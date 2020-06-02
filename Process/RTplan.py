@@ -1,0 +1,323 @@
+import pydicom
+import numpy as np
+import math
+import time
+
+from Process.SPRimage import *
+from Process.OptimizationObjectives import *
+
+class RTplan:
+
+  def __init__(self):
+    self.SeriesInstanceUID = ""
+    self.DcmFile = ""
+    self.Modality = ""
+    self.RadiationType = ""
+    self.ScanMode = ""
+    self.TreatmentMachineName = ""
+    self.NumberOfFractionsPlanned = 1
+    self.NumberOfSpots = 0
+    self.Beams = []
+    self.TotalMeterset = 0.0
+    self.PlanName = ""
+    self.Objectives = OptimizationObjectives()
+    self.isLoaded = 0
+    
+    
+    
+  def print_plan_info(self, prefix=""):
+    print(prefix + "Plan: " + self.SeriesInstanceUID)
+    print(prefix + "   " + self.DcmFile)
+    
+    
+  
+  def import_Dicom_plan(self):
+    if(self.isLoaded == 1):
+      print("Warning: RTplan " + self.SeriesInstanceUID + " is already loaded")
+      return
+      
+    dcm = pydicom.dcmread(self.DcmFile)
+    
+    # Photon plan
+    if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5": 
+      print("ERROR: Conventional radiotherapy (photon) plans are not supported")
+      self.Modality = "Radiotherapy"
+      return
+  
+    # Ion plan  
+    elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
+      self.Modality = "Ion therapy"
+    
+      if dcm.IonBeamSequence[0].RadiationType == "PROTON":
+        self.RadiationType = "Proton"
+      else:
+        print("ERROR: Radiation type " + dcm.IonBeamSequence[0].RadiationType + " not supported")
+        self.RadiationType = dcm.IonBeamSequence[0].RadiationType
+        return
+       
+      if dcm.IonBeamSequence[0].ScanMode == "MODULATED":
+        self.ScanMode = "MODULATED" # PBS
+      else:
+        print("ERROR: Scan mode " + dcm.IonBeamSequence[0].ScanMode + " not supported")
+        self.ScanMode = dcm.IonBeamSequence[0].ScanMode
+        return 
+    
+    # Other  
+    else:
+      print("ERROR: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + self.DcmFile)
+      self.Modality = "Unknown"
+      return
+      
+    # Start parsing PBS plan
+    self.TreatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName
+    self.NumberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
+    self.NumberOfSpots = 0
+    self.TotalMeterset = 0  
+  
+    for dcm_beam in dcm.IonBeamSequence:
+      if dcm_beam.TreatmentDeliveryType != "TREATMENT":
+        continue
+      
+      first_layer = dcm_beam.IonControlPointSequence[0]
+      
+      beam = Plan_IonBeam()
+      beam.SeriesInstanceUID = self.SeriesInstanceUID
+      beam.BeamName = dcm_beam.BeamName
+      beam.IsocenterPosition = [float(first_layer.IsocenterPosition[0]), float(first_layer.IsocenterPosition[1]), float(first_layer.IsocenterPosition[2])]
+      beam.GantryAngle = float(first_layer.GantryAngle)
+      beam.PatientSupportAngle = float(first_layer.PatientSupportAngle)
+      beam.FinalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
+    
+      # find corresponding beam in FractionGroupSequence (beam order may be different from IonBeamSequence)
+      ReferencedBeam_id = next((x for x, val in enumerate(dcm.FractionGroupSequence[0].ReferencedBeamSequence) if val.ReferencedBeamNumber == dcm_beam.BeamNumber), -1)
+      if ReferencedBeam_id == -1:
+        print("ERROR: Beam number " + dcm_beam.BeamNumber + " not found in FractionGroupSequence.")
+        print("This beam is therefore discarded.")
+        continue
+      else: beam.BeamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
+    
+      self.TotalMeterset += beam.BeamMeterset
+    
+      if dcm_beam.NumberOfRangeShifters == 0:
+        beam.RangeShifter = "none"
+      elif dcm_beam.NumberOfRangeShifters == 1:
+        if dcm_beam.RangeShifterSequence[0].RangeShifterType == "BINARY":
+          beam.RangeShifter = "binary"
+        elif dcm_beam.RangeShifterSequence[0].RangeShifterType == "ANALOG":
+          beam.RangeShifter = "analog"
+        else:
+          print("ERROR: Unknown range shifter type for beam " + dcm_beam.BeamName)
+          beam.RangeShifter = "none"
+      else: 
+        print("ERROR: More than one range shifter defined for beam " + dcm_beam.BeamName)
+        beam.RangeShifter = "none"
+      
+      
+      SnoutPosition = 0
+      if hasattr(first_layer, 'SnoutPosition'):
+        SnoutPosition = float(first_layer.SnoutPosition)
+    
+      IsocenterToRangeShifterDistance = SnoutPosition
+      RangeShifterWaterEquivalentThickness = 0
+      RangeShifterSetting = "OUT"
+      ReferencedRangeShifterNumber = 0
+    
+      if hasattr(first_layer, 'RangeShifterSettingsSequence'):
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'IsocenterToRangeShifterDistance'):
+          IsocenterToRangeShifterDistance = float(first_layer.RangeShifterSettingsSequence[0].IsocenterToRangeShifterDistance)
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'RangeShifterWaterEquivalentThickness'):
+          RangeShifterWaterEquivalentThickness = float(first_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness)
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'RangeShifterSetting'):
+          RangeShifterSetting = first_layer.RangeShifterSettingsSequence[0].RangeShifterSetting
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'ReferencedRangeShifterNumber'):
+          ReferencedRangeShifterNumber = int(first_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber)
+       
+      CumulativeMeterset = 0
+    
+      for dcm_layer in dcm_beam.IonControlPointSequence:
+        if dcm_layer.NumberOfScanSpotPositions == 1: sum_weights = dcm_layer.ScanSpotMetersetWeights
+        else: sum_weights = sum(dcm_layer.ScanSpotMetersetWeights)
+      
+        if sum_weights == 0.0:
+          continue
+        
+        layer = Plan_IonLayer()
+        layer.SeriesInstanceUID = self.SeriesInstanceUID
+            
+        if hasattr(dcm_layer, 'SnoutPosition'):
+          SnoutPosition = float(dcm_layer.SnoutPosition)
+        
+        if hasattr(dcm_layer, 'NumberOfPaintings'): layer.NumberOfPaintings = int(dcm_layer.NumberOfPaintings)
+        else: layer.NumberOfPaintings = 1
+       
+        layer.NominalBeamEnergy = float(dcm_layer.NominalBeamEnergy)
+        layer.ScanSpotPositionMap_x = dcm_layer.ScanSpotPositionMap[0::2]
+        layer.ScanSpotPositionMap_y = dcm_layer.ScanSpotPositionMap[1::2]
+        layer.ScanSpotMetersetWeights = dcm_layer.ScanSpotMetersetWeights
+        layer.SpotMU = np.array(dcm_layer.ScanSpotMetersetWeights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight # spot weights are converted to MU
+        if layer.SpotMU.size == 1: layer.SpotMU = [layer.SpotMU]
+        else: layer.SpotMU = layer.SpotMU.tolist()
+      
+        self.NumberOfSpots += len(layer.SpotMU)
+        CumulativeMeterset += sum(layer.SpotMU)
+        layer.CumulativeMeterset = CumulativeMeterset
+            
+        if beam.RangeShifter != "none":        
+          if hasattr(dcm_layer, 'RangeShifterSettingsSequence'):
+            RangeShifterSetting = dcm_layer.RangeShifterSettingsSequence[0].RangeShifterSetting
+            ReferencedRangeShifterNumber = dcm_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber
+            if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'IsocenterToRangeShifterDistance'):
+              IsocenterToRangeShifterDistance = dcm_layer.RangeShifterSettingsSequence[0].IsocenterToRangeShifterDistance
+            if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'RangeShifterWaterEquivalentThickness'):
+              RangeShifterWaterEquivalentThickness = dcm_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness
+        
+          layer.RangeShifterSetting = RangeShifterSetting
+          layer.IsocenterToRangeShifterDistance = IsocenterToRangeShifterDistance
+          layer.RangeShifterWaterEquivalentThickness = RangeShifterWaterEquivalentThickness
+          layer.ReferencedRangeShifterNumber = ReferencedRangeShifterNumber
+        
+        
+        beam.Layers.append(layer)
+      
+      self.Beams.append(beam)
+      
+    self.isLoaded = 1
+    
+    
+  
+  def Rotate_vector(self, vec, angle, axis):
+    if axis == 'x':
+      x = vec[0]
+      y = vec[1] * math.cos(angle) - vec[2] * math.sin(angle)
+      z = vec[1] * math.sin(angle) + vec[2] * math.cos(angle)
+    elif axis ==  'y':
+      x = vec[0] * math.cos(angle) + vec[2] * math.sin(angle)
+      y = vec[1]
+      z = -vec[0] * math.sin(angle) + vec[2] * math.cos(angle)
+    elif axis == 'z':
+      x = vec[0] * math.cos(angle) - vec[1] * math.sin(angle)
+      y = vec[0] * math.sin(angle) + vec[1] * math.cos(angle)
+      z = vec[2]
+      
+    return [x,y,z]
+    
+    
+    
+  def compute_cartesian_coordinates(self, CT, Scanner, beams):
+    time_start = time.time()
+    
+    SPR = SPRimage()
+    SPR.convert_CT_to_SPR(CT, Scanner)
+    
+    CTborders_x = [CT.ImagePositionPatient[0], CT.ImagePositionPatient[0] + CT.GridSize[0] * CT.PixelSpacing[0]]
+    CTborders_y = [CT.ImagePositionPatient[1], CT.ImagePositionPatient[1] + CT.GridSize[1] * CT.PixelSpacing[1]]
+    CTborders_z = [CT.ImagePositionPatient[2], CT.ImagePositionPatient[2] + CT.GridSize[2] * CT.PixelSpacing[2]]
+    
+    CartesianSpotPositions = []
+    for b in beams:
+      beam = self.Beams[b]
+      for layer in beam.Layers:
+        for s in range(len(layer.ScanSpotPositionMap_x)):
+          
+          # BEV coordinates to 3D coordinates: position (x,y,z) and direction (u,v,w)
+          x,y,z = layer.ScanSpotPositionMap_x[s], 0, layer.ScanSpotPositionMap_y[s]
+          u,v,w = 1e-10, 1.0, 1e-10
+          
+          # rotation for gantry angle (around Z axis)
+          angle = math.radians(beam.GantryAngle)
+          [x,y,z] = self.Rotate_vector([x,y,z], angle, 'z')
+          [u,v,w] = self.Rotate_vector([u,v,w], angle, 'z')
+          
+          # rotation for couch angle (around Y axis)
+          angle = math.radians(beam.PatientSupportAngle)
+          [x,y,z] = self.Rotate_vector([x,y,z], angle, 'y')
+          [u,v,w] = self.Rotate_vector([u,v,w], angle, 'y')
+          
+          # Dicom CT coordinates
+          x = x + beam.IsocenterPosition[0]
+          y = y + beam.IsocenterPosition[1]
+          z = z + beam.IsocenterPosition[2]
+          
+          # prepare raytracing
+          # translate initial position at the CT image border
+          Translation = np.array([1.0, 1.0, 1.0])
+          Translation[0] = (x - CTborders_x[int(u<0)]) / u
+          Translation[1] = (y - CTborders_y[int(v<0)]) / v
+          Translation[2] = (z - CTborders_z[int(w<0)]) / w
+          Translation = Translation.min()
+          x = x - Translation * u
+          y = y - Translation * v
+          z = z - Translation * w
+          
+          # find the position at the spot range (raytracing)
+          spot_range = SPR.energyToRange(layer.NominalBeamEnergy)*10
+          WET = 0
+          dist = np.array([1.0, 1.0, 1.0])
+          while WET < spot_range:
+            # check if we are still inside the CT image
+            if(x < CTborders_x[0] and u < 0): break
+            if(x > CTborders_x[1] and u > 0): break
+            if(y < CTborders_y[0] and v < 0): break
+            if(y > CTborders_y[1] and v > 0): break
+            if(z < CTborders_z[0] and w < 0): break
+            if(z > CTborders_z[1] and w > 0): break
+          
+            # compute distante to next voxel
+            dist[0] = abs(((math.floor((x-CT.ImagePositionPatient[0])/CT.PixelSpacing[0]) + float(u>0)) * CT.PixelSpacing[0] + CT.ImagePositionPatient[0] - x)/u)
+            dist[1] = abs(((math.floor((y-CT.ImagePositionPatient[1])/CT.PixelSpacing[1]) + float(v>0)) * CT.PixelSpacing[1] + CT.ImagePositionPatient[1] - y)/v)
+            dist[2] = abs(((math.floor((z-CT.ImagePositionPatient[2])/CT.PixelSpacing[2]) + float(w>0)) * CT.PixelSpacing[2] + CT.ImagePositionPatient[2] - z)/w)
+            step = dist.min() + 1e-3
+            
+            voxel_SPR = SPR.get_SPR_at_position([x,y,z])
+            
+            WET += voxel_SPR * step
+            x = x + step * u
+            y = y + step * v
+            z = z + step * w
+            
+          CartesianSpotPositions.append([x,y,z])
+          
+    print("Spot RayTracing: " + str(time.time()-time_start) + " sec")
+    return CartesianSpotPositions
+  
+  
+  
+   
+  #def depth_inside_SPR_map(self, SPR, ):
+    
+  
+  
+      
+class Plan_IonBeam:
+
+  def __init__(self):
+    self.SeriesInstanceUID = ""
+    self.BeamName = ""
+    self.IsocenterPosition = [0,0,0]
+    self.GantryAngle = 0.0
+    self.PatientSupportAngle = 0.0
+    self.FinalCumulativeMetersetWeight = 0.0
+    self.BeamMeterset = 0.0
+    self.RangeShifter = "none"
+    self.Layers = []
+    
+    
+    
+class Plan_IonLayer:
+
+  def __init__(self):
+    self.SeriesInstanceUID = ""
+    self.NumberOfPaintings = 1
+    self.NominalBeamEnergy = 0.0
+    self.ScanSpotPositionMap_x = []
+    self.ScanSpotPositionMap_y = []
+    self.ScanSpotMetersetWeights = []
+    self.SpotMU = []
+    self.CumulativeMeterset = 0.0
+    self.RangeShifterSetting = 'OUT'
+    self.IsocenterToRangeShifterDistance = 0.0
+    self.RangeShifterWaterEquivalentThickness = 0.0
+    self.ReferencedRangeShifterNumber = 0
+    
+    
+    
