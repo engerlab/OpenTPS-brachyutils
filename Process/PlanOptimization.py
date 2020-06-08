@@ -14,9 +14,12 @@ except:
   use_MKL = 0
 
 from Process.RTplan import *
+from Process.C_libraries.libRayTracing_wrapper import *
 
 
 def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanner):
+  start = time.time()
+
   plan = RTplan()
   plan.SeriesInstanceUID = pydicom.uid.generate_uid()
   plan.PlanName = "NewPlan"
@@ -58,10 +61,28 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
     
   # spot placement
   plan = SpotPlacement(plan, CT, RTV_mask, Scanner)
+
+  previous_energy = 999
+  for beam in plan.Beams:
+    beam.Layers.sort(reverse=True, key=(lambda element: element.NominalBeamEnergy))
+
+    # # arc pt
+    # for l in range(len(beam.Layers)):
+    #   if(beam.Layers[l].NominalBeamEnergy < previous_energy):
+    #     previous_energy = beam.Layers[l].NominalBeamEnergy
+    #     beam.Layers = [beam.Layers[l]]
+    #     print(beam.Layers[0].NominalBeamEnergy)
+    #     break
+
+    # if len(beam.Layers) > 1:
+    #   previous_energy = beam.Layers[0].NominalBeamEnergy
+    #   beam.Layers = [beam.Layers[0]]
+    #   print(beam.Layers[0].NominalBeamEnergy)
+
   
   plan.isLoaded = 1
   
-  print("New plan created")
+  print("New plan created in " + str(time.time()-start) + " sec")
   print("Number of spots: " + str(plan.NumberOfSpots)) 
     
   return plan
@@ -73,15 +94,16 @@ def SpotPlacement(plan, CT, Target_mask, Scanner):
   SPR = SPRimage()
   SPR.convert_CT_to_SPR(CT, Scanner)
     
-  CTborders_x = [CT.ImagePositionPatient[0], CT.ImagePositionPatient[0] + CT.GridSize[0] * CT.PixelSpacing[0]]
-  CTborders_y = [CT.ImagePositionPatient[1], CT.ImagePositionPatient[1] + CT.GridSize[1] * CT.PixelSpacing[1]]
-  CTborders_z = [CT.ImagePositionPatient[2], CT.ImagePositionPatient[2] + CT.GridSize[2] * CT.PixelSpacing[2]]
+  ImgBorders_x = [SPR.ImagePositionPatient[0], SPR.ImagePositionPatient[0] + SPR.GridSize[0] * SPR.PixelSpacing[0]]
+  ImgBorders_y = [SPR.ImagePositionPatient[1], SPR.ImagePositionPatient[1] + SPR.GridSize[1] * SPR.PixelSpacing[1]]
+  ImgBorders_z = [SPR.ImagePositionPatient[2], SPR.ImagePositionPatient[2] + SPR.GridSize[2] * SPR.PixelSpacing[2]]
   
   plan.NumberOfSpots = 0
   
   for beam in plan.Beams:
     # generate hexagonal spot grid around isocenter
     SpotGrid = generate_hexagonal_SpotGrid(beam.IsocenterPosition, beam.SpotSpacing, beam.GantryAngle, beam.PatientSupportAngle)
+    NumSpots = len(SpotGrid["x"])
     
     # compute direction vector
     u,v,w = 1e-10, 1.0, 1e-10 # BEV to 3D coordinates
@@ -89,109 +111,57 @@ def SpotPlacement(plan, CT, Target_mask, Scanner):
     [u,v,w] = Rotate_vector([u,v,w], math.radians(beam.PatientSupportAngle), 'y') # rotation for couch angle
     
     # prepare raytracing: translate initial positions at the CT image border
-    for spot in SpotGrid:
+    for s in range(NumSpots):
       Translation = np.array([1.0, 1.0, 1.0])
-      Translation[0] = (spot["x"] - CTborders_x[int(u<0)]) / u
-      Translation[1] = (spot["y"] - CTborders_y[int(v<0)]) / v
-      Translation[2] = (spot["z"] - CTborders_z[int(w<0)]) / w
+      Translation[0] = (SpotGrid["x"][s] - ImgBorders_x[int(u<0)]) / u
+      Translation[1] = (SpotGrid["y"][s] - ImgBorders_y[int(v<0)]) / v
+      Translation[2] = (SpotGrid["z"][s] - ImgBorders_z[int(w<0)]) / w
       Translation = Translation.min()
-      spot["x"] = spot["x"] - Translation * u
-      spot["y"] = spot["y"] - Translation * v
-      spot["z"] = spot["z"] - Translation * w
+      SpotGrid["x"][s] = SpotGrid["x"][s] - Translation * u
+      SpotGrid["y"][s] = SpotGrid["y"][s] - Translation * v
+      SpotGrid["z"][s] = SpotGrid["z"][s] - Translation * w
       
     # transport each spot until it reaches the target
-    for spot in SpotGrid:
-      spot["WET"] = 0
-      dist = np.array([1.0, 1.0, 1.0])
-      while True:      
-        # check if we are still inside the CT image
-        if(spot["x"] < CTborders_x[0] and u < 0): spot["WET"]=-1; break
-        if(spot["x"] > CTborders_x[1] and u > 0): spot["WET"]=-1; break
-        if(spot["y"] < CTborders_y[0] and v < 0): spot["WET"]=-1; break
-        if(spot["y"] > CTborders_y[1] and v > 0): spot["WET"]=-1; break
-        if(spot["z"] < CTborders_z[0] and w < 0): spot["WET"]=-1; break
-        if(spot["z"] > CTborders_z[1] and w > 0): spot["WET"]=-1; break
-        
-        # check if we reached the target
-        voxel = SPR.get_voxel_index([spot["x"], spot["y"], spot["z"]])
-        if(voxel[0] >= 0 and voxel[1] >= 0 and voxel[2] >= 0 and voxel[0] < CT.GridSize[0] and voxel[1] < CT.GridSize[1] and voxel[2] < CT.GridSize[2]):
-          if(Target_mask[voxel[1], voxel[0], voxel[2]]): break
-          
-        # compute distante to next voxel
-        dist[0] = abs(((math.floor((spot["x"]-CT.ImagePositionPatient[0])/CT.PixelSpacing[0]) + float(u>0)) * CT.PixelSpacing[0] + CT.ImagePositionPatient[0] - spot["x"])/u)
-        dist[1] = abs(((math.floor((spot["y"]-CT.ImagePositionPatient[1])/CT.PixelSpacing[1]) + float(v>0)) * CT.PixelSpacing[1] + CT.ImagePositionPatient[1] - spot["y"])/v)
-        dist[2] = abs(((math.floor((spot["z"]-CT.ImagePositionPatient[2])/CT.PixelSpacing[2]) + float(w>0)) * CT.PixelSpacing[2] + CT.ImagePositionPatient[2] - spot["z"])/w)
-        step = dist.min() + 1e-3
-            
-        voxel_SPR = SPR.get_SPR_at_position([spot["x"], spot["y"], spot["z"]])
-            
-        spot["WET"] += voxel_SPR * step
-        spot["x"] = spot["x"] + step * u
-        spot["y"] = spot["y"] + step * v
-        spot["z"] = spot["z"] + step * w
-        
+    transport_spots_to_target(SPR, Target_mask, SpotGrid, [u,v,w])
         
     # remove spots that didn't reach the target
     minWET = 9999999
-    for s in range(len(SpotGrid)-1, -1, -1):
-      if(SpotGrid[s]["WET"] < 0): SpotGrid.pop(s)
-      elif(SpotGrid[s]["WET"] < minWET): minWET = SpotGrid[s]["WET"]
-      
-    # raytrace remaining spots to define energy layers
-    for spot in SpotGrid:
-      NumLayer = math.ceil((spot["WET"] - minWET) / beam.LayerSpacing)
-      Layer_WET = minWET + NumLayer * beam.LayerSpacing
-      dist = np.array([1.0, 1.0, 1.0])
-      while True:      
-        # check if we are still inside the CT image
-        if(spot["x"] < CTborders_x[0] and u < 0): break
-        if(spot["x"] > CTborders_x[1] and u > 0): break
-        if(spot["y"] < CTborders_y[0] and v < 0): break
-        if(spot["y"] > CTborders_y[1] and v > 0): break
-        if(spot["z"] < CTborders_z[0] and w < 0): break
-        if(spot["z"] > CTborders_z[1] and w > 0): break
+    for s in range(NumSpots-1, -1, -1):
+      if(SpotGrid["WET"][s] < 0): 
+        SpotGrid["BEVx"].pop(s)
+        SpotGrid["BEVy"].pop(s)
+        SpotGrid["x"].pop(s)
+        SpotGrid["y"].pop(s)
+        SpotGrid["z"].pop(s)
+        SpotGrid["WET"].pop(s)
+      elif(SpotGrid["WET"][s] < minWET): minWET = SpotGrid["WET"][s]
+
+    # raytracing of remaining spots to define energy layers
+    transport_spots_inside_target(SPR, Target_mask, SpotGrid, [u,v,w], minWET, beam.LayerSpacing)
+
+    # generate plan structure
+    NumSpots = len(SpotGrid["x"])
+    for s in range(NumSpots):
+      for Energy in SpotGrid["EnergyLayers"][s]:
+        plan.NumberOfSpots += 1
+        layer_found = 0
+        for layer in beam.Layers:
+          if(layer.NominalBeamEnergy == Energy):
+            # add spot to existing layer
+            layer.ScanSpotPositionMap_x.append(SpotGrid["BEVx"][s])
+            layer.ScanSpotPositionMap_y.append(SpotGrid["BEVy"][s])
+            layer.ScanSpotMetersetWeights.append(1.0)
+            layer.SpotMU.append(1.0)
+            layer_found = 1
         
-        # check if we reached the next layer
-        if(spot["WET"] >= Layer_WET):
-          voxel = SPR.get_voxel_index([spot["x"], spot["y"], spot["z"]])
-          if(voxel[0] >= 0 and voxel[1] >= 0 and voxel[2] >= 0 and voxel[0] < CT.GridSize[0] and voxel[1] < CT.GridSize[1] and voxel[2] < CT.GridSize[2]):
-            if(Target_mask[voxel[1], voxel[0], voxel[2]]):
-              plan.NumberOfSpots += 1
-              Energy = SPR.rangeToEnergy(Layer_WET/10)
-              layer_found = 0
-              for layer in beam.Layers:
-                if(layer.NominalBeamEnergy == Energy):
-                  # add spot to existing layer
-                  layer.ScanSpotPositionMap_x.append(spot["BEV_x"])
-                  layer.ScanSpotPositionMap_y.append(spot["BEV_y"])
-                  layer.ScanSpotMetersetWeights.append(1.0)
-                  layer.SpotMU.append(1.0)
-                  layer_found = 1
-              
-              if(layer_found == 0):
-                # add new layer
-                beam.Layers.append(Plan_IonLayer())
-                beam.Layers[-1].NominalBeamEnergy = Energy
-                beam.Layers[-1].ScanSpotPositionMap_x.append(spot["BEV_x"])
-                beam.Layers[-1].ScanSpotPositionMap_y.append(spot["BEV_y"])
-                beam.Layers[-1].ScanSpotMetersetWeights.append(1.0)
-                beam.Layers[-1].SpotMU.append(1.0)
-              
-          NumLayer += 1
-          Layer_WET = minWET + NumLayer*beam.LayerSpacing
-        
-        # compute distante to next voxel
-        dist[0] = abs(((math.floor((spot["x"]-CT.ImagePositionPatient[0])/CT.PixelSpacing[0]) + float(u>0)) * CT.PixelSpacing[0] + CT.ImagePositionPatient[0] - spot["x"])/u)
-        dist[1] = abs(((math.floor((spot["y"]-CT.ImagePositionPatient[1])/CT.PixelSpacing[1]) + float(v>0)) * CT.PixelSpacing[1] + CT.ImagePositionPatient[1] - spot["y"])/v)
-        dist[2] = abs(((math.floor((spot["z"]-CT.ImagePositionPatient[2])/CT.PixelSpacing[2]) + float(w>0)) * CT.PixelSpacing[2] + CT.ImagePositionPatient[2] - spot["z"])/w)
-        step = dist.min() + 1e-3
-            
-        voxel_SPR = SPR.get_SPR_at_position([spot["x"], spot["y"], spot["z"]])
-            
-        spot["WET"] += voxel_SPR * step
-        spot["x"] = spot["x"] + step * u
-        spot["y"] = spot["y"] + step * v
-        spot["z"] = spot["z"] + step * w
+        if(layer_found == 0):
+          # add new layer
+          beam.Layers.append(Plan_IonLayer())
+          beam.Layers[-1].NominalBeamEnergy = Energy
+          beam.Layers[-1].ScanSpotPositionMap_x.append(SpotGrid["BEVx"][s])
+          beam.Layers[-1].ScanSpotPositionMap_y.append(SpotGrid["BEVy"][s])
+          beam.Layers[-1].ScanSpotMetersetWeights.append(1.0)
+          beam.Layers[-1].SpotMU.append(1.0)
            
   return plan
 
@@ -201,17 +171,26 @@ def generate_hexagonal_SpotGrid(IsoCenter, SpotSpacing, GantryAngle, CouchAngle)
   FOV = 400 # max field size on IBA P+ is 30x40 cm
   NumSpotX = math.ceil(FOV / SpotSpacing)
   NumSpotY = math.ceil(FOV / (SpotSpacing * math.cos(math.pi/6)))
-  SpotGrid = []
+
+  SpotGrid = {}
+  SpotGrid["BEVx"] = []
+  SpotGrid["BEVy"] = []
+  SpotGrid["x"] = []
+  SpotGrid["y"] = []
+  SpotGrid["z"] = []
+  SpotGrid["WET"] = []
+  SpotGrid["EnergyLayers"] = []
+
   for i in range(NumSpotX):
     for j in range(NumSpotY):
       spot = {}
       
       # coordinates in Beam-eye-view
-      spot["BEV_x"] = (i-round(NumSpotX/2)+(j%2)*0.5)* SpotSpacing 
-      spot["BEV_y"] = (j-round(NumSpotY/2)) * SpotSpacing * math.cos(math.pi/6)
+      SpotGrid["BEVx"].append( (i-round(NumSpotX/2)+(j%2)*0.5)* SpotSpacing )
+      SpotGrid["BEVy"].append( (j-round(NumSpotY/2)) * SpotSpacing * math.cos(math.pi/6) )
       
       # 3D coordinates
-      x,y,z = spot["BEV_x"], 0, spot["BEV_y"]
+      x,y,z = SpotGrid["BEVx"][-1], 0, SpotGrid["BEVy"][-1]
       
       # rotation for gantry angle (around Z axis)
       [x,y,z] = Rotate_vector([x,y,z], math.radians(GantryAngle), 'z')
@@ -220,10 +199,9 @@ def generate_hexagonal_SpotGrid(IsoCenter, SpotSpacing, GantryAngle, CouchAngle)
       [x,y,z] = Rotate_vector([x,y,z], math.radians(CouchAngle), 'y')
       
       # Dicom CT coordinates
-      spot["x"] = x + IsoCenter[0]
-      spot["y"] = y + IsoCenter[1]
-      spot["z"] = z + IsoCenter[2]
-      SpotGrid.append(spot)
+      SpotGrid["x"].append( x + IsoCenter[0] )
+      SpotGrid["y"].append( y + IsoCenter[1] )
+      SpotGrid["z"].append( z + IsoCenter[2] )
   
   return SpotGrid
 

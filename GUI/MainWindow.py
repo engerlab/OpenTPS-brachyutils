@@ -6,6 +6,7 @@ import numpy as np
 
 
 from GUI.AddBeam_dialog import *
+from GUI.AddArc_dialog import *
 from GUI.AddObjective_dialog import *
 
 from Process.PatientData import *
@@ -182,10 +183,16 @@ class MainWindow(QMainWindow):
     #QTreeWidgetItem(test, ["Layer 4"])
     #self.toolbox_4_layout.addWidget(self.toolbox_4_plan)
     ####
+    self.toolbox_4_button_hLoayout = QHBoxLayout()
+    self.toolbox_4_layout.addLayout(self.toolbox_4_button_hLoayout)
     self.toolbox_4_addBeam = QPushButton('Add beam')
     self.toolbox_4_addBeam.setMaximumWidth(80)
-    self.toolbox_4_layout.addWidget(self.toolbox_4_addBeam)
+    self.toolbox_4_button_hLoayout.addWidget(self.toolbox_4_addBeam)
     self.toolbox_4_addBeam.clicked.connect(self.add_new_beam) 
+    self.toolbox_4_addArc = QPushButton('Add arc')
+    self.toolbox_4_addArc.setMaximumWidth(80)
+    self.toolbox_4_button_hLoayout.addWidget(self.toolbox_4_addArc)
+    self.toolbox_4_addArc.clicked.connect(self.add_new_arc) 
     self.toolbox_4_layout.addSpacing(30)
     self.toolbox_4_CreatePlanButton = QPushButton('Create new plan')
     self.toolbox_4_layout.addWidget(self.toolbox_4_CreatePlanButton)
@@ -463,8 +470,28 @@ class MainWindow(QMainWindow):
       CouchAngle = dialog.CouchAngle.value()
       self.toolbox_4_beams.addItem(BeamName + ":  G=" + str(GantryAngle) + "°,  C=" + str(CouchAngle) + "°")
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+0, BeamName)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+1, GantryAngle)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+2, CouchAngle)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+1, 'beam')
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+2, GantryAngle)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+3, CouchAngle)
+    
+    
+    
+  def add_new_arc(self):
+    beam_number = self.toolbox_4_beams.count()
+    dialog = AddArc_dialog("Arc " + str(beam_number+1))
+    if(dialog.exec()):
+      ArcName = dialog.ArcName.text()
+      StartGantryAngle = dialog.StartGantryAngle.value()
+      StopGantryAngle = dialog.StopGantryAngle.value()
+      AngularStep = dialog.AngularStep.value()
+      CouchAngle = dialog.CouchAngle.value()
+      self.toolbox_4_beams.addItem(ArcName + ":  G=" + str(StartGantryAngle) + " to " + str(StopGantryAngle) + "°,  C=" + str(CouchAngle) + "°")
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+0, ArcName)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+1, 'arc')
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+2, StartGantryAngle)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+3, CouchAngle)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+4, StopGantryAngle)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+5, AngularStep)
   
   
   
@@ -489,9 +516,26 @@ class MainWindow(QMainWindow):
     GantryAngles = []
     CouchAngles = []
     for i in range(self.toolbox_4_beams.count()):
-      BeamNames.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+0))
-      GantryAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+1))
-      CouchAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+2))
+      BeamType = self.toolbox_4_beams.item(i).data(Qt.UserRole+1)
+      if(BeamType == "beam"):
+        BeamNames.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+0))
+        GantryAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+2))
+        CouchAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+3))
+      elif(BeamType == "arc"):
+        name = self.toolbox_4_beams.item(i).data(Qt.UserRole+0)
+        start = self.toolbox_4_beams.item(i).data(Qt.UserRole+2)
+        couch = self.toolbox_4_beams.item(i).data(Qt.UserRole+3)
+        stop = self.toolbox_4_beams.item(i).data(Qt.UserRole+4)
+        step = self.toolbox_4_beams.item(i).data(Qt.UserRole+5)
+        if start > stop:
+          start -= 360
+        for b in range(math.floor((stop-start)/step)+1):
+          angle = start + b * step
+          if angle < 0.0: angle += 360
+          print(angle)
+          BeamNames.append(name + "_" + str(angle))
+          GantryAngles.append(angle)
+          CouchAngles.append(couch)
     
     # Generate new plan
     plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, Scanner)
@@ -750,7 +794,7 @@ class MainWindow(QMainWindow):
           self.context_menu.addAction(self.display_spot_action[b+1])
         if(self.Viewer_Spots != []):
           self.remove_spot_action = QAction("Remove displayed spots")
-          self.remove_spot_action.triggered.connect(lambda : [self.Viewer_Spots.clear(), self.update_viewer('axial'), self.update_viewer('coronal'), self.update_viewer('sagittal')])
+          self.remove_spot_action.triggered.connect(lambda : [self.Viewer_Spots.clear(), self.Viewer_IsoCenter.clear(), self.update_viewer('axial'), self.update_viewer('coronal'), self.update_viewer('sagittal')])
           self.context_menu.addAction(self.remove_spot_action)
       self.context_menu.popup(pos)
       

@@ -5,6 +5,7 @@ import time
 
 from Process.SPRimage import *
 from Process.OptimizationObjectives import *
+from Process.C_libraries.libRayTracing_wrapper import *
 
 class RTplan:
 
@@ -209,14 +210,21 @@ class RTplan:
     SPR = SPRimage()
     SPR.convert_CT_to_SPR(CT, Scanner)
     
-    CTborders_x = [CT.ImagePositionPatient[0], CT.ImagePositionPatient[0] + CT.GridSize[0] * CT.PixelSpacing[0]]
-    CTborders_y = [CT.ImagePositionPatient[1], CT.ImagePositionPatient[1] + CT.GridSize[1] * CT.PixelSpacing[1]]
-    CTborders_z = [CT.ImagePositionPatient[2], CT.ImagePositionPatient[2] + CT.GridSize[2] * CT.PixelSpacing[2]]
+    CTborders_x = [SPR.ImagePositionPatient[0], SPR.ImagePositionPatient[0] + SPR.GridSize[0] * SPR.PixelSpacing[0]]
+    CTborders_y = [SPR.ImagePositionPatient[1], SPR.ImagePositionPatient[1] + SPR.GridSize[1] * SPR.PixelSpacing[1]]
+    CTborders_z = [SPR.ImagePositionPatient[2], SPR.ImagePositionPatient[2] + SPR.GridSize[2] * SPR.PixelSpacing[2]]
     
-    CartesianSpotPositions = []
+    spot_positions = []
+    spot_directions = []
+    spot_ranges = []
+
+    # initialize spot info for raytracing
     for b in beams:
       beam = self.Beams[b]
       for layer in beam.Layers:
+
+        range_in_water = SPR.energyToRange(layer.NominalBeamEnergy)*10
+
         for s in range(len(layer.ScanSpotPositionMap_x)):
           
           # BEV coordinates to 3D coordinates: position (x,y,z) and direction (u,v,w)
@@ -238,7 +246,6 @@ class RTplan:
           y = y + beam.IsocenterPosition[1]
           z = z + beam.IsocenterPosition[2]
           
-          # prepare raytracing
           # translate initial position at the CT image border
           Translation = np.array([1.0, 1.0, 1.0])
           Translation[0] = (x - CTborders_x[int(u<0)]) / u
@@ -248,44 +255,19 @@ class RTplan:
           x = x - Translation * u
           y = y - Translation * v
           z = z - Translation * w
-          
-          # find the position at the spot range (raytracing)
-          spot_range = SPR.energyToRange(layer.NominalBeamEnergy)*10
-          WET = 0
-          dist = np.array([1.0, 1.0, 1.0])
-          while WET < spot_range:
-            # check if we are still inside the CT image
-            if(x < CTborders_x[0] and u < 0): break
-            if(x > CTborders_x[1] and u > 0): break
-            if(y < CTborders_y[0] and v < 0): break
-            if(y > CTborders_y[1] and v > 0): break
-            if(z < CTborders_z[0] and w < 0): break
-            if(z > CTborders_z[1] and w > 0): break
-          
-            # compute distante to next voxel
-            dist[0] = abs(((math.floor((x-CT.ImagePositionPatient[0])/CT.PixelSpacing[0]) + float(u>0)) * CT.PixelSpacing[0] + CT.ImagePositionPatient[0] - x)/u)
-            dist[1] = abs(((math.floor((y-CT.ImagePositionPatient[1])/CT.PixelSpacing[1]) + float(v>0)) * CT.PixelSpacing[1] + CT.ImagePositionPatient[1] - y)/v)
-            dist[2] = abs(((math.floor((z-CT.ImagePositionPatient[2])/CT.PixelSpacing[2]) + float(w>0)) * CT.PixelSpacing[2] + CT.ImagePositionPatient[2] - z)/w)
-            step = dist.min() + 1e-3
-            
-            voxel_SPR = SPR.get_SPR_at_position([x,y,z])
-            
-            WET += voxel_SPR * step
-            x = x + step * u
-            y = y + step * v
-            z = z + step * w
-            
-          CartesianSpotPositions.append([x,y,z])
+
+          # append data to the list of spots to process
+          spot_positions.append([x,y,z])
+          spot_directions.append([u,v,w])
+          spot_ranges.append(range_in_water)
+
+
+    CartesianSpotPositions = compute_position_from_range(SPR, spot_positions, spot_directions, spot_ranges)
           
     print("Spot RayTracing: " + str(time.time()-time_start) + " sec")
     return CartesianSpotPositions
   
-  
-  
-   
-  #def depth_inside_SPR_map(self, SPR, ):
     
-  
   
       
 class Plan_IonBeam:

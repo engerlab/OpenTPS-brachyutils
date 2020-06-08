@@ -83,5 +83,7 @@ class CTimage:
     img_min = self.Image.min()
     #img_max = self.Image.max()
     img_max = np.percentile(self.Image, 99.995)
-    return 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
+    img = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
+    img[img>255] = 255
+    return img
     
