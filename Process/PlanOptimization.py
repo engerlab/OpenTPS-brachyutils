@@ -572,7 +572,7 @@ def l_bfgs(f, g, x0, maxIter, ftol, m=10):
 
     return xk, cost, i
 
-def fista(f, g, x0, maxIter, ftol, L0 = 1., L = None, Lambda = 0.01, eta = 1.5, with_reg = (False, None) ):
+def fista(f, g, x0, maxIter, ftol, L0 = 30., L = None, Lambda = 0.01, eta = 1.5, with_reg = (False, None) ):
     ''' this implements the FISTA algorithm to minimize a unconstrained convex
     function having the following form:
         object_func = f(x) + h(x)

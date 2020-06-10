@@ -84,7 +84,7 @@ plt.title("Pre-optimization DVH")
 # Optimize treatment plan
 #w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="Scipy-lBFGS")
 #w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="Gradient")
-w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="BFGS")
+w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="FISTA")
 beamlets.Weights = np.array(w, dtype=np.float32)
 dose.Image = np.reshape(dose_vector, ct.GridSize, order='F')
 dose.Image = np.flip(dose.Image, (0,1)).transpose(1,0,2)
