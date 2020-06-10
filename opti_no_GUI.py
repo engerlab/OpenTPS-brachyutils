@@ -40,6 +40,14 @@ plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, mc2
 plan.PlanName = "NewPlan"
 Patients.list[0].Plans.append(plan)
 
+# optimization objectives
+plan.Objectives.setTarget("PTV 74gy", 60.0)
+plan.Objectives.list = []
+plan.Objectives.addObjective("PTV 74 gy", "Dmax", "<", 60.0, 5.0)
+plan.Objectives.addObjective("PTV 74 gy", "Dmin", ">", 60.0, 5.0)
+plan.Objectives.addObjective("Rectum", "Dmax", "<", 50.0, 1.0)
+plan.Objectives.addObjective("Rectum", "Dmean", "<", 25.0, 1.0)
+
 # Compute beamlets
 beamlet_file = os.path.join(patient_data_path, "BeamletMatrix")
 if os.path.isfile(beamlet_file):
@@ -49,6 +57,7 @@ if os.path.isfile(beamlet_file):
 else:
   beamlets = mc2.MCsquare_beamlet_calculation(ct, plan) # already scaled to Gray units
   beamlets.save(beamlet_file)
+plan.beamlets = beamlets
 
 # Compute pre-optimization dose
 dose_vector = sp.csc_matrix.dot(beamlets.BeamletMatrix, beamlets.Weights)
@@ -73,9 +82,9 @@ plt.plot(OAR_DVH.dose, OAR_DVH.volume, label=OAR_DVH.ROIName)
 plt.title("Pre-optimization DVH")
 
 # Optimize treatment plan
-w, dose_vector, ps = OptimizeWeights(beamlets.BeamletMatrix, Target, OAR, method="Scipy-lBFGS")
-#w, dose_vector, ps = OptimizeWeights(beamlets.BeamletMatrix, Target, OAR, method="Gradient")
-#w, dose_vector, ps = OptimizeWeights(beamlets.BeamletMatrix, Target, OAR, method="BFGS")
+#w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="Scipy-lBFGS")
+#w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="Gradient")
+w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="BFGS")
 beamlets.Weights = np.array(w, dtype=np.float32)
 dose.Image = np.reshape(dose_vector, ct.GridSize, order='F')
 dose.Image = np.flip(dose.Image, (0,1)).transpose(1,0,2)

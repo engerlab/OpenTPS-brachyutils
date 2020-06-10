@@ -101,6 +101,27 @@ class RTdose:
     return self
     
     
+    
+  def Initialize_from_beamlet_dose(self, ImgName, beamlets, dose_vector, CT):
+      
+    self.ImgName = ImgName
+    self.CT_SeriesInstanceUID = CT.SeriesInstanceUID
+    self.SeriesInstanceUID = pydicom.uid.generate_uid()
+    
+    self.ImagePositionPatient = beamlets.Offset
+    self.PixelSpacing = beamlets.VoxelSpacing
+    self.GridSize = beamlets.ImageSize
+    self.NumVoxels = beamlets.NbrVoxels
+    
+    self.Image = np.reshape(dose_vector, self.GridSize, order='F')
+    self.Image = np.flip(self.Image, (0,1)).transpose(1,0,2)
+    self.resample_to_CT_grid(CT)
+    
+    self.isLoaded = 1
+    
+    return self
+    
+    
   
   def euclidean_dist(self, v1, v2):
     return sum((p-q)**2 for p, q in zip(v1, v2)) ** .5

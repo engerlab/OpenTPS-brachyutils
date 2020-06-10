@@ -3,7 +3,7 @@ from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, QIcon, QPalette, QPen
 from PyQt5.QtCore import Qt, QDir, QPointF
 import pyqtgraph as qtg
 import numpy as np
-
+import datetime
 
 from GUI.AddBeam_dialog import *
 from GUI.AddArc_dialog import *
@@ -11,9 +11,11 @@ from GUI.AddObjective_dialog import *
 
 from Process.PatientData import *
 from Process.RTdose import *
+from Process.RTplan import *
 from Process.DVH import *
 from Process.MCsquare import *
 from Process.MCsquare_plan import *
+from Process.MCsquare_sparse_format import *
 from Process.PlanOptimization import *
 from Process.DeepLearning_denoising.Denoise_MC_dose import *
 
@@ -136,10 +138,6 @@ class MainWindow(QMainWindow):
     self.toolbox_3_RunButton = QPushButton('Run dose calculation')
     self.toolbox_3_layout.addWidget(self.toolbox_3_RunButton)
     self.toolbox_3_RunButton.clicked.connect(self.run_MCsquare) 
-    self.toolbox_3_layout.addSpacing(15)
-    self.toolbox_3_ComputeBeamletButton = QPushButton('Beamlet calculation')
-    self.toolbox_3_layout.addWidget(self.toolbox_3_ComputeBeamletButton)
-    self.toolbox_3_ComputeBeamletButton.clicked.connect(self.compute_beamlets) 
     self.toolbox_3_layout.addStretch()
     
     # initialize the 4th toolbox panel (Plan design)
@@ -198,16 +196,31 @@ class MainWindow(QMainWindow):
     self.toolbox_4_layout.addWidget(self.toolbox_4_CreatePlanButton)
     self.toolbox_4_CreatePlanButton.clicked.connect(self.create_new_plan) 
     self.toolbox_4_layout.addSpacing(15)
-    self.toolbox_4_LoadPlanButton = QPushButton('Import existing PlanPencil')
-    self.toolbox_4_layout.addWidget(self.toolbox_4_LoadPlanButton)
-    self.toolbox_4_LoadPlanButton.clicked.connect(self.import_PlanPencil) 
+    self.toolbox_4_ComputeBeamletButton = QPushButton('Compute beamlets')
+    self.toolbox_4_layout.addWidget(self.toolbox_4_ComputeBeamletButton)
+    self.toolbox_4_ComputeBeamletButton.clicked.connect(self.compute_beamlets) 
     self.toolbox_4_layout.addStretch()
+    self.toolbox_4_LoadPlanButton = QPushButton('Import OpenTPS Plan')
+    self.toolbox_4_layout.addWidget(self.toolbox_4_LoadPlanButton)
+    self.toolbox_4_LoadPlanButton.clicked.connect(self.import_OpenTPS_Plan) 
+    self.toolbox_4_layout.addSpacing(15)
+    self.toolbox_4_LoadMCsquarePlanButton = QPushButton('Import MCsquare PlanPencil')
+    self.toolbox_4_layout.addWidget(self.toolbox_4_LoadMCsquarePlanButton)
+    self.toolbox_4_LoadMCsquarePlanButton.clicked.connect(self.import_PlanPencil) 
+    self.toolbox_4_layout.addSpacing(15)
     
     # initialize the 5th toolbox panel (Plan optimization)
     self.toolbox_5 = QWidget()
     self.toolbox_main.addItem(self.toolbox_5, 'Plan optimization')
     self.toolbox_5_layout = QVBoxLayout()
     self.toolbox_5.setLayout(self.toolbox_5_layout)
+    self.toolbox_5_layout.addWidget(QLabel('<b>Optimization algorithm:</b>'))
+    self.toolbox_5_Algorithm = QComboBox()
+    self.toolbox_5_Algorithm.addItem("Beamlet-free MCsquare")
+    self.toolbox_5_Algorithm.addItem("Beamlet-based BFGS")
+    self.toolbox_5_Algorithm.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_5_layout.addWidget(self.toolbox_5_Algorithm)
+    self.toolbox_5_layout.addSpacing(15)
     self.toolbox_5_layout.addWidget(QLabel('<b>Target:</b>'))
     self.toolbox_5_Target = QComboBox()
     self.toolbox_5_Target.setMaximumWidth(self.toolbox_width-18)
@@ -417,15 +430,6 @@ class MainWindow(QMainWindow):
     plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
     plan = self.Patients.list[plan_patient_id].Plans[plan_id]
     
-    # configure MCsquare module
-    mc2 = MCsquare()
-    mc2.DoseName = plan.PlanName
-    mc2.BDL.selected_BDL = self.toolbox_3_BDL_List.currentText()
-    mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
-    mc2.NumProtons = self.toolbox_3_NumProtons.value()
-    mc2.dose2water = self.toolbox_3_dose2water.checkState()
-    mc2.PlanOptimization = "beamlet-free"
-    
     # encode optimization objectives
     Target = self.toolbox_5_Target.currentText()
     ROINames = set([Target])
@@ -446,18 +450,46 @@ class MainWindow(QMainWindow):
     for ROI in ROINames:
       patient_id, struct_id, contour_id = self.Patients.find_contour(ROI)
       contours.append(self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id])
+
+    # Beamlet-free optimization algorithm
+    if(self.toolbox_5_Algorithm.currentText() == "Beamlet-free MCsquare"):
+      # configure MCsquare module
+      mc2 = MCsquare()
+      mc2.DoseName = plan.PlanName
+      mc2.BDL.selected_BDL = self.toolbox_3_BDL_List.currentText()
+      mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
+      mc2.NumProtons = self.toolbox_3_NumProtons.value()
+      mc2.dose2water = self.toolbox_3_dose2water.checkState()
+      mc2.PlanOptimization = "beamlet-free"
+          
+      # run MCsquare optimization
+      mhd_dose = mc2.BeamletFree_optimization(ct, plan, contours)
+      dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct)
+
+    # beamlet-based optimization with BFGS
+    elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based BFGS"):
+      if(plan.beamlets == []):
+        print("Error: beamlets must be pre-computed")
+        return
+      w, dose_vector, ps = OptimizeWeights(plan, contours, method="BFGS")
+      plan.beamlets.Weights = np.array(w, dtype=np.float32)
+      plan.update_spot_weights(w)
+      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
         
-    # run MCsquare optimization
-    mhd_dose = mc2.BeamletFree_optimization(ct, plan, contours)
-    
-    # load dose image in the database
-    dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct)
+    # add dose image in the database
     self.Patients.list[plan_patient_id].RTdoses.append(dose)
     self.toolbox_1_Dose_list.addItem(dose.ImgName)
     
     # display new dose
     currentRow = self.toolbox_1_Dose_list.count()-1
     self.toolbox_1_Dose_list.setCurrentRow(currentRow)   
+
+    # save plan
+    output_path = os.path.join(self.data_path, "OpenTPS")
+    if not os.path.isdir(output_path):
+      os.mkdir(output_path)
+    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
+    plan.save(plan_file)
     
     
     
@@ -570,6 +602,41 @@ class MainWindow(QMainWindow):
     self.toolbox_1_Plan_list.addItem(plan.PlanName)
     currentRow = self.toolbox_1_Plan_list.count()-1
     self.toolbox_1_Plan_list.setCurrentRow(currentRow)
+
+
+
+  def import_OpenTPS_Plan(self): 
+    # find selected CT image
+    ct_disp_id = self.toolbox_1_CT_list.currentRow()
+    if(ct_disp_id < 0):
+      print("Error: No CT image selected")
+      return
+    patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
+
+    # select file
+    file_path, _ = QFileDialog.getOpenFileName(self, "Load OpenTPS plan", self.data_path, "OpenTPS plan (*.tps);;All files (*.*)")
+    if(file_path == ""): return
+
+    # import plan
+    plan = RTplan()
+    plan.load(file_path)
+
+    # import beamlets
+    Folder, File = os.path.split(file_path)
+    beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
+    if(os.path.isfile(file_path)):
+      beamlets = MCsquare_sparse_format()
+      beamlets.load(beamlet_file)
+      beamlets.print_memory_usage()
+      plan.beamlets = beamlets
+
+    # add plan to list
+    self.Patients.list[patient_id].Plans.append(plan)
+    
+    # display new plan
+    self.toolbox_1_Plan_list.addItem(plan.PlanName)
+    currentRow = self.toolbox_1_Plan_list.count()-1
+    self.toolbox_1_Plan_list.setCurrentRow(currentRow)
     
   
   
@@ -594,13 +661,21 @@ class MainWindow(QMainWindow):
     mc2 = MCsquare()
     mc2.BDL.selected_BDL = self.toolbox_3_BDL_List.currentText()
     mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
-    mc2.NumProtons = self.toolbox_3_NumProtons.value()
+    mc2.NumProtons = 5e4
     mc2.dose2water = self.toolbox_3_dose2water.checkState()
     
     # run MCsquare simulation
     beamlets = mc2.MCsquare_beamlet_calculation(ct, plan)
-    beamlet_file = os.path.join(self.data_path, "BeamletMatrix")
+
+    # save data
+    output_path = os.path.join(self.data_path, "OpenTPS")
+    if not os.path.isdir(output_path):
+      os.mkdir(output_path)
+    beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
     beamlets.save(beamlet_file)
+    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + ".tps")
+    plan.save(plan_file)
+    plan.beamlets = beamlets
 
   
   
@@ -1066,8 +1141,8 @@ class MainWindow(QMainWindow):
 
 
   def load_patient_data(self):
-    self.data_path = QFileDialog.getExistingDirectory(self, "Open patient data folder", self.data_path)
-    #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Prostate'
+    #self.data_path = QFileDialog.getExistingDirectory(self, "Open patient data folder", self.data_path)
+    self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Prostate'
     #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Lung_3'
     #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/SIB'
     #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Esophagus'
