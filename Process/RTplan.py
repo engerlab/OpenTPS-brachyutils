@@ -2,6 +2,7 @@ import pydicom
 import numpy as np
 import math
 import time
+import pickle
 
 from Process.SPRimage import *
 from Process.OptimizationObjectives import *
@@ -23,6 +24,7 @@ class RTplan:
     self.PlanName = ""
     self.Objectives = OptimizationObjectives()
     self.isLoaded = 0
+    self.beamlets = []
     
     
     
@@ -266,6 +268,46 @@ class RTplan:
           
     print("Spot RayTracing: " + str(time.time()-time_start) + " sec")
     return CartesianSpotPositions
+
+
+      
+  def update_spot_weights(self, new_weights):
+    # update weight of initial plan with those from PlanPencil
+    count = 0
+    self.DeliveredProtons = 0
+    self.TotalMeterset = 0
+    for beam in self.Beams:
+      beam.FinalCumulativeMetersetWeight = 0
+      beam.BeamMeterset = 0
+      for layer in beam.Layers:
+        for s in range(len(layer.SpotMU)):
+          layer.ScanSpotMetersetWeights[s] = new_weights[count]
+          layer.SpotMU[s] = new_weights[count]
+          count += 1
+
+        self.TotalMeterset += sum(layer.SpotMU)
+        beam.BeamMeterset += sum(layer.SpotMU)
+        beam.FinalCumulativeMetersetWeight += sum(layer.SpotMU)
+        layer.CumulativeMeterset = beam.BeamMeterset
+
+
+
+  def save(self, file_path):
+    beamlets = self.beamlets
+    self.beamlets = []
+
+    with open(file_path, 'wb') as fid:
+      pickle.dump(self.__dict__, fid)
+
+    self.beamlets = beamlets
+
+
+
+  def load(self, file_path):
+    with open(file_path, 'rb') as fid:
+      tmp = pickle.load(fid)
+
+    self.__dict__.update(tmp) 
   
     
   

@@ -232,46 +232,30 @@ def ComputeIsocenter(Target_mask, CT):
   
   
   
-def OptimizeWeights(BLMatrix, Target, OAR, method="Scipy-lBFGS"):
-  # parameters (TODO: move to the treatment objective class)
-  global p, Dmin, Dmean, Dmax, w1, w2, w3, w4, w
-  p = 60.
-  Dmin = 56.
-  Dmean = 20.
-  Dmax = 64.
-  w1 = 5.
-  w2 = 2.
-  w3 = 1.
-  w4 = 2.
-  w = np.array([w1,w2,w3,w4])
-  
+def OptimizeWeights(plan, contours, method="Scipy-lBFGS"):
   # stopping criteria
   ftol = 1e-5   # tolerance (relative variation of objective function between two iterations)
   maxIter = 50  # maximum number of iterations
-
-  # vectorize ROI
-  mask_TV = np.flip(Target.Mask, (0,1)).transpose(1,0,2)
-  mask_TV = np.ndarray.flatten(mask_TV, 'F')
-  mask_OAR = np.flip(OAR.Mask, (0,1)).transpose(1,0,2)
-  mask_OAR = np.ndarray.flatten(mask_OAR, 'F')
     
   #1 Total Dose calculation
-  Weights = np.ones((BLMatrix.shape[1]), dtype=np.float32)
+  Weights = np.ones((plan.beamlets.NbrSpots), dtype=np.float32)
   if use_MKL == 1:
-    TotalDose = sparse_dot_mkl.dot_product_mkl(BLMatrix, Weights)
+    TotalDose = sparse_dot_mkl.dot_product_mkl(plan.beamlets.BeamletMatrix, Weights)
   else:
-    TotalDose = sp.csc_matrix.dot(BLMatrix, Weights)
-  maxDose = np.max(TotalDose)
-  print("max dose = ", maxDose)
+    TotalDose = sp.csc_matrix.dot(plan.beamlets.BeamletMatrix, Weights)
     
   #2 Weight normalization
   # variable change x = u²
-  x0 = np.sqrt(p/maxDose) * np.ones((BLMatrix.shape[1]), dtype=np.float32)
-  #x0 = np.sqrt(p/maxDose) * np.ones((BLMatrix.shape[1]), dtype=np.float32) + np.random.normal(0.0, 0.1, (BLMatrix.shape[1])).astype(np.float32)
+  maxDose = np.max(TotalDose)
+  x0 = np.sqrt(plan.Objectives.TargetPrescription/maxDose) * np.ones((plan.beamlets.NbrSpots), dtype=np.float32)
+  #x0 = np.sqrt(plan.Objectives.TargetPrescription/maxDose) * np.ones((plan.beamlets.NbrSpots), dtype=np.float32) + np.random.normal(0.0, 0.1, (plan.beamlets.NbrSpots)).astype(np.float32)
 
   # Callable functions
-  f = lambda x,a=BLMatrix,b=mask_TV,c=mask_OAR: fobj(x,a,b,c)
-  g = lambda x,a=BLMatrix,b=mask_TV,c=mask_OAR: dfobj(x,a,b,c)
+  plan.Objectives.initialize_objective_function(contours)
+  #f = lambda x, a=plan.beamlets.BeamletMatrix, b=mask_TV, c=mask_OAR: fobj(x,a,b,c)
+  #g = lambda x, a=plan.beamlets.BeamletMatrix,b =mask_TV, c=mask_OAR: dfobj(x,a,b,c)
+  f = lambda x, beamlets=plan.beamlets.BeamletMatrix: plan.Objectives.compute_objective_function(x, beamlets)
+  g = lambda x, beamlets=plan.beamlets.BeamletMatrix: plan.Objectives.compute_OF_gradient(x, beamlets)
 
   start = time.time()
 
@@ -303,9 +287,9 @@ def OptimizeWeights(BLMatrix, Target, OAR, method="Scipy-lBFGS"):
 
   Weights = np.square(x).astype(np.float32)
   if use_MKL == 1:
-    TotalDose = sparse_dot_mkl.dot_product_mkl(BLMatrix, Weights)
+    TotalDose = sparse_dot_mkl.dot_product_mkl(plan.beamlets.BeamletMatrix, Weights)
   else:
-    TotalDose = sp.csc_matrix.dot(BLMatrix, Weights)
+    TotalDose = sp.csc_matrix.dot(plan.beamlets.BeamletMatrix, Weights)
 
   return Weights, TotalDose, cost 
 
@@ -389,7 +373,7 @@ def steepest_descent(f, g, x0, maxIter, ftol):
     # compute stopping criteria
     fk1 = f(xk1)
     cost.append(fk1)
-    fvar = (fk-fk1) / max(fk, fk1, 1)
+    fvar = abs(fk-fk1) / max(fk, fk1, 1)
     print ("  iter={}, fvar={}, x={}, f(x)={}, alpha={}".format(i, fvar, xk1, fk1, alpha))
 
     # prepare next iter
@@ -440,9 +424,9 @@ def BacktrackingLineSearch(f, df, xk, pk, df_xk = None, f_xk = None, args = (), 
     else: # we passed the minimum
       c2 = (c2+1)/2 # reduce the step modifier
       if 1-c2 < eps: break
-      print('  step modifier reduced:' + str(c2))
+      #print('  step modifier reduced: ' + str(c2))
 
-    print('  linesearch iteration', n, ':', stp, fn, flim)
+    #print('  linesearch iteration', n, ':', stp, fn, flim)
     if stp * len_p < eps:
       print('  Step is  too small, stop')
       break
@@ -485,8 +469,7 @@ def bfgs(f, g, x0, maxIter, ftol):
     # compute stopping criteria
     fk1 = f(xk1)
     cost.append(fk1)
-    if fk1 < fk:
-      fvar = (fk-fk1) / max(fk, fk1, 1)
+    fvar = abs(fk-fk1) / max(fk, fk1, 1)
     print ("  iter={}, fvar={}, x={}, f(x)={}, alpha={}".format(i, fvar, xk1, fk1, alpha))
 
     # prepare next iter
