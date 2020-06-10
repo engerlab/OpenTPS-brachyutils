@@ -284,6 +284,18 @@ def OptimizeWeights(plan, contours, method="Scipy-lBFGS"):
     x, cost, n_iter = bfgs(f, g, x0, maxIter, ftol)
     print ("  BFGS terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
       .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
+    
+  elif method=="L-BFGS":
+    print ('\n======= Limited Memory Broyden-Fletcher-Goldfarb-Shanno ======\n')
+    x, cost, n_iter = l_bfgs(f, g, x0, maxIter, ftol, m = 6)
+    print ("  L-BFGS terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+      .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
+    
+  elif method=="FISTA":
+    print ('\n======= FISTA ======\n')
+    x, cost, n_iter = fista(f, g, x0, maxIter, ftol )
+    print (" FISTA  terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+      .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
 
   Weights = np.square(x).astype(np.float32)
   if use_MKL == 1:
@@ -480,3 +492,209 @@ def bfgs(f, g, x0, maxIter, ftol):
     i+=1
 
   return xk, cost, i
+
+def l_bfgs(f, g, x0, maxIter, ftol, m=10):
+
+    xk = x0
+    gk = g(xk)
+    fk = f(xk)
+    cost = [fk]
+    I = np.identity(xk.size)
+    Hk = I
+    
+    fvar = ftol+1
+    c2 = 0.9
+    
+
+    sks = []
+    yks = []
+
+    i = 0
+
+    def getHg(H0,g):
+        ''' This function returns the approximate inverse Hessian\
+                multiplied by the gradient, H*g        '''
+        m_t = len(sks)
+        q = g
+        a = np.zeros(m_t)
+        b = np.zeros(m_t)
+        for i in reversed(range(m_t)):
+            s = sks[i]
+            y = yks[i]
+            rho_i = float(1.0 / y.T.dot(s))
+            a[i] = rho_i * s.dot(q)
+            q = q - a[i] * y
+
+        z = H0.dot(q)
+
+        for i in range(m_t):
+            s = sks[i]
+            y = yks[i]
+            rho_i = float(1.0 / y.T.dot(s))
+            b[i] = rho_i * y.dot(z)
+            z = z + s * (a[i] - b[i])
+
+        return z
+
+    while fvar > ftol and i < maxIter:
+        # compute search direction
+        pk = - getHg(Hk, gk)
+
+        # obtain step length by line search
+        alpha = BacktrackingLineSearch(f, g, xk, pk)
+
+        # update x
+        xk1 = xk + alpha * pk
+        gk1 = g(xk1)
+
+        # define sk and yk for convenience
+        sk = xk1 - xk
+        yk = gk1 - gk
+
+        sks.append(sk)
+        yks.append(yk)
+        if len(sks) > m:
+            sks = sks[1:]
+            yks = yks[1:]
+
+        # compute stopping criteria
+        fk1 = f(xk1)
+        cost.append(fk1)
+        if fk1 < fk:
+          fvar = (fk-fk1) / max(fk, fk1, 1)
+        print ("  iter={}, fvar={}, x={}, f(x)={}, alpha={}".format(i, fvar, xk1, fk1, alpha))
+
+        # prepare next iter
+        xk = xk1
+        fk = fk1
+        gk = gk1
+        i+=1
+
+    return xk, cost, i
+
+def fista(f, g, x0, maxIter, ftol, L0 = 30., L = None, Lambda = 0.01, eta = 1.5, with_reg = (False, None) ):
+    ''' this implements the FISTA algorithm to minimize a unconstrained convex
+    function having the following form:
+        object_func = f(x) + h(x)
+    where f(x) has a first order derivation, and h(x) is L1 norm for now.
+
+        f -- objective function as stated above
+        g -- gradient of f(x)
+        x0 -- initial weights 
+        L -- Lipschitz constant of f(x), if None, backtracking procedure is
+             used.
+        with_reg -- whether or not objective function has a norm part(h(x))
+
+        return -- (optimal x, optimal objective value, iterate numbers)
+    '''
+
+    def prox_l1(U,Lambda):
+        ''' shrinkage-thresholding operator (l1 proximal operator) '''
+        # max because weights are constrained to be positive
+        X = np.maximum(0,U-Lambda)
+        return X
+
+    def prox_l21(U,Lambda):
+        ''' l2,1 proximal operator (euclidean norm) '''
+        X = np.maximum(0,1-Lambda/np.linalg.norm(U))*U
+        return X
+
+    with_L1_reg = False
+    with_L2_reg = False
+
+    if with_reg[0]:
+        if with_reg[1]=='L1':
+            with_L1_reg = True
+        elif with_reg[1] == 'L2':
+            with_L2_reg = True
+
+    def h(x):
+        # L1-norm term
+        if with_L1_reg: 
+            #for col in range(len(energyStruct)):
+            #    res += np.sum(np.abs(LAMBDA*energyStruct[col]))
+            res = np.sum(np.absolute(Lambda*x))
+        # L2,1-norm term 
+        elif with_L2_reg:
+            #for col in range(len(energyStruct)):
+            #    res += np.sqrt(np.sum(LAMBDA*np.square(energyStruct[col])))
+            res = np.sqrt(np.sum(Lambda*np.square(x)))
+        else: 
+            res=0
+        return res
+
+    def calc_Q(x,y,L):
+        # based on equation 2.5 page 189
+        res = f(y) + np.dot((x-y),g(y)) + L/2 * np.linalg.norm(x-y) + h(x)
+        return res
+
+    if L is None:
+        print('Launch backtracking')
+        backtracking = True
+        L = float(L0)
+    else:
+        backtracking = False
+        L = float(L)
+        
+    Linv = 1/L
+    LambdaLinv = Lambda * Linv
+
+    yk = x0
+    xk = x0
+    tk = 1
+    i = 0
+    fk = f(x0)
+    cost = [fk]
+    fvar = ftol+1
+
+    while fvar > ftol and i < maxIter:
+
+        if backtracking:
+            # find i_k
+            Lbar = L
+            while True:
+                Lambda0 = Lambda/Lbar
+                if with_L1_reg:
+                    zk = prox_l1(yk - 1/Lbar*g(yk),Lambda0)
+                elif with_L2_reg:
+                    zk = prox_l21(yk - 1/Lbar*g(yk),Lambda0)
+                else:
+                    zk = yk - 1/Lbar*g(yk)
+
+                F = f(zk)
+                Q = calc_Q(zk,yk,Lbar)
+
+                if F<=Q:
+                    break
+                Lbar = Lbar*eta
+                L = Lbar
+
+            LambdaProj = Lambda/L
+
+        else:
+            LambdaProj = LambdaLinv
+
+        # Update
+        if with_L1_reg:
+            xk1 = prox_l1(yk - 1/L*g(yk),LambdaProj)
+        else:
+            xk1 = yk - 1/L*g(yk)
+        tk1 = 0.5*(1+np.sqrt(1+4*tk**2))
+        yk1 = xk1 + (tk - 1)/tk1 * (xk1 - xk)
+
+
+        # compute stopping criteria
+        fk1 = f(xk1)
+        cost.append(fk1)
+        if fk1 < fk:
+          fvar = (fk-fk1) / max(fk, fk1, 1)
+        print ("  iter={}, fvar={}, x={}, f(x)={}, L={}".format(i, fvar, xk1, fk1, L))
+
+        # prepare next iter
+        xk = xk1
+        tk = tk1
+        yk = yk1
+        fk = fk1
+        i+=1 
+
+    return xk, cost, i

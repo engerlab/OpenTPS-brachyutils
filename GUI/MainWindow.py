@@ -218,6 +218,8 @@ class MainWindow(QMainWindow):
     self.toolbox_5_Algorithm = QComboBox()
     self.toolbox_5_Algorithm.addItem("Beamlet-free MCsquare")
     self.toolbox_5_Algorithm.addItem("Beamlet-based BFGS")
+    self.toolbox_5_Algorithm.addItem("Beamlet-based L-BFGS")
+    self.toolbox_5_Algorithm.addItem("Beamlet-based FISTA")
     self.toolbox_5_Algorithm.setMaximumWidth(self.toolbox_width-18)
     self.toolbox_5_layout.addWidget(self.toolbox_5_Algorithm)
     self.toolbox_5_layout.addSpacing(15)
@@ -475,7 +477,27 @@ class MainWindow(QMainWindow):
       plan.beamlets.Weights = np.array(w, dtype=np.float32)
       plan.update_spot_weights(w)
       dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
-        
+
+     # beamlet-based optimization with L-BFGS
+    elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based L-BFGS"):
+      if(plan.beamlets == []):
+        print("Error: beamlets must be pre-computed")
+        return
+      w, dose_vector, ps = OptimizeWeights(plan, contours, method="L-BFGS")
+      plan.beamlets.Weights = np.array(w, dtype=np.float32)
+      plan.update_spot_weights(w)
+      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
+
+      # beamlet-based optimization with FISTA
+    elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based FISTA"):
+      if(plan.beamlets == []):
+        print("Error: beamlets must be pre-computed")
+        return
+      w, dose_vector, ps = OptimizeWeights(plan, contours, method="FISTA")
+      plan.beamlets.Weights = np.array(w, dtype=np.float32)
+      plan.update_spot_weights(w)
+      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)  
+
     # add dose image in the database
     self.Patients.list[plan_patient_id].RTdoses.append(dose)
     self.toolbox_1_Dose_list.addItem(dose.ImgName)
