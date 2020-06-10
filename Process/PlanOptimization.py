@@ -309,8 +309,8 @@ def OptimizeWeights(BLMatrix, Target, OAR, method="Scipy-lBFGS"):
     
   elif method=="FISTA":
     print ('\n======= FISTA ======\n')
-    x, cost, n_iter = fista(f, g, x0, maxIter, ftol, )
-    print ("  L-BFGS terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+    x, cost, n_iter = fista(f, g, x0, maxIter, ftol )
+    print (" FISTA  terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
       .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
 
   Weights = np.square(x).astype(np.float32)
@@ -699,7 +699,6 @@ def fista(f, g, x0, maxIter, ftol, L0 = 1., L = None, Lambda = 0.01, eta = 1.5, 
         tk1 = 0.5*(1+np.sqrt(1+4*tk**2))
         yk1 = xk1 + (tk - 1)/tk1 * (xk1 - xk)
 
-        
 
         # compute stopping criteria
         fk1 = f(xk1)
@@ -716,4 +715,3 @@ def fista(f, g, x0, maxIter, ftol, L0 = 1., L = None, Lambda = 0.01, eta = 1.5, 
         i+=1 
 
     return xk, cost, i
-
