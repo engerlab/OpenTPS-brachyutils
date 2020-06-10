@@ -84,15 +84,16 @@ class OptimizationObjectives:
   def compute_OF_gradient(self, x, BLMatrix):
     weights = np.square(x).astype(np.float32)
     xDiag = sp.diags(x.astype(np.float32), format='csc')
-    dfTot = np.zeros((1, len(x)), dtype=np.float32)
 
     if use_MKL == 1:
       doseTotal = sparse_dot_mkl.dot_product_mkl(BLMatrix, weights)
       doseTmp = sparse_dot_mkl.dot_product_mkl(BLMatrix,xDiag)
+      dfTot = np.zeros((1, len(x)), dtype=np.float32)
     else:
       doseTotal = sp.csc_matrix.dot(BLMatrix, weights)
       doseTmp = sp.csc_matrix.dot(BLMatrix, xDiag)
       doseTmp = sp.csc_matrix.transpose(doseTmp)
+      dfTot = np.zeros((len(x), 1), dtype=np.float32)
 
     for objective in self.list:
 

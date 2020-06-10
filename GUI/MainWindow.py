@@ -1141,8 +1141,8 @@ class MainWindow(QMainWindow):
 
 
   def load_patient_data(self):
-    #self.data_path = QFileDialog.getExistingDirectory(self, "Open patient data folder", self.data_path)
-    self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Prostate'
+    self.data_path = QFileDialog.getExistingDirectory(self, "Open patient data folder", self.data_path)
+    #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Prostate'
     #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Lung_3'
     #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/SIB'
     #self.data_path = '/home/kevin/CloudStation/dev/python/python_interface/data/Esophagus'
