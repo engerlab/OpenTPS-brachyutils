@@ -35,11 +35,12 @@ class MainWindow(QMainWindow):
     self.Viewer_coronal_slice = 0
     self.Viewer_sagittal_slice = 0
     self.Viewer_resolution = [1,1,1]
+    self.robustness_scenarios = []
   
     # initialize the main window
     QMainWindow.__init__(self)
     self.setWindowTitle('OpenTPS')
-    self.resize(1200, 800)
+    self.resize(1400, 900)
     self.main_layout = QHBoxLayout()
     self.central_Widget = QWidget()
     self.central_Widget.setLayout(self.main_layout)
@@ -47,11 +48,12 @@ class MainWindow(QMainWindow):
     self.setWindowIcon(QIcon('GUI' + os.path.sep + 'res' + os.path.sep + 'icon.png'))
     
     # initialize the toolbox
-    self.toolbox_width = 260
+    self.toolbox_width = 270
     self.toolbox_main = QToolBox()
     self.toolbox_main.setStyleSheet("QToolBox::tab {font: bold; color: #000000; font-size: 16px;}")
     self.main_layout.addWidget(self.toolbox_main)
     self.toolbox_main.setFixedWidth(self.toolbox_width)
+    self.toolbox_main.currentChanged.connect(self.menu_changed)
     
     # initialize the 1st toolbox panel (patient data)
     self.toolbox_1 = QWidget()
@@ -317,9 +319,36 @@ class MainWindow(QMainWindow):
     self.toolbox_6_ErrorLayout.addWidget(self.toolbox_6_syst_range, 6, 2)
     self.toolbox_6_ErrorLayout.addWidget(QLabel('%'), 6, 3)
     self.toolbox_6_layout.addSpacing(30)
-    self.toolbox_6_ComputeScenariosButton = QPushButton('Compute Scenarios')
-    self.toolbox_6_layout.addWidget(self.toolbox_6_ComputeScenariosButton)
+    self.toolbox_6_button_hLoayout = QHBoxLayout()
+    self.toolbox_6_layout.addLayout(self.toolbox_6_button_hLoayout)
+    self.toolbox_6_ComputeScenariosButton = QPushButton('Compute \n Scenarios')
+    self.toolbox_6_ComputeScenariosButton.setMaximumWidth(100)
+    self.toolbox_6_button_hLoayout.addWidget(self.toolbox_6_ComputeScenariosButton)
     self.toolbox_6_ComputeScenariosButton.clicked.connect(self.compute_robustness_scenarios) 
+    self.toolbox_6_LoadScenariosButton = QPushButton('Load saved \n scenarios')
+    self.toolbox_6_LoadScenariosButton.setMaximumWidth(100)
+    self.toolbox_6_button_hLoayout.addWidget(self.toolbox_6_LoadScenariosButton)
+    self.toolbox_6_LoadScenariosButton.clicked.connect(self.load_robustness_scenarios) 
+    self.toolbox_6_layout.addSpacing(30)
+    self.toolbox_6_layout.addWidget(QLabel('<b>Selection metric:</b>'))
+    self.toolbox_6_Metric = QComboBox()
+    self.toolbox_6_Metric.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_6_Metric.addItems(['D95', 'MSE'])
+    self.toolbox_6_layout.addWidget(self.toolbox_6_Metric)
+    self.toolbox_6_layout.addSpacing(20)
+    self.toolbox_6_CI_label = QLabel('<b>Confidence interval:</b>')
+    self.toolbox_6_layout.addWidget(self.toolbox_6_CI_label)
+    self.toolbox_6_CI = QSlider(Qt.Horizontal)
+    self.toolbox_6_CI.setMinimum(0.0)
+    self.toolbox_6_CI.setMaximum(100.0)
+    self.toolbox_6_CI.setValue(90.0)
+    self.toolbox_6_layout.addWidget(self.toolbox_6_CI)
+    self.toolbox_6_layout.addSpacing(20)
+    self.toolbox_6_layout.addWidget(QLabel('<b>Displayed dose:</b>'))
+    self.toolbox_6_DisplayedDose = QComboBox()
+    self.toolbox_6_DisplayedDose.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_6_DisplayedDose.addItems(['Nominal', 'Worst scenario', 'Voxel wise minimum', 'Voxel wise maximum'])
+    self.toolbox_6_layout.addWidget(self.toolbox_6_DisplayedDose)
     self.toolbox_6_layout.addStretch()
     self.toolbox_6_syst_setup_x.textChanged.connect(self.recompute_margin) 
     self.toolbox_6_syst_setup_y.textChanged.connect(self.recompute_margin) 
@@ -327,7 +356,11 @@ class MainWindow(QMainWindow):
     self.toolbox_6_rand_setup_x.textChanged.connect(self.recompute_margin) 
     self.toolbox_6_rand_setup_y.textChanged.connect(self.recompute_margin) 
     self.toolbox_6_rand_setup_z.textChanged.connect(self.recompute_margin) 
+    self.toolbox_6_CI.valueChanged.connect(self.recompute_robustness_analysis)
+    self.toolbox_6_Metric.currentIndexChanged.connect(self.recompute_robustness_analysis)
+    self.toolbox_6_DisplayedDose.currentIndexChanged.connect(self.recompute_robustness_analysis)
     self.recompute_margin()
+    self.recompute_robustness_analysis()
     
     # initialize the image viewer
     self.viewer_palette = QPalette()
@@ -355,6 +388,10 @@ class MainWindow(QMainWindow):
     self.viewer_DVH.showGrid(x=True, y=True)
     self.viewer_DVH.setXRange(0, 100, padding=0)
     self.viewer_DVH.setYRange(0, 100, padding=0)
+    self.viewer_DVH_proxy = qtg.SignalProxy(self.viewer_DVH.scene().sigMouseMoved, rateLimit=120, slot=self.DVH_mouseMoved)
+    self.viewer_DVH_label = qtg.TextItem("", color=(255,255,255), fill=(0,0,0,250), anchor=(0,1))
+    self.viewer_DVH_label.hide()
+    self.viewer_DVH.addItem(self.viewer_DVH_label)
     self.viewer_layout.setColumnStretch(0, 1)
     self.viewer_layout.setColumnStretch(1, 1)
     self.viewer_layout.setRowStretch(0, 1)
@@ -369,6 +406,115 @@ class MainWindow(QMainWindow):
     
   
   
+  
+  def DVH_mouseMoved(self, evt):
+    self.viewer_DVH_label.hide()
+
+    if self.viewer_DVH.sceneBoundingRect().contains(evt[0]):
+      mousePoint = self.viewer_DVH.getViewBox().mapSceneToView(evt[0])
+      for item in self.viewer_DVH.scene().items():
+        if hasattr(item, "DVH"):
+          data = item.getData()
+          y, y2 = np.interp([mousePoint.x(), mousePoint.x()*1.01], data[0], data[1])
+          #if item.mouseShape().contains(mousePoint):
+          # check if mouse.y is close to f(mouse.x)
+          if abs(y-mousePoint.y()) < 2.0+abs(y2-y): # abs(y2-y) is to increase the distance in high gradient
+            self.viewer_DVH_label.setHtml("<b><font color='#" + "{:02x}{:02x}{:02x}".format(item.DVH.ROIDisplayColor[2], item.DVH.ROIDisplayColor[1], item.DVH.ROIDisplayColor[0]) + "'>" + \
+              item.name() + ":</font></b>" + \
+              "<br>D95 = {:.1f} Gy".format(item.DVH.D95) + \
+              "<br>D5 = {:.1f} Gy".format(item.DVH.D5) + \
+              "<br>Dmean = {:.1f} Gy".format(item.DVH.Dmean) )
+            self.viewer_DVH_label.setPos(mousePoint)
+            if(mousePoint.x() < 50 and mousePoint.y() < 50): self.viewer_DVH_label.setAnchor((0,1))
+            elif(mousePoint.x() < 50 and mousePoint.y() >= 50): self.viewer_DVH_label.setAnchor((0,0))
+            elif(mousePoint.x() >= 50 and mousePoint.y() < 50): self.viewer_DVH_label.setAnchor((1,1))
+            elif(mousePoint.x() >= 50 and mousePoint.y() >= 50): self.viewer_DVH_label.setAnchor((1,0))
+            self.viewer_DVH_label.show()
+            break
+
+        elif hasattr(item, "DVHband"):
+          #if item.isUnderMouse():
+          data = item.curves[0].getData()
+          y0 = np.interp(mousePoint.x(), data[0], data[1])
+          data = item.curves[1].getData()
+          y1 = np.interp(mousePoint.x(), data[0], data[1])
+          # check if mouse is inside the band
+          if(y1 < mousePoint.y() < y0):
+            self.viewer_DVH_label.setHtml("<b><font color='#" + "{:02x}{:02x}{:02x}".format(item.DVHband.ROIDisplayColor[2], item.DVHband.ROIDisplayColor[1], item.DVHband.ROIDisplayColor[0]) + "'>" + \
+              item.DVHband.ROIName + ":</font></b>" + \
+              "<br>D95 = {:.1f} - {:.1f} Gy".format(item.DVHband.D95[0], item.DVHband.D95[1]) + \
+              "<br>D5 = {:.1f} - {:.1f} Gy".format(item.DVHband.D5[0], item.DVHband.D5[1]) + \
+              "<br>Dmean = {:.1f} - {:.1f} Gy".format(item.DVHband.Dmean[0], item.DVHband.Dmean[1]) )
+            self.viewer_DVH_label.setPos(mousePoint)
+            if(mousePoint.x() < 50 and mousePoint.y() < 50): self.viewer_DVH_label.setAnchor((0,1))
+            elif(mousePoint.x() < 50 and mousePoint.y() >= 50): self.viewer_DVH_label.setAnchor((0,0))
+            elif(mousePoint.x() >= 50 and mousePoint.y() < 50): self.viewer_DVH_label.setAnchor((1,1))
+            elif(mousePoint.x() >= 50 and mousePoint.y() >= 50): self.viewer_DVH_label.setAnchor((1,0))
+            self.viewer_DVH_label.show()
+            break
+
+
+
+
+  def menu_changed(self, index):
+    if index == 5:
+      if hasattr(self, 'toolbox_6_layout'):
+        self.recompute_robustness_analysis()
+    else:
+      if hasattr(self, 'toolbox_1_Dose_list'):
+        self.Current_dose_changed(self.toolbox_1_Dose_list.currentRow())
+
+
+
+  def recompute_robustness_analysis(self):
+    CI = self.toolbox_6_CI.value()
+    self.toolbox_6_CI_label.setText('<b>Confidence interval:</b> &nbsp;&nbsp;&nbsp; ' + str(CI) + " %")
+
+    if(self.robustness_scenarios == []): return
+
+    self.robustness_scenarios.DoseDistributionType = self.toolbox_6_DisplayedDose.currentText()
+
+    if(self.toolbox_6_Strategy.currentText() == "Dosimetric space (statistical)"):
+      self.robustness_scenarios.dosimetric_space_analysis(self.toolbox_6_Metric.currentText(), CI)
+
+      # update dvh
+      self.update_DVH_band_viewer()
+
+      # update dose distribution
+      self.Viewer_Dose = self.robustness_scenarios.DoseDistribution.prepare_image_for_viewer()
+      self.update_viewer('axial')
+      self.update_viewer('coronal')
+      self.update_viewer('sagittal')
+
+
+
+
+  def update_DVH_band_viewer(self):
+    self.viewer_DVH.clear()
+    for dvh_band in self.robustness_scenarios.DVH_bands:
+      display = 0
+      for ROI in self.ROI_CheckBox:
+        if ROI.text() == dvh_band.ROIName:
+          display = ROI.isChecked()
+          break
+      
+      if display == 1:
+        color = [dvh_band.ROIDisplayColor[2], dvh_band.ROIDisplayColor[1], dvh_band.ROIDisplayColor[0]]
+        phigh = qtg.PlotCurveItem(dvh_band.dose, dvh_band.volume_high, pen=color, name=dvh_band.ROIName)           
+        plow = qtg.PlotCurveItem(dvh_band.dose, dvh_band.volume_low, pen=color, name=dvh_band.ROIName)          
+        pnominal = qtg.PlotCurveItem(dvh_band.nominalDVH.dose, dvh_band.nominalDVH.volume, pen=color, name=dvh_band.ROIName)  
+        pnominal.DVH = dvh_band.nominalDVH
+        pfill = qtg.FillBetweenItem(phigh, plow, brush=tuple(color + [100]))
+        pfill.DVHband = dvh_band
+        #self.viewer_DVH.addItem(phigh)
+        #self.viewer_DVH.addItem(plow)
+        self.viewer_DVH.addItem(pfill)
+        self.viewer_DVH.addItem(pnominal)
+
+    self.viewer_DVH.addItem(self.viewer_DVH_label)
+
+
+
   def recompute_margin(self):
     Sigma = float(self.toolbox_6_syst_setup_x.text())
     sigma = float(self.toolbox_6_rand_setup_x.text())
@@ -636,7 +782,7 @@ class MainWindow(QMainWindow):
     patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
 
     # select file
-    file_path, _ = QFileDialog.getOpenFileName(self, "Load OpenTPS plan", self.data_path, "OpenTPS plan (*.tps);;All files (*.*)")
+    file_path, _ = QFileDialog.getOpenFileName(self, "Load OpenTPS plan", self.data_path, "OpenTPS data (*.tps);;All files (*.*)")
     if(file_path == ""): return
 
     # import plan
@@ -646,12 +792,12 @@ class MainWindow(QMainWindow):
     # import beamlets
     Folder, File = os.path.split(file_path)
     beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
-    if(os.path.isfile(file_path)):
+    if(os.path.isfile(beamlet_file)):
       beamlets = MCsquare_sparse_format()
       beamlets.load(beamlet_file)
       beamlets.print_memory_usage()
       plan.beamlets = beamlets
-
+      
     # add plan to list
     self.Patients.list[patient_id].Plans.append(plan)
     
@@ -699,6 +845,35 @@ class MainWindow(QMainWindow):
     plan.save(plan_file)
     plan.beamlets = beamlets
 
+
+
+  def load_robustness_scenarios(self):
+    # select file
+    file_path, _ = QFileDialog.getOpenFileName(self, "Load robustness test", self.data_path, "OpenTPS data (*.tps);;All files (*.*)")
+    if(file_path == ""): return
+
+    scenarios = RobustnessTest()
+    scenarios.load(file_path)
+
+    if scenarios.SelectionStrategy == "Dosimetric":
+      self.toolbox_6_Strategy.setCurrentText("Dosimetric space (statistical)")
+
+    self.toolbox_6_syst_setup_x.setText(str(scenarios.SetupSystematicError[0]))
+    self.toolbox_6_syst_setup_y.setText(str(scenarios.SetupSystematicError[1]))
+    self.toolbox_6_syst_setup_z.setText(str(scenarios.SetupSystematicError[2]))
+    self.toolbox_6_rand_setup_x.setText(str(scenarios.SetupRandomError[0]))
+    self.toolbox_6_rand_setup_y.setText(str(scenarios.SetupRandomError[1]))
+    self.toolbox_6_rand_setup_z.setText(str(scenarios.SetupRandomError[2]))
+    self.toolbox_6_syst_range.setText(str(scenarios.RangeSystematicError))
+
+    scenarios.print_info()
+
+    #scenarios.recompute_DVH(self.Patients.list[0].RTstructs[0].Contours)
+    #scenarios.save(file_path)
+
+    self.robustness_scenarios = scenarios
+    self.recompute_robustness_analysis()
+
   
   
   def compute_robustness_scenarios(self):
@@ -737,6 +912,17 @@ class MainWindow(QMainWindow):
 
     # run MCsquare simulation
     scenarios = mc2.MCsquare_RobustScenario_calculation(ct, plan, Target, TargetPrescription)
+
+    # save data
+    output_path = os.path.join(self.data_path, "OpenTPS")
+    if not os.path.isdir(output_path):
+      os.mkdir(output_path)
+    output_file = os.path.join(output_path, "RobustnessTest_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
+    scenarios.save(output_file)
+
+    self.robustness_scenarios = scenarios
+    self.recompute_robustness_analysis()
+
 
 
 
@@ -1063,10 +1249,12 @@ class MainWindow(QMainWindow):
         if(disp_id >= len(self.ROI_CheckBox)): break
         if(self.ROI_CheckBox[disp_id].isChecked() == False): continue
         myDVH = DVH(dose, contour)
-        print(myDVH.D95)
         pen = qtg.mkPen(color=(contour.ROIDisplayColor[2], contour.ROIDisplayColor[1], contour.ROIDisplayColor[0]), width=2)
-        self.viewer_DVH.plot(myDVH.dose, myDVH.volume, pen=pen, name=contour.ROIName)
-        
+        curve = qtg.PlotCurveItem(myDVH.dose, myDVH.volume, pen=pen, name=contour.ROIName)   
+        curve.DVH = myDVH
+        self.viewer_DVH.addItem(curve)
+
+    self.viewer_DVH.addItem(self.viewer_DVH_label)
         
         
     

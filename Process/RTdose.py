@@ -149,6 +149,25 @@ class RTdose:
       self.PixelSpacing = CT.PixelSpacing
       self.GridSize = CT.GridSize
       self.NumVoxels = CT.NumVoxels
-        
+
+
+
+  def copy(self):
+    dose = RTdose()
+
+    dose.ImgName = self.ImgName
+    dose.CT_SeriesInstanceUID = self.CT_SeriesInstanceUID
+    dose.SeriesInstanceUID = pydicom.uid.generate_uid()
+    
+    dose.ImagePositionPatient = self.ImagePositionPatient
+    dose.PixelSpacing = self.PixelSpacing
+    dose.GridSize = self.GridSize
+    dose.NumVoxels = self.NumVoxels
+    
+    dose.Image = self.Image.copy()
+    
+    dose.isLoaded = self.isLoaded
+
+    return dose
         
         

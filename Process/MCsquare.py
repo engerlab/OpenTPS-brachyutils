@@ -105,7 +105,7 @@ class MCsquare:
     self.config["Robustness_Mode"] = True
     self.config["Scenario_selection"] = "Random"
     self.config["Simulate_nominal_plan"] = False
-    self.config["Num_Random_Scenarios"] = 5
+    self.config["Num_Random_Scenarios"] = 100
     self.config["Systematic_Setup_Error"] = [self.SetupSystematicError[0]/10, self.SetupSystematicError[1]/10, self.SetupSystematicError[2]/10] # cm
     self.config["Random_Setup_Error"] = [self.SetupRandomError[0]/10, self.SetupRandomError[1]/10, self.SetupRandomError[2]/10] # cm
     self.config["Systematic_Range_Error"] = self.RangeSystematicError # %

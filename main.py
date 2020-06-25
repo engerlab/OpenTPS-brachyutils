@@ -11,8 +11,6 @@ app = QApplication.instance()
 if not app: 
   app = QApplication([])
 
-#app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-
 # instantiate the main GUI window
 main_window = MainWindow()
 main_window.show()
