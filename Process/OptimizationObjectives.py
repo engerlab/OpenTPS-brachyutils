@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.sparse as sp
 import time
+import os
+import pickle
 
 try:
   import sparse_dot_mkl
@@ -143,3 +145,32 @@ class OptimizationObjective:
     self.Weight = ""
     self.Mask_vec = []
     
+
+
+class ObjectiveTemplateList:
+
+  def __init__(self):
+    self.list = []
+    self.SelectedID = -1
+    self.saved_file = "./Objective_Templates.dat"
+
+    self.LoadTemplates()
+
+
+  def LoadTemplates(self):
+    if os.path.isfile(self.saved_file):
+      with open(self.saved_file, 'rb') as fid:
+        self.list = pickle.load(fid)
+
+
+  def SaveTemplates(self):
+    with open(self.saved_file, 'wb') as fid:
+      pickle.dump(self.list, fid)
+
+
+
+class ObjectiveTemplate:
+
+  def __init__(self):
+    self.Name = ""
+    self.Objectives = []

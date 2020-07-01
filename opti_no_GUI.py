@@ -41,7 +41,7 @@ plan.PlanName = "NewPlan"
 Patients.list[0].Plans.append(plan)
 
 # optimization objectives
-plan.Objectives.setTarget("PTV 74gy", 60.0)
+plan.Objectives.setTarget("PTV 74 gy", 60.0)
 plan.Objectives.list = []
 plan.Objectives.addObjective("PTV 74 gy", "Dmax", "<", 60.0, 5.0)
 plan.Objectives.addObjective("PTV 74 gy", "Dmin", ">", 60.0, 5.0)

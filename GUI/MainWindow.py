@@ -8,6 +8,7 @@ import datetime
 from GUI.AddBeam_dialog import *
 from GUI.AddArc_dialog import *
 from GUI.AddObjective_dialog import *
+from GUI.ObjectiveTemplateWindow import *
 
 from Process.PatientData import *
 from Process.RTdose import *
@@ -246,10 +247,16 @@ class MainWindow(QMainWindow):
     self.toolbox_5_objectives.setContextMenuPolicy(Qt.CustomContextMenu)
     self.toolbox_5_objectives.customContextMenuRequested.connect(lambda pos, list_type='objective': self.List_RightClick(pos, list_type))
     self.toolbox_5_layout.addWidget(self.toolbox_5_objectives)
+    self.toolbox_5_button_hLoayout = QHBoxLayout()
+    self.toolbox_5_layout.addLayout(self.toolbox_5_button_hLoayout)
     self.toolbox_5_addObjective = QPushButton('Add objective')
     self.toolbox_5_addObjective.setMaximumWidth(100)
-    self.toolbox_5_layout.addWidget(self.toolbox_5_addObjective)
+    self.toolbox_5_button_hLoayout.addWidget(self.toolbox_5_addObjective)
     self.toolbox_5_addObjective.clicked.connect(self.add_new_objective) 
+    self.toolbox_5_TemplateBtn = QPushButton('Templates')
+    self.toolbox_5_TemplateBtn.setMaximumWidth(100)
+    self.toolbox_5_button_hLoayout.addWidget(self.toolbox_5_TemplateBtn)
+    self.toolbox_5_TemplateBtn.clicked.connect(self.TemplateWindow) 
     self.toolbox_5_layout.addSpacing(30)
     self.toolbox_5_OptimizePlanButton = QPushButton('Optimize plan')
     self.toolbox_5_layout.addWidget(self.toolbox_5_OptimizePlanButton)
@@ -407,6 +414,32 @@ class MainWindow(QMainWindow):
   
   
   
+  def TemplateWindow(self):
+    # get list of contours
+    ContourList = []
+    for contour in self.ROI_CheckBox:
+      ContourList.append(contour.text())
+
+    # get saved templates
+    Templates = ObjectiveTemplateList()
+    
+    # create dialog window
+    dialog = ObjectiveTemplateWindow(ContourList, Templates)
+    
+    # get template
+    if(dialog.exec()):
+      for objective in Templates.list[Templates.SelectedID].Objectives:
+        if objective.ROIName in ContourList:
+          obj_number = self.toolbox_5_objectives.count()
+          self.toolbox_5_objectives.addItem(objective.ROIName + ":\n" + objective.Metric + " " + objective.Condition + " " + str(objective.LimitValue) + " Gy   (w=" + str(objective.Weight) + ")")
+          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+0, objective.ROIName)
+          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+1, objective.Metric)
+          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+2, objective.Condition)
+          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+3, objective.LimitValue)
+          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+4, objective.Weight)
+
+
+
   def DVH_mouseMoved(self, evt):
     self.viewer_DVH_label.hide()
 
