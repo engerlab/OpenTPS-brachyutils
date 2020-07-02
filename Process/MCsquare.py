@@ -343,7 +343,16 @@ class MCsquare:
     if os.path.isdir(out_dir):
       file_list = os.listdir(out_dir)
       for file in file_list:
+
         if(file.endswith(".mhd")): os.remove(os.path.join(out_dir, file))
         if(file.endswith(".raw")): os.remove(os.path.join(out_dir, file))
         if(file.endswith(".txt")): os.remove(os.path.join(out_dir, file))
         if(file.endswith(".bin")): os.remove(os.path.join(out_dir, file))
+
+        if(file == "tmp" and os.path.isdir(os.path.join(out_dir, file))):
+          folder_path = os.path.join(self.WorkDir, "Outputs", "tmp")
+          for root, dirs, files in os.walk(folder_path, topdown=False):
+            for name in files: os.remove(os.path.join(root, name))
+            for name in dirs: os.rmdir(os.path.join(root, name))
+
+
