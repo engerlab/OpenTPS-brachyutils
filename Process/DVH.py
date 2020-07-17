@@ -9,6 +9,7 @@ class DVH:
     self.Dose_SeriesInstanceUID = dose.SeriesInstanceUID
     self.dose = []
     self.volume = []
+    self.volume_absolute = []
     self.Dmean = 0
     self.D98 = 0
     self.D95 = 0
@@ -22,9 +23,12 @@ class DVH:
     index = np.searchsorted(-self.volume, -x)
     volume = self.volume[index]
     volume2 = self.volume[index+1]
-    w2 = (volume-x) / (volume - volume2)
-    w1 = (x-volume2) / (volume - volume2)
-    return w1*self.dose[index] + w2*self.dose[index+1]
+    if(volume == volume2):
+      return self.dose[index]
+    else:
+      w2 = (volume-x) / (volume - volume2)
+      w1 = (x-volume2) / (volume - volume2)
+      return w1*self.dose[index] + w2*self.dose[index+1]
 
 
   def compute_DVH(self, dose, Contour, maxDVH=100.0):
@@ -43,7 +47,8 @@ class DVH:
     h = np.flip(h, 0)
     h = np.cumsum(h)
     h = np.flip(h, 0)
-    self.volume = h * 100 / np.nanmax(h)
+    self.volume = h * 100 / len(d) # volume in %
+    self.volume_absolute = h * dose.PixelSpacing[0] * dose.PixelSpacing[1] * dose.PixelSpacing[2] / 1000 # volume in cm3
 
     # compute metrics
     self.Dmean = np.mean(d)
