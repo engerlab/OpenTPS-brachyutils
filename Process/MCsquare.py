@@ -25,6 +25,7 @@ class MCsquare:
     self.dose2water = 1
     self.PlanOptimization = "none" # possible options: none, beamlet-free
     self.config = {}
+    self.Robustness_Strategy = "DoseSpace"
     self.SetupSystematicError = [2.5, 2.5, 2.5] # mm
     self.SetupRandomError = [1.0, 1.0, 1.0] # mm
     self.RangeSystematicError = 3.0 # %
@@ -61,10 +62,11 @@ class MCsquare:
 
 
 
-  def MCsquare_RobustScenario_calculation(self, CT, Plan, Target, TargetPrescription):
+  def MCsquare_RobustScenario_calculation(self, CT, Plan, Target, TargetPrescription, AllContours):
     # Initialize robustness test object
     scenarios = RobustnessTest()
-    scenarios.SelectionStrategy = "Dosimetric"
+    if(self.Robustness_Strategy == "DoseSpace"): scenarios.SelectionStrategy = "Dosimetric"
+    else: scenarios.SelectionStrategy = "Error"
     scenarios.SetupSystematicError = self.SetupSystematicError
     scenarios.SetupRandomError = self.SetupRandomError
     scenarios.RangeSystematicError = self.RangeSystematicError
@@ -94,7 +96,7 @@ class MCsquare:
     # Import dose result
     mhd_dose = self.import_MCsquare_dose(Plan)
     dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT)
-    scenarios.setNominal(dose)
+    scenarios.setNominal(dose, AllContours)
 
     # Import number of particles from previous simulation
     NumParticles, StatUncertainty = self.get_simulation_progress()
@@ -103,12 +105,17 @@ class MCsquare:
     self.config["Num_Primaries"] = NumParticles
     self.config["Compute_stat_uncertainty"] = False
     self.config["Robustness_Mode"] = True
-    self.config["Scenario_selection"] = "Random"
     self.config["Simulate_nominal_plan"] = False
-    self.config["Num_Random_Scenarios"] = 100
     self.config["Systematic_Setup_Error"] = [self.SetupSystematicError[0]/10, self.SetupSystematicError[1]/10, self.SetupSystematicError[2]/10] # cm
     self.config["Random_Setup_Error"] = [self.SetupRandomError[0]/10, self.SetupRandomError[1]/10, self.SetupRandomError[2]/10] # cm
     self.config["Systematic_Range_Error"] = self.RangeSystematicError # %
+    if(self.Robustness_Strategy == "Dosimetric"): 
+      self.config["Scenario_selection"] = "Random"
+      self.config["Num_Random_Scenarios"] = 100
+      NumScenarios = self.config["Num_Random_Scenarios"]
+    else:
+      self.config["Scenario_selection"] = "All"
+      NumScenarios = 81
     export_MCsquare_config(self.config)
 
     # Start simulation of error scenarios
@@ -125,13 +132,13 @@ class MCsquare:
     # print(rc)
 
     # Import dose results
-    for s in range(self.config["Num_Random_Scenarios"]):
-      FileName = 'Dose_Scenario_' + str(s+1) + '-' + str(self.config["Num_Random_Scenarios"]) + '.mhd'
+    for s in range(NumScenarios):
+      FileName = 'Dose_Scenario_' + str(s+1) + '-' + str(NumScenarios) + '.mhd'
       FilePath = os.path.join(self.WorkDir, "Outputs", FileName)
       if os.path.isfile(FilePath):
         mhd_dose = self.import_MCsquare_dose(Plan, FileName=FileName)
         dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT)
-        scenarios.addScnenario(dose)
+        scenarios.addScnenario(dose, AllContours)
 
     return scenarios
   

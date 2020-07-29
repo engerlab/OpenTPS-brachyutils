@@ -93,15 +93,21 @@ class DVH_band:
     index = np.searchsorted(-self.volume_low, -x)
     volume = self.volume_low[index]
     volume2 = self.volume_low[index+1]
-    w2 = (volume-x) / (volume - volume2)
-    w1 = (x-volume2) / (volume - volume2)
-    low_Dx = w1*self.dose[index] + w2*self.dose[index+1]
+    if(volume == volume2): 
+      low_Dx = self.dose[index]
+    else:
+      w2 = (volume-x) / (volume - volume2)
+      w1 = (x-volume2) / (volume - volume2)
+      low_Dx = w1*self.dose[index] + w2*self.dose[index+1]
 
     index = np.searchsorted(-self.volume_high, -x)
     volume = self.volume_high[index]
     volume2 = self.volume_high[index+1]
-    w2 = (volume-x) / (volume - volume2)
-    w1 = (x-volume2) / (volume - volume2)
-    high_Dx = w1*self.dose[index] + w2*self.dose[index+1]
+    if(volume == volume2): 
+      high_Dx = self.dose[index]
+    else:
+      w2 = (volume-x) / (volume - volume2)
+      w1 = (x-volume2) / (volume - volume2)
+      high_Dx = w1*self.dose[index] + w2*self.dose[index+1]
     
     return [low_Dx, high_Dx]

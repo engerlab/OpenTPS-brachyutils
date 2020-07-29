@@ -325,6 +325,10 @@ class MainWindow(QMainWindow):
     self.toolbox_6_syst_range.setMaximumWidth(30)
     self.toolbox_6_ErrorLayout.addWidget(self.toolbox_6_syst_range, 6, 2)
     self.toolbox_6_ErrorLayout.addWidget(QLabel('%'), 6, 3)
+    self.toolbox_6_ErrorLayout.addWidget(QLabel('Equiv. error:'), 7, 0, 1, 2)
+    self.toolbox_6_RangeError = QLabel('1.0')
+    self.toolbox_6_ErrorLayout.addWidget(self.toolbox_6_RangeError, 7, 2)
+    self.toolbox_6_ErrorLayout.addWidget(QLabel('%'), 7, 3)
     self.toolbox_6_layout.addSpacing(30)
     self.toolbox_6_button_hLoayout = QHBoxLayout()
     self.toolbox_6_layout.addLayout(self.toolbox_6_button_hLoayout)
@@ -363,6 +367,7 @@ class MainWindow(QMainWindow):
     self.toolbox_6_rand_setup_x.textChanged.connect(self.recompute_margin) 
     self.toolbox_6_rand_setup_y.textChanged.connect(self.recompute_margin) 
     self.toolbox_6_rand_setup_z.textChanged.connect(self.recompute_margin) 
+    self.toolbox_6_Strategy.currentIndexChanged.connect(self.update_robust_strategy)
     self.toolbox_6_CI.valueChanged.connect(self.recompute_robustness_analysis)
     self.toolbox_6_Metric.currentIndexChanged.connect(self.recompute_robustness_analysis)
     self.toolbox_6_DisplayedDose.currentIndexChanged.connect(self.recompute_robustness_analysis)
@@ -507,8 +512,10 @@ class MainWindow(QMainWindow):
 
     self.robustness_scenarios.DoseDistributionType = self.toolbox_6_DisplayedDose.currentText()
 
-    if(self.toolbox_6_Strategy.currentText() == "Dosimetric space (statistical)"):
+    if(self.robustness_scenarios.SelectionStrategy == "Dosimetric"):
       self.robustness_scenarios.dosimetric_space_analysis(self.toolbox_6_Metric.currentText(), CI)
+    else:
+      self.robustness_scenarios.error_space_analysis(self.toolbox_6_Metric.currentText())
 
       # update dvh
       self.update_DVH_band_viewer()
@@ -548,21 +555,69 @@ class MainWindow(QMainWindow):
 
 
 
+  def update_robust_strategy(self):
+    if(self.toolbox_6_Strategy.currentText() == 'Error space (regular)'):
+      self.toolbox_6_SigmaS_label.setText('M<sub>S</sub>')
+      self.toolbox_6_SigmaR_label.setText('M<sub>R</sub>')
+      self.toolbox_6_syst_setup_x.setText('5.0')
+      self.toolbox_6_syst_setup_y.setText('5.0')
+      self.toolbox_6_syst_setup_z.setText('5.0')
+      self.toolbox_6_rand_setup_x.setText('0.0')
+      self.toolbox_6_rand_setup_y.setText('0.0')
+      self.toolbox_6_rand_setup_z.setText('0.0')
+      self.toolbox_6_syst_range.setText('3.0')
+
+    elif(self.toolbox_6_Strategy.currentText() == 'Error space (statistical)'):
+      self.toolbox_6_SigmaS_label.setText('&Sigma;<sub>S</sub>')
+      self.toolbox_6_SigmaR_label.setText('&Sigma;<sub>R</sub>')
+      self.toolbox_6_syst_setup_x.setText('2.0')
+      self.toolbox_6_syst_setup_y.setText('2.0')
+      self.toolbox_6_syst_setup_z.setText('2.0')
+      self.toolbox_6_rand_setup_x.setText('0.0')
+      self.toolbox_6_rand_setup_y.setText('0.0')
+      self.toolbox_6_rand_setup_z.setText('0.0')
+      self.toolbox_6_syst_range.setText('1.6')
+
+    else:
+      self.toolbox_6_SigmaS_label.setText('&Sigma;<sub>S</sub>')
+      self.toolbox_6_SigmaR_label.setText('&Sigma;<sub>R</sub>')
+      self.toolbox_6_syst_setup_x.setText('1.6')
+      self.toolbox_6_syst_setup_y.setText('1.6')
+      self.toolbox_6_syst_setup_z.setText('1.6')
+      self.toolbox_6_rand_setup_x.setText('1.4')
+      self.toolbox_6_rand_setup_y.setText('1.4')
+      self.toolbox_6_rand_setup_z.setText('1.4')
+      self.toolbox_6_syst_range.setText('1.6')
+
+    self.recompute_margin()
+
+
   def recompute_margin(self):
-    Sigma = float(self.toolbox_6_syst_setup_x.text())
-    sigma = float(self.toolbox_6_rand_setup_x.text())
-    margin = 2.5 * Sigma + 0.7 * sigma
-    self.toolbox_6_SetupMarginX.setText('{:3.1f}'.format(margin))
+    Sigma_x = float(self.toolbox_6_syst_setup_x.text())
+    sigma_x = float(self.toolbox_6_rand_setup_x.text())
+    Sigma_y = float(self.toolbox_6_syst_setup_y.text())
+    sigma_y = float(self.toolbox_6_rand_setup_y.text())
+    Sigma_z = float(self.toolbox_6_syst_setup_z.text())
+    sigma_z = float(self.toolbox_6_rand_setup_z.text())
+    range_sigma = float(self.toolbox_6_syst_range.text())
 
-    Sigma = float(self.toolbox_6_syst_setup_y.text())
-    sigma = float(self.toolbox_6_rand_setup_y.text())
-    margin = 2.5 * Sigma + 0.7 * sigma
-    self.toolbox_6_SetupMarginY.setText('{:3.1f}'.format(margin))
+    if(self.toolbox_6_Strategy.currentText() == 'Error space (regular)'):
+      margin_x = 1.0 * Sigma_x + 0.7 * sigma_x
+      margin_y = 1.0 * Sigma_y + 0.7 * sigma_y
+      margin_z = 1.0 * Sigma_z + 0.7 * sigma_z
+      margin_r = 1.0 * range_sigma
 
-    Sigma = float(self.toolbox_6_syst_setup_z.text())
-    sigma = float(self.toolbox_6_rand_setup_z.text())
-    margin = 2.5 * Sigma + 0.7 * sigma
-    self.toolbox_6_SetupMarginZ.setText('{:3.1f}'.format(margin))
+    else:
+      margin_x = 2.5 * Sigma_x + 0.7 * sigma_x
+      margin_y = 2.5 * Sigma_y + 0.7 * sigma_y
+      margin_z = 2.5 * Sigma_z + 0.7 * sigma_z
+      margin_r = 1.5 * range_sigma
+
+    self.toolbox_6_SetupMarginX.setText('{:3.1f}'.format(margin_x))
+    self.toolbox_6_SetupMarginY.setText('{:3.1f}'.format(margin_y))
+    self.toolbox_6_SetupMarginZ.setText('{:3.1f}'.format(margin_z))
+    self.toolbox_6_RangeError.setText('{:3.1f}'.format(margin_r))
+
 
 
 
@@ -929,6 +984,7 @@ class MainWindow(QMainWindow):
     # target contour
     Target_name = self.toolbox_4_Target.currentText()
     patient_id, struct_id, contour_id = self.Patients.find_contour(Target_name)
+    AllContours = self.Patients.list[patient_id].RTstructs[struct_id].Contours
     Target = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
     TargetPrescription = self.toolbox_5_Prescription.value()
 
@@ -943,8 +999,12 @@ class MainWindow(QMainWindow):
     mc2.SetupRandomError = [float(self.toolbox_6_rand_setup_x.text()), float(self.toolbox_6_rand_setup_y.text()), float(self.toolbox_6_rand_setup_z.text())]
     mc2.RangeSystematicError = float(self.toolbox_6_syst_range.text())
 
+    if(self.toolbox_6_Strategy.currentText() == 'Dosimetric space (statistical)'): mc2.Robustness_Strategy = "DoseSpace"
+    elif(self.toolbox_6_Strategy.currentText() == 'Error space (statistical)'): mc2.Robustness_Strategy = "ErrorSpace_stat"
+    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
+
     # run MCsquare simulation
-    scenarios = mc2.MCsquare_RobustScenario_calculation(ct, plan, Target, TargetPrescription)
+    scenarios = mc2.MCsquare_RobustScenario_calculation(ct, plan, Target, TargetPrescription, AllContours)
 
     # save data
     output_path = os.path.join(self.data_path, "OpenTPS")
