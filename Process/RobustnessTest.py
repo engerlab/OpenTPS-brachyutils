@@ -81,6 +81,56 @@ class RobustnessTest:
 
 
 
+  def error_space_analysis(self, metric):
+    NumScenario = len(self.Scenarios)
+
+    # sort scenarios from worst to best according to selected metric
+    if(metric == "D95"):
+      self.Scenarios.sort(key=(lambda scenario: scenario.Target_D95))
+    elif(metric == "MSE"):
+      self.Scenarios.sort(key=(lambda scenario: scenario.Target_MSE))
+
+    # initialize dose distribution
+    if self.DoseDistributionType == "Nominal":
+      self.DoseDistribution = self.Nominal.Dose.copy()
+    else:
+      self.DoseDistribution = self.Scenarios[0].Dose.copy() # Worst scenario
+
+    # initialize dvh-band structure
+    all_DVH = []
+    all_Dmean = []
+    for dvh in self.Scenarios[0].DVH:
+      all_DVH.append(np.array([]).reshape((len(dvh.volume), 0)))
+      all_Dmean.append([])
+      
+    # generate DVH-band
+    for s in range(NumScenario):
+      self.Scenarios[s].selected = 1
+      if self.DoseDistributionType == "Voxel wise minimum":
+        self.DoseDistribution.Image = np.minimum(self.DoseDistribution.Image, self.Scenarios[s].Dose.Image)
+      elif self.DoseDistributionType == "Voxel wise maximum":
+        self.DoseDistribution.Image = np.maximum(self.DoseDistribution.Image, self.Scenarios[s].Dose.Image)
+      for c in range(len(self.Scenarios[s].DVH)):
+          all_DVH[c] = np.hstack((all_DVH[c], np.expand_dims(self.Scenarios[s].DVH[c].volume, axis=1)))
+          all_Dmean[c].append(self.Scenarios[s].DVH[c].Dmean)
+
+    self.DVH_bands.clear()
+    for c in range(len(self.Scenarios[0].DVH)):
+      dvh = self.Scenarios[0].DVH[c]
+      dvh_band = DVH_band()
+      dvh_band.Struct_SeriesInstanceUID = dvh.Struct_SeriesInstanceUID
+      dvh_band.ROIName = dvh.ROIName
+      dvh_band.ROIDisplayColor = dvh.ROIDisplayColor
+      dvh_band.dose = dvh.dose
+      dvh_band.volume_low = np.amin(all_DVH[c], axis=1)
+      dvh_band.volume_high = np.amax(all_DVH[c], axis=1)
+      dvh_band.nominalDVH = self.Nominal.DVH[c]
+      dvh_band.compute_metrics()
+      dvh_band.Dmean = [min(all_Dmean[c]), max(all_Dmean[c])]
+      self.DVH_bands.append(dvh_band)
+
+
+
   def dosimetric_space_analysis(self, metric, CI):
     if(metric == "D95"):
       self.Scenarios.sort(key=(lambda scenario: scenario.Target_D95))
