@@ -30,6 +30,11 @@ class MCsquare:
     self.SetupRandomError = [1.0, 1.0, 1.0] # mm
     self.RangeSystematicError = 3.0 # %
     
+
+
+  def MCsquare_version(self):
+    os.system(os.path.join(self.Path_MCsquareLib, "MCsquare_linux") + " -v")
+
   
   
   def MCsquare_simulation(self, CT, Plan):
@@ -109,7 +114,7 @@ class MCsquare:
     self.config["Systematic_Setup_Error"] = [self.SetupSystematicError[0]/10, self.SetupSystematicError[1]/10, self.SetupSystematicError[2]/10] # cm
     self.config["Random_Setup_Error"] = [self.SetupRandomError[0]/10, self.SetupRandomError[1]/10, self.SetupRandomError[2]/10] # cm
     self.config["Systematic_Range_Error"] = self.RangeSystematicError # %
-    if(self.Robustness_Strategy == "Dosimetric"): 
+    if(self.Robustness_Strategy == "DoseSpace"): 
       self.config["Scenario_selection"] = "Random"
       self.config["Num_Random_Scenarios"] = 100
       NumScenarios = self.config["Num_Random_Scenarios"]

@@ -517,14 +517,14 @@ class MainWindow(QMainWindow):
     else:
       self.robustness_scenarios.error_space_analysis(self.toolbox_6_Metric.currentText())
 
-      # update dvh
-      self.update_DVH_band_viewer()
+    # update dvh
+    self.update_DVH_band_viewer()
 
-      # update dose distribution
-      self.Viewer_Dose = self.robustness_scenarios.DoseDistribution.prepare_image_for_viewer()
-      self.update_viewer('axial')
-      self.update_viewer('coronal')
-      self.update_viewer('sagittal')
+    # update dose distribution
+    self.Viewer_Dose = self.robustness_scenarios.DoseDistribution.prepare_image_for_viewer()
+    self.update_viewer('axial')
+    self.update_viewer('coronal')
+    self.update_viewer('sagittal')
 
 
 
