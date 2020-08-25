@@ -27,6 +27,7 @@ Python modules:
 pip3 install --upgrade -U pip
 pip3 install -U pydicom
 pip3 install -U numpy
+pip3 install -U scipy
 pip3 install -U matplotlib
 pip3 install -U Pillow
 pip3 install -U PyQt5==5.14

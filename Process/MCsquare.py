@@ -2,6 +2,7 @@ import os
 import numpy as np
 import scipy.sparse as sp
 import subprocess
+import platform
 
 from Process.MHD_image import *
 from Process.MCsquare_BDL import *
@@ -33,8 +34,9 @@ class MCsquare:
 
 
   def MCsquare_version(self):
-    os.system(os.path.join(self.Path_MCsquareLib, "MCsquare_linux") + " -v")
-
+    if(platform.system() == "Linux"): os.system(os.path.join(self.Path_MCsquareLib, "MCsquare_linux") + " -v")
+    elif(platform.system() == "Windows"): os.system(os.path.join(self.Path_MCsquareLib, "MCsquare_win.exe") + " -v")
+    else: print("Error: not compatible with " + platform.system() + " system.")
   
   
   def MCsquare_simulation(self, CT, Plan):
@@ -58,7 +60,9 @@ class MCsquare:
     
     # Start simulation
     print("\nStart MCsquare simulation")
-    os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))
+    if(platform.system() == "Linux"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))
+    elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat"))
+    else: print("Error: not compatible with " + platform.system() + " system.")
     
     # Import dose result
     mhd_dose = self.import_MCsquare_dose(Plan)
@@ -96,7 +100,9 @@ class MCsquare:
     
     # Start nominal simulation
     print("\nSimulation of nominal scenario")
-    os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))  
+    if(platform.system() == "Linux"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))
+    elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat"))
+    else: print("Error: not compatible with " + platform.system() + " system.")
     
     # Import dose result
     mhd_dose = self.import_MCsquare_dose(Plan)
@@ -125,7 +131,9 @@ class MCsquare:
 
     # Start simulation of error scenarios
     print("\nSimulation of error scenarios")
-    os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare")) 
+    if(platform.system() == "Linux"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))
+    elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat"))
+    else: print("Error: not compatible with " + platform.system() + " system.")
 
     # command = os.path.join(self.Path_MCsquareLib, "MCsquare") 
     # process = subprocess.Popen([command], cwd=self.WorkDir, stdout=subprocess.PIPE, shell=True)
@@ -142,11 +150,85 @@ class MCsquare:
       FilePath = os.path.join(self.WorkDir, "Outputs", FileName)
       if os.path.isfile(FilePath):
         mhd_dose = self.import_MCsquare_dose(Plan, FileName=FileName)
-        dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT)
+        dose = RTdose().Initialize_from_MHD(self.DoseName+"_Scenario_"+str(s), mhd_dose, CT)
         scenarios.addScnenario(dose, AllContours)
 
     return scenarios
-  
+
+
+
+  def MCsquare_repeat_previous_RobustScenario(self, CT, Plan, Target, TargetPrescription, AllContours):
+    # Initialize robustness test object
+    scenarios = RobustnessTest()
+    if(self.Robustness_Strategy == "DoseSpace"): scenarios.SelectionStrategy = "Dosimetric"
+    else: scenarios.SelectionStrategy = "Error"
+    scenarios.SetupSystematicError = self.SetupSystematicError
+    scenarios.SetupRandomError = self.SetupRandomError
+    scenarios.RangeSystematicError = self.RangeSystematicError
+    scenarios.Target = Target
+    scenarios.TargetPrescription = TargetPrescription
+
+    # save previous scenario configuration
+    scenario_file = os.path.join(self.WorkDir, "Outputs", "Robustness_scenarios.txt")
+    NumScenarios, NumFractions = self.Parse_RobustnessScenario_file(scenario_file)
+    print("NumScenarios = " + str(NumScenarios))
+    print("NumFractions = " + str(NumFractions))
+    os.system("cp " + scenario_file + " " + os.path.join(self.WorkDir, "Robustness_scenarios.txt"))
+
+    self.init_simulation_directory()
+
+    # Export CT image
+    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"))
+    
+    # Export treatment plan
+    self.BDL.import_BDL()
+    export_plan_for_MCsquare(Plan, os.path.join(self.WorkDir, "PlanPencil.txt"), CT, self.BDL)
+    
+    # Generate MCsquare configuration file
+    self.config = generate_MCsquare_config(self.WorkDir, self.NumProtons, self.Scanner.get_path(), self.BDL.get_path(), 'CT.mhd', 'PlanPencil.txt')
+    if(self.dose2water > 0): self.config["Dose_to_Water_conversion"] = "OnlineSPR"
+    else: self.config["Dose_to_Water_conversion"] = "Disabled"
+    self.config["Stat_uncertainty"] = self.MaxUncertainty
+    export_MCsquare_config(self.config)
+    
+    # Start nominal simulation
+    print("\nSimulation of nominal scenario")
+    if(platform.system() == "Linux"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))
+    elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat"))
+    else: print("Error: not compatible with " + platform.system() + " system.")
+    
+    # Import dose result
+    mhd_dose = self.import_MCsquare_dose(Plan)
+    dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT)
+    scenarios.setNominal(dose, AllContours)
+
+    # Import number of particles from previous simulation
+    NumParticles, StatUncertainty = self.get_simulation_progress()
+
+    # Configure simulation of error scenarios
+    self.config["Num_Primaries"] = NumParticles
+    self.config["Compute_stat_uncertainty"] = False
+    self.config["Robustness_Mode"] = True
+    self.config["Simulate_nominal_plan"] = False
+    self.config["Scenario_selection"] = "File"
+    export_MCsquare_config(self.config)
+
+    # Start simulation of error scenarios
+    print("\nSimulation of error scenarios")
+    if(platform.system() == "Linux"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))
+    elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat"))
+    else: print("Error: not compatible with " + platform.system() + " system.")
+
+    # Import dose results
+    for s in range(NumScenarios):
+      FileName = 'Dose_Scenario_' + str(s+1) + '-' + str(NumScenarios) + '.mhd'
+      FilePath = os.path.join(self.WorkDir, "Outputs", FileName)
+      if os.path.isfile(FilePath):
+        mhd_dose = self.import_MCsquare_dose(Plan, FileName=FileName)
+        dose = RTdose().Initialize_from_MHD(self.DoseName+"_Scenario_"+str(s), mhd_dose, CT)
+        scenarios.addScnenario(dose, AllContours)
+
+    return scenarios
   
   def MCsquare_beamlet_calculation(self, CT, Plan):
     print("Prepare MCsquare beamlet calculation")
@@ -173,7 +255,9 @@ class MCsquare:
     
     # Start simulation
     print("\nStart MCsquare simulation")
-    os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))   
+    if(platform.system() == "Linux"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare"))
+    elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat"))
+    else: print("Error: not compatible with " + platform.system() + " system.")
     
     # Import sparse beamlets
     Beamlets = MCsquare_sparse_format()
@@ -368,3 +452,15 @@ class MCsquare:
             for name in dirs: os.rmdir(os.path.join(root, name))
 
 
+
+  def Parse_RobustnessScenario_file(self, scenario_file):
+    NumScenarios = 1
+    NumFractions = 0
+
+    with open(scenario_file, 'r') as fid:
+      for line in fid:
+        if "Scenario (" in line:
+          if "Scenario (1/" in line: NumFractions += 1
+          else: NumScenarios = int(line.split('/')[0].split('(')[1])
+
+    return NumScenarios, NumFractions
