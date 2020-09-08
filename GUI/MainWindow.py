@@ -700,7 +700,7 @@ class MainWindow(QMainWindow):
           
       # run MCsquare optimization
       mhd_dose = mc2.BeamletFree_optimization(ct, plan, contours)
-      dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct)
+      dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct, plan)
 
     # beamlet-based optimization with BFGS
     elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based BFGS"):
@@ -1049,13 +1049,13 @@ class MainWindow(QMainWindow):
     mhd_dose = mc2.MCsquare_simulation(ct, plan)
     
     # load dose image in the database
-    dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct)
+    dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct, plan)
     self.Patients.list[plan_patient_id].RTdoses.append(dose)
     self.toolbox_1_Dose_list.addItem(dose.ImgName)
     
     # deep learning dose denoising
     if(self.toolbox_3_DoseDenoising.checkState()):
-      DenoisedDose = RTdose().Initialize_from_MHD(mc2.DoseName + "_denoised", mhd_dose, ct)
+      DenoisedDose = RTdose().Initialize_from_MHD(mc2.DoseName + "_denoised", mhd_dose, ct, plan)
       DenoisedDose.Image = Denoise_MC_dose(dose.Image, 'dUNet_24')
       self.Patients.list[plan_patient_id].RTdoses.append(DenoisedDose)
       self.toolbox_1_Dose_list.addItem(DenoisedDose.ImgName)
@@ -1152,6 +1152,10 @@ class MainWindow(QMainWindow):
     
     if(row > -1):
       self.context_menu = QMenu()
+      if(list_type == 'dose'):
+        self.export_action = QAction("Export")
+        self.export_action.triggered.connect(lambda checked, list_type=list_type, row=row: self.export_item(list_type, row))
+        self.context_menu.addAction(self.export_action)
       if(list_type != 'beam' and list_type != 'objective'):
         self.rename_action = QAction("Rename")
         self.rename_action.triggered.connect(lambda checked, list_type=list_type, row=row: self.rename_item(list_type, row))
@@ -1176,6 +1180,23 @@ class MainWindow(QMainWindow):
       
   
   
+  def export_item(self, list_type, row):
+    output_path = os.path.join(self.data_path, "OpenTPS")
+    if not os.path.isdir(output_path): os.mkdir(output_path)
+
+    if(list_type == 'CT'):
+      patient_id, ct_id = self.Patients.find_CT_image(row)
+        
+    elif(list_type == 'dose'):
+      patient_id, dose_id = self.Patients.find_dose_image(row)
+      output_file = os.path.join(output_path, "RTdose_" + self.Patients.list[patient_id].RTdoses[dose_id].ImgName + ".dcm")
+      self.Patients.list[patient_id].RTdoses[dose_id].export_Dicom(output_file)
+        
+    elif(list_type == 'plan'):
+      patient_id, plan_id = self.Patients.find_plan(row)
+
+
+
   def display_spots(self, beam):
     plan_disp_id = self.toolbox_1_Plan_list.currentRow()
     if(plan_disp_id < 0):

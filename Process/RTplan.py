@@ -12,6 +12,9 @@ class RTplan:
 
   def __init__(self):
     self.SeriesInstanceUID = ""
+    self.SOPInstanceUID = ""
+    self.PatientInfo = {}
+    self.StudyInfo = {}
     self.DcmFile = ""
     self.Modality = ""
     self.RadiationType = ""
@@ -72,6 +75,7 @@ class RTplan:
       return
       
     # Start parsing PBS plan
+    self.SOPInstanceUID = dcm.SOPInstanceUID
     self.TreatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName
     self.NumberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
     self.NumberOfSpots = 0

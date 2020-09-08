@@ -80,7 +80,7 @@ class PatientList:
           print("Invalid Dicom file: " + file_path)
           continue
         
-        patient_id = next((x for x, val in enumerate(self.list) if val.PatientID == dcm.PatientID), -1)
+        patient_id = next((x for x, val in enumerate(self.list) if val.PatientInfo.PatientID == dcm.PatientID), -1)
 
         # print(dcm.dir('UID'))
         # print("PatientID: " + dcm.PatientID) # user defined patient ID
@@ -91,8 +91,10 @@ class PatientList:
         
         if patient_id == -1:
           Patient = PatientData()
-          Patient.PatientID = dcm.PatientID
-          Patient.PatientName = str(dcm.PatientName)
+          Patient.PatientInfo.PatientID = dcm.PatientID
+          Patient.PatientInfo.PatientName = str(dcm.PatientName)
+          Patient.PatientInfo.PatientBirthDate = dcm.PatientBirthDate
+          Patient.PatientInfo.PatientSex = dcm.PatientSex
           self.list.append(Patient)
           patient_id = len(self.list) - 1
 
@@ -102,6 +104,12 @@ class PatientList:
           if ct_id == -1:
             CT = CTimage()
             CT.SeriesInstanceUID = dcm.SeriesInstanceUID
+            CT.PatientInfo = self.list[patient_id].PatientInfo
+            CT.StudyInfo = StudyInfo()
+            CT.StudyInfo.StudyInstanceUID = dcm.StudyInstanceUID
+            CT.StudyInfo.StudyID = dcm.StudyID
+            CT.StudyInfo.StudyDate = dcm.StudyDate
+            CT.StudyInfo.StudyTime = dcm.StudyTime
             if(hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""): CT.ImgName = dcm.SeriesDescription
             else: CT.ImgName = dcm.SeriesInstanceUID
             self.list[patient_id].CTimages.append(CT)
@@ -111,10 +119,17 @@ class PatientList:
 
         # Dicom dose
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.2":
-          dose_id = next((x for x, val in enumerate(self.list[patient_id].RTdoses) if val.SeriesInstanceUID == dcm.SeriesInstanceUID), -1)
+          dose_id = next((x for x, val in enumerate(self.list[patient_id].RTdoses) if val.SOPInstanceUID == dcm.SOPInstanceUID), -1)
           if dose_id == -1:
             dose = RTdose()
+            dose.SOPInstanceUID = dcm.SOPInstanceUID
             dose.SeriesInstanceUID = dcm.SeriesInstanceUID
+            dose.PatientInfo = self.list[patient_id].PatientInfo
+            dose.StudyInfo = StudyInfo()
+            dose.StudyInfo.StudyInstanceUID = dcm.StudyInstanceUID
+            dose.StudyInfo.StudyID = dcm.StudyID
+            dose.StudyInfo.StudyDate = dcm.StudyDate
+            dose.StudyInfo.StudyTime = dcm.StudyTime
             if(hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""): dose.ImgName = dcm.SeriesDescription
             else: dose.ImgName = dcm.SeriesInstanceUID
             dose.DcmFile = file_path
@@ -126,6 +141,12 @@ class PatientList:
           if plan_id == -1:
             plan = RTplan()
             plan.SeriesInstanceUID = dcm.SeriesInstanceUID
+            plan.PatientInfo = self.list[patient_id].PatientInfo
+            plan.StudyInfo = StudyInfo()
+            plan.StudyInfo.StudyInstanceUID = dcm.StudyInstanceUID
+            plan.StudyInfo.StudyID = dcm.StudyID
+            plan.StudyInfo.StudyDate = dcm.StudyDate
+            plan.StudyInfo.StudyTime = dcm.StudyTime
             if(hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""): plan.PlanName = dcm.SeriesDescription
             else: plan.PlanName = dcm.SeriesInstanceUID
             plan.DcmFile = file_path
@@ -137,6 +158,12 @@ class PatientList:
           if struct_id == -1:
             struct = RTstruct()
             struct.SeriesInstanceUID = dcm.SeriesInstanceUID
+            struct.PatientInfo = self.list[patient_id].PatientInfo
+            struct.StudyInfo = StudyInfo()
+            struct.StudyInfo.StudyInstanceUID = dcm.StudyInstanceUID
+            struct.StudyInfo.StudyID = dcm.StudyID
+            struct.StudyInfo.StudyDate = dcm.StudyDate
+            struct.StudyInfo.StudyTime = dcm.StudyTime
             struct.DcmFile = file_path
             self.list[patient_id].RTstructs.append(struct)
 
@@ -160,8 +187,7 @@ class PatientList:
 class PatientData:
 
   def __init__(self):
-    self.PatientID = ""
-    self.PatientName = ""
+    self.PatientInfo = PatientInfo()
     self.CTimages = []
     self.RTdoses = []
     self.Plans = []
@@ -169,8 +195,8 @@ class PatientData:
     
   def print_patient_info(self, prefix=""):
     print("")
-    print(prefix + "PatientName: " + self.PatientName)
-    print(prefix+ "PatientID: " + self.PatientID)
+    print(prefix + "PatientName: " + self.PatientInfo.PatientName)
+    print(prefix+ "PatientID: " + self.PatientInfo.PatientID)
     
     for ct in self.CTimages:
       print("")
@@ -214,3 +240,25 @@ class PatientData:
     for struct in self.RTstructs:
       struct.import_Dicom_struct(self.CTimages[0]) # to be improved: user select CT image
 
+
+
+
+
+class PatientInfo:
+
+  def __init__(self):
+    self.PatientID = ''
+    self.PatientName = ''
+    self.PatientBirthDate = ''
+    self.PatientSex = ''
+
+
+
+
+class StudyInfo:
+
+  def __init__(self):
+    self.StudyInstanceUID = ''
+    self.StudyID = ''
+    self.StudyDate = ''
+    self.StudyTime = ''

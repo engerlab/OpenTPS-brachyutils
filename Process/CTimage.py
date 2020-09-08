@@ -7,6 +7,9 @@ class CTimage:
 
   def __init__(self):
     self.SeriesInstanceUID = ""
+    self.PatientInfo = {}
+    self.StudyInfo = {}
+    self.FrameOfReferenceUID = ""
     self.ImgName = ""
     self.DcmFiles = []
     self.isLoaded = 0
@@ -33,7 +36,7 @@ class CTimage:
       file_path = self.DcmFiles[i]
       dcm = pydicom.dcmread(file_path)
 
-      if(abs(dcm.SliceLocation - dcm.ImagePositionPatient[2]) > 0.001):
+      if(hasattr(dcm, 'SliceLocation') and abs(dcm.SliceLocation - dcm.ImagePositionPatient[2]) > 0.001):
         print("WARNING: SliceLocation (" + str(dcm.SliceLocation) + ") is different than ImagePositionPatient[2] (" + str(dcm.ImagePositionPatient[2]) + ") for " + file_path)
 
       SliceLocation[i] = float(dcm.ImagePositionPatient[2])
@@ -54,6 +57,7 @@ class CTimage:
     if(abs(MeanSliceDistance - dcm.SliceThickness) > 0.001):
       print("WARNING: MeanSliceDistance (" + str(MeanSliceDistance) + ") is different from SliceThickness (" + str(dcm.SliceThickness) + ")")
 
+    self.FrameOfReferenceUID = dcm.FrameOfReferenceUID
     self.ImagePositionPatient = [float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), SliceLocation[0]]
     self.PixelSpacing = [float(dcm.PixelSpacing[0]), float(dcm.PixelSpacing[1]), MeanSliceDistance]
     self.GridSize = list(Image.shape)

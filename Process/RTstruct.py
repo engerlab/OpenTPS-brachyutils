@@ -9,6 +9,8 @@ class RTstruct:
 
   def __init__(self):
     self.SeriesInstanceUID = ""
+    self.PatientInfo = {}
+    self.StudyInfo = {}
     self.CT_SeriesInstanceUID = ""
     self.DcmFile = ""
     self.isLoaded = 0

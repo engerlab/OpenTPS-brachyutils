@@ -106,7 +106,7 @@ class MCsquare:
     
     # Import dose result
     mhd_dose = self.import_MCsquare_dose(Plan)
-    dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT)
+    dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT, Plan)
     scenarios.setNominal(dose, AllContours)
 
     # Import number of particles from previous simulation
@@ -150,7 +150,7 @@ class MCsquare:
       FilePath = os.path.join(self.WorkDir, "Outputs", FileName)
       if os.path.isfile(FilePath):
         mhd_dose = self.import_MCsquare_dose(Plan, FileName=FileName)
-        dose = RTdose().Initialize_from_MHD(self.DoseName+"_Scenario_"+str(s), mhd_dose, CT)
+        dose = RTdose().Initialize_from_MHD(self.DoseName+"_Scenario_"+str(s), mhd_dose, CT, Plan)
         scenarios.addScnenario(dose, AllContours)
 
     return scenarios
@@ -199,7 +199,7 @@ class MCsquare:
     
     # Import dose result
     mhd_dose = self.import_MCsquare_dose(Plan)
-    dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT)
+    dose = RTdose().Initialize_from_MHD(self.DoseName+"_Nominal", mhd_dose, CT, Plan)
     scenarios.setNominal(dose, AllContours)
 
     # Import number of particles from previous simulation
@@ -225,7 +225,7 @@ class MCsquare:
       FilePath = os.path.join(self.WorkDir, "Outputs", FileName)
       if os.path.isfile(FilePath):
         mhd_dose = self.import_MCsquare_dose(Plan, FileName=FileName)
-        dose = RTdose().Initialize_from_MHD(self.DoseName+"_Scenario_"+str(s), mhd_dose, CT)
+        dose = RTdose().Initialize_from_MHD(self.DoseName+"_Scenario_"+str(s), mhd_dose, CT, Plan)
         scenarios.addScnenario(dose, AllContours)
 
     return scenarios

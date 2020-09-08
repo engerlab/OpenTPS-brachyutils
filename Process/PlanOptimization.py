@@ -21,7 +21,8 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
   start = time.time()
 
   plan = RTplan()
-  plan.SeriesInstanceUID = pydicom.uid.generate_uid()
+  plan.SOPInstanceUID = pydicom.uid.generate_uid()
+  plan.SeriesInstanceUID = plan.SOPInstanceUID + ".1"
   plan.PlanName = "NewPlan"
   plan.Modality = "Ion therapy"
   plan.RadiationType = "Proton"
