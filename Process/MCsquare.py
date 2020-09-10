@@ -30,6 +30,7 @@ class MCsquare:
     self.SetupSystematicError = [2.5, 2.5, 2.5] # mm
     self.SetupRandomError = [1.0, 1.0, 1.0] # mm
     self.RangeSystematicError = 3.0 # %
+    self.Crop_CT_contour = {}
     
 
 
@@ -45,7 +46,7 @@ class MCsquare:
     self.init_simulation_directory()
       
     # Export CT image
-    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"))
+    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"), self.Crop_CT_contour)
     
     # Export treatment plan
     self.BDL.import_BDL()
@@ -85,7 +86,7 @@ class MCsquare:
     self.init_simulation_directory()
       
     # Export CT image
-    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"))
+    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"), self.Crop_CT_contour)
     
     # Export treatment plan
     self.BDL.import_BDL()
@@ -178,7 +179,7 @@ class MCsquare:
     self.init_simulation_directory()
 
     # Export CT image
-    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"))
+    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"), self.Crop_CT_contour)
     
     # Export treatment plan
     self.BDL.import_BDL()
@@ -236,7 +237,7 @@ class MCsquare:
     self.init_simulation_directory()
       
     # Export CT image
-    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"))
+    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"), self.Crop_CT_contour)
     
     # Export treatment plan
     self.BDL.import_BDL()
@@ -274,7 +275,7 @@ class MCsquare:
     self.init_simulation_directory()
       
     # Export CT image
-    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"))
+    self.export_CT_for_MCsquare(CT, os.path.join(self.WorkDir, "CT.mhd"), self.Crop_CT_contour)
     
     # Export treatment plan
     self.BDL.import_BDL()
@@ -335,12 +336,18 @@ class MCsquare:
     
     
     
-  def export_CT_for_MCsquare(self, CT, file_path):
+  def export_CT_for_MCsquare(self, CT, file_path, Crop_CT_contour):
   
     if CT.GridSize[0] != CT.GridSize[1]:
       print("WARNING: different number of voxels in X and Y directions may not be fully supported")  
 
     mhd_image = CT.convert_to_MHD()
+
+    # Crop CT image with contour
+    if(Crop_CT_contour != {}):
+      print("crop...") 
+      print(Crop_CT_contour.Mask.dtype)
+      mhd_image.Image[Crop_CT_contour.Mask == False] = -1024
   
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version

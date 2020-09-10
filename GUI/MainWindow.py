@@ -130,6 +130,12 @@ class MainWindow(QMainWindow):
     self.toolbox_3_MaxUncertainty.setSuffix("% uncertainty")
     self.toolbox_3_layout.addWidget(self.toolbox_3_MaxUncertainty)
     self.toolbox_3_layout.addSpacing(15)
+    self.toolbox_3_layout.addWidget(QLabel('<b>Crop CT with contour:</b>'))
+    self.toolbox_3_CropContour = QComboBox()
+    self.toolbox_3_CropContour.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_3_CropContour.addItem("None")
+    self.toolbox_3_layout.addWidget(self.toolbox_3_CropContour)
+    self.toolbox_3_layout.addSpacing(15)
     self.toolbox_3_layout.addWidget(QLabel('<b>Other parameters:</b>'))
     self.toolbox_3_dose2water = QCheckBox('convert dose-to-water')
     self.toolbox_3_dose2water.setChecked(True)
@@ -697,6 +703,11 @@ class MainWindow(QMainWindow):
       mc2.NumProtons = self.toolbox_3_NumProtons.value()
       mc2.dose2water = self.toolbox_3_dose2water.checkState()
       mc2.PlanOptimization = "beamlet-free"
+
+      # Crop CT image with contour:
+      if(self.toolbox_3_CropContour.currentIndex() > 0):
+        patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
+        mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
           
       # run MCsquare optimization
       mhd_dose = mc2.BeamletFree_optimization(ct, plan, contours)
@@ -712,7 +723,7 @@ class MainWindow(QMainWindow):
       plan.update_spot_weights(w)
       dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 
-     # beamlet-based optimization with L-BFGS
+    # beamlet-based optimization with L-BFGS
     elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based L-BFGS"):
       if(plan.beamlets == []):
         print("Error: beamlets must be pre-computed")
@@ -722,7 +733,7 @@ class MainWindow(QMainWindow):
       plan.update_spot_weights(w)
       dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 
-      # beamlet-based optimization with FISTA
+    # beamlet-based optimization with FISTA
     elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based FISTA"):
       if(plan.beamlets == []):
         print("Error: beamlets must be pre-computed")
@@ -919,6 +930,11 @@ class MainWindow(QMainWindow):
     mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
     mc2.NumProtons = 5e4
     mc2.dose2water = self.toolbox_3_dose2water.checkState()
+
+    # Crop CT image with contour:
+    if(self.toolbox_3_CropContour.currentIndex() > 0):
+      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
+      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
     
     # run MCsquare simulation
     beamlets = mc2.MCsquare_beamlet_calculation(ct, plan)
@@ -999,6 +1015,11 @@ class MainWindow(QMainWindow):
     mc2.SetupRandomError = [float(self.toolbox_6_rand_setup_x.text()), float(self.toolbox_6_rand_setup_y.text()), float(self.toolbox_6_rand_setup_z.text())]
     mc2.RangeSystematicError = float(self.toolbox_6_syst_range.text())
 
+    # Crop CT image with contour:
+    if(self.toolbox_3_CropContour.currentIndex() > 0):
+      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
+      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
+
     if(self.toolbox_6_Strategy.currentText() == 'Dosimetric space (statistical)'): mc2.Robustness_Strategy = "DoseSpace"
     elif(self.toolbox_6_Strategy.currentText() == 'Error space (statistical)'): mc2.Robustness_Strategy = "ErrorSpace_stat"
     else: mc2.Robustness_Strategy = "ErrorSpace_regular"
@@ -1044,6 +1065,11 @@ class MainWindow(QMainWindow):
     mc2.NumProtons = self.toolbox_3_NumProtons.value()
     mc2.MaxUncertainty = self.toolbox_3_MaxUncertainty.value()
     mc2.dose2water = self.toolbox_3_dose2water.checkState()
+
+    # Crop CT image with contour:
+    if(self.toolbox_3_CropContour.currentIndex() > 0):
+      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
+      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
     
     # run MCsquare simulation
     mhd_dose = mc2.MCsquare_simulation(ct, plan)
@@ -1515,6 +1541,7 @@ class MainWindow(QMainWindow):
         self.ROI_CheckBox[-1].setIcon(QIcon(pixmap))
         self.ROI_CheckBox[-1].stateChanged.connect(self.Current_contours_changed) 
         self.toolbox_2_layout.addWidget(self.ROI_CheckBox[-1])
+        self.toolbox_3_CropContour.addItem(contour.ROIName)
         self.toolbox_4_Target.addItem(contour.ROIName)
         self.toolbox_5_Target.addItem(contour.ROIName)
         
