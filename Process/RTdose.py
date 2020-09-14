@@ -1,8 +1,9 @@
 import pydicom
 import datetime
 import numpy as np
-import scipy.interpolate
 from matplotlib import cm
+
+from Process.C_libraries.libInterp3_wrapper import *
 
 class RTdose:
 
@@ -148,16 +149,17 @@ class RTdose:
       return
     else:
       print('Resample dose image to CT grid.')
-    
-      x = self.ImagePositionPatient[1] + np.arange(self.GridSize[1]) * self.PixelSpacing[1]
-      y = self.ImagePositionPatient[0] + np.arange(self.GridSize[0]) * self.PixelSpacing[0]
-      z = self.ImagePositionPatient[2] + np.arange(self.GridSize[2]) * self.PixelSpacing[2]
   
-      xi = np.array(np.meshgrid(CT.VoxelY, CT.VoxelX, CT.VoxelZ))
+      GridSize = [self.GridSize[1], self.GridSize[0], self.GridSize[2]]
+      CT_x = (CT.VoxelY-self.ImagePositionPatient[1]) / self.PixelSpacing[1]
+      CT_y = (CT.VoxelX-self.ImagePositionPatient[0]) / self.PixelSpacing[0]
+      CT_z = (CT.VoxelZ-self.ImagePositionPatient[2]) / self.PixelSpacing[2]
+
+      xi = np.array(np.meshgrid(CT_x, CT_y, CT_z))
       xi = np.rollaxis(xi, 0, 4)
       xi = xi.reshape((xi.size // 3, 3))
   
-      self.Image = scipy.interpolate.interpn((x,y,z), self.Image, xi, method='linear', fill_value=0, bounds_error=False)
+      self.Image = Trilinear_Interpolation(self.Image, GridSize, xi)
       self.Image = self.Image.reshape((CT.GridSize[0], CT.GridSize[1], CT.GridSize[2])).transpose(1,0,2)
   
       self.ImagePositionPatient = CT.ImagePositionPatient
