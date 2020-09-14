@@ -61,9 +61,7 @@ plan.beamlets = beamlets
 
 # Compute pre-optimization dose
 dose_vector = sp.csc_matrix.dot(beamlets.BeamletMatrix, beamlets.Weights)
-dose = RTdose()
-dose.Image = np.reshape(dose_vector, ct.GridSize, order='F')
-dose.Image = np.flip(dose.Image, (0,1)).transpose(1,0,2)
+dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 
 # Compute DVH
 Target_DVH = DVH(dose, Target)
