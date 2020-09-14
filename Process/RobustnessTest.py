@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+import os
 
 from Process.DVH import *
 
@@ -13,6 +14,7 @@ class RobustnessTest:
     self.Target = []
     self.TargetPrescription = 60 # Gy
     self.Nominal = RobustnessScenario()
+    self.NumScenarios = 0
     self.Scenarios = []
     self.DVH_bands = []
     self.DoseDistributionType = ""
@@ -21,7 +23,6 @@ class RobustnessTest:
 
 
   def setNominal(self, dose, contours):
-    dose.Image = dose.Image.astype(np.float32)
     self.Nominal.Dose = dose
     Target_DVH = DVH(dose, self.Target)
     self.Nominal.Target_D95 = Target_DVH.D95
@@ -31,11 +32,11 @@ class RobustnessTest:
     for contour in contours:
       myDVH = DVH(self.Nominal.Dose, contour)
       self.Nominal.DVH.append(myDVH)
+    self.Nominal.Dose = self.Nominal.Dose.Image.astype(np.float32)
     self.Nominal.print_info()
 
 
   def addScnenario(self, dose, contours):
-    dose.Image = dose.Image.astype(np.float32)
     scenario = RobustnessScenario()
     scenario.Dose = dose
     Target_DVH = DVH(dose, self.Target)
@@ -46,7 +47,9 @@ class RobustnessTest:
     for contour in contours:
       myDVH = DVH(scenario.Dose, contour)
       scenario.DVH.append(myDVH)
+    scenario.Dose.Image = scenario.Dose.Image.astype(np.float16) # can be reduced to float16 because all metrics are already computed and it's only used for display
     self.Scenarios.append(scenario)
+    self.NumScenarios += 1
     scenario.print_info()
 
 
@@ -82,8 +85,6 @@ class RobustnessTest:
 
 
   def error_space_analysis(self, metric):
-    NumScenario = len(self.Scenarios)
-
     # sort scenarios from worst to best according to selected metric
     if(metric == "D95"):
       self.Scenarios.sort(key=(lambda scenario: scenario.Target_D95))
@@ -104,7 +105,7 @@ class RobustnessTest:
       all_Dmean.append([])
       
     # generate DVH-band
-    for s in range(NumScenario):
+    for s in range(self.NumScenarios):
       self.Scenarios[s].selected = 1
       if self.DoseDistributionType == "Voxel wise minimum":
         self.DoseDistribution.Image = np.minimum(self.DoseDistribution.Image, self.Scenarios[s].Dose.Image)
@@ -137,9 +138,8 @@ class RobustnessTest:
     elif(metric == "MSE"):
       self.Scenarios.sort(key=(lambda scenario: scenario.Target_MSE))
 
-    NumScenario = len(self.Scenarios)
-    start = round(NumScenario * (100-CI) / 100)
-    if start == NumScenario: start -= 1
+    start = round(self.NumScenarios * (100-CI) / 100)
+    if start == self.NumScenarios: start -= 1
 
     # initialize dose distribution
     if self.DoseDistributionType == "Nominal":
@@ -155,7 +155,7 @@ class RobustnessTest:
       selected_Dmean.append([])
 
     # select scenarios
-    for s in range(NumScenario):
+    for s in range(self.NumScenarios):
       if(s < start): 
         self.Scenarios[s].selected = 0
       else: 
@@ -197,17 +197,35 @@ class RobustnessTest:
 
 
 
-  def save(self, file_path):
+  def save(self, folder_path):
+    if not os.path.isdir(folder_path):
+      os.mkdir(folder_path)
+
+    for s in range(self.NumScenarios):
+      file_path = os.path.join(folder_path, "Scenario_"+str(s)+".tps")
+      self.Scenarios[s].save(file_path)
+
+    tmp = self.Scenarios
+    self.Scenarios = []
+
+    file_path = os.path.join(folder_path, "RobustnessTest"+".tps")
     with open(file_path, 'wb') as fid:
       pickle.dump(self.__dict__, fid)
 
+    self.Scenarios = tmp
 
 
-  def load(self, file_path):
+  def load(self, folder_path):
+    file_path = os.path.join(folder_path, "RobustnessTest"+".tps")
     with open(file_path, 'rb') as fid:
       tmp = pickle.load(fid)
-
     self.__dict__.update(tmp) 
+
+    for s in range(self.NumScenarios):
+      file_path = os.path.join(folder_path, "Scenario_"+str(s)+".tps")
+      scenario = RobustnessScenario()
+      scenario.load(file_path)
+      self.Scenarios.append(scenario)
 
 
 
@@ -229,3 +247,17 @@ class RobustnessScenario:
     print("Target_D5 = " + str(self.Target_D5))
     print("Target_MSE = " + str(self.Target_MSE))
     print(" ")
+
+
+
+  def save(self, file_path):
+    with open(file_path, 'wb') as fid:
+      pickle.dump(self.__dict__, fid)
+
+
+
+  def load(self, file_path):
+    with open(file_path, 'rb') as fid:
+      tmp = pickle.load(fid)
+
+    self.__dict__.update(tmp) 

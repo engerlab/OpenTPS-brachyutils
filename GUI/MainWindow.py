@@ -952,12 +952,12 @@ class MainWindow(QMainWindow):
 
 
   def load_robustness_scenarios(self):
-    # select file
-    file_path, _ = QFileDialog.getOpenFileName(self, "Load robustness test", self.data_path, "OpenTPS data (*.tps);;All files (*.*)")
-    if(file_path == ""): return
+    # select folder
+    folder_path = QFileDialog.getExistingDirectory(self, "Select robustness test directory", self.data_path)
+    if(folder_path == ""): return
 
     scenarios = RobustnessTest()
-    scenarios.load(file_path)
+    scenarios.load(folder_path)
 
     if scenarios.SelectionStrategy == "Dosimetric":
       self.toolbox_6_Strategy.setCurrentText("Dosimetric space (statistical)")
@@ -973,7 +973,7 @@ class MainWindow(QMainWindow):
     scenarios.print_info()
 
     #scenarios.recompute_DVH(self.Patients.list[0].RTstructs[0].Contours)
-    #scenarios.save(file_path)
+    #scenarios.save(folder_path)
 
     self.robustness_scenarios = scenarios
     self.recompute_robustness_analysis()
@@ -1031,8 +1031,8 @@ class MainWindow(QMainWindow):
     output_path = os.path.join(self.data_path, "OpenTPS")
     if not os.path.isdir(output_path):
       os.mkdir(output_path)
-    output_file = os.path.join(output_path, "RobustnessTest_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-    scenarios.save(output_file)
+    output_folder = os.path.join(output_path, "RobustnessTest_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S"))
+    scenarios.save(output_folder)
 
     self.robustness_scenarios = scenarios
     self.recompute_robustness_analysis()

@@ -31,7 +31,8 @@ class MCsquare:
     self.SetupRandomError = [1.0, 1.0, 1.0] # mm
     self.RangeSystematicError = 3.0 # %
     self.Crop_CT_contour = {}
-    
+    self.SimulatedParticles = 0
+    self.SimulatedStatUncert = -1
 
 
   def MCsquare_version(self):
@@ -111,10 +112,10 @@ class MCsquare:
     scenarios.setNominal(dose, AllContours)
 
     # Import number of particles from previous simulation
-    NumParticles, StatUncertainty = self.get_simulation_progress()
+    self.SimulatedParticles, self.SimulatedStatUncert = self.get_simulation_progress()
 
     # Configure simulation of error scenarios
-    self.config["Num_Primaries"] = NumParticles
+    self.config["Num_Primaries"] = self.SimulatedParticles
     self.config["Compute_stat_uncertainty"] = False
     self.config["Robustness_Mode"] = True
     self.config["Simulate_nominal_plan"] = False
@@ -204,10 +205,10 @@ class MCsquare:
     scenarios.setNominal(dose, AllContours)
 
     # Import number of particles from previous simulation
-    NumParticles, StatUncertainty = self.get_simulation_progress()
+    self.SimulatedParticles, self.SimulatedStatUncert = self.get_simulation_progress()
 
     # Configure simulation of error scenarios
-    self.config["Num_Primaries"] = NumParticles
+    self.config["Num_Primaries"] = self.SimulatedParticles
     self.config["Compute_stat_uncertainty"] = False
     self.config["Robustness_Mode"] = True
     self.config["Simulate_nominal_plan"] = False
@@ -345,8 +346,6 @@ class MCsquare:
 
     # Crop CT image with contour
     if(Crop_CT_contour != {}):
-      print("crop...") 
-      print(Crop_CT_contour.Mask.dtype)
       mhd_image.Image[Crop_CT_contour.Mask == False] = -1024
   
     # Convert data for compatibility with MCsquare
