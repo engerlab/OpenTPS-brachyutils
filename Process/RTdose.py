@@ -193,7 +193,7 @@ class RTdose:
     return dose
         
         
-  def export_Dicom(self, OutputFile):
+  def export_Dicom(self, OutputFile, plan_uid=[]):
 
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
@@ -243,7 +243,8 @@ class RTdose:
     dcm_file.DoseSummationType = 'PLAN'
     ReferencedPlan = pydicom.dataset.Dataset()
     ReferencedPlan.ReferencedSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.8" # ion plan
-    ReferencedPlan.ReferencedSOPInstanceUID = self.Plan_SOPInstanceUID
+    if(plan_uid == []): ReferencedPlan.ReferencedSOPInstanceUID = self.Plan_SOPInstanceUID
+    else: ReferencedPlan.ReferencedSOPInstanceUID = plan_uid
     dcm_file.ReferencedRTPlanSequence = pydicom.sequence.Sequence([ReferencedPlan])
     # dcm_file.ReferringPhysicianName
     # dcm_file.OperatorName

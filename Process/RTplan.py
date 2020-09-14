@@ -28,6 +28,7 @@ class RTplan:
     self.Objectives = OptimizationObjectives()
     self.isLoaded = 0
     self.beamlets = []
+    self.OriginalDicomDataset = []
     
     
     
@@ -43,6 +44,8 @@ class RTplan:
       return
       
     dcm = pydicom.dcmread(self.DcmFile)
+
+    self.OriginalDicomDataset = dcm
     
     # Photon plan
     if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5": 
@@ -293,6 +296,23 @@ class RTplan:
         beam.BeamMeterset += sum(layer.SpotMU)
         beam.FinalCumulativeMetersetWeight += sum(layer.SpotMU)
         layer.CumulativeMeterset = beam.BeamMeterset
+
+
+
+  def export_Dicom_with_new_UID(self, OutputFile):
+    # generate new uid
+    initial_uid = self.OriginalDicomDataset.SOPInstanceUID
+    new_uid = pydicom.uid.generate_uid()
+    self.OriginalDicomDataset.SOPInstanceUID = new_uid
+
+    # save dicom file
+    print("Export dicom RTPLAN: " + OutputFile)
+    self.OriginalDicomDataset.save_as(OutputFile)
+
+    # restore initial uid
+    self.OriginalDicomDataset.SOPInstanceUID = initial_uid
+
+    return new_uid
 
 
 
