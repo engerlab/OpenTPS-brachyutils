@@ -109,18 +109,21 @@ class RTplan:
       self.TotalMeterset += beam.BeamMeterset
     
       if dcm_beam.NumberOfRangeShifters == 0:
-        beam.RangeShifter = "none"
+        beam.RangeShifterID = ""
+        beam.RangeShifterType = "none"
       elif dcm_beam.NumberOfRangeShifters == 1:
+        beam.RangeShifterID = dcm_beam.RangeShifterSequence[0].RangeShifterID
         if dcm_beam.RangeShifterSequence[0].RangeShifterType == "BINARY":
-          beam.RangeShifter = "binary"
+          beam.RangeShifterType = "binary"
         elif dcm_beam.RangeShifterSequence[0].RangeShifterType == "ANALOG":
-          beam.RangeShifter = "analog"
+          beam.RangeShifterType = "analog"
         else:
           print("ERROR: Unknown range shifter type for beam " + dcm_beam.BeamName)
-          beam.RangeShifter = "none"
+          beam.RangeShifterType = "none"
       else: 
         print("ERROR: More than one range shifter defined for beam " + dcm_beam.BeamName)
-        beam.RangeShifter = "none"
+        beam.RangeShifterID = ""
+        beam.RangeShifterType = "none"
       
       
       SnoutPosition = 0
@@ -128,7 +131,7 @@ class RTplan:
         SnoutPosition = float(first_layer.SnoutPosition)
     
       IsocenterToRangeShifterDistance = SnoutPosition
-      RangeShifterWaterEquivalentThickness = 0
+      RangeShifterWaterEquivalentThickness = ""
       RangeShifterSetting = "OUT"
       ReferencedRangeShifterNumber = 0
     
@@ -172,7 +175,7 @@ class RTplan:
         CumulativeMeterset += sum(layer.SpotMU)
         layer.CumulativeMeterset = CumulativeMeterset
             
-        if beam.RangeShifter != "none":        
+        if beam.RangeShifterType != "none":        
           if hasattr(dcm_layer, 'RangeShifterSettingsSequence'):
             RangeShifterSetting = dcm_layer.RangeShifterSettingsSequence[0].RangeShifterSetting
             ReferencedRangeShifterNumber = dcm_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber

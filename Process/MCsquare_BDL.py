@@ -28,6 +28,7 @@ class MCsquare_BDL:
     self.SpotSize2y = []
     self.Divergence2y = []
     self.Correlation2y = []
+    self.RangeShifters = []
     
     
 
@@ -78,22 +79,60 @@ class MCsquare_BDL:
 
   def import_BDL(self):
     path = self.get_path()
-    fid = open(path, 'r')
-  
-    # verify BDL format
-    line = fid.readline()
-    fid.seek(0)
-    if not "--UPenn beam model (double gaussian)--" in line and not "--Lookup table BDL format--" in line:
-      print("ERROR: BDL format not supported")
-      fid.close()
-      return None
-  
-    # find at what line the BDL table is located in the file
-    line_num = next((x for x, line in enumerate(fid) if "NominalEnergy" in line), -1)
-  
-    fid.close()
-  
-    BDL_table = np.loadtxt(path, skiprows=line_num+1)
+    with open(path, 'r') as fid:
+      
+      # verify BDL format
+      line = fid.readline()
+      fid.seek(0)
+      if not "--UPenn beam model (double gaussian)--" in line and not "--Lookup table BDL format--" in line:
+        print("ERROR: BDL format not supported")
+        fid.close()
+        return None
+      
+      line_num = 0
+      for line in fid:
+        line_num += 1
+
+        # remove comments
+        if line[0] == '#': continue
+        line = line.split('#')[0]
+
+        # find begining of the BDL table in the file
+        if("NominalEnergy" in line): table_line = line_num+1
+
+        # parse range shifter data
+        if("Range Shifter parameters" in line):
+          RS = RangeShifter_data()
+          self.RangeShifters.append(RS)
+
+        if("RS_ID" in line):
+          line = line.split('=')
+          value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
+          self.RangeShifters[-1].ID = value
+          
+        if("RS_type" in line):
+          line = line.split('=')
+          value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
+          self.RangeShifters[-1].type = value.lower()
+          
+        if("RS_material" in line):
+          line = line.split('=')
+          value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
+          self.RangeShifters[-1].material = int(value)
+          
+        if("RS_density" in line):
+          line = line.split('=')
+          value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
+          self.RangeShifters[-1].density = float(value)
+          
+        if("RS_WET" in line):
+          line = line.split('=')
+          value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
+          self.RangeShifters[-1].WET = float(value)
+
+    
+    # parse BDL table
+    BDL_table = np.loadtxt(path, skiprows=table_line)
   
     self.NominalEnergy = BDL_table[:,0]
     self.MeanEnergy = BDL_table[:,1]
@@ -118,3 +157,20 @@ class MCsquare_BDL:
     
     
     
+class RangeShifter_data:
+
+  def __init__(self):
+    self.ID = ''
+    self.type = ''
+    self.material = -1
+    self.density = 0.0
+    self.WET = 0.0
+
+  def print_info(self):
+    print(' ')
+    print('RS_ID = ' + self.ID)
+    print('RS_type = ' + self.type)
+    print('RS_material = ' + str(self.material))
+    print('RS_density = ' + str(self.density))
+    print('RS_WET = ' + str(self.WET))
+    print(' ')

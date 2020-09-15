@@ -1,4 +1,4 @@
---UPenn beam model (double gaussian)--
+--Lookup table BDL format--
 # Beam data library for P1
 
 Nozzle exit to Isocenter distance

@@ -63,9 +63,15 @@ def export_plan_for_MCsquare(plan, file_path, CT, BDL):
     fid.write("###IsocenterPosition\n")
     fid.write("%f\t %f\t %f\n" % tuple(plan.Beams[i].MCsquareIsocenter))
     
-    if plan.Beams[i].RangeShifter == "binary":
-      fid.write("###RangeShifterType\n")
-      fid.write("binary\n")
+    if plan.Beams[i].RangeShifterType == "binary":
+      RangeShifter = next((RS for RS in BDL.RangeShifters if RS.ID == plan.Beams[i].RangeShifterID), -1)
+      if(RangeShifter == -1):
+        print("WARNING: Range shifter " + plan.Beams[i].RangeShifterID + " was not found in the BDL.")
+      else:
+        fid.write("###RangeShifterID\n")
+        fid.write("%s\n" % RangeShifter.ID) 
+        fid.write("###RangeShifterType\n")
+        fid.write("binary\n")
       
     fid.write("###NumberOfControlPoints\n")
     fid.write("%d\n" % len(plan.Beams[i].Layers)) 
@@ -82,13 +88,16 @@ def export_plan_for_MCsquare(plan, file_path, CT, BDL):
       fid.write("####Energy (MeV)\n")
       fid.write("%f\n" % plan.Beams[i].Layers[j].NominalBeamEnergy)
       
-      if plan.Beams[i].RangeShifter == "binary":
+      if(RangeShifter != -1 and plan.Beams[i].RangeShifterType == "binary"):
         fid.write("####RangeShifterSetting\n")
         fid.write("%s\n" % plan.Beams[i].Layers[j].RangeShifterSetting)
         fid.write("####IsocenterToRangeShifterDistance\n")
         fid.write("%f\n" % plan.Beams[i].Layers[j].IsocenterToRangeShifterDistance)
         fid.write("####RangeShifterWaterEquivalentThickness\n")
-        fid.write("%f\n" % plan.Beams[i].Layers[j].RangeShifterWaterEquivalentThickness)
+        if(plan.Beams[i].Layers[j].RangeShifterWaterEquivalentThickness == ""):
+          fid.write("%f\n" % RangeShifter.WET)
+        else:
+          fid.write("%f\n" % plan.Beams[i].Layers[j].RangeShifterWaterEquivalentThickness)
         
       fid.write("####NbOfScannedSpots\n")
       fid.write("%d\n" % len(plan.Beams[i].Layers[j].SpotMU))
