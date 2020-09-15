@@ -63,6 +63,7 @@ def export_plan_for_MCsquare(plan, file_path, CT, BDL):
     fid.write("###IsocenterPosition\n")
     fid.write("%f\t %f\t %f\n" % tuple(plan.Beams[i].MCsquareIsocenter))
     
+    RangeShifter = -1
     if plan.Beams[i].RangeShifterType == "binary":
       RangeShifter = next((RS for RS in BDL.RangeShifters if RS.ID == plan.Beams[i].RangeShifterID), -1)
       if(RangeShifter == -1):
