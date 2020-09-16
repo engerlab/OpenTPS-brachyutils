@@ -55,6 +55,7 @@ class MainWindow(QMainWindow):
     self.main_layout.addWidget(self.toolbox_main)
     self.toolbox_main.setFixedWidth(self.toolbox_width)
     self.toolbox_main.currentChanged.connect(self.menu_changed)
+    self.toolbox_main.previous_index = 0
     
     # initialize the 1st toolbox panel (patient data)
     self.toolbox_1 = QWidget()
@@ -505,8 +506,10 @@ class MainWindow(QMainWindow):
       if hasattr(self, 'toolbox_6_layout'):
         self.recompute_robustness_analysis()
     else:
-      if hasattr(self, 'toolbox_1_Dose_list'):
+      if hasattr(self, 'toolbox_1_Dose_list') and self.toolbox_main.previous_index == 5:
         self.Current_dose_changed(self.toolbox_1_Dose_list.currentRow())
+
+    self.toolbox_main.previous_index = index
 
 
 
@@ -1504,19 +1507,19 @@ class MainWindow(QMainWindow):
     for ct in self.Patients.list[0].CTimages:
       if(ct.isLoaded == 1):
         self.toolbox_1_CT_list.addItem(ct.ImgName)
-        self.toolbox_1_CT_list.setCurrentRow(self.toolbox_1_CT_list.count()-1)
+    self.toolbox_1_CT_list.setCurrentRow(self.toolbox_1_CT_list.count()-1)
     
     # display dose distributions
     for dose in self.Patients.list[0].RTdoses:
       if(dose.isLoaded == 1): 
         self.toolbox_1_Dose_list.addItem(dose.ImgName)
-        self.toolbox_1_Dose_list.setCurrentRow(self.toolbox_1_Dose_list.count()-1)
+    self.toolbox_1_Dose_list.setCurrentRow(self.toolbox_1_Dose_list.count()-1)
       
     # display plans
     for plan in self.Patients.list[0].Plans:
       if(plan.isLoaded == 1): 
         self.toolbox_1_Plan_list.addItem(plan.PlanName)
-        self.toolbox_1_Plan_list.setCurrentRow(self.toolbox_1_Plan_list.count()-1)
+    self.toolbox_1_Plan_list.setCurrentRow(self.toolbox_1_Plan_list.count()-1)
     
     # remove all contours from the list
     self.ROI_CheckBox = []

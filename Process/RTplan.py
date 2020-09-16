@@ -79,10 +79,14 @@ class RTplan:
       
     # Start parsing PBS plan
     self.SOPInstanceUID = dcm.SOPInstanceUID
-    self.TreatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName
     self.NumberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
     self.NumberOfSpots = 0
     self.TotalMeterset = 0  
+
+    if(hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName')):
+      self.TreatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName
+    else:
+      self.TreatmentMachineName = ""
   
     for dcm_beam in dcm.IonBeamSequence:
       if dcm_beam.TreatmentDeliveryType != "TREATMENT":

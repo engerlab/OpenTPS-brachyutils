@@ -220,23 +220,26 @@ class PatientData:
     
 
   def import_patient_data(self):
-
     # import CT images
+    print("Import CT images")
     for ct in self.CTimages:
       if(ct.isLoaded == 1): continue
       ct.import_Dicom_CT()
 
     # import dose distributions
+    print("Import dose images")
     for dose in self.RTdoses:
       if(dose.isLoaded == 1): continue
       dose.import_Dicom_dose(self.CTimages[0]) # to be improved: user select CT image
 
     # import plans
+    print("Import treatment plans")
     for plan in self.Plans:
       if(plan.isLoaded == 1): continue
       plan.import_Dicom_plan()
 
     # import RTstructs
+    print("Import RT-Structs")
     for struct in self.RTstructs:
       struct.import_Dicom_struct(self.CTimages[0]) # to be improved: user select CT image
 
