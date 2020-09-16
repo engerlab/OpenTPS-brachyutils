@@ -32,7 +32,7 @@ class RobustnessTest:
     for contour in contours:
       myDVH = DVH(self.Nominal.Dose, contour)
       self.Nominal.DVH.append(myDVH)
-    self.Nominal.Dose = self.Nominal.Dose.Image.astype(np.float32)
+    self.Nominal.Dose.Image = self.Nominal.Dose.Image.astype(np.float32)
     self.Nominal.print_info()
 
 
