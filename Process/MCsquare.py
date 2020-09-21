@@ -1,4 +1,5 @@
 import os
+import shutil
 import numpy as np
 import scipy.sparse as sp
 import subprocess
@@ -33,6 +34,7 @@ class MCsquare:
     self.Crop_CT_contour = {}
     self.SimulatedParticles = 0
     self.SimulatedStatUncert = -1
+    self.Compute_DVH_only = 0
 
 
   def MCsquare_version(self):
@@ -58,6 +60,9 @@ class MCsquare:
     if(self.dose2water > 0): self.config["Dose_to_Water_conversion"] = "OnlineSPR"
     else: self.config["Dose_to_Water_conversion"] = "Disabled"
     self.config["Stat_uncertainty"] = self.MaxUncertainty
+    if(self.Compute_DVH_only > 0):
+      self.config["Dose_MHD_Output"] = False
+      self.config["Compute_DVH"] = True
     export_MCsquare_config(self.config)
     
     # Start simulation
@@ -470,3 +475,81 @@ class MCsquare:
           else: NumScenarios = int(line.split('/')[0].split('(')[1])
 
     return NumScenarios, NumFractions
+
+
+
+  def Copy_BDL_to_WorkDir(self, Output_FileName='BDL.txt'):
+    source_path = self.BDL.get_path()
+    destination_path = os.path.join(self.WorkDir, Output_FileName)
+    shutil.copyfile(source_path, destination_path)
+
+
+
+  def Copy_CT_calib_to_WorkDir(self, Density_FileName="HU_Density_Conversion.txt", Material_FileName="HU_Material_Conversion.txt"):
+    source_path = os.path.join(self.Scanner.get_path(), "HU_Density_Conversion.txt")
+    destination_path = os.path.join(self.WorkDir, Density_FileName)
+    shutil.copyfile(source_path, destination_path)
+
+    source_path = os.path.join(self.Scanner.get_path(), "HU_Material_Conversion.txt")
+    destination_path = os.path.join(self.WorkDir, Material_FileName)
+    shutil.copyfile(source_path, destination_path)
+
+
+
+  def Copy_Materials_to_WorkDir(self):
+    source_path = os.path.join(self.Path_MCsquareLib, "Materials")
+    destination_path = os.path.join(self.WorkDir, "Materials")
+    if(not os.path.isdir(destination_path)): shutil.copytree(source_path, destination_path)
+
+
+
+  def Copy_MCsquare_bin_to_WorkDir(self, OperatingSystem="linux"):
+    if(OperatingSystem == "linux"):
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare")
+      destination_path = os.path.join(self.WorkDir, "MCsquare")
+      shutil.copyfile(source_path, destination_path) # copy file
+      shutil.copymode(source_path, destination_path) # copy permissions
+      
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare_linux")
+      destination_path = os.path.join(self.WorkDir, "MCsquare_linux")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+      
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare_linux_avx")
+      destination_path = os.path.join(self.WorkDir, "MCsquare_linux_avx")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+      
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare_linux_avx2")
+      destination_path = os.path.join(self.WorkDir, "MCsquare_linux_avx2")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+      
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare_linux_avx512")
+      destination_path = os.path.join(self.WorkDir, "MCsquare_linux_avx512")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+      
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare_linux_sse4")
+      destination_path = os.path.join(self.WorkDir, "MCsquare_linux_sse4")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+
+    elif(OperatingSystem == "windows"):
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat")
+      destination_path = os.path.join(self.WorkDir, "MCsquare_win.bat")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+
+      source_path = os.path.join(self.Path_MCsquareLib, "MCsquare_win.exe")
+      destination_path = os.path.join(self.WorkDir, "MCsquare_win.exe")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+
+      source_path = os.path.join(self.Path_MCsquareLib, "libiomp5md.dll")
+      destination_path = os.path.join(self.WorkDir, "libiomp5md.dll")
+      shutil.copyfile(source_path, destination_path)
+      shutil.copymode(source_path, destination_path)
+
+    else:
+      print("Error: Operating system " + OperatingSystem + " is not supported.")

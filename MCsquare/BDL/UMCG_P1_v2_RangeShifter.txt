@@ -13,7 +13,7 @@ SMY to Isocenter distance
 Range Shifter parameters
 RS_ID = RS40		# ID of the range shifter as defined in the plan
 RS_type = binary	# analog = variable thickness (sliding wedges, or water column); binary = different thickness materials that can be moved in or out
-RS_material = 65	# MCsquare material ID
+RS_material = 66	# MCsquare material ID
 RS_density = 1.217	# physical density (in g/cm3)
 RS_WET = 40.3		# water equivalent thickness (in mm)
 

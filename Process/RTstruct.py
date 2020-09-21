@@ -22,6 +22,14 @@ class RTstruct:
     print(prefix + "Struct: " + self.SeriesInstanceUID)
     print(prefix + "   " + self.DcmFile)
     
+    
+  def print_ROINames(self):
+    print("RT Struct UID: " + self.SeriesInstanceUID)
+    count = -1
+    for contour in self.Contours:
+      count += 1
+      print('  [' + str(count) + ']  ' + contour.ROIName)
+    
   
   
   def import_Dicom_struct(self, CT):

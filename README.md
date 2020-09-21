@@ -24,17 +24,19 @@ sudo echo 'export LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64:$LD_LIBRARY_PATH' >
 
 Python modules:
 ``` 
-pip3 install --upgrade -U pip
-pip3 install -U pydicom
-pip3 install -U numpy
-pip3 install -U scipy
-pip3 install -U matplotlib
-pip3 install -U Pillow
-pip3 install -U PyQt5==5.14
-pip3 install -U pyqtgraph
-pip3 install -U tensorflow
-pip3 install -U keras
-pip3 install -U sparse_dot_mkl
+pip3 install --upgrade --user pip
+pip3 install --user pydicom
+pip3 install --user numpy
+pip3 install --user scipy
+pip3 install --user matplotlib
+pip3 install --user Pillow
+pip3 install --user PyQt5==5.14
+pip3 install --user pyqtgraph
+pip3 install --user tensorflow
+pip3 install --user keras
+pip3 install --user sparse_dot_mkl
+pip3 install --user shutil
+pip3 install --user paramiko
 ```
 
 ## Run:

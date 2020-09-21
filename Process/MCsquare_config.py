@@ -1,9 +1,9 @@
 import os
 
-def export_MCsquare_config(config):
+def export_MCsquare_config(config, FileName="config.txt"):
 
 
-  file_path = os.path.join(config["WorkDir"], "config.txt")
+  file_path = os.path.join(config["WorkDir"], FileName)
 
   print("Write config file: " + file_path)
 
@@ -95,7 +95,7 @@ def generate_MCsquare_config(WorkDir, NumberOfPrimaries, Scanner_folder, BDL_fil
   config["Energy_MHD_Output"] = False
   config["Energy_Sparse_Output"] = False
   config["Dose_ASCII_Output"] = False
-  config["Dose_MHD_Output"] = 1
+  config["Dose_MHD_Output"] = True
   config["Dose_Sparse_Output"] = False
   config["LET_ASCII_Output"] = False
   config["LET_MHD_Output"] = False
