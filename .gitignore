@@ -1,5 +1,7 @@
 data/
-__pycache__/
+*__pycache__
 *.pyc
 *~
 README.sublime-workspace
+*.dat
+/test_*
