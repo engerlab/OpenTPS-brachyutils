@@ -353,7 +353,8 @@ class Plan_IonBeam:
     self.PatientSupportAngle = 0.0
     self.FinalCumulativeMetersetWeight = 0.0
     self.BeamMeterset = 0.0
-    self.RangeShifter = "none"
+    self.RangeShifterID = ""
+    self.RangeShifterType = "none"
     self.Layers = []
     
     
