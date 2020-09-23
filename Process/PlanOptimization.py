@@ -264,7 +264,7 @@ def OptimizeWeights(plan, contours, method="Scipy-lBFGS"):
   if method=="Scipy-lBFGS":
     print ('\n======= Scipy Limited memory Broyden-Fletcher-Goldfarb-Shanno ======\n')
     def callbackF(Xi):
-      print('{0:.6e}  '.format(f(Xi)))
+      print('cost function = {0:.6e}  '.format(f(Xi)))
       cost.append(f(Xi))
 
     cost = [f(x0)]

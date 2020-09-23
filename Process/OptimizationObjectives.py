@@ -129,7 +129,7 @@ class OptimizationObjectives:
           dfTot += objective.Weight * sp.csr_matrix.mean(df, axis=1)
 
     dfTot = 4 * dfTot
-    dfTot = np.squeeze(np.asarray(dfTot))
+    dfTot = np.squeeze(np.asarray(dfTot)).astype(np.float64)
 
     return dfTot
     

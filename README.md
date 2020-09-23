@@ -35,7 +35,6 @@ pip3 install --user pyqtgraph
 pip3 install --user tensorflow
 pip3 install --user keras
 pip3 install --user sparse_dot_mkl
-pip3 install --user shutil
 pip3 install --user paramiko
 ```
 
