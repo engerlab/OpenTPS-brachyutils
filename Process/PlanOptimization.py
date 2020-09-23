@@ -233,10 +233,10 @@ def ComputeIsocenter(Target_mask, CT):
   
   
   
-def OptimizeWeights(plan, contours, method="Scipy-lBFGS"):
+def OptimizeWeights(plan, contours, method="Scipy-lBFGS", ftol=1e-5, maxIter=50): 
   # stopping criteria
-  ftol = 1e-5   # tolerance (relative variation of objective function between two iterations)
-  maxIter = 50  # maximum number of iterations
+  # ftol = relative variation of objective function between two iterations
+  # maxIter = maximum number of iterations
     
   #1 Total Dose calculation
   Weights = np.ones((plan.beamlets.NbrSpots), dtype=np.float32)
@@ -268,34 +268,34 @@ def OptimizeWeights(plan, contours, method="Scipy-lBFGS"):
       cost.append(f(Xi))
 
     cost = [f(x0)]
-    result = scipy.optimize.minimize(f, x0, method='L-BFGS-B', jac=g, callback=callbackF)
+    result = scipy.optimize.minimize(f, x0, method='L-BFGS-B', jac=g, callback=callbackF, options={'ftol': ftol, 'maxiter': maxIter})
     x = result.x
     print("Optimization finished in " + str(time.time()-start) + " sec")
-    print ("  Scipy lBFGS terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+    print ("  Scipy lBFGS terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
       .format(result.nit, x, f(x), time.time()-start, (time.time()-start)/result.nit))
 
   elif method=="Gradient":
     print ('\n======= Steepest Descent ======\n')
     x, cost, n_iter = steepest_descent(f,g , x0, maxIter, ftol)
-    print ("  Steepest Descent terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+    print ("  Steepest Descent terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
       .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
 
   elif method=="BFGS":
     print ('\n======= Broyden-Fletcher-Goldfarb-Shanno ======\n')
     x, cost, n_iter = bfgs(f, g, x0, maxIter, ftol)
-    print ("  BFGS terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+    print ("  BFGS terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
       .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
     
   elif method=="L-BFGS":
     print ('\n======= Limited Memory Broyden-Fletcher-Goldfarb-Shanno ======\n')
     x, cost, n_iter = l_bfgs(f, g, x0, maxIter, ftol, m = 6)
-    print ("  L-BFGS terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+    print ("  L-BFGS terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
       .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
     
   elif method=="FISTA":
     print ('\n======= FISTA ======\n')
     x, cost, n_iter = fista(f, g, x0, maxIter, ftol )
-    print (" FISTA  terminated in {} maxIter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
+    print (" FISTA  terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}"\
       .format(n_iter, x, f(x), time.time()-start, (time.time()-start)/n_iter))
 
   Weights = np.square(x).astype(np.float32)
