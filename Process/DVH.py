@@ -2,11 +2,11 @@ import numpy as np
 
 class DVH:
 
-  def __init__(self, dose, Contour, maxDVH=100.0):
-    self.Struct_SeriesInstanceUID = Contour.SeriesInstanceUID
-    self.ROIName = Contour.ROIName
-    self.ROIDisplayColor = Contour.ROIDisplayColor
-    self.Dose_SeriesInstanceUID = dose.SeriesInstanceUID
+  def __init__(self, dose=[], Contour=[], maxDVH=100.0):
+    self.Struct_SeriesInstanceUID = ""
+    self.ROIName = ""
+    self.ROIDisplayColor = ""
+    self.Dose_SeriesInstanceUID = ""
     self.dose = []
     self.volume = []
     self.volume_absolute = []
@@ -16,7 +16,18 @@ class DVH:
     self.D50 = 0
     self.D5 = 0
     self.D2 = 0
-    self.compute_DVH(dose, Contour, maxDVH)
+
+    if(dose != []):
+      self.Dose_SeriesInstanceUID = dose.SeriesInstanceUID
+
+    if(Contour != []):
+      self.Struct_SeriesInstanceUID = Contour.SeriesInstanceUID
+      self.ROIName = Contour.ROIName
+      self.ROIDisplayColor = Contour.ROIDisplayColor
+
+    if(dose != [] and Contour != []):
+      self.compute_DVH(dose, Contour, maxDVH)
+
 
 
   def compute_Dx(self, x):
