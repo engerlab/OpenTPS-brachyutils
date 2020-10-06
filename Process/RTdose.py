@@ -41,6 +41,10 @@ class RTdose:
       dt = np.dtype('uint16')
     elif(dcm.BitsStored == 16 and dcm.PixelRepresentation == 1):
       dt = np.dtype('int16')
+    elif(dcm.BitsStored == 32 and dcm.PixelRepresentation == 0):
+      dt = np.dtype('uint32')
+    elif(dcm.BitsStored == 32 and dcm.PixelRepresentation == 1):
+      dt = np.dtype('int32')
     else:
       print("Error: Unknown data type for " + self.DcmFile)
       return

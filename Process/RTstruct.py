@@ -60,6 +60,11 @@ class RTstruct:
       Contour.ContourMask = np.zeros((CT.GridSize[0], CT.GridSize[1], CT.GridSize[2]), dtype=np.bool)
       
       SOPInstanceUID_match = 1
+            
+      if not hasattr(dcm_contour, 'ContourSequence'):
+          print("This structure has no attribute ContourSequence. Skipping ...")
+          continue
+
       for dcm_slice in dcm_contour.ContourSequence:
         Slice = {}
       
