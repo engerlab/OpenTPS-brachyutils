@@ -60,7 +60,7 @@ class RTstruct:
       Contour.ContourMask = np.zeros((CT.GridSize[0], CT.GridSize[1], CT.GridSize[2]), dtype=np.bool)
       
       SOPInstanceUID_match = 1
-            
+
       if not hasattr(dcm_contour, 'ContourSequence'):
           print("This structure has no attribute ContourSequence. Skipping ...")
           continue
@@ -122,6 +122,13 @@ class ROIcontour:
     self.SeriesInstanceUID = ""
     self.ROIName = ""
     self.ContourSequence = []
+    self.ROIDisplayColor = []
+    self.Mask = []
+    self.ContourMask = []
+    self.Mask_GridSize = []
+    self.Mask_PixelSpacing = []
+    self.Mask_Offset = []
+    self.Mask_NumVoxels = 0   
     
     
     
