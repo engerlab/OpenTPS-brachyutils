@@ -1124,21 +1124,21 @@ class MainWindow(QMainWindow):
       patient_id, ct_id = self.Patients.find_CT_image(row)
       DeleteReply = QMessageBox.question(self, 'Delete image', 'Delete "' + self.Patients.list[patient_id].CTimages[ct_id].ImgName + '" CT image ?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
       if(DeleteReply == QMessageBox.Yes):
-        #self.Patients.list[patient_id].CTimages[ct_id].delete()
+        del self.Patients.list[patient_id].CTimages[ct_id]
         self.toolbox_1_CT_list.takeItem(row)
         
     elif(list_type == 'dose'):
       patient_id, dose_id = self.Patients.find_dose_image(row)
       DeleteReply = QMessageBox.question(self, 'Delete image', 'Delete "' + self.Patients.list[patient_id].RTdoses[dose_id].ImgName + '" dose image ?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
       if(DeleteReply == QMessageBox.Yes):
-        #self.Patients.list[patient_id].RTdoses[dose_id].delete()
+        del self.Patients.list[patient_id].RTdoses[dose_id]
         self.toolbox_1_Dose_list.takeItem(row)
         
     elif(list_type == 'plan'):
       patient_id, plan_id = self.Patients.find_plan(row)
       DeleteReply = QMessageBox.question(self, 'Delete plan', 'Delete "' + self.Patients.list[patient_id].Plans[plan_id].PlanName + '" plan ?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
       if(DeleteReply == QMessageBox.Yes):
-        #self.Patients.list[patient_id].Plans[plan_id].delete()
+        del self.Patients.list[patient_id].Plans[plan_id]
         self.toolbox_1_Plan_list.takeItem(row)
         
     elif(list_type == 'beam'):

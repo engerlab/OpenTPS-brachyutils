@@ -445,6 +445,11 @@ class MCsquare:
     if not os.path.isdir(self.WorkDir):
       os.mkdir(self.WorkDir)
 
+    # Clean structs directory
+    struct_dir = os.path.join(self.WorkDir, "structs")
+    if os.path.isdir(struct_dir):
+      shutil.rmtree(struct_dir)
+
     # Clean output directory
     out_dir = os.path.join(self.WorkDir, "Outputs")
     if os.path.isdir(out_dir):
