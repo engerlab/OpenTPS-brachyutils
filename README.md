@@ -17,7 +17,7 @@ apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB
 sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list'
 sudo apt-get update
 sudo apt-get install intel-mkl-64bit-2020.1-102
-sudo echo 'export LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64:$LD_LIBRARY_PATH' > /etc/profile.d/mkl_lib.sh
+echo 'export LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64:$LD_LIBRARY_PATH' | sudo tee -a /etc/profile.d/mkl_lib.sh
 
 # adapted from: http://dirk.eddelbuettel.com/blog/2018/04/15/
 ``` 

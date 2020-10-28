@@ -57,11 +57,14 @@ class RTdose:
     dose_image = np.frombuffer(dcm.PixelData, dtype=dt) 
     dose_image = dose_image.reshape((dcm.Columns, dcm.Rows, dcm.NumberOfFrames), order='F').transpose(1,0,2)
     dose_image = dose_image * dcm.DoseGridScaling
+
+    if(type(dcm.SliceThickness) == float): SliceThickness = dcm.SliceThickness
+    else: SliceThickness = (dcm.GridFrameOffsetVector[-1] - dcm.GridFrameOffsetVector[0]) / (len(dcm.GridFrameOffsetVector)-1)
     
     self.Image = dose_image
     self.FrameOfReferenceUID = dcm.FrameOfReferenceUID
     self.ImagePositionPatient = dcm.ImagePositionPatient
-    self.PixelSpacing = [dcm.PixelSpacing[0], dcm.PixelSpacing[1], dcm.SliceThickness]
+    self.PixelSpacing = [dcm.PixelSpacing[0], dcm.PixelSpacing[1], SliceThickness]
     self.GridSize = [dcm.Columns, dcm.Rows, dcm.NumberOfFrames]
     self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
     
