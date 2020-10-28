@@ -32,15 +32,31 @@ class RTstruct:
     
   
   
-  def import_Dicom_struct(self, CT):
+  def import_Dicom_struct(self, CT_list):
     if(self.isLoaded == 1):
       print("Warning: RTstruct " + self.SeriesInstanceUID + " is already loaded")
       return
       
     dcm = pydicom.dcmread(self.DcmFile)
-    
+
+    # find associated CT image
+    CT = {}
+    try:
+      CT_UID = dcm.ReferencedFrameOfReferenceSequence[0].RTReferencedStudySequence[0].RTReferencedSeriesSequence[0].SeriesInstanceUID
+      #FrameOfReferenceUID = dcm.ReferencedFrameOfReferenceSequence[0].FrameOfReferenceUID
+      CT_ID = next((x for x, val in enumerate(CT_list) if val.SeriesInstanceUID == CT_UID), -1)
+      CT = CT_list[CT_ID]
+    except:
+      pass
+
+    if(CT == {}):
+      print("Warning: Referenced CT image not found for RTstruct " + self.SeriesInstanceUID )
+      print("RTstruct is imported on the first CT image instead.")
+      CT = CT_list[0]
+
     self.CT_SeriesInstanceUID = CT.SeriesInstanceUID
     
+    # load contours
     for dcm_struct in dcm.StructureSetROISequence:    
       ReferencedROI_id = next((x for x, val in enumerate(dcm.ROIContourSequence) if val.ReferencedROINumber == dcm_struct.ROINumber), -1)
       dcm_contour = dcm.ROIContourSequence[ReferencedROI_id]
@@ -62,7 +78,7 @@ class RTstruct:
       SOPInstanceUID_match = 1
 
       if not hasattr(dcm_contour, 'ContourSequence'):
-          print("This structure has no attribute ContourSequence. Skipping ...")
+          print(Contour.ROIName + " has no attribute ContourSequence. Skip this structure...")
           continue
 
       for dcm_slice in dcm_contour.ContourSequence:

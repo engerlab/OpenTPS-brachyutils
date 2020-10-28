@@ -230,7 +230,7 @@ class PatientData:
     print("Import dose images")
     for dose in self.RTdoses:
       if(dose.isLoaded == 1): continue
-      dose.import_Dicom_dose(self.CTimages[0]) # to be improved: user select CT image
+      dose.import_Dicom_dose(self.CTimages)
 
     # import plans
     print("Import treatment plans")
@@ -241,7 +241,7 @@ class PatientData:
     # import RTstructs
     print("Import RT-Structs")
     for struct in self.RTstructs:
-      struct.import_Dicom_struct(self.CTimages[0]) # to be improved: user select CT image
+      struct.import_Dicom_struct(self.CTimages)
 
 
 

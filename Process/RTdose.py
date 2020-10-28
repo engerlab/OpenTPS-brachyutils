@@ -27,13 +27,27 @@ class RTdose:
     
     
     
-  def import_Dicom_dose(self, CT):
+  def import_Dicom_dose(self, CT_list):
     if(self.isLoaded == 1):
       print("Warning: Dose image " + self.SOPInstanceUID + " is already loaded")
       return
       
     dcm = pydicom.dcmread(self.DcmFile)
+
+    # find associated CT image
+    CT = {}
+    try:
+      CT_ID = next((x for x, val in enumerate(CT_list) if val.FrameOfReferenceUID == dcm.FrameOfReferenceUID), -1)
+      CT = CT_list[CT_ID]
+    except:
+      pass
+
+    if(CT == {}):
+      print("Warning: No CT image has been found with the same frame of reference as RTdose " + self.SeriesInstanceUID )
+      print("RTdose is imported on the first CT image.")
+      CT = CT_list[0]
     
+    # import dose
     self.CT_SeriesInstanceUID = CT.SeriesInstanceUID
     self.Plan_SOPInstanceUID = dcm.ReferencedRTPlanSequence[0].ReferencedSOPInstanceUID
     
