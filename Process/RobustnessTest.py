@@ -24,25 +24,17 @@ class RobustnessTest:
 
   def setNominal(self, dose, contours):
     self.Nominal.Dose = dose
-    Target_DVH = DVH(dose, self.Target)
-    self.Nominal.Target_D95 = Target_DVH.D95
-    self.Nominal.Target_D5 = Target_DVH.D5
-    self.Nominal.Target_MSE = self.computeTargetMSE(dose.Image)
     self.Nominal.DVH.clear()
     for contour in contours:
       myDVH = DVH(self.Nominal.Dose, contour)
       self.Nominal.DVH.append(myDVH)
     self.Nominal.Dose.Image = self.Nominal.Dose.Image.astype(np.float32)
-    self.Nominal.print_info()
+
 
 
   def addScnenario(self, dose, contours):
     scenario = RobustnessScenario()
     scenario.Dose = dose
-    Target_DVH = DVH(dose, self.Target)
-    scenario.Target_D95 = Target_DVH.D95
-    scenario.Target_D5 = Target_DVH.D5
-    scenario.Target_MSE = self.computeTargetMSE(dose.Image)
     scenario.DVH.clear()
     for contour in contours:
       myDVH = DVH(scenario.Dose, contour)
@@ -50,26 +42,37 @@ class RobustnessTest:
     scenario.Dose.Image = scenario.Dose.Image.astype(np.float16) # can be reduced to float16 because all metrics are already computed and it's only used for display
     self.Scenarios.append(scenario)
     self.NumScenarios += 1
-    scenario.print_info()
+
+
+
+  def setTarget(self, Target_contour, Target_Prescription):
+    self.Target = Target_contour
+    self.TargetPrescription = Target_Prescription
+    for dvh in self.Nominal.DVH:
+      if dvh.ROIName == self.Target.ROIName:
+        self.Nominal.Target_D95 = dvh.D95
+        self.Nominal.Target_D5 = dvh.D5
+        self.Nominal.Target_MSE = self.computeTargetMSE(self.Nominal.Dose.Image)
+        break
+
+    for scenario in self.Scenarios:
+      for dvh in scenario.DVH:
+        if dvh.ROIName == self.Target.ROIName:
+          scenario.Target_D95 = dvh.D95
+          scenario.Target_D5 = dvh.D5
+          scenario.Target_MSE = self.computeTargetMSE(scenario.Dose.Image)
+          break
 
 
 
   def recompute_DVH(self, contours):
     self.Nominal.DVH.clear()
-    Target_DVH = DVH(self.Nominal.Dose, self.Target)
-    self.Nominal.Target_D95 = Target_DVH.D95
-    self.Nominal.Target_D5 = Target_DVH.D5
-    self.Nominal.Target_MSE = self.computeTargetMSE(self.Nominal.Dose.Image)
     for contour in contours:
       myDVH = DVH(self.Nominal.Dose, contour)
       self.Nominal.DVH.append(myDVH)
 
     for scenario in self.Scenarios:
       scenario.DVH.clear()
-      Target_DVH = DVH(scenario.Dose, self.Target)
-      scenario.Target_D95 = Target_DVH.D95
-      scenario.Target_D5 = Target_DVH.D5
-      scenario.Target_MSE = self.computeTargetMSE(scenario.Dose.Image)
       for contour in contours:
         myDVH = DVH(scenario.Dose, contour)
         scenario.DVH.append(myDVH)
@@ -84,7 +87,10 @@ class RobustnessTest:
 
 
 
-  def error_space_analysis(self, metric):
+  def error_space_analysis(self, metric, Target_contour, Target_Prescription):
+    if(self.Target == [] or self.Target.ROIName != Target_contour.ROIName or self.TargetPrescription != Target_Prescription):
+      self.setTarget(Target_contour, Target_Prescription)
+
     # sort scenarios from worst to best according to selected metric
     if(metric == "D95"):
       self.Scenarios.sort(key=(lambda scenario: scenario.Target_D95))
@@ -132,7 +138,10 @@ class RobustnessTest:
 
 
 
-  def dosimetric_space_analysis(self, metric, CI):
+  def dosimetric_space_analysis(self, metric, CI, Target_contour, Target_Prescription):
+    if(self.Target == [] or self.Target.ROIName != Target_contour.ROIName or self.TargetPrescription != Target_Prescription):
+      self.setTarget(Target_contour, Target_Prescription)
+
     if(metric == "D95"):
       self.Scenarios.sort(key=(lambda scenario: scenario.Target_D95))
     elif(metric == "MSE"):

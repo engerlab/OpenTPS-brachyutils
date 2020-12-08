@@ -35,6 +35,7 @@ class CTimage:
     for i in range(len(self.DcmFiles)):
       file_path = self.DcmFiles[i]
       dcm = pydicom.dcmread(file_path)
+      #dcm = pydicom.dcmread(file_path, force=True)
 
       if(hasattr(dcm, 'SliceLocation') and abs(dcm.SliceLocation - dcm.ImagePositionPatient[2]) > 0.001):
         print("WARNING: SliceLocation (" + str(dcm.SliceLocation) + ") is different than ImagePositionPatient[2] (" + str(dcm.ImagePositionPatient[2]) + ") for " + file_path)

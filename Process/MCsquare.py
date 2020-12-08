@@ -78,7 +78,7 @@ class MCsquare:
 
 
 
-  def MCsquare_RobustScenario_calculation(self, CT, Plan, Target, TargetPrescription, AllContours):
+  def MCsquare_RobustScenario_calculation(self, CT, Plan, AllContours):
     # Initialize robustness test object
     scenarios = RobustnessTest()
     if(self.Robustness_Strategy == "DoseSpace"): scenarios.SelectionStrategy = "Dosimetric"
@@ -86,8 +86,6 @@ class MCsquare:
     scenarios.SetupSystematicError = self.SetupSystematicError
     scenarios.SetupRandomError = self.SetupRandomError
     scenarios.RangeSystematicError = self.RangeSystematicError
-    scenarios.Target = Target
-    scenarios.TargetPrescription = TargetPrescription
   
     self.init_simulation_directory()
       

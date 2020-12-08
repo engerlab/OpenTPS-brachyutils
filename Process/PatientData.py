@@ -76,6 +76,7 @@ class PatientList:
       
         try:
           dcm = pydicom.dcmread(file_path)
+          #dcm = pydicom.dcmread(file_path, force=True)
         except:
           print("Invalid Dicom file: " + file_path)
           continue
