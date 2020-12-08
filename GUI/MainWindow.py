@@ -747,7 +747,7 @@ class MainWindow(QMainWindow):
     ct = self.Patients.list[patient_id].CTimages[ct_id]
     
     # target contour
-    Target_name = self.toolbox_6_Target.currentText()
+    Target_name = self.toolbox_4_Target.currentText()
     patient_id, struct_id, contour_id = self.Patients.find_contour(Target_name)
     Target = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
     
