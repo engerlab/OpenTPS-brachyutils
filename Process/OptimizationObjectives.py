@@ -17,35 +17,35 @@ class OptimizationObjectives:
     self.list = []
     self.TargetName = ""
     self.TargetPrescription = 0.0
-    
-    
-    
+
+
+
   def setTarget(self, ROIName, Prescription):
     self.TargetName = ROIName
     self.TargetPrescription = Prescription
-    
-    
-    
+
+
+
   def addObjective(self, ROIName, Metric, Condition, LimitValue, Weight):
     objective = OptimizationObjective()
     objective.ROIName = ROIName
-    
+
     if Metric == "Dmin": objective.Metric = "Dmin"
     elif Metric == "Dmax": objective.Metric = "Dmax"
     elif Metric == "Dmean": objective.Metric = "Dmean"
     else:
       print("Error: objective metric " + Metric + " is not supported.")
       return
-      
+
     if Condition == "LessThan" or Condition == "<": objective.Condition = "<"
     elif Condition == "GreaterThan" or Condition == ">": objective.Condition = ">"
     else:
       print("Error: objective condition " + Condition + " is not supported.")
       return
-    
+
     objective.LimitValue = LimitValue
     objective.Weight = Weight
-    
+
     self.list.append(objective)
 
 
@@ -83,7 +83,7 @@ class OptimizationObjectives:
     return fTot
 
 
-  def compute_OF_gradient(self, x, BLMatrix):
+  def compute_OF_gradient(self, x, BLMatrix,formatArray=32):
     weights = np.square(x).astype(np.float32)
     xDiag = sp.diags(x.astype(np.float32), format='csc')
 
@@ -130,11 +130,14 @@ class OptimizationObjectives:
 
     dfTot = 4 * dfTot
     dfTot = np.squeeze(np.asarray(dfTot)).astype(np.float64)
+    #if scipy-lbfgs used, need to use float64
+    if formatArray==64:
+        dfTot = np.array(dfTot, dtype ="float64")
 
     return dfTot
-    
-      
-    
+
+
+
 class OptimizationObjective:
 
   def __init__(self):
@@ -144,7 +147,7 @@ class OptimizationObjective:
     self.LimitValue = ""
     self.Weight = ""
     self.Mask_vec = []
-    
+
 
 
 class ObjectiveTemplateList:
