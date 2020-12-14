@@ -2,6 +2,7 @@ import pydicom
 import datetime
 import numpy as np
 from matplotlib import cm
+import scipy.ndimage
 
 from Process.C_libraries.libInterp3_wrapper import *
 
@@ -78,10 +79,14 @@ class RTdose:
     self.Image = dose_image
     self.FrameOfReferenceUID = dcm.FrameOfReferenceUID
     self.ImagePositionPatient = dcm.ImagePositionPatient
-    self.PixelSpacing = [dcm.PixelSpacing[0], dcm.PixelSpacing[1], SliceThickness]
-    self.GridSize = [dcm.Columns, dcm.Rows, dcm.NumberOfFrames]
+    self.PixelSpacing = [float(dcm.PixelSpacing[0]), float(dcm.PixelSpacing[1]), SliceThickness]
+    self.GridSize = [dcm.Columns, dcm.Rows, int(dcm.NumberOfFrames)]
     self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
     
+    self.OriginalImagePositionPatient = self.ImagePositionPatient
+    self.OriginalPixelSpacing = self.PixelSpacing
+    self.OriginalGridSize = self.GridSize
+        
     if hasattr(dcm, 'GridFrameOffsetVector'):
       if(dcm.GridFrameOffsetVector[1] - dcm.GridFrameOffsetVector[0] < 0):
         self.Image = np.flip(self.Image, 2)
@@ -126,6 +131,10 @@ class RTdose:
     self.GridSize = mhd_dose.GridSize
     self.NumVoxels = mhd_dose.NumVoxels
     
+    self.OriginalImagePositionPatient = self.ImagePositionPatient
+    self.OriginalPixelSpacing = self.PixelSpacing
+    self.OriginalGridSize = self.GridSize
+    
     self.Image = mhd_dose.Image
     self.resample_to_CT_grid(CT)
     
@@ -150,6 +159,10 @@ class RTdose:
     self.GridSize = beamlets.ImageSize
     self.NumVoxels = beamlets.NbrVoxels
     
+    self.OriginalImagePositionPatient = self.ImagePositionPatient
+    self.OriginalPixelSpacing = self.PixelSpacing
+    self.OriginalGridSize = self.GridSize
+        
     self.Image = np.reshape(dose_vector, self.GridSize, order='F')
     self.Image = np.flip(self.Image, (0,1)).transpose(1,0,2)
     self.resample_to_CT_grid(CT)
@@ -166,27 +179,42 @@ class RTdose:
     
       
   def resample_to_CT_grid(self, CT):
-    if(self.GridSize == CT.GridSize and self.euclidean_dist(self.ImagePositionPatient, CT.ImagePositionPatient) < 0.001 and self.euclidean_dist(self.PixelSpacing, CT.PixelSpacing) < 0.001):
+    if(self.GridSize == CT.GridSize and self.euclidean_dist(self.ImagePositionPatient, CT.ImagePositionPatient) < 0.01 and self.euclidean_dist(self.PixelSpacing, CT.PixelSpacing) < 0.01):
       return
     else:
       print('Resample dose image to CT grid.')
-  
-      GridSize = [self.GridSize[1], self.GridSize[0], self.GridSize[2]]
-      CT_x = (CT.VoxelY-self.ImagePositionPatient[1]) / self.PixelSpacing[1]
-      CT_y = (CT.VoxelX-self.ImagePositionPatient[0]) / self.PixelSpacing[0]
-      CT_z = (CT.VoxelZ-self.ImagePositionPatient[2]) / self.PixelSpacing[2]
+      self.resample_image(CT.GridSize, CT.ImagePositionPatient, CT.PixelSpacing)
+    
+    
+      
+  def resample_image(self, GridSize, Offset, PixelSpacing):
+    # anti-aliasing filter
+    sigma = [0, 0, 0]
+    if(PixelSpacing[0] > self.PixelSpacing[0]): sigma[0] = 0.4 * (PixelSpacing[0]/self.PixelSpacing[0])
+    if(PixelSpacing[1] > self.PixelSpacing[1]): sigma[1] = 0.4 * (PixelSpacing[1]/self.PixelSpacing[1])
+    if(PixelSpacing[2] > self.PixelSpacing[2]): sigma[2] = 0.4 * (PixelSpacing[2]/self.PixelSpacing[2])
+    if(sigma != [0, 0, 0]):
+      print("Image is filtered before downsampling")
+      self.Image = scipy.ndimage.gaussian_filter(self.Image, sigma)
+    
+    # resampling    
+    Init_GridSize = [self.GridSize[1], self.GridSize[0], self.GridSize[2]]
 
-      xi = np.array(np.meshgrid(CT_x, CT_y, CT_z))
-      xi = np.rollaxis(xi, 0, 4)
-      xi = xi.reshape((xi.size // 3, 3))
+    interp_x = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[1])*PixelSpacing[1]) / self.PixelSpacing[1]
+    interp_y = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[0])*PixelSpacing[0]) / self.PixelSpacing[0]
+    interp_z = (Offset[2] - self.ImagePositionPatient[2] + np.arange(GridSize[2])*PixelSpacing[2]) / self.PixelSpacing[2]
   
-      self.Image = Trilinear_Interpolation(self.Image, GridSize, xi)
-      self.Image = self.Image.reshape((CT.GridSize[0], CT.GridSize[1], CT.GridSize[2])).transpose(1,0,2)
+    xi = np.array(np.meshgrid(interp_x, interp_y, interp_z))
+    xi = np.rollaxis(xi, 0, 4)
+    xi = xi.reshape((xi.size // 3, 3))
   
-      self.ImagePositionPatient = CT.ImagePositionPatient
-      self.PixelSpacing = CT.PixelSpacing
-      self.GridSize = CT.GridSize
-      self.NumVoxels = CT.NumVoxels
+    self.Image = Trilinear_Interpolation(self.Image, Init_GridSize, xi)
+    self.Image = self.Image.reshape((GridSize[0], GridSize[1], GridSize[2])).transpose(1,0,2)
+  
+    self.ImagePositionPatient = Offset
+    self.PixelSpacing = PixelSpacing
+    self.GridSize = GridSize
+    self.NumVoxels = GridSize[0] * GridSize[1] * GridSize[2]  
 
 
 
@@ -208,6 +236,10 @@ class RTdose:
     dose.PixelSpacing = self.PixelSpacing
     dose.GridSize = self.GridSize
     dose.NumVoxels = self.NumVoxels
+    
+    dose.OriginalImagePositionPatient = self.OriginalImagePositionPatient
+    dose.OriginalPixelSpacing = self.OriginalPixelSpacing
+    dose.OriginalGridSize = self.OriginalGridSize
     
     dose.Image = self.Image.copy()
     

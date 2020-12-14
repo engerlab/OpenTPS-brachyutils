@@ -24,7 +24,7 @@ class RTstruct:
     
     
   def print_ROINames(self):
-    print("RT Struct UID: " + self.SeriesInstanceUID)
+    print("\nRT Struct UID: " + self.SeriesInstanceUID)
     count = -1
     for contour in self.Contours:
       count += 1
