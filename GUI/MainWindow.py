@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
     self.Viewer_sagittal_slice = 0
     self.Viewer_resolution = [1,1,1]
     self.RobustEval = {"Strategy": "DoseSpace", "syst_setup": [1.6, 1.6, 1.6], "rand_setup": [1.4, 1.4, 1.4], "syst_range": 1.6}
-    self.RobustOpti = {"Strategy": "ErrorSpace_regular", "syst_setup": [5.0, 5.0, 5.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 3.0}
+    self.RobustOpti = {"Strategy": "Disabled", "syst_setup": [5.0, 5.0, 5.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 3.0}
     self.robustness_scenarios = []
   
     # initialize the main window
@@ -205,6 +205,14 @@ class MainWindow(QMainWindow):
     self.toolbox_4_button_hLoayout.addWidget(self.toolbox_4_addArc)
     self.toolbox_4_addArc.clicked.connect(self.add_new_arc) 
     self.toolbox_4_layout.addSpacing(30)
+    self.toolbox_4_layout.addWidget(QLabel('<b>Robust optimization:</b>'))
+    self.toolbox_4_RobustSettings = QLabel('')
+    self.toolbox_4_layout.addWidget(self.toolbox_4_RobustSettings)
+    self.toolbox_4_layout.addSpacing(10)
+    self.toolbox_4_RobustnessSettingsButton = QPushButton('Modify robustness settings')
+    self.toolbox_4_RobustnessSettingsButton.clicked.connect(self.set_robust_opti_settings)
+    self.toolbox_4_layout.addWidget(self.toolbox_4_RobustnessSettingsButton)
+    self.toolbox_4_layout.addSpacing(30)
     self.toolbox_4_CreatePlanButton = QPushButton('Create new plan')
     self.toolbox_4_layout.addWidget(self.toolbox_4_CreatePlanButton)
     self.toolbox_4_CreatePlanButton.clicked.connect(self.create_new_plan) 
@@ -216,11 +224,12 @@ class MainWindow(QMainWindow):
     self.toolbox_4_LoadPlanButton = QPushButton('Import OpenTPS Plan')
     self.toolbox_4_layout.addWidget(self.toolbox_4_LoadPlanButton)
     self.toolbox_4_LoadPlanButton.clicked.connect(self.import_OpenTPS_Plan) 
-    self.toolbox_4_layout.addSpacing(15)
+    self.toolbox_4_layout.addSpacing(10)
     self.toolbox_4_LoadMCsquarePlanButton = QPushButton('Import MCsquare PlanPencil')
     self.toolbox_4_layout.addWidget(self.toolbox_4_LoadMCsquarePlanButton)
     self.toolbox_4_LoadMCsquarePlanButton.clicked.connect(self.import_PlanPencil) 
-    self.toolbox_4_layout.addSpacing(15)
+    self.toolbox_4_layout.addSpacing(10)
+    self.update_robust_opti_settings()
     
     # initialize the 5th toolbox panel (Plan optimization)
     self.toolbox_5 = QWidget()
@@ -539,14 +548,15 @@ class MainWindow(QMainWindow):
 
 
   def set_robust_eval_settings(self):
-    dialog = Robustness_Settings_dialog(AllStrategies=True, RobustParam=self.RobustEval)
+    dialog = Robustness_Settings_dialog(PlanEvaluation=True, RobustParam=self.RobustEval)
     if(dialog.exec()): self.RobustEval = dialog.RobustParam
     self.update_robust_eval_settings()
 
 
   def set_robust_opti_settings(self):
-    dialog = Robustness_Settings_dialog(AllStrategies=False, RobustParam=self.RobustOpti)
+    dialog = Robustness_Settings_dialog(PlanEvaluation=False, RobustParam=self.RobustOpti)
     if(dialog.exec()): self.RobustOpti = dialog.RobustParam
+    self.update_robust_opti_settings()
 
 
 
@@ -567,6 +577,18 @@ class MainWindow(QMainWindow):
       self.toolbox_6_Rand_Setup.setText('Rand. setup: &sigma;<sub>S</sub> = ' + str(self.RobustEval["rand_setup"]) + ' mm')
       self.toolbox_6_Syst_Range.setText('Syst. range: &Sigma;<sub>R</sub> = ' + str(self.RobustEval["syst_range"]) + ' %')
 
+
+
+  def update_robust_opti_settings(self):
+    if(self.RobustOpti["Strategy"] == 'Disabled'):
+      self.toolbox_4_RobustSettings.setText('Disabled')
+    else:
+      RobustSettings = ''
+      RobustSettings += 'Selection: error space<br>'
+      RobustSettings += 'Syst. setup: E<sub>S</sub> = ' + str(self.RobustOpti["syst_setup"]) + ' mm<br>'
+      RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self.RobustOpti["rand_setup"]) + ' mm<br>'
+      RobustSettings += 'Syst. range: E<sub>R</sub> = ' + str(self.RobustOpti["syst_range"]) + ' %'
+      self.toolbox_4_RobustSettings.setText(RobustSettings)
 
 
 
@@ -782,6 +804,7 @@ class MainWindow(QMainWindow):
     # Generate new plan
     plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, Scanner)
     plan.PlanName = self.toolbox_4_plan_name.text()
+    plan.RobustOpti = self.RobustOpti
     self.Patients.list[patient_id].Plans.append(plan)
     
     # display new plan to the list
@@ -833,12 +856,27 @@ class MainWindow(QMainWindow):
 
     # import beamlets
     Folder, File = os.path.split(file_path)
-    beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
-    if(os.path.isfile(beamlet_file)):
-      beamlets = MCsquare_sparse_format()
-      beamlets.load(beamlet_file)
-      beamlets.print_memory_usage()
-      plan.beamlets = beamlets
+    if(plan.RobustOpti["Strategy"] == 'Disabled'): 
+      beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
+      if(os.path.isfile(beamlet_file)):
+        beamlets = MCsquare_sparse_format()
+        beamlets.load(beamlet_file)
+        beamlets.print_memory_usage()
+        plan.beamlets = beamlets
+    else:
+      beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Nominal.blm")
+      if(os.path.isfile(beamlet_file)):
+        beamlets = MCsquare_sparse_format()
+        beamlets.load(beamlet_file)
+        beamlets.print_memory_usage()
+        plan.beamlets = beamlets
+      for s in range(plan.NumScenarios):
+        beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Scenario_" + str(s+1) + "-" + str(plan.NumScenarios) + ".blm")
+        if(os.path.isfile(beamlet_file)):
+          beamlets = MCsquare_sparse_format()
+          beamlets.load(beamlet_file)
+          beamlets.print_memory_usage()
+          plan.scenarios.append(beamlets)
       
     # add plan to list
     self.Patients.list[patient_id].Plans.append(plan)
@@ -873,6 +911,11 @@ class MainWindow(QMainWindow):
     mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
     mc2.NumProtons = 5e4
     mc2.dose2water = self.toolbox_3_dose2water.checkState()
+    mc2.SetupSystematicError = plan.RobustOpti["syst_setup"]
+    mc2.SetupRandomError = plan.RobustOpti["rand_setup"]
+    mc2.RangeSystematicError = plan.RobustOpti["syst_range"]
+    if(plan.RobustOpti["Strategy"] == 'Disabled'): mc2.Robustness_Strategy = "Disabled"
+    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
 
     # Crop CT image with contour:
     if(self.toolbox_3_CropContour.currentIndex() > 0):
@@ -886,11 +929,27 @@ class MainWindow(QMainWindow):
     output_path = os.path.join(self.data_path, "OpenTPS")
     if not os.path.isdir(output_path):
       os.mkdir(output_path)
-    beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
-    beamlets.save(beamlet_file)
-    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-    plan.save(plan_file)
-    plan.beamlets = beamlets
+
+    if(plan.RobustOpti["Strategy"] == 'Disabled'): 
+      plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
+      plan.save(plan_file)
+      beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
+      beamlets.save(beamlet_file)
+      plan.beamlets = beamlets
+      
+    else:
+      plan.NumScenarios = len(beamlets[1])
+      plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
+      plan.save(plan_file)
+
+      plan.beamlets = beamlets[0]
+      beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Nominal.blm")
+      plan.beamlets.save(beamlet_file)
+
+      plan.scenarios = beamlets[1]
+      for s in range(plan.NumScenarios):
+        beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Scenario_" + str(s+1) + "-" + str(plan.NumScenarios) + ".blm")
+        plan.scenarios[s].save(beamlet_file)
 
 
 
@@ -954,15 +1013,14 @@ class MainWindow(QMainWindow):
     mc2.SetupSystematicError = self.RobustEval["syst_setup"]
     mc2.SetupRandomError = self.RobustEval["rand_setup"]
     mc2.RangeSystematicError = self.RobustEval["syst_range"]
+    if(self.RobustEval["Strategy"] == 'DoseSpace'): mc2.Robustness_Strategy = "DoseSpace"
+    elif(self.RobustEval["Strategy"] == 'ErrorSpace_stat'): mc2.Robustness_Strategy = "ErrorSpace_stat"
+    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
 
     # Crop CT image with contour:
     if(self.toolbox_3_CropContour.currentIndex() > 0):
       patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
       mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-
-    if(self.RobustEval["Strategy"] == 'DoseSpace'): mc2.Robustness_Strategy = "DoseSpace"
-    elif(self.RobustEval["Strategy"] == 'ErrorSpace_stat'): mc2.Robustness_Strategy = "ErrorSpace_stat"
-    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
 
     # run MCsquare simulation
     scenarios = mc2.MCsquare_RobustScenario_calculation(ct, plan, AllContours)

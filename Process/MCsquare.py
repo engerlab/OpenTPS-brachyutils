@@ -234,6 +234,8 @@ class MCsquare:
         scenarios.addScnenario(dose, AllContours)
 
     return scenarios
+
+
   
   def MCsquare_beamlet_calculation(self, CT, Plan):
     print("Prepare MCsquare beamlet calculation")
@@ -256,6 +258,19 @@ class MCsquare:
     self.config["Beamlet_Parallelization"] = True
     self.config["Dose_MHD_Output"] = False
     self.config["Dose_Sparse_Output"] = True
+
+    # Robustness settings
+    if(self.Robustness_Strategy == "Disabled"): 
+      self.config["Robustness_Mode"] = False
+    else:
+      self.config["Robustness_Mode"] = True
+      self.config["Simulate_nominal_plan"] = True
+      self.config["Systematic_Setup_Error"] = [self.SetupSystematicError[0]/10, self.SetupSystematicError[1]/10, self.SetupSystematicError[2]/10] # cm
+      self.config["Random_Setup_Error"] = [self.SetupRandomError[0]/10, self.SetupRandomError[1]/10, self.SetupRandomError[2]/10] # cm
+      self.config["Systematic_Range_Error"] = self.RangeSystematicError # %
+      self.config["Scenario_selection"] = "All"
+      NumScenarios = 81
+
     export_MCsquare_config(self.config)
     
     # Start simulation
@@ -265,9 +280,23 @@ class MCsquare:
     else: print("Error: not compatible with " + platform.system() + " system.")
     
     # Import sparse beamlets
-    Beamlets = MCsquare_sparse_format()
-    beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose.txt")
-    Beamlets.import_Sparse_Beamlets(beamlet_file, Plan.BeamletRescaling)
+    if(self.Robustness_Strategy == "Disabled"): 
+      beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose.txt")
+      Beamlets = MCsquare_sparse_format()
+      Beamlets.import_Sparse_Beamlets(beamlet_file, Plan.BeamletRescaling)
+    else:
+      beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose_Nominal.txt")
+      Nominal = MCsquare_sparse_format()
+      Nominal.import_Sparse_Beamlets(beamlet_file, Plan.BeamletRescaling)
+      Beamlets = []
+      Beamlets.append(Nominal)
+      Scenarios = []
+      for s in range(NumScenarios):
+        beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose_Scenario_" + str(s+1) + "-" + str(NumScenarios) + ".txt")
+        scenario = MCsquare_sparse_format()
+        scenario.import_Sparse_Beamlets(beamlet_file, Plan.BeamletRescaling)
+        Scenarios.append(scenario)
+      Beamlets.append(Scenarios)
 
     return Beamlets
     

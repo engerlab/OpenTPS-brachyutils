@@ -29,6 +29,9 @@ class RTplan:
     self.isLoaded = 0
     self.beamlets = []
     self.OriginalDicomDataset = []
+    self.RobustOpti = {}
+    self.scenarios = []
+    self.NumScenarios = 0
     
     
     

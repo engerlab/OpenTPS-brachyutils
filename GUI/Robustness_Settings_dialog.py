@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt
 
 class Robustness_Settings_dialog(QDialog):
 
-  def __init__(self, AllStrategies=False, RobustParam={"Strategy": "ErrorSpace_regular", "syst_setup": [5.0, 5.0, 5.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 3.0}):
+  def __init__(self, PlanEvaluation=False, RobustParam={"Strategy": "ErrorSpace_regular", "syst_setup": [5.0, 5.0, 5.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 3.0}):
     
     self.RobustParam = RobustParam
     
@@ -18,10 +18,11 @@ class Robustness_Settings_dialog(QDialog):
     self.Strategy = QComboBox()
     self.Strategy.setMaximumWidth(300-18)
     
-    if(AllStrategies): self.Strategy.addItems(['Dosimetric space (statistical)', 'Error space (statistical)', 'Error space (regular)'])
-    else: self.Strategy.addItems(['Error space (regular)'])
+    if(PlanEvaluation): self.Strategy.addItems(['Dosimetric space (statistical)', 'Error space (statistical)', 'Error space (regular)'])
+    else: self.Strategy.addItems(['Disabled', 'Error space (regular)'])
     
-    if(self.RobustParam["Strategy"] == "ErrorSpace_regular"): self.Strategy.setCurrentText('Error space (regular)')
+    if(self.RobustParam["Strategy"] == "Disabled"): self.Strategy.setCurrentText('Disabled')
+    elif(self.RobustParam["Strategy"] == "ErrorSpace_regular"): self.Strategy.setCurrentText('Error space (regular)')
     elif(self.RobustParam["Strategy"] == "ErrorSpace_stat"): self.Strategy.setCurrentText('Error space (statistical)')
     else: self.Strategy.setCurrentText('Dosimetric space (statistical)')
     
@@ -93,6 +94,7 @@ class Robustness_Settings_dialog(QDialog):
     self.rand_setup_z.textChanged.connect(self.recompute_margin) 
     self.syst_range.textChanged.connect(self.recompute_margin) 
     self.recompute_margin()
+    if(self.Strategy.currentText() == 'Disabled'): self.update_robust_strategy()
   
     # buttons
     self.ButtonLayout = QHBoxLayout()
@@ -107,7 +109,23 @@ class Robustness_Settings_dialog(QDialog):
 
 
   def update_robust_strategy(self):
-    if(self.Strategy.currentText() == 'Error space (regular)'):
+    if(self.Strategy.currentText() == 'Disabled'):
+      self.syst_setup_x.setEnabled(False)
+      self.syst_setup_y.setEnabled(False)
+      self.syst_setup_z.setEnabled(False)
+      self.rand_setup_x.setEnabled(False)
+      self.rand_setup_y.setEnabled(False)
+      self.rand_setup_z.setEnabled(False)
+      self.syst_range.setEnabled(False)
+
+    elif(self.Strategy.currentText() == 'Error space (regular)'):
+      self.syst_setup_x.setEnabled(True)
+      self.syst_setup_y.setEnabled(True)
+      self.syst_setup_z.setEnabled(True)
+      self.rand_setup_x.setEnabled(True)
+      self.rand_setup_y.setEnabled(True)
+      self.rand_setup_z.setEnabled(True)
+      self.syst_range.setEnabled(True)
       self.SigmaS_label.setText('E<sub>S</sub>')
       self.SigmaR_label.setText('E<sub>R</sub>')
       self.syst_setup_x.setText('5.0')
@@ -119,6 +137,13 @@ class Robustness_Settings_dialog(QDialog):
       self.syst_range.setText('3.0')
 
     elif(self.Strategy.currentText() == 'Error space (statistical)'):
+      self.syst_setup_x.setEnabled(True)
+      self.syst_setup_y.setEnabled(True)
+      self.syst_setup_z.setEnabled(True)
+      self.rand_setup_x.setEnabled(True)
+      self.rand_setup_y.setEnabled(True)
+      self.rand_setup_z.setEnabled(True)
+      self.syst_range.setEnabled(True)
       self.SigmaS_label.setText('&Sigma;<sub>S</sub>')
       self.SigmaR_label.setText('&Sigma;<sub>R</sub>')
       self.syst_setup_x.setText('2.0')
@@ -130,6 +155,13 @@ class Robustness_Settings_dialog(QDialog):
       self.syst_range.setText('1.6')
 
     else:
+      self.syst_setup_x.setEnabled(True)
+      self.syst_setup_y.setEnabled(True)
+      self.syst_setup_z.setEnabled(True)
+      self.rand_setup_x.setEnabled(True)
+      self.rand_setup_y.setEnabled(True)
+      self.rand_setup_z.setEnabled(True)
+      self.syst_range.setEnabled(True)
       self.SigmaS_label.setText('&Sigma;<sub>S</sub>')
       self.SigmaR_label.setText('&Sigma;<sub>R</sub>')
       self.syst_setup_x.setText('1.6')
@@ -165,10 +197,11 @@ class Robustness_Settings_dialog(QDialog):
       margin_z = 2.5 * Sigma_z + 0.7 * sigma_z
       margin_r = 1.5 * range_sigma
 
-    self.SetupMarginX.setText('{:3.1f}'.format(margin_x))
-    self.SetupMarginY.setText('{:3.1f}'.format(margin_y))
-    self.SetupMarginZ.setText('{:3.1f}'.format(margin_z))
-    self.RangeError.setText('{:3.1f}'.format(margin_r))
+    if(self.Strategy.currentText() != 'Disabled'):
+      self.SetupMarginX.setText('{:3.1f}'.format(margin_x))
+      self.SetupMarginY.setText('{:3.1f}'.format(margin_y))
+      self.SetupMarginZ.setText('{:3.1f}'.format(margin_z))
+      self.RangeError.setText('{:3.1f}'.format(margin_r))
 
 
 
@@ -177,7 +210,8 @@ class Robustness_Settings_dialog(QDialog):
     self.RobustParam["rand_setup"] = [float(self.rand_setup_x.text()), float(self.rand_setup_y.text()), float(self.rand_setup_z.text())]
     self.RobustParam["syst_range"] = float(self.syst_range.text())
 
-    if(self.Strategy.currentText() == 'Dosimetric space (statistical)'): self.RobustParam["Strategy"] = "DoseSpace"
+    if(self.Strategy.currentText() == 'Disabled'): self.RobustParam["Strategy"] = "Disabled"
+    elif(self.Strategy.currentText() == 'Dosimetric space (statistical)'): self.RobustParam["Strategy"] = "DoseSpace"
     elif(self.Strategy.currentText() == 'Error space (statistical)'): self.RobustParam["Strategy"] = "ErrorSpace_stat"
     else: self.RobustParam["Strategy"] = "ErrorSpace_regular"
 
