@@ -234,7 +234,7 @@ def ComputeIsocenter(Target_mask, CT):
 
 
 
-def OptimizeWeights(plan, contours,maxIter,ftol, method="Scipy-lBFGS", *args):
+def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS", step=1.0, output=None, *args):
   # Total Dose calculation
   Weights = np.ones((plan.beamlets.NbrSpots), dtype=np.float32)
   if use_MKL == 1:
@@ -242,7 +242,6 @@ def OptimizeWeights(plan, contours,maxIter,ftol, method="Scipy-lBFGS", *args):
   else:
     TotalDose = sp.csc_matrix.dot(plan.beamlets.BeamletMatrix, Weights)
 
-  step, output = args
   # Weight normalization
   # variable change x = u²
   maxDose = np.max(TotalDose)
