@@ -29,7 +29,7 @@ class RTplan:
     self.isLoaded = 0
     self.beamlets = []
     self.OriginalDicomDataset = []
-    self.RobustOpti = {}
+    self.RobustOpti = {"Strategy": "Disabled", "syst_setup": [0.0, 0.0, 0.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 0.0}
     self.scenarios = []
     self.NumScenarios = 0
     

@@ -18,7 +18,7 @@ from Process.pyOpti import functions,solvers,acceleration
 
 
 
-def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanner):
+def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RTV_margin = 7.0, SpotSpacing = 7.0, LayerSpacing = 6.0):
   start = time.time()
 
   plan = RTplan()
@@ -35,7 +35,6 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
   IsoCenter = ComputeIsocenter(Target.Mask, CT)
 
   # compute RTV = dilated target for spot placement
-  RTV_margin = 7.0 # mm
   RTV_margin_x = RTV_margin / CT.PixelSpacing[0] # voxels
   RTV_margin_y = RTV_margin / CT.PixelSpacing[1] # voxels
   RTV_margin_z = RTV_margin / CT.PixelSpacing[2] # voxels
@@ -58,8 +57,8 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
     plan.Beams[b].GantryAngle = GantryAngles[b]
     plan.Beams[b].PatientSupportAngle = CouchAngles[b]
     plan.Beams[b].IsocenterPosition = IsoCenter
-    plan.Beams[b].SpotSpacing = 7.0
-    plan.Beams[b].LayerSpacing = 6.0
+    plan.Beams[b].SpotSpacing = SpotSpacing
+    plan.Beams[b].LayerSpacing = LayerSpacing
 
   # spot placement
   plan = SpotPlacement(plan, CT, RTV_mask, Scanner)

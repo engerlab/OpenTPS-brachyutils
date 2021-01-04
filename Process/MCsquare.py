@@ -268,8 +268,10 @@ class MCsquare:
       self.config["Systematic_Setup_Error"] = [self.SetupSystematicError[0]/10, self.SetupSystematicError[1]/10, self.SetupSystematicError[2]/10] # cm
       self.config["Random_Setup_Error"] = [self.SetupRandomError[0]/10, self.SetupRandomError[1]/10, self.SetupRandomError[2]/10] # cm
       self.config["Systematic_Range_Error"] = self.RangeSystematicError # %
-      self.config["Scenario_selection"] = "All"
-      NumScenarios = 81
+      self.config["Scenario_selection"] = "ReducedSet" # "All" (81 scenarios), or "ReducedSet" (21 scenarios as in RayStation)
+      if(self.config["Scenario_selection"] == "All"): NumScenarios = 81
+      else: NumScenarios = 21
+      
 
     export_MCsquare_config(self.config)
     

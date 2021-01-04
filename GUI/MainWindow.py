@@ -597,9 +597,19 @@ class MainWindow(QMainWindow):
     ContourList = []
     for contour in self.ROI_CheckBox:
       ContourList.append(contour.text())
+
+    # find selected plan
+    plan_disp_id = self.toolbox_1_Plan_list.currentRow()
+    if(plan_disp_id < 0):
+      print("Error: No treatment plan selected")
+      return
+    plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
+    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
     
     # create dialog window
-    dialog = AddObjective_dialog(ContourList)
+    if(plan.RobustOpti["Strategy"] == 'Disabled'): dialog = AddObjective_dialog(ContourList, RobustOpti=False)
+    else: dialog = AddObjective_dialog(ContourList, RobustOpti=True)
+
     obj_number = self.toolbox_5_objectives.count()
     if(obj_number == 0): dialog.Contour.setCurrentText(self.toolbox_5_Target.currentText())
     else: dialog.Contour.setCurrentText(self.toolbox_5_objectives.item(obj_number-1).data(Qt.UserRole+0))
@@ -611,12 +621,17 @@ class MainWindow(QMainWindow):
       Condition = dialog.Condition.currentText()
       LimitValue = dialog.LimitValue.value()
       Weight = dialog.Weight.value()
-      self.toolbox_5_objectives.addItem(ROIName + ":\n" + Metric + " " + Condition + " " + str(LimitValue) + " Gy   (w=" + str(Weight) + ")")
+      Robust = dialog.Robust.isChecked()
+      if(Robust == True):
+        self.toolbox_5_objectives.addItem(ROIName + ":\n" + Metric + " " + Condition + " " + str(LimitValue) + " Gy   (w=" + str(Weight) + ", robust)")
+      else:
+        self.toolbox_5_objectives.addItem(ROIName + ":\n" + Metric + " " + Condition + " " + str(LimitValue) + " Gy   (w=" + str(Weight) + ")")
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+0, ROIName)
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+1, Metric)
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+2, Condition)
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+3, LimitValue)
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+4, Weight)
+      self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+5, Robust)
       
       
     
@@ -649,7 +664,8 @@ class MainWindow(QMainWindow):
       Condition = self.toolbox_5_objectives.item(i).data(Qt.UserRole+2)
       LimitValue = self.toolbox_5_objectives.item(i).data(Qt.UserRole+3)
       Weight = self.toolbox_5_objectives.item(i).data(Qt.UserRole+4)
-      plan.Objectives.addObjective(ROIName, Metric, Condition, LimitValue, Weight)
+      Robust = self.toolbox_5_objectives.item(i).data(Qt.UserRole+5)
+      plan.Objectives.addObjective(ROIName, Metric, Condition, LimitValue, Weight, Robust=Robust)
       ROINames.add(ROIName)
       
     # create list of contours
@@ -800,9 +816,20 @@ class MainWindow(QMainWindow):
           BeamNames.append(name + "_" + str(angle))
           GantryAngles.append(angle)
           CouchAngles.append(couch)
+
+    # set spacing parameters
+    if(self.RobustOpti["Strategy"] == 'Disabled'): 
+      SpotSpacing = 7.0
+      LayerSpacing = 6.0
+      RTV_margin = max(SpotSpacing, LayerSpacing)
+    else: 
+      SpotSpacing = 7.0
+      LayerSpacing = 6.0
+      RTV_margin = max(SpotSpacing, LayerSpacing) + max(self.RobustOpti["syst_setup"])
+
     
     # Generate new plan
-    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, Scanner)
+    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing)
     plan.PlanName = self.toolbox_4_plan_name.text()
     plan.RobustOpti = self.RobustOpti
     self.Patients.list[patient_id].Plans.append(plan)

@@ -26,7 +26,7 @@ class OptimizationObjectives:
 
 
 
-  def addObjective(self, ROIName, Metric, Condition, LimitValue, Weight):
+  def addObjective(self, ROIName, Metric, Condition, LimitValue, Weight, Robust=False):
     objective = OptimizationObjective()
     objective.ROIName = ROIName
 
@@ -45,6 +45,7 @@ class OptimizationObjectives:
 
     objective.LimitValue = LimitValue
     objective.Weight = Weight
+    objective.Robust = Robust
 
     self.list.append(objective)
 
@@ -146,6 +147,7 @@ class OptimizationObjective:
     self.Condition = ""
     self.LimitValue = ""
     self.Weight = ""
+    self.Robust = False
     self.Mask_vec = []
 
 

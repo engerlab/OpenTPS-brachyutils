@@ -41,7 +41,7 @@ Breathing_period		{BREATHING_PERIOD}		# Period (in seconds) of the breathing mot
 
 ### Robustness simulation
 Robustness_Mode			{ROBUSTNESS_MODE} 		# Enable/Disable the robustness verification mode. Default: False
-Scenario_selection		{SCENARIO_SELECTION}		# Method for scenario selection: All (simulate all combinations), Random (randomly sample scenarios). Default: All
+Scenario_selection		{SCENARIO_SELECTION}		# Method for scenario selection: All (simulate all 81 combinations of errors), ReducedSet (simulate 21 scenarios), Random (randomly sample scenarios). Default: All
 Simulate_nominal_plan		{SIMULATE_NOMINAL_PLAN}		# Simulate the nominal plan (without any systematic or random uncertainty). Default: True
 Num_Random_Scenarios		{NUM_RANDOM_SCENARIOS}		# Number of uncertainty scenarios to simulate in Random mode. Default: 100
 Systematic_Setup_Error		{SYSTEMATIC_SETUP_ERROR}	# Systematic error for the patient setup along the XYZ axes (cm). Default: 0.25 0.25 0.25

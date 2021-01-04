@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import *
 
 class AddObjective_dialog(QDialog):
 
-  def __init__(self, ContourList):
+  def __init__(self, ContourList, RobustOpti=False):
     
     # initialize the window
     QDialog.__init__(self)
@@ -46,6 +46,16 @@ class AddObjective_dialog(QDialog):
     self.Weight.setValue(1.0)
     self.WeightLayout.addWidget(self.Weight)
     self.main_layout.addLayout(self.WeightLayout)
+    self.main_layout.addSpacing(30)
+    
+    # Robust
+    self.RobustLayout = QHBoxLayout()
+    self.RobustLayout.addWidget(QLabel('<b>Robust objective:</b>'))
+    self.Robust = QCheckBox("")
+    self.Robust.setChecked(False)
+    if(RobustOpti == False): self.Robust.setDisabled(True)
+    self.RobustLayout.addWidget(self.Robust)
+    self.main_layout.addLayout(self.RobustLayout)
     self.main_layout.addSpacing(30)
     
     # buttons
