@@ -189,6 +189,66 @@ class linesearch(dummy):
         print('  Linesearch done (' + str(n) + ' iter)')
         return step
 
+
+
+class linesearch_v2(dummy):
+    r"""
+    Backtracking lines earch acceleration based on the Armijo–Goldstein condition,
+    is a line search method to determine the amount to move along a given search direction.
+    It starts withca relatively large estimate of the step size for movement along
+    the search direction, and iteratively shrinking the step size (i.e., "backtracking")
+    until a decrease of the objective function is observed that adequately corresponds
+    to the decrease that is expected, based on the local gradient of the objective function.
+    Parameters
+    ----------
+    c1 : float
+        backtracking parameter
+    c2 : float
+        backtracking parameter
+    eps : float
+        (Optional) quit if norm of step produced is less than this
+    """
+    def __init__(self, c1=1e-4, c2=0.9, eps=1e-3, **kwargs):
+        self.c1 = c1
+        self.c2 = c2
+        self.eps = eps
+        super(linesearch_v2, self).__init__(**kwargs)
+
+    def _update_step(self, solver, objective, niter):
+        # Save current state of the solver
+        properties = copy.deepcopy(vars(solver))
+        logging.debug('(Begin) solver properties: {}'.format(properties))
+
+        # initialize some useful variables
+        self.f = solver.smooth_funs[0]
+        derphi = np.dot(self.f.grad(properties['sol']), solver.pk)
+        n = 1
+        step = 1.0
+        step1 = step * 0.8
+        fn = self.f.eval(properties['sol']+ step * solver.pk)
+        flim = self.f.eval(properties['sol']) + self.c1 * step * derphi
+        len_p = np.linalg.norm(solver.pk)
+
+        #Loop until Armijo condition is satisfied
+        while fn > flim:
+          n += 1
+          fn1 = self.f.eval(properties['sol']+ step1 * solver.pk)
+          next_step = step + (flim*0.999 - fn) * (step1-step)/(fn1-fn) # linear extrapolation to find flim
+          step = step1
+          step1 = next_step
+          fn = fn1
+
+          if abs(step-step1) < self.eps: break
+          if abs(step * len_p) < self.eps or step1 < 0: 
+            print(step)
+            step = self.eps / len_p
+            break
+
+        print('  Linesearch_v2 done (' + str(n) + ' iter)')
+        return step
+
+
+
 class backtracking(dummy):
     r"""
     Backtracking acceleration based on a local quadratic approximation of the

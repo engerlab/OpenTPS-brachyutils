@@ -248,8 +248,8 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
 
   # Callable functions
   plan.Objectives.initialize_objective_function(contours)
-  f = lambda x, beamlets=plan.beamlets.BeamletMatrix: plan.Objectives.compute_objective_function(x, beamlets)
-  g = lambda x, beamlets=plan.beamlets.BeamletMatrix: plan.Objectives.compute_OF_gradient(x, beamlets)
+  f = lambda x, beamlets=plan.beamlets.BeamletMatrix, scenarios=plan.scenarios: plan.Objectives.compute_objective_function(x, beamlets, ScenariosBL=scenarios)
+  g = lambda x, beamlets=plan.beamlets.BeamletMatrix, scenarios=plan.scenarios: plan.Objectives.compute_OF_gradient(x, beamlets, ScenariosBL=scenarios)
 
   start = time.time()
   f1 = functions.func()
@@ -257,10 +257,15 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
   f1._grad = g
   f2 = functions.dummy()
 
+  # Need robust optimization?
+  robust = False
+  for objective in plan.Objectives.list:
+    if objective.Robust == True: robust = True
+
   # Optimization methods
   if method=="Scipy-lBFGS":
     print ('\n======= Scipy Limited memory Broyden-Fletcher-Goldfarb-Shanno ======\n')
-    grad64 = lambda x, beamlets=plan.beamlets.BeamletMatrix: plan.Objectives.compute_OF_gradient(x, beamlets, formatArray=64)
+    grad64 = lambda x, beamlets=plan.beamlets.BeamletMatrix, scenarios=plan.scenarios: plan.Objectives.compute_OF_gradient(x, beamlets, ScenariosBL=scenarios, formatArray=64)
     def callbackF(Xi):
         print('cost function = {0:.6e}  '.format(f(Xi)))
         cost.append(f(Xi))
@@ -280,7 +285,8 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
 
   elif method=="BFGS":
     print ('\n======= Broyden-Fletcher-Goldfarb-Shanno ======\n')
-    accel = acceleration.linesearch()
+    if(robust == False or plan.scenarios == []): accel = acceleration.linesearch()
+    else: accel = acceleration.linesearch_v2()
     solver = solvers.bfgs(accel=accel, step = step)
     ret = solvers.solve([f1,f2],x0,plan,solver,atol=1e-5,rtol = 1e-5, maxit=maxIter, verbosity='ALL', output=output)
     x = ret['sol']
@@ -290,7 +296,8 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
 
   elif method=="L-BFGS":
     print ('\n======= Limited Memory Broyden-Fletcher-Goldfarb-Shanno ======\n')
-    accel = acceleration.linesearch()
+    if(robust == False or plan.scenarios == []): accel = acceleration.linesearch()
+    else: accel = acceleration.linesearch_v2()
     solver = solvers.lbfgs(accel=accel, step = step)
     ret = solvers.solve([f1,f2],x0,plan, solver,atol=1e-5,rtol = 1e-5, maxit=maxIter, verbosity='ALL',output=output)
     x = ret['sol']

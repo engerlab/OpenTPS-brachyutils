@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt, QDir, QPointF
 import pyqtgraph as qtg
 import numpy as np
 import datetime
+import os
 
 from GUI.AddBeam_dialog import *
 from GUI.AddArc_dialog import *
@@ -424,6 +425,7 @@ class MainWindow(QMainWindow):
           self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+2, objective.Condition)
           self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+3, objective.LimitValue)
           self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+4, objective.Weight)
+          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+5, objective.Robust)
 
 
 

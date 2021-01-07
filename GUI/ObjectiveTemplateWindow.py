@@ -134,11 +134,16 @@ class ObjectiveTemplateWindow(QDialog):
       new.Condition = dialog.Condition.currentText()
       new.LimitValue = dialog.LimitValue.value()
       new.Weight = dialog.Weight.value()
+      new.Robust = dialog.Robust.isChecked()
 
       self.Templates.list[template_id].Objectives.append(new)
       self.SaveTemplates.show()
 
-      self.ObjectiveList.addItem(new.ROIName + ":\n" + new.Metric + " " + new.Condition + " " + str(new.LimitValue) + " Gy   (w=" + str(new.Weight) + ")")
+      
+      if(new.Robust == True):
+        self.ObjectiveList.addItem(new.ROIName + ":\n" + new.Metric + " " + new.Condition + " " + str(new.LimitValue) + " Gy   (w=" + str(new.Weight) + ", robust)")
+      else:
+        self.ObjectiveList.addItem(new.ROIName + ":\n" + new.Metric + " " + new.Condition + " " + str(new.LimitValue) + " Gy   (w=" + str(new.Weight) + ")")
 
 
 
