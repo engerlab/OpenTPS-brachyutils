@@ -327,18 +327,15 @@ class RTplan:
 
 
   def save(self, file_path):
-    beamlets = self.beamlets
-    self.beamlets = []
-    scenarios = self.scenarios
-    self.scenarios = []
+    self.beamlets.unload()
+    for scenario in self.scenarios:
+      scenario.unload()
     dcm = self.OriginalDicomDataset
     self.OriginalDicomDataset = []
 
     with open(file_path, 'wb') as fid:
       pickle.dump(self.__dict__, fid)
-
-    self.beamlets = beamlets
-    self.scenarios = scenarios
+      
     self.OriginalDicomDataset = dcm
 
 

@@ -5,18 +5,23 @@ import scipy.sparse as sp
 import struct
 import time
 import pickle
+import datetime
+import struct
 
 class MCsquare_sparse_format:
   
   def __init__(self):
     self.Header_file = ""
     self.Binary_file = ""
+    self.Saved_beamlet_file = ""
+    self.ImgName = ""
     self.SimulationMode = []
     self.NbrSpots = 0
     self.NbrVoxels = 0
     self.ImageSize = [0, 0, 0]
     self.VoxelSpacing = [1, 1, 1]
     self.Offset = [0, 0, 0]
+    self.Image = []
     self.BeamletMatrix = []
     self.Weights = []
     
@@ -47,8 +52,11 @@ class MCsquare_sparse_format:
     
   def Read_Sparse_header(self, file_path):
 
-    self.Header_file = file_path
+    # Parse file path
     Folder, File = os.path.split(file_path)
+    FileName, FileExtension = os.path.splitext(File)
+    self.Header_file = file_path
+    self.ImgName = FileName
 
     try:
       with open(self.Header_file,'r') as fid:
@@ -171,13 +179,23 @@ class MCsquare_sparse_format:
 
       
   def save(self, file_path):
+    self.Saved_beamlet_file = file_path
     with open(file_path, 'wb') as fid:
       pickle.dump(self.__dict__, fid)
 
 
 
-  def load(self, file_path):
+  def load(self, file_path=""):
+    if(file_path == ""):
+      file_path = self.Saved_beamlet_file
+      
     with open(file_path, 'rb') as fid:
       tmp = pickle.load(fid)
 
     self.__dict__.update(tmp) 
+
+
+
+  def unload(self):
+    self.Image = []
+    self.BeamletMatrix = []

@@ -237,7 +237,7 @@ class MCsquare:
 
 
   
-  def MCsquare_beamlet_calculation(self, CT, Plan):
+  def MCsquare_beamlet_calculation(self, CT, Plan, output_path):
     print("Prepare MCsquare beamlet calculation")
   
     self.init_simulation_directory()
@@ -283,24 +283,32 @@ class MCsquare:
     
     # Import sparse beamlets
     if(self.Robustness_Strategy == "Disabled"): 
-      beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose.txt")
+      input_beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose.txt")
       Beamlets = MCsquare_sparse_format()
-      Beamlets.import_Sparse_Beamlets(beamlet_file, Plan.BeamletRescaling)
+      Beamlets.import_Sparse_Beamlets(input_beamlet_file, Plan.BeamletRescaling)
+      output_beamlet_file = os.path.join(output_path, "BeamletMatrix_" + Plan.SeriesInstanceUID + ".blm")
+      Beamlets.save(output_beamlet_file)
+      Beamlets.unload()
+      Plan.beamlets = Beamlets
     else:
-      beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose_Nominal.txt")
+      input_beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose_Nominal.txt")
       Nominal = MCsquare_sparse_format()
-      Nominal.import_Sparse_Beamlets(beamlet_file, Plan.BeamletRescaling)
-      Beamlets = []
-      Beamlets.append(Nominal)
-      Scenarios = []
+      Nominal.import_Sparse_Beamlets(input_beamlet_file, Plan.BeamletRescaling)
+      output_beamlet_file = os.path.join(output_path, "BeamletMatrix_" + Plan.SeriesInstanceUID + "_Nominal.blm")
+      Nominal.save(output_beamlet_file)
+      Nominal.unload()
+      Plan.beamlets = Nominal
+      Plan.scenarios = []
       for s in range(NumScenarios):
-        beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose_Scenario_" + str(s+1) + "-" + str(NumScenarios) + ".txt")
+        input_beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose_Scenario_" + str(s+1) + "-" + str(NumScenarios) + ".txt")
         scenario = MCsquare_sparse_format()
-        scenario.import_Sparse_Beamlets(beamlet_file, Plan.BeamletRescaling)
-        Scenarios.append(scenario)
-      Beamlets.append(Scenarios)
+        scenario.import_Sparse_Beamlets(input_beamlet_file, Plan.BeamletRescaling)
+        output_beamlet_file = os.path.join(output_path, "BeamletMatrix_" + Plan.SeriesInstanceUID + "_Scenario_" + str(s+1) + "-" + str(Plan.NumScenarios) + ".blm")
+        scenario.save(output_beamlet_file)
+        scenario.unload()
+        Plan.scenarios.append(scenario)
+        Plan.NumScenarios += 1
 
-    return Beamlets
     
   
   

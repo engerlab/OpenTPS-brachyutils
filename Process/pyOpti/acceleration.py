@@ -152,7 +152,7 @@ class linesearch(dummy):
     eps : float
         (Optional) quit if norm of step produced is less than this
     """
-    def __init__(self, c1=5e-5,c2=0.8,eps=1e-8, **kwargs):
+    def __init__(self, c1=1e-4, c2=0.8, eps=1e-4, **kwargs):
         self.c1 = c1
         self.c2 = c2
         self.eps = eps
@@ -179,8 +179,9 @@ class linesearch(dummy):
           if fn1 < fn:
             fn = fn1
           else: # we passed the minimum
+            step /= self.c2
             self.c2 = (self.c2+1)/2 # reduce the step modifier
-            if 1-self.c2 < self.eps: break
+            if 1-self.c2 < 1e-4: break
 
           if step * len_p < self.eps:
             print('  Step is  too small, stop')
@@ -240,7 +241,6 @@ class linesearch_v2(dummy):
 
           if abs(step-step1) < self.eps: break
           if abs(step * len_p) < self.eps or step1 < 0: 
-            print(step)
             step = self.eps / len_p
             break
 

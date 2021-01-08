@@ -696,35 +696,35 @@ class MainWindow(QMainWindow):
       mhd_dose = mc2.BeamletFree_optimization(ct, plan, contours)
       dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct, plan)
 
-    # beamlet-based optimization with BFGS
-    elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based BFGS"):
-      if(plan.beamlets == []):
-        print("Error: beamlets must be pre-computed")
-        return
-      w, dose_vector, ps = OptimizeWeights(plan, contours, method="BFGS")
-      plan.beamlets.Weights = np.array(w, dtype=np.float32)
-      plan.update_spot_weights(w)
-      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 
-    # beamlet-based optimization with L-BFGS
-    elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based L-BFGS"):
+    # Beamlet-based optimization methods
+    else:
+      # check beamlets
       if(plan.beamlets == []):
         print("Error: beamlets must be pre-computed")
         return
-      w, dose_vector, ps = OptimizeWeights(plan, contours, method="L-BFGS")
-      plan.beamlets.Weights = np.array(w, dtype=np.float32)
-      plan.update_spot_weights(w)
-      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 
-    # beamlet-based optimization with FISTA
-    elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based FISTA"):
-      if(plan.beamlets == []):
-        print("Error: beamlets must be pre-computed")
-        return
-      w, dose_vector, ps = OptimizeWeights(plan, contours, method="FISTA")
-      plan.beamlets.Weights = np.array(w, dtype=np.float32)
-      plan.update_spot_weights(w)
-      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)  
+      # beamlet-based optimization with BFGS
+      if(self.toolbox_5_Algorithm.currentText() == "Beamlet-based BFGS"):
+        w, dose_vector, ps = OptimizeWeights(plan, contours, method="BFGS")
+        plan.beamlets.Weights = np.array(w, dtype=np.float32)
+        plan.update_spot_weights(w)
+        dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
+
+      # beamlet-based optimization with L-BFGS
+      elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based L-BFGS"):
+        w, dose_vector, ps = OptimizeWeights(plan, contours, method="L-BFGS")
+        plan.beamlets.Weights = np.array(w, dtype=np.float32)
+        plan.update_spot_weights(w)
+        dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
+
+      # beamlet-based optimization with FISTA
+      elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based FISTA"):
+        w, dose_vector, ps = OptimizeWeights(plan, contours, method="FISTA")
+        plan.beamlets.Weights = np.array(w, dtype=np.float32)
+        plan.update_spot_weights(w)
+        dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)  
+
 
     # add dose image in the database
     self.Patients.list[plan_patient_id].RTdoses.append(dose)
@@ -882,30 +882,6 @@ class MainWindow(QMainWindow):
     # import plan
     plan = RTplan()
     plan.load(file_path)
-
-    # import beamlets
-    Folder, File = os.path.split(file_path)
-    if(plan.RobustOpti["Strategy"] == 'Disabled'): 
-      beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
-      if(os.path.isfile(beamlet_file)):
-        beamlets = MCsquare_sparse_format()
-        beamlets.load(beamlet_file)
-        beamlets.print_memory_usage()
-        plan.beamlets = beamlets
-    else:
-      beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Nominal.blm")
-      if(os.path.isfile(beamlet_file)):
-        beamlets = MCsquare_sparse_format()
-        beamlets.load(beamlet_file)
-        beamlets.print_memory_usage()
-        plan.beamlets = beamlets
-      for s in range(plan.NumScenarios):
-        beamlet_file = os.path.join(Folder, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Scenario_" + str(s+1) + "-" + str(plan.NumScenarios) + ".blm")
-        if(os.path.isfile(beamlet_file)):
-          beamlets = MCsquare_sparse_format()
-          beamlets.load(beamlet_file)
-          beamlets.print_memory_usage()
-          plan.scenarios.append(beamlets)
       
     # add plan to list
     self.Patients.list[patient_id].Plans.append(plan)
@@ -951,34 +927,18 @@ class MainWindow(QMainWindow):
       patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
       mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
     
-    # run MCsquare simulation
-    beamlets = mc2.MCsquare_beamlet_calculation(ct, plan)
-
-    # save data
+    # output folder
     output_path = os.path.join(self.data_path, "OpenTPS")
     if not os.path.isdir(output_path):
       os.mkdir(output_path)
 
-    if(plan.RobustOpti["Strategy"] == 'Disabled'): 
-      plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-      plan.save(plan_file)
-      beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
-      beamlets.save(beamlet_file)
-      plan.beamlets = beamlets
-      
-    else:
-      plan.NumScenarios = len(beamlets[1])
-      plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-      plan.save(plan_file)
+    # run MCsquare simulation
+    mc2.MCsquare_beamlet_calculation(ct, plan, output_path)
 
-      plan.beamlets = beamlets[0]
-      beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Nominal.blm")
-      plan.beamlets.save(beamlet_file)
+    # save plan
+    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
+    plan.save(plan_file)
 
-      plan.scenarios = beamlets[1]
-      for s in range(plan.NumScenarios):
-        beamlet_file = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + "_Scenario_" + str(s+1) + "-" + str(plan.NumScenarios) + ".blm")
-        plan.scenarios[s].save(beamlet_file)
 
 
 

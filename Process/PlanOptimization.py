@@ -234,6 +234,29 @@ def ComputeIsocenter(Target_mask, CT):
 
 
 def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS", step=1.0, output=None, *args):
+  # initialize objective function and ROI masks
+  print("Initialize objective function ...")
+  plan.Objectives.initialize_objective_function(contours)
+  ROI_objectives = np.zeros(plan.beamlets.NbrVoxels).astype(bool)
+  ROI_robust_objectives = np.zeros(plan.beamlets.NbrVoxels).astype(bool)
+  robust = False
+  for objective in plan.Objectives.list:
+    if objective.Robust == True: 
+      robust = True
+      ROI_robust_objectives = np.logical_or(ROI_robust_objectives, objective.Mask_vec)
+    else:
+      ROI_objectives = np.logical_or(ROI_objectives, objective.Mask_vec)
+  ROI_objectives = np.logical_or(ROI_objectives, ROI_robust_objectives)
+
+  # reload beamlets and crop to optimization ROI
+  print("Load beamlets ...")
+  plan.beamlets.load()
+  plan.beamlets.BeamletMatrix = sparse_dot_mkl.dot_product_mkl( sp.diags(ROI_objectives.astype(np.float32), format='csc') , plan.beamlets.BeamletMatrix)
+  if(robust == True):
+    for s in range(len(plan.scenarios)):
+      plan.scenarios[s].load()
+      plan.scenarios[s].BeamletMatrix = sparse_dot_mkl.dot_product_mkl( sp.diags(ROI_robust_objectives.astype(np.float32), format='csc') , plan.scenarios[s].BeamletMatrix)
+
   # Total Dose calculation
   Weights = np.ones((plan.beamlets.NbrSpots), dtype=np.float32)
   if use_MKL == 1:
@@ -247,7 +270,6 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
   x0 = np.sqrt(plan.Objectives.TargetPrescription/maxDose) * np.ones((plan.beamlets.NbrSpots), dtype=np.float32)
 
   # Callable functions
-  plan.Objectives.initialize_objective_function(contours)
   f = lambda x, beamlets=plan.beamlets.BeamletMatrix, scenarios=plan.scenarios: plan.Objectives.compute_objective_function(x, beamlets, ScenariosBL=scenarios)
   g = lambda x, beamlets=plan.beamlets.BeamletMatrix, scenarios=plan.scenarios: plan.Objectives.compute_OF_gradient(x, beamlets, ScenariosBL=scenarios)
 
@@ -256,11 +278,6 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
   f1._eval = f
   f1._grad = g
   f2 = functions.dummy()
-
-  # Need robust optimization?
-  robust = False
-  for objective in plan.Objectives.list:
-    if objective.Robust == True: robust = True
 
   # Optimization methods
   if method=="Scipy-lBFGS":
@@ -311,10 +328,19 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
     cost = f(x)
   Weights = np.square(x).astype(np.float32)
 
+  # unload scenario beamlets
+  for s in range(len(plan.scenarios)):
+    plan.scenarios[s].unload()
+
+  # total dose
+  print("Total dose calculation ...")
+  plan.beamlets.load()
   if use_MKL == 1:
     TotalDose = sparse_dot_mkl.dot_product_mkl(plan.beamlets.BeamletMatrix, Weights)
   else:
     TotalDose = sp.csc_matrix.dot(plan.beamlets.BeamletMatrix, Weights)
+  plan.beamlets.unload()
+
 
   return Weights, TotalDose, cost
 
