@@ -303,7 +303,7 @@ class MCsquare:
         input_beamlet_file = os.path.join(self.WorkDir, "Outputs", "Sparse_Dose_Scenario_" + str(s+1) + "-" + str(NumScenarios) + ".txt")
         scenario = MCsquare_sparse_format()
         scenario.import_Sparse_Beamlets(input_beamlet_file, Plan.BeamletRescaling)
-        output_beamlet_file = os.path.join(output_path, "BeamletMatrix_" + Plan.SeriesInstanceUID + "_Scenario_" + str(s+1) + "-" + str(Plan.NumScenarios) + ".blm")
+        output_beamlet_file = os.path.join(output_path, "BeamletMatrix_" + Plan.SeriesInstanceUID + "_Scenario_" + str(s+1) + "-" + str(NumScenarios) + ".blm")
         scenario.save(output_beamlet_file)
         scenario.unload()
         Plan.scenarios.append(scenario)

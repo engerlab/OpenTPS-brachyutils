@@ -303,7 +303,7 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
   elif method=="BFGS":
     print ('\n======= Broyden-Fletcher-Goldfarb-Shanno ======\n')
     if(robust == False or plan.scenarios == []): accel = acceleration.linesearch()
-    else: accel = acceleration.linesearch_v2()
+    else: accel = acceleration.linesearch()
     solver = solvers.bfgs(accel=accel, step = step)
     ret = solvers.solve([f1,f2],x0,plan,solver,atol=1e-5,rtol = 1e-5, maxit=maxIter, verbosity='ALL', output=output)
     x = ret['sol']
@@ -314,7 +314,7 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
   elif method=="L-BFGS":
     print ('\n======= Limited Memory Broyden-Fletcher-Goldfarb-Shanno ======\n')
     if(robust == False or plan.scenarios == []): accel = acceleration.linesearch()
-    else: accel = acceleration.linesearch_v2()
+    else: accel = acceleration.linesearch()
     solver = solvers.lbfgs(accel=accel, step = step)
     ret = solvers.solve([f1,f2],x0,plan, solver,atol=1e-5,rtol = 1e-5, maxit=maxIter, verbosity='ALL',output=output)
     x = ret['sol']
