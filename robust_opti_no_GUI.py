@@ -32,6 +32,10 @@ mc2.BDL.selected_BDL = mc2.BDL.list[1] # UMCG_P1_v2_RangeShifter
 mc2.Scanner.selected_Scanner = mc2.Scanner.list[0] # UCL_Toshiba
 mc2.NumProtons = 5e4
 mc2.dose2water = True
+mc2.SetupSystematicError = [5.0, 5.0, 5.0] # mm
+mc2.SetupRandomError = [0.0, 0.0, 0.0] # mm (sigma)
+mc2.RangeSystematicError = 3.0 # %
+mc2.Robustness_Strategy = "ErrorSpace_regular"
 
 # Plan parameters:
 ct = Patients.list[0].CTimages[0]
@@ -40,15 +44,18 @@ OAR = Patients.list[0].RTstructs[0].Contours[6] # 4="Rectum", 6="Vessie"
 BeamNames = ["Beam1", "Beam2"]
 GantryAngles = [90., 270.]
 CouchAngles = [0., 0.]
+SpotSpacing = 7.0
+LayerSpacing = 6.0
+RTV_margin = max(SpotSpacing, LayerSpacing) + max(mc2.SetupSystematicError)
     
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "NewPlan.tps")
+plan_file = os.path.join(output_path, "RobustPlan.tps")
 if os.path.isfile(plan_file):
   plan = RTplan()
   plan.load(plan_file)
 else:
-  plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, mc2.Scanner.selected_Scanner) # Spot placement
-  plan.PlanName = "NewPlan"
+  plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, mc2.Scanner.selected_Scanner, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing) # Spot placement
+  plan.PlanName = "RobustPlan"
   mc2.MCsquare_beamlet_calculation(ct, plan, output_path)
   plan.save(plan_file)
 Patients.list[0].Plans.append(plan)
@@ -56,8 +63,8 @@ Patients.list[0].Plans.append(plan)
 # optimization objectives
 plan.Objectives.setTarget(Target.ROIName, 60.0)
 plan.Objectives.list = []
-plan.Objectives.addObjective(Target.ROIName, "Dmax", "<", 60.0, 5.0)
-plan.Objectives.addObjective(Target.ROIName, "Dmin", ">", 60.0, 5.0)
+plan.Objectives.addObjective(Target.ROIName, "Dmax", "<", 60.0, 5.0, Robust=True)
+plan.Objectives.addObjective(Target.ROIName, "Dmin", ">", 60.0, 5.0, Robust=True)
 plan.Objectives.addObjective(OAR.ROIName, "Dmax", "<", 50.0, 1.0)
 plan.Objectives.addObjective(OAR.ROIName, "Dmean", "<", 25.0, 1.0)
 
@@ -89,7 +96,7 @@ plt.title("Pre-optimization DVH")
 # Optimize treatment plan
 w, dose_vector, ps = OptimizeWeights(plan, Patients.list[0].RTstructs[0].Contours, method="Scipy-lBFGS")
 dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
-plan_file = os.path.join(output_path, "NewPlan_optimized.tps")
+plan_file = os.path.join(output_path, "RobustPlan_optimized.tps")
 plan.save(plan_file)
 
 # Compute DVH

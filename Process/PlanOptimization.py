@@ -232,7 +232,6 @@ def ComputeIsocenter(Target_mask, CT):
   return [np.mean(CT.VoxelX[maskX]), np.mean(CT.VoxelY[maskY]), np.mean(CT.VoxelZ[maskZ])]
 
 
-
 def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS", step=1.0, output=None, *args):
   # initialize objective function and ROI masks
   print("Initialize objective function ...")
@@ -326,6 +325,7 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
   except KeyError:
     # scipy syntax
     cost = f(x)
+
   Weights = np.square(x).astype(np.float32)
 
   # unload scenario beamlets
@@ -334,12 +334,8 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
 
   # total dose
   print("Total dose calculation ...")
-  plan.beamlets.load()
-  if use_MKL == 1:
-    TotalDose = sparse_dot_mkl.dot_product_mkl(plan.beamlets.BeamletMatrix, Weights)
-  else:
-    TotalDose = sp.csc_matrix.dot(plan.beamlets.BeamletMatrix, Weights)
-  plan.beamlets.unload()
+  plan.update_spot_weights(Weights)
+  TotalDose = plan.beamlets.Compute_dose_from_beamlets(Weights)
 
 
   return Weights, TotalDose, cost

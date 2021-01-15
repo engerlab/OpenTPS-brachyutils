@@ -27,7 +27,7 @@ class MCsquare:
     self.dose2water = 1
     self.PlanOptimization = "none" # possible options: none, beamlet-free
     self.config = {}
-    self.Robustness_Strategy = "DoseSpace"
+    self.Robustness_Strategy = "Disabled"
     self.SetupSystematicError = [2.5, 2.5, 2.5] # mm
     self.SetupRandomError = [1.0, 1.0, 1.0] # mm
     self.RangeSystematicError = 3.0 # %

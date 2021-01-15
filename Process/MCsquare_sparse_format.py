@@ -8,6 +8,12 @@ import pickle
 import datetime
 import struct
 
+try:
+  import sparse_dot_mkl
+  use_MKL = 1
+except:
+  use_MKL = 0
+
 class MCsquare_sparse_format:
   
   def __init__(self):
@@ -175,6 +181,21 @@ class MCsquare_sparse_format:
       print("Data format: " + str(self.BeamletMatrix.dtype))
       print("Memory usage: " + str(mat_size / 1024**3) + " GB")
       print(" ")
+
+
+
+  def Compute_dose_from_beamlets(self, Weights=[]):
+    self.load()
+
+    if Weights == []:
+      Weights = self.Weights
+
+    if use_MKL == 1:
+      TotalDose = sparse_dot_mkl.dot_product_mkl(self.BeamletMatrix, Weights)
+    else:
+      TotalDose = sp.csc_matrix.dot(self.BeamletMatrix, Weights)
+    self.unload()
+    return TotalDose
 
 
       

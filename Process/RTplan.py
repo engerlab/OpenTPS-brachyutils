@@ -335,7 +335,7 @@ class RTplan:
 
     with open(file_path, 'wb') as fid:
       pickle.dump(self.__dict__, fid)
-      
+
     self.OriginalDicomDataset = dcm
 
 
