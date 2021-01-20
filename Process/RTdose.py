@@ -80,12 +80,13 @@ class RTdose:
     self.FrameOfReferenceUID = dcm.FrameOfReferenceUID
     self.ImagePositionPatient = dcm.ImagePositionPatient
     self.PixelSpacing = [float(dcm.PixelSpacing[0]), float(dcm.PixelSpacing[1]), SliceThickness]
-    self.GridSize = [dcm.Columns, dcm.Rows, int(dcm.NumberOfFrames)]
+    #self.GridSize = [dcm.Columns, dcm.Rows, int(dcm.NumberOfFrames)]
+    self.GridSize = list(self.Image.shape)
     self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
     
-    self.OriginalImagePositionPatient = self.ImagePositionPatient
-    self.OriginalPixelSpacing = self.PixelSpacing
-    self.OriginalGridSize = self.GridSize
+    self.OriginalImagePositionPatient = list(self.ImagePositionPatient)
+    self.OriginalPixelSpacing = list(self.PixelSpacing)
+    self.OriginalGridSize = list(self.GridSize)
         
     if hasattr(dcm, 'GridFrameOffsetVector'):
       if(dcm.GridFrameOffsetVector[1] - dcm.GridFrameOffsetVector[0] < 0):
@@ -126,14 +127,14 @@ class RTdose:
     self.SOPInstanceUID = pydicom.uid.generate_uid()
     self.SeriesInstanceUID = self.SOPInstanceUID + ".1"
     
-    self.ImagePositionPatient = mhd_dose.ImagePositionPatient
-    self.PixelSpacing = mhd_dose.PixelSpacing
-    self.GridSize = mhd_dose.GridSize
+    self.ImagePositionPatient = list(mhd_dose.ImagePositionPatient)
+    self.PixelSpacing = list(mhd_dose.PixelSpacing)
+    self.GridSize = list(mhd_dose.GridSize)
     self.NumVoxels = mhd_dose.NumVoxels
     
-    self.OriginalImagePositionPatient = self.ImagePositionPatient
-    self.OriginalPixelSpacing = self.PixelSpacing
-    self.OriginalGridSize = self.GridSize
+    self.OriginalImagePositionPatient = list(self.ImagePositionPatient)
+    self.OriginalPixelSpacing = list(self.PixelSpacing)
+    self.OriginalGridSize = list(self.GridSize)
     
     self.Image = mhd_dose.Image
     self.resample_to_CT_grid(CT)
@@ -154,14 +155,14 @@ class RTdose:
     self.SOPInstanceUID = pydicom.uid.generate_uid()
     self.SeriesInstanceUID = self.SOPInstanceUID + ".1"
     
-    self.ImagePositionPatient = beamlets.Offset
-    self.PixelSpacing = beamlets.VoxelSpacing
-    self.GridSize = beamlets.ImageSize
+    self.ImagePositionPatient = list(beamlets.Offset)
+    self.PixelSpacing = list(beamlets.VoxelSpacing)
+    self.GridSize = list(beamlets.ImageSize)
     self.NumVoxels = beamlets.NbrVoxels
     
-    self.OriginalImagePositionPatient = self.ImagePositionPatient
-    self.OriginalPixelSpacing = self.PixelSpacing
-    self.OriginalGridSize = self.GridSize
+    self.OriginalImagePositionPatient = list(self.ImagePositionPatient)
+    self.OriginalPixelSpacing = list(self.PixelSpacing)
+    self.OriginalGridSize = list(self.GridSize)
         
     self.Image = np.reshape(dose_vector, self.GridSize, order='F')
     self.Image = np.flip(self.Image, (0,1)).transpose(1,0,2)
@@ -198,22 +199,22 @@ class RTdose:
       self.Image = scipy.ndimage.gaussian_filter(self.Image, sigma)
     
     # resampling    
-    Init_GridSize = [self.GridSize[1], self.GridSize[0], self.GridSize[2]]
+    Init_GridSize = list(self.GridSize)
 
-    interp_x = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[1])*PixelSpacing[1]) / self.PixelSpacing[1]
-    interp_y = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[0])*PixelSpacing[0]) / self.PixelSpacing[0]
+    interp_x = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[1])*PixelSpacing[0]) / self.PixelSpacing[0]
+    interp_y = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[0])*PixelSpacing[1]) / self.PixelSpacing[1]
     interp_z = (Offset[2] - self.ImagePositionPatient[2] + np.arange(GridSize[2])*PixelSpacing[2]) / self.PixelSpacing[2]
   
-    xi = np.array(np.meshgrid(interp_x, interp_y, interp_z))
+    xi = np.array(np.meshgrid(interp_y, interp_x, interp_z))
     xi = np.rollaxis(xi, 0, 4)
     xi = xi.reshape((xi.size // 3, 3))
   
     self.Image = Trilinear_Interpolation(self.Image, Init_GridSize, xi)
-    self.Image = self.Image.reshape((GridSize[0], GridSize[1], GridSize[2])).transpose(1,0,2)
+    self.Image = self.Image.reshape((GridSize[1], GridSize[0], GridSize[2])).transpose(1,0,2)
   
-    self.ImagePositionPatient = Offset
-    self.PixelSpacing = PixelSpacing
-    self.GridSize = GridSize
+    self.ImagePositionPatient = list(Offset)
+    self.PixelSpacing = list(PixelSpacing)
+    self.GridSize = list(GridSize)
     self.NumVoxels = GridSize[0] * GridSize[1] * GridSize[2]  
 
 
@@ -232,14 +233,14 @@ class RTdose:
     dose.PatientInfo = self.PatientInfo
     dose.StudyInfo = self.StudyInfo
     
-    dose.ImagePositionPatient = self.ImagePositionPatient
-    dose.PixelSpacing = self.PixelSpacing
-    dose.GridSize = self.GridSize
+    dose.ImagePositionPatient = list(self.ImagePositionPatient)
+    dose.PixelSpacing = list(self.PixelSpacing)
+    dose.GridSize = list(self.GridSize)
     dose.NumVoxels = self.NumVoxels
     
-    dose.OriginalImagePositionPatient = self.OriginalImagePositionPatient
-    dose.OriginalPixelSpacing = self.OriginalPixelSpacing
-    dose.OriginalGridSize = self.OriginalGridSize
+    dose.OriginalImagePositionPatient = list(self.OriginalImagePositionPatient)
+    dose.OriginalPixelSpacing = list(self.OriginalPixelSpacing)
+    dose.OriginalGridSize = list(self.OriginalGridSize)
     
     dose.Image = self.Image.copy()
     
@@ -305,9 +306,9 @@ class RTdose:
     # dcm_file.OperatorName
 
     # image information
-    dcm_file.Width = self.GridSize[0]
+    dcm_file.Width = self.GridSize[1]
     dcm_file.Columns = dcm_file.Width
-    dcm_file.Height = self.GridSize[1]
+    dcm_file.Height = self.GridSize[0]
     dcm_file.Rows = dcm_file.Height
     dcm_file.NumberOfFrames = self.GridSize[2]
     dcm_file.SliceThickness = self.PixelSpacing[2]

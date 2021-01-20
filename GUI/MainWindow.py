@@ -20,6 +20,7 @@ from Process.MCsquare import *
 from Process.MCsquare_plan import *
 from Process.MCsquare_sparse_format import *
 from Process.PlanOptimization import *
+from Process.Registration import *
 from Process.DeepLearning_denoising.Denoise_MC_dose import *
 
 class MainWindow(QMainWindow):
@@ -45,7 +46,7 @@ class MainWindow(QMainWindow):
     # initialize the main window
     QMainWindow.__init__(self)
     self.setWindowTitle('OpenTPS')
-    self.resize(1400, 900)
+    self.resize(1400, 920)
     self.main_layout = QHBoxLayout()
     self.central_Widget = QWidget()
     self.central_Widget.setLayout(self.main_layout)
@@ -355,6 +356,42 @@ class MainWindow(QMainWindow):
     self.toolbox_6_Prescription.valueChanged.connect(self.recompute_robustness_analysis)
     self.update_robust_eval_settings()
     self.recompute_robustness_analysis()
+
+    # initialize the 7th toolbox panel (Image registration)
+    self.toolbox_7 = QWidget()
+    self.toolbox_main.addItem(self.toolbox_7, 'Image registration')
+    self.toolbox_7_layout = QVBoxLayout()
+    self.toolbox_7.setLayout(self.toolbox_7_layout)
+    self.toolbox_7_layout.addWidget(QLabel('<b>Fixed image:</b>'))
+    self.toolbox_7_Fixed = QComboBox()
+    self.toolbox_7_Fixed.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_7_layout.addWidget(self.toolbox_7_Fixed)
+    self.toolbox_7_layout.addSpacing(15)
+    self.toolbox_7_layout.addWidget(QLabel('<b>Moving image:</b>'))
+    self.toolbox_7_Moving = QComboBox()
+    self.toolbox_7_Moving.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_7_layout.addWidget(self.toolbox_7_Moving)
+    self.toolbox_7_layout.addSpacing(15)
+    self.toolbox_7_layout.addWidget(QLabel('<b>Registration algorithm:</b>'))
+    self.toolbox_7_Algorithm = QComboBox()
+    self.toolbox_7_Algorithm.addItem("Quick translation search")
+    self.toolbox_7_Algorithm.addItem("Rigid registration")
+    self.toolbox_7_Algorithm.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_7_layout.addWidget(self.toolbox_7_Algorithm)
+    self.toolbox_7_layout.addSpacing(15)
+    self.toolbox_7_layout.addWidget(QLabel('<b>Region of Interest:</b>'))
+    self.toolbox_7_ROI = QComboBox()
+    self.toolbox_7_ROI.addItem("Entire image")
+    self.toolbox_7_ROI.setMaximumWidth(self.toolbox_width-18)
+    self.toolbox_7_layout.addWidget(self.toolbox_7_ROI)
+    self.toolbox_7_layout.addSpacing(30)
+    self.toolbox_7_RegisterButton = QPushButton('Register')
+    self.toolbox_7_layout.addWidget(self.toolbox_7_RegisterButton)
+    self.toolbox_7_RegisterButton.clicked.connect(self.register_images)
+    self.toolbox_7_layout.addStretch()
+    self.toolbox_7_Fixed.currentIndexChanged.connect(self.recompute_image_difference)
+    self.toolbox_7_Moving.currentIndexChanged.connect(self.recompute_image_difference)
+    self.toolbox_7_ROI.currentIndexChanged.connect(self.display_registration_ROI)
     
     # initialize the image viewer
     self.viewer_palette = QPalette()
@@ -478,14 +515,83 @@ class MainWindow(QMainWindow):
 
 
   def menu_changed(self, index):
+    # Robustness evaluation views
     if index == 5:
       if hasattr(self, 'toolbox_6_layout'):
         self.recompute_robustness_analysis()
+
+    # Image registration views
+    elif index == 6:
+      if hasattr(self, 'toolbox_7_layout'):
+        self.recompute_image_difference()
+
+    # Normal views
     else:
-      if hasattr(self, 'toolbox_1_Dose_list') and self.toolbox_main.previous_index == 5:
+      if hasattr(self, 'toolbox_1_Dose_list') and hasattr(self, 'toolbox_1_CT_list') and self.toolbox_main.previous_index > 4:
+        self.Current_CT_changed(self.toolbox_1_CT_list.currentRow())
         self.Current_dose_changed(self.toolbox_1_Dose_list.currentRow())
 
     self.toolbox_main.previous_index = index
+
+
+
+  def recompute_image_difference(self):
+    if(self.toolbox_main.currentIndex() != 6): return
+
+    Fixed_id = self.toolbox_7_Fixed.currentIndex()
+    Moving_id = self.toolbox_7_Moving.currentIndex()
+    if(Fixed_id < 0 or Moving_id < 0): return
+
+    if(Fixed_id == Moving_id): return
+
+    ct_patient_id, ct_id = self.Patients.find_CT_image(Fixed_id)
+    fixed = self.Patients.list[ct_patient_id].CTimages[ct_id]
+    ct_patient_id, ct_id = self.Patients.find_CT_image(Moving_id)
+    moving = self.Patients.list[ct_patient_id].CTimages[ct_id]
+
+    reg = Registration(fixed, moving)
+    diff = reg.Image_difference(KeepFixedShape=False)
+
+    self.Viewer_CT = diff.prepare_image_for_viewer()
+    self.Viewer_Dose = np.array([])
+    self.Viewer_Contours = np.array([])
+
+    img_size = list(self.Viewer_CT.shape)
+    self.Viewer_axial_slice = round(img_size[2] / 2)
+    self.Viewer_coronal_slice = round(img_size[0] / 2)
+    self.Viewer_sagittal_slice = round(img_size[1] / 2)
+    self.Viewer_resolution = diff.PixelSpacing
+    self.Viewer_initialized = 1  
+
+    self.update_viewer('axial')
+    self.update_viewer('coronal')
+    self.update_viewer('sagittal')
+    self.display_registration_ROI()
+
+
+
+  def display_registration_ROI(self):
+    if(self.toolbox_7_ROI.currentText() == "Entire image"):
+      self.Viewer_Contours = np.array([])
+    else:
+      # compute ROI box shape
+      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_7_ROI.currentText())
+      ROI = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
+      reg = Registration()
+      reg.setROI(ROI)
+      start = reg.ROI_box[0]
+      stop = reg.ROI_box[1]
+
+      # display
+      img_size = list(self.Viewer_CT.shape)
+      self.Viewer_Contours = np.zeros((img_size[0], img_size[1], img_size[2], 4))
+      self.Viewer_Contours[:,:,:,2] = 255
+      self.Viewer_Contours[start[0]:stop[0], start[1]:stop[1], start[2]:stop[2], 3] = 255
+      self.Viewer_Contours[start[0]+1:stop[0]-1, start[1]+1:stop[1]-1, start[2]+1:stop[2]-1, 3] = 0
+
+    self.update_viewer('axial')
+    self.update_viewer('coronal')
+    self.update_viewer('sagittal')
 
 
 
@@ -633,7 +739,38 @@ class MainWindow(QMainWindow):
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+3, LimitValue)
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+4, Weight)
       self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+5, Robust)
-      
+
+
+
+  def register_images(self):
+    Fixed_id = self.toolbox_7_Fixed.currentIndex()
+    Moving_id = self.toolbox_7_Moving.currentIndex()
+    if(Fixed_id < 0 or Moving_id < 0): return
+
+    ct_patient_id, ct_id = self.Patients.find_CT_image(Fixed_id)
+    fixed = self.Patients.list[ct_patient_id].CTimages[ct_id]
+    ct_patient_id, ct_id = self.Patients.find_CT_image(Moving_id)
+    moving = self.Patients.list[ct_patient_id].CTimages[ct_id]
+
+    reg = Registration(fixed, moving)
+
+    if(self.toolbox_7_ROI.currentText() != "Entire image"):
+      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_7_ROI.currentText())
+      ROI = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
+      reg.setROI(ROI)
+
+    if(self.toolbox_7_Algorithm.currentText() == "Quick translation search"):
+      translation = reg.Quick_translation_search()
+    elif(self.toolbox_7_Algorithm.currentText() == "Rigid registration"):
+      translation = reg.Rigid_registration()
+    else:
+      translation = [0.0, 0.0, 0.0]
+
+    print(translation)
+    reg.Translate_origin(moving, translation)
+
+    self.recompute_image_difference()
+
       
     
   def optimize_plan(self):
@@ -1077,6 +1214,8 @@ class MainWindow(QMainWindow):
       if(okPressed):
         self.Patients.list[patient_id].CTimages[ct_id].ImgName = NewName
         self.toolbox_1_CT_list.item(row).setText(NewName)
+        self.toolbox_7_Fixed.setItemText(row, NewName)
+        self.toolbox_7_Moving.setItemText(row, NewName)
         
     elif(list_type == 'dose'):
       patient_id, dose_id = self.Patients.find_dose_image(row)
@@ -1101,6 +1240,8 @@ class MainWindow(QMainWindow):
       if(DeleteReply == QMessageBox.Yes):
         del self.Patients.list[patient_id].CTimages[ct_id]
         self.toolbox_1_CT_list.takeItem(row)
+        self.toolbox_7_Fixed.removeItem(row)
+        self.toolbox_7_Moving.removeItem(row)
         
     elif(list_type == 'dose'):
       patient_id, dose_id = self.Patients.find_dose_image(row)
@@ -1256,6 +1397,7 @@ class MainWindow(QMainWindow):
       
       for c in range(self.Patients.list[0].RTstructs[struct_id].NumContours):
         disp_id += 1
+        if(disp_id >= len(self.ROI_CheckBox)): break
         if(self.ROI_CheckBox[disp_id].isChecked() == False): continue
         #color = list(self.Patients.list[0].RTstructs[struct_id].Contours[c].ROIDisplayColor) + [255]
         #color = np.array(color).reshape(1,1,1,4)
@@ -1275,24 +1417,25 @@ class MainWindow(QMainWindow):
     
    
   def Current_CT_changed(self, currentRow):
+    if currentRow < 0: return
+
     patient_id, ct_id = self.Patients.find_CT_image(currentRow)
-    self.Viewer_image =  self.Patients.list[patient_id].CTimages[ct_id].prepare_image_for_viewer()
-    img_size = list(self.Viewer_image.shape)
+    self.Viewer_CT =  self.Patients.list[patient_id].CTimages[ct_id].prepare_image_for_viewer()
+    img_size = list(self.Viewer_CT.shape)
     
-    if(self.Viewer_initialized != 1):
-      self.Viewer_axial_slice = round(img_size[2] / 2)
-      self.Viewer_coronal_slice = round(img_size[0] / 2)
-      self.Viewer_sagittal_slice = round(img_size[1] / 2)
-      self.Viewer_resolution = self.Patients.list[patient_id].CTimages[ct_id].PixelSpacing
-      self.Viewer_initialized = 1  
-      
-    self.update_viewer('axial')
-    self.update_viewer('coronal')
-    self.update_viewer('sagittal')
+    self.Viewer_axial_slice = round(img_size[2] / 2)
+    self.Viewer_coronal_slice = round(img_size[0] / 2)
+    self.Viewer_sagittal_slice = round(img_size[1] / 2)
+    self.Viewer_resolution = self.Patients.list[patient_id].CTimages[ct_id].PixelSpacing
+    self.Viewer_initialized = 1  
+
+    self.Current_contours_changed()
   
   
   
   def Current_dose_changed(self, currentRow):
+    if currentRow < 0: return
+
     if(currentRow > -1):
       patient_id, dose_id = self.Patients.find_dose_image(currentRow)
       self.Viewer_Dose = self.Patients.list[patient_id].RTdoses[dose_id].prepare_image_for_viewer()
@@ -1315,7 +1458,7 @@ class MainWindow(QMainWindow):
       
     numDegrees = event.angleDelta().y() / 8
     numSteps = numDegrees / 15
-    img_size = self.Viewer_image.shape
+    img_size = self.Viewer_CT.shape
       
     if(self.viewer_axial.underMouse()):
       self.Viewer_axial_slice += numSteps 
@@ -1386,9 +1529,9 @@ class MainWindow(QMainWindow):
     else: Yscaling = self.Viewer_resolution[2] / self.Viewer_resolution[0]
             
     # paint CT image
-    if(view == 'axial'): img_data = self.Viewer_image[:,:,round(self.Viewer_axial_slice)]
-    elif(view == 'sagittal'): img_data = np.flip(np.transpose(self.Viewer_image[:,round(self.Viewer_sagittal_slice),:], (1,0)), 0)
-    else: img_data = np.flip(np.transpose(self.Viewer_image[round(self.Viewer_coronal_slice),:,:], (1,0)), 0)
+    if(view == 'axial'): img_data = self.Viewer_CT[:,:,round(self.Viewer_axial_slice)]
+    elif(view == 'sagittal'): img_data = np.flip(np.transpose(self.Viewer_CT[:,round(self.Viewer_sagittal_slice),:], (1,0)), 0)
+    else: img_data = np.flip(np.transpose(self.Viewer_CT[round(self.Viewer_coronal_slice),:,:], (1,0)), 0)
     img_data = np.require(img_data, np.uint8, 'C')
     img_size = img_data.shape
     CTimage = QImage(img_data, img_size[1], img_size[0], img_data.strides[0], QImage.Format_Indexed8)
@@ -1452,19 +1595,19 @@ class MainWindow(QMainWindow):
     # resize image to window scale and display
     if(view == 'axial'): 
       if(self.viewer_axial.width()/img_size[1] < self.viewer_axial.height()/(Yscaling*img_size[0])):
-        self.viewer_axial.setPixmap(QPixmap.fromImage(MergedImage).scaledToWidth(self.viewer_axial.width()-10))
+        self.viewer_axial.setPixmap(QPixmap.fromImage(MergedImage).scaledToWidth(self.viewer_axial.width()-10, mode=Qt.SmoothTransformation))
       else:
-        self.viewer_axial.setPixmap(QPixmap.fromImage(MergedImage).scaledToHeight(self.viewer_axial.height()-10))
+        self.viewer_axial.setPixmap(QPixmap.fromImage(MergedImage).scaledToHeight(self.viewer_axial.height()-10, mode=Qt.SmoothTransformation))
     elif(view == 'sagittal'): 
       if(self.viewer_sagittal.width()/img_size[1] < self.viewer_sagittal.height()/(Yscaling*img_size[0])):
-        self.viewer_sagittal.setPixmap(QPixmap.fromImage(MergedImage).scaledToWidth(self.viewer_sagittal.width()-10))
+        self.viewer_sagittal.setPixmap(QPixmap.fromImage(MergedImage).scaledToWidth(self.viewer_sagittal.width()-10, mode=Qt.SmoothTransformation))
       else:
-        self.viewer_sagittal.setPixmap(QPixmap.fromImage(MergedImage).scaledToHeight(self.viewer_sagittal.height()-10))
+        self.viewer_sagittal.setPixmap(QPixmap.fromImage(MergedImage).scaledToHeight(self.viewer_sagittal.height()-10, mode=Qt.SmoothTransformation))
     else: 
       if(self.viewer_coronal.width()/img_size[1] < self.viewer_coronal.height()/(Yscaling*img_size[0])):
-        self.viewer_coronal.setPixmap(QPixmap.fromImage(MergedImage).scaledToWidth(self.viewer_coronal.width()-10))
+        self.viewer_coronal.setPixmap(QPixmap.fromImage(MergedImage).scaledToWidth(self.viewer_coronal.width()-10, mode=Qt.SmoothTransformation))
       else:
-        self.viewer_coronal.setPixmap(QPixmap.fromImage(MergedImage).scaledToHeight(self.viewer_coronal.height()-10))
+        self.viewer_coronal.setPixmap(QPixmap.fromImage(MergedImage).scaledToHeight(self.viewer_coronal.height()-10, mode=Qt.SmoothTransformation))
     
 
 
@@ -1479,6 +1622,8 @@ class MainWindow(QMainWindow):
     for ct in self.Patients.list[0].CTimages:
       if(ct.isLoaded == 1):
         self.toolbox_1_CT_list.addItem(ct.ImgName)
+        self.toolbox_7_Fixed.addItem(ct.ImgName)
+        self.toolbox_7_Moving.addItem(ct.ImgName)
     self.toolbox_1_CT_list.setCurrentRow(self.toolbox_1_CT_list.count()-1)
     
     # display dose distributions
@@ -1520,6 +1665,7 @@ class MainWindow(QMainWindow):
         self.toolbox_4_Target.addItem(contour.ROIName)
         self.toolbox_5_Target.addItem(contour.ROIName)
         self.toolbox_6_Target.addItem(contour.ROIName)
+        self.toolbox_7_ROI.addItem(contour.ROIName)
         
     self.toolbox_2_layout.addStretch()
     

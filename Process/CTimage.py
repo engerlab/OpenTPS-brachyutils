@@ -2,6 +2,7 @@ import pydicom
 import numpy as np
 
 from Process.MHD_image import *
+from Process.C_libraries.libInterp3_wrapper import *
 
 class CTimage:
 
@@ -88,7 +89,68 @@ class CTimage:
     img_min = self.Image.min()
     #img_max = self.Image.max()
     img_max = np.percentile(self.Image, 99.995)
-    img = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
+    img = 255 * (self.Image - img_min) / (img_max - img_min + 1e-5) # normalize data betwee, 0 and 255
     img[img>255] = 255
     return img
+
+
+
+  def copy(self):
+    img = CTimage()
+
+    img.ImgName = self.ImgName
+    img.SeriesInstanceUID = self.SeriesInstanceUID + ".1"
+    img.FrameOfReferenceUID = self.FrameOfReferenceUID
+    img.PatientInfo = self.PatientInfo
+    img.StudyInfo = self.StudyInfo
+    img.DcmFiles = self.DcmFiles
+    img.isLoaded = self.DcmFiles
+    
+    img.ImagePositionPatient = list(self.ImagePositionPatient)
+    img.PixelSpacing = list(self.PixelSpacing)
+    img.GridSize = list(self.GridSize)
+    img.NumVoxels = self.NumVoxels
+    img.SOPInstanceUIDs = self.SOPInstanceUIDs
+    img.VoxelX = self.VoxelX.copy()
+    img.VoxelY = self.VoxelY.copy()
+    img.VoxelZ = self.VoxelZ.copy()
+
+    img.Image = self.Image.copy()
+
+    return img
+
+
+
+  def resample_image(self, GridSize, Offset, PixelSpacing):
+    # anti-aliasing filter
+    sigma = [0, 0, 0]
+    if(PixelSpacing[0] > self.PixelSpacing[0]): sigma[0] = 0.4 * (PixelSpacing[0]/self.PixelSpacing[0])
+    if(PixelSpacing[1] > self.PixelSpacing[1]): sigma[1] = 0.4 * (PixelSpacing[1]/self.PixelSpacing[1])
+    if(PixelSpacing[2] > self.PixelSpacing[2]): sigma[2] = 0.4 * (PixelSpacing[2]/self.PixelSpacing[2])
+    if(sigma != [0, 0, 0]):
+      print("Image is filtered before downsampling")
+      self.Image = scipy.ndimage.gaussian_filter(self.Image, sigma)
+    
+    # resampling    
+    Init_GridSize = list(self.GridSize)
+
+    interp_x = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[1])*PixelSpacing[0]) / self.PixelSpacing[0]
+    interp_y = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[0])*PixelSpacing[1]) / self.PixelSpacing[1]
+    interp_z = (Offset[2] - self.ImagePositionPatient[2] + np.arange(GridSize[2])*PixelSpacing[2]) / self.PixelSpacing[2]
+  
+    xi = np.array(np.meshgrid(interp_y, interp_x, interp_z))
+    xi = np.rollaxis(xi, 0, 4)
+    xi = xi.reshape((xi.size // 3, 3))
+  
+    self.Image = Trilinear_Interpolation(self.Image, Init_GridSize, xi, fill_value=-1000)
+    self.Image = self.Image.reshape((GridSize[1], GridSize[0], GridSize[2])).transpose(1,0,2)
+  
+    self.ImagePositionPatient = list(Offset)
+    self.PixelSpacing = list(PixelSpacing)
+    self.GridSize = list(GridSize)
+    self.NumVoxels = GridSize[0] * GridSize[1] * GridSize[2]  
+
+    self.VoxelX = self.ImagePositionPatient[0] + np.arange(self.GridSize[0])*self.PixelSpacing[0]
+    self.VoxelY = self.ImagePositionPatient[1] + np.arange(self.GridSize[1])*self.PixelSpacing[1]
+    self.VoxelZ = self.ImagePositionPatient[2] + np.arange(self.GridSize[2])*self.PixelSpacing[2]
     

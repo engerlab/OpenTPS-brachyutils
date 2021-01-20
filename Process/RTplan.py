@@ -243,6 +243,7 @@ class RTplan:
       for layer in beam.Layers:
 
         range_in_water = SPR.energyToRange(layer.NominalBeamEnergy)*10
+        if(layer.RangeShifterSetting == 'IN' and layer.RangeShifterWaterEquivalentThickness > 0.0): range_in_water -= layer.RangeShifterWaterEquivalentThickness
 
         for s in range(len(layer.ScanSpotPositionMap_x)):
           
@@ -270,7 +271,7 @@ class RTplan:
           Translation[0] = (x - CTborders_x[int(u<0)]) / u
           Translation[1] = (y - CTborders_y[int(v<0)]) / v
           Translation[2] = (z - CTborders_z[int(w<0)]) / w
-          Translation = Translation.min()
+          Translation = Translation[np.argmin(np.absolute(Translation))]
           x = x - Translation * u
           y = y - Translation * v
           z = z - Translation * w
