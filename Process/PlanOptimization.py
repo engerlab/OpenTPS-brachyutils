@@ -18,7 +18,7 @@ from Process.pyOpti import functions,solvers,acceleration
 
 
 
-def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RTV_margin = 7.0, SpotSpacing = 7.0, LayerSpacing = 6.0):
+def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RangeShifters=[], RTV_margin = 7.0, SpotSpacing = 7.0, LayerSpacing = 6.0):
   start = time.time()
 
   plan = RTplan()
@@ -59,11 +59,14 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
     plan.Beams[b].IsocenterPosition = IsoCenter
     plan.Beams[b].SpotSpacing = SpotSpacing
     plan.Beams[b].LayerSpacing = LayerSpacing
+    if(RangeShifters != [] and RangeShifters[b] != "None"):
+      plan.Beams[b].RangeShifterID = RangeShifters[b].ID
+      plan.Beams[b].RangeShifterType = RangeShifters[b].type
 
   # spot placement
-  plan = SpotPlacement(plan, CT, RTV_mask, Scanner)
+  plan = SpotPlacement(plan, CT, RTV_mask, Scanner, RangeShifters=RangeShifters)
 
-  previous_energy = 999
+  #previous_energy = 999
   for beam in plan.Beams:
     beam.Layers.sort(reverse=True, key=(lambda element: element.NominalBeamEnergy))
 
@@ -90,7 +93,7 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
 
 
 
-def SpotPlacement(plan, CT, Target_mask, Scanner):
+def SpotPlacement(plan, CT, Target_mask, Scanner, RangeShifters=[]):
 
   SPR = SPRimage()
   SPR.convert_CT_to_SPR(CT, Scanner)
@@ -101,7 +104,9 @@ def SpotPlacement(plan, CT, Target_mask, Scanner):
 
   plan.NumberOfSpots = 0
 
-  for beam in plan.Beams:
+  for b in range(len(plan.Beams)):
+    beam = plan.Beams[b]
+
     # generate hexagonal spot grid around isocenter
     SpotGrid = generate_hexagonal_SpotGrid(beam.IsocenterPosition, beam.SpotSpacing, beam.GantryAngle, beam.PatientSupportAngle)
     NumSpots = len(SpotGrid["x"])
@@ -135,7 +140,9 @@ def SpotPlacement(plan, CT, Target_mask, Scanner):
         SpotGrid["y"].pop(s)
         SpotGrid["z"].pop(s)
         SpotGrid["WET"].pop(s)
-      elif(SpotGrid["WET"][s] < minWET): minWET = SpotGrid["WET"][s]
+      else:
+        if(RangeShifters != [] and RangeShifters[b] != "None" and RangeShifters[b].WET > 0.0): SpotGrid["WET"][s] += RangeShifters[b].WET
+        if(SpotGrid["WET"][s] < minWET): minWET = SpotGrid["WET"][s]
 
     # raytracing of remaining spots to define energy layers
     transport_spots_inside_target(SPR, Target_mask, SpotGrid, [u,v,w], minWET, beam.LayerSpacing)
@@ -163,6 +170,11 @@ def SpotPlacement(plan, CT, Target_mask, Scanner):
           beam.Layers[-1].ScanSpotPositionMap_y.append(SpotGrid["BEVy"][s])
           beam.Layers[-1].ScanSpotMetersetWeights.append(1.0)
           beam.Layers[-1].SpotMU.append(1.0)
+
+          if(RangeShifters != [] and RangeShifters[b] != "None" and RangeShifters[b].WET > 0.0):
+            beam.Layers[-1].RangeShifterSetting = 'IN'
+            beam.Layers[-1].IsocenterToRangeShifterDistance = 300.0 #TODO: raytrace distance from iso to body contour + margin
+            beam.Layers[-1].RangeShifterWaterEquivalentThickness = RangeShifters[b].WET
 
   return plan
 

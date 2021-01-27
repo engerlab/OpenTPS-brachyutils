@@ -2,7 +2,9 @@ from PyQt5.QtWidgets import *
 
 class AddBeam_dialog(QDialog):
 
-  def __init__(self, BeamName):
+  def __init__(self, BeamName, RangeShifterList=[]):
+
+    RangeShifterList = ["None"] + RangeShifterList
     
     # initialize the window
     QDialog.__init__(self)
@@ -34,6 +36,11 @@ class AddBeam_dialog(QDialog):
     self.CouchAngle.setValue(0.0)
     self.CouchAngle.setSuffix("°")
     self.InputLayout.addWidget(self.CouchAngle, 2, 1)
+
+    self.InputLayout.addWidget(QLabel('<b>Range shifter:</b>'), 3, 0)
+    self.RangeShifter = QComboBox()
+    self.RangeShifter.addItems(RangeShifterList)
+    self.InputLayout.addWidget(self.RangeShifter, 3, 1)
     
     # buttons
     self.ButtonLayout = QHBoxLayout()

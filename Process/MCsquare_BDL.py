@@ -77,7 +77,9 @@ class MCsquare_BDL:
 
 
 
-  def import_BDL(self):
+  def import_BDL(self, selected_BDL=""):
+    if(selected_BDL != ""): self.selected_BDL = selected_BDL
+    
     path = self.get_path()
     with open(path, 'r') as fid:
       

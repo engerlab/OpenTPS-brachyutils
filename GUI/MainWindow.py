@@ -17,6 +17,7 @@ from Process.RTdose import *
 from Process.RTplan import *
 from Process.DVH import *
 from Process.MCsquare import *
+from Process.MCsquare_BDL import *
 from Process.MCsquare_plan import *
 from Process.MCsquare_sparse_format import *
 from Process.PlanOptimization import *
@@ -873,35 +874,57 @@ class MainWindow(QMainWindow):
     
   def add_new_beam(self):
     beam_number = self.toolbox_4_beams.count()
-    dialog = AddBeam_dialog("Beam " + str(beam_number+1))
+
+    # retrieve list of range shifters from BDL
+    BDL = MCsquare_BDL()
+    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
+    RangeShifterList = [RS.ID for RS in BDL.RangeShifters]
+
+    dialog = AddBeam_dialog("Beam " + str(beam_number+1), RangeShifterList=RangeShifterList)
     if(dialog.exec()):
       BeamName = dialog.BeamName.text()
       GantryAngle = dialog.GantryAngle.value()
       CouchAngle = dialog.CouchAngle.value()
-      self.toolbox_4_beams.addItem(BeamName + ":  G=" + str(GantryAngle) + "°,  C=" + str(CouchAngle) + "°")
+      RangeShifter = dialog.RangeShifter.currentText()
+
+      if(RangeShifter == "None"): RS_disp=""
+      else: RS_disp=", RS"
+      self.toolbox_4_beams.addItem(BeamName + ":  G=" + str(GantryAngle) + "°,  C=" + str(CouchAngle) + "°" + RS_disp)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+0, BeamName)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+1, 'beam')
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+2, GantryAngle)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+3, CouchAngle)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+4, RangeShifter)
     
     
     
   def add_new_arc(self):
     beam_number = self.toolbox_4_beams.count()
-    dialog = AddArc_dialog("Arc " + str(beam_number+1))
+
+    # retrieve list of range shifters from BDL
+    BDL = MCsquare_BDL()
+    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
+    RangeShifterList = [RS.ID for RS in BDL.RangeShifters]
+
+    dialog = AddArc_dialog("Arc " + str(beam_number+1), RangeShifterList=RangeShifterList)
     if(dialog.exec()):
       ArcName = dialog.ArcName.text()
       StartGantryAngle = dialog.StartGantryAngle.value()
       StopGantryAngle = dialog.StopGantryAngle.value()
       AngularStep = dialog.AngularStep.value()
       CouchAngle = dialog.CouchAngle.value()
-      self.toolbox_4_beams.addItem(ArcName + ":  G=" + str(StartGantryAngle) + " to " + str(StopGantryAngle) + "°,  C=" + str(CouchAngle) + "°")
+      RangeShifter = dialog.RangeShifter.currentText()
+
+      if(RangeShifter == "None"): RS_disp=""
+      else: RS_disp=", RS"
+      self.toolbox_4_beams.addItem(ArcName + ":  G=" + str(StartGantryAngle) + " to " + str(StopGantryAngle) + "°,  C=" + str(CouchAngle) + "°" + RS_disp)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+0, ArcName)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+1, 'arc')
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+2, StartGantryAngle)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+3, CouchAngle)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+4, StopGantryAngle)
       self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+5, AngularStep)
+      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+6, RangeShifter)
   
   
   
@@ -920,23 +943,48 @@ class MainWindow(QMainWindow):
     Target = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
     
     Scanner = self.toolbox_3_Scanner_List.currentText()
+
+    # load BDL
+    BDL = MCsquare_BDL()
+    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
     
     # extract beam info from QListWidget
     BeamNames = []
     GantryAngles = []
     CouchAngles = []
+    RangeShifters = []
     for i in range(self.toolbox_4_beams.count()):
       BeamType = self.toolbox_4_beams.item(i).data(Qt.UserRole+1)
       if(BeamType == "beam"):
         BeamNames.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+0))
         GantryAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+2))
         CouchAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+3))
+        RS_ID = self.toolbox_4_beams.item(i).data(Qt.UserRole+4)
+        if(RS_ID == "None"):
+          RangeShifter = "None"
+        else:
+          RangeShifter = next((RS for RS in BDL.RangeShifters if RS.ID == RS_ID), -1)
+          if(RangeShifter == -1):
+            print("WARNING: Range shifter " + RS_ID + " was not found in the BDL.")
+            RangeShifter = "None"
+        RangeShifters.append(RangeShifter)
+
       elif(BeamType == "arc"):
         name = self.toolbox_4_beams.item(i).data(Qt.UserRole+0)
         start = self.toolbox_4_beams.item(i).data(Qt.UserRole+2)
         couch = self.toolbox_4_beams.item(i).data(Qt.UserRole+3)
         stop = self.toolbox_4_beams.item(i).data(Qt.UserRole+4)
         step = self.toolbox_4_beams.item(i).data(Qt.UserRole+5)
+        RangeShifter = next((RS for RS in BDL.RangeShifters if RS.ID == self.toolbox_4_beams.item(i).data(Qt.UserRole+6)), -1)
+        RS_ID = self.toolbox_4_beams.item(i).data(Qt.UserRole+6)
+        if(RS_ID == "None"):
+          RangeShifter = "None"
+        else:
+          ID = next((RS for RS in BDL.RangeShifters if RS.ID == RS_ID), -1)
+          if(ID == -1):
+            print("WARNING: Range shifter " + RS_ID + " was not found in the BDL.")
+            RangeShifter = "None"
+
         if start > stop:
           start -= 360
         for b in range(math.floor((stop-start)/step)+1):
@@ -946,6 +994,7 @@ class MainWindow(QMainWindow):
           BeamNames.append(name + "_" + str(angle))
           GantryAngles.append(angle)
           CouchAngles.append(couch)
+          RangeShifters.append(RangeShifter)
 
     # set spacing parameters
     if(self.RobustOpti["Strategy"] == 'Disabled'): 
@@ -959,7 +1008,7 @@ class MainWindow(QMainWindow):
 
     
     # Generate new plan
-    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing)
+    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing)
     plan.PlanName = self.toolbox_4_plan_name.text()
     plan.RobustOpti = self.RobustOpti
     self.Patients.list[patient_id].Plans.append(plan)

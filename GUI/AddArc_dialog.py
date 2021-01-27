@@ -2,7 +2,9 @@ from PyQt5.QtWidgets import *
 
 class AddArc_dialog(QDialog):
 
-  def __init__(self, ArcName):
+  def __init__(self, ArcName, RangeShifterList=[]):
+
+    RangeShifterList = ["None"] + RangeShifterList
     
     # initialize the window
     QDialog.__init__(self)
@@ -50,6 +52,11 @@ class AddArc_dialog(QDialog):
     self.CouchAngle.setValue(0.0)
     self.CouchAngle.setSuffix("°")
     self.InputLayout.addWidget(self.CouchAngle, 4, 1)
+
+    self.InputLayout.addWidget(QLabel('<b>Range shifter:</b>'), 5, 0)
+    self.RangeShifter = QComboBox()
+    self.RangeShifter.addItems(RangeShifterList)
+    self.InputLayout.addWidget(self.RangeShifter, 5, 1)
     
     # buttons
     self.ButtonLayout = QHBoxLayout()
