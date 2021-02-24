@@ -3,6 +3,7 @@ import scipy.interpolate
 import math
 
 from Process.MCsquare_CT_calibration import *
+from Process.C_libraries.libRayTracing_wrapper import *
 
 
 class SPRimage:
@@ -21,6 +22,20 @@ class SPRimage:
     self.PixelSpacing = CT.PixelSpacing
     self.GridSize = CT.GridSize
     self.NumVoxels = CT.NumVoxels
+
+
+  def compute_WET_map(self, GantryAngle, CouchAngle, ROI=[]):
+    if(self.Image == np.array([])):
+      print("Error: SPR image not initialized.")
+
+    # compute direction vector
+    u,v,w = 1e-10, 1.0, 1e-10 # direction for gantry and couch at 0°
+    [u,v,w] = Rotate_vector([u,v,w], math.radians(GantryAngle), 'z') # rotation for gantry angle
+    [u,v,w] = Rotate_vector([u,v,w], math.radians(CouchAngle), 'y') # rotation for couch angle
+
+    WET = WET_raytracing(self, [u,v,w], ROI)
+
+    return WET
     
     
     
@@ -98,5 +113,21 @@ class SPRimage:
     #SPR = scipy.interpolate.interpn((y,x,z), self.Image, (position[1], position[0], position[2]), method='linear', fill_value=0.001, bounds_error=False)[0]
     #return SPR
       
-      
+  
+
+def Rotate_vector(vec, angle, axis):
+  if axis == 'x':
+    x = vec[0]
+    y = vec[1] * math.cos(angle) - vec[2] * math.sin(angle)
+    z = vec[1] * math.sin(angle) + vec[2] * math.cos(angle)
+  elif axis ==  'y':
+    x = vec[0] * math.cos(angle) + vec[2] * math.sin(angle)
+    y = vec[1]
+    z = -vec[0] * math.sin(angle) + vec[2] * math.cos(angle)
+  elif axis == 'z':
+    x = vec[0] * math.cos(angle) - vec[1] * math.sin(angle)
+    y = vec[0] * math.sin(angle) + vec[1] * math.cos(angle)
+    z = vec[2]
+
+  return [x,y,z]
       
