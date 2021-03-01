@@ -853,7 +853,7 @@ class MainWindow(QMainWindow):
       elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based Scipy-lBFGS"):
         w, dose_vector, ps = OptimizeWeights(plan, contours, method="Scipy-lBFGS")
 
-    dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
+      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 
     # add dose image in the database
     self.Patients.list[plan_patient_id].RTdoses.append(dose)
@@ -998,12 +998,12 @@ class MainWindow(QMainWindow):
 
     # set spacing parameters
     if(self.RobustOpti["Strategy"] == 'Disabled'): 
-      SpotSpacing = 7.0
-      LayerSpacing = 6.0
-      RTV_margin = max(SpotSpacing, LayerSpacing)
+      SpotSpacing = 5.0
+      LayerSpacing = 5.0
+      RTV_margin = max(SpotSpacing, LayerSpacing) #+ 3
     else: 
-      SpotSpacing = 7.0
-      LayerSpacing = 6.0
+      SpotSpacing = 5.0
+      LayerSpacing = 5.0
       RTV_margin = max(SpotSpacing, LayerSpacing) + max(self.RobustOpti["syst_setup"])
 
     
@@ -1416,10 +1416,14 @@ class MainWindow(QMainWindow):
       beams = range(len(plan.Beams))
     else:
       beams = [beam]
+
+    # load BDL
+    BDL = MCsquare_BDL()
+    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
     
     # compute spot coordinates in pixel units
     self.Viewer_Spots = []
-    spot_positions = plan.compute_cartesian_coordinates(ct, self.toolbox_3_Scanner_List.currentText(), beams)
+    spot_positions = plan.compute_cartesian_coordinates(ct, self.toolbox_3_Scanner_List.currentText(), beams, RangeShifters=BDL.RangeShifters)
     for position in spot_positions:
       x = (position[0] - ct.ImagePositionPatient[0]) / ct.PixelSpacing[0]
       y = (position[1] - ct.ImagePositionPatient[1]) / ct.PixelSpacing[1]

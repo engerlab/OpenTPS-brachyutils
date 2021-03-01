@@ -189,7 +189,7 @@ class RTplan:
             if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'IsocenterToRangeShifterDistance'):
               IsocenterToRangeShifterDistance = dcm_layer.RangeShifterSettingsSequence[0].IsocenterToRangeShifterDistance
             if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'RangeShifterWaterEquivalentThickness'):
-              RangeShifterWaterEquivalentThickness = dcm_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness
+              RangeShifterWaterEquivalentThickness = float(dcm_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness)
         
           layer.RangeShifterSetting = RangeShifterSetting
           layer.IsocenterToRangeShifterDistance = IsocenterToRangeShifterDistance
@@ -223,7 +223,7 @@ class RTplan:
     
     
     
-  def compute_cartesian_coordinates(self, CT, Scanner, beams):
+  def compute_cartesian_coordinates(self, CT, Scanner, beams, RangeShifters=[]):
     time_start = time.time()
     
     SPR = SPRimage()
@@ -240,10 +240,20 @@ class RTplan:
     # initialize spot info for raytracing
     for b in beams:
       beam = self.Beams[b]
+
+      RangeShifter = -1
+      if beam.RangeShifterType == "binary":
+        RangeShifter = next((RS for RS in RangeShifters if RS.ID == beam.RangeShifterID), -1)
+
       for layer in beam.Layers:
 
         range_in_water = SPR.energyToRange(layer.NominalBeamEnergy)*10
-        if(layer.RangeShifterSetting == 'IN' and layer.RangeShifterWaterEquivalentThickness > 0.0): range_in_water -= layer.RangeShifterWaterEquivalentThickness
+        if(layer.RangeShifterSetting == 'IN'):
+          if(layer.RangeShifterWaterEquivalentThickness != ""): RangeShifter_WET = layer.RangeShifterWaterEquivalentThickness
+          elif(RangeShifter != -1): RangeShifter_WET = RangeShifter.WET
+          else: RangeShifter_WET = 0.0
+
+          if(RangeShifter_WET > 0.0): range_in_water -= RangeShifter_WET
 
         for s in range(len(layer.ScanSpotPositionMap_x)):
           
@@ -328,9 +338,12 @@ class RTplan:
 
 
   def save(self, file_path):
-    self.beamlets.unload()
+    if self.beamlets != []:
+      self.beamlets.unload()
+
     for scenario in self.scenarios:
       scenario.unload()
+      
     dcm = self.OriginalDicomDataset
     self.OriginalDicomDataset = []
 
@@ -352,35 +365,63 @@ class RTplan:
       
 class Plan_IonBeam:
 
-  def __init__(self):
-    self.SeriesInstanceUID = ""
-    self.BeamName = ""
-    self.IsocenterPosition = [0,0,0]
-    self.GantryAngle = 0.0
-    self.PatientSupportAngle = 0.0
-    self.FinalCumulativeMetersetWeight = 0.0
-    self.BeamMeterset = 0.0
-    self.RangeShifterID = ""
-    self.RangeShifterType = "none"
-    self.Layers = []
+  def __init__(self, from_beam={}):
+    if(from_beam == {}):
+      self.SeriesInstanceUID = ""
+      self.BeamName = ""
+      self.IsocenterPosition = [0,0,0]
+      self.GantryAngle = 0.0
+      self.PatientSupportAngle = 0.0
+      self.RangeShifterID = ""
+      self.RangeShifterType = "none"
+      self.FinalCumulativeMetersetWeight = 0.0
+      self.BeamMeterset = 0.0
+      self.Layers = []
+    else:
+      self.SeriesInstanceUID = from_beam.SeriesInstanceUID
+      self.BeamName = from_beam.BeamName
+      self.IsocenterPosition = list(from_beam.IsocenterPosition)
+      self.GantryAngle = from_beam.GantryAngle
+      self.PatientSupportAngle = from_beam.PatientSupportAngle
+      self.RangeShifterID = from_beam.RangeShifterID
+      self.RangeShifterType = from_beam.RangeShifterType   
+      self.FinalCumulativeMetersetWeight = from_beam.FinalCumulativeMetersetWeight
+      self.BeamMeterset = from_beam.BeamMeterset
+      self.Layers = list(from_beam.Layers)
+
     
     
     
 class Plan_IonLayer:
 
-  def __init__(self):
-    self.SeriesInstanceUID = ""
-    self.NumberOfPaintings = 1
-    self.NominalBeamEnergy = 0.0
-    self.ScanSpotPositionMap_x = []
-    self.ScanSpotPositionMap_y = []
-    self.ScanSpotMetersetWeights = []
-    self.SpotMU = []
-    self.CumulativeMeterset = 0.0
-    self.RangeShifterSetting = 'OUT'
-    self.IsocenterToRangeShifterDistance = 0.0
-    self.RangeShifterWaterEquivalentThickness = 0.0
-    self.ReferencedRangeShifterNumber = 0
+  def __init__(self, from_layer={}):
+    if(from_layer == {}):
+      self.SeriesInstanceUID = ""
+      self.NumberOfPaintings = 1
+      self.NominalBeamEnergy = 0.0
+      self.ScanSpotPositionMap_x = []
+      self.ScanSpotPositionMap_y = []
+      self.ScanSpotMetersetWeights = []
+      self.SpotMU = []
+      self.CumulativeMeterset = 0.0
+      self.RangeShifterSetting = 'OUT'
+      self.IsocenterToRangeShifterDistance = 0.0
+      self.RangeShifterWaterEquivalentThickness = 0.0
+      self.ReferencedRangeShifterNumber = 0
+    else:
+      self.SeriesInstanceUID = from_layer.SeriesInstanceUID
+      self.NumberOfPaintings = from_layer.NumberOfPaintings
+      self.NominalBeamEnergy = from_layer.NominalBeamEnergy
+      self.ScanSpotPositionMap_x = list(from_layer.ScanSpotPositionMap_x)
+      self.ScanSpotPositionMap_y = list(from_layer.ScanSpotPositionMap_y)
+      self.ScanSpotMetersetWeights = list(from_layer.ScanSpotMetersetWeights)
+      self.SpotMU = list(from_layer.SpotMU)
+      self.CumulativeMeterset = from_layer.CumulativeMeterset
+      self.RangeShifterSetting = from_layer.RangeShifterSetting
+      self.IsocenterToRangeShifterDistance = from_layer.IsocenterToRangeShifterDistance
+      self.RangeShifterWaterEquivalentThickness = from_layer.RangeShifterWaterEquivalentThickness
+      self.ReferencedRangeShifterNumber = from_layer.ReferencedRangeShifterNumber
+
     
     
     

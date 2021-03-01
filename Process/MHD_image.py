@@ -6,6 +6,7 @@ class MHD_image:
 
   def __init__(self):
     self.mhd_file_path = ""
+    self.ImgName = ""
     self.NDims = 3
     self.ElementNumberOfChannels = 1
     self.ElementType = "MET_FLOAT"

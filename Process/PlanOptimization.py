@@ -262,18 +262,19 @@ def OptimizeWeights(plan, contours, maxIter=50, ftol=1e-5, method="Scipy-lBFGS",
   # reload beamlets and crop to optimization ROI
   print("Load beamlets ...")
   plan.beamlets.load()
-  plan.beamlets.BeamletMatrix = sparse_dot_mkl.dot_product_mkl( sp.diags(ROI_objectives.astype(np.float32), format='csc') , plan.beamlets.BeamletMatrix)
+  if use_MKL == 1: plan.beamlets.BeamletMatrix = sparse_dot_mkl.dot_product_mkl( sp.diags(ROI_objectives.astype(np.float32), format='csc') , plan.beamlets.BeamletMatrix)
+  else: plan.beamlets.BeamletMatrix = sp.csc_matrix.dot( sp.diags(ROI_objectives.astype(np.float32), format='csc') , plan.beamlets.BeamletMatrix)
+  
   if(robust == True):
     for s in range(len(plan.scenarios)):
       plan.scenarios[s].load()
-      plan.scenarios[s].BeamletMatrix = sparse_dot_mkl.dot_product_mkl( sp.diags(ROI_robust_objectives.astype(np.float32), format='csc') , plan.scenarios[s].BeamletMatrix)
-
+      if use_MKL == 1: plan.scenarios[s].BeamletMatrix = sparse_dot_mkl.dot_product_mkl( sp.diags(ROI_robust_objectives.astype(np.float32), format='csc') , plan.scenarios[s].BeamletMatrix)
+      else: plan.scenarios[s].BeamletMatrix = sp.csc_matrix.dot( sp.diags(ROI_robust_objectives.astype(np.float32), format='csc') , plan.scenarios[s].BeamletMatrix)
+        
   # Total Dose calculation
   Weights = np.ones((plan.beamlets.NbrSpots), dtype=np.float32)
-  if use_MKL == 1:
-    TotalDose = sparse_dot_mkl.dot_product_mkl(plan.beamlets.BeamletMatrix, Weights)
-  else:
-    TotalDose = sp.csc_matrix.dot(plan.beamlets.BeamletMatrix, Weights)
+  if use_MKL == 1: TotalDose = sparse_dot_mkl.dot_product_mkl(plan.beamlets.BeamletMatrix, Weights)
+  else: TotalDose = sp.csc_matrix.dot(plan.beamlets.BeamletMatrix, Weights)
 
   # Weight normalization
   # variable change x = u²
