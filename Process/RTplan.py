@@ -318,6 +318,16 @@ class RTplan:
         beam.FinalCumulativeMetersetWeight += sum(layer.SpotMU)
         layer.CumulativeMeterset = beam.BeamMeterset
 
+  def get_spot_weights(self):
+      spot_weights = np.zeros(self.NumberOfSpots)
+      count = 0
+      for beam in self.Beams:
+        for layer in beam.Layers:
+            for s in range(len(layer.SpotMU)):
+                spot_weights[count] = layer.SpotMU[s]
+                count+=1
+      return spot_weights
+
 
 
   def export_Dicom_with_new_UID(self, OutputFile):
