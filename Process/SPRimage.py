@@ -27,6 +27,7 @@ class SPRimage:
   def compute_WET_map(self, GantryAngle, CouchAngle, ROI=[]):
     if(self.Image == np.array([])):
       print("Error: SPR image not initialized.")
+      return []
 
     # compute direction vector
     u,v,w = 1e-10, 1.0, 1e-10 # direction for gantry and couch at 0°

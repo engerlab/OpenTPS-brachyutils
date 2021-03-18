@@ -389,6 +389,10 @@ class MainWindow(QMainWindow):
     self.toolbox_7_RegisterButton = QPushButton('Register')
     self.toolbox_7_layout.addWidget(self.toolbox_7_RegisterButton)
     self.toolbox_7_RegisterButton.clicked.connect(self.register_images)
+    self.toolbox_7_layout.addSpacing(15)
+    self.toolbox_7_ResampleButton = QPushButton('Resample moving image')
+    self.toolbox_7_layout.addWidget(self.toolbox_7_ResampleButton)
+    self.toolbox_7_ResampleButton.clicked.connect(self.resample_moving)
     self.toolbox_7_layout.addStretch()
     self.toolbox_7_Fixed.currentIndexChanged.connect(self.recompute_image_difference)
     self.toolbox_7_Moving.currentIndexChanged.connect(self.recompute_image_difference)
@@ -772,6 +776,27 @@ class MainWindow(QMainWindow):
 
     self.recompute_image_difference()
 
+
+
+  def resample_moving(self):
+    Fixed_id = self.toolbox_7_Fixed.currentIndex()
+    Moving_id = self.toolbox_7_Moving.currentIndex()
+    if(Fixed_id < 0 or Moving_id < 0): return
+
+    ct_patient_id, ct_id = self.Patients.find_CT_image(Fixed_id)
+    fixed = self.Patients.list[ct_patient_id].CTimages[ct_id]
+    ct_patient_id, ct_id = self.Patients.find_CT_image(Moving_id)
+    moving = self.Patients.list[ct_patient_id].CTimages[ct_id]
+
+    reg = Registration(fixed, moving)
+    resampled = reg.Resample_moving_image(KeepFixedShape=True)
+    resampled.ImgName += "_registered"
+
+    self.Patients.list[ct_patient_id].CTimages.append(resampled)
+    self.toolbox_1_CT_list.addItem(resampled.ImgName)
+    self.toolbox_7_Fixed.addItem(resampled.ImgName)
+    self.toolbox_7_Moving.addItem(resampled.ImgName)
+
       
     
   def optimize_plan(self):
@@ -1000,11 +1025,11 @@ class MainWindow(QMainWindow):
     if(self.RobustOpti["Strategy"] == 'Disabled'): 
       SpotSpacing = 5.0
       LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) #+ 3
+      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5
     else: 
       SpotSpacing = 5.0
       LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) + max(self.RobustOpti["syst_setup"])
+      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5 + max(self.RobustOpti["syst_setup"])
 
     
     # Generate new plan

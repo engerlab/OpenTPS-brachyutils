@@ -16,6 +16,8 @@ class DVH:
     self.D50 = 0
     self.D5 = 0
     self.D2 = 0
+    self.Dmin = 0
+    self.Dmax = 0
 
     if(dose != []):
       self.Dose_SeriesInstanceUID = dose.SeriesInstanceUID
@@ -39,7 +41,9 @@ class DVH:
     else:
       w2 = (volume-x) / (volume - volume2)
       w1 = (x-volume2) / (volume - volume2)
-      return w1*self.dose[index] + w2*self.dose[index+1]
+      Dx = w1*self.dose[index] + w2*self.dose[index+1]
+      if Dx < 0: Dx = 0
+      return Dx
 
 
   def compute_DVH(self, dose, Contour, maxDVH=100.0):
@@ -63,6 +67,8 @@ class DVH:
 
     # compute metrics
     self.Dmean = np.mean(d)
+    self.Dmin = d.min()
+    self.Dmax = d.max()
     self.D98 = self.compute_Dx(98)
     self.D95 = self.compute_Dx(95)
     self.D50 = self.compute_Dx(50)
