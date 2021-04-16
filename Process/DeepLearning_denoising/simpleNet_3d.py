@@ -1,32 +1,41 @@
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
 
-from keras.layers import Input, Conv3D, Conv2D, Conv3DTranspose, Add
-from keras.layers import MaxPooling3D, Cropping3D, Concatenate
-from keras.layers import Lambda, Activation, BatchNormalization, Dropout
-from keras.models import Model
-from keras import backend as K
+try:
+  from keras.layers import Input, Conv3D, Conv2D, Conv3DTranspose, Add
+  from keras.layers import MaxPooling3D, Cropping3D, Concatenate
+  from keras.layers import Lambda, Activation, BatchNormalization, Dropout
+  from keras.models import Model
+  from keras import backend as K
+  use_keras = 1
+except:
+  use_keras = 0
+
+
 import numpy as np
 
 
 def conv_layer(input_tensor, filters, padding='valid',
                        batchnorm=False, dropout=0.0):
-    _, _, height, width, _ = K.int_shape(input_tensor)
-    assert height % 2 == 0
-    assert width % 2 == 0
 
-    x = Conv3D(filters, kernel_size=(3,3,3), padding=padding,
+  if use_keras == 0: return
+
+  _, _, height, width, _ = K.int_shape(input_tensor)
+  assert height % 2 == 0
+  assert width % 2 == 0
+
+  x = Conv3D(filters, kernel_size=(3,3,3), padding=padding,
                dilation_rate=1, kernel_initializer='he_normal')(input_tensor)
-    x = BatchNormalization()(x) if batchnorm else x
-    x = Activation('relu')(x)
-    x = Dropout(dropout)(x) if dropout > 0 else x
+  x = BatchNormalization()(x) if batchnorm else x
+  x = Activation('relu')(x)
+  x = Dropout(dropout)(x) if dropout > 0 else x
 
-    x = Conv3D(filters, kernel_size=(3,3,3), padding=padding, dilation_rate=2, kernel_initializer='he_normal')(x)
-    x = BatchNormalization()(x) if batchnorm else x
-    x = Activation('relu')(x)
-    x = Dropout(dropout)(x) if dropout > 0 else x
+  x = Conv3D(filters, kernel_size=(3,3,3), padding=padding, dilation_rate=2, kernel_initializer='he_normal')(x)
+  x = BatchNormalization()(x) if batchnorm else x
+  x = Activation('relu')(x)
+  x = Dropout(dropout)(x) if dropout > 0 else x
 
-    return x
+  return x
 
 
 # ========================================================================================================== #
@@ -53,6 +62,9 @@ def simpleNet(height, width, channels, classes, features=64, depth=4,
       output_width = width.
 
     """
+    
+    if use_keras == 0: return
+
     x = Input(shape=(classes, height, width, channels))
     inputs = x
 

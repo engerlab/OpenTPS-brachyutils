@@ -20,7 +20,11 @@ class MHD_image:
     
     
   def import_MHD_header(self, file_path):
+    # Parse file path
+    Folder, File = os.path.split(file_path)
+    FileName, FileExtension = os.path.splitext(File)
     self.mhd_file_path = file_path
+    self.ImgName = FileName
     
     with open(self.mhd_file_path, 'r') as fid:
       for line in fid:
@@ -69,9 +73,7 @@ class MHD_image:
   
   
   
-  def export_MHD_header(self, file_path):
-    self.mhd_file_path = file_path
-  
+  def export_MHD_header(self, file_path):  
     # Parse file path
     DestFolder, DestFile = os.path.split(file_path)
     FileName, FileExtension = os.path.splitext(DestFile)
@@ -82,10 +84,12 @@ class MHD_image:
     else:
       MHD_File = DestFile + ".mhd"
       RAW_File = DestFile + ".raw"
+
+    self.mhd_file_path = os.path.join(DestFolder, MHD_File)
     
     # Write header file (MHD)
-    print("Write MHD CT: " + os.path.join(DestFolder, MHD_File))
-    fid = open(os.path.join(DestFolder, MHD_File),"w") 
+    print("Write MHD image: " + self.mhd_file_path)
+    fid = open(self.mhd_file_path, "w") 
     fid.write("ObjectType = Image\n") 
     fid.write("NDims = %d\n" % self.NDims) 
     fid.write("DimSize = %d %d %d\n" % tuple(self.GridSize))

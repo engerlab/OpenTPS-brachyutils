@@ -106,7 +106,7 @@ class RTdose:
     img_data = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
     color_index = np.arange(255)
     rgb = cm.get_cmap('jet')(color_index) * 255 # generate colormap
-    img_viewer = np.zeros((self.GridSize[0], self.GridSize[1], self.GridSize[2], 4))
+    img_viewer = np.zeros((self.GridSize[0], self.GridSize[1], self.GridSize[2], 4), dtype=np.int8)
     img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
     img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
     img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
