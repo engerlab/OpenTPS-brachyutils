@@ -1,35 +1,28 @@
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor, QIcon, QPalette, QPen
+from PyQt5.QtGui import QImage, QPainter, QPalette, QPen
 from PyQt5.QtCore import Qt, QDir, QPointF
 import pyqtgraph as qtg
 import numpy as np
 import datetime
 import os
 
-from GUI.AddBeam_dialog import *
-from GUI.AddArc_dialog import *
-from GUI.AddObjective_dialog import *
-from GUI.Robustness_Settings_dialog import *
-from GUI.ObjectiveTemplateWindow import *
+from GUI.Toolbox_PatientData import *
+from GUI.Toolbox_ROI import *
+from GUI.Toolbox_DoseComputation import *
+from GUI.Toolbox_PlanDesign import *
+from GUI.Toolbox_PlanOptimization import *
+from GUI.Toolbox_PlanEvaluation import *
+from GUI.Toolbox_ImageRegistration import *
 
 from Process.PatientData import *
-from Process.RTdose import *
-from Process.RTplan import *
 from Process.DVH import *
-from Process.MCsquare import *
 from Process.MCsquare_BDL import *
-from Process.MCsquare_plan import *
-from Process.MCsquare_sparse_format import *
-from Process.PlanOptimization import *
-from Process.Registration import *
-from Process.DeepLearning_denoising.Denoise_MC_dose import *
 
 class MainWindow(QMainWindow):
   def __init__(self):
     # initialize data
     self.Patients = PatientList()
     self.data_path = QDir.currentPath()
-    self.ROI_CheckBox = []
     self.Viewer_initialized = 0
     self.Viewer_CT = np.array([])
     self.Viewer_Dose = np.array([])
@@ -40,9 +33,10 @@ class MainWindow(QMainWindow):
     self.Viewer_coronal_slice = 0
     self.Viewer_sagittal_slice = 0
     self.Viewer_resolution = [1,1,1]
-    self.RobustEval = {"Strategy": "DoseSpace", "syst_setup": [1.6, 1.6, 1.6], "rand_setup": [1.4, 1.4, 1.4], "syst_range": 1.6}
-    self.RobustOpti = {"Strategy": "Disabled", "syst_setup": [5.0, 5.0, 5.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 3.0}
-    self.robustness_scenarios = []
+    self.Dose_calculation_param = {"BDL": "", "Scanner": "", "NumProtons": 1e7, "MaxUncertainty": 2.0, "CropContour": "None", "dose2water": True}
+    self.CT_disp_ID = -1
+    self.Dose_disp_ID = -1
+    self.Plan_disp_ID = -1
   
     # initialize the main window
     QMainWindow.__init__(self)
@@ -64,339 +58,70 @@ class MainWindow(QMainWindow):
     self.toolbox_main.previous_index = 0
     
     # initialize the 1st toolbox panel (patient data)
-    self.toolbox_1 = QWidget()
+    self.toolbox_1 = Toolbox_PatientData(self.Patients, self.toolbox_width)
     self.toolbox_main.addItem(self.toolbox_1, 'Patient data')
-    self.toolbox_1_layout = QVBoxLayout()
-    self.toolbox_1.setLayout(self.toolbox_1_layout)
-    self.toolbox_1_layout.addWidget(QLabel('<b>CT images:</b>'))
-    self.toolbox_1_CT_list = QListWidget()
-    self.toolbox_1_CT_list.currentRowChanged.connect(self.Current_CT_changed) 
-    self.toolbox_1_CT_list.setContextMenuPolicy(Qt.CustomContextMenu)
-    self.toolbox_1_CT_list.customContextMenuRequested.connect(lambda pos, list_type='CT': self.List_RightClick(pos, list_type))
-    self.toolbox_1_layout.addWidget(self.toolbox_1_CT_list)
-    self.toolbox_1_layout.addSpacing(10)
-    self.toolbox_1_layout.addWidget(QLabel('<b>Dose distributions:</b>'))
-    self.toolbox_1_Dose_list = QListWidget()
-    self.toolbox_1_Dose_list.currentRowChanged.connect(self.Current_dose_changed) 
-    self.toolbox_1_Dose_list.setContextMenuPolicy(Qt.CustomContextMenu)
-    self.toolbox_1_Dose_list.customContextMenuRequested.connect(lambda pos, list_type='dose': self.List_RightClick(pos, list_type))
-    self.toolbox_1_layout.addWidget(self.toolbox_1_Dose_list)
-    self.toolbox_1_layout.addSpacing(10)
-    self.toolbox_1_layout.addWidget(QLabel('<b>Treatment plans:</b>'))
-    self.toolbox_1_Plan_list = QListWidget()
-    self.toolbox_1_Plan_list.setContextMenuPolicy(Qt.CustomContextMenu)
-    self.toolbox_1_Plan_list.customContextMenuRequested.connect(lambda pos, list_type='plan': self.List_RightClick(pos, list_type))
-    self.toolbox_1_layout.addWidget(self.toolbox_1_Plan_list)
-    self.toolbox_1_layout.addSpacing(10)
-    self.toolbox_1_LoadButton = QPushButton('Load patient data')
-    self.toolbox_1_layout.addWidget(self.toolbox_1_LoadButton)
-    self.toolbox_1_LoadButton.clicked.connect(self.load_patient_data) 
-    
+    self.toolbox_1.Current_CT_changed.connect(self.Current_CT_changed)
+    self.toolbox_1.Current_dose_changed.connect(self.Current_dose_changed)
+    self.toolbox_1.Current_plan_changed.connect(self.Current_plan_changed)
+    self.toolbox_1.Data_path_changed.connect(self.Data_path_changed)
+    self.toolbox_1.Viewer_display_spots.connect(self.display_spots)
+    self.toolbox_1.Viewer_clear_spots.connect(self.clear_spots_viewer)
+
     # initialize the 2nd toolbox panel (ROI)
-    self.toolbox_2 = QWidget()
+    self.toolbox_2 = Toolbox_ROI(self.Patients, self.toolbox_width)
     self.toolbox_main.addItem(self.toolbox_2, 'ROI')
-    self.toolbox_2_layout = QVBoxLayout()
-    self.toolbox_2.setLayout(self.toolbox_2_layout)
-    self.toolbox_2_layout.addWidget(QLabel("No ROI loaded"))
+    self.toolbox_1.ROI_list_changed.connect(self.toolbox_2.reload_ROI_list)
+    self.toolbox_2.Current_contours_changed.connect(self.Current_contours_changed)
     
     # initialize the 3rd toolbox panel (Dose computation)
-    mc2 = MCsquare()
-    self.toolbox_3 = QWidget()
+    self.toolbox_3 = Toolbox_DoseComputation(self.Patients, self.toolbox_width)
     self.toolbox_main.addItem(self.toolbox_3, 'Dose computation')
-    self.toolbox_3_layout = QVBoxLayout()
-    self.toolbox_3.setLayout(self.toolbox_3_layout)
-    self.toolbox_3_layout.addWidget(QLabel('<b>Dose name:</b>'))
-    self.toolbox_3_dose_name = QLineEdit('MCsquare_dose')
-    self.toolbox_3_layout.addWidget(self.toolbox_3_dose_name)
-    self.toolbox_3_layout.addSpacing(15)
-    self.toolbox_3_layout.addWidget(QLabel('<b>Beam model:</b>'))
-    self.toolbox_3_BDL_List = QComboBox()
-    self.toolbox_3_BDL_List.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_3_BDL_List.addItems(mc2.BDL.list)
-    self.toolbox_3_layout.addWidget(self.toolbox_3_BDL_List)
-    self.toolbox_3_layout.addSpacing(15)
-    self.toolbox_3_layout.addWidget(QLabel('<b>Scanner calibration:</b>'))
-    self.toolbox_3_Scanner_List = QComboBox()
-    self.toolbox_3_Scanner_List.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_3_Scanner_List.addItems(mc2.Scanner.list)
-    self.toolbox_3_layout.addWidget(self.toolbox_3_Scanner_List)
-    self.toolbox_3_layout.addSpacing(15)
-    self.toolbox_3_layout.addWidget(QLabel('<b>Simulation statistics:</b>'))
-    self.toolbox_3_NumProtons = QSpinBox()
-    self.toolbox_3_NumProtons.setGroupSeparatorShown(True)
-    self.toolbox_3_NumProtons.setRange(0, 1e9)
-    self.toolbox_3_NumProtons.setSingleStep(1e6)
-    self.toolbox_3_NumProtons.setValue(1e7)
-    self.toolbox_3_NumProtons.setSuffix(" protons")
-    self.toolbox_3_layout.addWidget(self.toolbox_3_NumProtons)
-    self.toolbox_3_MaxUncertainty = QDoubleSpinBox()
-    self.toolbox_3_MaxUncertainty.setGroupSeparatorShown(True)
-    self.toolbox_3_MaxUncertainty.setRange(0.0, 100.0)
-    self.toolbox_3_MaxUncertainty.setSingleStep(0.1)
-    self.toolbox_3_MaxUncertainty.setValue(2.0)
-    self.toolbox_3_MaxUncertainty.setSuffix("% uncertainty")
-    self.toolbox_3_layout.addWidget(self.toolbox_3_MaxUncertainty)
-    self.toolbox_3_layout.addSpacing(15)
-    self.toolbox_3_layout.addWidget(QLabel('<b>Crop CT with contour:</b>'))
-    self.toolbox_3_CropContour = QComboBox()
-    self.toolbox_3_CropContour.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_3_CropContour.addItem("None")
-    self.toolbox_3_layout.addWidget(self.toolbox_3_CropContour)
-    self.toolbox_3_layout.addSpacing(15)
-    self.toolbox_3_layout.addWidget(QLabel('<b>Other parameters:</b>'))
-    self.toolbox_3_dose2water = QCheckBox('convert dose-to-water')
-    self.toolbox_3_dose2water.setChecked(True)
-    self.toolbox_3_layout.addWidget(self.toolbox_3_dose2water)
-    self.toolbox_3_DoseDenoising = QCheckBox('denoising (Deep Learning)')
-    self.toolbox_3_DoseDenoising.setChecked(False)
-    self.toolbox_3_layout.addWidget(self.toolbox_3_DoseDenoising)
-    self.toolbox_3_layout.addSpacing(30)
-    self.toolbox_3_RunButton = QPushButton('Run dose calculation')
-    self.toolbox_3_layout.addWidget(self.toolbox_3_RunButton)
-    self.toolbox_3_RunButton.clicked.connect(self.run_MCsquare) 
-    self.toolbox_3_layout.addStretch()
+    self.toolbox_3.New_dose_created.connect(self.toolbox_1.Add_dose)
+    self.toolbox_2.New_contour_added.connect(self.toolbox_3.Add_new_contour)
+    self.toolbox_2.Contour_removed.connect(self.toolbox_3.Remove_contour)
+    self.Update_dose_calculation_param(self.toolbox_3.Dose_calculation_param)
+    self.toolbox_3.Dose_calculation_param_changed.connect(self.Update_dose_calculation_param)
     
     # initialize the 4th toolbox panel (Plan design)
-    self.toolbox_4 = QWidget()
+    self.toolbox_4 = Toolbox_PlanDesign(self.Patients, self.toolbox_width)
     self.toolbox_main.addItem(self.toolbox_4, 'Plan design')
-    self.toolbox_4_layout = QVBoxLayout()
-    self.toolbox_4.setLayout(self.toolbox_4_layout)
-    self.toolbox_4_layout.addWidget(QLabel('<b>Plan name:</b>'))
-    self.toolbox_4_plan_name = QLineEdit('New plan')
-    self.toolbox_4_layout.addWidget(self.toolbox_4_plan_name)
-    self.toolbox_4_layout.addSpacing(15)
-    self.toolbox_4_layout.addWidget(QLabel('<b>Target:</b>'))
-    self.toolbox_4_Target = QComboBox()
-    self.toolbox_4_Target.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_4_layout.addWidget(self.toolbox_4_Target)
-    self.toolbox_4_layout.addSpacing(15)
-    self.toolbox_4_layout.addWidget(QLabel('<b>Beams:</b>'))
-    self.toolbox_4_beams =  QListWidget()
-    self.toolbox_4_beams.setMaximumHeight(100)
-    self.toolbox_4_beams.setContextMenuPolicy(Qt.CustomContextMenu)
-    self.toolbox_4_beams.customContextMenuRequested.connect(lambda pos, list_type='beam': self.List_RightClick(pos, list_type))
-    self.toolbox_4_layout.addWidget(self.toolbox_4_beams)
-    ####
-    #self.toolbox_4_beams = QTableWidget()
-    #self.toolbox_4_beams.setColumnCount(3)
-    #self.toolbox_4_beams.setHorizontalHeaderLabels(["Name", "Gantry", "Couch"])
-    #self.toolbox_4_layout.addWidget(self.toolbox_4_beams)
-    ####
-    #self.toolbox_4_plan = QTreeWidget()
-    #self.toolbox_4_plan.setColumnCount(1)
-    #self.toolbox_4_plan.setHeaderHidden(True)
-    #test = QTreeWidgetItem(None, ["Beam 1"])
-    #test.setData(0, Qt.UserRole, 90.0) # GantryAngle
-    #test.setData(0, Qt.UserRole+1, 0.0) # CouchAngle
-    #test.addChild(QTreeWidgetItem(None, ["Layer 1"]))
-    #QTreeWidgetItem(test, ["Layer 2"])
-    #self.toolbox_4_plan.addTopLevelItem(test)
-    #test = QTreeWidgetItem(None, ["Beam 2"])
-    #self.toolbox_4_plan.addTopLevelItem(test)
-    #test.addChild(QTreeWidgetItem(None, ["Layer 3"]))
-    #QTreeWidgetItem(test, ["Layer 4"])
-    #self.toolbox_4_layout.addWidget(self.toolbox_4_plan)
-    ####
-    self.toolbox_4_button_hLoayout = QHBoxLayout()
-    self.toolbox_4_layout.addLayout(self.toolbox_4_button_hLoayout)
-    self.toolbox_4_addBeam = QPushButton('Add beam')
-    self.toolbox_4_addBeam.setMaximumWidth(80)
-    self.toolbox_4_button_hLoayout.addWidget(self.toolbox_4_addBeam)
-    self.toolbox_4_addBeam.clicked.connect(self.add_new_beam) 
-    self.toolbox_4_addArc = QPushButton('Add arc')
-    self.toolbox_4_addArc.setMaximumWidth(80)
-    self.toolbox_4_button_hLoayout.addWidget(self.toolbox_4_addArc)
-    self.toolbox_4_addArc.clicked.connect(self.add_new_arc) 
-    self.toolbox_4_layout.addSpacing(30)
-    self.toolbox_4_layout.addWidget(QLabel('<b>Robust optimization:</b>'))
-    self.toolbox_4_RobustSettings = QLabel('')
-    self.toolbox_4_layout.addWidget(self.toolbox_4_RobustSettings)
-    self.toolbox_4_layout.addSpacing(10)
-    self.toolbox_4_RobustnessSettingsButton = QPushButton('Modify robustness settings')
-    self.toolbox_4_RobustnessSettingsButton.clicked.connect(self.set_robust_opti_settings)
-    self.toolbox_4_layout.addWidget(self.toolbox_4_RobustnessSettingsButton)
-    self.toolbox_4_layout.addSpacing(30)
-    self.toolbox_4_CreatePlanButton = QPushButton('Create new plan')
-    self.toolbox_4_layout.addWidget(self.toolbox_4_CreatePlanButton)
-    self.toolbox_4_CreatePlanButton.clicked.connect(self.create_new_plan) 
-    self.toolbox_4_layout.addSpacing(15)
-    self.toolbox_4_ComputeBeamletButton = QPushButton('Compute beamlets')
-    self.toolbox_4_layout.addWidget(self.toolbox_4_ComputeBeamletButton)
-    self.toolbox_4_ComputeBeamletButton.clicked.connect(self.compute_beamlets) 
-    self.toolbox_4_layout.addStretch()
-    self.toolbox_4_LoadPlanButton = QPushButton('Import OpenTPS Plan')
-    self.toolbox_4_layout.addWidget(self.toolbox_4_LoadPlanButton)
-    self.toolbox_4_LoadPlanButton.clicked.connect(self.import_OpenTPS_Plan) 
-    self.toolbox_4_layout.addSpacing(10)
-    self.toolbox_4_LoadMCsquarePlanButton = QPushButton('Import MCsquare PlanPencil')
-    self.toolbox_4_layout.addWidget(self.toolbox_4_LoadMCsquarePlanButton)
-    self.toolbox_4_LoadMCsquarePlanButton.clicked.connect(self.import_PlanPencil) 
-    self.toolbox_4_layout.addSpacing(10)
-    self.update_robust_opti_settings()
+    self.toolbox_4.Update_dose_calculation_param(self.toolbox_3.Dose_calculation_param)
+    self.toolbox_3.Dose_calculation_param_changed.connect(self.toolbox_4.Update_dose_calculation_param)
+    self.toolbox_2.New_contour_added.connect(self.toolbox_4.Add_new_contour)
+    self.toolbox_2.Contour_removed.connect(self.toolbox_4.Remove_contour)
+    self.toolbox_4.New_plan_created.connect(self.toolbox_1.Add_plan)
+    self.toolbox_1.Data_path_changed.connect(self.toolbox_4.Data_path_changed)
     
     # initialize the 5th toolbox panel (Plan optimization)
-    self.toolbox_5 = QWidget()
+    self.toolbox_5 = Toolbox_PlanOptimization(self.Patients, self.toolbox_width)
     self.toolbox_main.addItem(self.toolbox_5, 'Plan optimization')
-    self.toolbox_5_layout = QVBoxLayout()
-    self.toolbox_5.setLayout(self.toolbox_5_layout)
-    self.toolbox_5_layout.addWidget(QLabel('<b>Optimization algorithm:</b>'))
-    self.toolbox_5_Algorithm = QComboBox()
-    self.toolbox_5_Algorithm.addItem("Beamlet-free MCsquare")
-    self.toolbox_5_Algorithm.addItem("Beamlet-based BFGS")
-    self.toolbox_5_Algorithm.addItem("Beamlet-based L-BFGS")
-    self.toolbox_5_Algorithm.addItem("Beamlet-based Scipy-lBFGS")
-    self.toolbox_5_Algorithm.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_5_layout.addWidget(self.toolbox_5_Algorithm)
-    self.toolbox_5_layout.addSpacing(15)
-    self.toolbox_5_layout.addWidget(QLabel('<b>Target:</b>'))
-    self.toolbox_5_Target = QComboBox()
-    self.toolbox_5_Target.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_5_layout.addWidget(self.toolbox_5_Target)
-    self.toolbox_5_layout.addSpacing(15)
-    self.toolbox_5_layout.addWidget(QLabel('<b>Prescription:</b>'))
-    self.toolbox_5_Prescription = QDoubleSpinBox()
-    self.toolbox_5_Prescription.setRange(0.0, 100.0)
-    self.toolbox_5_Prescription.setSingleStep(1.0)
-    self.toolbox_5_Prescription.setValue(60.0)
-    self.toolbox_5_Prescription.setSuffix(" Gy")
-    self.toolbox_5_layout.addWidget(self.toolbox_5_Prescription)
-    self.toolbox_5_layout.addSpacing(15)
-    self.toolbox_5_layout.addWidget(QLabel('<b>Objectives:</b>'))
-    self.toolbox_5_objectives =  QListWidget()
-    self.toolbox_5_objectives.setSpacing(2)
-    self.toolbox_5_objectives.setAlternatingRowColors(True)
-    self.toolbox_5_objectives.setMaximumHeight(150)
-    self.toolbox_5_objectives.setContextMenuPolicy(Qt.CustomContextMenu)
-    self.toolbox_5_objectives.customContextMenuRequested.connect(lambda pos, list_type='objective': self.List_RightClick(pos, list_type))
-    self.toolbox_5_layout.addWidget(self.toolbox_5_objectives)
-    self.toolbox_5_button_hLoayout = QHBoxLayout()
-    self.toolbox_5_layout.addLayout(self.toolbox_5_button_hLoayout)
-    self.toolbox_5_addObjective = QPushButton('Add objective')
-    self.toolbox_5_addObjective.setMaximumWidth(100)
-    self.toolbox_5_button_hLoayout.addWidget(self.toolbox_5_addObjective)
-    self.toolbox_5_addObjective.clicked.connect(self.add_new_objective) 
-    self.toolbox_5_TemplateBtn = QPushButton('Templates')
-    self.toolbox_5_TemplateBtn.setMaximumWidth(100)
-    self.toolbox_5_button_hLoayout.addWidget(self.toolbox_5_TemplateBtn)
-    self.toolbox_5_TemplateBtn.clicked.connect(self.TemplateWindow) 
-    self.toolbox_5_layout.addSpacing(30)
-    self.toolbox_5_OptimizePlanButton = QPushButton('Optimize plan')
-    self.toolbox_5_layout.addWidget(self.toolbox_5_OptimizePlanButton)
-    self.toolbox_5_OptimizePlanButton.clicked.connect(self.optimize_plan) 
-    self.toolbox_5_layout.addStretch()
+    self.toolbox_2.New_contour_added.connect(self.toolbox_5.Add_new_contour)
+    self.toolbox_2.Contour_removed.connect(self.toolbox_5.Remove_contour)
+    self.toolbox_5.Update_dose_calculation_param(self.toolbox_3.Dose_calculation_param)
+    self.toolbox_3.Dose_calculation_param_changed.connect(self.toolbox_5.Update_dose_calculation_param)
+    self.toolbox_5.New_dose_created.connect(self.toolbox_1.Add_dose)
+    self.toolbox_1.Data_path_changed.connect(self.toolbox_5.Data_path_changed)
     
     # initialize the 6th toolbox panel (Plan evaluation)
-    self.toolbox_6 = QWidget()
+    self.toolbox_6 = Toolbox_PlanEvaluation(self.Patients, self.toolbox_width)
     self.toolbox_main.addItem(self.toolbox_6, 'Robustness evaluation')
-    self.toolbox_6_layout = QVBoxLayout()
-    self.toolbox_6.setLayout(self.toolbox_6_layout)
-    self.toolbox_6_layout.addWidget(QLabel('<b>Scenario selection strategy:</b>'))
-    self.toolbox_6_Strategy = QLabel('')
-    self.toolbox_6_layout.addWidget(self.toolbox_6_Strategy)
-    self.toolbox_6_layout.addSpacing(20)
-    self.toolbox_6_layout.addWidget(QLabel('<b>Scenario errors:</b>'))
-    self.toolbox_6_Syst_Setup = QLabel('Systematic setup:')
-    self.toolbox_6_layout.addWidget(self.toolbox_6_Syst_Setup)
-    self.toolbox_6_Rand_Setup = QLabel('Random setup:')
-    self.toolbox_6_layout.addWidget(self.toolbox_6_Rand_Setup)
-    self.toolbox_6_Syst_Range = QLabel('Systematic range:')
-    self.toolbox_6_layout.addWidget(self.toolbox_6_Syst_Range)
-    self.toolbox_6_layout.addSpacing(30)
-    self.toolbox_6_RobustnessSettingsButton = QPushButton('Modify robustness settings')
-    self.toolbox_6_RobustnessSettingsButton.clicked.connect(self.set_robust_eval_settings)
-    self.toolbox_6_layout.addWidget(self.toolbox_6_RobustnessSettingsButton)
-    self.toolbox_6_layout.addSpacing(30)
-    self.toolbox_6_button_hLoayout = QHBoxLayout()
-    self.toolbox_6_layout.addLayout(self.toolbox_6_button_hLoayout)
-    self.toolbox_6_ComputeScenariosButton = QPushButton('Compute \n Scenarios')
-    self.toolbox_6_ComputeScenariosButton.setMaximumWidth(100)
-    self.toolbox_6_button_hLoayout.addWidget(self.toolbox_6_ComputeScenariosButton)
-    self.toolbox_6_ComputeScenariosButton.clicked.connect(self.compute_robustness_scenarios) 
-    self.toolbox_6_LoadScenariosButton = QPushButton('Load saved \n scenarios')
-    self.toolbox_6_LoadScenariosButton.setMaximumWidth(100)
-    self.toolbox_6_button_hLoayout.addWidget(self.toolbox_6_LoadScenariosButton)
-    self.toolbox_6_LoadScenariosButton.clicked.connect(self.load_robustness_scenarios) 
-    self.toolbox_6_layout.addSpacing(40)
-    self.toolbox_6_layout.addWidget(QLabel('<b>Displayed dose:</b>'))
-    self.toolbox_6_DisplayedDose = QComboBox()
-    self.toolbox_6_DisplayedDose.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_6_DisplayedDose.addItems(['Nominal', 'Worst scenario', 'Voxel wise minimum', 'Voxel wise maximum'])
-    self.toolbox_6_layout.addWidget(self.toolbox_6_DisplayedDose)
-    self.toolbox_6_layout.addSpacing(30)
-    self.toolbox_6_layout.addWidget(QLabel('<b>Target:</b>'))
-    self.toolbox_6_Target = QComboBox()
-    self.toolbox_6_Target.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_6_layout.addWidget(self.toolbox_6_Target)
-    self.toolbox_6_layout.addSpacing(10)
-    self.toolbox_6_layout.addWidget(QLabel('<b>Prescription:</b>'))
-    self.toolbox_6_Prescription = QDoubleSpinBox()
-    self.toolbox_6_Prescription.setRange(0.0, 100.0)
-    self.toolbox_6_Prescription.setSingleStep(1.0)
-    self.toolbox_6_Prescription.setValue(60.0)
-    self.toolbox_6_Prescription.setSuffix(" Gy")
-    self.toolbox_6_layout.addWidget(self.toolbox_6_Prescription)
-    self.toolbox_6_layout.addSpacing(10)
-    self.toolbox_6_layout.addWidget(QLabel('<b>Evaluation metric:</b>'))
-    self.toolbox_6_Metric = QComboBox()
-    self.toolbox_6_Metric.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_6_Metric.addItems(['D95', 'MSE'])
-    self.toolbox_6_layout.addWidget(self.toolbox_6_Metric)
-    self.toolbox_6_layout.addSpacing(10)
-    self.toolbox_6_CI_label = QLabel('<b>Confidence interval:</b>')
-    self.toolbox_6_layout.addWidget(self.toolbox_6_CI_label)
-    self.toolbox_6_CI = QSlider(Qt.Horizontal)
-    self.toolbox_6_CI.setMinimum(0.0)
-    self.toolbox_6_CI.setMaximum(100.0)
-    self.toolbox_6_CI.setValue(90.0)
-    self.toolbox_6_layout.addWidget(self.toolbox_6_CI)
-    self.toolbox_6_layout.addStretch()
-    self.toolbox_6_CI.valueChanged.connect(self.recompute_robustness_analysis)
-    self.toolbox_6_Metric.currentIndexChanged.connect(self.recompute_robustness_analysis)
-    self.toolbox_6_DisplayedDose.currentIndexChanged.connect(self.recompute_robustness_analysis)
-    self.toolbox_6_Target.currentIndexChanged.connect(self.recompute_robustness_analysis)
-    self.toolbox_6_Prescription.valueChanged.connect(self.recompute_robustness_analysis)
-    self.update_robust_eval_settings()
-    self.recompute_robustness_analysis()
+    self.toolbox_2.New_contour_added.connect(self.toolbox_6.Add_new_contour)
+    self.toolbox_2.Contour_removed.connect(self.toolbox_6.Remove_contour)
+    self.toolbox_5.Update_dose_calculation_param(self.toolbox_6.Dose_calculation_param)
+    self.toolbox_3.Dose_calculation_param_changed.connect(self.toolbox_6.Update_dose_calculation_param)
+    self.toolbox_1.Data_path_changed.connect(self.toolbox_6.Data_path_changed)
+    self.toolbox_6.Robustness_analysis_recomputed.connect(self.update_robustness_viewer)
 
     # initialize the 7th toolbox panel (Image registration)
-    self.toolbox_7 = QWidget()
+    self.toolbox_7 = Toolbox_ImageRegistration(self.Patients, self.toolbox_width)
     self.toolbox_main.addItem(self.toolbox_7, 'Image registration')
-    self.toolbox_7_layout = QVBoxLayout()
-    self.toolbox_7.setLayout(self.toolbox_7_layout)
-    self.toolbox_7_layout.addWidget(QLabel('<b>Fixed image:</b>'))
-    self.toolbox_7_Fixed = QComboBox()
-    self.toolbox_7_Fixed.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_7_layout.addWidget(self.toolbox_7_Fixed)
-    self.toolbox_7_layout.addSpacing(15)
-    self.toolbox_7_layout.addWidget(QLabel('<b>Moving image:</b>'))
-    self.toolbox_7_Moving = QComboBox()
-    self.toolbox_7_Moving.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_7_layout.addWidget(self.toolbox_7_Moving)
-    self.toolbox_7_layout.addSpacing(15)
-    self.toolbox_7_layout.addWidget(QLabel('<b>Registration algorithm:</b>'))
-    self.toolbox_7_Algorithm = QComboBox()
-    self.toolbox_7_Algorithm.addItem("Quick translation search")
-    self.toolbox_7_Algorithm.addItem("Rigid registration")
-    self.toolbox_7_Algorithm.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_7_layout.addWidget(self.toolbox_7_Algorithm)
-    self.toolbox_7_layout.addSpacing(15)
-    self.toolbox_7_layout.addWidget(QLabel('<b>Region of Interest:</b>'))
-    self.toolbox_7_ROI = QComboBox()
-    self.toolbox_7_ROI.addItem("Entire image")
-    self.toolbox_7_ROI.setMaximumWidth(self.toolbox_width-18)
-    self.toolbox_7_layout.addWidget(self.toolbox_7_ROI)
-    self.toolbox_7_layout.addSpacing(30)
-    self.toolbox_7_RegisterButton = QPushButton('Register')
-    self.toolbox_7_layout.addWidget(self.toolbox_7_RegisterButton)
-    self.toolbox_7_RegisterButton.clicked.connect(self.register_images)
-    self.toolbox_7_layout.addSpacing(15)
-    self.toolbox_7_ResampleButton = QPushButton('Resample moving image')
-    self.toolbox_7_layout.addWidget(self.toolbox_7_ResampleButton)
-    self.toolbox_7_ResampleButton.clicked.connect(self.resample_moving)
-    self.toolbox_7_layout.addStretch()
-    self.toolbox_7_Fixed.currentIndexChanged.connect(self.recompute_image_difference)
-    self.toolbox_7_Moving.currentIndexChanged.connect(self.recompute_image_difference)
-    self.toolbox_7_ROI.currentIndexChanged.connect(self.display_registration_ROI)
+    self.toolbox_7.Registration_updated.connect(self.update_registration_viewer)
+    self.toolbox_7.New_CT_created.connect(self.toolbox_1.Add_CT)
+    self.toolbox_1.New_CT_created.connect(self.toolbox_7.Add_CT)
+    self.toolbox_1.CT_removed.connect(self.toolbox_7.Remove_CT)
+    self.toolbox_1.CT_renamed.connect(self.toolbox_7.Rename_CT)
+    self.toolbox_2.New_contour_added.connect(self.toolbox_7.Add_new_contour)
+    self.toolbox_2.Contour_removed.connect(self.toolbox_7.Remove_contour)
     
     # initialize the image viewer
     self.viewer_palette = QPalette()
@@ -438,35 +163,17 @@ class MainWindow(QMainWindow):
     self.viewer_layout.addWidget(self.viewer_DVH, 1,1)
     self.main_layout.addLayout(self.viewer_layout)
     
-    #QSplitter
-    
-  
-  
-  
-  def TemplateWindow(self):
-    # get list of contours
-    ContourList = []
-    for contour in self.ROI_CheckBox:
-      ContourList.append(contour.text())
+    self.GUI_initialized = 1
 
-    # get saved templates
-    Templates = ObjectiveTemplateList()
+
+
+  def Update_dose_calculation_param(self, param):
+    self.Dose_calculation_param = param
     
-    # create dialog window
-    dialog = ObjectiveTemplateWindow(ContourList, Templates)
-    
-    # get template
-    if(dialog.exec()):
-      for objective in Templates.list[Templates.SelectedID].Objectives:
-        if objective.ROIName in ContourList:
-          obj_number = self.toolbox_5_objectives.count()
-          self.toolbox_5_objectives.addItem(objective.ROIName + ":\n" + objective.Metric + " " + objective.Condition + " " + str(objective.LimitValue) + " Gy   (w=" + str(objective.Weight) + ")")
-          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+0, objective.ROIName)
-          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+1, objective.Metric)
-          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+2, objective.Condition)
-          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+3, objective.LimitValue)
-          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+4, objective.Weight)
-          self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+5, objective.Robust)
+  
+
+  def Data_path_changed(self, data_path):
+    self.data_path = data_path
 
 
 
@@ -520,124 +227,74 @@ class MainWindow(QMainWindow):
 
 
   def menu_changed(self, index):
+    if(not hasattr(self, 'GUI_initialized')): return
+
     # Robustness evaluation views
     if index == 5:
-      if hasattr(self, 'toolbox_6_layout'):
-        self.recompute_robustness_analysis()
+      if(self.toolbox_6.robustness_scenarios == []):
+        self.Current_CT_changed(self.CT_disp_ID)
+        self.Current_dose_changed(self.Dose_disp_ID)
+
+      else:
+        self.update_robustness_viewer()
 
     # Image registration views
     elif index == 6:
-      if hasattr(self, 'toolbox_7_layout'):
-        self.recompute_image_difference()
+      self.update_registration_viewer()
 
     # Normal views
     else:
-      if hasattr(self, 'toolbox_1_Dose_list') and hasattr(self, 'toolbox_1_CT_list') and self.toolbox_main.previous_index > 4:
-        self.Current_CT_changed(self.toolbox_1_CT_list.currentRow())
-        self.Current_dose_changed(self.toolbox_1_Dose_list.currentRow())
+      if self.toolbox_main.previous_index > 4:
+        self.Current_CT_changed(self.CT_disp_ID)
+        self.Current_dose_changed(self.Dose_disp_ID)
 
     self.toolbox_main.previous_index = index
 
 
 
-  def recompute_image_difference(self):
-    if(self.toolbox_main.currentIndex() != 6): return
-
-    Fixed_id = self.toolbox_7_Fixed.currentIndex()
-    Moving_id = self.toolbox_7_Moving.currentIndex()
-    if(Fixed_id < 0 or Moving_id < 0): return
-
-    if(Fixed_id == Moving_id): return
-
-    ct_patient_id, ct_id = self.Patients.find_CT_image(Fixed_id)
-    fixed = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    ct_patient_id, ct_id = self.Patients.find_CT_image(Moving_id)
-    moving = self.Patients.list[ct_patient_id].CTimages[ct_id]
-
-    reg = Registration(fixed, moving)
-    diff = reg.Image_difference(KeepFixedShape=False)
-
-    self.Viewer_CT = diff.prepare_image_for_viewer()
-    self.Viewer_Dose = np.array([])
-    self.Viewer_Contours = np.array([])
-
-    img_size = list(self.Viewer_CT.shape)
-    self.Viewer_axial_slice = round(img_size[2] / 2)
-    self.Viewer_coronal_slice = round(img_size[0] / 2)
-    self.Viewer_sagittal_slice = round(img_size[1] / 2)
-    self.Viewer_resolution = diff.PixelSpacing
-    self.Viewer_initialized = 1  
-
-    self.update_viewer('axial')
-    self.update_viewer('coronal')
-    self.update_viewer('sagittal')
-    self.display_registration_ROI()
-
-
-
-  def display_registration_ROI(self):
-    if(self.toolbox_7_ROI.currentText() == "Entire image"):
-      self.Viewer_Contours = np.array([])
-    else:
-      # compute ROI box shape
-      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_7_ROI.currentText())
-      ROI = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-      reg = Registration()
-      reg.setROI(ROI)
-      start = reg.ROI_box[0]
-      stop = reg.ROI_box[1]
-
-      # display
-      img_size = list(self.Viewer_CT.shape)
-      self.Viewer_Contours = np.zeros((img_size[0], img_size[1], img_size[2], 4))
-      self.Viewer_Contours[:,:,:,2] = 255
-      self.Viewer_Contours[start[0]:stop[0], start[1]:stop[1], start[2]:stop[2], 3] = 255
-      self.Viewer_Contours[start[0]+1:stop[0]-1, start[1]+1:stop[1]-1, start[2]+1:stop[2]-1, 3] = 0
-
-    self.update_viewer('axial')
-    self.update_viewer('coronal')
-    self.update_viewer('sagittal')
-
-
-
-  def recompute_robustness_analysis(self):
-
-    CI = self.toolbox_6_CI.value()
-    self.toolbox_6_CI_label.setText('<b>Confidence interval:</b> &nbsp;&nbsp;&nbsp; ' + str(CI) + " %")
-
-    # target contour
-    Target_name = self.toolbox_6_Target.currentText()
-    if(Target_name == ''): return
-    patient_id, struct_id, contour_id = self.Patients.find_contour(Target_name)
-    Target = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-    TargetPrescription = self.toolbox_6_Prescription.value()
-
-    if(self.robustness_scenarios == []): return
-
-    self.robustness_scenarios.DoseDistributionType = self.toolbox_6_DisplayedDose.currentText()
-
-    if(self.robustness_scenarios.SelectionStrategy == "Dosimetric"):
-      self.robustness_scenarios.dosimetric_space_analysis(self.toolbox_6_Metric.currentText(), CI, Target, TargetPrescription)
-    else:
-      self.robustness_scenarios.error_space_analysis(self.toolbox_6_Metric.currentText(), Target, TargetPrescription)
+  def update_robustness_viewer(self):
+    if(self.toolbox_6.robustness_scenarios == []): return
 
     # update dvh
     self.update_DVH_band_viewer()
 
     # update dose distribution
-    self.Viewer_Dose = self.robustness_scenarios.DoseDistribution.prepare_image_for_viewer()
+    self.Viewer_Dose = self.toolbox_6.robustness_scenarios.DoseDistribution.prepare_image_for_viewer()
     self.update_viewer('axial')
     self.update_viewer('coronal')
     self.update_viewer('sagittal')
 
 
 
+  def update_registration_viewer(self):
+    if(self.toolbox_7.diff_image_viewer == []): return
+
+    self.Viewer_CT = self.toolbox_7.diff_image_viewer
+    self.Viewer_Dose = np.array([])
+
+    img_size = list(self.Viewer_CT.shape)
+    self.Viewer_axial_slice = round(img_size[2] / 2)
+    self.Viewer_coronal_slice = round(img_size[0] / 2)
+    self.Viewer_sagittal_slice = round(img_size[1] / 2)
+    self.Viewer_resolution = self.toolbox_7.PixelSpacing_viewer
+    self.Viewer_initialized = 1  
+
+    if(self.toolbox_7.ROI_box_viewer == []):
+      self.Viewer_Contours = np.array([])
+    else:
+      self.Viewer_Contours = self.toolbox_7.ROI_box_viewer
+
+    self.update_viewer('axial')
+    self.update_viewer('coronal')
+    self.update_viewer('sagittal')
+
+
 
   def update_DVH_band_viewer(self):
     self.viewer_DVH.clear()
-    for dvh_band in self.robustness_scenarios.DVH_bands:
+    for dvh_band in self.toolbox_6.robustness_scenarios.DVH_bands:
       display = 0
-      for ROI in self.ROI_CheckBox:
+      for ROI in self.toolbox_2.ROI_CheckBox:
         if ROI.text() == dvh_band.ROIName:
           display = ROI.isChecked()
           break
@@ -659,776 +316,17 @@ class MainWindow(QMainWindow):
 
 
 
-  def set_robust_eval_settings(self):
-    dialog = Robustness_Settings_dialog(PlanEvaluation=True, RobustParam=self.RobustEval)
-    if(dialog.exec()): self.RobustEval = dialog.RobustParam
-    self.update_robust_eval_settings()
-
-
-  def set_robust_opti_settings(self):
-    dialog = Robustness_Settings_dialog(PlanEvaluation=False, RobustParam=self.RobustOpti)
-    if(dialog.exec()): self.RobustOpti = dialog.RobustParam
-    self.update_robust_opti_settings()
-
-
-
-  def update_robust_eval_settings(self):
-    if(self.RobustEval["Strategy"] == 'ErrorSpace_regular'):
-      self.toolbox_6_Strategy.setText('Error space (regular)')
-      self.toolbox_6_Syst_Setup.setText('Syst. setup: E<sub>S</sub> = ' + str(self.RobustEval["syst_setup"]) + ' mm')
-      self.toolbox_6_Rand_Setup.setText('Rand. setup: &sigma;<sub>S</sub> = ' + str(self.RobustEval["rand_setup"]) + ' mm')
-      self.toolbox_6_Syst_Range.setText('Syst. range: E<sub>R</sub> = ' + str(self.RobustEval["syst_range"]) + ' %')
-    elif(self.RobustEval["Strategy"] == 'ErrorSpace_stat'):
-      self.toolbox_6_Strategy.setText('Error space (statistical)')
-      self.toolbox_6_Syst_Setup.setText('Syst. setup: &Sigma;<sub>S</sub> = ' + str(self.RobustEval["syst_setup"]) + ' mm')
-      self.toolbox_6_Rand_Setup.setText('Rand. setup: &sigma;<sub>S</sub> = ' + str(self.RobustEval["rand_setup"]) + ' mm')
-      self.toolbox_6_Syst_Range.setText('Syst. range: &Sigma;<sub>R</sub> = ' + str(self.RobustEval["syst_range"]) + ' %')
-    else:
-      self.toolbox_6_Strategy.setText('Dosimetric space (statistical)')
-      self.toolbox_6_Syst_Setup.setText('Syst. setup: &Sigma;<sub>S</sub> = ' + str(self.RobustEval["syst_setup"]) + ' mm')
-      self.toolbox_6_Rand_Setup.setText('Rand. setup: &sigma;<sub>S</sub> = ' + str(self.RobustEval["rand_setup"]) + ' mm')
-      self.toolbox_6_Syst_Range.setText('Syst. range: &Sigma;<sub>R</sub> = ' + str(self.RobustEval["syst_range"]) + ' %')
-
-
-
-  def update_robust_opti_settings(self):
-    if(self.RobustOpti["Strategy"] == 'Disabled'):
-      self.toolbox_4_RobustSettings.setText('Disabled')
-    else:
-      RobustSettings = ''
-      RobustSettings += 'Selection: error space<br>'
-      RobustSettings += 'Syst. setup: E<sub>S</sub> = ' + str(self.RobustOpti["syst_setup"]) + ' mm<br>'
-      RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self.RobustOpti["rand_setup"]) + ' mm<br>'
-      RobustSettings += 'Syst. range: E<sub>R</sub> = ' + str(self.RobustOpti["syst_range"]) + ' %'
-      self.toolbox_4_RobustSettings.setText(RobustSettings)
-
-
-
-  def add_new_objective(self):
-    # get list of contours
-    ContourList = []
-    for contour in self.ROI_CheckBox:
-      ContourList.append(contour.text())
-
-    # find selected plan
-    plan_disp_id = self.toolbox_1_Plan_list.currentRow()
-    if(plan_disp_id < 0):
-      print("Error: No treatment plan selected")
-      return
-    plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
-    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
-    
-    # create dialog window
-    if(plan.RobustOpti["Strategy"] == 'Disabled'): dialog = AddObjective_dialog(ContourList, RobustOpti=False)
-    else: dialog = AddObjective_dialog(ContourList, RobustOpti=True)
-
-    obj_number = self.toolbox_5_objectives.count()
-    if(obj_number == 0): dialog.Contour.setCurrentText(self.toolbox_5_Target.currentText())
-    else: dialog.Contour.setCurrentText(self.toolbox_5_objectives.item(obj_number-1).data(Qt.UserRole+0))
-    
-    # get objective inputs
-    if(dialog.exec()):
-      ROIName = dialog.Contour.currentText()
-      Metric = dialog.Metric.currentText()
-      Condition = dialog.Condition.currentText()
-      LimitValue = dialog.LimitValue.value()
-      Weight = dialog.Weight.value()
-      Robust = dialog.Robust.isChecked()
-      if(Robust == True):
-        self.toolbox_5_objectives.addItem(ROIName + ":\n" + Metric + " " + Condition + " " + str(LimitValue) + " Gy   (w=" + str(Weight) + ", robust)")
-      else:
-        self.toolbox_5_objectives.addItem(ROIName + ":\n" + Metric + " " + Condition + " " + str(LimitValue) + " Gy   (w=" + str(Weight) + ")")
-      self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+0, ROIName)
-      self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+1, Metric)
-      self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+2, Condition)
-      self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+3, LimitValue)
-      self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+4, Weight)
-      self.toolbox_5_objectives.item(obj_number).setData(Qt.UserRole+5, Robust)
-
-
-
-  def register_images(self):
-    Fixed_id = self.toolbox_7_Fixed.currentIndex()
-    Moving_id = self.toolbox_7_Moving.currentIndex()
-    if(Fixed_id < 0 or Moving_id < 0): return
-
-    ct_patient_id, ct_id = self.Patients.find_CT_image(Fixed_id)
-    fixed = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    ct_patient_id, ct_id = self.Patients.find_CT_image(Moving_id)
-    moving = self.Patients.list[ct_patient_id].CTimages[ct_id]
-
-    reg = Registration(fixed, moving)
-
-    if(self.toolbox_7_ROI.currentText() != "Entire image"):
-      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_7_ROI.currentText())
-      ROI = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-      reg.setROI(ROI)
-
-    if(self.toolbox_7_Algorithm.currentText() == "Quick translation search"):
-      translation = reg.Quick_translation_search()
-    elif(self.toolbox_7_Algorithm.currentText() == "Rigid registration"):
-      translation = reg.Rigid_registration()
-    else:
-      translation = [0.0, 0.0, 0.0]
-
-    print(translation)
-    reg.Translate_origin(moving, translation)
-
-    self.recompute_image_difference()
-
-
-
-  def resample_moving(self):
-    Fixed_id = self.toolbox_7_Fixed.currentIndex()
-    Moving_id = self.toolbox_7_Moving.currentIndex()
-    if(Fixed_id < 0 or Moving_id < 0): return
-
-    ct_patient_id, ct_id = self.Patients.find_CT_image(Fixed_id)
-    fixed = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    ct_patient_id, ct_id = self.Patients.find_CT_image(Moving_id)
-    moving = self.Patients.list[ct_patient_id].CTimages[ct_id]
-
-    reg = Registration(fixed, moving)
-    resampled = reg.Resample_moving_image(KeepFixedShape=True)
-    resampled.ImgName += "_registered"
-
-    self.Patients.list[ct_patient_id].CTimages.append(resampled)
-    self.toolbox_1_CT_list.addItem(resampled.ImgName)
-    self.toolbox_7_Fixed.addItem(resampled.ImgName)
-    self.toolbox_7_Moving.addItem(resampled.ImgName)
-
-      
-    
-  def optimize_plan(self):
-    # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
-      print("Error: No CT image selected")
-      return
-    ct_patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-    ct = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    
-    # find selected plan
-    plan_disp_id = self.toolbox_1_Plan_list.currentRow()
-    if(plan_disp_id < 0):
-      print("Error: No treatment plan selected")
-      return
-    plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
-    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
-    
-    # encode optimization objectives
-    Target = self.toolbox_5_Target.currentText()
-    ROINames = set([Target])
-    Prescription = self.toolbox_5_Prescription.value()
-    plan.Objectives.setTarget(Target, Prescription)
-    plan.Objectives.list = []
-    for i in range(self.toolbox_5_objectives.count()):
-      ROIName = self.toolbox_5_objectives.item(i).data(Qt.UserRole+0)
-      Metric = self.toolbox_5_objectives.item(i).data(Qt.UserRole+1)
-      Condition = self.toolbox_5_objectives.item(i).data(Qt.UserRole+2)
-      LimitValue = self.toolbox_5_objectives.item(i).data(Qt.UserRole+3)
-      Weight = self.toolbox_5_objectives.item(i).data(Qt.UserRole+4)
-      Robust = self.toolbox_5_objectives.item(i).data(Qt.UserRole+5)
-      plan.Objectives.addObjective(ROIName, Metric, Condition, LimitValue, Weight, Robust=Robust)
-      ROINames.add(ROIName)
-      
-    # create list of contours
-    contours = []
-    for ROI in ROINames:
-      patient_id, struct_id, contour_id = self.Patients.find_contour(ROI)
-      contours.append(self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id])
-
-    # Beamlet-free optimization algorithm
-    if(self.toolbox_5_Algorithm.currentText() == "Beamlet-free MCsquare"):
-      # configure MCsquare module
-      mc2 = MCsquare()
-      mc2.DoseName = plan.PlanName
-      mc2.BDL.selected_BDL = self.toolbox_3_BDL_List.currentText()
-      mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
-      mc2.NumProtons = self.toolbox_3_NumProtons.value()
-      mc2.dose2water = self.toolbox_3_dose2water.checkState()
-      mc2.PlanOptimization = "beamlet-free"
-
-      # Crop CT image with contour:
-      if(self.toolbox_3_CropContour.currentIndex() > 0):
-        patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
-        mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-          
-      # run MCsquare optimization
-      mhd_dose = mc2.BeamletFree_optimization(ct, plan, contours)
-      dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct, plan)
-
-
-    # Beamlet-based optimization methods
-    else:
-      # check beamlets
-      if(plan.beamlets == []):
-        print("Error: beamlets must be pre-computed")
-        return
-
-      # beamlet-based optimization with BFGS
-      if(self.toolbox_5_Algorithm.currentText() == "Beamlet-based BFGS"):
-        w, dose_vector, ps = OptimizeWeights(plan, contours, method="BFGS")
-
-      # beamlet-based optimization with L-BFGS
-      elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based L-BFGS"):
-        w, dose_vector, ps = OptimizeWeights(plan, contours, method="L-BFGS")
-
-      # beamlet-based optimization with FISTA
-      elif(self.toolbox_5_Algorithm.currentText() == "Beamlet-based Scipy-lBFGS"):
-        w, dose_vector, ps = OptimizeWeights(plan, contours, method="Scipy-lBFGS")
-
-      dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
-
-    # add dose image in the database
-    self.Patients.list[plan_patient_id].RTdoses.append(dose)
-    self.toolbox_1_Dose_list.addItem(dose.ImgName)
-    
-    # display new dose
-    currentRow = self.toolbox_1_Dose_list.count()-1
-    self.toolbox_1_Dose_list.setCurrentRow(currentRow)   
-
-    # save plan
-    output_path = os.path.join(self.data_path, "OpenTPS")
-    if not os.path.isdir(output_path):
-      os.mkdir(output_path)
-    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-    plan.save(plan_file)
-    
-    
-    
-  def add_new_beam(self):
-    beam_number = self.toolbox_4_beams.count()
-
-    # retrieve list of range shifters from BDL
-    BDL = MCsquare_BDL()
-    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
-    RangeShifterList = [RS.ID for RS in BDL.RangeShifters]
-
-    dialog = AddBeam_dialog("Beam " + str(beam_number+1), RangeShifterList=RangeShifterList)
-    if(dialog.exec()):
-      BeamName = dialog.BeamName.text()
-      GantryAngle = dialog.GantryAngle.value()
-      CouchAngle = dialog.CouchAngle.value()
-      RangeShifter = dialog.RangeShifter.currentText()
-
-      if(RangeShifter == "None"): RS_disp=""
-      else: RS_disp=", RS"
-      self.toolbox_4_beams.addItem(BeamName + ":  G=" + str(GantryAngle) + "°,  C=" + str(CouchAngle) + "°" + RS_disp)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+0, BeamName)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+1, 'beam')
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+2, GantryAngle)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+3, CouchAngle)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+4, RangeShifter)
-    
-    
-    
-  def add_new_arc(self):
-    beam_number = self.toolbox_4_beams.count()
-
-    # retrieve list of range shifters from BDL
-    BDL = MCsquare_BDL()
-    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
-    RangeShifterList = [RS.ID for RS in BDL.RangeShifters]
-
-    dialog = AddArc_dialog("Arc " + str(beam_number+1), RangeShifterList=RangeShifterList)
-    if(dialog.exec()):
-      ArcName = dialog.ArcName.text()
-      StartGantryAngle = dialog.StartGantryAngle.value()
-      StopGantryAngle = dialog.StopGantryAngle.value()
-      AngularStep = dialog.AngularStep.value()
-      CouchAngle = dialog.CouchAngle.value()
-      RangeShifter = dialog.RangeShifter.currentText()
-
-      if(RangeShifter == "None"): RS_disp=""
-      else: RS_disp=", RS"
-      self.toolbox_4_beams.addItem(ArcName + ":  G=" + str(StartGantryAngle) + " to " + str(StopGantryAngle) + "°,  C=" + str(CouchAngle) + "°" + RS_disp)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+0, ArcName)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+1, 'arc')
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+2, StartGantryAngle)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+3, CouchAngle)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+4, StopGantryAngle)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+5, AngularStep)
-      self.toolbox_4_beams.item(beam_number).setData(Qt.UserRole+6, RangeShifter)
-  
-  
-  
-  def create_new_plan(self):
-    # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
-      print("Error: No CT image selected")
-      return
-    patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-    ct = self.Patients.list[patient_id].CTimages[ct_id]
-    
-    # target contour
-    Target_name = self.toolbox_4_Target.currentText()
-    patient_id, struct_id, contour_id = self.Patients.find_contour(Target_name)
-    Target = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-    
-    Scanner = self.toolbox_3_Scanner_List.currentText()
-
-    # load BDL
-    BDL = MCsquare_BDL()
-    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
-    
-    # extract beam info from QListWidget
-    BeamNames = []
-    GantryAngles = []
-    CouchAngles = []
-    RangeShifters = []
-    for i in range(self.toolbox_4_beams.count()):
-      BeamType = self.toolbox_4_beams.item(i).data(Qt.UserRole+1)
-      if(BeamType == "beam"):
-        BeamNames.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+0))
-        GantryAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+2))
-        CouchAngles.append(self.toolbox_4_beams.item(i).data(Qt.UserRole+3))
-        RS_ID = self.toolbox_4_beams.item(i).data(Qt.UserRole+4)
-        if(RS_ID == "None"):
-          RangeShifter = "None"
-        else:
-          RangeShifter = next((RS for RS in BDL.RangeShifters if RS.ID == RS_ID), -1)
-          if(RangeShifter == -1):
-            print("WARNING: Range shifter " + RS_ID + " was not found in the BDL.")
-            RangeShifter = "None"
-        RangeShifters.append(RangeShifter)
-
-      elif(BeamType == "arc"):
-        name = self.toolbox_4_beams.item(i).data(Qt.UserRole+0)
-        start = self.toolbox_4_beams.item(i).data(Qt.UserRole+2)
-        couch = self.toolbox_4_beams.item(i).data(Qt.UserRole+3)
-        stop = self.toolbox_4_beams.item(i).data(Qt.UserRole+4)
-        step = self.toolbox_4_beams.item(i).data(Qt.UserRole+5)
-        RangeShifter = next((RS for RS in BDL.RangeShifters if RS.ID == self.toolbox_4_beams.item(i).data(Qt.UserRole+6)), -1)
-        RS_ID = self.toolbox_4_beams.item(i).data(Qt.UserRole+6)
-        if(RS_ID == "None"):
-          RangeShifter = "None"
-        else:
-          ID = next((RS for RS in BDL.RangeShifters if RS.ID == RS_ID), -1)
-          if(ID == -1):
-            print("WARNING: Range shifter " + RS_ID + " was not found in the BDL.")
-            RangeShifter = "None"
-
-        if start > stop:
-          start -= 360
-        for b in range(math.floor((stop-start)/step)+1):
-          angle = start + b * step
-          if angle < 0.0: angle += 360
-          print(angle)
-          BeamNames.append(name + "_" + str(angle))
-          GantryAngles.append(angle)
-          CouchAngles.append(couch)
-          RangeShifters.append(RangeShifter)
-
-    # set spacing parameters
-    if(self.RobustOpti["Strategy"] == 'Disabled'): 
-      SpotSpacing = 5.0
-      LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5
-    else: 
-      SpotSpacing = 5.0
-      LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5 + max(self.RobustOpti["syst_setup"])
-
-    
-    # Generate new plan
-    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing)
-    plan.PlanName = self.toolbox_4_plan_name.text()
-    plan.RobustOpti = self.RobustOpti
-    self.Patients.list[patient_id].Plans.append(plan)
-    
-    # display new plan to the list
-    self.toolbox_1_Plan_list.addItem(plan.PlanName)
-    currentRow = self.toolbox_1_Plan_list.count()-1
-    self.toolbox_1_Plan_list.setCurrentRow(currentRow)
-    
-  
-  
-  def import_PlanPencil(self):
-    # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
-      print("Error: No CT image selected")
-      return
-    patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-    ct = self.Patients.list[patient_id].CTimages[ct_id]
-    
-    # select file
-    path, _ = QFileDialog.getOpenFileName(self, "Open MCsquare plan", self.data_path, "MCsquare plan (*.txt);;All files (*.*)")
-    if(path == ""): return
-    
-    # import file
-    plan = import_MCsquare_plan(path, ct)
-    self.Patients.list[patient_id].Plans.append(plan)
-    
-    # display new plan
-    self.toolbox_1_Plan_list.addItem(plan.PlanName)
-    currentRow = self.toolbox_1_Plan_list.count()-1
-    self.toolbox_1_Plan_list.setCurrentRow(currentRow)
-
-
-
-  def import_OpenTPS_Plan(self): 
-    # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
-      print("Error: No CT image selected")
-      return
-    patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-
-    # select file
-    file_path, _ = QFileDialog.getOpenFileName(self, "Load OpenTPS plan", self.data_path, "OpenTPS data (*.tps);;All files (*.*)")
-    if(file_path == ""): return
-
-    # import plan
-    plan = RTplan()
-    plan.load(file_path)
-      
-    # add plan to list
-    self.Patients.list[patient_id].Plans.append(plan)
-    
-    # display new plan
-    self.toolbox_1_Plan_list.addItem(plan.PlanName)
-    currentRow = self.toolbox_1_Plan_list.count()-1
-    self.toolbox_1_Plan_list.setCurrentRow(currentRow)
-    
-  
-  
-  def compute_beamlets(self):
-    # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
-      print("Error: No CT image selected")
-      return
-    ct_patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-    ct = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    
-    # find selected plan
-    plan_disp_id = self.toolbox_1_Plan_list.currentRow()
-    if(plan_disp_id < 0):
-      print("Error: No treatment plan selected")
-      return
-    plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
-    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
-    
-    # configure MCsquare module
-    mc2 = MCsquare()
-    mc2.BDL.selected_BDL = self.toolbox_3_BDL_List.currentText()
-    mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
-    mc2.NumProtons = 5e4
-    mc2.dose2water = self.toolbox_3_dose2water.checkState()
-    mc2.SetupSystematicError = plan.RobustOpti["syst_setup"]
-    mc2.SetupRandomError = plan.RobustOpti["rand_setup"]
-    mc2.RangeSystematicError = plan.RobustOpti["syst_range"]
-    if(plan.RobustOpti["Strategy"] == 'Disabled'): mc2.Robustness_Strategy = "Disabled"
-    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
-
-    # Crop CT image with contour:
-    if(self.toolbox_3_CropContour.currentIndex() > 0):
-      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
-      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-    
-    # output folder
-    output_path = os.path.join(self.data_path, "OpenTPS")
-    if not os.path.isdir(output_path):
-      os.mkdir(output_path)
-
-    # run MCsquare simulation
-    mc2.MCsquare_beamlet_calculation(ct, plan, output_path)
-
-    # save plan
-    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-    plan.save(plan_file)
-
-
-
-
-  def load_robustness_scenarios(self):
-    # select folder
-    folder_path = QFileDialog.getExistingDirectory(self, "Select robustness test directory", self.data_path)
-    if(folder_path == ""): return
-
-    scenarios = RobustnessTest()
-    scenarios.load(folder_path)
-
-    if scenarios.SelectionStrategy == "Dosimetric":
-      self.RobustEval["Strategy"] = 'DoseSpace'
-    else:
-      self.RobustEval["Strategy"] = 'ErrorSpace_regular'
-
-    self.RobustEval["syst_setup"] = scenarios.SetupSystematicError
-    self.RobustEval["rand_setup"] = scenarios.SetupRandomError
-    self.RobustEval["syst_range"] = scenarios.RangeSystematicError
-
-    self.update_robust_eval_settings()
-    scenarios.print_info()
-
-    #scenarios.recompute_DVH(self.Patients.list[0].RTstructs[0].Contours)
-    #scenarios.save(folder_path)
-
-    self.robustness_scenarios = scenarios
-    self.recompute_robustness_analysis()
-
-  
-  
-  def compute_robustness_scenarios(self):
-    # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
-      print("Error: No CT image selected")
-      return
-    ct_patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-    ct = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    
-    # find selected plan
-    plan_disp_id = self.toolbox_1_Plan_list.currentRow()
-    if(plan_disp_id < 0):
-      print("Error: No treatment plan selected")
-      return
-    plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
-    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
-
-    # find contours
-    Target_name = self.toolbox_6_Target.currentText()
-    patient_id, struct_id, contour_id = self.Patients.find_contour(Target_name)
-    AllContours = self.Patients.list[patient_id].RTstructs[struct_id].Contours
-
-    # configure MCsquare module
-    mc2 = MCsquare()
-    mc2.BDL.selected_BDL = self.toolbox_3_BDL_List.currentText()
-    mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
-    mc2.NumProtons = self.toolbox_3_NumProtons.value()
-    mc2.MaxUncertainty = self.toolbox_3_MaxUncertainty.value()
-    mc2.dose2water = self.toolbox_3_dose2water.checkState()
-    mc2.SetupSystematicError = self.RobustEval["syst_setup"]
-    mc2.SetupRandomError = self.RobustEval["rand_setup"]
-    mc2.RangeSystematicError = self.RobustEval["syst_range"]
-    if(self.RobustEval["Strategy"] == 'DoseSpace'): mc2.Robustness_Strategy = "DoseSpace"
-    elif(self.RobustEval["Strategy"] == 'ErrorSpace_stat'): mc2.Robustness_Strategy = "ErrorSpace_stat"
-    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
-
-    # Crop CT image with contour:
-    if(self.toolbox_3_CropContour.currentIndex() > 0):
-      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
-      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-
-    # run MCsquare simulation
-    scenarios = mc2.MCsquare_RobustScenario_calculation(ct, plan, AllContours)
-
-    # save data
-    output_path = os.path.join(self.data_path, "OpenTPS")
-    if not os.path.isdir(output_path):
-      os.mkdir(output_path)
-    output_folder = os.path.join(output_path, "RobustnessTest_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S"))
-    scenarios.save(output_folder)
-
-    self.robustness_scenarios = scenarios
-    self.recompute_robustness_analysis()
-
-
-
-
-  def run_MCsquare(self):
-    # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
-      print("Error: No CT image selected")
-      return
-    ct_patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-    ct = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    
-    # find selected plan
-    plan_disp_id = self.toolbox_1_Plan_list.currentRow()
-    if(plan_disp_id < 0):
-      print("Error: No treatment plan selected")
-      return
-    plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
-    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
-    
-    # configure MCsquare module
-    mc2 = MCsquare()
-    mc2.DoseName = self.toolbox_3_dose_name.text()
-    mc2.BDL.selected_BDL = self.toolbox_3_BDL_List.currentText()
-    mc2.Scanner.selected_Scanner = self.toolbox_3_Scanner_List.currentText()
-    mc2.NumProtons = self.toolbox_3_NumProtons.value()
-    mc2.MaxUncertainty = self.toolbox_3_MaxUncertainty.value()
-    mc2.dose2water = self.toolbox_3_dose2water.checkState()
-
-    # Crop CT image with contour:
-    if(self.toolbox_3_CropContour.currentIndex() > 0):
-      patient_id, struct_id, contour_id = self.Patients.find_contour(self.toolbox_3_CropContour.currentText())
-      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-    
-    # run MCsquare simulation
-    mhd_dose = mc2.MCsquare_simulation(ct, plan)
-    
-    # load dose image in the database
-    dose = RTdose().Initialize_from_MHD(mc2.DoseName, mhd_dose, ct, plan)
-    self.Patients.list[plan_patient_id].RTdoses.append(dose)
-    self.toolbox_1_Dose_list.addItem(dose.ImgName)
-    
-    # deep learning dose denoising
-    if(self.toolbox_3_DoseDenoising.checkState()):
-      DenoisedDose = RTdose().Initialize_from_MHD(mc2.DoseName + "_denoised", mhd_dose, ct, plan)
-      DenoisedDose.Image = Denoise_MC_dose(dose.Image, 'dUNet_24')
-      self.Patients.list[plan_patient_id].RTdoses.append(DenoisedDose)
-      self.toolbox_1_Dose_list.addItem(DenoisedDose.ImgName)
-    
-    # display new dose
-    currentRow = self.toolbox_1_Dose_list.count()-1
-    self.toolbox_1_Dose_list.setCurrentRow(currentRow)
-    
-    
-    
-  def rename_item(self, list_type, row):
-    if(list_type == 'CT'):
-      patient_id, ct_id = self.Patients.find_CT_image(row)
-      NewName, okPressed = QInputDialog.getText(self, "Rename " + list_type + " image", "New name:", QLineEdit.Normal, self.Patients.list[patient_id].CTimages[ct_id].ImgName)
-      if(okPressed):
-        self.Patients.list[patient_id].CTimages[ct_id].ImgName = NewName
-        self.toolbox_1_CT_list.item(row).setText(NewName)
-        self.toolbox_7_Fixed.setItemText(row, NewName)
-        self.toolbox_7_Moving.setItemText(row, NewName)
-        
-    elif(list_type == 'dose'):
-      patient_id, dose_id = self.Patients.find_dose_image(row)
-      NewName, okPressed = QInputDialog.getText(self, "Rename " + list_type + " image", "New name:", QLineEdit.Normal, self.Patients.list[patient_id].RTdoses[dose_id].ImgName)
-      if(okPressed):
-        self.Patients.list[patient_id].RTdoses[dose_id].ImgName = NewName
-        self.toolbox_1_Dose_list.item(row).setText(NewName)
-        
-    elif(list_type == 'plan'):
-      patient_id, plan_id = self.Patients.find_plan(row)
-      NewName, okPressed = QInputDialog.getText(self, "Rename " + list_type + " plan", "New name:", QLineEdit.Normal, self.Patients.list[patient_id].Plans[plan_id].PlanName)
-      if(okPressed):
-        self.Patients.list[patient_id].Plans[plan_id].PlanName = NewName
-        self.toolbox_1_Plan_list.item(row).setText(NewName)
-        
-        
-    
-  def delete_item(self, list_type, row):
-    if(list_type == 'CT'):
-      patient_id, ct_id = self.Patients.find_CT_image(row)
-      DeleteReply = QMessageBox.question(self, 'Delete image', 'Delete "' + self.Patients.list[patient_id].CTimages[ct_id].ImgName + '" CT image ?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-      if(DeleteReply == QMessageBox.Yes):
-        del self.Patients.list[patient_id].CTimages[ct_id]
-        self.toolbox_1_CT_list.takeItem(row)
-        self.toolbox_7_Fixed.removeItem(row)
-        self.toolbox_7_Moving.removeItem(row)
-        
-    elif(list_type == 'dose'):
-      patient_id, dose_id = self.Patients.find_dose_image(row)
-      DeleteReply = QMessageBox.question(self, 'Delete image', 'Delete "' + self.Patients.list[patient_id].RTdoses[dose_id].ImgName + '" dose image ?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-      if(DeleteReply == QMessageBox.Yes):
-        del self.Patients.list[patient_id].RTdoses[dose_id]
-        self.toolbox_1_Dose_list.takeItem(row)
-        
-    elif(list_type == 'plan'):
-      patient_id, plan_id = self.Patients.find_plan(row)
-      DeleteReply = QMessageBox.question(self, 'Delete plan', 'Delete "' + self.Patients.list[patient_id].Plans[plan_id].PlanName + '" plan ?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-      if(DeleteReply == QMessageBox.Yes):
-        del self.Patients.list[patient_id].Plans[plan_id]
-        self.toolbox_1_Plan_list.takeItem(row)
-        
-    elif(list_type == 'beam'):
-      self.toolbox_4_beams.takeItem(row)
-        
-    elif(list_type == 'objective'):
-      self.toolbox_5_objectives.takeItem(row)
-        
-  
-  
-  def List_RightClick(self, pos, list_type):
-    if(list_type == 'CT'):
-      item = self.toolbox_1_CT_list.itemAt(pos)
-      row = self.toolbox_1_CT_list.row(item)
-      pos = self.toolbox_1_CT_list.mapToGlobal(pos)
-   
-    elif(list_type == 'dose'):
-      item = self.toolbox_1_Dose_list.itemAt(pos)
-      row = self.toolbox_1_Dose_list.row(item)
-      pos = self.toolbox_1_Dose_list.mapToGlobal(pos)
-   
-    elif(list_type == 'plan'):
-      item = self.toolbox_1_Plan_list.itemAt(pos)
-      row = self.toolbox_1_Plan_list.row(item)
-      pos = self.toolbox_1_Plan_list.mapToGlobal(pos)
-      patient_id, plan_id = self.Patients.find_plan(row)
-      plan = self.Patients.list[patient_id].Plans[plan_id]
-   
-    elif(list_type == 'beam'):
-      item = self.toolbox_4_beams.itemAt(pos)
-      row = self.toolbox_4_beams.row(item)
-      pos = self.toolbox_4_beams.mapToGlobal(pos)
-   
-    elif(list_type == 'objective'):
-      item = self.toolbox_5_objectives.itemAt(pos)
-      row = self.toolbox_5_objectives.row(item)
-      pos = self.toolbox_5_objectives.mapToGlobal(pos)
-    
-    else: return
-    
-    if(row > -1):
-      self.context_menu = QMenu()
-      if(list_type == 'dose'):
-        self.export_action = QAction("Export")
-        self.export_action.triggered.connect(lambda checked, list_type=list_type, row=row: self.export_item(list_type, row))
-        self.context_menu.addAction(self.export_action)
-      if(list_type != 'beam' and list_type != 'objective'):
-        self.rename_action = QAction("Rename")
-        self.rename_action.triggered.connect(lambda checked, list_type=list_type, row=row: self.rename_item(list_type, row))
-        self.context_menu.addAction(self.rename_action)
-      self.delete_action = QAction("Delete")
-      self.delete_action.triggered.connect(lambda checked, list_type=list_type, row=row: self.delete_item(list_type, row))
-      self.context_menu.addAction(self.delete_action)
-      if(list_type == 'plan'):
-        self.display_spot_action = []
-        self.display_spot_action.append( QAction("Display spots (full plan)") )
-        self.display_spot_action[0].triggered.connect(lambda checked, beam=-1: self.display_spots(beam))
-        self.context_menu.addAction(self.display_spot_action[0])
-        for b in range(len(plan.Beams)):
-          self.display_spot_action.append( QAction("Display spots (Beam " + str(b+1) + ")") )
-          self.display_spot_action[b+1].triggered.connect(lambda checked, beam=b: self.display_spots(beam))
-          self.context_menu.addAction(self.display_spot_action[b+1])
-        if(self.Viewer_Spots != []):
-          self.remove_spot_action = QAction("Remove displayed spots")
-          self.remove_spot_action.triggered.connect(lambda : [self.Viewer_Spots.clear(), self.Viewer_IsoCenter.clear(), self.update_viewer('axial'), self.update_viewer('coronal'), self.update_viewer('sagittal')])
-          self.context_menu.addAction(self.remove_spot_action)
-      self.context_menu.popup(pos)
-      
-  
-  
-  def export_item(self, list_type, row):
-    output_path = os.path.join(self.data_path, "OpenTPS")
-    if not os.path.isdir(output_path): os.mkdir(output_path)
-
-    if(list_type == 'CT'):
-      patient_id, ct_id = self.Patients.find_CT_image(row)
-        
-    elif(list_type == 'dose'):
-      patient_id, dose_id = self.Patients.find_dose_image(row)
-      output_file = os.path.join(output_path, "RTdose_" + self.Patients.list[patient_id].RTdoses[dose_id].ImgName + ".dcm")
-      self.Patients.list[patient_id].RTdoses[dose_id].export_Dicom(output_file)
-        
-    elif(list_type == 'plan'):
-      patient_id, plan_id = self.Patients.find_plan(row)
-
-
-
   def display_spots(self, beam):
-    plan_disp_id = self.toolbox_1_Plan_list.currentRow()
-    if(plan_disp_id < 0):
+    if(self.Plan_disp_ID < 0):
       print("Error: No treatment plan selected")
       return
-    plan_patient_id, plan_id = self.Patients.find_plan(plan_disp_id)
+    plan_patient_id, plan_id = self.Patients.find_plan(self.Plan_disp_ID)
     plan = self.Patients.list[plan_patient_id].Plans[plan_id]
     
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    if(ct_disp_id < 0):
+    if(self.CT_disp_ID < 0):
       print("Error: No CT image selected")
       return
-    ct_patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
+    ct_patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
     ct = self.Patients.list[ct_patient_id].CTimages[ct_id]
     
     # compute iso-center coordinates in pixel units
@@ -1444,11 +342,11 @@ class MainWindow(QMainWindow):
 
     # load BDL
     BDL = MCsquare_BDL()
-    BDL.import_BDL(self.toolbox_3_BDL_List.currentText())
+    BDL.import_BDL(self.Dose_calculation_param["BDL"])
     
     # compute spot coordinates in pixel units
     self.Viewer_Spots = []
-    spot_positions = plan.compute_cartesian_coordinates(ct, self.toolbox_3_Scanner_List.currentText(), beams, RangeShifters=BDL.RangeShifters)
+    spot_positions = plan.compute_cartesian_coordinates(ct, self.Dose_calculation_param["Scanner"], beams, RangeShifters=BDL.RangeShifters)
     for position in spot_positions:
       x = (position[0] - ct.ImagePositionPatient[0]) / ct.PixelSpacing[0]
       y = (position[1] - ct.ImagePositionPatient[1]) / ct.PixelSpacing[1]
@@ -1458,12 +356,21 @@ class MainWindow(QMainWindow):
     self.update_viewer('axial')
     self.update_viewer('coronal')
     self.update_viewer('sagittal')
+
+
+  
+  def Current_plan_changed(self, Plan_disp_ID):
+    self.Plan_disp_ID = Plan_disp_ID
+    self.toolbox_3.Plan_disp_ID = Plan_disp_ID
+    self.toolbox_4.Plan_disp_ID = Plan_disp_ID
+    self.toolbox_5.Plan_disp_ID = Plan_disp_ID
+    self.toolbox_6.Plan_disp_ID = Plan_disp_ID
+
       
       
   def Current_contours_changed(self):
     # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
+    patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
     img_size = self.Patients.list[patient_id].CTimages[ct_id].GridSize
     
     #initialize image of contours for the viewer
@@ -1475,8 +382,8 @@ class MainWindow(QMainWindow):
       
       for c in range(self.Patients.list[0].RTstructs[struct_id].NumContours):
         disp_id += 1
-        if(disp_id >= len(self.ROI_CheckBox)): break
-        if(self.ROI_CheckBox[disp_id].isChecked() == False): continue
+        if(disp_id >= len(self.toolbox_2.ROI_CheckBox)): break
+        if(self.toolbox_2.ROI_CheckBox[disp_id].isChecked() == False): continue
         #color = list(self.Patients.list[0].RTstructs[struct_id].Contours[c].ROIDisplayColor) + [255]
         #color = np.array(color).reshape(1,1,1,4)
         #self.Viewer_Contours += self.Patients.list[0].RTstructs[struct_id].Contours[c].ContourMask.reshape(img_size[0], img_size[1], img_size[2], 1) * color
@@ -1494,10 +401,25 @@ class MainWindow(QMainWindow):
     self.update_DVH_viewer()
     
    
-  def Current_CT_changed(self, currentRow):
-    if currentRow < 0: return
+  def Current_CT_changed(self, CT_disp_ID):
 
-    patient_id, ct_id = self.Patients.find_CT_image(currentRow)
+    self.CT_disp_ID = CT_disp_ID
+    self.toolbox_2.CT_disp_ID = CT_disp_ID
+    self.toolbox_3.CT_disp_ID = CT_disp_ID
+    self.toolbox_4.CT_disp_ID = CT_disp_ID
+    self.toolbox_5.CT_disp_ID = CT_disp_ID
+    self.toolbox_6.CT_disp_ID = CT_disp_ID
+
+    if CT_disp_ID < 0: 
+      self.Viewer_initialized = 0
+      self.Viewer_CT = np.array([])
+      self.update_viewer('axial')
+      self.update_viewer('coronal')
+      self.update_viewer('sagittal')
+      self.update_DVH_viewer()
+      return
+
+    patient_id, ct_id = self.Patients.find_CT_image(CT_disp_ID)
     self.Viewer_CT =  self.Patients.list[patient_id].CTimages[ct_id].prepare_image_for_viewer()
     img_size = list(self.Viewer_CT.shape)
     
@@ -1511,14 +433,14 @@ class MainWindow(QMainWindow):
   
   
   
-  def Current_dose_changed(self, currentRow):
-    if currentRow < 0: return
-
-    if(currentRow > -1):
-      patient_id, dose_id = self.Patients.find_dose_image(currentRow)
-      self.Viewer_Dose = self.Patients.list[patient_id].RTdoses[dose_id].prepare_image_for_viewer()
-    else:
+  def Current_dose_changed(self, Dose_disp_ID):
+    if Dose_disp_ID < 0: 
       self.Viewer_Dose = np.array([])
+
+    else:
+      self.Dose_disp_ID = Dose_disp_ID
+      patient_id, dose_id = self.Patients.find_dose_image(Dose_disp_ID)
+      self.Viewer_Dose = self.Patients.list[patient_id].RTdoses[dose_id].prepare_image_for_viewer()
       
     self.update_viewer('axial')
     self.update_viewer('coronal')
@@ -1569,14 +491,12 @@ class MainWindow(QMainWindow):
     self.viewer_DVH.clear()
   
     # find selected dose image
-    dose_disp_id = self.toolbox_1_Dose_list.currentRow()
-    if(dose_disp_id < 0): return
-    patient_id, dose_id = self.Patients.find_dose_image(dose_disp_id)
+    if(self.Dose_disp_ID < 0): return
+    patient_id, dose_id = self.Patients.find_dose_image(self.Dose_disp_ID)
     dose = self.Patients.list[patient_id].RTdoses[dose_id]
     
     # find selected CT image
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
+    patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
     ct = self.Patients.list[patient_id].CTimages[ct_id]
     
     disp_id = -1
@@ -1585,8 +505,8 @@ class MainWindow(QMainWindow):
       
       for contour in struct.Contours:
         disp_id += 1
-        if(disp_id >= len(self.ROI_CheckBox)): break
-        if(self.ROI_CheckBox[disp_id].isChecked() == False): continue
+        if(disp_id >= len(self.toolbox_2.ROI_CheckBox)): break
+        if(self.toolbox_2.ROI_CheckBox[disp_id].isChecked() == False): continue
         myDVH = DVH(dose, contour)
         pen = qtg.mkPen(color=(contour.ROIDisplayColor[2], contour.ROIDisplayColor[1], contour.ROIDisplayColor[0]), width=2)
         curve = qtg.PlotCurveItem(myDVH.dose, myDVH.volume, pen=pen, name=contour.ROIName)   
@@ -1594,6 +514,15 @@ class MainWindow(QMainWindow):
         self.viewer_DVH.addItem(curve)
 
     self.viewer_DVH.addItem(self.viewer_DVH_label)
+
+
+
+  def clear_spots_viewer(self):
+    self.Viewer_Spots.clear()
+    self.Viewer_IsoCenter.clear()
+    self.update_viewer('axial')
+    self.update_viewer('coronal')
+    self.update_viewer('sagittal')
         
         
     
@@ -1689,64 +618,6 @@ class MainWindow(QMainWindow):
     
 
 
-  def load_patient_data(self):
-    self.data_path = QFileDialog.getExistingDirectory(self, "Open patient data folder", self.data_path)
-
-    self.Patients.list_dicom_files(self.data_path, 1)
-    #self.Patients.print_patient_list()
-    self.Patients.list[0].import_patient_data()
-    
-    # display CT images
-    for ct in self.Patients.list[0].CTimages:
-      if(ct.isLoaded == 1):
-        self.toolbox_1_CT_list.addItem(ct.ImgName)
-        self.toolbox_7_Fixed.addItem(ct.ImgName)
-        self.toolbox_7_Moving.addItem(ct.ImgName)
-    self.toolbox_1_CT_list.setCurrentRow(self.toolbox_1_CT_list.count()-1)
-    
-    # display dose distributions
-    for dose in self.Patients.list[0].RTdoses:
-      if(dose.isLoaded == 1): 
-        self.toolbox_1_Dose_list.addItem(dose.ImgName)
-    self.toolbox_1_Dose_list.setCurrentRow(self.toolbox_1_Dose_list.count()-1)
-      
-    # display plans
-    for plan in self.Patients.list[0].Plans:
-      if(plan.isLoaded == 1): 
-        self.toolbox_1_Plan_list.addItem(plan.PlanName)
-    self.toolbox_1_Plan_list.setCurrentRow(self.toolbox_1_Plan_list.count()-1)
-    
-    # remove all contours from the list
-    self.ROI_CheckBox = []
-    while(self.toolbox_2_layout.count() != 0):
-      item = self.toolbox_2_layout.takeAt(0).widget()
-      if(item != None): item.setParent(None)    
-      
-    # display list of contours in the GUI
-    ct_disp_id = self.toolbox_1_CT_list.currentRow()
-    patient_id, ct_id = self.Patients.find_CT_image(ct_disp_id)
-    ct = self.Patients.list[patient_id].CTimages[ct_id]
-    
-    for struct in self.Patients.list[0].RTstructs:
-      if(struct.CT_SeriesInstanceUID != ct.SeriesInstanceUID): continue
-      
-      for contour in struct.Contours:
-        self.ROI_CheckBox.append(QCheckBox(contour.ROIName))
-        self.ROI_CheckBox[-1].setMaximumWidth(self.toolbox_width-18)
-        #self.ROI_CheckBox[-1].setChecked(True)
-        pixmap = QPixmap(100,100)
-        pixmap.fill(QColor(contour.ROIDisplayColor[2], contour.ROIDisplayColor[1], contour.ROIDisplayColor[0], 255))
-        self.ROI_CheckBox[-1].setIcon(QIcon(pixmap))
-        self.ROI_CheckBox[-1].stateChanged.connect(self.Current_contours_changed) 
-        self.toolbox_2_layout.addWidget(self.ROI_CheckBox[-1])
-        self.toolbox_3_CropContour.addItem(contour.ROIName)
-        self.toolbox_4_Target.addItem(contour.ROIName)
-        self.toolbox_5_Target.addItem(contour.ROIName)
-        self.toolbox_6_Target.addItem(contour.ROIName)
-        self.toolbox_7_ROI.addItem(contour.ROIName)
-        
-    self.toolbox_2_layout.addStretch()
-    
-    self.Current_contours_changed()
+  
     
 
