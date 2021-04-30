@@ -341,7 +341,9 @@ class MCsquare:
     
     # Start simulation
     print("\nStart MCsquare simulation")
-    os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_opti"))
+    if(platform.system() == "Linux"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_opti"))
+    elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_opti_win.bat"))
+    else: print("Error: not compatible with " + platform.system() + " system.")
     
     # Import optimized plan
     file_path = os.path.join(self.config["WorkDir"], "Outputs", "Optimized_Plan.txt")

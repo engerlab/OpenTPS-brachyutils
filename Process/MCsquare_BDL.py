@@ -91,7 +91,7 @@ class MCsquare_BDL:
         fid.close()
         return None
       
-      line_num = 0
+      line_num = -1
       for line in fid:
         line_num += 1
 

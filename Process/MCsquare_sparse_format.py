@@ -107,19 +107,21 @@ class MCsquare_sparse_format:
     time_start = time.time()
 
     for i in range(self.NbrSpots):
-      [NonZeroVoxels] = struct.unpack('i', fid.read(4))
-      [BeamID] = struct.unpack('i', fid.read(4))
-      [LayerID] = struct.unpack('i', fid.read(4))
+      [NonZeroVoxels] = struct.unpack('I', fid.read(4))
+      [BeamID] = struct.unpack('I', fid.read(4))
+      [LayerID] = struct.unpack('I', fid.read(4))
       [xcoord] = struct.unpack('<f',fid.read(4))
       [ycoord] = struct.unpack('<f', fid.read(4))
-      print("Spot " + str(i) + ": BeamID=" + str(BeamID) + " LayerID=" + str(LayerID) + " Position=(" + str(xcoord) + ";" + str(ycoord) + ")")
+      print("Spot " + str(i) + ": BeamID=" + str(BeamID) + " LayerID=" + str(LayerID) + " Position=(" + str(xcoord) + ";" + str(ycoord) + ") NonZeroVoxels=" + str(NonZeroVoxels))
+
+      if(NonZeroVoxels == 0): continue
 
       ReadVoxels = 0
       while(1):
-        [NbrContinuousValues] = struct.unpack('i',fid.read(4))
+        [NbrContinuousValues] = struct.unpack('I',fid.read(4))
         ReadVoxels+=NbrContinuousValues
 
-        [FirstIndex] = struct.unpack('i',fid.read(4))
+        [FirstIndex] = struct.unpack('I',fid.read(4))
 
         for j in range(NbrContinuousValues):
           [temp] = struct.unpack('<f',fid.read(4))
@@ -202,7 +204,7 @@ class MCsquare_sparse_format:
   def save(self, file_path):
     self.Saved_beamlet_file = file_path
     with open(file_path, 'wb') as fid:
-      pickle.dump(self.__dict__, fid)
+      pickle.dump(self.__dict__, fid, protocol=4)
 
 
 
