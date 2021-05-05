@@ -403,6 +403,7 @@ class Plan_IonLayer:
       self.ScanSpotPositionMap_y = []
       self.ScanSpotMetersetWeights = []
       self.SpotMU = []
+      self.SpotTiming = []
       self.CumulativeMeterset = 0.0
       self.RangeShifterSetting = 'OUT'
       self.IsocenterToRangeShifterDistance = 0.0
@@ -416,6 +417,8 @@ class Plan_IonLayer:
       self.ScanSpotPositionMap_y = list(from_layer.ScanSpotPositionMap_y)
       self.ScanSpotMetersetWeights = list(from_layer.ScanSpotMetersetWeights)
       self.SpotMU = list(from_layer.SpotMU)
+      if hasattr(from_layer,'SpotTiming'):
+        self.SpotTiming = list(from_layer.SpotTiming)
       self.CumulativeMeterset = from_layer.CumulativeMeterset
       self.RangeShifterSetting = from_layer.RangeShifterSetting
       self.IsocenterToRangeShifterDistance = from_layer.IsocenterToRangeShifterDistance
