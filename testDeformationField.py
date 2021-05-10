@@ -13,7 +13,7 @@ df = DeformationField()
 df.DcmFile = def_path
 df.import_Dicom_DF(CT_list)
 
-dose_image = df.Image
+dose_image = df.Displacement
 ct_img = ct.Image.transpose(1,0,2)
 print("ct.shape",ct_img.shape)
 print("df.shape",dose_image.shape)
