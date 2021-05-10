@@ -33,6 +33,7 @@ class Toolbox_ImageRegistration(QWidget):
     self.Algorithm = QComboBox()
     self.Algorithm.addItem("Quick translation search")
     self.Algorithm.addItem("Rigid registration")
+    self.Algorithm.addItem("Deformable registration (Demons)")
     self.Algorithm.setMaximumWidth(self.toolbox_width-18)
     self.layout.addWidget(self.Algorithm)
     self.layout.addSpacing(15)
@@ -104,13 +105,22 @@ class Toolbox_ImageRegistration(QWidget):
 
     if(self.Algorithm.currentText() == "Quick translation search"):
       translation = reg.Quick_translation_search()
+      print(translation)
+      reg.Translate_origin(moving, translation)
+
     elif(self.Algorithm.currentText() == "Rigid registration"):
       translation = reg.Rigid_registration()
-    else:
-      translation = [0.0, 0.0, 0.0]
-
-    print(translation)
-    reg.Translate_origin(moving, translation)
+      print(translation)
+      reg.Translate_origin(moving, translation)
+      
+    elif(self.Algorithm.currentText() == "Deformable registration (Demons)"):
+      DefField = reg.Registration_demons()
+      reg.Deformed.ImgName += "_deformed"
+      self.Patients.list[ct_patient_id].CTimages.append(reg.Deformed)
+      self.New_CT_created.emit(reg.Deformed.ImgName)
+      self.Fixed.addItem(reg.Deformed.ImgName)
+      self.Moving.addItem(reg.Deformed.ImgName)
+      self.Moving.setCurrentIndex(self.Moving.count()-1)
 
     self.recompute_image_difference()
 

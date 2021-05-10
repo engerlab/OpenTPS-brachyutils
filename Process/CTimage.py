@@ -119,6 +119,19 @@ class CTimage:
 
     return img
 
+  
+
+  def euclidean_dist(self, v1, v2):
+    return sum((p-q)**2 for p, q in zip(v1, v2)) ** .5
+
+
+  
+  def is_same_grid(self, OtherImage):
+    if(self.GridSize == OtherImage.GridSize and self.euclidean_dist(self.ImagePositionPatient, OtherImage.ImagePositionPatient) < 0.01 and self.euclidean_dist(self.PixelSpacing, OtherImage.PixelSpacing) < 0.01):
+      return True
+    else: 
+      return False
+
 
 
   def resample_image(self, GridSize, Offset, PixelSpacing):
