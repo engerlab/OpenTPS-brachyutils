@@ -174,6 +174,12 @@ def import_MCsquare_plan(file_path, CT):
         iso[1] = iso[1] + CT.ImagePositionPatient[1] - CT.PixelSpacing[1]/2
         iso[2] = iso[2] + CT.ImagePositionPatient[2] - CT.PixelSpacing[2]/2
         plan.Beams[-1].IsocenterPosition = iso
+
+      elif line == "###RangeShifterID":
+        plan.Beams[-1].RangeShifterID = f.readline()
+
+      elif line == "###RangeShifterType":
+        plan.Beams[-1].RangeShifterType = f.readline()
         
       elif line == "####ControlPointIndex":
         plan.Beams[-1].Layers.append(Plan_IonLayer())
@@ -185,6 +191,15 @@ def import_MCsquare_plan(file_path, CT):
         
       elif line == "####Energy(MeV)":
         plan.Beams[-1].Layers[-1].NominalBeamEnergy = float(f.readline())
+
+      elif line == "####RangeShifterSetting":
+        plan.Beams[-1].Layers[-1].RangeShifterSetting = f.readline()
+
+      elif line == "####IsocenterToRangeShifterDistance":
+        plan.Beams[-1].Layers[-1].IsocenterToRangeShifterDistance = float(f.readline())
+
+      elif line == "####RangeShifterWaterEquivalentThickness":
+        plan.Beams[-1].Layers[-1].RangeShifterWaterEquivalentThickness = float(f.readline())
         
       elif line == "####NbOfScannedSpots":
         NumSpots = int(f.readline())
@@ -197,7 +212,16 @@ def import_MCsquare_plan(file_path, CT):
           plan.Beams[-1].Layers[-1].ScanSpotPositionMap_y.append(float(data[1]))
           plan.Beams[-1].Layers[-1].ScanSpotMetersetWeights.append(float(data[2]))
           plan.Beams[-1].Layers[-1].SpotMU.append(float(data[2]))
-        
+
+      elif line == "####XYWeightTime":
+        for s in range(NumSpots):
+          data = f.readline().replace('\r', '').replace('\n', '').replace('\t', '').split()
+          plan.Beams[-1].Layers[-1].ScanSpotPositionMap_x.append(float(data[0]))
+          plan.Beams[-1].Layers[-1].ScanSpotPositionMap_y.append(float(data[1]))
+          plan.Beams[-1].Layers[-1].ScanSpotMetersetWeights.append(float(data[2]))
+          plan.Beams[-1].Layers[-1].SpotMU.append(float(data[2]))
+          plan.Beams[-1].Layers[-1].SpotTiming.append(float(data[3]))
+
       line = f.readline()
   
   

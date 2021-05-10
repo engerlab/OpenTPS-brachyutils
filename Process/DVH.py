@@ -45,6 +45,19 @@ class DVH:
       if Dx < 0: Dx = 0
       return Dx
 
+  def compute_Dcc(self, x):
+    index = np.searchsorted(-self.volume_absolute, -x)
+    volume = self.volume_absolute[index]
+    volume2 = self.volume_absolute[index+1]
+    if(volume == volume2):
+      return self.dose[index]
+    else:
+      w2 = (volume-x) / (volume - volume2)
+      w1 = (x-volume2) / (volume - volume2)
+      Dx = w1*self.dose[index] + w2*self.dose[index+1]
+      if Dx < 0: Dx = 0
+      return Dx
+
 
   def compute_DVH(self, dose, Contour, maxDVH=100.0):
 
