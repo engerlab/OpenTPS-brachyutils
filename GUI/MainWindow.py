@@ -251,7 +251,7 @@ class MainWindow(QMainWindow):
     img_size = self.Patients.list[patient_id].CTimages[ct_id].GridSize
     
     #initialize image of contours for the viewer
-    Viewer_Contours = np.zeros((img_size[0], img_size[1], img_size[2], 4))
+    Viewer_Contours = np.zeros((img_size[0], img_size[1], img_size[2], 4), dtype=np.int8)
     
     disp_id = -1
     for struct_id in range(len(self.Patients.list[0].RTstructs)):
