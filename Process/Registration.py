@@ -1,6 +1,7 @@
 
 import numpy as np
 import scipy.optimize
+import scipy.ndimage
 
 from Process.DeformationField import *
 
@@ -56,9 +57,9 @@ class Registration:
   def Regularization(self, field, filter="Gaussian", sigma=1.0):
 
     if(filter == "Gaussian"):
-      field.Velocity[:,:,:,0] = gaussian_filter(field.Velocity[:,:,:,0], sigma=sigma)
-      field.Velocity[:,:,:,1] = gaussian_filter(field.Velocity[:,:,:,1], sigma=sigma)
-      field.Velocity[:,:,:,2] = gaussian_filter(field.Velocity[:,:,:,2], sigma=sigma)
+      field.Velocity[:,:,:,0] = scipy.ndimage.gaussian_filter(field.Velocity[:,:,:,0], sigma=sigma)
+      field.Velocity[:,:,:,1] = scipy.ndimage.gaussian_filter(field.Velocity[:,:,:,1], sigma=sigma)
+      field.Velocity[:,:,:,2] = scipy.ndimage.gaussian_filter(field.Velocity[:,:,:,2], sigma=sigma)
       return
 
     else:
@@ -165,6 +166,8 @@ class Registration:
       Origin = self.Fixed.ImagePositionPatient + np.array([start[1]*self.Fixed.PixelSpacing[0], start[0]*self.Fixed.PixelSpacing[1], start[2]*self.Fixed.PixelSpacing[2]])
       GridSize = list(fixed.shape)
 
+    print("Translation: " + str(translation))
+
     # deform moving image
     self.Deformed = self.Moving.copy()
     self.Translate_origin(self.Deformed, translation)
@@ -189,7 +192,7 @@ class Registration:
   def Rigid_registration(self, initial_translation=[0.0, 0.0, 0.0]):
     print("\nStart rigid registration.\n")
 
-    opt = scipy.optimize.minimize(self.Translate_and_SSD, initial_translation, method='Powell')
+    opt = scipy.optimize.minimize(self.Translate_and_SSD, initial_translation, method='Powell', options={'xtol': 0.01, 'ftol': 0.0001, 'maxiter': 25, 'maxfev': 75})
 
     if(self.ROI_box == []):
        translation = opt.x
@@ -199,6 +202,7 @@ class Registration:
       translation = opt.x
     
     return translation
+    
 
 
   def Translate_origin(self, Image, translation):

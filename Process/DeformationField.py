@@ -1,11 +1,8 @@
 import pydicom
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt
 import scipy.ndimage
 import math
-import numpy as np
-from scipy.ndimage import gaussian_filter
 
 from Process.C_libraries.libInterp3_wrapper import *
 
@@ -13,6 +10,14 @@ class DeformationField:
 
   def __init__(self):
     self.FieldName = ""
+    self.DcmFile = ""        
+    self.SeriesInstanceUID = ""
+    self.SOPInstanceUID = ""
+    self.PatientInfo = {}
+    self.StudyInfo = {}
+    self.CT_SeriesInstanceUID = ""
+    self.Plan_SOPInstanceUID = ""
+    self.FrameOfReferenceUID = ""
     self.ImagePositionPatient = [0, 0, 0]
     self.PixelSpacing = [1, 1, 1]
     self.GridSize = [0, 0, 0]
@@ -20,6 +25,7 @@ class DeformationField:
     self.Velocity = []
     self.Displacement = []
     self.isLoaded = 0
+
 
 
   def Init_Field_Zeros(self, GridSize, Offset=[0, 0, 0], PixelSpacing=[1, 1, 1]):
@@ -59,25 +65,24 @@ class DeformationField:
     # import deformation field
     self.CT_SeriesInstanceUID = CT.SeriesInstanceUID
     self.FrameOfReferenceUID = dcm.SourceFrameOfReferenceUID
-    def0 = dcm.DeformableRegistrationGridSequence[0]
+    dcm_field = dcm.DeformableRegistrationGridSequence[0]
 
-    df_image = np.frombuffer(def0.VectorGridData, dtype=np.float32) 
-    # Deformation field coming from REGGUI
-    df_image = df_image.reshape((3, def0.GridDimensions[0], def0.GridDimensions[1], def0.GridDimensions[2]), order='F').transpose(1,2,3,0)
+    field = np.frombuffer(dcm_field.VectorGridData, dtype=np.float32) 
+    field = field.reshape((3, dcm_field.GridDimensions[0], dcm_field.GridDimensions[1], dcm_field.GridDimensions[2]), order='F').transpose(1,2,3,0)
 
-    self.ImagePositionPatient = def0.ImagePositionPatient
-    self.ImageOrientationPatient = def0.ImageOrientationPatient
-    self.GridSize = def0.GridDimensions
-    self.PixelSpacing = def0.GridResolution
+    self.ImagePositionPatient = dcm_field.ImagePositionPatient
+    self.ImageOrientationPatient = dcm_field.ImageOrientationPatient
+    self.GridSize = dcm_field.GridDimensions
+    self.PixelSpacing = dcm_field.GridResolution
     self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
     
     if df_type=='Velocity':
-      self.Velocity = df_image
+      self.Velocity = field
       self.Displacement = self.Exponentiation()
       # Resample both the velocity and diplacement to the CT
       self.resample_to_CT_grid(CT, which_df='both')
     elif df_type=='Displacement':
-      self.Displacement = df_image
+      self.Displacement = field
       self.resample_to_CT_grid(CT, which_df='Displacement')
     else:
       print("Unknown deformation field type")
@@ -85,17 +90,13 @@ class DeformationField:
     self.isLoaded = 1
 
 
-  def euclidean_dist(self, v1, v2):
-    return sum((p-q)**2 for p, q in zip(v1, v2)) ** .5
-
 
   def resample_to_CT_grid(self, CT, which_df):
-    if(self.GridSize == CT.GridSize and self.euclidean_dist(self.ImagePositionPatient, CT.ImagePositionPatient) < 0.01 and self.euclidean_dist(self.PixelSpacing, CT.PixelSpacing) < 0.01):
-      return
-    else:
-      print('Resample dose image to CT grid.')
-      self.resample_DF(CT.GridSize, CT.ImagePositionPatient, CT.PixelSpacing, which_df)
+    if(not CT.is_same_grid(self)):
+      print('Resample deformation field to CT grid.')
+      self.resample_image(CT.GridSize, CT.ImagePositionPatient, CT.PixelSpacing, which_df)
       
+
 
   def resample_DF(self, GridSize, Offset, PixelSpacing, which_df='both'):
     if which_df == 'both':
@@ -119,7 +120,8 @@ class DeformationField:
     self.NumVoxels = GridSize[0] * GridSize[1] * GridSize[2]
 
 
-  def resample_image(self, img_to_resample, GridSize, Offset, PixelSpacing):
+
+  def resample_field(self, init_field, GridSize, Offset, PixelSpacing):
     field_components = [0, 1, 2]
     # anti-aliasing filter
     if self.NumVoxels > np.product(GridSize): # downsampling
@@ -128,12 +130,10 @@ class DeformationField:
       if(PixelSpacing[1] > self.PixelSpacing[1]): sigma[1] = 0.4 * (PixelSpacing[1]/self.PixelSpacing[1])
       if(PixelSpacing[2] > self.PixelSpacing[2]): sigma[2] = 0.4 * (PixelSpacing[2]/self.PixelSpacing[2])
       if(sigma != [0, 0, 0]):
-          print("Image is filtered before downsampling")
+          print("Field is filtered before downsampling")
 
-      img = np.zeros_like(img_to_resample)
       for i in field_components:
-        img[:,:,:,i] = scipy.ndimage.gaussian_filter(img_to_resample[:,:,:,i], sigma)
-      img_to_resample = img
+        init_field[:,:,:,i] = scipy.ndimage.gaussian_filter(init_field[:,:,:,i], sigma)
     
     # resampling    
     Init_GridSize = list(self.GridSize)
@@ -146,11 +146,12 @@ class DeformationField:
     xi = np.rollaxis(xi, 0, 4)
     xi = xi.reshape((xi.size // 3, 3))
 
-    img = np.zeros((*GridSize,3))
+    field = np.zeros((*GridSize,3))
     for i in field_components:
-      img_temp = Trilinear_Interpolation(img_to_resample[:,:,:,i], Init_GridSize, xi)
-      img[:,:,:,i] = img_temp.reshape((GridSize[1], GridSize[0], GridSize[2])).transpose(1,0,2)
-    return img
+      field_temp = Trilinear_Interpolation(init_field[:,:,:,i], Init_GridSize, xi)
+      field[:,:,:,i] = field_temp.reshape((GridSize[1], GridSize[0], GridSize[2])).transpose(1,0,2)
+
+    return field
 
 
 
@@ -174,7 +175,6 @@ class DeformationField:
     if(save_displacement == 0): self.Displacement = []
 
     return output
-
 
 
 
