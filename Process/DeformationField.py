@@ -94,7 +94,7 @@ class DeformationField:
   def resample_to_CT_grid(self, CT, which_df):
     if(not CT.is_same_grid(self)):
       print('Resample deformation field to CT grid.')
-      self.resample_image(CT.GridSize, CT.ImagePositionPatient, CT.PixelSpacing, which_df)
+      self.resample_DF(CT.GridSize, CT.ImagePositionPatient, CT.PixelSpacing, which_df)
       
 
 
@@ -102,14 +102,14 @@ class DeformationField:
     if which_df == 'both':
       assert self.Velocity != []
       assert self.Displacement != []
-      self.Velocity = self.resample_image(self.Velocity, GridSize, Offset, PixelSpacing)
-      self.Displacement = self.resample_image(self.Displacement, GridSize, Offset, PixelSpacing)
+      self.Velocity = self.resample_field(self.Velocity, GridSize, Offset, PixelSpacing)
+      self.Displacement = self.resample_field(self.Displacement, GridSize, Offset, PixelSpacing)
     elif which_df == 'Velocity':
       assert self.Velocity != []
-      self.Velocity = self.resample_image(self.Velocity, GridSize, Offset, PixelSpacing)
+      self.Velocity = self.resample_field(self.Velocity, GridSize, Offset, PixelSpacing)
     elif which_df == 'Displacement':
       assert self.Displacement != []
-      self.Displacement = self.resample_image(self.Displacement, GridSize, Offset, PixelSpacing)
+      self.Displacement = self.resample_field(self.Displacement, GridSize, Offset, PixelSpacing)
     else:
       print("parameter which_df should either be 'both', 'Velocity' or 'Displacement'.")
       return

@@ -1,5 +1,6 @@
 from Process.DeformationField import *
 from Process.PatientData import *
+import matplotlib.pyplot as plt
 
 CT_path = '/mnt/c/Users/vhamaide/Desktop/UCL/ARIES/data/liver/patient_0/MidP_CT'
 Patients = PatientList()
