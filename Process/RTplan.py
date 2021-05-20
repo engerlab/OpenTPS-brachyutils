@@ -69,6 +69,8 @@ class RTplan:
        
       if dcm.IonBeamSequence[0].ScanMode == "MODULATED":
         self.ScanMode = "MODULATED" # PBS
+      elif dcm.IonBeamSequence[0].ScanMode == "LINE":
+        self.ScanMode = "LINE" # Line Scanning
       else:
         print("ERROR: Scan mode " + dcm.IonBeamSequence[0].ScanMode + " not supported")
         self.ScanMode = dcm.IonBeamSequence[0].ScanMode
@@ -153,10 +155,15 @@ class RTplan:
           ReferencedRangeShifterNumber = int(first_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber)
        
       CumulativeMeterset = 0
+
     
       for dcm_layer in dcm_beam.IonControlPointSequence:
-        if dcm_layer.NumberOfScanSpotPositions == 1: sum_weights = dcm_layer.ScanSpotMetersetWeights
-        else: sum_weights = sum(dcm_layer.ScanSpotMetersetWeights)
+        if(self.ScanMode == "MODULATED"):
+          if dcm_layer.NumberOfScanSpotPositions == 1: sum_weights = dcm_layer.ScanSpotMetersetWeights
+          else: sum_weights = sum(dcm_layer.ScanSpotMetersetWeights)
+          
+        elif(self.ScanMode == "LINE"):
+          sum_weights = sum(np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())  
       
         if sum_weights == 0.0:
           continue
@@ -171,16 +178,32 @@ class RTplan:
         else: layer.NumberOfPaintings = 1
        
         layer.NominalBeamEnergy = float(dcm_layer.NominalBeamEnergy)
-        layer.ScanSpotPositionMap_x = dcm_layer.ScanSpotPositionMap[0::2]
-        layer.ScanSpotPositionMap_y = dcm_layer.ScanSpotPositionMap[1::2]
-        layer.ScanSpotMetersetWeights = dcm_layer.ScanSpotMetersetWeights
-        layer.SpotMU = np.array(dcm_layer.ScanSpotMetersetWeights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight # spot weights are converted to MU
-        if layer.SpotMU.size == 1: layer.SpotMU = [layer.SpotMU]
-        else: layer.SpotMU = layer.SpotMU.tolist()
-      
-        self.NumberOfSpots += len(layer.SpotMU)
-        CumulativeMeterset += sum(layer.SpotMU)
-        layer.CumulativeMeterset = CumulativeMeterset
+        
+        if(self.ScanMode == "MODULATED"):
+          layer.ScanSpotPositionMap_x = dcm_layer.ScanSpotPositionMap[0::2]
+          layer.ScanSpotPositionMap_y = dcm_layer.ScanSpotPositionMap[1::2]
+          layer.ScanSpotMetersetWeights = dcm_layer.ScanSpotMetersetWeights
+          layer.SpotMU = np.array(dcm_layer.ScanSpotMetersetWeights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight # spot weights are converted to MU
+          if layer.SpotMU.size == 1: layer.SpotMU = [layer.SpotMU]
+          else: layer.SpotMU = layer.SpotMU.tolist()
+          self.NumberOfSpots += len(layer.SpotMU)
+          CumulativeMeterset += sum(layer.SpotMU)
+          layer.CumulativeMeterset = CumulativeMeterset
+        
+        elif(self.ScanMode == "LINE"): 
+          #print("SpotNumber: ", dcm_layer[0x300b1092].value)
+          #print("SpotValue: ", np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist())
+          #print("MUValue: ", np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())
+          #print("SizeValue: ", np.frombuffer(dcm_layer[0x300b1098].value, dtype=np.float32).tolist())
+          #print("PaintValue: ", dcm_layer[0x300b109a].value)
+          LineScanPoints = np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist()
+          layer.LineScanControlPoint_x = LineScanPoints[0::2]
+          layer.LineScanControlPoint_y = LineScanPoints[1::2]
+          layer.LineScanControlPoint_linear_Weights = np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist()
+          layer.LineScanControlPoint_linear_MU = np.array(layer.LineScanControlPoint_linear_Weights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight # weights are converted to MU
+          if layer.LineScanControlPoint_linear_MU.size == 1: layer.LineScanControlPoint_linear_MU = [layer.LineScanControlPoint_linear_MU]
+          else: layer.LineScanControlPoint_linear_MU = layer.LineScanControlPoint_linear_MU.tolist()          
+        
             
         if beam.RangeShifterType != "none":        
           if hasattr(dcm_layer, 'RangeShifterSettingsSequence'):
@@ -202,6 +225,47 @@ class RTplan:
       self.Beams.append(beam)
       
     self.isLoaded = 1
+
+
+
+  def convert_LineScanning_to_PBS(self, SpotDensity=10): # SpotDensity: number of simulated spots per cm.
+    if(self.ScanMode != "LINE"):
+      print("ERROR: Scan mode " + self.ScanMode + " cannot be converted to PBS plan")
+      return
+    
+    self.NumberOfSpots = 0
+    
+    for beam in self.Beams:
+      beam.FinalCumulativeMetersetWeight = 0
+      beam.BeamMeterset = 0
+      
+      for layer in beam.Layers:
+        layer.ScanSpotPositionMap_x = []
+        layer.ScanSpotPositionMap_y = []
+        layer.ScanSpotMetersetWeights = []
+        layer.SpotMU = []
+        
+        for i in range(len(layer.LineScanControlPoint_x)-1):
+          x_start = layer.LineScanControlPoint_x[i] # mm
+          x_stop = layer.LineScanControlPoint_x[i+1] # mm
+          y_start = layer.LineScanControlPoint_y[i] # mm
+          y_stop = layer.LineScanControlPoint_y[i+1] # mm
+          distance = math.sqrt( (x_stop-x_start)**2 + (y_stop-y_start)**2 ) / 10 # cm
+          NumSpots = math.ceil(distance*SpotDensity)
+          SpotWeight = layer.LineScanControlPoint_linear_Weights[i+1] * distance / NumSpots
+          SpotMU = layer.LineScanControlPoint_linear_MU[i+1] * distance / NumSpots
+          
+          layer.ScanSpotPositionMap_x.extend(np.linspace(x_start, x_stop, num=NumSpots))
+          layer.ScanSpotPositionMap_y.extend(np.linspace(y_start, y_stop, num=NumSpots))
+          layer.ScanSpotMetersetWeights.extend([SpotWeight]*NumSpots)
+          layer.SpotMU.extend([SpotMU]*NumSpots)
+          self.NumberOfSpots += NumSpots
+      
+        beam.BeamMeterset += sum(layer.SpotMU)
+        beam.FinalCumulativeMetersetWeight += sum(layer.ScanSpotMetersetWeights)
+        layer.CumulativeMeterset = beam.BeamMeterset
+      
+    self.ScanMode = "MODULATED"
     
     
   
@@ -409,6 +473,10 @@ class Plan_IonLayer:
       self.IsocenterToRangeShifterDistance = 0.0
       self.RangeShifterWaterEquivalentThickness = 0.0
       self.ReferencedRangeShifterNumber = 0
+      self.LineScanControlPoint_x = []
+      self.LineScanControlPoint_y = []
+      self.LineScanControlPoint_linear_Weights = []
+      self.LineScanControlPoint_linear_MU = []
     else:
       self.SeriesInstanceUID = from_layer.SeriesInstanceUID
       self.NumberOfPaintings = from_layer.NumberOfPaintings
@@ -419,11 +487,17 @@ class Plan_IonLayer:
       self.SpotMU = list(from_layer.SpotMU)
       if hasattr(from_layer,'SpotTiming'):
         self.SpotTiming = list(from_layer.SpotTiming)
+      else:
+        self.SpotTiming = []
       self.CumulativeMeterset = from_layer.CumulativeMeterset
       self.RangeShifterSetting = from_layer.RangeShifterSetting
       self.IsocenterToRangeShifterDistance = from_layer.IsocenterToRangeShifterDistance
       self.RangeShifterWaterEquivalentThickness = from_layer.RangeShifterWaterEquivalentThickness
       self.ReferencedRangeShifterNumber = from_layer.ReferencedRangeShifterNumber
+      self.LineScanControlPoint_x = list(from_layer.LineScanControlPoint_x)
+      self.LineScanControlPoint_y = list(from_layer.LineScanControlPoint_y)
+      self.LineScanControlPoint_linear_Weights = list(from_layer.LineScanControlPoint_linear_Weights)
+      self.LineScanControlPoint_linear_MU = list(from_layer.LineScanControlPoint_linear_MU)
 
     
     

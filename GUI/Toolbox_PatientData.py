@@ -152,6 +152,11 @@ class Toolbox_PatientData(QWidget):
       self.context_menu.addAction(self.delete_action)
       
       if(list_type == 'plan'):
+        if(plan.ScanMode == 'LINE'):
+          self.convert_action = QAction("Convert line scanning to PBS plan")
+          self.convert_action.triggered.connect(lambda checked: plan.convert_LineScanning_to_PBS())
+          self.context_menu.addAction(self.convert_action)
+
         self.display_spot_action = []
         self.display_spot_action.append( QAction("Display spots (full plan)") )
         self.display_spot_action[0].triggered.connect(lambda checked, beam=-1: self.Viewer_display_spots.emit(beam))
@@ -160,6 +165,7 @@ class Toolbox_PatientData(QWidget):
           self.display_spot_action.append( QAction("Display spots (Beam " + str(b+1) + ")") )
           self.display_spot_action[b+1].triggered.connect(lambda checked, beam=b: self.Viewer_display_spots.emit(beam))
           self.context_menu.addAction(self.display_spot_action[b+1])
+
         self.remove_spot_action = QAction("Remove displayed spots")
         self.remove_spot_action.triggered.connect(self.Viewer_clear_spots.emit)
         self.context_menu.addAction(self.remove_spot_action)
