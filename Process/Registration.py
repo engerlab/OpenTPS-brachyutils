@@ -1,6 +1,9 @@
 
 import numpy as np
 import scipy.optimize
+import scipy.ndimage
+
+from Process.DeformationField import *
 
 
 class Registration:
@@ -10,6 +13,58 @@ class Registration:
     self.Moving = Moving
     self.Deformed = []
     self.ROI_box = []
+
+
+
+  def Registration_demons(self, Niter=15):
+    # Resample moving image
+    if(not self.Fixed.is_same_grid(self.Moving)):
+      self.Moving = self.Resample_moving_image()
+
+    # Initialization
+    Grad_fixed = np.gradient(self.Fixed.Image)
+    deformed = self.Moving.Image.copy()
+    field = DeformationField()
+    field.Init_Field_Zeros(deformed.shape)
+    
+    # Iterative loop
+    for i in range(Niter):
+      SSD = self.Compute_SSD(self.Fixed.Image, deformed)
+      print('Iteration ' + str(i+1) + ': SSD=' + str(SSD))
+      Grad_moving = np.gradient(deformed)
+      squared_diff = np.square(self.Fixed.Image-deformed)
+      squared_norm_grad = np.square(Grad_fixed[0]+Grad_moving[0])+np.square(Grad_fixed[1]+Grad_moving[1])+np.square(Grad_fixed[2]+Grad_moving[2])
+
+      # demons formula
+      field.Velocity[:,:,:,0] += 2 * (self.Fixed.Image - deformed) * (Grad_fixed[0]+Grad_moving[0]) / (squared_diff + squared_norm_grad + 1e-5)
+      field.Velocity[:,:,:,1] += 2 * (self.Fixed.Image - deformed) * (Grad_fixed[1]+Grad_moving[1]) / (squared_diff + squared_norm_grad + 1e-5)
+      field.Velocity[:,:,:,2] += 2 * (self.Fixed.Image - deformed) * (Grad_fixed[2]+Grad_moving[2]) / (squared_diff + squared_norm_grad + 1e-5)
+
+      # regularization (Gaussian filter)
+      self.Regularization(field, filter="Gaussian", sigma=1.0)
+
+      # deformation  
+      # velocity field converted to displacement field before applying the deformation
+      deformed = field.apply_deformation(self.Moving.Image) 
+
+    self.Deformed = self.Moving.copy()
+    self.Deformed.Image = deformed
+
+    return field
+
+
+
+  def Regularization(self, field, filter="Gaussian", sigma=1.0):
+
+    if(filter == "Gaussian"):
+      field.Velocity[:,:,:,0] = scipy.ndimage.gaussian_filter(field.Velocity[:,:,:,0], sigma=sigma)
+      field.Velocity[:,:,:,1] = scipy.ndimage.gaussian_filter(field.Velocity[:,:,:,1], sigma=sigma)
+      field.Velocity[:,:,:,2] = scipy.ndimage.gaussian_filter(field.Velocity[:,:,:,2], sigma=sigma)
+      return
+
+    else:
+      print("Error: unknown filter for field regularization")
+      return
 
 
 
@@ -97,7 +152,7 @@ class Registration:
 
 
 
-  def Compute_SSD(self, translation=[0.0, 0.0, 0.0]):
+  def Translate_and_SSD(self, translation=[0.0, 0.0, 0.0]):
 
     # crop fixed image to ROI box
     if(self.ROI_box == []):
@@ -111,27 +166,23 @@ class Registration:
       Origin = self.Fixed.ImagePositionPatient + np.array([start[1]*self.Fixed.PixelSpacing[0], start[0]*self.Fixed.PixelSpacing[1], start[2]*self.Fixed.PixelSpacing[2]])
       GridSize = list(fixed.shape)
 
+    print("Translation: " + str(translation))
+
     # deform moving image
     self.Deformed = self.Moving.copy()
     self.Translate_origin(self.Deformed, translation)
     self.Deformed.resample_image(GridSize, Origin, self.Fixed.PixelSpacing)
 
-    if(sum(translation) == 9.0):
-      from matplotlib import pyplot as plt
-      plt.figure(figsize=(10,10))
-      plt.subplot(1,3,1)
-      img = np.flip(np.transpose(fixed[:,:,60]))
-      plt.imshow(img, cmap='gray')
-      plt.subplot(1,3,2)
-      img = np.flip(np.transpose(self.Deformed.Image[:,:,60]))
-      plt.imshow(img, cmap='gray')
-      plt.subplot(1,3,3)
-      img = np.flip(np.transpose(self.Moving.Image[:,:,60+start[2]]))
-      plt.imshow(img, cmap='gray')
-      plt.show()
-
     # compute metric
-    SSD = np.sum(np.power(fixed - self.Deformed.Image, 2))
+    SSD = self.Compute_SSD(fixed, self.Deformed.Image)
+
+    return SSD
+
+
+
+  def Compute_SSD(self, fixed, deformed):
+    # compute metric
+    SSD = np.sum(np.power(fixed - deformed, 2))
     print("SSD: " + str(SSD))
 
     return SSD
@@ -141,7 +192,7 @@ class Registration:
   def Rigid_registration(self, initial_translation=[0.0, 0.0, 0.0]):
     print("\nStart rigid registration.\n")
 
-    opt = scipy.optimize.minimize(self.Compute_SSD, initial_translation, method='Powell')
+    opt = scipy.optimize.minimize(self.Translate_and_SSD, initial_translation, method='Powell', options={'xtol': 0.01, 'ftol': 0.0001, 'maxiter': 25, 'maxfev': 75})
 
     if(self.ROI_box == []):
        translation = opt.x
@@ -151,6 +202,7 @@ class Registration:
       translation = opt.x
     
     return translation
+    
 
 
   def Translate_origin(self, Image, translation):

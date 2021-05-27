@@ -5,12 +5,21 @@ import time
 
 import warnings
 warnings.filterwarnings('ignore',category=FutureWarning)
-import keras
+
+try:
+  import keras
+  use_keras = 1
+except:
+  use_keras = 0
 
 from Process.DeepLearning_denoising.simpleNet_3d import *
 from Process.DeepLearning_denoising.dilatedUnet_3d import *
 
 def Denoise_MC_dose(NoisyImage, model='sNet_7'):
+
+  if use_keras == 0:
+    print('Error: keras/tensorflow not installed.')
+    return np.zeros(NoisyImage.shape)
 
   if(model == 'sNet_7'): return sNet_7_model(NoisyImage)
   elif(model == 'sNet_24'): return sNet_24_model(NoisyImage)
@@ -20,6 +29,10 @@ def Denoise_MC_dose(NoisyImage, model='sNet_7'):
 
 
 def sNet_24_model(NoisyImage):
+  if use_keras == 0:
+    print('Error: keras/tensorflow not installed.')
+    return np.zeros(NoisyImage.shape)
+
   # model parameters
   fixedDepth = 24
   discarded_slices = 5
@@ -75,6 +88,10 @@ def sNet_24_model(NoisyImage):
 
 
 def dUNet_24_model(NoisyImage):
+  if use_keras == 0:
+    print('Error: keras/tensorflow not installed.')
+    return np.zeros(NoisyImage.shape)
+
   # model parameters
   fixedDepth = 24
   discarded_slices = 5
@@ -130,6 +147,10 @@ def dUNet_24_model(NoisyImage):
   
 
 def sNet_7_model(NoisyImage):
+  if use_keras == 0:
+    print('Error: keras/tensorflow not installed.')
+    return np.zeros(NoisyImage.shape)
+
   # model parameters
   context = 7
   filters = 24
@@ -179,6 +200,10 @@ def sNet_7_model(NoisyImage):
   
 
 def dUNet_7_model(NoisyImage):
+  if use_keras == 0:
+    print('Error: keras/tensorflow not installed.')
+    return np.zeros(NoisyImage.shape)
+    
   # model parameters
   context = 7
   filters = 24

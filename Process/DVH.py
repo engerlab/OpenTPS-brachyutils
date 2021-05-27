@@ -16,6 +16,8 @@ class DVH:
     self.D50 = 0
     self.D5 = 0
     self.D2 = 0
+    self.Dmin = 0
+    self.Dmax = 0
 
     if(dose != []):
       self.Dose_SeriesInstanceUID = dose.SeriesInstanceUID
@@ -32,6 +34,7 @@ class DVH:
 
   def compute_Dx(self, x):
     index = np.searchsorted(-self.volume, -x)
+    if(index > len(self.volume)-2): index = len(self.volume)-2
     volume = self.volume[index]
     volume2 = self.volume[index+1]
     if(volume == volume2):
@@ -39,7 +42,23 @@ class DVH:
     else:
       w2 = (volume-x) / (volume - volume2)
       w1 = (x-volume2) / (volume - volume2)
-      return w1*self.dose[index] + w2*self.dose[index+1]
+      Dx = w1*self.dose[index] + w2*self.dose[index+1]
+      if Dx < 0: Dx = 0
+      return Dx
+
+  def compute_Dcc(self, x):
+    index = np.searchsorted(-self.volume_absolute, -x)
+    if(index > len(self.volume)-2): index = len(self.volume)-2
+    volume = self.volume_absolute[index]
+    volume2 = self.volume_absolute[index+1]
+    if(volume == volume2):
+      return self.dose[index]
+    else:
+      w2 = (volume-x) / (volume - volume2)
+      w1 = (x-volume2) / (volume - volume2)
+      Dx = w1*self.dose[index] + w2*self.dose[index+1]
+      if Dx < 0: Dx = 0
+      return Dx
 
 
   def compute_DVH(self, dose, Contour, maxDVH=100.0):
@@ -51,6 +70,7 @@ class DVH:
     DVH_interval = [0, maxDVH]
     bin_size = (DVH_interval[1]-DVH_interval[0])/number_of_bins
     bin_edges = np.arange(DVH_interval[0], DVH_interval[1]+0.5*bin_size, bin_size)
+    bin_edges[-1] = maxDVH + dose.Image.max()
     self.dose = bin_edges[:number_of_bins] + 0.5*bin_size
 
     d = dose.Image[Contour.Mask]
@@ -63,6 +83,8 @@ class DVH:
 
     # compute metrics
     self.Dmean = np.mean(d)
+    self.Dmin = d.min()
+    self.Dmax = d.max()
     self.D98 = self.compute_Dx(98)
     self.D95 = self.compute_Dx(95)
     self.D50 = self.compute_Dx(50)
@@ -102,6 +124,7 @@ class DVH_band:
 
   def compute_band_Dx(self, x):
     index = np.searchsorted(-self.volume_low, -x)
+    if(index > len(self.volume_low)-2): index = len(self.volume_low)-2
     volume = self.volume_low[index]
     volume2 = self.volume_low[index+1]
     if(volume == volume2): 
@@ -110,8 +133,10 @@ class DVH_band:
       w2 = (volume-x) / (volume - volume2)
       w1 = (x-volume2) / (volume - volume2)
       low_Dx = w1*self.dose[index] + w2*self.dose[index+1]
+      if low_Dx < 0: low_Dx = 0
 
     index = np.searchsorted(-self.volume_high, -x)
+    if(index > len(self.volume_high)-2): index = len(self.volume_high)-2
     volume = self.volume_high[index]
     volume2 = self.volume_high[index+1]
     if(volume == volume2): 
@@ -120,5 +145,6 @@ class DVH_band:
       w2 = (volume-x) / (volume - volume2)
       w1 = (x-volume2) / (volume - volume2)
       high_Dx = w1*self.dose[index] + w2*self.dose[index+1]
+      if high_Dx < 0: high_Dx = 0
     
     return [low_Dx, high_Dx]

@@ -4,8 +4,22 @@
 #include <stdbool.h>
 #include <omp.h>
 
+#if defined(_MSC_VER)
+  #define DLLEXPORT_TAG __declspec(dllexport)
+#else
+  #define DLLEXPORT_TAG
+#endif
 
-void raytrace_WET(float *SPR, bool *ROI_mask, float *WET, float *Offset, float *PixelSpacing, int *GridSize, float *beam_direction){
+// function declarations
+#if defined(_MSC_VER)
+DLLEXPORT_TAG void raytrace_WET(float *SPR, bool *ROI_mask, float *WET, float *Offset, float *PixelSpacing, int *GridSize, float *beam_direction);
+DLLEXPORT_TAG void compute_position_from_range(float *SPR, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *directions, float *ranges, int NumSpots);
+DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *direction, int NumSpots);
+DLLEXPORT_TAG void transport_spots_inside_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *Layers, float *direction, int NumSpots, int max_number_layers, float minWET, float LayerSpacing);
+#endif
+
+// function definitions
+DLLEXPORT_TAG void raytrace_WET(float *SPR, bool *ROI_mask, float *WET, float *Offset, float *PixelSpacing, int *GridSize, float *beam_direction){
   float *Voxel_Coord_X = (float*) malloc(GridSize[0] * sizeof(float));
   float *Voxel_Coord_Y = (float*) malloc(GridSize[1] * sizeof(float));
   float *Voxel_Coord_Z = (float*) malloc(GridSize[2] * sizeof(float));
@@ -77,7 +91,7 @@ void raytrace_WET(float *SPR, bool *ROI_mask, float *WET, float *Offset, float *
 }
 
 
-void compute_position_from_range(float *SPR, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *directions, float *ranges, int NumSpots){
+DLLEXPORT_TAG void compute_position_from_range(float *SPR, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *directions, float *ranges, int NumSpots){
 
   float ImgBorders_x[2], ImgBorders_y[2], ImgBorders_z[2];
   ImgBorders_x[0] = Offset[0];
@@ -140,7 +154,7 @@ void compute_position_from_range(float *SPR, float *Offset, float *PixelSpacing,
 
 
 
-void transport_spots_to_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *direction, int NumSpots){
+DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *direction, int NumSpots){
   
   float ImgBorders_x[2], ImgBorders_y[2], ImgBorders_z[2];
   ImgBorders_x[0] = Offset[0];
@@ -205,7 +219,7 @@ void transport_spots_to_target(float *SPR, bool *Target_mask, float *Offset, flo
 
 
 
-void transport_spots_inside_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *Layers, float *direction, int NumSpots, int max_number_layers, float minWET, float LayerSpacing){
+DLLEXPORT_TAG void transport_spots_inside_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *Layers, float *direction, int NumSpots, int max_number_layers, float minWET, float LayerSpacing){
   
   float ImgBorders_x[2], ImgBorders_y[2], ImgBorders_z[2];
   ImgBorders_x[0] = Offset[0];

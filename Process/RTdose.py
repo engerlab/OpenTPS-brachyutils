@@ -106,7 +106,7 @@ class RTdose:
     img_data = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
     color_index = np.arange(255)
     rgb = cm.get_cmap('jet')(color_index) * 255 # generate colormap
-    img_viewer = np.zeros((self.GridSize[0], self.GridSize[1], self.GridSize[2], 4))
+    img_viewer = np.zeros((self.GridSize[0], self.GridSize[1], self.GridSize[2], 4), dtype=np.int8)
     img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
     img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
     img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
@@ -173,16 +173,9 @@ class RTdose:
     return self
     
     
-  
-  def euclidean_dist(self, v1, v2):
-    return sum((p-q)**2 for p, q in zip(v1, v2)) ** .5
-    
-    
       
   def resample_to_CT_grid(self, CT):
-    if(self.GridSize == CT.GridSize and self.euclidean_dist(self.ImagePositionPatient, CT.ImagePositionPatient) < 0.01 and self.euclidean_dist(self.PixelSpacing, CT.PixelSpacing) < 0.01):
-      return
-    else:
+    if(not CT.is_same_grid(self)):
       print('Resample dose image to CT grid.')
       self.resample_image(CT.GridSize, CT.ImagePositionPatient, CT.PixelSpacing)
     

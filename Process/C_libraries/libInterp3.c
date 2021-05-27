@@ -3,7 +3,18 @@
 #include <math.h> 
 #include <omp.h>
 
-void Trilinear_Interpolation(float *Image, int *GridSize, float *InterpolatedPoints, int NumPoints, float fill_value, float *Intepolated_img){
+#if defined(_MSC_VER)
+  #define DLLEXPORT_TAG __declspec(dllexport)
+#else
+  #define DLLEXPORT_TAG
+#endif
+
+// function declarations
+DLLEXPORT_TAG void Trilinear_Interpolation(float *Image, int *GridSize, float *InterpolatedPoints, int NumPoints, float fill_value, float *Intepolated_img);
+
+
+// function definitions
+DLLEXPORT_TAG void Trilinear_Interpolation(float *Image, int *GridSize, float *InterpolatedPoints, int NumPoints, float fill_value, float *Intepolated_img){
 
   #pragma omp parallel for
   for(int p=0; p<NumPoints; p++){
