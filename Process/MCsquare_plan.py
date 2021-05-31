@@ -6,6 +6,10 @@ from Process.RTplan import *
 
 def export_plan_for_MCsquare(plan, file_path, CT, BDL):
 
+  if(plan.ScanMode != "MODULATED"):
+    print("Error: cannot simulate this treatment modality. Please convert the plan to PBS delivery mode.")
+    return
+
   DestFolder, DestFile = os.path.split(file_path)
   FileName, FileExtension = os.path.splitext(DestFile)
     

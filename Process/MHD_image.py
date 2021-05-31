@@ -113,7 +113,7 @@ class MHD_image:
     else:
       self.Image = np.fromfile(self.ElementDataFile, dtype=np.float32)
       
-    self.Image = self.Image.reshape(self.GridSize, order='F').transpose(1,0,2)
+    self.Image = self.Image.reshape(self.GridSize, order='F')
     
   
     
@@ -137,7 +137,7 @@ class MHD_image:
   
     # Write binary file (RAW)
     fid = open(os.path.join(DestFolder, RAW_File),"w") 
-    self.Image.transpose(1,0,2).reshape(self.NumVoxels, order='F').tofile(fid)
+    self.Image.reshape(self.NumVoxels, order='F').tofile(fid)
     fid.close()
           
           

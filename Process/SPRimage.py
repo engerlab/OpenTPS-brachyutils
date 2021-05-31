@@ -105,7 +105,7 @@ class SPRimage:
       return 0.001
       
     else: 
-      return self.Image[voxel_id[1], voxel_id[0], voxel_id[2]]
+      return self.Image[voxel_id[0], voxel_id[1], voxel_id[2]]
     
     # interpolation method here-below is much slower
     #x = self.ImagePositionPatient[0] + np.arange(self.GridSize[0]) * self.PixelSpacing[0]

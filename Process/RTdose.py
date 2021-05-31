@@ -70,7 +70,7 @@ class RTdose:
       dt = dt.newbyteorder('B')
       
     dose_image = np.frombuffer(dcm.PixelData, dtype=dt) 
-    dose_image = dose_image.reshape((dcm.Columns, dcm.Rows, dcm.NumberOfFrames), order='F').transpose(1,0,2)
+    dose_image = dose_image.reshape((dcm.Columns, dcm.Rows, dcm.NumberOfFrames), order='F')
     dose_image = dose_image * dcm.DoseGridScaling
 
     if(type(dcm.SliceThickness) == float): SliceThickness = dcm.SliceThickness
@@ -79,7 +79,7 @@ class RTdose:
     self.Image = dose_image
     self.FrameOfReferenceUID = dcm.FrameOfReferenceUID
     self.ImagePositionPatient = dcm.ImagePositionPatient
-    self.PixelSpacing = [float(dcm.PixelSpacing[0]), float(dcm.PixelSpacing[1]), SliceThickness]
+    self.PixelSpacing = [float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), SliceThickness]
     #self.GridSize = [dcm.Columns, dcm.Rows, int(dcm.NumberOfFrames)]
     self.GridSize = list(self.Image.shape)
     self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
@@ -165,7 +165,7 @@ class RTdose:
     self.OriginalGridSize = list(self.GridSize)
         
     self.Image = np.reshape(dose_vector, self.GridSize, order='F')
-    self.Image = np.flip(self.Image, (0,1)).transpose(1,0,2)
+    self.Image = np.flip(self.Image, (0,1))
     self.resample_to_CT_grid(CT)
     
     self.isLoaded = 1
@@ -194,17 +194,17 @@ class RTdose:
     # resampling    
     Init_GridSize = list(self.GridSize)
 
-    interp_x = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[1])*PixelSpacing[0]) / self.PixelSpacing[0]
-    interp_y = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[0])*PixelSpacing[1]) / self.PixelSpacing[1]
+    interp_x = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[0])*PixelSpacing[0]) / self.PixelSpacing[0]
+    interp_y = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[1])*PixelSpacing[1]) / self.PixelSpacing[1]
     interp_z = (Offset[2] - self.ImagePositionPatient[2] + np.arange(GridSize[2])*PixelSpacing[2]) / self.PixelSpacing[2]
   
-    xi = np.array(np.meshgrid(interp_y, interp_x, interp_z))
+    xi = np.array(np.meshgrid(interp_x, interp_y, interp_z))
     xi = np.rollaxis(xi, 0, 4)
     xi = xi.reshape((xi.size // 3, 3))
   
     self.Image = Trilinear_Interpolation(self.Image, Init_GridSize, xi)
     self.Image = self.Image.reshape((GridSize[1], GridSize[0], GridSize[2])).transpose(1,0,2)
-  
+
     self.ImagePositionPatient = list(Offset)
     self.PixelSpacing = list(PixelSpacing)
     self.GridSize = list(GridSize)

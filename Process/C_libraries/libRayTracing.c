@@ -67,8 +67,7 @@ DLLEXPORT_TAG void raytrace_WET(float *SPR, bool *ROI_mask, float *WET, float *O
           id_x = floor((x - Offset[0]) / PixelSpacing[0]);
           id_y = floor((y - Offset[1]) / PixelSpacing[1]);
           id_z = floor((z - Offset[2]) / PixelSpacing[2]);
-          id_SPR = id_z + GridSize[2] * (id_x + GridSize[1]*id_y); //order='C'
-          //id_SPR = id_y + GridSize[0] * (id_y + GridSize[1]*id_z); //order='F'
+          id_SPR = id_z + GridSize[2] * (id_y + GridSize[1]*id_x); //order='C'
       
           // accumulate WET
           voxel_SPR = SPR[id_SPR];
@@ -135,8 +134,7 @@ DLLEXPORT_TAG void compute_position_from_range(float *SPR, float *Offset, float 
   		id_x = floor((x - Offset[0]) / PixelSpacing[0]);
       id_y = floor((y - Offset[1]) / PixelSpacing[1]);
       id_z = floor((z - Offset[2]) / PixelSpacing[2]);
-      id_vox = id_z + GridSize[2] * (id_x + GridSize[1]*id_y); //order='C'
-      //id_vox = id_y + GridSize[0] * (id_y + GridSize[1]*id_z); //order='F'
+      id_vox = id_z + GridSize[2] * (id_y + GridSize[1]*id_x); //order='C'
       
   		voxel_SPR = SPR[id_vox];
         
@@ -187,8 +185,7 @@ DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, floa
   		id_x = floor((x - Offset[0]) / PixelSpacing[0]);
       id_y = floor((y - Offset[1]) / PixelSpacing[1]);
       id_z = floor((z - Offset[2]) / PixelSpacing[2]);
-      id_vox = id_z + GridSize[2] * (id_x + GridSize[1]*id_y); //order='C'
-      //id_vox = id_y + GridSize[0] * (id_y + GridSize[1]*id_z); //order='F'
+      id_vox = id_z + GridSize[2] * (id_y + GridSize[1]*id_x); //order='C'
 
       // check if we reached the target
       if(id_x >= 0 && id_y >= 0 && id_z >= 0 && id_x < GridSize[0] && id_y < GridSize[1] && id_z < GridSize[2]){
@@ -256,8 +253,7 @@ DLLEXPORT_TAG void transport_spots_inside_target(float *SPR, bool *Target_mask, 
   		id_x = floor((x - Offset[0]) / PixelSpacing[0]);
       id_y = floor((y - Offset[1]) / PixelSpacing[1]);
       id_z = floor((z - Offset[2]) / PixelSpacing[2]);
-      id_vox = id_z + GridSize[2] * (id_x + GridSize[1]*id_y); //order='C'
-      //id_vox = id_y + GridSize[0] * (id_y + GridSize[1]*id_z); //order='F'
+      id_vox = id_z + GridSize[2] * (id_y + GridSize[1]*id_x); //order='C'
 
   		// check if we reached the next layer
       if(WETs[s] >= Layer_WET){

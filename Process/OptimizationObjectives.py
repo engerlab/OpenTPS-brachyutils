@@ -56,7 +56,7 @@ class OptimizationObjectives:
       for contour in contours:
         if objective.ROIName == contour.ROIName:
           # vectorize contour
-          objective.Mask_vec = np.flip(contour.Mask, (0,1)).transpose(1,0,2)
+          objective.Mask_vec = np.flip(contour.Mask, (0,1))
           objective.Mask_vec = np.ndarray.flatten(objective.Mask_vec, 'F')
 
 
