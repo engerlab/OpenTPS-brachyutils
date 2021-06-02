@@ -120,6 +120,8 @@ class JsonPlan:
                     spotDict['positionX'] = layer.ScanSpotPositionMap_x[s]
                     spotDict['positionY'] = layer.ScanSpotPositionMap_y[s]
                     spotDict['metersetWeight'] = layer.SpotMU[s]
+                    layerDict['spots'].append(spotDict)
+                beamDict['layers'].append(layerDict)
         return beamDict
         
             
