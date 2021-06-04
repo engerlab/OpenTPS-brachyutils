@@ -18,7 +18,7 @@ from Process.pyOpti import functions,solvers,acceleration
 
 
 
-def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RangeShifters=[], RTV_margin = 7.0, SpotSpacing = 7.0, LayerSpacing = 6.0):
+def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanner, RangeShifters=[], RTV_margin = 7.0, SpotSpacing = 7.0, LayerSpacing = 6.0, AlignLayersToSpacing=False):
   start = time.time()
 
   plan = RTplan()
@@ -64,12 +64,12 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
       plan.Beams[b].RangeShifterType = RangeShifters[b].type
 
   # spot placement
-  plan = SpotPlacement(plan, CT, RTV_mask, Scanner, RangeShifters=RangeShifters)
+  plan = SpotPlacement(plan, CT, RTV_mask, Scanner, RangeShifters=RangeShifters, AlignLayersToSpacing=AlignLayersToSpacing)
 
   #previous_energy = 999
   for beam in plan.Beams:
     beam.Layers.sort(reverse=True, key=(lambda element: element.NominalBeamEnergy))
-
+    
     # # arc pt
     # for l in range(len(beam.Layers)):
     #   if(beam.Layers[l].NominalBeamEnergy < previous_energy):
@@ -93,7 +93,7 @@ def CreatePlanStructure(CT, Target, BeamNames, GantryAngles, CouchAngles, Scanne
 
 
 
-def SpotPlacement(plan, CT, Target_mask, Scanner, RangeShifters=[]):
+def SpotPlacement(plan, CT, Target_mask, Scanner, RangeShifters=[], AlignLayersToSpacing=False):
 
   SPR = SPRimage()
   SPR.convert_CT_to_SPR(CT, Scanner)
@@ -143,6 +143,7 @@ def SpotPlacement(plan, CT, Target_mask, Scanner, RangeShifters=[]):
       else:
         if(RangeShifters != [] and RangeShifters[b] != "None" and RangeShifters[b].WET > 0.0): SpotGrid["WET"][s] += RangeShifters[b].WET
         if(SpotGrid["WET"][s] < minWET): minWET = SpotGrid["WET"][s]
+        if(AlignLayersToSpacing): minWET = round(minWET/beam.LayerSpacing)*beam.LayerSpacing
 
     # raytracing of remaining spots to define energy layers
     transport_spots_inside_target(SPR, Target_mask, SpotGrid, [u,v,w], minWET, beam.LayerSpacing)

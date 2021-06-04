@@ -178,6 +178,7 @@ class Toolbox_PlanDesign(QWidget):
     GantryAngles = []
     CouchAngles = []
     RangeShifters = []
+    AlignLayers = False
     for i in range(self.beams.count()):
       BeamType = self.BeamDescription[i]["BeamType"]
       if(BeamType == "beam"):
@@ -195,6 +196,7 @@ class Toolbox_PlanDesign(QWidget):
         RangeShifters.append(RangeShifter)
 
       elif(BeamType == "arc"):
+        AlignLayers = True
         name = self.BeamDescription[i]["BeamName"]
         start = self.BeamDescription[i]["StartGantryAngle"]
         stop = self.BeamDescription[i]["StopGantryAngle"]
@@ -232,7 +234,7 @@ class Toolbox_PlanDesign(QWidget):
 
     
     # Generate new plan
-    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, self.Dose_calculation_param["Scanner"], RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing)
+    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, self.Dose_calculation_param["Scanner"], RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing, AlignLayersToSpacing=AlignLayers)
     plan.PlanName = self.plan_name.text()
     plan.RobustOpti = self.RobustOpti
     self.Patients.list[patient_id].Plans.append(plan)
