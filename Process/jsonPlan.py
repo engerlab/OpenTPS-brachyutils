@@ -91,14 +91,14 @@ class JsonPlan:
             beamDict['mu'] = str(beam.BeamMeterset) 
             beamDict['repaintingtype'] = "None"
             beamDict['layer'] = []
-            layerDict = {}
             for layer in beam.Layers:
+                layerDict = {}
                 layerDict['spottuneid'] = "3.0"
                 layerDict['energy'] = str(layer.NominalBeamEnergy)
                 layerDict['paintings'] = str(layer.NumberOfPaintings)
                 layerDict['spot'] = []
-                spotDict = {}
                 for s in range(len(layer.SpotMU)):
+                    spotDict = {}
                     spotDict['x'] = str(layer.ScanSpotPositionMap_x[s])
                     spotDict['y'] = str(layer.ScanSpotPositionMap_y[s])
                     spotDict['metersetweight'] = str(layer.SpotMU[s])
@@ -109,14 +109,14 @@ class JsonPlan:
             beamDict['meterset'] = beam.BeamMeterset
             beamDict['repaintingType'] = "None"
             beamDict['layers'] = []
-            layerDict = {}
             for layer in beam.Layers:
+                layerDict = {}
                 layerDict['spotTuneId'] = "4.0"
                 layerDict['nominalBeamEnergy'] = layer.NominalBeamEnergy
                 layerDict['numberOfPaintings'] = layer.NumberOfPaintings
                 layerDict['spots'] = []
-                spotDict = {}
                 for s in range(len(layer.SpotMU)):
+                    spotDict = {}
                     spotDict['positionX'] = layer.ScanSpotPositionMap_x[s]
                     spotDict['positionY'] = layer.ScanSpotPositionMap_y[s]
                     spotDict['metersetWeight'] = layer.SpotMU[s]
