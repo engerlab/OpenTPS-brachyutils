@@ -4,7 +4,8 @@ import requests
 import csv
 
 '''
-Class to convert openTPS plan into json plan (input for scanAlgo) 
+Class to 1) convert openTPS plan into json plan (input for scanAlgo) 
+         2) Compute Beam Delivery Time (BDT) based on scanAlgo output
 
 Usage:
 
@@ -93,7 +94,7 @@ class BDT:
                     beam_csv.append(str('Up'))
                 previous_energy = scanAlgo['layer'][-1]['energy']
                 self.inputCSV.append(beam_csv)
-    
+        
     def create_inputCSV(self,inputCSV_filename):
         header = ['Angle','Time','Switch']
         with open(inputCSV_filename, 'w') as f:
@@ -103,10 +104,8 @@ class BDT:
             writer.writerow(header)
             writer.writerows(self.inputCSV)
         
-    def call_arcAlgo(self):
+    def call_arcAlgo(self, input_CSV_filename, config):
         pass
-
-
 
 class JsonPlan:
     def __init__(self, plan, Gantry = "PPlus", beamID = 0):
@@ -199,8 +198,6 @@ class JsonPlan:
                     layerDict['spots'].append(spotDict)
                 beamDict['layers'].append(layerDict)
         return beamDict
-        
-            
 
     def save(self, file_path):
         with open(file_path, 'w') as fid:
