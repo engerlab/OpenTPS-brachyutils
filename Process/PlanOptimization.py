@@ -241,7 +241,7 @@ def Rotate_vector(vec, angle, axis):
 
 
 def ComputeIsocenter(Target_mask, CT):
-  maskY,maskX,maskZ = np.nonzero(Target_mask)
+  maskX,maskY,maskZ = np.nonzero(Target_mask)
   return [np.mean(CT.VoxelX[maskX]), np.mean(CT.VoxelY[maskY]), np.mean(CT.VoxelZ[maskZ])]
 
 

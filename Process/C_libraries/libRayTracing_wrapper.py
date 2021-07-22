@@ -49,7 +49,7 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
       for j in range(SPR.GridSize[1]):
         for k in range(SPR.GridSize[2]):
           if(ROI != []):
-            if(ROI.Mask[j,i,k] == 0): continue
+            if(ROI.Mask[i,j,k] == 0): continue
 
           # initialize raytracing for voxel ijk
           voxel_WET = 0
@@ -83,7 +83,7 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
             y = y + step * v
             z = z + step * w
 
-          WET[j,i,k] = voxel_WET
+          WET[i,j,k] = voxel_WET
 
 
   return WET
@@ -224,7 +224,7 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
         # check if we reached the target
         voxel = SPR.get_voxel_index([SpotGrid["x"][s], SpotGrid["y"][s], SpotGrid["z"][s]])
         if(voxel[0] >= 0 and voxel[1] >= 0 and voxel[2] >= 0 and voxel[0] < SPR.GridSize[0] and voxel[1] < SPR.GridSize[1] and voxel[2] < SPR.GridSize[2]):
-          if(Target_mask[voxel[1], voxel[0], voxel[2]]): break
+          if(Target_mask[voxel[0], voxel[1], voxel[2]]): break
           
         # compute distante to next voxel
         dist[0] = abs(((math.floor((SpotGrid["x"][s]-SPR.ImagePositionPatient[0])/SPR.PixelSpacing[0]) + float(direction[0]>0)) * SPR.PixelSpacing[0] + SPR.ImagePositionPatient[0] - SpotGrid["x"][s])/direction[0])
@@ -303,7 +303,7 @@ def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET,
         if(SpotGrid["WET"][s] >= Layer_WET):
           voxel = SPR.get_voxel_index([SpotGrid["x"][s], SpotGrid["y"][s], SpotGrid["z"][s]])
           if(voxel[0] >= 0 and voxel[1] >= 0 and voxel[2] >= 0 and voxel[0] < SPR.GridSize[0] and voxel[1] < SPR.GridSize[1] and voxel[2] < SPR.GridSize[2]):
-            if(Target_mask[voxel[1], voxel[0], voxel[2]]):
+            if(Target_mask[voxel[0], voxel[1], voxel[2]]):
               Energy = SPR.rangeToEnergy(Layer_WET/10)
               SpotGrid["EnergyLayers"][s].append(Energy)
               
@@ -398,7 +398,7 @@ def transport_spots_inside_target_map(SPR, Target_mask, SpotGrid, direction, min
         if(SpotGrid["WET"][s] >= Layer_WET):
           voxel = SPR.get_voxel_index([SpotGrid["x"][s], SpotGrid["y"][s], SpotGrid["z"][s]])
           if(voxel[0] >= 0 and voxel[1] >= 0 and voxel[2] >= 0 and voxel[0] < SPR.GridSize[0] and voxel[1] < SPR.GridSize[1] and voxel[2] < SPR.GridSize[2]):
-            if(Target_mask[voxel[1], voxel[0], voxel[2]]):
+            if(Target_mask[voxel[0], voxel[1], voxel[2]]):
               Energy = SPR.rangeToEnergy(Layer_WET/10)
               SpotGrid["EnergyLayers"][s].append(Energy)
               

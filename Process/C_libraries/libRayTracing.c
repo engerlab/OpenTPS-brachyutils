@@ -36,7 +36,7 @@ DLLEXPORT_TAG void raytrace_WET(float *SPR, bool *ROI_mask, float *WET, float *O
       #pragma omp parallel for
       for(int k=0; k<GridSize[2]; k++){
 
-        int id_vox = k + GridSize[2] * (i + GridSize[1]*j); //order='C'
+        int id_vox = k + GridSize[2] * (j + GridSize[1]*i); //order='C'
         if(ROI_mask[id_vox] == 0) continue;
 
         // initialize raytracing for voxel ijk
@@ -154,6 +154,7 @@ DLLEXPORT_TAG void compute_position_from_range(float *SPR, float *Offset, float 
 
 DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *direction, int NumSpots){
   
+  int NumVox = GridSize[0]*GridSize[1]*GridSize[2];
   float ImgBorders_x[2], ImgBorders_y[2], ImgBorders_z[2];
   ImgBorders_x[0] = Offset[0];
   ImgBorders_x[1] = Offset[0] + GridSize[0] * PixelSpacing[0];
@@ -187,10 +188,10 @@ DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, floa
       id_z = floor((z - Offset[2]) / PixelSpacing[2]);
       id_vox = id_z + GridSize[2] * (id_y + GridSize[1]*id_x); //order='C'
 
+      if(id_vox < 0 || id_vox >= NumVox){ WETs[s]=-1; break; }
+
       // check if we reached the target
-      if(id_x >= 0 && id_y >= 0 && id_z >= 0 && id_x < GridSize[0] && id_y < GridSize[1] && id_z < GridSize[2]){
-        if(Target_mask[id_vox]) break;
-      }
+      if(Target_mask[id_vox]) break;
 
       // compute distante to next voxel
   		dist[0] = fabs(((floor((x-Offset[0])/PixelSpacing[0]) + (direction[0]>0)) * PixelSpacing[0] + Offset[0] - x)/direction[0]);
@@ -218,6 +219,7 @@ DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, floa
 
 DLLEXPORT_TAG void transport_spots_inside_target(float *SPR, bool *Target_mask, float *Offset, float *PixelSpacing, int *GridSize, float *positions, float *WETs, float *Layers, float *direction, int NumSpots, int max_number_layers, float minWET, float LayerSpacing){
   
+  int NumVox = GridSize[0]*GridSize[1]*GridSize[2];
   float ImgBorders_x[2], ImgBorders_y[2], ImgBorders_z[2];
   ImgBorders_x[0] = Offset[0];
   ImgBorders_x[1] = Offset[0] + GridSize[0] * PixelSpacing[0];
@@ -255,15 +257,15 @@ DLLEXPORT_TAG void transport_spots_inside_target(float *SPR, bool *Target_mask, 
       id_z = floor((z - Offset[2]) / PixelSpacing[2]);
       id_vox = id_z + GridSize[2] * (id_y + GridSize[1]*id_x); //order='C'
 
+      if(id_vox < 0 || id_vox >= NumVox) break;
+
   		// check if we reached the next layer
       if(WETs[s] >= Layer_WET){
       	// check if we are still inside the target
-        if(id_x >= 0 && id_y >= 0 && id_z >= 0 && id_x < GridSize[0] && id_y < GridSize[1] && id_z < GridSize[2]){
-          if(Target_mask[id_vox]){
-          	id_layer = s*max_number_layers + count;
-          	Layers[id_layer] = Layer_WET;
-          	count++;
-          }
+        if(Target_mask[id_vox]){
+          id_layer = s*max_number_layers + count;
+          Layers[id_layer] = Layer_WET;
+          count++;
         }
         NumLayer++;
         Layer_WET = minWET + NumLayer * LayerSpacing;

@@ -1,5 +1,7 @@
 from pyqtgraph import *
 
+import numpy as np
+
 class Viewer_DVH(PlotWidget):
 
   def __init__(self):
