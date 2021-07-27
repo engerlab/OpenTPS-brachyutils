@@ -2,7 +2,7 @@
 
 Python interface to convert Dicom data and run MCsquare simulations
 
-## Installation:
+## Installation (Linux):
 
 system libraries (Ubuntu 19 or more recent):
 ``` 

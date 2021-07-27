@@ -14,6 +14,7 @@ class Toolbox_PatientData(QWidget):
   Viewer_display_spots = pyqtSignal(int)
   Viewer_clear_spots = pyqtSignal()
   New_CT_created = pyqtSignal(str)
+  New_dose_created = pyqtSignal(str)
   CT_removed = pyqtSignal(int)
   CT_renamed = pyqtSignal(int, str)
 
@@ -72,6 +73,7 @@ class Toolbox_PatientData(QWidget):
     for dose in self.Patients.list[0].RTdoses:
       if(dose.isLoaded == 1): 
         self.Dose_list.addItem(dose.ImgName)
+        self.New_dose_created.emit(dose.ImgName)
     self.Dose_list.setCurrentRow(self.Dose_list.count()-1)
       
     # display plans

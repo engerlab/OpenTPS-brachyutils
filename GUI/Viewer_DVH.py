@@ -1,4 +1,5 @@
 from pyqtgraph import *
+from PyQt5.QtCore import Qt
 
 import numpy as np
 
@@ -65,7 +66,10 @@ class Viewer_DVH(PlotWidget):
 
     # display DVHs
     for dvh in self.DVH_list:
-      pen = mkPen(color=(dvh.ROIDisplayColor[2], dvh.ROIDisplayColor[1], dvh.ROIDisplayColor[0]), width=2)
+      mycolor = (dvh.ROIDisplayColor[2], dvh.ROIDisplayColor[1], dvh.ROIDisplayColor[0])
+      if(hasattr(dvh, "LineStyle") and dvh.LineStyle == "dashed"): pen = mkPen(color=mycolor, width=2, style=Qt.DashLine)
+      elif(hasattr(dvh, "LineStyle") and dvh.LineStyle == "dotted"): pen = mkPen(color=mycolor, width=2, style=Qt.DotLine)
+      else: pen = mkPen(color=mycolor, width=2)
       curve = PlotCurveItem(dvh.dose, dvh.volume, pen=pen, name=dvh.ROIName)   
       curve.DVH = dvh
       self.addItem(curve)

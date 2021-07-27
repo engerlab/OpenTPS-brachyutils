@@ -98,19 +98,35 @@ class RTdose:
     
    
   
-  def prepare_image_for_viewer(self):
-    #img_min = self.Image.min()
-    img_min = 0.05
-    #img_max = self.Image.max()
-    img_max = np.percentile(self.Image, 99.995) # reduce impact of noise on the dose range calculation
-    img_data = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
+  def prepare_image_for_viewer(self, allow_negative=False):
     color_index = np.arange(255)
     rgb = cm.get_cmap('jet')(color_index) * 255 # generate colormap
+
     img_viewer = np.zeros((self.GridSize[0], self.GridSize[1], self.GridSize[2], 4), dtype=np.int8)
-    img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
-    img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
-    img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
-    img_viewer[:,:,:,3] = 255 * (img_data > img_min)
+
+    if(allow_negative == False):
+      img_min = 0.01
+      img_max = np.percentile(self.Image, 99.995) # reduce impact of noise on the dose range calculation
+      img_data = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
+      img_data[img_data>255] = 255
+      img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
+      img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
+      img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
+      img_viewer[:,:,:,3] = 255 * (img_data > img_min)
+
+    else: 
+      #img_min = self.Image.min()
+      #img_max = self.Image.max()
+      img_min = np.percentile(self.Image, 0.005)
+      img_max = np.percentile(self.Image, 99.995)
+      rescale_factor = max(abs(img_min), abs(img_max))
+      img_data = 127 + 128 * self.Image / rescale_factor # normalize data betwee, 0 and 255
+      img_data[img_data<0] = 0
+      img_data[img_data>255] = 255
+      img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
+      img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
+      img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
+      img_viewer[:,:,:,3] = 255 * (img_data != 127)
     
     return img_viewer
     

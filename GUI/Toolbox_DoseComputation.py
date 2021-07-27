@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSignal
 
 from Process.MCsquare import *
+from Process.RTdose import *
 from Process.DeepLearning_denoising.Denoise_MC_dose import *
 
 
