@@ -342,7 +342,7 @@ class RTdose:
     dcm_file.HighBit = 15
     dcm_file.PixelRepresentation = 0 # 0=unsigned, 1=signed
     dcm_file.DoseGridScaling = self.Image.max()/(2**dcm_file.BitDepth - 1)
-    dcm_file.PixelData = (self.Image/dcm_file.DoseGridScaling).astype(np.uint16).transpose(2,0,1).tostring()
+    dcm_file.PixelData = (self.Image/dcm_file.DoseGridScaling).astype(np.uint16).transpose(2,1,0).tostring()
 
     #print(dcm_file)
 

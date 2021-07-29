@@ -188,10 +188,10 @@ DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, floa
       id_z = floor((z - Offset[2]) / PixelSpacing[2]);
       id_vox = id_z + GridSize[2] * (id_y + GridSize[1]*id_x); //order='C'
 
-      if(id_vox < 0 || id_vox >= NumVox){ WETs[s]=-1; break; }
-
       // check if we reached the target
-      if(Target_mask[id_vox]) break;
+      if(id_vox > 0 && id_vox < NumVox){
+        if(Target_mask[id_vox]) break;
+      }
 
       // compute distante to next voxel
   		dist[0] = fabs(((floor((x-Offset[0])/PixelSpacing[0]) + (direction[0]>0)) * PixelSpacing[0] + Offset[0] - x)/direction[0]);
@@ -199,7 +199,8 @@ DLLEXPORT_TAG void transport_spots_to_target(float *SPR, bool *Target_mask, floa
   		dist[2] = fabs(((floor((z-Offset[2])/PixelSpacing[2]) + (direction[2]>0)) * PixelSpacing[2] + Offset[2] - z)/direction[2]);
   		step = fmin(dist[0], fmin(dist[1], dist[2])) + 1e-3;
 
-  		voxel_SPR = SPR[id_vox];
+      if(id_vox > 0 && id_vox < NumVox) voxel_SPR = SPR[id_vox];
+      else voxel_SPR = 0.001;
         
   		WETs[s] += voxel_SPR * step;
   		x = x + step * direction[0];

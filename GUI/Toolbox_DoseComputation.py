@@ -82,7 +82,7 @@ class Toolbox_DoseComputation(QWidget):
     self.RunButton.clicked.connect(self.run_MCsquare) 
     self.layout.addStretch()
     
-    self.Update_dose_calculation_param()
+    
 
 
 

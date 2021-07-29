@@ -134,6 +134,7 @@ class MainWindow(QMainWindow):
     self.ViewerGrid = Viewer_Grid()
     self.main_layout.addLayout(self.ViewerGrid)
     
+    self.toolbox_3.Update_dose_calculation_param()
     self.GUI_initialized = 1
 
 
