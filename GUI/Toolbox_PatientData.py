@@ -4,6 +4,10 @@ import os
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QDir, pyqtSignal
 
+from Process.RTplan import *
+from Process.MCsquare_plan import *
+
+
 class Toolbox_PatientData(QWidget):
 
   Current_CT_changed = pyqtSignal(int)
@@ -48,9 +52,17 @@ class Toolbox_PatientData(QWidget):
     self.Plan_list.customContextMenuRequested.connect(lambda pos, list_type='plan': self.List_RightClick(pos, list_type))
     self.layout.addWidget(self.Plan_list)
     self.layout.addSpacing(10)
-    self.LoadButton = QPushButton('Load patient data')
+    self.LoadButton = QPushButton('Load patient folder')
     self.layout.addWidget(self.LoadButton)
     self.LoadButton.clicked.connect(self.load_patient_data) 
+    self.layout.addSpacing(10)
+    self.LoadPlanButton = QPushButton('Import OpenTPS Plan')
+    self.layout.addWidget(self.LoadPlanButton)
+    self.LoadPlanButton.clicked.connect(self.import_OpenTPS_Plan) 
+    self.layout.addSpacing(10)
+    self.LoadMCsquarePlanButton = QPushButton('Import MCsquare PlanPencil')
+    self.layout.addWidget(self.LoadMCsquarePlanButton)
+    self.LoadMCsquarePlanButton.clicked.connect(self.import_PlanPencil) 
 
 
   def load_patient_data(self):
@@ -84,6 +96,48 @@ class Toolbox_PatientData(QWidget):
 
     # display contours
     self.ROI_list_changed.emit()
+
+
+
+  def import_OpenTPS_Plan(self): 
+    # find selected CT image
+    if(self.CT_list.currentRow() < 0):
+      print("Error: No CT image selected")
+      return
+    patient_id, ct_id = self.Patients.find_CT_image(self.CT_list.currentRow())
+
+    # select file
+    file_path, _ = QFileDialog.getOpenFileName(self, "Load OpenTPS plan", self.data_path, "OpenTPS data (*.tps);;All files (*.*)")
+    if(file_path == ""): return
+
+    # import plan
+    plan = RTplan()
+    plan.load(file_path)
+      
+    # add plan to list
+    self.Patients.list[patient_id].Plans.append(plan)
+    self.Plan_list.addItem(plan.PlanName)
+    self.Plan_list.setCurrentRow(self.Plan_list.count()-1)
+    
+  
+  
+  def import_PlanPencil(self):
+    # find selected CT image
+    if(self.CT_list.currentRow() < 0):
+      print("Error: No CT image selected")
+      return
+    patient_id, ct_id = self.Patients.find_CT_image(self.CT_list.currentRow())
+    ct = self.Patients.list[patient_id].CTimages[ct_id]
+    
+    # select file
+    path, _ = QFileDialog.getOpenFileName(self, "Open MCsquare plan", self.data_path, "MCsquare plan (*.txt);;All files (*.*)")
+    if(path == ""): return
+    
+    # import file
+    plan = import_MCsquare_plan(path, ct)
+    self.Patients.list[patient_id].Plans.append(plan)
+    self.Plan_list.addItem(plan.PlanName)
+    self.Plan_list.setCurrentRow(self.Plan_list.count()-1)
 
 
 

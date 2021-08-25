@@ -56,7 +56,7 @@ class CTimage:
       print("WARNING: GridSize " + str(Image.shape[0:2]) + " different from Dicom Columns (" + str(dcm.Columns) + ") and Rows (" + str(dcm.Rows) + ")")
 
     MeanSliceDistance = (SliceLocation[-1] - SliceLocation[0]) / (len(images)-1)
-    if(abs(MeanSliceDistance - dcm.SliceThickness) > 0.001):
+    if(hasattr(dcm, 'SliceThickness') and (type(dcm.SliceThickness) == int or type(dcm.SliceThickness) == float) and abs(MeanSliceDistance - dcm.SliceThickness) > 0.001):
       print("WARNING: MeanSliceDistance (" + str(MeanSliceDistance) + ") is different from SliceThickness (" + str(dcm.SliceThickness) + ")")
 
     self.FrameOfReferenceUID = dcm.FrameOfReferenceUID

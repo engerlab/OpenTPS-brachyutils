@@ -37,6 +37,37 @@ class Toolbox_PlanDesign(QWidget):
     self.Target = QComboBox()
     self.Target.setMaximumWidth(self.toolbox_width-18)
     self.layout.addWidget(self.Target)
+    self.layout.addSpacing(10)
+    self.SpotSpacing_layout = QHBoxLayout()
+    self.SpotSpacing_layout.addWidget(QLabel('<b>Spot spacing:</b>'))
+    self.SpotSpacing = QDoubleSpinBox()
+    self.SpotSpacing.setGroupSeparatorShown(True)
+    self.SpotSpacing.setRange(0.1, 100.0)
+    self.SpotSpacing.setSingleStep(1.0)
+    self.SpotSpacing.setValue(5.0)
+    self.SpotSpacing.setSuffix(" mm")
+    self.SpotSpacing_layout.addWidget(self.SpotSpacing)
+    self.layout.addLayout(self.SpotSpacing_layout)
+    self.LayerSpacing_layout = QHBoxLayout()
+    self.LayerSpacing_layout.addWidget(QLabel('<b>Layer spacing:</b>'))
+    self.LayerSpacing = QDoubleSpinBox()
+    self.LayerSpacing.setGroupSeparatorShown(True)
+    self.LayerSpacing.setRange(0.001, 100.0)
+    self.LayerSpacing.setSingleStep(1.0)
+    self.LayerSpacing.setValue(5.0)
+    self.LayerSpacing.setSuffix(" mm")
+    self.LayerSpacing_layout.addWidget(self.LayerSpacing)
+    self.layout.addLayout(self.LayerSpacing_layout)
+    self.TargetMargin_layout = QHBoxLayout()
+    self.TargetMargin_layout.addWidget(QLabel('<b>Target margin:</b>'))
+    self.TargetMargin = QDoubleSpinBox()
+    self.TargetMargin.setGroupSeparatorShown(True)
+    self.TargetMargin.setRange(0.001, 100.0)
+    self.TargetMargin.setSingleStep(1.0)
+    self.TargetMargin.setValue(5.0)
+    self.TargetMargin.setSuffix(" mm")
+    self.TargetMargin_layout.addWidget(self.TargetMargin)
+    self.layout.addLayout(self.TargetMargin_layout)
     self.layout.addSpacing(15)
     self.layout.addWidget(QLabel('<b>Beams:</b>'))
     self.beams =  QListWidget()
@@ -71,14 +102,6 @@ class Toolbox_PlanDesign(QWidget):
     self.layout.addWidget(self.ComputeBeamletButton)
     self.ComputeBeamletButton.clicked.connect(self.compute_beamlets) 
     self.layout.addStretch()
-    self.LoadPlanButton = QPushButton('Import OpenTPS Plan')
-    self.layout.addWidget(self.LoadPlanButton)
-    self.LoadPlanButton.clicked.connect(self.import_OpenTPS_Plan) 
-    self.layout.addSpacing(10)
-    self.LoadMCsquarePlanButton = QPushButton('Import MCsquare PlanPencil')
-    self.layout.addWidget(self.LoadMCsquarePlanButton)
-    self.LoadMCsquarePlanButton.clicked.connect(self.import_PlanPencil) 
-    self.layout.addSpacing(10)
     self.update_robust_opti_settings()
     
   
@@ -224,13 +247,13 @@ class Toolbox_PlanDesign(QWidget):
 
     # set spacing parameters
     if(self.RobustOpti["Strategy"] == 'Disabled'): 
-      SpotSpacing = 5.0
-      LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5
+      SpotSpacing = self.SpotSpacing.value()
+      LayerSpacing = self.LayerSpacing.value()
+      RTV_margin = self.TargetMargin.value()
     else: 
-      SpotSpacing = 5.0
-      LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5 + max(self.RobustOpti["syst_setup"])
+      SpotSpacing = self.SpotSpacing.value()
+      LayerSpacing = self.LayerSpacing.value()
+      RTV_margin = self.TargetMargin.value() + max(self.RobustOpti["syst_setup"])
 
     
     # Generate new plan
@@ -288,46 +311,6 @@ class Toolbox_PlanDesign(QWidget):
     # save plan
     plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
     plan.save(plan_file)
-
-
-
-  def import_OpenTPS_Plan(self): 
-    # find selected CT image
-    if(self.CT_disp_ID < 0):
-      print("Error: No CT image selected")
-      return
-    patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
-
-    # select file
-    file_path, _ = QFileDialog.getOpenFileName(self, "Load OpenTPS plan", self.data_path, "OpenTPS data (*.tps);;All files (*.*)")
-    if(file_path == ""): return
-
-    # import plan
-    plan = RTplan()
-    plan.load(file_path)
-      
-    # add plan to list
-    self.Patients.list[patient_id].Plans.append(plan)
-    self.New_plan_created.emit(plan.PlanName)
-    
-  
-  
-  def import_PlanPencil(self):
-    # find selected CT image
-    if(self.CT_disp_ID < 0):
-      print("Error: No CT image selected")
-      return
-    patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
-    ct = self.Patients.list[patient_id].CTimages[ct_id]
-    
-    # select file
-    path, _ = QFileDialog.getOpenFileName(self, "Open MCsquare plan", self.data_path, "MCsquare plan (*.txt);;All files (*.*)")
-    if(path == ""): return
-    
-    # import file
-    plan = import_MCsquare_plan(path, ct)
-    self.Patients.list[patient_id].Plans.append(plan)
-    self.New_plan_created.emit(plan.PlanName)
 
 
 
