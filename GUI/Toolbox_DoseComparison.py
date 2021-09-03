@@ -65,13 +65,18 @@ class Toolbox_DoseComparison(QWidget):
   def Compute_dose_difference(self):
     row1 = self.Dose1_list.currentRow()
     row2 = self.Dose2_list.currentRow()
-    if(row2 < 0): return
+
+    if(row1 < 0): return
     
     # find dose distributions
     patient_id, dose_id = self.Patients.find_dose_image(row1)
     dose1 = self.Patients.list[patient_id].RTdoses[dose_id]
-    patient_id, dose_id = self.Patients.find_dose_image(row2)
-    dose2 = self.Patients.list[patient_id].RTdoses[dose_id]
+    if(row2 < 0):
+      dose2 = dose1.copy()
+      dose2.Image = np.zeros(dose1.Image.shape)
+    else:
+      patient_id, dose_id = self.Patients.find_dose_image(row2)
+      dose2 = self.Patients.list[patient_id].RTdoses[dose_id]
 
     # compute dose difference
     DoseDiff = dose1.copy()
@@ -79,7 +84,8 @@ class Toolbox_DoseComparison(QWidget):
     self.DoseDiff = DoseDiff.prepare_image_for_viewer(allow_negative=True)
 
     # compute histogram
-    mask = np.logical_or(dose1.Image!=0, dose2.Image!=0)
+    if(row2 < 0): mask = dose1.Image!=0
+    else: mask = np.logical_or(dose1.Image!=0, dose2.Image!=0)
     y,x = np.histogram(DoseDiff.Image[mask], bins=25)
     bin_starts = x[0:-1]
     bin_width = x[1:] - x[0:-1]
@@ -98,10 +104,11 @@ class Toolbox_DoseComparison(QWidget):
       dvh = DVH(dose1, contour)
       dvh.ROIName += " (dose1)"
       self.DVH_list.append(dvh)
-      dvh = DVH(dose2, contour)
-      dvh.LineStyle = "dashed"
-      dvh.ROIName += " (dose2)"
-      self.DVH_list.append(dvh)
+      if(row2 >= 0):
+        dvh = DVH(dose2, contour)
+        dvh.LineStyle = "dashed"
+        dvh.ROIName += " (dose2)"
+        self.DVH_list.append(dvh)
 
     self.DoseComparison_updated.emit()
 
