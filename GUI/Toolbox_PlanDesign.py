@@ -68,6 +68,22 @@ class Toolbox_PlanDesign(QWidget):
     self.TargetMargin.setSuffix(" mm")
     self.TargetMargin_layout.addWidget(self.TargetMargin)
     self.layout.addLayout(self.TargetMargin_layout)
+    self.TargetProxLayers_layout = QHBoxLayout()
+    self.TargetProxLayers_layout.addWidget(QLabel('<b>Proximal layers:</b>'))
+    self.TargetProxLayers = QSpinBox()
+    self.TargetProxLayers.setRange(0, 10)
+    self.TargetProxLayers.setSingleStep(1)
+    self.TargetProxLayers.setValue(1)
+    self.TargetProxLayers_layout.addWidget(self.TargetProxLayers)
+    self.layout.addLayout(self.TargetProxLayers_layout)
+    self.TargetDistLayers_layout = QHBoxLayout()
+    self.TargetDistLayers_layout.addWidget(QLabel('<b>Distal layers:</b>'))
+    self.TargetDistLayers = QSpinBox()
+    self.TargetDistLayers.setRange(0, 10)
+    self.TargetDistLayers.setSingleStep(1)
+    self.TargetDistLayers.setValue(1)
+    self.TargetDistLayers_layout.addWidget(self.TargetDistLayers)
+    self.layout.addLayout(self.TargetDistLayers_layout)
     self.layout.addSpacing(15)
     self.layout.addWidget(QLabel('<b>Beams:</b>'))
     self.beams =  QListWidget()
@@ -246,18 +262,16 @@ class Toolbox_PlanDesign(QWidget):
           RangeShifters.append(RangeShifter)
 
     # set spacing parameters
-    if(self.RobustOpti["Strategy"] == 'Disabled'): 
-      SpotSpacing = self.SpotSpacing.value()
-      LayerSpacing = self.LayerSpacing.value()
-      RTV_margin = self.TargetMargin.value()
-    else: 
-      SpotSpacing = self.SpotSpacing.value()
-      LayerSpacing = self.LayerSpacing.value()
-      RTV_margin = self.TargetMargin.value() + max(self.RobustOpti["syst_setup"])
+    SpotSpacing = self.SpotSpacing.value()
+    LayerSpacing = self.LayerSpacing.value()
+    ProximalLayers = self.TargetProxLayers.value()
+    DistalLayers = self.TargetDistLayers.value()
+    if(self.RobustOpti["Strategy"] == 'Disabled'): RTV_margin = self.TargetMargin.value()
+    else: RTV_margin = self.TargetMargin.value() + max(self.RobustOpti["syst_setup"])
 
     
     # Generate new plan
-    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, self.Dose_calculation_param["Scanner"], RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing, AlignLayersToSpacing=AlignLayers)
+    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, self.Dose_calculation_param["Scanner"], RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing, ProximalLayers=ProximalLayers, DistalLayers=DistalLayers, AlignLayersToSpacing=AlignLayers)
     plan.PlanName = self.plan_name.text()
     plan.RobustOpti = self.RobustOpti
     self.Patients.list[patient_id].Plans.append(plan)
