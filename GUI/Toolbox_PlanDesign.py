@@ -113,10 +113,6 @@ class Toolbox_PlanDesign(QWidget):
     self.CreatePlanButton = QPushButton('Create new plan')
     self.layout.addWidget(self.CreatePlanButton)
     self.CreatePlanButton.clicked.connect(self.create_new_plan) 
-    self.layout.addSpacing(15)
-    self.ComputeBeamletButton = QPushButton('Compute beamlets')
-    self.layout.addWidget(self.ComputeBeamletButton)
-    self.ComputeBeamletButton.clicked.connect(self.compute_beamlets) 
     self.layout.addStretch()
     self.update_robust_opti_settings()
     
@@ -269,62 +265,12 @@ class Toolbox_PlanDesign(QWidget):
     if(self.RobustOpti["Strategy"] == 'Disabled'): RTV_margin = self.TargetMargin.value()
     else: RTV_margin = self.TargetMargin.value() + max(self.RobustOpti["syst_setup"])
 
-    
     # Generate new plan
     plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, self.Dose_calculation_param["Scanner"], RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing, ProximalLayers=ProximalLayers, DistalLayers=DistalLayers, AlignLayersToSpacing=AlignLayers)
     plan.PlanName = self.plan_name.text()
     plan.RobustOpti = self.RobustOpti
     self.Patients.list[patient_id].Plans.append(plan)
     self.New_plan_created.emit(plan.PlanName)
-    
-    
-  
-  
-  def compute_beamlets(self):
-    # find selected CT image
-    if(self.CT_disp_ID < 0):
-      print("Error: No CT image selected")
-      return
-    ct_patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
-    ct = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    
-    # find selected plan
-    if(self.Plan_disp_ID < 0):
-      print("Error: No treatment plan selected")
-      return
-    plan_patient_id, plan_id = self.Patients.find_plan(self.Plan_disp_ID)
-    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
-    
-    # configure MCsquare module
-    mc2 = MCsquare()
-    mc2.BDL.selected_BDL = self.Dose_calculation_param["BDL"]
-    mc2.Scanner.selected_Scanner = self.Dose_calculation_param["Scanner"]
-    mc2.NumProtons = 5e4
-    mc2.dose2water = self.Dose_calculation_param["dose2water"]
-    mc2.SetupSystematicError = plan.RobustOpti["syst_setup"]
-    mc2.SetupRandomError = plan.RobustOpti["rand_setup"]
-    mc2.RangeSystematicError = plan.RobustOpti["syst_range"]
-    if(plan.RobustOpti["Strategy"] == 'Disabled'): mc2.Robustness_Strategy = "Disabled"
-    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
-
-    # Crop CT image with contour:
-    if(self.Dose_calculation_param["CropContour"] == "None"):
-      mc2.Crop_CT_contour = {}
-    else:
-      patient_id, struct_id, contour_id = self.Patients.find_contour(self.Dose_calculation_param["CropContour"])
-      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-    
-    # output folder
-    output_path = os.path.join(self.data_path, "OpenTPS")
-    if not os.path.isdir(output_path):
-      os.mkdir(output_path)
-
-    # run MCsquare simulation
-    mc2.MCsquare_beamlet_calculation(ct, plan, output_path)
-
-    # save plan
-    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-    plan.save(plan_file)
 
 
 

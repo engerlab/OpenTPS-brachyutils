@@ -76,6 +76,7 @@ class MainWindow(QMainWindow):
     self.toolbox_2.Contour_removed.connect(self.toolbox_3.Remove_contour)
     self.Update_dose_calculation_param(self.toolbox_3.Dose_calculation_param)
     self.toolbox_3.Dose_calculation_param_changed.connect(self.Update_dose_calculation_param)
+    self.toolbox_1.Data_path_changed.connect(self.toolbox_3.Data_path_changed)
     
     # initialize the 4th toolbox panel (Plan design)
     self.toolbox_4 = Toolbox_PlanDesign(self.Patients, self.toolbox_width)
@@ -96,6 +97,8 @@ class MainWindow(QMainWindow):
     self.toolbox_3.Dose_calculation_param_changed.connect(self.toolbox_5.Update_dose_calculation_param)
     self.toolbox_5.New_dose_created.connect(self.toolbox_1.Add_dose)
     self.toolbox_1.Data_path_changed.connect(self.toolbox_5.Data_path_changed)
+    self.toolbox_5.Run_beamlet_calculation.connect(self.toolbox_3.compute_beamlets_SLOT)
+    self.toolbox_3.Run_plan_optimization.connect(self.toolbox_5.optimize_plan)
     
     # initialize the 6th toolbox panel (Plan evaluation)
     self.toolbox_6 = Toolbox_PlanEvaluation(self.Patients, self.toolbox_width)
