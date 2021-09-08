@@ -200,10 +200,10 @@ class RTplan:
           LineScanPoints = np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist()
           layer.LineScanControlPoint_x = LineScanPoints[0::2]
           layer.LineScanControlPoint_y = LineScanPoints[1::2]
-          layer.LineScanControlPoint_linear_Weights = np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist()
-          layer.LineScanControlPoint_linear_MU = np.array(layer.LineScanControlPoint_linear_Weights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight # weights are converted to MU
-          if layer.LineScanControlPoint_linear_MU.size == 1: layer.LineScanControlPoint_linear_MU = [layer.LineScanControlPoint_linear_MU]
-          else: layer.LineScanControlPoint_linear_MU = layer.LineScanControlPoint_linear_MU.tolist()          
+          layer.LineScanControlPoint_Weights = np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist()
+          layer.LineScanControlPoint_MU = np.array(layer.LineScanControlPoint_Weights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight # weights are converted to MU
+          if layer.LineScanControlPoint_MU.size == 1: layer.LineScanControlPoint_MU = [layer.LineScanControlPoint_MU]
+          else: layer.LineScanControlPoint_MU = layer.LineScanControlPoint_MU.tolist()  
         
             
         if beam.RangeShifterType != "none":        
@@ -253,8 +253,8 @@ class RTplan:
           y_stop = layer.LineScanControlPoint_y[i+1] # mm
           distance = math.sqrt( (x_stop-x_start)**2 + (y_stop-y_start)**2 ) / 10 # cm
           NumSpots = math.ceil(distance*SpotDensity)
-          SpotWeight = layer.LineScanControlPoint_linear_Weights[i+1] * distance / NumSpots
-          SpotMU = layer.LineScanControlPoint_linear_MU[i+1] * distance / NumSpots
+          SpotWeight = layer.LineScanControlPoint_Weights[i+1] / NumSpots
+          SpotMU = layer.LineScanControlPoint_MU[i+1] / NumSpots
           
           layer.ScanSpotPositionMap_x.extend(np.linspace(x_start, x_stop, num=NumSpots))
           layer.ScanSpotPositionMap_y.extend(np.linspace(y_start, y_stop, num=NumSpots))
@@ -264,9 +264,11 @@ class RTplan:
       
         beam.BeamMeterset += sum(layer.SpotMU)
         beam.FinalCumulativeMetersetWeight += sum(layer.ScanSpotMetersetWeights)
+
         layer.CumulativeMeterset = beam.BeamMeterset
       
     self.ScanMode = "MODULATED"
+    print("Line scanning plan converted to PBS plan with spot density of ", SpotDensity, " spots per cm.")
     
     
   
@@ -503,8 +505,8 @@ class Plan_IonLayer:
       self.ReferencedRangeShifterNumber = 0
       self.LineScanControlPoint_x = []
       self.LineScanControlPoint_y = []
-      self.LineScanControlPoint_linear_Weights = []
-      self.LineScanControlPoint_linear_MU = []
+      self.LineScanControlPoint_Weights = []
+      self.LineScanControlPoint_MU = []
     else:
       self.SeriesInstanceUID = from_layer.SeriesInstanceUID
       self.NumberOfPaintings = from_layer.NumberOfPaintings
@@ -524,8 +526,8 @@ class Plan_IonLayer:
       self.ReferencedRangeShifterNumber = from_layer.ReferencedRangeShifterNumber
       self.LineScanControlPoint_x = list(from_layer.LineScanControlPoint_x)
       self.LineScanControlPoint_y = list(from_layer.LineScanControlPoint_y)
-      self.LineScanControlPoint_linear_Weights = list(from_layer.LineScanControlPoint_linear_Weights)
-      self.LineScanControlPoint_linear_MU = list(from_layer.LineScanControlPoint_linear_MU)
+      self.LineScanControlPoint_Weights = list(from_layer.LineScanControlPoint_Weights)
+      self.LineScanControlPoint_MU = list(from_layer.LineScanControlPoint_MU)
 
   def reorder_spots(self, order):
     if type(order) is str and order=='scanAlgo':

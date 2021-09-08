@@ -50,18 +50,18 @@ class CTimage:
     SliceLocation = SliceLocation[sort_index]
     SOPInstanceUIDs = [SOPInstanceUIDs[n] for n in sort_index]
     images = [images[n] for n in sort_index]
-    Image = np.dstack(images).astype("float32")
+    Image = np.dstack(images).astype("float32").transpose(1,0,2)
 
-    if Image.shape[0:2] != (dcm.Rows, dcm.Columns):
-      print("WARNING: GridSize " + str(Image.shape[0:2]) + " different from Dicom Rows (" + str(dcm.Rows) + ") and Columns (" + str(dcm.Columns) + ")")
+    if Image.shape[0:2] != (dcm.Columns, dcm.Rows):
+      print("WARNING: GridSize " + str(Image.shape[0:2]) + " different from Dicom Columns (" + str(dcm.Columns) + ") and Rows (" + str(dcm.Rows) + ")")
 
     MeanSliceDistance = (SliceLocation[-1] - SliceLocation[0]) / (len(images)-1)
-    if(abs(MeanSliceDistance - dcm.SliceThickness) > 0.001):
+    if(hasattr(dcm, 'SliceThickness') and (type(dcm.SliceThickness) == int or type(dcm.SliceThickness) == float) and abs(MeanSliceDistance - dcm.SliceThickness) > 0.001):
       print("WARNING: MeanSliceDistance (" + str(MeanSliceDistance) + ") is different from SliceThickness (" + str(dcm.SliceThickness) + ")")
 
     self.FrameOfReferenceUID = dcm.FrameOfReferenceUID
     self.ImagePositionPatient = [float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), SliceLocation[0]]
-    self.PixelSpacing = [float(dcm.PixelSpacing[0]), float(dcm.PixelSpacing[1]), MeanSliceDistance]
+    self.PixelSpacing = [float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), MeanSliceDistance]
     self.GridSize = list(Image.shape)
     self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
     self.Image = Image

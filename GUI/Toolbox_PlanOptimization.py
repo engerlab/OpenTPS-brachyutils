@@ -11,6 +11,7 @@ from Process.PlanOptimization import *
 class Toolbox_PlanOptimization(QWidget):
 
   New_dose_created = pyqtSignal(str)
+  Run_beamlet_calculation = pyqtSignal()
 
   def __init__(self, PatientList, toolbox_width):
     QWidget.__init__(self)
@@ -226,8 +227,19 @@ class Toolbox_PlanOptimization(QWidget):
     else:
       # check beamlets
       if(plan.beamlets == []):
-        print("Error: beamlets must be pre-computed")
-        return
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Warning)
+        msg_box.setText("Beamlet were not computed for this treatment plan.")
+        msg_box.setInformativeText("Do you want to pre-compute " + str(plan.NumberOfSpots) + " beamlets now?")
+        msg_box.setWindowTitle("Beamlet calculation")
+        msg_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        answer = msg_box.exec()
+        if(answer == QMessageBox.Ok):
+          self.Run_beamlet_calculation.emit()
+          return
+        else:
+          print("Error: beamlets must be pre-computed")
+          return
 
       # beamlet-based optimization with BFGS
       if(self.Algorithm.currentText() == "Beamlet-based BFGS"):

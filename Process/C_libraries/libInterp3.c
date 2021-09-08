@@ -26,10 +26,15 @@ DLLEXPORT_TAG void Trilinear_Interpolation(float *Image, int *GridSize, float *I
     Id_y = floor(InterpolatedPoints[3*p+1]);
     Id_z = floor(InterpolatedPoints[3*p+2]);
 
-    if(Id_x < 0 || Id_x > GridSize[0]-2 || Id_y < 0 || Id_y > GridSize[1]-2 || Id_z < 0 || Id_z > GridSize[2]-2){
+    if(Id_x < 0 || Id_x >= GridSize[0] || Id_y < 0 || Id_y >= GridSize[1] || Id_z < 0 || Id_z >= GridSize[2]){
       Intepolated_img[p] = fill_value;
     }
     else{
+
+      if(Id_x > GridSize[0]-2) Id_x = GridSize[0]-2;
+      if(Id_y > GridSize[1]-2) Id_y = GridSize[1]-2;
+      if(Id_z > GridSize[2]-2) Id_z = GridSize[2]-2;
+
       // voxel coordinates corresponding to order='C'
       Id1 = (Id_z) + GridSize[2] * ((Id_y) + GridSize[1]*(Id_x));
       Id2 = (Id_z) + GridSize[2] * ((Id_y) + GridSize[1]*(Id_x+1));

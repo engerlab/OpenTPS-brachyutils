@@ -56,7 +56,7 @@ class OptimizationObjectives:
       for contour in contours:
         if objective.ROIName == contour.ROIName:
           # vectorize contour
-          objective.Mask_vec = np.flip(contour.Mask, (0,1)).transpose(1,0,2)
+          objective.Mask_vec = np.flip(contour.Mask, (0,1))
           objective.Mask_vec = np.ndarray.flatten(objective.Mask_vec, 'F')
 
 
@@ -76,14 +76,14 @@ class OptimizationObjectives:
 
     for objective in self.list:
       if objective.Metric == "Dmax" and objective.Condition == "<":
-        f = np.mean(np.maximum(0, doseTotal[objective.Mask_vec]-objective.LimitValue))
+        f = np.mean(np.maximum(0, doseTotal[objective.Mask_vec]-objective.LimitValue)**2)
       elif objective.Metric == "Dmean" and objective.Condition == "<":
-        f = np.maximum(0, np.mean(doseTotal[objective.Mask_vec], dtype=np.float32)-objective.LimitValue)
+        f = np.maximum(0, np.mean(doseTotal[objective.Mask_vec], dtype=np.float32)-objective.LimitValue)**2
       elif objective.Metric == "Dmin" and objective.Condition == ">":
-        f = np.mean(np.minimum(0, doseTotal[objective.Mask_vec]-objective.LimitValue))
+        f = np.mean(np.minimum(0, doseTotal[objective.Mask_vec]-objective.LimitValue)**2)
 
-      if objective.Robust == False: fTot += objective.Weight * f**2
-      else: fTotScenario += objective.Weight * f**2
+      if objective.Robust == False: fTot += objective.Weight * f
+      else: fTotScenario += objective.Weight * f
 
     ScenarioList.append(fTotScenario)
 
@@ -111,13 +111,13 @@ class OptimizationObjectives:
         if objective.Robust == False: continue
 
         if objective.Metric == "Dmax" and objective.Condition == "<":
-          f = np.mean(np.maximum(0, doseTotal[objective.Mask_vec]-objective.LimitValue))
+          f = np.mean(np.maximum(0, doseTotal[objective.Mask_vec]-objective.LimitValue)**2)
         elif objective.Metric == "Dmean" and objective.Condition == "<":
-          f = np.maximum(0, np.mean(doseTotal[objective.Mask_vec], dtype=np.float32)-objective.LimitValue)
+          f = np.maximum(0, np.mean(doseTotal[objective.Mask_vec], dtype=np.float32)-objective.LimitValue)**2
         elif objective.Metric == "Dmin" and objective.Condition == ">":
-          f = np.mean(np.minimum(0, doseTotal[objective.Mask_vec]-objective.LimitValue))
+          f = np.mean(np.minimum(0, doseTotal[objective.Mask_vec]-objective.LimitValue)**2)
 
-        fTotScenario += objective.Weight * f**2
+        fTotScenario += objective.Weight * f
 
       ScenarioList.append(fTotScenario)
 

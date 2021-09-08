@@ -6,6 +6,10 @@ from Process.RTplan import *
 
 def export_plan_for_MCsquare(plan, file_path, CT, BDL):
 
+  if(plan.ScanMode != "MODULATED"):
+    print("Error: cannot simulate this treatment modality. Please convert the plan to PBS delivery mode.")
+    return
+
   DestFolder, DestFile = os.path.split(file_path)
   FileName, FileExtension = os.path.splitext(DestFile)
     
@@ -24,12 +28,12 @@ def export_plan_for_MCsquare(plan, file_path, CT, BDL):
   for beam in plan.Beams:
     for layer in beam.Layers:
       if BDL.isLoaded:
-        DeliveredProtons = np.interp(layer.NominalBeamEnergy, BDL.NominalEnergy, BDL.ProtonsMU)
+        Protons_per_MU = np.interp(layer.NominalBeamEnergy, BDL.NominalEnergy, BDL.ProtonsMU)
       else:
-        DeliveredProtons += BDL.MU_to_NumProtons(1.0, layer.NominalBeamEnergy)
-      plan.DeliveredProtons += sum(layer.SpotMU) * DeliveredProtons
+        Protons_per_MU += BDL.MU_to_NumProtons(1.0, layer.NominalBeamEnergy)
+      plan.DeliveredProtons += sum(layer.SpotMU) * Protons_per_MU
       for spot in range(len(layer.SpotMU)):
-        plan.BeamletRescaling.append(DeliveredProtons * 1.602176e-19 * 1000)
+        plan.BeamletRescaling.append(Protons_per_MU * 1.602176e-19 * 1000)
   
   # export plan      
   print("Write Plan: " + file_path)

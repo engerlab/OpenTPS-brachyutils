@@ -120,8 +120,8 @@ class Viewer_3D_RT(QLabel):
     self.current_slice += numSteps 
     if(self.current_slice < 0): self.current_slice = 0
     if(self.view_direction == 'axial' and self.current_slice > self.GridSize[2]-1): self.current_slice = self.GridSize[2] - 1
-    if(self.view_direction == 'coronal' and self.current_slice > self.GridSize[0]-1): self.current_slice = self.GridSize[0] - 1
-    if(self.view_direction == 'sagittal' and self.current_slice > self.GridSize[1]-1): self.current_slice = self.GridSize[1] - 1
+    if(self.view_direction == 'coronal' and self.current_slice > self.GridSize[1]-1): self.current_slice = self.GridSize[1] - 1
+    if(self.view_direction == 'sagittal' and self.current_slice > self.GridSize[0]-1): self.current_slice = self.GridSize[0] - 1
     self.update_viewer()
         
         
@@ -136,9 +136,9 @@ class Viewer_3D_RT(QLabel):
     else: Yscaling = self.resolution[2] / self.resolution[0]
             
     # paint CT image
-    if(self.view_direction == 'axial'): img_data = self.CT_image[:,:,round(self.current_slice)]
-    elif(self.view_direction == 'sagittal'): img_data = np.flip(np.transpose(self.CT_image[:,round(self.current_slice),:], (1,0)), 0)
-    else: img_data = np.flip(np.transpose(self.CT_image[round(self.current_slice),:,:], (1,0)), 0)
+    if(self.view_direction == 'axial'): img_data = self.CT_image[:,:,round(self.current_slice)].transpose(1,0)
+    elif(self.view_direction == 'sagittal'): img_data = np.flip(np.transpose(self.CT_image[round(self.current_slice),:,:], (1,0)), 0)
+    else: img_data = np.flip(np.transpose(self.CT_image[:,round(self.current_slice),:], (1,0)), 0)
     img_data = np.require(img_data, np.uint8, 'C')
     img_size = img_data.shape
     CTimage = QImage(img_data, img_size[1], img_size[0], img_data.strides[0], QImage.Format_Indexed8)
@@ -152,9 +152,9 @@ class Viewer_3D_RT(QLabel):
     
     # paint dose image
     if(self.Dose_image != []):
-      if(self.view_direction == 'axial'): img_data = self.Dose_image[:,:,round(self.current_slice)]
-      elif(self.view_direction == 'sagittal'): img_data = np.flip(np.transpose(self.Dose_image[:,round(self.current_slice),:], (1,0,2)), 0)
-      else: img_data = np.flip(np.transpose(self.Dose_image[round(self.current_slice),:,:], (1,0,2)), 0)
+      if(self.view_direction == 'axial'): img_data = np.transpose(self.Dose_image[:,:,round(self.current_slice),:], (1,0,2))
+      elif(self.view_direction == 'sagittal'): img_data = np.flip(np.transpose(self.Dose_image[round(self.current_slice),:,:,:], (1,0,2)), 0)
+      else: img_data = np.flip(np.transpose(self.Dose_image[:,round(self.current_slice),:,:], (1,0,2)), 0)
       img_data = np.require(img_data, np.uint8, 'C')
       DoseImage = QImage(img_data, img_size[1], img_size[0], QImage.Format_ARGB32)
       painter.setOpacity(0.3)
@@ -180,9 +180,9 @@ class Viewer_3D_RT(QLabel):
     
     # paint contour image
     if(self.Contour_image != []):
-      if(self.view_direction == 'axial'): img_data = self.Contour_image[:,:,round(self.current_slice)]
-      elif(self.view_direction == 'sagittal'): img_data = np.flip(np.transpose(self.Contour_image[:,round(self.current_slice),:], (1,0,2)), 0)
-      else: img_data = np.flip(np.transpose(self.Contour_image[round(self.current_slice),:,:], (1,0,2)), 0)
+      if(self.view_direction == 'axial'): img_data = self.Contour_image[:,:,round(self.current_slice),:].transpose(1,0,2)
+      elif(self.view_direction == 'sagittal'): img_data = np.flip(np.transpose(self.Contour_image[round(self.current_slice),:,:,:], (1,0,2)), 0)
+      else: img_data = np.flip(np.transpose(self.Contour_image[:,round(self.current_slice),:,:], (1,0,2)), 0)
       img_data = np.require(img_data, np.uint8, 'C')
       ContourImage = QImage(img_data, img_size[1], img_size[0], QImage.Format_ARGB32)
       painter.drawImage(0, 0, ContourImage)

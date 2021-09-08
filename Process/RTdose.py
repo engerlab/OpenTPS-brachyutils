@@ -70,7 +70,7 @@ class RTdose:
       dt = dt.newbyteorder('B')
       
     dose_image = np.frombuffer(dcm.PixelData, dtype=dt) 
-    dose_image = dose_image.reshape((dcm.Columns, dcm.Rows, dcm.NumberOfFrames), order='F').transpose(1,0,2)
+    dose_image = dose_image.reshape((dcm.Columns, dcm.Rows, dcm.NumberOfFrames), order='F')
     dose_image = dose_image * dcm.DoseGridScaling
 
     if(type(dcm.SliceThickness) == float): SliceThickness = dcm.SliceThickness
@@ -79,7 +79,7 @@ class RTdose:
     self.Image = dose_image
     self.FrameOfReferenceUID = dcm.FrameOfReferenceUID
     self.ImagePositionPatient = dcm.ImagePositionPatient
-    self.PixelSpacing = [float(dcm.PixelSpacing[0]), float(dcm.PixelSpacing[1]), SliceThickness]
+    self.PixelSpacing = [float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), SliceThickness]
     #self.GridSize = [dcm.Columns, dcm.Rows, int(dcm.NumberOfFrames)]
     self.GridSize = list(self.Image.shape)
     self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
@@ -98,19 +98,35 @@ class RTdose:
     
    
   
-  def prepare_image_for_viewer(self):
-    #img_min = self.Image.min()
-    img_min = 0.05
-    #img_max = self.Image.max()
-    img_max = np.percentile(self.Image, 99.995) # reduce impact of noise on the dose range calculation
-    img_data = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
+  def prepare_image_for_viewer(self, allow_negative=False):
     color_index = np.arange(255)
     rgb = cm.get_cmap('jet')(color_index) * 255 # generate colormap
+
     img_viewer = np.zeros((self.GridSize[0], self.GridSize[1], self.GridSize[2], 4), dtype=np.int8)
-    img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
-    img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
-    img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
-    img_viewer[:,:,:,3] = 255 * (img_data > img_min)
+
+    if(allow_negative == False):
+      img_min = 0.01
+      img_max = np.percentile(self.Image, 99.995) # reduce impact of noise on the dose range calculation
+      img_data = 255 * (self.Image - img_min) / (img_max - img_min) # normalize data betwee, 0 and 255
+      img_data[img_data>255] = 255
+      img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
+      img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
+      img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
+      img_viewer[:,:,:,3] = 255 * (img_data > img_min)
+
+    else: 
+      #img_min = self.Image.min()
+      #img_max = self.Image.max()
+      img_min = np.percentile(self.Image, 0.005)
+      img_max = np.percentile(self.Image, 99.995)
+      rescale_factor = max(abs(img_min), abs(img_max))
+      img_data = 127 + 128 * self.Image / rescale_factor # normalize data betwee, 0 and 255
+      img_data[img_data<0] = 0
+      img_data[img_data>255] = 255
+      img_viewer[:,:,:,0] = np.interp(img_data, color_index, rgb[:,2]) # apply colormap for each channel
+      img_viewer[:,:,:,1] = np.interp(img_data, color_index, rgb[:,1])
+      img_viewer[:,:,:,2] = np.interp(img_data, color_index, rgb[:,0])
+      img_viewer[:,:,:,3] = 255 * (img_data != 127)
     
     return img_viewer
     
@@ -165,7 +181,7 @@ class RTdose:
     self.OriginalGridSize = list(self.GridSize)
         
     self.Image = np.reshape(dose_vector, self.GridSize, order='F')
-    self.Image = np.flip(self.Image, (0,1)).transpose(1,0,2)
+    self.Image = np.flip(self.Image, (0,1))
     self.resample_to_CT_grid(CT)
     
     self.isLoaded = 1
@@ -194,17 +210,17 @@ class RTdose:
     # resampling    
     Init_GridSize = list(self.GridSize)
 
-    interp_x = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[1])*PixelSpacing[0]) / self.PixelSpacing[0]
-    interp_y = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[0])*PixelSpacing[1]) / self.PixelSpacing[1]
+    interp_x = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[0])*PixelSpacing[0]) / self.PixelSpacing[0]
+    interp_y = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[1])*PixelSpacing[1]) / self.PixelSpacing[1]
     interp_z = (Offset[2] - self.ImagePositionPatient[2] + np.arange(GridSize[2])*PixelSpacing[2]) / self.PixelSpacing[2]
   
-    xi = np.array(np.meshgrid(interp_y, interp_x, interp_z))
+    xi = np.array(np.meshgrid(interp_x, interp_y, interp_z))
     xi = np.rollaxis(xi, 0, 4)
     xi = xi.reshape((xi.size // 3, 3))
   
     self.Image = Trilinear_Interpolation(self.Image, Init_GridSize, xi)
     self.Image = self.Image.reshape((GridSize[1], GridSize[0], GridSize[2])).transpose(1,0,2)
-  
+
     self.ImagePositionPatient = list(Offset)
     self.PixelSpacing = list(PixelSpacing)
     self.GridSize = list(GridSize)
@@ -326,7 +342,7 @@ class RTdose:
     dcm_file.HighBit = 15
     dcm_file.PixelRepresentation = 0 # 0=unsigned, 1=signed
     dcm_file.DoseGridScaling = self.Image.max()/(2**dcm_file.BitDepth - 1)
-    dcm_file.PixelData = (self.Image/dcm_file.DoseGridScaling).astype(np.uint16).transpose(2,0,1).tostring()
+    dcm_file.PixelData = (self.Image/dcm_file.DoseGridScaling).astype(np.uint16).transpose(2,1,0).tostring()
 
     #print(dcm_file)
 

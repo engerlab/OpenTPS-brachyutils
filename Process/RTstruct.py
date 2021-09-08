@@ -107,13 +107,13 @@ class RTstruct:
         # convert polygon to mask (based on PIL - fast)
         img = Image.new('L', (CT.GridSize[0], CT.GridSize[1]), 0)
         if(len(Slice["XY_img"]) > 1): ImageDraw.Draw(img).polygon(Slice["XY_img"], outline=1, fill=1)
-        mask = np.array(img)
+        mask = np.array(img).transpose(1,0)
         Contour.Mask[:,:,Slice["Slice_id"]] = np.logical_or(Contour.Mask[:,:,Slice["Slice_id"]], mask)
         
         # do the same, but only keep contour in the mask
         img = Image.new('L', (CT.GridSize[0], CT.GridSize[1]), 0)
         if(len(Slice["XY_img"]) > 1): ImageDraw.Draw(img).polygon(Slice["XY_img"], outline=1, fill=0)
-        mask = np.array(img)
+        mask = np.array(img).transpose(1,0)
         Contour.ContourMask[:,:,Slice["Slice_id"]] = np.logical_or(Contour.ContourMask[:,:,Slice["Slice_id"]], mask)
             
         Contour.ContourSequence.append(Slice)
@@ -123,7 +123,7 @@ class RTstruct:
           SOPInstanceUID_match = 0
       
       if SOPInstanceUID_match != 1:
-        print("WARNING: some SOPInstanceUIDs don't match during importation of " + Contour.ROIName + " contour on CT image")
+        print("WARNING: some SOPInstanceUIDs don't match during import of " + Contour.ROIName + " contour on CT image")
       
       #RGBA_color = list(Contour.ROIDisplayColor) + [255]
       #RGBA_color = np.array(RGBA_color).reshape(1,1,1,4)

@@ -13,6 +13,7 @@ from GUI.Toolbox_PlanDesign import *
 from GUI.Toolbox_PlanOptimization import *
 from GUI.Toolbox_PlanEvaluation import *
 from GUI.Toolbox_ImageRegistration import *
+from GUI.Toolbox_DoseComparison import *
 from GUI.Viewer_Grid import *
 
 from Process.PatientData import *
@@ -20,6 +21,9 @@ from Process.DVH import *
 from Process.MCsquare_BDL import *
 
 class MainWindow(QMainWindow):
+
+  Selected_contours_changed = pyqtSignal(list)
+
   def __init__(self):
     # initialize data
     self.Patients = PatientList()
@@ -72,6 +76,7 @@ class MainWindow(QMainWindow):
     self.toolbox_2.Contour_removed.connect(self.toolbox_3.Remove_contour)
     self.Update_dose_calculation_param(self.toolbox_3.Dose_calculation_param)
     self.toolbox_3.Dose_calculation_param_changed.connect(self.Update_dose_calculation_param)
+    self.toolbox_1.Data_path_changed.connect(self.toolbox_3.Data_path_changed)
     
     # initialize the 4th toolbox panel (Plan design)
     self.toolbox_4 = Toolbox_PlanDesign(self.Patients, self.toolbox_width)
@@ -92,6 +97,8 @@ class MainWindow(QMainWindow):
     self.toolbox_3.Dose_calculation_param_changed.connect(self.toolbox_5.Update_dose_calculation_param)
     self.toolbox_5.New_dose_created.connect(self.toolbox_1.Add_dose)
     self.toolbox_1.Data_path_changed.connect(self.toolbox_5.Data_path_changed)
+    self.toolbox_5.Run_beamlet_calculation.connect(self.toolbox_3.compute_beamlets_SLOT)
+    self.toolbox_3.Run_plan_optimization.connect(self.toolbox_5.optimize_plan)
     
     # initialize the 6th toolbox panel (Plan evaluation)
     self.toolbox_6 = Toolbox_PlanEvaluation(self.Patients, self.toolbox_width)
@@ -113,11 +120,24 @@ class MainWindow(QMainWindow):
     self.toolbox_1.CT_renamed.connect(self.toolbox_7.Rename_CT)
     self.toolbox_2.New_contour_added.connect(self.toolbox_7.Add_new_contour)
     self.toolbox_2.Contour_removed.connect(self.toolbox_7.Remove_contour)
+
+    # initialize the 8th toolbox panel (Dose comparison)
+    self.toolbox_8 = Toolbox_DoseComparison(self.Patients, self.toolbox_width)
+    self.toolbox_main.addItem(self.toolbox_8, 'Dose comparison')
+    self.toolbox_8.DoseComparison_updated.connect(self.update_DoseComparison_viewer)
+    self.toolbox_8.Current_dose_changed.connect(self.Current_dose_changed)
+    self.toolbox_8.Current_dose_changed.connect(self.toolbox_1.Dose_list.setCurrentRow)
+    self.toolbox_1.Current_dose_changed.connect(self.toolbox_8.Dose1_list.setCurrentRow)
+    self.toolbox_1.New_dose_created.connect(self.toolbox_8.Add_dose)
+    self.toolbox_3.New_dose_created.connect(self.toolbox_8.Add_dose)
+    self.toolbox_5.New_dose_created.connect(self.toolbox_8.Add_dose)
+    self.Selected_contours_changed.connect(self.toolbox_8.Update_contours)
     
     # initialize the image viewer
     self.ViewerGrid = Viewer_Grid()
     self.main_layout.addLayout(self.ViewerGrid)
     
+    self.toolbox_3.Update_dose_calculation_param()
     self.GUI_initialized = 1
 
 
@@ -148,6 +168,10 @@ class MainWindow(QMainWindow):
     elif index == 6:
       self.update_registration_viewer()
 
+    # Dose comparison views
+    elif index == 7:
+      self.update_DoseComparison_viewer()
+
     # Normal views
     else:
       if self.toolbox_main.previous_index > 4:
@@ -155,6 +179,13 @@ class MainWindow(QMainWindow):
         self.Current_dose_changed(self.Dose_disp_ID)
 
     self.toolbox_main.previous_index = index
+
+
+
+  def update_DoseComparison_viewer(self):
+    if(self.toolbox_main.currentIndex() != 7): return
+    if(self.toolbox_8.DoseDiff != []): self.ViewerGrid.set_Dose_images(self.toolbox_8.DoseDiff)
+    if(self.toolbox_8.DVH_list != []): self.ViewerGrid.set_DVH(self.toolbox_8.DVH_list)
 
 
 
@@ -251,6 +282,7 @@ class MainWindow(QMainWindow):
     img_size = self.Patients.list[patient_id].CTimages[ct_id].GridSize
     
     #initialize image of contours for the viewer
+    selected_contours = []
     Viewer_Contours = np.zeros((img_size[0], img_size[1], img_size[2], 4), dtype=np.int8)
     
     disp_id = -1
@@ -262,11 +294,13 @@ class MainWindow(QMainWindow):
         if(disp_id >= len(self.toolbox_2.ROI_CheckBox)): break
         if(self.toolbox_2.ROI_CheckBox[disp_id].isChecked() == False): continue
 
+        selected_contours.append(self.Patients.list[0].RTstructs[struct_id].Contours[c])
         Viewer_Contours[:,:,:,0] += self.Patients.list[0].RTstructs[struct_id].Contours[c].ContourMask * self.Patients.list[0].RTstructs[struct_id].Contours[c].ROIDisplayColor[0]
         Viewer_Contours[:,:,:,1] += self.Patients.list[0].RTstructs[struct_id].Contours[c].ContourMask * self.Patients.list[0].RTstructs[struct_id].Contours[c].ROIDisplayColor[1]
         Viewer_Contours[:,:,:,2] += self.Patients.list[0].RTstructs[struct_id].Contours[c].ContourMask * self.Patients.list[0].RTstructs[struct_id].Contours[c].ROIDisplayColor[2]
         Viewer_Contours[:,:,:,3] += self.Patients.list[0].RTstructs[struct_id].Contours[c].ContourMask * 255
         
+    self.Selected_contours_changed.emit(selected_contours)
     self.ViewerGrid.set_Contour_images(Viewer_Contours)
     self.update_DVH_viewer()
 

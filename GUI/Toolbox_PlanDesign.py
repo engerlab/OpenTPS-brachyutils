@@ -37,6 +37,53 @@ class Toolbox_PlanDesign(QWidget):
     self.Target = QComboBox()
     self.Target.setMaximumWidth(self.toolbox_width-18)
     self.layout.addWidget(self.Target)
+    self.layout.addSpacing(10)
+    self.SpotSpacing_layout = QHBoxLayout()
+    self.SpotSpacing_layout.addWidget(QLabel('<b>Spot spacing:</b>'))
+    self.SpotSpacing = QDoubleSpinBox()
+    self.SpotSpacing.setGroupSeparatorShown(True)
+    self.SpotSpacing.setRange(0.1, 100.0)
+    self.SpotSpacing.setSingleStep(1.0)
+    self.SpotSpacing.setValue(5.0)
+    self.SpotSpacing.setSuffix(" mm")
+    self.SpotSpacing_layout.addWidget(self.SpotSpacing)
+    self.layout.addLayout(self.SpotSpacing_layout)
+    self.LayerSpacing_layout = QHBoxLayout()
+    self.LayerSpacing_layout.addWidget(QLabel('<b>Layer spacing:</b>'))
+    self.LayerSpacing = QDoubleSpinBox()
+    self.LayerSpacing.setGroupSeparatorShown(True)
+    self.LayerSpacing.setRange(0.001, 100.0)
+    self.LayerSpacing.setSingleStep(1.0)
+    self.LayerSpacing.setValue(5.0)
+    self.LayerSpacing.setSuffix(" mm")
+    self.LayerSpacing_layout.addWidget(self.LayerSpacing)
+    self.layout.addLayout(self.LayerSpacing_layout)
+    self.TargetMargin_layout = QHBoxLayout()
+    self.TargetMargin_layout.addWidget(QLabel('<b>Target margin:</b>'))
+    self.TargetMargin = QDoubleSpinBox()
+    self.TargetMargin.setGroupSeparatorShown(True)
+    self.TargetMargin.setRange(0.001, 100.0)
+    self.TargetMargin.setSingleStep(1.0)
+    self.TargetMargin.setValue(5.0)
+    self.TargetMargin.setSuffix(" mm")
+    self.TargetMargin_layout.addWidget(self.TargetMargin)
+    self.layout.addLayout(self.TargetMargin_layout)
+    self.TargetProxLayers_layout = QHBoxLayout()
+    self.TargetProxLayers_layout.addWidget(QLabel('<b>Proximal layers:</b>'))
+    self.TargetProxLayers = QSpinBox()
+    self.TargetProxLayers.setRange(0, 10)
+    self.TargetProxLayers.setSingleStep(1)
+    self.TargetProxLayers.setValue(1)
+    self.TargetProxLayers_layout.addWidget(self.TargetProxLayers)
+    self.layout.addLayout(self.TargetProxLayers_layout)
+    self.TargetDistLayers_layout = QHBoxLayout()
+    self.TargetDistLayers_layout.addWidget(QLabel('<b>Distal layers:</b>'))
+    self.TargetDistLayers = QSpinBox()
+    self.TargetDistLayers.setRange(0, 10)
+    self.TargetDistLayers.setSingleStep(1)
+    self.TargetDistLayers.setValue(1)
+    self.TargetDistLayers_layout.addWidget(self.TargetDistLayers)
+    self.layout.addLayout(self.TargetDistLayers_layout)
     self.layout.addSpacing(15)
     self.layout.addWidget(QLabel('<b>Beams:</b>'))
     self.beams =  QListWidget()
@@ -66,19 +113,7 @@ class Toolbox_PlanDesign(QWidget):
     self.CreatePlanButton = QPushButton('Create new plan')
     self.layout.addWidget(self.CreatePlanButton)
     self.CreatePlanButton.clicked.connect(self.create_new_plan) 
-    self.layout.addSpacing(15)
-    self.ComputeBeamletButton = QPushButton('Compute beamlets')
-    self.layout.addWidget(self.ComputeBeamletButton)
-    self.ComputeBeamletButton.clicked.connect(self.compute_beamlets) 
     self.layout.addStretch()
-    self.LoadPlanButton = QPushButton('Import OpenTPS Plan')
-    self.layout.addWidget(self.LoadPlanButton)
-    self.LoadPlanButton.clicked.connect(self.import_OpenTPS_Plan) 
-    self.layout.addSpacing(10)
-    self.LoadMCsquarePlanButton = QPushButton('Import MCsquare PlanPencil')
-    self.layout.addWidget(self.LoadMCsquarePlanButton)
-    self.LoadMCsquarePlanButton.clicked.connect(self.import_PlanPencil) 
-    self.layout.addSpacing(10)
     self.update_robust_opti_settings()
     
   
@@ -178,6 +213,7 @@ class Toolbox_PlanDesign(QWidget):
     GantryAngles = []
     CouchAngles = []
     RangeShifters = []
+    AlignLayers = False
     for i in range(self.beams.count()):
       BeamType = self.BeamDescription[i]["BeamType"]
       if(BeamType == "beam"):
@@ -195,6 +231,7 @@ class Toolbox_PlanDesign(QWidget):
         RangeShifters.append(RangeShifter)
 
       elif(BeamType == "arc"):
+        AlignLayers = True
         name = self.BeamDescription[i]["BeamName"]
         start = self.BeamDescription[i]["StartGantryAngle"]
         stop = self.BeamDescription[i]["StopGantryAngle"]
@@ -221,109 +258,17 @@ class Toolbox_PlanDesign(QWidget):
           RangeShifters.append(RangeShifter)
 
     # set spacing parameters
-    if(self.RobustOpti["Strategy"] == 'Disabled'): 
-      SpotSpacing = 5.0
-      LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5
-    else: 
-      SpotSpacing = 5.0
-      LayerSpacing = 5.0
-      RTV_margin = max(SpotSpacing, LayerSpacing) * 1.5 + max(self.RobustOpti["syst_setup"])
+    SpotSpacing = self.SpotSpacing.value()
+    LayerSpacing = self.LayerSpacing.value()
+    ProximalLayers = self.TargetProxLayers.value()
+    DistalLayers = self.TargetDistLayers.value()
+    if(self.RobustOpti["Strategy"] == 'Disabled'): RTV_margin = self.TargetMargin.value()
+    else: RTV_margin = self.TargetMargin.value() + max(self.RobustOpti["syst_setup"])
 
-    
     # Generate new plan
-    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, self.Dose_calculation_param["Scanner"], RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing)
+    plan = CreatePlanStructure(ct, Target, BeamNames, GantryAngles, CouchAngles, self.Dose_calculation_param["Scanner"], RangeShifters=RangeShifters, RTV_margin=RTV_margin, SpotSpacing=SpotSpacing, LayerSpacing=LayerSpacing, ProximalLayers=ProximalLayers, DistalLayers=DistalLayers, AlignLayersToSpacing=AlignLayers)
     plan.PlanName = self.plan_name.text()
     plan.RobustOpti = self.RobustOpti
-    self.Patients.list[patient_id].Plans.append(plan)
-    self.New_plan_created.emit(plan.PlanName)
-    
-    
-  
-  
-  def compute_beamlets(self):
-    # find selected CT image
-    if(self.CT_disp_ID < 0):
-      print("Error: No CT image selected")
-      return
-    ct_patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
-    ct = self.Patients.list[ct_patient_id].CTimages[ct_id]
-    
-    # find selected plan
-    if(self.Plan_disp_ID < 0):
-      print("Error: No treatment plan selected")
-      return
-    plan_patient_id, plan_id = self.Patients.find_plan(self.Plan_disp_ID)
-    plan = self.Patients.list[plan_patient_id].Plans[plan_id]
-    
-    # configure MCsquare module
-    mc2 = MCsquare()
-    mc2.BDL.selected_BDL = self.Dose_calculation_param["BDL"]
-    mc2.Scanner.selected_Scanner = self.Dose_calculation_param["Scanner"]
-    mc2.NumProtons = 5e4
-    mc2.dose2water = self.Dose_calculation_param["dose2water"]
-    mc2.SetupSystematicError = plan.RobustOpti["syst_setup"]
-    mc2.SetupRandomError = plan.RobustOpti["rand_setup"]
-    mc2.RangeSystematicError = plan.RobustOpti["syst_range"]
-    if(plan.RobustOpti["Strategy"] == 'Disabled'): mc2.Robustness_Strategy = "Disabled"
-    else: mc2.Robustness_Strategy = "ErrorSpace_regular"
-
-    # Crop CT image with contour:
-    if(self.Dose_calculation_param["CropContour"] == "None"):
-      mc2.Crop_CT_contour = {}
-    else:
-      patient_id, struct_id, contour_id = self.Patients.find_contour(self.Dose_calculation_param["CropContour"])
-      mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
-    
-    # output folder
-    output_path = os.path.join(self.data_path, "OpenTPS")
-    if not os.path.isdir(output_path):
-      os.mkdir(output_path)
-
-    # run MCsquare simulation
-    mc2.MCsquare_beamlet_calculation(ct, plan, output_path)
-
-    # save plan
-    plan_file = os.path.join(output_path, "Plan_" + plan.PlanName + "_" + datetime.datetime.today().strftime("%b-%d-%Y_%H-%M-%S") + ".tps")
-    plan.save(plan_file)
-
-
-
-  def import_OpenTPS_Plan(self): 
-    # find selected CT image
-    if(self.CT_disp_ID < 0):
-      print("Error: No CT image selected")
-      return
-    patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
-
-    # select file
-    file_path, _ = QFileDialog.getOpenFileName(self, "Load OpenTPS plan", self.data_path, "OpenTPS data (*.tps);;All files (*.*)")
-    if(file_path == ""): return
-
-    # import plan
-    plan = RTplan()
-    plan.load(file_path)
-      
-    # add plan to list
-    self.Patients.list[patient_id].Plans.append(plan)
-    self.New_plan_created.emit(plan.PlanName)
-    
-  
-  
-  def import_PlanPencil(self):
-    # find selected CT image
-    if(self.CT_disp_ID < 0):
-      print("Error: No CT image selected")
-      return
-    patient_id, ct_id = self.Patients.find_CT_image(self.CT_disp_ID)
-    ct = self.Patients.list[patient_id].CTimages[ct_id]
-    
-    # select file
-    path, _ = QFileDialog.getOpenFileName(self, "Open MCsquare plan", self.data_path, "MCsquare plan (*.txt);;All files (*.*)")
-    if(path == ""): return
-    
-    # import file
-    plan = import_MCsquare_plan(path, ct)
     self.Patients.list[patient_id].Plans.append(plan)
     self.New_plan_created.emit(plan.PlanName)
 

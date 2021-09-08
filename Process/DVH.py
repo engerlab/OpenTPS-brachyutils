@@ -6,6 +6,7 @@ class DVH:
     self.Struct_SeriesInstanceUID = ""
     self.ROIName = ""
     self.ROIDisplayColor = ""
+    self.LineStyle = "solid"
     self.Dose_SeriesInstanceUID = ""
     self.dose = []
     self.volume = []
