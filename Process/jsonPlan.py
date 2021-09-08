@@ -16,16 +16,24 @@ file_path = "Plan_OpenTPS.tps"
 plan = RTplan()
 plan.load(file_path)
 
+#### Arc PT usage
 # Create BDT object
 BDT = BDT(plan)
 # Create 1 json file per beam
 jsonFiles = BDT.create_jsonFiles()
-# call scanAlgo to get times (in ms)
+# call scanAlgo to get times (in ms) for arc
 BDT.call_scanAlgo(jsonFiles)
 # create inputCSV for arcAlgo
 BDT.create_inputCSV("yo.csv")
 
+#### Conventional PT usage
+# Add PBS timings into a plan
+BDT = BDT(plan, config_file)
+plan_with_timings = BDT.get_PBS_timings(sort_spots="true")
 
+#### Config file: text file config.txt with 2 lines
+Gantry, <TYPE OF GANTRY>
+Gateway, <URL>
 '''
 
 
@@ -108,7 +116,7 @@ class BDT:
         pass
 
 
-    def get_PBS_timings(self, jsonFilesList):
+    def get_PBS_timings(self, sort_spots="true"):
         """
         Add timings for each spot in the plan:
         INPUT:
@@ -118,11 +126,10 @@ class BDT:
         """
         plan = self.openTPSPlan.copy()
         gantry_angles = [] if plan.Beams==[] else [plan.Beams[i].GantryAngle for i in range(len(plan.Beams))]
-        for index,beam in enumerate(jsonFilesList):
-            with open(beam,'rb') as f:
-                data = json.load(f)
-            gantry_angle = float(data['gantryangle']) if self.Gantry=="PPlus" else float(data['gantryAngle'])
-            scanAlgo = requests.post(self.url,json=data).json()
+        for index,beam in enumerate(plan.Beams):
+            data = JsonPlan(plan, self.Gantry, index, sort_spots=sort_spots)
+            gantry_angle = float(data.gantryangle) if self.Gantry=="PPlus" else float(data.gantryAngle)
+            scanAlgo = requests.post(self.url,json=data.__dict__).json()
             if 'cause' in scanAlgo:
                print("!!!!!!!!! ScanAlgo ERROR in beam !!!!!!! ", index)  
                print('\n')
