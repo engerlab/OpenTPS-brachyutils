@@ -1,10 +1,14 @@
 import json
 from Process.RTplan import *
+try:
+    from Process.arc_algo import run
+except:
+    print("Confidential module. Ask repo administrator.")
 import requests
 import csv
 
 '''
-Class to 1) convert openTPS plan into json plan (input for scanAlgo) 
+Class to 1) convert openTPS plan into json plan (input for scanAlgo)
          2) Compute Beam Delivery Time (BDT) based on scanAlgo output
 
 Usage:
@@ -45,7 +49,7 @@ class BDT:
         self.url = self.params['Gateway']
         self.inputCSV = []
 
-                
+
     def create_jsonFiles(self, sort_spots="true"):
         jsonFiles = []
         for i,beam in enumerate(self.openTPSPlan.Beams):
@@ -79,7 +83,7 @@ class BDT:
             gantry_angle = data['gantryangle']
             scanAlgo = requests.post(self.url,json=data).json()
             if 'cause' in scanAlgo:
-               print("!!!!!!!!! ScanAlgo ERROR in beam !!!!!!! ", index)  
+               print("!!!!!!!!! ScanAlgo ERROR in beam !!!!!!! ", index)
                print('\n')
                print(scanAlgo['cause'])
                print('\n')
@@ -102,18 +106,23 @@ class BDT:
                     beam_csv.append(str('Up'))
                 previous_energy = scanAlgo['layer'][-1]['energy']
                 self.inputCSV.append(beam_csv)
-        
+            os.remove(beam)
+
     def create_inputCSV(self,inputCSV_filename):
         header = ['Angle','Time','Switch']
         with open(inputCSV_filename, 'w') as f:
             # create the csv writer
-            writer = csv.writer(f)    
+            writer = csv.writer(f)
             # write the header
             writer.writerow(header)
             writer.writerows(self.inputCSV)
-        
-    def call_arcAlgo(self, input_CSV_filename, config):
-        pass
+
+    def call_arcAlgo(self, input_CSV, config, figName):
+        # create inputCSV for arcAlgo
+        self.create_inputCSV(input_CSV)
+        # run arcAlgo (! module not pushed because confidential)
+        totalTime = run(input_CSV, config, figName)
+        return totalTime
 
 
     def get_PBS_timings(self, sort_spots="true"):
@@ -131,7 +140,7 @@ class BDT:
             gantry_angle = float(data.gantryangle) if self.Gantry=="PPlus" else float(data.gantryAngle)
             scanAlgo = requests.post(self.url,json=data.__dict__).json()
             if 'cause' in scanAlgo:
-               print("!!!!!!!!! ScanAlgo ERROR in beam !!!!!!! ", index)  
+               print("!!!!!!!!! ScanAlgo ERROR in beam !!!!!!! ", index)
                print('\n')
                print(scanAlgo['cause'])
                print('\n')
@@ -163,7 +172,7 @@ class BDT:
         for l in range(len(plan.Beams[index_beam].Layers)):
             # identify current spot in layer
             for s in range(len(plan.Beams[index_beam].Layers[l].ScanSpotPositionMap_x)):
-                index_spot_scanAlgo = self.find_spot_index_json(scanAlgo['layer'][l]['spot'], 
+                index_spot_scanAlgo = self.find_spot_index_json(scanAlgo['layer'][l]['spot'],
                     plan.Beams[index_beam].Layers[l].ScanSpotPositionMap_x[s],
                     plan.Beams[index_beam].Layers[l].ScanSpotPositionMap_y[s])
                 start_time = float(scanAlgo['layer'][l]['spot'][index_spot_scanAlgo]['start']) / 1000
@@ -206,7 +215,7 @@ class BDT:
                 charge_spot_all_bursts = []
                 total_charge = 0
                 for b in range(max_num_bursts):
-                    index_spot_scanAlgo.append(self.find_spot_index_json(scanAlgo['layers'][l]['bursts'][b]['spots'], 
+                    index_spot_scanAlgo.append(self.find_spot_index_json(scanAlgo['layers'][l]['bursts'][b]['spots'],
                         plan.Beams[index_beam].Layers[l].ScanSpotPositionMap_x[s],
                         plan.Beams[index_beam].Layers[l].ScanSpotPositionMap_y[s]))
                     if index_spot_scanAlgo[-1] is not None:
@@ -245,7 +254,7 @@ class BDT:
                                 cumul_layer_time + cumul_burst_time
                             plan.Beams[index_beam].Layers[l].SpotTiming.append(start_time / 1000)
                             cumul_burst_time += scanAlgo['layers'][l]['bursts'][b]['spots'][-1]["startTime"] + scanAlgo['layers'][l]['bursts'][b]['spots'][-1]["duration"] + burst_switching_time
-            
+
             # Reorder spots according to spot timings
             order = np.argsort(plan.Beams[index_beam].Layers[l].SpotTiming)
             plan.Beams[index_beam].Layers[l].reorder_spots(order)
@@ -295,7 +304,7 @@ class JsonPlan:
             self.ic23offsetx = "0"
             self.ic23offsety = "0"
             self.smoffsetx = "0"
-            self.smoffsety = "0" 
+            self.smoffsety = "0"
             self.ic1positionx = "0"
             self.ic1positiony = "0"
         elif Gantry == "POne":
@@ -318,19 +327,19 @@ class JsonPlan:
             self.icOffsetX = "0"
             self.icOffsetY = "0"
             self.smOffsetX = "0"
-            self.smOffsetY = "0" 
+            self.smOffsetY = "0"
             self.ic1PositionX = "0"
             self.ic1PositionY = "0"
 
         self.mud = "0"
-        
+
         self.beam = self.getLayers(plan,Gantry,beamID)
 
     def getLayers(self,plan,Gantry,beamID):
         beam = plan.Beams[beamID]
         beamDict = {}
         if Gantry == "PPlus":
-            beamDict['mu'] = str(beam.BeamMeterset) 
+            beamDict['mu'] = str(beam.BeamMeterset)
             beamDict['repaintingtype'] = "None"
             beamDict['layer'] = []
             for layer in beam.Layers:
@@ -373,7 +382,7 @@ class JsonPlan:
     def load(self,file_path):
         with open(file_path) as fid:
             self.data = json.load(fid)
-            
+
 
 
 
