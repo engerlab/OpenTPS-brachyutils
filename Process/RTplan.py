@@ -3,6 +3,7 @@ import numpy as np
 import math
 import time
 import pickle
+import copy
 
 from Process.SPRimage import *
 from Process.OptimizationObjectives import *
@@ -384,6 +385,16 @@ class RTplan:
         beam.FinalCumulativeMetersetWeight += sum(layer.SpotMU)
         layer.CumulativeMeterset = beam.BeamMeterset
 
+  def get_spot_weights(self):
+      spot_weights = np.zeros(self.NumberOfSpots)
+      count = 0
+      for beam in self.Beams:
+        for layer in beam.Layers:
+            for s in range(len(layer.SpotMU)):
+                spot_weights[count] = layer.SpotMU[s]
+                count+=1
+      return spot_weights
+
 
 
   def export_Dicom_with_new_UID(self, OutputFile):
@@ -426,7 +437,16 @@ class RTplan:
 
     self.__dict__.update(tmp) 
   
-    
+  def copy(self):
+    return copy.deepcopy(self) # recursive copy
+
+  def reorder_plan(self, order_layers="decreasing", order_spots="scanAlgo"):
+    for i in range(len(self.Beams)):
+      if order_layers=="decreasing":
+        self.Beams[i].reorder_layers(order_layers)
+      if order_spots=="scanAlgo":
+        for l in range(len(self.Beams[i].Layers)):
+          self.Beams[i].Layers[l].reorder_spots(order_spots)
   
       
 class Plan_IonBeam:
@@ -454,6 +474,14 @@ class Plan_IonBeam:
       self.FinalCumulativeMetersetWeight = from_beam.FinalCumulativeMetersetWeight
       self.BeamMeterset = from_beam.BeamMeterset
       self.Layers = list(from_beam.Layers)
+
+  def reorder_layers(self, order):
+    layer_energies = [self.Layers[i].NominalBeamEnergy for i in range(len(self.Layers))]
+    if order=="decreasing":
+      order = np.argsort(layer_energies)[::-1]
+
+    #order is a list
+    self.Layers = [self.Layers[i] for i in order]
 
     
     
@@ -500,6 +528,55 @@ class Plan_IonLayer:
       self.LineScanControlPoint_y = list(from_layer.LineScanControlPoint_y)
       self.LineScanControlPoint_Weights = list(from_layer.LineScanControlPoint_Weights)
       self.LineScanControlPoint_MU = list(from_layer.LineScanControlPoint_MU)
+
+  def reorder_spots(self, order):
+    if type(order) is str and order=='scanAlgo':
+      coord = np.column_stack((self.ScanSpotPositionMap_x,self.ScanSpotPositionMap_y)).astype(float)
+      order = np.argsort(coord.view('f8,f8'), order=['f1','f0'],axis=0).ravel() # sort according to y then x
+      coord = coord[order]
+      _, ind_unique = np.unique(coord[:,1], return_index=True) # unique y's
+      n_unique = len(ind_unique)
+      if n_unique > 1:
+        for i in range(1,n_unique):
+          if i == n_unique - 1:
+            ind_last_x_at_current_y = coord.shape[0]
+          else:
+            ind_last_x_at_current_y = ind_unique[i+1] - 1
+          if ind_unique[i] == ind_last_x_at_current_y: # only 1 spot for current y coord
+            continue
+
+          coord_last_x_at_current_y = coord[ind_last_x_at_current_y,0]
+          ind_previous = ind_unique[i] - 1
+          coord_previous = coord[ind_previous,0]
+          ind_first_x_at_current_y = ind_unique[i]
+          coord_first_x_at_current_y = coord[ind_first_x_at_current_y,0]
+
+          # Check closest point to coord_previous
+          if np.abs(coord_previous-coord_first_x_at_current_y) > np.abs(coord_previous-coord_last_x_at_current_y):
+            # Need to inverse the order of the spot irradiated for those coordinates:
+            order[ind_first_x_at_current_y:ind_last_x_at_current_y] = order[ind_first_x_at_current_y:ind_last_x_at_current_y][::-1]
+            coord[ind_first_x_at_current_y:ind_last_x_at_current_y] = coord[ind_first_x_at_current_y:ind_last_x_at_current_y][::-1]
+
+    
+    # order is a list of the order of the spot irradiated
+    # sort all lists according to order
+    n = len(order)
+    self.ScanSpotPositionMap_x = [self.ScanSpotPositionMap_x[i] for i in order]
+    self.ScanSpotPositionMap_y = [self.ScanSpotPositionMap_y[i] for i in order]
+    self.ScanSpotMetersetWeights = [self.ScanSpotMetersetWeights[i] for i in order]
+    self.SpotMU = [self.SpotMU[i] for i in order]
+    if len(self.SpotTiming)==n:
+      self.SpotTiming = [self.SpotTiming[i] for i in order]
+    if hasattr(self, 'LineScanControlPoint_x') and len(self.LineScanControlPoint_x)==n:
+      self.LineScanControlPoint_x = [self.LineScanControlPoint_x[i] for i in order]
+    if hasattr(self, 'LineScanControlPoint_y') and len(self.LineScanControlPoint_y)==n:
+      self.LineScanControlPoint_y = [self.LineScanControlPoint_y[i] for i in order]
+    if hasattr(self, 'LineScanControlPoint_linear_Weights') and len(self.LineScanControlPoint_linear_Weights)==n:
+      self.LineScanControlPoint_linear_Weights = [self.LineScanControlPoint_linear_Weights[i] for i in order]
+    if hasattr(self, 'LineScanControlPoint_linear_MU') and len(self.LineScanControlPoint_linear_MU)==n:
+      self.LineScanControlPoint_linear_MU = [self.LineScanControlPoint_linear_MU[i] for i in order]
+          
+
 
     
     
