@@ -315,9 +315,9 @@ class RTdose:
     # dcm_file.OperatorName
 
     # image information
-    dcm_file.Width = self.GridSize[1]
+    dcm_file.Width = self.GridSize[0]
     dcm_file.Columns = dcm_file.Width
-    dcm_file.Height = self.GridSize[0]
+    dcm_file.Height = self.GridSize[1]
     dcm_file.Rows = dcm_file.Height
     dcm_file.NumberOfFrames = self.GridSize[2]
     dcm_file.SliceThickness = self.PixelSpacing[2]
