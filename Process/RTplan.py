@@ -4,6 +4,7 @@ import math
 import time
 import pickle
 import copy
+import statistics
 
 from Process.SPRimage import *
 from Process.OptimizationObjectives import *
@@ -39,7 +40,22 @@ class RTplan:
   def print_plan_info(self, prefix=""):
     print(prefix + "Plan: " + self.SeriesInstanceUID)
     print(prefix + "   " + self.DcmFile)
-    
+
+
+
+  def print_plan_stat(self):
+    print("Number of fractions:", self.NumberOfFractionsPlanned)
+    print("Number of beams:", len(self.Beams))
+    print("Number of spots:", self.NumberOfSpots)
+
+    for beam in self.Beams:
+      print(" ")
+      print("Beam: Gantry %.1f°, Couch %.1f°" % (beam.GantryAngle, beam.PatientSupportAngle))
+      for layer in beam.Layers:
+        if len(layer.SpotMU) == 1:
+          print("  Layer %3.1f MeV: %2d spots, %2.2f +/- %2.2f MU/spot" % (layer.NominalBeamEnergy, len(layer.SpotMU), layer.SpotMU[0], 0.0))
+        else:
+          print("  Layer %3.1f MeV: %2d spots, %2.2f +/- %2.2f MU/spot" % (layer.NominalBeamEnergy, len(layer.SpotMU), statistics.mean(layer.SpotMU), statistics.stdev(layer.SpotMU)))
     
   
   def import_Dicom_plan(self):

@@ -225,6 +225,10 @@ class Toolbox_PatientData(QWidget):
         self.remove_spot_action = QAction("Remove displayed spots")
         self.remove_spot_action.triggered.connect(self.Viewer_clear_spots.emit)
         self.context_menu.addAction(self.remove_spot_action)
+
+        self.print_plan_action = QAction("Print plan info")
+        self.print_plan_action.triggered.connect(plan.print_plan_stat)
+        self.context_menu.addAction(self.print_plan_action)
       
       self.context_menu.popup(pos)
 
