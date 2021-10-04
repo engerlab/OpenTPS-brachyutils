@@ -173,7 +173,7 @@ def SpotPlacement(plan, CT, Target_mask, Scanner, RangeShifters=[], AlignLayersT
         plan.NumberOfSpots += 1
         layer_found = 0
         for layer in beam.Layers:
-          if(layer.NominalBeamEnergy == Energy):
+          if(abs(layer.NominalBeamEnergy - Energy) < 0.05):
             # add spot to existing layer
             layer.ScanSpotPositionMap_x.append(SpotGrid["BEVx"][s])
             layer.ScanSpotPositionMap_y.append(SpotGrid["BEVy"][s])
