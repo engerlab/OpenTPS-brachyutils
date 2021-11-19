@@ -35,6 +35,7 @@ class MCsquare:
     self.SimulatedParticles = 0
     self.SimulatedStatUncert = -1
     self.Compute_DVH_only = 0
+    self.Compute_LET_distribution = 0
 
 
   def MCsquare_version(self):
@@ -63,6 +64,8 @@ class MCsquare:
     if(self.Compute_DVH_only > 0):
       self.config["Dose_MHD_Output"] = False
       self.config["Compute_DVH"] = True
+    if(self.Compute_LET_distribution > 0):
+      self.config["LET_MHD_Output"] = True
     export_MCsquare_config(self.config)
     
     # Start simulation
@@ -71,8 +74,11 @@ class MCsquare:
     elif(platform.system() == "Windows"): os.system("cd " + self.WorkDir + " && " + os.path.join(self.Path_MCsquareLib, "MCsquare_win.bat"))
     else: print("Error: not compatible with " + platform.system() + " system.")
     
-    # Import dose result
+    # Import simulation results
     mhd_dose = self.import_MCsquare_dose(Plan)
+    if(self.Compute_LET_distribution > 0):
+      mhd_LET = self.import_MCsquare_LET()
+      return [mhd_dose, mhd_LET]
     
     return mhd_dose
 
@@ -376,6 +382,27 @@ class MCsquare:
   
     # Convert in Gray units
     mhd_image.Image = mhd_image.Image * 1.602176e-19 * 1000 * plan.DeliveredProtons * plan.NumberOfFractionsPlanned * DoseScaling;
+  
+    return mhd_image
+
+
+  def import_MCsquare_LET(self, FileName="LET.mhd", DoseScaling=1.0):
+  
+    LET_file = os.path.join(self.WorkDir, "Outputs", FileName)
+  
+    if not os.path.isfile(LET_file):
+      print("ERROR: file " + LET_file + " not found!")
+      return None
+    else: print("Read dose file: " + LET_file)
+  
+    mhd_image = MHD_image()
+    mhd_image.import_MHD_header(LET_file)
+    mhd_image.import_MHD_data()
+  
+    # Convert data for compatibility with MCsquare
+    # These transformations may be modified in a future version
+    mhd_image.Image = np.flip(mhd_image.Image, 0)
+    mhd_image.Image = np.flip(mhd_image.Image, 1)
   
     return mhd_image
     
