@@ -5,6 +5,7 @@ class Patient:
         self.patientID = None
         self.sex = None
         self.images = []
+        self.plans = []
 
     def appendImage(self, image):
         self.images.append(image)
