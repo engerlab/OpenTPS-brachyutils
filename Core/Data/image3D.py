@@ -2,8 +2,10 @@ from Core.Data.patientData import PatientData
 
 
 class Image3D(PatientData):
-    def __init__(self, data=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0)):
+    def __init__(self, data=None, name=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0)):
+
         self.data = data
+        self.name = name
         self.origin = origin
         self.spacing = spacing
         self.angles = angles
@@ -15,6 +17,6 @@ class Image3D(PatientData):
 
     def getGridSize(self):
         if self.data is None:
-            return (0, 0)
+            return (0, 0, 0)
 
         return self.data.shape
