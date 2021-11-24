@@ -1,7 +1,8 @@
 
 class Image3D:
-    def __init__(self, data=None, origin=(0, 0, 0), spacing=(1, 1, 1)):
+    def __init__(self, data=None, name=None, origin=(0, 0, 0), spacing=(1, 1, 1)):
         self.data = data
+        self.name = name
         self.origin = origin
         self.spacing = spacing
 
