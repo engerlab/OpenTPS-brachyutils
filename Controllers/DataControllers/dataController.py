@@ -32,5 +32,6 @@ class DataController(QObject):
         #else
         self.data = data
 
-        super(DataController, self).__init__()
+        QObject.__init__(self)
+
         
