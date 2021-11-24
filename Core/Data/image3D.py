@@ -1,5 +1,7 @@
+from Core.Data.patientData import PatientData
 
-class Image3D:
+
+class Image3D(PatientData):
     def __init__(self, data=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0)):
         self.data = data
         self.origin = origin
