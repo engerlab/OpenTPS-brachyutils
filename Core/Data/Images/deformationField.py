@@ -3,7 +3,7 @@ import scipy.ndimage
 import math
 
 from Core.Processing.C_libraries.libInterp3_wrapper import *
-from Core.Data.image3D import Image3D
+from Core.Data.Images.image3D import Image3D
 
 class DeformationField(Image3D):
 
