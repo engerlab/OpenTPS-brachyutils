@@ -1,6 +1,17 @@
 import numpy as np
 import scipy.ndimage
 import scipy.signal
+import logging
+
+
+def normGaussConv(data, cert, sigma):
+    data = scipy.ndimage.gaussian_filter(np.multiply(data, cert), sigma=sigma)
+    cert = scipy.ndimage.gaussian_filter(cert, sigma=sigma)
+    z = (cert == 0)
+    data[z] = 0.0
+    cert[z] = 1.0
+    data = np.divide(data, cert)
+    return data
 
 
 class Registration:
@@ -11,35 +22,25 @@ class Registration:
         self.deformed = []
         self.roiBox = []
 
-    def fieldRegularization(self, field, filter="Gaussian", sigma=1.0, cert=None):
+    def fieldRegularization(self, field, filterType="Gaussian", sigma=1.0, cert=None):
 
-        if (filter == "Gaussian"):
+        if filterType == "Gaussian":
             field.Velocity[:, :, :, 0] = scipy.ndimage.gaussian_filter(field.Velocity[:, :, :, 0], sigma=sigma)
             field.Velocity[:, :, :, 1] = scipy.ndimage.gaussian_filter(field.Velocity[:, :, :, 1], sigma=sigma)
             field.Velocity[:, :, :, 2] = scipy.ndimage.gaussian_filter(field.Velocity[:, :, :, 2], sigma=sigma)
             return
 
-        if (filter == "NormalizedGaussian"):
+        if filterType == "NormalizedGaussian":
             if cert is None:
                 cert = np.ones_like(field.Velocity[:, :, :, 0])
-            field.Velocity[:, :, :, 0] = self.normGaussConv(field.Velocity[:, :, :, 0], cert, sigma)
-            field.Velocity[:, :, :, 1] = self.normGaussConv(field.Velocity[:, :, :, 1], cert, sigma)
-            field.Velocity[:, :, :, 2] = self.normGaussConv(field.Velocity[:, :, :, 2], cert, sigma)
+            field.Velocity[:, :, :, 0] = normGaussConv(field.Velocity[:, :, :, 0], cert, sigma)
+            field.Velocity[:, :, :, 1] = normGaussConv(field.Velocity[:, :, :, 1], cert, sigma)
+            field.Velocity[:, :, :, 2] = normGaussConv(field.Velocity[:, :, :, 2], cert, sigma)
             return
 
         else:
             print("Error: unknown filter for field fieldRegularization")
             return
-
-    def normGaussConv(self, data, cert, sigma):
-
-        data = scipy.ndimage.gaussian_filter(np.multiply(data, cert), sigma=sigma)
-        cert = scipy.ndimage.gaussian_filter(cert, sigma=sigma)
-        z = (cert == 0)
-        data[z] = 0.0
-        cert[z] = 1.0
-        data = np.divide(data, cert)
-        return data
 
     def setROI(self, ROI):
         profile = np.sum(ROI.Mask, (0, 2))
@@ -60,28 +61,14 @@ class Registration:
 
         self.roiBox = box
 
+    def translateOrigin(self, Image, translation):
+        Image.ImagePositionPatient[0] += translation[0]
+        Image.ImagePositionPatient[1] += translation[1]
+        Image.ImagePositionPatient[2] += translation[2]
 
-    def matchProfiles(self, fixed, moving):
-        mse = []
-
-        for index in range(len(moving)):
-            shift = index - round(len(moving) / 2)
-
-            # shift profiles
-            shifted = np.roll(moving, shift)
-
-            # crop profiles to same size
-            if (len(shifted) > len(fixed)):
-                vec1 = shifted[:len(fixed)]
-                vec2 = fixed
-            else:
-                vec1 = shifted
-                vec2 = fixed[:len(shifted)]
-
-            # compute MSE
-            mse.append(((vec1 - vec2) ** 2).mean())
-
-        return (np.argmin(mse) - round(len(moving) / 2))
+        Image.VoxelX = Image.ImagePositionPatient[0] + np.arange(Image.GridSize[0]) * Image.PixelSpacing[0]
+        Image.VoxelY = Image.ImagePositionPatient[1] + np.arange(Image.GridSize[1]) * Image.PixelSpacing[1]
+        Image.VoxelZ = Image.ImagePositionPatient[2] + np.arange(Image.GridSize[2]) * Image.PixelSpacing[2]
 
     def translateAndComputeSSD(self, translation=[0.0, 0.0, 0.0]):
 
@@ -108,27 +95,13 @@ class Registration:
 
         # compute metric
         ssd = self.computeSSD(fixed, self.deformed.Image)
-
         return ssd
 
     def computeSSD(self, fixed, deformed):
         # compute metric
         ssd = np.sum(np.power(fixed - deformed, 2))
         # print("SSD: " + str(ssd))
-
         return ssd
-
-
-
-    def translateOrigin(self, Image, translation):
-
-        Image.ImagePositionPatient[0] += translation[0]
-        Image.ImagePositionPatient[1] += translation[1]
-        Image.ImagePositionPatient[2] += translation[2]
-
-        Image.VoxelX = Image.ImagePositionPatient[0] + np.arange(Image.GridSize[0]) * Image.PixelSpacing[0]
-        Image.VoxelY = Image.ImagePositionPatient[1] + np.arange(Image.GridSize[1]) * Image.PixelSpacing[1]
-        Image.VoxelZ = Image.ImagePositionPatient[2] + np.arange(Image.GridSize[2]) * Image.PixelSpacing[2]
 
     def resampleMovingImage(self, keepFixedShape=True):
         if (self.fixed == [] or self.moving == []):

@@ -1,7 +1,8 @@
 import numpy as np
+import logging
 
+from Core.Data.Images.deformationField import DeformationField
 from Core.Processing.Registration.registration import Registration
-from Core.Data.deformationField import DeformationField
 
 class RegistrationDemons(Registration):
 
@@ -41,7 +42,7 @@ class RegistrationDemons(Registration):
                     squaredDiff + squaredNormGrad + 1e-5)
 
             # Regularization (Gaussian filter)
-            self.fieldRegularization(field, filter="Gaussian", sigma=1.0)
+            self.fieldRegularization(field, filterType="Gaussian", sigma=1.0)
 
             # deformation
             deformed = field.deform_image(self.moving)
