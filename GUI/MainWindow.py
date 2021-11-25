@@ -4,10 +4,12 @@ from GUI.Panels.patientDataPanel import PatientDataPanel
 
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, viewController):
         QMainWindow.__init__(self)
 
         self.toolbox_width = 270
+
+        self._viewController = viewController
 
         self.setWindowTitle('OpenTPS')
         self.resize(1400, 920)
@@ -22,5 +24,5 @@ class MainWindow(QMainWindow):
         self.toolbox_main.setFixedWidth(self.toolbox_width)
 
         # initialize the 1st toolbox panel (patient data)
-        self.patientDataPanel = PatientDataPanel()
+        self.patientDataPanel = PatientDataPanel(self._viewController)
         self.toolbox_main.addItem(self.patientDataPanel, 'Patient data')
