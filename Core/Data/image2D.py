@@ -1,8 +1,8 @@
 from Core.Data.patientData import PatientData
 
 
-class Image3D(PatientData):
-    def __init__(self, data=None, name=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0)):
+class Image2D(PatientData):
+    def __init__(self, data=None, name=None, origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0)):
 
         self.data = data
         self.name = name
@@ -12,11 +12,11 @@ class Image3D(PatientData):
 
     def __str__(self):
         gs = self.getGridSize()
-        s = 'Image3D ' + str(gs[0]) + 'x' +  str(gs[1]) + '\n'
+        s = 'Image3D ' + str(gs[0]) + 'x' +  str(gs[1]) + 'x' +  str(gs[2]) + '\n'
         return s
 
     def getGridSize(self):
         if self.data is None:
-            return (0, 0, 0)
+            return (0, 0)
 
         return self.data.shape

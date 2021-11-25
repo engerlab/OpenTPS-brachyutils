@@ -5,25 +5,27 @@ class DataController(QObject):
     _allDataControllers = []
 
     def __new__(cls, data):
-        if isinstance(data, cls):
+        if isinstance(data, DataController):
             return data
 
         if data is None:
             return None
 
         # if there is already a data controller for this data instance
-        for controller in cls._allDataControllers:
+        for controller in DataController._allDataControllers:
             if controller.data == data:
                 return controller
 
         # else
-        dataController = super(DataController, cls).__new__(DataController)
+        dataController = super().__new__(cls)
         DataController._allDataControllers.append(dataController)
 
         return dataController
 
     def __init__(self, data):
-        if isinstance(data, self.__class__):
+        super().__init__()
+
+        if isinstance(data, DataController):
             return
 
         if data is None:
@@ -32,6 +34,12 @@ class DataController(QObject):
         #else
         self.data = data
 
-        QObject.__init__(self)
+if __name__ == '__main__':
+    data1 = 'jlj'
 
-        
+    p1 = DataController(data1)
+    print(p1.data)
+    p2 = DataController('khkh')
+    print(p2.data)
+    p3 =  DataController(data1)
+    print(p1 == p3)

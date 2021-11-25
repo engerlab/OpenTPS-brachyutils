@@ -1,5 +1,4 @@
 import os
-
 import pydicom
 import numpy as np
 
