@@ -8,6 +8,9 @@ from Core.Data.image3D import Image3D
 class DeformationField(Image3D):
 
     def __init__(self):
+
+        Image3D.__init__(self)
+
         self.SOPInstanceUID = ""
         self.FieldName = ""
         self.DcmFile = ""
