@@ -1,4 +1,4 @@
-from Core.Data.Image.image3D import Image3D
+from Core.Data.Images.image3D import Image3D
 
 
 class LETImage(Image3D):
