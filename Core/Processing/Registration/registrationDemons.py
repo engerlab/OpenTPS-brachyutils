@@ -25,7 +25,7 @@ class RegistrationDemons(Registration):
 
         # Iterative loop
         for i in range(self.nIter):
-            ssd = self.computeSSD(self.fixed.Image, deformed)
+            ssd = computeSSD(self.fixed.Image, deformed)
             print('Iteration ' + str(i + 1) + ': SSD=' + str(ssd))
             gradMoving = np.gradient(deformed)
             squaredDiff = np.square(self.fixed.Image - deformed)

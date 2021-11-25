@@ -192,7 +192,7 @@ class RegistrationMorphons(Registration):
 
                 # Regularize velocity field and certainty
                 self.fieldRegularization(field, filter="NormalizedGaussian", sigma=1.25, cert=certainty.Image)
-                certainty.Image = self.normGaussConv(certainty.Image, certainty.Image, 1.25)
+                certainty.Image = normGaussConv(certainty.Image, certainty.Image, 1.25)
 
         self.deformed = self.moving.copy()
         self.deformed.Image = field.deform_image(self.deformed, fill_value='closest')
