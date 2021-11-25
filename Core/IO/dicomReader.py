@@ -1,75 +1,90 @@
-import os
+import os, sys
 import pydicom
 import numpy as np
-
+import logging
+sys.path.insert(0,os.path.join('.'))
 from Core.Data.ctImage import CTImage
 
-
+logger = logging.getLogger(__name__)
 class DICOMReader:
     @staticmethod
-    def read(DcmFiles):
-        if type(DcmFiles) is list:
-            if len(DcmFiles)==1:
-                return DICOMReader.read(DcmFiles[0])
+    def read(dcmFiles):
+        if type(dcmFiles) is list:
+            if len(dcmFiles)==1:
+                return DICOMReader.read(dcmFiles[0])
             else:
-                return DICOMReader.readSeries(DcmFiles)
+                return DICOMReader.readCT(dcmFiles)
         else:
-            dcm = pydicom.dcmread(DcmFiles)
+            dcm = pydicom.dcmread(dcmFiles)
             if 'StructureSetROISequence' in dcm:
-                return DICOMReader.loadRTStruct(DcmFiles)
+                return DICOMReader.loadRTStruct(dcmFiles)
             else:
                 #TODO
                 pass
 
 
     @staticmethod
-    def readSeries(DcmFiles):
-        images = []
-        SOPInstanceUIDs = []
-        SliceLocation = np.zeros(len(DcmFiles), dtype='float')
+    def readCT(dcmFiles):
+        """​
+        Reads from a list of DICOM files and builds a CTimage object
 
-        for i in range(len(DcmFiles)):
-            file_path = DcmFiles[i]
+        Parameters
+        ----------​
+
+        dcmFiles : list
+
+            list of dcm files composing the CT image.​
+​
+
+        Returns​
+        -------​
+        CTimage
+        """
+        images = []
+        sopInstanceUIDs = []
+        sliceLocation = np.zeros(len(dcmFiles), dtype='float')
+        
+        for i in range(len(dcmFiles)):
+            file_path = dcmFiles[i]
             dcm = pydicom.dcmread(file_path)
-            # dcm = pydicom.dcmread(file_path, force=True)
 
             if (hasattr(dcm, 'SliceLocation') and abs(dcm.SliceLocation - dcm.ImagePositionPatient[2]) > 0.001):
-                print("WARNING: SliceLocation (" + str(
+                logging.warning("WARNING: SliceLocation (" + str(
                     dcm.SliceLocation) + ") is different than ImagePositionPatient[2] (" + str(
                     dcm.ImagePositionPatient[2]) + ") for " + file_path)
 
-            SliceLocation[i] = float(dcm.ImagePositionPatient[2])
+            sliceLocation[i] = float(dcm.ImagePositionPatient[2])
             images.append(dcm.pixel_array * dcm.RescaleSlope + dcm.RescaleIntercept)
-            SOPInstanceUIDs.append(dcm.SOPInstanceUID)
+            sopInstanceUIDs.append(dcm.SOPInstanceUID)
 
         # sort slices according to their location in order to reconstruct the 3d image
-        sort_index = np.argsort(SliceLocation)
-        SliceLocation = SliceLocation[sort_index]
-        SOPInstanceUIDs = [SOPInstanceUIDs[n] for n in sort_index]
+        sort_index = np.argsort(sliceLocation)
+        sliceLocation = sliceLocation[sort_index]
+        sopInstanceUIDs = [sopInstanceUIDs[n] for n in sort_index]
         images = [images[n] for n in sort_index]
-        Image = np.dstack(images).astype("float32").transpose(1, 0, 2)
+        image = np.dstack(images).astype("float32").transpose(1, 0, 2)
 
-        if Image.shape[0:2] != (dcm.Columns, dcm.Rows):
-            print("WARNING: GridSize " + str(Image.shape[0:2]) + " different from Dicom Columns (" + str(
+        if image.shape[0:2] != (dcm.Columns, dcm.Rows):
+            logging.warning("WARNING: GridSize " + str(image.shape[0:2]) + " different from Dicom Columns (" + str(
                 dcm.Columns) + ") and Rows (" + str(dcm.Rows) + ")")
 
-        MeanSliceDistance = (SliceLocation[-1] - SliceLocation[0]) / (len(images) - 1)
+        meanSliceDistance = (sliceLocation[-1] - sliceLocation[0]) / (len(images) - 1)
         if (hasattr(dcm, 'SliceThickness') and (
                 type(dcm.SliceThickness) == int or type(dcm.SliceThickness) == float) and abs(
-                MeanSliceDistance - dcm.SliceThickness) > 0.001):
-            print(
-                "WARNING: MeanSliceDistance (" + str(MeanSliceDistance) + ") is different from SliceThickness (" + str(
+                meanSliceDistance - dcm.SliceThickness) > 0.001):
+            logging.warning(
+                "WARNING: meanSliceDistance (" + str(meanSliceDistance) + ") is different from SliceThickness (" + str(
                     dcm.SliceThickness) + ")")
 
-        ImagePositionPatient = [float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]),
-                                SliceLocation[0]]
-        PixelSpacing = [float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), MeanSliceDistance]
-        FrameOfReferenceUID = dcm.FrameOfReferenceUID = dcm.FrameOfReferenceUID
-        SeriesInstanceUID = dcm.SeriesInstanceUID
-
+        imagePositionPatient = [float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]),
+                                sliceLocation[0]]
+        pixelSpacing = [float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), meanSliceDistance]
+        frameOfReferenceUID = dcm.FrameOfReferenceUID = dcm.FrameOfReferenceUID
+        seriesInstanceUID = dcm.SeriesInstanceUID
+        
         #TODO: ImgName
-        return CTImage(data=Image, spacing=PixelSpacing, origin=ImagePositionPatient)
-
+        return CTImage(data=image, name="CT", origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=seriesInstanceUID, frameOfReferenceUID=frameOfReferenceUID, sliceLocation=sliceLocation)
+    
     @staticmethod
     def loadRTPlan(DcmFile):
         raise(NotImplementedError("TODO"))
@@ -80,9 +95,9 @@ class DICOMReader:
 
 
 if __name__ == '__main__':
-    folderPath = '/home/sylvain/Downloads/MIROPT_data'
+    folderPath = r'D:/Users/Public/Documents/Data/CT_test'
 
     fileList = [os.path.join(folderPath, file) for file in os.listdir(folderPath)]
     image = DICOMReader.read(fileList)
-
-    print(image)
+    
+    logging.info(image)
