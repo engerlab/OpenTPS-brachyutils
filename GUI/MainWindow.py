@@ -1,5 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QToolBox
 
+from GUI.Panels.patientDataPanel import PatientDataPanel
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -22,5 +24,3 @@ class MainWindow(QMainWindow):
         # initialize the 1st toolbox panel (patient data)
         self.patientDataPanel = PatientDataPanel()
         self.toolbox_main.addItem(self.patientDataPanel, 'Patient data')
-
-
