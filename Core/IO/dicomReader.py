@@ -3,7 +3,7 @@ import pydicom
 import numpy as np
 import logging
 sys.path.insert(0,os.path.join('.'))
-from Core.Data.ctImage import CTImage
+from Core.Data.Images.ctImage import CTImage
 
 logger = logging.getLogger(__name__)
 class DICOMReader:

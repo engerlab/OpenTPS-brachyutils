@@ -1,6 +1,30 @@
 import numpy as np
+import logging
 
 from Core.Processing.Registration.registration import Registration
+
+
+def matchProfiles(fixed, moving):
+  mse = []
+
+  for index in range(len(moving)):
+    shift = index - round(len(moving) / 2)
+
+    # shift profiles
+    shifted = np.roll(moving, shift)
+
+    # crop profiles to same size
+    if (len(shifted) > len(fixed)):
+      vec1 = shifted[:len(fixed)]
+      vec2 = fixed
+    else:
+      vec1 = shifted
+      vec2 = fixed[:len(shifted)]
+
+    # compute MSE
+    mse.append(((vec1 - vec2) ** 2).mean())
+
+  return (np.argmin(mse) - round(len(moving) / 2))
 
 
 class RegistrationQuick(Registration):
@@ -45,6 +69,6 @@ class RegistrationQuick(Registration):
         translation[2] = self.fixed.ImagePositionPatient[2] - self.moving.ImagePositionPatient[2] + shift * \
                          self.deformed.PixelSpacing[2]
 
-        translateOrigin(self.deformed, translation)
+        self.translateOrigin(self.deformed, translation)
 
         return translation

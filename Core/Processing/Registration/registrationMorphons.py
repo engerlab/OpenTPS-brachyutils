@@ -1,11 +1,12 @@
 import os
 import numpy as np
 import scipy.signal
+import logging
 import multiprocessing as mp
 from functools import partial
 
+from Core.Data.Images.deformationField import DeformationField
 from Core.Processing.Registration.registration import Registration
-from Core.Data.deformationField import DeformationField
 
 
 def morphonsConv(im, k):
@@ -24,7 +25,7 @@ class RegistrationMorphons(Registration):
     def __init__(self, fixed, moving, baseResolution=2.5, nbProcesses=-1):
 
         Registration.__init__(self, fixed, moving)
-        self.baseResolution = self.baseResolution
+        self.baseResolution = baseResolution
         self.nbProcesses = nbProcesses
 
     def compute(self):
@@ -42,7 +43,7 @@ class RegistrationMorphons(Registration):
         qDirections = [[0, 0.5257, 0.8507], [0, -0.5257, 0.8507], [0.5257, 0.8507, 0], [-0.5257, 0.8507, 0],
                         [0.8507, 0, 0.5257], [0.8507, 0, -0.5257]]
 
-        morphonsPath = os.path.abspath("./Registration/Morphons_kernels")
+        morphonsPath = os.path.abspath("./Core/Processing/Registration/Morphons_kernels")
         k = []
         k.append(np.reshape(
             np.float32(np.fromfile(os.path.join(morphonsPath, "kernel1_real.bin"), dtype="float64")) + np.float32(
@@ -191,7 +192,7 @@ class RegistrationMorphons(Registration):
                                             certainty.Image + certaintyUpdate + eps)
 
                 # Regularize velocity field and certainty
-                self.fieldRegularization(field, filter="NormalizedGaussian", sigma=1.25, cert=certainty.Image)
+                self.fieldRegularization(field, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.Image)
                 certainty.Image = normGaussConv(certainty.Image, certainty.Image, 1.25)
 
         self.deformed = self.moving.copy()

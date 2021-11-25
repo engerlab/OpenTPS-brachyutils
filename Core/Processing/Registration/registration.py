@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.ndimage
 import scipy.signal
+import logging
 
 
 def normGaussConv(data, cert, sigma):
@@ -11,47 +12,6 @@ def normGaussConv(data, cert, sigma):
     cert[z] = 1.0
     data = np.divide(data, cert)
     return data
-
-
-def matchProfiles(fixed, moving):
-  mse = []
-
-  for index in range(len(moving)):
-    shift = index - round(len(moving) / 2)
-
-    # shift profiles
-    shifted = np.roll(moving, shift)
-
-    # crop profiles to same size
-    if (len(shifted) > len(fixed)):
-      vec1 = shifted[:len(fixed)]
-      vec2 = fixed
-    else:
-      vec1 = shifted
-      vec2 = fixed[:len(shifted)]
-
-    # compute MSE
-    mse.append(((vec1 - vec2) ** 2).mean())
-
-  return (np.argmin(mse) - round(len(moving) / 2))
-
-
-def computeSSD(fixed, deformed):
-  # compute metric
-  ssd = np.sum(np.power(fixed - deformed, 2))
-  # print("SSD: " + str(ssd))
-
-  return ssd
-
-
-def translateOrigin(Image, translation):
-  Image.ImagePositionPatient[0] += translation[0]
-  Image.ImagePositionPatient[1] += translation[1]
-  Image.ImagePositionPatient[2] += translation[2]
-
-  Image.VoxelX = Image.ImagePositionPatient[0] + np.arange(Image.GridSize[0]) * Image.PixelSpacing[0]
-  Image.VoxelY = Image.ImagePositionPatient[1] + np.arange(Image.GridSize[1]) * Image.PixelSpacing[1]
-  Image.VoxelZ = Image.ImagePositionPatient[2] + np.arange(Image.GridSize[2]) * Image.PixelSpacing[2]
 
 
 class Registration:
@@ -101,6 +61,15 @@ class Registration:
 
         self.roiBox = box
 
+    def translateOrigin(self, Image, translation):
+        Image.ImagePositionPatient[0] += translation[0]
+        Image.ImagePositionPatient[1] += translation[1]
+        Image.ImagePositionPatient[2] += translation[2]
+
+        Image.VoxelX = Image.ImagePositionPatient[0] + np.arange(Image.GridSize[0]) * Image.PixelSpacing[0]
+        Image.VoxelY = Image.ImagePositionPatient[1] + np.arange(Image.GridSize[1]) * Image.PixelSpacing[1]
+        Image.VoxelZ = Image.ImagePositionPatient[2] + np.arange(Image.GridSize[2]) * Image.PixelSpacing[2]
+
     def translateAndComputeSSD(self, translation=[0.0, 0.0, 0.0]):
 
         # crop fixed image to ROI box
@@ -121,12 +90,17 @@ class Registration:
 
         # deform moving image
         self.deformed = self.moving.copy()
-        translateOrigin(self.deformed, translation)
+        self.translateOrigin(self.deformed, translation)
         self.deformed.resample_image(GridSize, Origin, self.fixed.PixelSpacing)
 
         # compute metric
-        ssd = computeSSD(fixed, self.deformed.Image)
+        ssd = self.computeSSD(fixed, self.deformed.Image)
+        return ssd
 
+    def computeSSD(self, fixed, deformed):
+        # compute metric
+        ssd = np.sum(np.power(fixed - deformed, 2))
+        # print("SSD: " + str(ssd))
         return ssd
 
     def resampleMovingImage(self, keepFixedShape=True):
