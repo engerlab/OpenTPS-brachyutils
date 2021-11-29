@@ -20,6 +20,7 @@ class DataController(QObject):
         dataController = super().__new__(cls)
         DataController._allDataControllers.append(dataController)
 
+        # TODO: Critical!!!! check if controller has same class name than class calling new and subclass otherwise
         return dataController
 
     def __init__(self, data):

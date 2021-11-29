@@ -1,4 +1,5 @@
 import scipy.signal
+import logging
 
 from Core.Processing.Registration.registration import Registration
 
