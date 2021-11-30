@@ -14,7 +14,9 @@ class GridElement(QWidget):
 
         self._displayController = None
         self.mainLayout = QVBoxLayout()
+
         self.setLayout(self.mainLayout)
+        self.mainLayout.setContentsMargins(0, 0, 0, 0)
 
         if self._viewController.getDisplayType()==self._viewController.SliceViewerDisplay:
             vtkWidget = SliceViewerVTK(self._viewController.getDisplayController())

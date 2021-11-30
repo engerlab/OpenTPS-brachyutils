@@ -38,6 +38,7 @@ class SliceViewerVTK(QWidget):
 
     self.setLayout(self.mainLayout)
     self.mainLayout.addWidget(self.vtkWidget)
+    self.mainLayout.setContentsMargins(0, 0, 0, 0)
 
     #self.textOverlay = Overlay(self.vtkWidget)
     #self.textOverlay.show()

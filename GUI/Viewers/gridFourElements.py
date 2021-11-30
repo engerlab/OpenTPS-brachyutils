@@ -25,6 +25,11 @@ class GridFourElements(QWidget):
         topLeftLayout = QVBoxLayout(topLeft)
         topRightLayout = QVBoxLayout(topRight)
 
+        botLeftLayout.setContentsMargins(0, 0, 0, 0)
+        botRightLayout.setContentsMargins(0, 0, 0, 0)
+        topLeftLayout.setContentsMargins(0, 0, 0, 0)
+        topRightLayout.setContentsMargins(0, 0, 0, 0)
+
         botLeftLayout.addWidget(GridElement(self._viewerController.botLeftController))
         botRightLayout.addWidget(GridElement(self._viewerController.botRightController))
         topLeftLayout.addWidget(GridElement(self._viewerController.topLeftController))
@@ -46,9 +51,12 @@ class GridFourElements(QWidget):
         splitter.setStretchFactor(1, 1)
 
         hbox.addWidget(splitter)
+        hbox.setContentsMargins(0, 0, 0, 0)
+
 
         # Vertical splitters
         vbox = QVBoxLayout(left)
+        vbox.setContentsMargins(0, 0, 0, 0)
 
         leftSplitter = QSplitter(QtCore.Qt.Vertical)
         leftSplitter.addWidget(botLeft)
@@ -57,6 +65,7 @@ class GridFourElements(QWidget):
         vbox.addWidget(leftSplitter)
 
         vbox = QVBoxLayout(right)
+        vbox.setContentsMargins(0, 0, 0, 0)
 
         rightSplitter = QSplitter(QtCore.Qt.Vertical)
         rightSplitter.addWidget(botRight)
