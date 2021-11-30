@@ -125,6 +125,8 @@ class DVH:
       Volume that receives at least x Gy
 
     """
+
+    #TODO: improve this code using interpolation instead of search
     index = np.searchsorted(self.dose, x)
     if return_percentage: return self.volume[index]
     else: return self.volume_absolute[index]
@@ -150,6 +152,7 @@ class DVH:
     """
     assert self.prescription is not None
     dose_percentage = (self.dose / self.prescription) * 100 
+    #TODO: improve this code using interpolation instead of search
     index = np.searchsorted(dose_percentage, x)
     if return_percentage:
       return self.volume[index]
