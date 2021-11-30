@@ -218,6 +218,12 @@ class DVH:
       return (self.D2 - self.D98) / self.D50
 
     if method == 'conventional_3':
+      return self.D2 - self.D98
+
+    if method == 'conventional_4':
+      return self.D5 - self.D95
+
+    if method == 'conventional_5':
       assert self.prescription is not None
       return self.Dmax / self.prescription
 
