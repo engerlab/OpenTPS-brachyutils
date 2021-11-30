@@ -3,32 +3,45 @@ import logging
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from Controllers.DataControllers.patientController import PatientController
+
 
 class ViewController(QObject):
-    currentPatientChangedSignal = pyqtSignal(object)
+    patientAddedSignal = pyqtSignal(object)
+    patientRemovedSignal = pyqtSignal(object)
 
     def __init__(self, patientListController):
         QObject.__init__(self)
 
-        self.activePatientControllers = []
+        self.activePatientControllers = [PatientController(patient) for patient in patientListController.data]
         self.logger = logging.getLogger(__name__)
         self.multipleActivePatientsEnabled = False
-        self._patientListController = patientListController
+        self._selectedImageController = None
+
+        patientListController.patientAddedSignal.connect(self.appendActivePatientController)
+        patientListController.patientRemovedSignal.connect(self.appendActivePatientController)
 
     # if self.multipleActivePatientsEnabled
     def appendActivePatientController(self, patientController):
+        patientController = PatientController(patientController)
+
         self.activePatientControllers.append(patientController)
+        self.patientAddedSignal.emit(self.activePatientControllers[-1])
 
-    def getPatientListController(self):
-        return self._patientListController
+    def removeActivePatientController(self, patientController):
+        patientController = PatientController(patientController)
 
-    def getActivePatientController(self):
+        self.activePatientControllers.remove(patientController)
+        self.patientRemovedSignal.emit(patientController)
+
+    def getActivePatientControllers(self):
         if self.multipleActivePatientsEnabled:
             self.logger.exception('Cannot getActivePatientController if multiple patients enabled')
             raise
 
-    # if not self.multipleActivePatientsEnabled
-    def setActivePatientController(self, patientController):
-        self.activePatientControllers = [patientController]
-        self.currentPatientChangedSignal.emit(self.activePatientControllers[0])
+    def getSelectedImageController(self):
+        return self._selectedImageController
+
+    def setSelectedImageController(self, imageController):
+        self._selectedImageController = imageController
 
