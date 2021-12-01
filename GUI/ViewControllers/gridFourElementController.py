@@ -9,10 +9,10 @@ class GridFourElementController(QObject):
 
         self._parent = viewController
 
-        self.botLeftController = GridElementController(parent=self)
-        self.botRightController = GridElementController(parent=self)
-        self.topLeftController = GridElementController(parent=self)
-        self.topRightController = GridElementController(parent=self)
+        self.controller0 = GridElementController(parent=self)
+        self.controller1 = GridElementController(parent=self)
+        self.controller2 = GridElementController(parent=self)
+        self.controller3 = GridElementController(parent=self)
 
         self.singleImageMode = True
 
@@ -20,16 +20,16 @@ class GridFourElementController(QObject):
         return self._parent.getSelectedImageController()
 
     def setMainImage(self, imageController):
-        self.botLeftController.setMainImage(imageController)
-        self.botRightController.setMainImage(imageController)
-        self.topLeftController.setMainImage(imageController)
-        self.topRightController.setMainImage(imageController)
+        self.controller0.setMainImage(imageController)
+        self.controller1.setMainImage(imageController)
+        self.controller2.setMainImage(imageController)
+        self.controller3.setMainImage(imageController)
 
     def setSecondaryImage(self, imageController):
-        self.botLeftController.setSecondaryImage(imageController)
-        self.botRightController.setSecondaryImage(imageController)
-        self.topLeftController.setSecondaryImage(imageController)
-        self.topRightController.setSecondaryImage(imageController)
+        self.controller0.setSecondaryImage(imageController)
+        self.controller1.setSecondaryImage(imageController)
+        self.controller2.setSecondaryImage(imageController)
+        self.controller3.setSecondaryImage(imageController)
 
 
 
