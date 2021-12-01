@@ -6,7 +6,9 @@ class DataController(QObject):
 
     def __new__(cls, data):
         if isinstance(data, DataController):
-            return data
+            if isinstance(data, DataController):
+                data.__class__ = cls # Subclass the existing data controller
+                return data
 
         if data is None:
             return None
@@ -14,13 +16,13 @@ class DataController(QObject):
         # if there is already a data controller for this data instance
         for controller in DataController._allDataControllers:
             if controller.data == data:
-                return controller
+                # we might need to subclass the existign data controller:
+                return DataController.__new__(cls, controller)
 
         # else
         dataController = super().__new__(cls)
         DataController._allDataControllers.append(dataController)
 
-        # TODO: Critical!!!! check if controller has same class name than class calling new and subclass otherwise
         return dataController
 
     def __init__(self, data):
@@ -34,6 +36,7 @@ class DataController(QObject):
 
         #else
         self.data = data
+
 
 if __name__ == '__main__':
     data1 = 'jlj'

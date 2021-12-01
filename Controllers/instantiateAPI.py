@@ -2,5 +2,5 @@ from Controllers.IOControllers.dicomReaderController import DICOMReaderControlle
 from Controllers.modelController import ModelController
 
 
-def instantiateAPI():
-    DICOMReaderController()
+def instantiateAPI(patientListController):
+    DICOMReaderController(patientListController)
