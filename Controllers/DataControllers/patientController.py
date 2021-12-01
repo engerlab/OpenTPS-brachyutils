@@ -5,16 +5,19 @@ from Controllers.DataControllers.image3DController import Image3DController
 
 
 class PatientController(DataController):
-    imageAdded = pyqtSignal(object)
-    imageRemoved = pyqtSignal(object)
-    nameChanged = pyqtSignal(str)
+    imageAddedSignal = pyqtSignal(object)
+    imageRemovedSignal = pyqtSignal(object)
+    nameChangedSignal = pyqtSignal(str)
 
     def __init__(self, patient):
         super().__init__(patient)
 
     def appendImage(self, image):
+        if isinstance(image, Image3DController):
+            image = image.data
+
         self.data.appendImage(image)
-        self.imageAdded.emit(image)
+        self.imageAddedSignal.emit(Image3DController(image))
 
     def getName(self):
         return self.data.name
@@ -23,8 +26,17 @@ class PatientController(DataController):
         return [Image3DController(image) for image in self.data.images]
 
     def removeImage(self, image):
+        if isinstance(image, Image3DController):
+            image = image.data
+
         self.data.removeImage(image)
-        self.imageRemoved.emit(image)
+        self.imageRemovedSignal.emit(Image3DController(image))
 
     def setName(self, name):
         self.data.name = name
+
+    def getImageIndex(self, image):
+        if isinstance(image, Image3DController):
+            image = image.data
+
+        self.data.list.index(image)

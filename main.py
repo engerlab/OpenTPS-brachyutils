@@ -17,12 +17,13 @@ if __name__ == '__main__':
   if not app:
     app = QApplication([])
 
-  #TODO Find a better way to instantiate the API
-  instantiateAPI()
-
-  # instantiate the main GUI window
   patientList = PatientList()
   patientListController = PatientListController(patientList)
+
+  #TODO Find a better way to instantiate the API
+  instantiateAPI(patientListController)
+
+  # instantiate the main GUI window
   viewController = ViewController(patientListController)
   mainWindow = MainWindow(viewController)
   mainWindow.show()

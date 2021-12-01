@@ -1,5 +1,6 @@
-from PyQt5.QtCore import QDir
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from PyQt5 import QtCore
+from PyQt5.QtCore import QDir, QMimeData, Qt
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
     QStackedWidget, QListView, QLineEdit
 
@@ -26,8 +27,9 @@ class PatientDataPanel(QWidget):
         self.layout.addWidget(loadDataButton)
 
     def loadData(self):
-        file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
-        ModelController().getAPI().readDicomImage(file)
+        #file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
+        #ModelController().getAPI().readDicomImage(file)
+        ModelController().getAPI().readDicomImage(None) #test
 
 
 class PatientComboBox(QComboBox):
@@ -36,11 +38,10 @@ class PatientComboBox(QComboBox):
 
         self._viewController = viewController
 
-        patientListController = self._viewController.getPatientListController()
-        patientListController.patientAdded.connect(self._addPatient)
-        patientListController.patientRemoved.connect(self._removePatient)
+        self._viewController.patientAddedSignal.connect(self._addPatient)
+        self._viewController.patientRemovedSignal.connect(self._removePatient)
 
-        self._setActivePatientController = lambda index: self._viewController.setActivePatientController(self.currentData())
+        self._setActivePatientController = lambda index: self._viewController.setCurrentPatientController(self.currentData())
         self.currentIndexChanged.connect(self._setActivePatientController)
 
     def __del__(self):
@@ -52,6 +53,8 @@ class PatientComboBox(QComboBox):
             name = 'None'
 
         self.addItem(name, patientController)
+        if self.count()==1:
+            self._viewController.setCurrentPatientController(patientController)
 
     def _removePatient(self, patientController):
         self.removeItem(self.findData(patientController))
@@ -70,7 +73,25 @@ class PatientImageList(QTreeView):
 
         self._viewController.currentPatientChangedSignal.connect(self.updateAll)
 
-        self.updateAll(self._viewController.getActivePatientController())
+        patientController = self._viewController.getCurrentPatientController()
+        self.updateAll(patientController)
+
+        self.clicked.connect(self._treeClick)
+
+        self.setDragEnabled(True)
+
+    def appendImage(self, imageController):
+        item = PatientImageItem(imageController)
+        self.rootNode.appendRow(item)
+
+    def mouseMoveEvent(self, event):
+        drag = QDrag(self)
+        mimeData = QMimeData()
+
+        mimeData.setText('image')
+        drag.setMimeData(mimeData)
+
+        drag.exec_(QtCore.Qt.CopyAction)
 
     def updateAll(self, patientController):
         self.treeModel.clear()
@@ -79,20 +100,29 @@ class PatientImageList(QTreeView):
         if patientController is None:
             return
 
+        try:
+         patientController.imageAddedSignal.disconnect(self.appendImage)
+        except:
+            pass
+        patientController.imageAddedSignal.connect(self.appendImage)
+
         imageControllers = patientController.getImageControllers()
         for imageController in imageControllers:
-            item = PatientImageItem(imageController)
-            self.rootNode.appendRow(item)
+            self.appendImage(imageController)
+
+    def _treeClick(self, selection):
+        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
 
 
 class PatientImageItem(QStandardItem):
     def __init__(self, imageController):
         QStandardItem.__init__(self)
 
-        self._imageController = imageController
-        self._imageController.nameChangedSignal.connect(self.setName)
+        self.imageController = imageController
+        self.imageController.nameChangedSignal.connect(self.setName)
 
-        self.setName(self._imageController.getName())
+        self.setName(self.imageController.getName())
+
 
     def setName(self, name):
         self.setText(name)
