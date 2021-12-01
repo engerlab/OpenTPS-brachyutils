@@ -1,6 +1,14 @@
 Core.Processing package
 =======================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   Core.Processing.Registration
+
 Module contents
 ---------------
 

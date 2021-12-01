@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   Core.Data.CTCalibrations
    Core.Data.Images
 
 Submodules

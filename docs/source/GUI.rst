@@ -13,6 +13,7 @@ Subpackages
 
    GUI.Panels
    GUI.ViewControllers
+   GUI.Viewers
 
 Submodules
 ----------
