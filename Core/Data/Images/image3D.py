@@ -19,4 +19,4 @@ class Image3D(PatientData):
         if self.data is None:
             return (0, 0, 0)
 
-        return self.data.shape
+        return self.data.shape[0:3]

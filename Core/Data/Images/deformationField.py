@@ -11,42 +11,27 @@ class DeformationField(Image3D):
 
         Image3D.__init__(self)
 
-        self.SOPInstanceUID = ""
-        self.FieldName = ""
-        self.DcmFile = ""
-        self.SeriesInstanceUID = ""
-        self.PatientInfo = {}
-        self.StudyInfo = {}
-        self.CT_SeriesInstanceUID = ""
-        self.Plan_SOPInstanceUID = ""
-        self.FrameOfReferenceUID = ""
-        self.ImagePositionPatient = [0, 0, 0]
-        self.PixelSpacing = [1, 1, 1]
-        self.GridSize = [0, 0, 0]
-        self.NumVoxels = 0
-        self.Velocity = []
-        self.Displacement = []
-        self.isLoaded = 0
+        self.velocity = []
+        self.displacement = []
 
     def print_field_info(self, prefix=""):
         print(prefix + "Deformation field: " + self.SOPInstanceUID)
         print(prefix + "   " + self.DcmFile)
 
-    def Init_Field_Zeros(self, GridSize, Offset=[0, 0, 0], PixelSpacing=[1, 1, 1]) -> object:
-        if (len(GridSize) == 3):
-            GridSize = tuple(GridSize) + (3,)
-        elif (len(GridSize) == 4 and GridSize[3] != 3):
+    def initFieldWithZeros(self, gridSize, origin=[0, 0, 0], spacing=[1, 1, 1]) -> object:
+        if (len(gridSize) == 3):
+            gridSize = tuple(gridSize) + (3,)
+        elif (len(gridSize) == 4 and gridSize[3] != 3):
             print("Error: last dimension of deformation field should be of size 3")
             return
 
-        self.Velocity = np.zeros(GridSize)
-        self.ImagePositionPatient = Offset
-        self.PixelSpacing = PixelSpacing
-        self.GridSize = GridSize[0:3]
+        self.velocity = np.zeros(gridSize)
+        self.origin = origin
+        self.spacing = spacing
 
     def copy(self):
         df = DeformationField()
-        df.FieldName = df.FieldName
+
         df.SeriesInstanceUID = self.SeriesInstanceUID + ".1"
         df.SOPInstanceUID = self.SOPInstanceUID
         df.PatientInfo = self.PatientInfo
@@ -54,12 +39,11 @@ class DeformationField(Image3D):
         df.CT_SeriesInstanceUID = self.CT_SeriesInstanceUID
         df.Plan_SOPInstanceUID = self.Plan_SOPInstanceUID
         df.FrameOfReferenceUID = self.FrameOfReferenceUID
-        df.ImagePositionPatient = list(self.ImagePositionPatient)
-        df.PixelSpacing = list(self.PixelSpacing)
-        df.GridSize = list(self.GridSize)
-        df.NumVoxels = 0
-        df.Velocity = self.Velocity
-        df.Displacement = self.Velocity
+
+        df.origin = list(self.origin)
+        df.spacing = list(self.spacing)
+        df.velocity = self.velocity
+        df.displacement = self.velocity
         return df
 
     def import_Dicom_DF(self, CT_list, df_type='Velocity'):
@@ -70,30 +54,27 @@ class DeformationField(Image3D):
         dcm = pydicom.dcmread(self.DcmFile).DeformableRegistrationSequence[0]
 
         # find associated CT image
-        CT = {}
+        ct = {}
         try:
             CT_ID = next(
                 (x for x, val in enumerate(CT_list) if val.FrameOfReferenceUID == dcm.SourceFrameOfReferenceUID), -1)
             CT_ID = next((x for x, val in enumerate(CT_list) if val.FrameOfReferenceUID == dcm.FrameOfReferenceUID), -1)
-            CT = CT_list[CT_ID]
+            ct = CT_list[CT_ID]
         except:
             pass
 
-        if (CT == {}):
-            print("Warning: No CT image has been found with the same frame of reference as DeformationField ")
+        if (ct == {}):
+            print("Warning: No ct image has been found with the same frame of reference as DeformationField ")
             print("DeformationField is imported on the first CT image.")
-            CT = CT_list[0]
+            ct = CT_list[0]
 
         # import deformation field
-        self.CT_SeriesInstanceUID = CT.SeriesInstanceUID
+        self.CT_SeriesInstanceUID = ct.SeriesInstanceUID
         self.FrameOfReferenceUID = dcm.SourceFrameOfReferenceUID
         dcm_field = dcm.DeformableRegistrationGridSequence[0]
 
-        self.ImagePositionPatient = dcm_field.ImagePositionPatient
-        self.ImageOrientationPatient = dcm_field.ImageOrientationPatient
-        self.GridSize = dcm_field.GridDimensions
-        self.PixelSpacing = dcm_field.GridResolution
-        self.NumVoxels = self.GridSize[0] * self.GridSize[1] * self.GridSize[2]
+        self.origin = dcm_field.ImagePositionPatient
+        self.spacing = dcm_field.GridResolution
 
         raw_field = np.frombuffer(dcm_field.VectorGridData, dtype=np.float32)
         raw_field = raw_field.reshape(
@@ -101,128 +82,127 @@ class DeformationField(Image3D):
             order='F').transpose(1, 2, 3, 0)
         field = raw_field.copy()
         for i in range(3):
-            field[:, :, :, i] = field[:, :, :, i] / self.PixelSpacing[i]
+            field[:, :, :, i] = field[:, :, :, i] / self.spacing[i]
 
         if df_type == 'Velocity':
-            self.Velocity = field
-            self.Displacement = self.Exponentiation()
+            self.velocity = field
+            self.displacement = self.exponentiateField()
             # Resample both the velocity and diplacement to the CT
-            self.resample_to_CT_grid(CT, which_df='both')
+            self.resampleToCTGrid(ct, whichField='both')
         elif df_type == 'Displacement':
-            self.Displacement = field
-            self.resample_to_CT_grid(CT, which_df='Displacement')
+            self.displacement = field
+            self.resampleToCTGrid(ct, whichField='Displacement')
         else:
             print("Unknown deformation field type")
             return
         self.isLoaded = 1
 
-    def resample_to_CT_grid(self, CT, which_df):
-        if (not CT.is_same_grid(self)):
-            print('Resample deformation field to CT grid.')
-            self.resample_DF(CT.GridSize, CT.ImagePositionPatient, CT.PixelSpacing, which_df)
 
-    def resample_DF(self, GridSize, Offset, PixelSpacing, which_df='both'):
-        if which_df == 'both':
-            assert self.Velocity != []
-            assert self.Displacement != []
-            self.Velocity = self.resample_field(self.Velocity, GridSize, Offset, PixelSpacing)
-            self.Displacement = self.resample_field(self.Displacement, GridSize, Offset, PixelSpacing)
-        elif which_df == 'Velocity':
-            assert self.Velocity != []
-            self.Velocity = self.resample_field(self.Velocity, GridSize, Offset, PixelSpacing)
-        elif which_df == 'Displacement':
-            assert self.Displacement != []
-            self.Displacement = self.resample_field(self.Displacement, GridSize, Offset, PixelSpacing)
+    def resampleToCTGrid(self, ct, whichField):
+        if (not ct.is_same_grid(self)):
+            print('Resample deformation field to CT grid.')
+            self.resampleDeformationField(ct.getGridSize(), ct.origin, ct.spacing, whichField)
+
+    def resampleDeformationField(self, gridSize, origin, spacing, whichField='both'):
+        if whichField == 'both':
+            assert self.velocity != []
+            assert self.displacement != []
+            self.velocity = self.resampleVectorField(self.velocity, gridSize, origin, spacing)
+            self.displacement = self.resampleVectorField(self.displacement, gridSize, origin, spacing)
+        elif whichField == 'Velocity':
+            assert self.velocity != []
+            self.velocity = self.resampleVectorField(self.velocity, gridSize, origin, spacing)
+        elif whichField == 'Displacement':
+            assert self.displacement != []
+            self.displacement = self.resampleVectorField(self.displacement, gridSize, origin, spacing)
         else:
-            print("parameter which_df should either be 'both', 'Velocity' or 'Displacement'.")
+            print("parameter whichField should either be 'both', 'Velocity' or 'Displacement'.")
             return
 
-        self.ImagePositionPatient = list(Offset)
-        self.PixelSpacing = list(PixelSpacing)
-        self.GridSize = list(GridSize)
-        self.NumVoxels = GridSize[0] * GridSize[1] * GridSize[2]
+        self.origin = list(origin)
+        self.spacing = list(spacing)
 
-    def resample_field(self, init_field, GridSize, Offset, PixelSpacing):
-        field_components = [0, 1, 2]
+    def resampleVectorField(self, initField, gridSize, origin, spacing):
+        fieldComponents = [0, 1, 2]
         # anti-aliasing filter
-        if self.NumVoxels > np.product(GridSize):  # downsampling
+        if np.product(self.getGridSize()) > np.product(gridSize):  # downsampling
             sigma = [0, 0, 0]
-            if (PixelSpacing[0] > self.PixelSpacing[0]): sigma[0] = 0.4 * (PixelSpacing[0] / self.PixelSpacing[0])
-            if (PixelSpacing[1] > self.PixelSpacing[1]): sigma[1] = 0.4 * (PixelSpacing[1] / self.PixelSpacing[1])
-            if (PixelSpacing[2] > self.PixelSpacing[2]): sigma[2] = 0.4 * (PixelSpacing[2] / self.PixelSpacing[2])
+            if (spacing[0] > self.spacing[0]): sigma[0] = 0.4 * (spacing[0] / self.spacing[0])
+            if (spacing[1] > self.spacing[1]): sigma[1] = 0.4 * (spacing[1] / self.spacing[1])
+            if (spacing[2] > self.spacing[2]): sigma[2] = 0.4 * (spacing[2] / self.spacing[2])
             if (sigma != [0, 0, 0]):
                 print("Field is filtered before downsampling")
 
-            for i in field_components:
-                init_field[:, :, :, i] = scipy.ndimage.gaussian_filter(init_field[:, :, :, i], sigma)
+            for i in fieldComponents:
+                initField[:, :, :, i] = scipy.ndimage.gaussian_filter(initField[:, :, :, i], sigma)
 
         # resampling
-        Init_GridSize = list(self.GridSize)
+        initGridSize = list(self.getGridSize())
 
-        interp_x = (Offset[0] - self.ImagePositionPatient[0] + np.arange(GridSize[1]) * PixelSpacing[0]) / \
-                   self.PixelSpacing[0]
-        interp_y = (Offset[1] - self.ImagePositionPatient[1] + np.arange(GridSize[0]) * PixelSpacing[1]) / \
-                   self.PixelSpacing[1]
-        interp_z = (Offset[2] - self.ImagePositionPatient[2] + np.arange(GridSize[2]) * PixelSpacing[2]) / \
-                   self.PixelSpacing[2]
+        interpX = (origin[0] - self.origin[0] + np.arange(gridSize[1]) * spacing[0]) / \
+                   self.spacing[0]
+        interpY = (origin[1] - self.origin[1] + np.arange(gridSize[0]) * spacing[1]) / \
+                   self.spacing[1]
+        interpZ = (origin[2] - self.origin[2] + np.arange(gridSize[2]) * spacing[2]) / \
+                   self.spacing[2]
 
         # Correct for potential precision issues on the border of the grid
-        interp_x[interp_x > Init_GridSize[1] - 1] = np.round(interp_x[interp_x > Init_GridSize[1] - 1] * 1e3) / 1e3
-        interp_y[interp_y > Init_GridSize[0] - 1] = np.round(interp_y[interp_y > Init_GridSize[0] - 1] * 1e3) / 1e3
-        interp_z[interp_z > Init_GridSize[2] - 1] = np.round(interp_z[interp_z > Init_GridSize[2] - 1] * 1e3) / 1e3
+        interpX[interpX > initGridSize[1] - 1] = np.round(interpX[interpX > initGridSize[1] - 1] * 1e3) / 1e3
+        interpY[interpY > initGridSize[0] - 1] = np.round(interpY[interpY > initGridSize[0] - 1] * 1e3) / 1e3
+        interpZ[interpZ > initGridSize[2] - 1] = np.round(interpZ[interpZ > initGridSize[2] - 1] * 1e3) / 1e3
 
-        xi = np.array(np.meshgrid(interp_y, interp_x, interp_z))
+        xi = np.array(np.meshgrid(interpY, interpX, interpZ))
         xi = np.rollaxis(xi, 0, 4)
         xi = xi.reshape((xi.size // 3, 3))
 
-        field = np.zeros((*GridSize, 3))
-        for i in field_components:
-            field_temp = Trilinear_Interpolation(init_field[:, :, :, i], Init_GridSize, xi)
-            field[:, :, :, i] = field_temp.reshape((GridSize[1], GridSize[0], GridSize[2])).transpose(1, 0, 2) * \
-                                self.PixelSpacing[i] / PixelSpacing[i]
+        field = np.zeros((*gridSize, 3))
+        for i in fieldComponents:
+            fieldTemp = Trilinear_Interpolation(initField[:, :, :, i], initGridSize, xi)
+            field[:, :, :, i] = fieldTemp.reshape((gridSize[1], gridSize[0], gridSize[2])).transpose(1, 0, 2) * \
+                                self.spacing[i] / spacing[i]
 
         return field
 
-    def Exponentiation(self, save_displacement=0):
-        norm = np.square(self.Velocity[:, :, :, 0]) + np.square(self.Velocity[:, :, :, 1]) + np.square(
-            self.Velocity[:, :, :, 2])
+    def exponentiateField(self, saveDisplacement=0):
+        norm = np.square(self.velocity[:, :, :, 0]) + np.square(self.velocity[:, :, :, 1]) + np.square(
+            self.velocity[:, :, :, 2])
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
         # print("Field exponentiation (N=" + str(N) + ')')
 
-        self.Displacement = self.Velocity.copy() * 2 ** (-N)
+        self.displacement = self.velocity.copy() * 2 ** (-N)
 
         for r in range(N):
-            new_0 = self.apply_displacement_field(self.Displacement[:, :, :, 0], self.Displacement, fill_value=0)
-            new_1 = self.apply_displacement_field(self.Displacement[:, :, :, 1], self.Displacement, fill_value=0)
-            new_2 = self.apply_displacement_field(self.Displacement[:, :, :, 2], self.Displacement, fill_value=0)
-            self.Displacement[:, :, :, 0] += new_0
-            self.Displacement[:, :, :, 1] += new_1
-            self.Displacement[:, :, :, 2] += new_2
+            new_0 = self.applyDisplacementField(self.displacement[:, :, :, 0], self.displacement, fill_value=0)
+            new_1 = self.applyDisplacementField(self.displacement[:, :, :, 1], self.displacement, fill_value=0)
+            new_2 = self.applyDisplacementField(self.displacement[:, :, :, 2], self.displacement, fill_value=0)
+            self.displacement[:, :, :, 0] += new_0
+            self.displacement[:, :, :, 1] += new_1
+            self.displacement[:, :, :, 2] += new_2
 
-        output = self.Displacement
-        if (save_displacement == 0): self.Displacement = []
+        output = self.displacement
+        if saveDisplacement == 0: self.displacement = []
 
         return output
 
-    def deform_image(self, Im, fill_value=-1000):
+    def deformImage(self, Im, fillValue=-1000):
         # Im is an image. The output is the matrix of voxels after deformation (i.e. deformed Im.Image)
 
-        if (self.Displacement == []):
-            field = self.Exponentiation()
+        if (self.displacement == []):
+            field = self.exponentiateField()
         else:
-            field = self.Displacement
+            field = self.displacement
 
-        if tuple(self.GridSize) != tuple(Im.GridSize) or tuple(self.ImagePositionPatient) != tuple(
-                Im.ImagePositionPatient) or tuple(self.PixelSpacing) != tuple(Im.PixelSpacing):
-            field = self.resample_field(field, Im.GridSize, Im.ImagePositionPatient, Im.PixelSpacing)
+        if tuple(self.getGridSize()) != tuple(Im.getGridSize()) or tuple(self.origin) != tuple(
+                Im.ImagePositionPatient) or tuple(self.spacing) != tuple(Im.spacing):
+            field = self.resampleVectorField(field, Im.getGridSize(), Im.ImagePositionPatient, Im.spacing)
             print("Warning: image and field dimensions do not match. Resample displacement field to image grid.")
 
-        deformed = self.apply_displacement_field(Im.Image, field, fill_value=fill_value)
+        deformed = self.applyDisplacementField(Im.Image, field, fillValue=fillValue)
 
         return deformed
 
-    def apply_displacement_field(self, img, field, fill_value=-1000):
+    def applyDisplacementField(self, img, field, fillValue=-1000):
         size = img.shape
 
         if (field.shape[0:3] != size):
@@ -239,28 +219,28 @@ class DeformationField(Image3D):
         xi[:, 0] += field[:, :, :, 0].transpose(1, 0, 2).reshape((xi.shape[0],))
         xi[:, 1] += field[:, :, :, 1].transpose(1, 0, 2).reshape((xi.shape[0],))
         xi[:, 2] += field[:, :, :, 2].transpose(1, 0, 2).reshape((xi.shape[0],))
-        if fill_value == 'closest':
+        if fillValue == 'closest':
             xi[:, 0] = np.maximum(np.minimum(xi[:, 0], size[0] - 1), 0)
             xi[:, 1] = np.maximum(np.minimum(xi[:, 1], size[1] - 1), 0)
             xi[:, 2] = np.maximum(np.minimum(xi[:, 2], size[2] - 1), 0)
-            fill_value = -1000
-        # deformed = scipy.interpolate.interpn((x,y,z), img, xi, method='linear', fill_value=fill_value, bounds_error=False)
-        deformed = Trilinear_Interpolation(img, size, xi, fill_value=fill_value)
+            fillValue = -1000
+        # deformed = scipy.interpolate.interpn((x,y,z), img, xi, method='linear', fillValue=fillValue, bounds_error=False)
+        deformed = Trilinear_Interpolation(img, size, xi, fillValue=fillValue)
         deformed = deformed.reshape((size[1], size[0], size[2])).transpose(1, 0, 2)
 
         return deformed
 
-    def field_norm(self, which_df='Displacement'):
-        if which_df == 'Velocity':
-            assert self.Velocity != []
+    def computeFieldNorm(self, whichField='Displacement'):
+        if whichField == 'Velocity':
+            assert self.velocity != []
             return np.sqrt(
-                self.Velocity[:, :, :, 0] ** 2 + self.Velocity[:, :, :, 1] ** 2 + self.Velocity[:, :, :, 2] ** 2)
-        elif which_df == 'Displacement':
-            assert self.Displacement != []
-            self.Displacement
+                self.velocity[:, :, :, 0] ** 2 + self.velocity[:, :, :, 1] ** 2 + self.velocity[:, :, :, 2] ** 2)
+        elif whichField == 'Displacement':
+            assert self.displacement != []
+            self.displacement
             return np.sqrt(
-                self.Displacement[:, :, :, 0] ** 2 + self.Displacement[:, :, :, 1] ** 2 + self.Displacement[:, :, :,
+                self.displacement[:, :, :, 0] ** 2 + self.displacement[:, :, :, 1] ** 2 + self.displacement[:, :, :,
                                                                                           2] ** 2)
         else:
-            print("parameter which_df should either be 'Velocity' or 'Displacement'.")
+            print("parameter whichField should either be 'Velocity' or 'Displacement'.")
             return -1

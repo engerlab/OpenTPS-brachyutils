@@ -1,8 +1,10 @@
 import numpy as np
 from pydicom.uid import generate_uid
 
-from Process.Registration import *
 from Core.Data.patientData import PatientData
+from Core.Data.Images.deformationField import DeformationField
+from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
+
 
 class Dynamic3DModel(PatientData):
 
@@ -12,49 +14,49 @@ class Dynamic3DModel(PatientData):
         self.motionFieldList = []
         self.midp = []
 
-    def computeMidPositionImage(self, CT4D, ref_index=0, morphon_resolution=2.5, nb_processes=-1):
+    def computeMidPositionImage(self, CT4D, refIndex=0, morphonsResolution=2.5, nbProcesses=-1):
 
-        if ref_index >= len(CT4D.dyn3DImageList):
+        if refIndex >= len(CT4D.dyn3DImageList):
             print("Reference index is out of bound")
             return -1
 
-        average_field = DeformationField()
+        averageField = DeformationField()
 
         # perform registrations
         self.motionFieldList = []
 
         for i in range(len(CT4D.dyn3DImageList)):
 
-            if i == ref_index:
+            if i == refIndex:
                 self.motionFieldList.append(DeformationField())
             else:
-                print('\nRegistering phase', ref_index , 'to phase', i, '...')
-                reg = Registration(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[ref_index])
-                self.motionFieldList.append(reg.Registration_morphons(base_resolution=morphon_resolution, nb_processes=nb_processes))
-                field_shape = self.motionFieldList[i].Velocity.shape[0:3]
-                if (max(average_field.GridSize) == 0):
-                    average_field.Init_Field_Zeros(field_shape)
+                print('\nRegistering phase', refIndex, 'to phase', i, '...')
+                reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=morphonsResolution, nbProcesses=nbProcesses)
+                self.motionFieldList.append(reg.compute())
+                fieldShape = self.motionFieldList[i].velocity.shape[0:3]
+                if (max(averageField.getGridSize()) == 0):
+                    averageField.initFieldWithZeros(fieldShape)
 
-            average_field.Velocity += self.motionFieldList[i].Velocity
+            averageField.velocity += self.motionFieldList[i].velocity
 
-        self.motionFieldList[ref_index].Init_Field_Zeros(field_shape)
-        average_field.Velocity /= len(self.motionFieldList)
+        self.motionFieldList[refIndex].initFieldWithZeros(fieldShape)
+        averageField.velocity /= len(self.motionFieldList)
 
         # compute fields to midp
         for i in range(len(CT4D.dyn3DImageList)):
             self.motionFieldList[i].FieldName = 'def ' + CT4D.dyn3DImageList[i].ImgName
-            self.motionFieldList[i].Velocity = average_field.Velocity - self.motionFieldList[i].Velocity
+            self.motionFieldList[i].velocity = averageField.velocity - self.motionFieldList[i].velocity
 
         # deform images
         def3DImageList = []
         for i in range(len(CT4D.dyn3DImageList)):
             def3DImageList.append(self.motionFieldList[i].deform_image(CT4D.dyn3DImageList[i],
-                                                                                fill_value='closest'))
+                                                                                fillValue='closest'))
 
         # invert fields (to have them from midp to phases)
         for i in range(len(CT4D.dyn3DImageList)):
-            self.motionFieldList[i].Displacement = []
-            self.motionFieldList[i].Velocity = -self.motionFieldList[i].Velocity
+            self.motionFieldList[i].displacement = []
+            self.motionFieldList[i].velocity = -self.motionFieldList[i].velocity
 
         # compute MidP
         self.midp = CT4D.dyn3DImageList[0].copy()
@@ -75,18 +77,18 @@ class Dynamic3DModel(PatientData):
         phase2 = np.ceil(phase) % len(self.motionFieldList)
 
         field = self.motionFieldList[int(phase1)].copy()
-        field.Displacement = []
+        field.displacement = []
         if phase1 == phase2:
-            field.Velocity = amplitude * self.motionFieldList[int(phase1)].Velocity
+            field.velocity = amplitude * self.motionFieldList[int(phase1)].velocity
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))
             if abs(w1+w2-1.0) > 1e-6:
                 print('Error in phase interpolation.')
                 return
-            field.Velocity = amplitude * (w1 * self.motionFieldList[int(phase1)].Velocity + w2 * self.motionFieldList[int(phase2)].Velocity)
+            field.velocity = amplitude * (w1 * self.motionFieldList[int(phase1)].velocity + w2 * self.motionFieldList[int(phase2)].velocity)
 
         output = self.midp.copy()
-        output.Image = field.deform_image(self.midp, fill_value='closest')
+        output.Image = field.deform_image(self.midp, fillValue='closest')
 
         return output
