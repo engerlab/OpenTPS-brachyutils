@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core.Data.Images package &mdash; OpenTPS 1.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> OpenTPS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Core.html">Core package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Controllers.html">Controllers package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GUI.html">GUI package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">OpenTPS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Core.Data.Images package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Core.Data.Images.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="core-data-images-package">
+<h1>Core.Data.Images package<a class="headerlink" href="#core-data-images-package" title="Permalink to this headline"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline"></a></h2>
+</section>
+<section id="module-Core.Data.Images.ctImage">
+<span id="core-data-images-ctimage-module"></span><h2>Core.Data.Images.ctImage module<a class="headerlink" href="#module-Core.Data.Images.ctImage" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Core.Data.Images.ctImage.CTImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CTImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">1,</span> <span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seriesInstanceUID</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frameOfReferenceUID</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sliceLocation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.ctImage.CTImage" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Core.Data.Images.image3D.Image3D" title="Core.Data.Images.image3D.Image3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core.Data.Images.image3D.Image3D</span></code></a></p>
+</dd></dl>
+
+</section>
+<section id="module-Core.Data.Images.deformationField">
+<span id="core-data-images-deformationfield-module"></span><h2>Core.Data.Images.deformationField module<a class="headerlink" href="#module-Core.Data.Images.deformationField" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DeformationField</span></span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Core.Data.Images.image3D.Image3D" title="Core.Data.Images.image3D.Image3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core.Data.Images.image3D.Image3D</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.Exponentiation">
+<span class="sig-name descname"><span class="pre">Exponentiation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">save_displacement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.Exponentiation" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.Init_Field_Zeros">
+<span class="sig-name descname"><span class="pre">Init_Field_Zeros</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">GridSize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[0,</span> <span class="pre">0,</span> <span class="pre">0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PixelSpacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[1,</span> <span class="pre">1,</span> <span class="pre">1]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">object</span></span></span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.Init_Field_Zeros" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.apply_displacement_field">
+<span class="sig-name descname"><span class="pre">apply_displacement_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">img</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.apply_displacement_field" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.copy" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.deform_image">
+<span class="sig-name descname"><span class="pre">deform_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Im</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.deform_image" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.field_norm">
+<span class="sig-name descname"><span class="pre">field_norm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">which_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Displacement'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.field_norm" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.import_Dicom_DF">
+<span class="sig-name descname"><span class="pre">import_Dicom_DF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">CT_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Velocity'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.import_Dicom_DF" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.print_field_info">
+<span class="sig-name descname"><span class="pre">print_field_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.print_field_info" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.resample_DF">
+<span class="sig-name descname"><span class="pre">resample_DF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">GridSize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PixelSpacing</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_df</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'both'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.resample_DF" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.resample_field">
+<span class="sig-name descname"><span class="pre">resample_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">init_field</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">GridSize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PixelSpacing</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.resample_field" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.deformationField.DeformationField.resample_to_CT_grid">
+<span class="sig-name descname"><span class="pre">resample_to_CT_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">CT</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">which_df</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.deformationField.DeformationField.resample_to_CT_grid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Core.Data.Images.doseImage">
+<span id="core-data-images-doseimage-module"></span><h2>Core.Data.Images.doseImage module<a class="headerlink" href="#module-Core.Data.Images.doseImage" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DoseImage</span></span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Core.Data.Images.image3D.Image3D" title="Core.Data.Images.image3D.Image3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core.Data.Images.image3D.Image3D</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage.copy" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage.exportDicom">
+<span class="sig-name descname"><span class="pre">exportDicom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outputFile</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">planUID</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage.exportDicom" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage.initializeFromBeamletDose">
+<span class="sig-name descname"><span class="pre">initializeFromBeamletDose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imgName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beamlets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doseVector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage.initializeFromBeamletDose" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the DoseImage object from a dose vector calculated using the beamlet matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>imgName</strong> (<em>str</em>) – Name of the dose image as it will be displayed to the user</p></li>
+<li><p><strong>beamlets</strong> (<em>MHDImage object</em>) – MHD image of the dose distribution</p></li>
+<li><p><strong>doseVector</strong> (<em>np Array</em>) – 1D vector resulting from the product of the beamlet matrix and the spot weight vector</p></li>
+<li><p><strong>ct</strong> (<em>ctImage object</em>) – CT image used for dose calculation</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage.initializeFromMHD">
+<span class="sig-name descname"><span class="pre">initializeFromMHD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imgName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mhdDose</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage.initializeFromMHD" title="Permalink to this definition"></a></dt>
+<dd><p>Initialize the DoseImage object from a MHDImage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>imgName</strong> (<em>str</em>) – Name of the dose image as it will be displayed to the user</p></li>
+<li><p><strong>mhdDose</strong> (<em>MHDImage object</em>) – MHD image of the dose distribution</p></li>
+<li><p><strong>ct</strong> (<em>ctImage object</em>) – CT image used for dose calculation</p></li>
+<li><p><strong>plan</strong> (<em>RTPlan object</em>) – Treatment plan used for dose calculation</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage.prepareImageForViewer">
+<span class="sig-name descname"><span class="pre">prepareImageForViewer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allowNegative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage.prepareImageForViewer" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage.resampleImage">
+<span class="sig-name descname"><span class="pre">resampleImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gridSize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelSpacing</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage.resampleImage" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.doseImage.DoseImage.resampleToCtGrid">
+<span class="sig-name descname"><span class="pre">resampleToCtGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.doseImage.DoseImage.resampleToCtGrid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Core.Data.Images.image2D">
+<span id="core-data-images-image2d-module"></span><h2>Core.Data.Images.image2D module<a class="headerlink" href="#module-Core.Data.Images.image2D" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Core.Data.Images.image2D.Image2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Image2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.image2D.Image2D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="Core.Data.html#Core.Data.patientData.PatientData" title="Core.Data.patientData.PatientData"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core.Data.patientData.PatientData</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.image2D.Image2D.getGridSize">
+<span class="sig-name descname"><span class="pre">getGridSize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.image2D.Image2D.getGridSize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Core.Data.Images.image3D">
+<span id="core-data-images-image3d-module"></span><h2>Core.Data.Images.image3D module<a class="headerlink" href="#module-Core.Data.Images.image3D" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Core.Data.Images.image3D.Image3D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Image3D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">1,</span> <span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.image3D.Image3D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="Core.Data.html#Core.Data.patientData.PatientData" title="Core.Data.patientData.PatientData"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core.Data.patientData.PatientData</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.image3D.Image3D.getGridSize">
+<span class="sig-name descname"><span class="pre">getGridSize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.image3D.Image3D.getGridSize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Core.Data.Images.letImage">
+<span id="core-data-images-letimage-module"></span><h2>Core.Data.Images.letImage module<a class="headerlink" href="#module-Core.Data.Images.letImage" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LETImage</span></span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Core.Data.Images.image3D.Image3D" title="Core.Data.Images.image3D.Image3D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core.Data.Images.image3D.Image3D</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage.copy" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage.initializeFromBeamletDose">
+<span class="sig-name descname"><span class="pre">initializeFromBeamletDose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imgName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beamlets</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">doseVector</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage.initializeFromBeamletDose" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage.initializeFromMHD">
+<span class="sig-name descname"><span class="pre">initializeFromMHD</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">imgName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mhdDose</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ct</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage.initializeFromMHD" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage.prepareImageForViewer">
+<span class="sig-name descname"><span class="pre">prepareImageForViewer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allowNegative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage.prepareImageForViewer" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage.printLETInfo">
+<span class="sig-name descname"><span class="pre">printLETInfo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage.printLETInfo" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage.resampleImage">
+<span class="sig-name descname"><span class="pre">resampleImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gridSize</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pixelSpacing</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage.resampleImage" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Core.Data.Images.letImage.LETImage.resampleToCtGrid">
+<span class="sig-name descname"><span class="pre">resampleToCtGrid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ct</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.letImage.LETImage.resampleToCtGrid" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Core.Data.Images.radioImage">
+<span id="core-data-images-radioimage-module"></span><h2>Core.Data.Images.radioImage module<a class="headerlink" href="#module-Core.Data.Images.radioImage" title="Permalink to this headline"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Core.Data.Images.radioImage.RadioImage">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">RadioImage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spacing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">0)</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.Data.Images.radioImage.RadioImage" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Core.Data.Images.image2D.Image2D" title="Core.Data.Images.image2D.Image2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">Core.Data.Images.image2D.Image2D</span></code></a></p>
+</dd></dl>
+
+</section>
+<section id="module-Core.Data.Images">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Core.Data.Images" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Kevin Souris, Guillaume Janssens, Sophie Wuyckens, Margerie Huet, Damien Dasnoy, Sylvain Deffet, Valentin Hamaide.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

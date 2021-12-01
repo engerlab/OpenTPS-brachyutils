@@ -1,6 +1,10 @@
 Core package
 ============
 
+.. uml:: Core
+   :classes:
+   :packages:
+
 Subpackages
 -----------
 

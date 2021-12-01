@@ -1,6 +1,10 @@
 Controllers package
 ===================
 
+.. uml:: Controllers
+   :classes:
+   :packages:
+
 Subpackages
 -----------
 

@@ -1,12 +1,17 @@
 GUI package
 ===========
 
+.. uml:: GUI
+   :classes:
+   :packages:
+
 Subpackages
 -----------
 
 .. toctree::
    :maxdepth: 4
 
+   GUI.Panels
    GUI.ViewControllers
 
 Submodules

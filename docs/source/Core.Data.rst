@@ -1,6 +1,14 @@
 Core.Data package
 =================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   Core.Data.Images
+
 Submodules
 ----------
 
