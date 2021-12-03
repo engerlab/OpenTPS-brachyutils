@@ -10,31 +10,23 @@ class GridElement(QWidget):
     def __init__(self, viewController):
         QWidget.__init__(self)
 
+        self._mainLayout = QVBoxLayout()
         self._viewController = viewController
+        self._viewerWidget = None
 
-        self._displayController = None
-        self.mainLayout = QVBoxLayout()
+        self.setLayout(self._mainLayout)
+        self._mainLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.setLayout(self.mainLayout)
-        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        if not self._viewController.getDisplayView() is None:
+            self.setDisplayWidget(self._viewController.getDisplayView())
 
-        if self._viewController.getDisplayType()==self._viewController.SliceViewerDisplay:
-            vtkWidget = SliceViewerVTK(self._viewController.getDisplayController())
-            self.mainLayout.addWidget(vtkWidget)
+        self._viewController.displayChangeSignal.connect(self.setDisplayWidget)
 
-            self.setAcceptDrops(True)
+    def setDisplayWidget(self, viewerWidget):
+        if not self._viewerWidget is None:
+            self._mainLayout.removeWidget(self._viewerWidget)
 
-        #else: TODO
-
-    def dragEnterEvent(self, e):
-        e.accept()
-
-    def dropEvent(self, e):
-        if e.mimeData().hasText():
-            if(e.mimeData().text()=='image'):
-                self._viewController.notifyDroppedImage()
-                e.accept()
-                return
-        e.ignore()
+        self._mainLayout.addWidget(viewerWidget)
+        self._viewerWidget = viewerWidget
 
 
