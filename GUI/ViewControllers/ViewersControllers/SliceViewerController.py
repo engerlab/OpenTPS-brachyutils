@@ -7,14 +7,15 @@ class SliceViewerController(QObject):
     mainImageChangeSignal = pyqtSignal(object)
     secondaryImageChangeSignal = pyqtSignal(object)
     selectedPositionSignal = pyqtSignal(object)
-    wwlValueSignal = pyqtSignal(object)
 
     def __init__(self):
         QObject.__init__(self)
 
         self._mainImageController = None
         self._contourControllers = []
+        self._crossHairEnabled = False
         self._secondaryImageController = None
+        self._wwlEnabled = False
 
     def appendContour(self, contourController):
         if contourController in self._contourControllers:
@@ -23,12 +24,21 @@ class SliceViewerController(QObject):
         self._contourControllers.append(contourController)
         self.contourAddedSignal.emit(self._contourControllers[-1])
 
+    def isCrossHairEnabled(self):
+        return self._crossHairEnabled
+
+    def isWWLEnabled(self):
+        return self._wwlEnabled
+
     def removeContour(self, contourController):
         if not (contourController in self._contourControllers):
             return
 
         self._contourControllers.remove(contourController)
         self.contourRemovedSignal.emit(contourController)
+
+    def setCrossHairEnabled(self, enabled):
+        self._crossHairEnabled = enabled
 
     def setMainImage(self, imageController):
         self._mainImageController = imageController
@@ -37,5 +47,8 @@ class SliceViewerController(QObject):
     def setSecondaryImage(self, imageController):
         self._secondaryImageController = imageController
         self.secondaryImageChangeSignal.emit(self._secondaryImageController)
+
+    def setWindowLevelEnabled(self, enabled):
+        self._wwlEnabled = enabled
 
 

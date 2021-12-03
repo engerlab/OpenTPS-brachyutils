@@ -11,16 +11,17 @@ class GridElementController(QObject):
 
     displayChangeSignal = pyqtSignal(object)
 
-    def __init__(self, parent=None):
+    def __init__(self, viewerPanelController):
         QObject.__init__(self)
 
         self._displayType = None
         self._dropEnabled = False
-        self._parent = parent
-        self._viewController = None
         self._view = None
+        self._viewController = None
+        self._viewerPanelController = viewerPanelController
 
         self.setDisplayType(self.DISPLAY_SLICEVIEWER)
+        self._viewerPanelController.independentViewsEnabledSignal.connect(self.setDropEnabled)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
@@ -34,7 +35,8 @@ class GridElementController(QObject):
         return self._view
 
     def getSelectedImageController(self):
-        return self._parent.getSelectedImageController()
+        print(self._viewerPanelController.getSelectedImageController().getName())
+        return self._viewerPanelController.getSelectedImageController()
 
     def setDisplayType(self, displayType):
         if displayType==self._displayType:
@@ -47,6 +49,8 @@ class GridElementController(QObject):
             self._view = SliceViewerVTK(self._viewController)
 
             self.setDropEnabled(self._dropEnabled)
+            self._viewerPanelController.crossHairEnabledSignal.connect(self._viewController.setCrossHairEnabled)
+            self._viewerPanelController.windowLevelEnabledSignal.connect(self._viewController.setWindowLevelEnabled)
 
             self.displayChangeSignal.emit(self._view)
 

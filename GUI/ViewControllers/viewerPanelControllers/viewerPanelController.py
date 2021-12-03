@@ -7,21 +7,27 @@ from GUI.Panels.viewerPanel.gridFourElements import GridFourElements
 class ViewerPanelController(QObject):
     LAYOUT_FOUR = 'LAYOUT_FOUR'
 
+    crossHairEnabledSignal = pyqtSignal(bool)
     independentViewsEnabledSignal = pyqtSignal(bool)
     viewerGridChangeSignal = pyqtSignal(object)
+    windowLevelEnabledSignal = pyqtSignal(bool)
 
     def __init__(self, viewController):
         QObject.__init__(self)
 
+        self._crossHairEnabled = None
         self._dropEnabled = False
         self._independentViewsEnabled = None
+        self._windowLevelEnabled = None
         self._gridController = None
         self._layout = self.LAYOUT_FOUR
         self._parent = viewController
         self._view = None
 
+        self.setCrossHairEnabled(False)
         self.setLayout(self.LAYOUT_FOUR)
-        self.setIndependentViewsEnabled(False)
+        self.setIndependentViewsEnabled(False) # must be called after layout is set
+        self.setWindowLevelEnabled(False)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
@@ -40,6 +46,16 @@ class ViewerPanelController(QObject):
 
     def getViewerGrid(self):
         return self._view
+
+    def setCrossHairEnabled(self, enabled):
+        if enabled==self._crossHairEnabled:
+            return
+
+        if self._windowLevelEnabled and enabled:
+            self.setWindowLevelEnabled(False)
+
+        self._crossHairEnabled = enabled
+        self.crossHairEnabledSignal.emit(self._crossHairEnabled)
 
     def setDropEnabled(self, enabled):
         self._dropEnabled = enabled
@@ -60,6 +76,16 @@ class ViewerPanelController(QObject):
 
         self.independentViewsEnabledSignal.emit(self._independentViewsEnabled)
 
+    def setWindowLevelEnabled(self, enabled):
+        if enabled==self._windowLevelEnabled:
+            return
+
+        if self._crossHairEnabled and enabled:
+            self.setCrossHairEnabled(False)
+
+        self._windowLevelEnabled = enabled
+        self.windowLevelEnabledSignal.emit(self._windowLevelEnabled)
+
     def setLayout(self, layout):
         self._layout = layout
 
@@ -69,9 +95,6 @@ class ViewerPanelController(QObject):
         if self._layout==self.LAYOUT_FOUR:
             self._gridController = GridFourElementController(self)
             self._view = GridFourElements(self._gridController)
-
-            self._gridController.setIndependentViewsEnabled(self._independentViewsEnabled)
-            self.independentViewsEnabledSignal.connect(self._gridController.setIndependentViewsEnabled)
 
         if self._view==None:
             return

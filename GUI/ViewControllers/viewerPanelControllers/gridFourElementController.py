@@ -3,13 +3,13 @@ from GUI.ViewControllers.viewerPanelControllers.gridElementController import Gri
 
 
 class GridFourElementController(GridController):
-    def __init__(self, viewController):
-        GridController.__init__(self, viewController)
+    def __init__(self, viewerPanelController):
+        GridController.__init__(self, viewerPanelController)
 
-        self.controller0 = GridElementController(parent=self)
-        self.controller1 = GridElementController(parent=self)
-        self.controller2 = GridElementController(parent=self)
-        self.controller3 = GridElementController(parent=self)
+        self.controller0 = GridElementController(viewerPanelController)
+        self.controller1 = GridElementController(viewerPanelController)
+        self.controller2 = GridElementController(viewerPanelController)
+        self.controller3 = GridElementController(viewerPanelController)
 
         self.appendGridElementController(self.controller0)
         self.appendGridElementController(self.controller1)

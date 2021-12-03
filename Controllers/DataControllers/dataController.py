@@ -26,8 +26,6 @@ class DataController(QObject):
         return dataController
 
     def __init__(self, data):
-        super().__init__()
-
         if isinstance(data, DataController):
             return
 
@@ -35,6 +33,8 @@ class DataController(QObject):
             return
 
         #else
+        # It is important to call super().__init__() now and not before because if we init QObject we loose previously initialized pyqtSignals
+        super().__init__()
         self.data = data
 
 

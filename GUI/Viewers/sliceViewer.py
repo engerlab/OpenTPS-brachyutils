@@ -13,6 +13,8 @@ from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor, vtkCoordinate, vtkTextActor
 
+from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
+
 
 class SliceViewerVTK(QWidget):
 
@@ -22,8 +24,6 @@ class SliceViewerVTK(QWidget):
     self._controller = controller
     self._controller.mainImageChangeSignal.connect(self.setMainImage)
     self._controller.contourAddedSignal.connect(self.setNewContour)
-    self._controller.selectedPositionSignal.connect(self.setPosition)
-    self._controller.wwlValueSignal.connect(self.setWWL)
 
     self._mainImageController = None
     self.contourReslices = []
@@ -83,6 +83,8 @@ class SliceViewerVTK(QWidget):
 
     self.renderWindow.GetInteractor().SetInteractorStyle(self.iStyle)
 
+    self.setView('axial')
+
   #overrides QWidget resizeEvent
   def resizeEvent(self, event):
     QWidget.resizeEvent(self, event)
@@ -92,18 +94,20 @@ class SliceViewerVTK(QWidget):
     #todo Trigger a reslice of QVTKRenderWindowInteractor
 
   def _connectAll(self):
-    self._mainImageController.getNameChangeSignal().connect(self.updateName)
+    self._mainImageController.nameChangedSignal.connect(self.updateName)
 
   def _disconnectAll(self):
     if self._mainImageController is None:
       return
 
-    self._mainImageController.getNameChangeSignal().disconnect(self.updateName)
+    self._mainImageController.nameChangedSignal.disconnect(self.updateName)
+    self._mainImageController.wwlChangedSignal.disconnect(self.setWWL)
+    self._mainImageController.selectedPositionChangedSignal.disconnect(self.setPosition)
 
   def _leftButtonCallback(self, obj, event):
     if 'Press' in event:
       self.leftButtonPress = True
-      if self._controller.crossHair():
+      if self._controller.isCrossHairEnabled():
         self.mouseMoveCallback(None, None)
       else:
         self.iStyle.OnLeftButtonDown()
@@ -128,15 +132,15 @@ class SliceViewerVTK(QWidget):
 
     self.updateCurrentPosition(point)
 
-    if self.leftButtonPress and self._controller.crossHair():
-      self._controller.setSelectedPosition(point)
+    if self.leftButtonPress and self._controller.isCrossHairEnabled():
+      self._mainImageController.setSelectedPosition(point)
     else:
       self.iStyle.OnMouseMove()
 
-      if self.leftButtonPress and self._controller.wwl():
+      if self.leftButtonPress and self._controller.isWWLEnabled():
         self.__sendingWWL = True
         imageProperty = self.iStyle.GetCurrentImageProperty()
-        self._controller.setWWL((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
+        self._mainImageController.setWWLValue((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
         self.__sendingWWL = False
 
   def setPosition(self, position):
@@ -227,7 +231,9 @@ class SliceViewerVTK(QWidget):
       self._mainImageController = None
       return
 
-    self._mainImageController = imageController
+    self._mainImageController = Image3DViewerController(imageController)
+    self._mainImageController.wwlChangedSignal.connect(self.setWWL)
+    self._mainImageController.selectedPositionChangedSignal.connect(self.setPosition)
 
     image = self._mainImageController.data
 
@@ -246,7 +252,7 @@ class SliceViewerVTK(QWidget):
     self.dataImporter.SetDataScalarTypeToFloat()
 
     data_string = num_array.tobytes()
-    self.dataImporter.CopyImportVoidPointer(data_string , len(data_string ))
+    self.dataImporter.CopyImportVoidPointer(data_string , len(data_string))
 
     self.reslice.SetInputConnection(self.dataImporter.GetOutputPort())
 
@@ -277,7 +283,7 @@ class SliceViewerVTK(QWidget):
     self.iStyle.OnLeftButtonUp()
     self.iStyle.EndWindowLevel()
 
-    if self._controller.wwl():
+    if self._controller.isWWLEnabled():
       self.iStyle.StartWindowLevel()
       self.iStyle.OnLeftButtonUp()
 
@@ -328,8 +334,8 @@ class SliceViewerVTK(QWidget):
 
     self.setResliceMatrix(matrix)
 
-    if self._controller.crossHair():
-      worldPos = self._controller.getSelectedPosition()
+    if self._controller.isCrossHairEnabled():
+      worldPos = self._mainImageController.getSelectedPosition()
       if worldPos is None:
         return
 
@@ -341,7 +347,7 @@ class SliceViewerVTK(QWidget):
 
       point = matrix.MultiplyPoint((point[0], point[1], point[2]+deltaY, 1))
 
-      self._controller.setSelectedPosition(point)
+      self._mainImageController.setSelectedPosition(point)
 
   def updateCurrentPosition(self, position):
     try:

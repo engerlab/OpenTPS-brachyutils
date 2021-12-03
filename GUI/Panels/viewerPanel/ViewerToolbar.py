@@ -21,8 +21,14 @@ class ViewerToolbar(QToolBar):
         self._buttonChain.setChecked(self._controller.getIndependentViewsEnabled())
 
         self._buttonContrast = QAction(QIcon(iconPath + "contrast.png"), "Window level", self)
+        self._buttonContrast.setStatusTip("Window level")
+        self._buttonContrast.triggered.connect(self._handleWindowLevel)
+        self._buttonContrast.setCheckable(True)
 
         self._buttonCrossHair = QAction(QIcon(iconPath + "geolocation.png"), "Crosshair", self)
+        self._buttonCrossHair.setStatusTip("Crosshair")
+        self._buttonCrossHair.triggered.connect(self._handleCrossHair)
+        self._buttonCrossHair.setCheckable(True)
 
         self._buttonOpen = QAction(QIcon(iconPath + "folder-open.png"), "Open files or folder", self)
 
@@ -32,6 +38,8 @@ class ViewerToolbar(QToolBar):
         self.addAction(self._buttonContrast)
 
         self._controller.independentViewsEnabledSignal.connect(self._handleButtonChain)
+        self._controller.windowLevelEnabledSignal.connect(self._handleWindowLevel)
+        self._controller.crossHairEnabledSignal.connect(self._handleCrossHair)
 
     def _handleButtonChain(self, pressed):
         # This is useful if controller emit a signal:
@@ -40,3 +48,19 @@ class ViewerToolbar(QToolBar):
             return
 
         self._controller.setIndependentViewsEnabled(pressed)
+
+    def _handleCrossHair(self, pressed):
+        # This is useful if controller emit a signal:
+        if self._buttonCrossHair.isChecked() != pressed:
+            self._buttonCrossHair.setChecked(pressed)
+            return
+
+        self._controller.setCrossHairEnabled(pressed)
+
+    def _handleWindowLevel(self, pressed):
+        # This is useful if controller emit a signal:
+        if self._buttonContrast.isChecked() != pressed:
+            self._buttonContrast.setChecked(pressed)
+            return
+
+        self._controller.setWindowLevelEnabled(pressed)
