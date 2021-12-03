@@ -1,7 +1,5 @@
-from PyQt5.QtCore import pyqtSignal, QObject
-
-from GUI.ViewControllers.gridController import GridController
-from GUI.ViewControllers.gridElementController import GridElementController
+from GUI.ViewControllers.viewerPanelControllers.gridController import GridController
+from GUI.ViewControllers.viewerPanelControllers.gridElementController import GridElementController
 
 
 class GridFourElementController(GridController):

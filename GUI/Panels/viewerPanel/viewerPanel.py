@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from GUI.Panels.ViewerToolbar import ViewerToolbar
+from GUI.Panels.viewerPanel.ViewerToolbar import ViewerToolbar
 
 
 class ViewerPanel(QWidget):

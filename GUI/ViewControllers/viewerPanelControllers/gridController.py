@@ -5,9 +5,11 @@ class GridController(QObject):
     def __init__(self, parent):
         QObject.__init__(self)
 
-        self._independentViewsEnabled = False
+        self._independentViewsEnabled = None
         self._parent = parent
         self._gridElementControllers = []
+
+        self.setIndependentViewsEnabled(False)
 
     def appendGridElementController(self, gridElementController):
         self._gridElementControllers.append(gridElementController)
@@ -22,6 +24,9 @@ class GridController(QObject):
         self._gridElementControllers.remove(gridElementController)
 
     def setIndependentViewsEnabled(self, enabled):
+        if self._independentViewsEnabled==enabled:
+            return
+
         if enabled:
             for controller in self._gridElementControllers:
                 controller.setDropEnabled(True)

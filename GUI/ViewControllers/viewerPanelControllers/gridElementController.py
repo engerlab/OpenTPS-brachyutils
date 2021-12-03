@@ -1,11 +1,12 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from GUI.ViewControllers.SliceViewerController import SliceViewerController
+from GUI.ViewControllers.ViewersControllers.SliceViewerController import SliceViewerController
 from GUI.Viewers.sliceViewer import SliceViewerVTK
 
 
 class GridElementController(QObject):
     DISPLAY_DVH = 'DVH'
+    DISPLAY_GRAPH = 'GRAPH'
     DISPLAY_SLICEVIEWER = 'SLICE'
 
     displayChangeSignal = pyqtSignal(object)
@@ -36,6 +37,9 @@ class GridElementController(QObject):
         return self._parent.getSelectedImageController()
 
     def setDisplayType(self, displayType):
+        if displayType==self._displayType:
+            return
+
         self._displayType = displayType
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:

@@ -1,25 +1,27 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from GUI.ViewControllers.gridFourElementController import GridFourElementController
-from GUI.Viewers.gridFourElements import GridFourElements
+from GUI.ViewControllers.viewerPanelControllers.gridFourElementController import GridFourElementController
+from GUI.Panels.viewerPanel.gridFourElements import GridFourElements
 
 
 class ViewerPanelController(QObject):
     LAYOUT_FOUR = 'LAYOUT_FOUR'
+
+    independentViewsEnabledSignal = pyqtSignal(bool)
     viewerGridChangeSignal = pyqtSignal(object)
 
     def __init__(self, viewController):
         QObject.__init__(self)
 
         self._dropEnabled = False
-        self._independentViewsEnabled = False
+        self._independentViewsEnabled = None
         self._gridController = None
         self._layout = self.LAYOUT_FOUR
         self._parent = viewController
         self._view = None
 
         self.setLayout(self.LAYOUT_FOUR)
-        self.setIndependentViewsEnabled(self._independentViewsEnabled)
+        self.setIndependentViewsEnabled(False)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
@@ -50,16 +52,26 @@ class ViewerPanelController(QObject):
             self._view.setAcceptDrops(False)
 
     def setIndependentViewsEnabled(self, enabled):
+        if enabled==self._independentViewsEnabled:
+            return
+
         self.setDropEnabled(not enabled)
-        self._gridController.setIndependentViewsEnabled(enabled)
         self._independentViewsEnabled = enabled
+
+        self.independentViewsEnabledSignal.emit(self._independentViewsEnabled)
 
     def setLayout(self, layout):
         self._layout = layout
 
+        if not self._gridController is None:
+            self.independentViewsEnabledSignal.disconnect(self._gridController.setIndependentViewsEnabled)
+
         if self._layout==self.LAYOUT_FOUR:
             self._gridController = GridFourElementController(self)
             self._view = GridFourElements(self._gridController)
+
+            self._gridController.setIndependentViewsEnabled(self._independentViewsEnabled)
+            self.independentViewsEnabledSignal.connect(self._gridController.setIndependentViewsEnabled)
 
         if self._view==None:
             return

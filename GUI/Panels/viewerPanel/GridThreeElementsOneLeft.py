@@ -1,46 +1,38 @@
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QHBoxLayout, QFrame, QSplitter, QWidget, QVBoxLayout
 
-from GUI.Viewers.gridElement import GridElement
+from GUI.Panels.viewerPanel.gridElement import GridElement
 
 
-class GridFourElements(QWidget):
+class GridThreeElementsOneLeft(QWidget):
     def __init__(self, viewerController):
         QWidget.__init__(self)
 
         self._viewerController = viewerController
 
-        botLeft = QFrame(self)
         botRight = QFrame(self)
-        topLeft = QFrame(self)
+        left = QFrame(self)
         topRight = QFrame(self)
 
-        botLeft.setFrameShape(QFrame.StyledPanel)
         botRight.setFrameShape(QFrame.StyledPanel)
-        topLeft.setFrameShape(QFrame.StyledPanel)
+        left.setFrameShape(QFrame.StyledPanel)
         topRight.setFrameShape(QFrame.StyledPanel)
 
-        botLeftLayout = QVBoxLayout(botLeft)
         botRightLayout = QVBoxLayout(botRight)
-        topLeftLayout = QVBoxLayout(topLeft)
+        leftLayout = QVBoxLayout(left)
         topRightLayout = QVBoxLayout(topRight)
 
-        botLeftLayout.setContentsMargins(0, 0, 0, 0)
         botRightLayout.setContentsMargins(0, 0, 0, 0)
-        topLeftLayout.setContentsMargins(0, 0, 0, 0)
+        leftLayout.setContentsMargins(0, 0, 0, 0)
         topRightLayout.setContentsMargins(0, 0, 0, 0)
 
-        botLeftLayout.addWidget(GridElement(self._viewerController.controller0))
-        botRightLayout.addWidget(GridElement(self._viewerController.controller1))
-        topLeftLayout.addWidget(GridElement(self._viewerController.controller2))
-        topRightLayout.addWidget(GridElement(self._viewerController.controller3))
+        botRightLayout.addWidget(GridElement(self._viewerController.controller0))
+        leftLayout.addWidget(GridElement(self._viewerController.controller1))
+        topRightLayout.addWidget(GridElement(self._viewerController.controller2))
 
 
         # Horizontal splitter
         hbox = QHBoxLayout(self)
-
-        left = QFrame(self)
-        left.setFrameShape(QFrame.StyledPanel)
 
         right = QFrame(self)
         right.setFrameShape(QFrame.StyledPanel)
@@ -54,16 +46,7 @@ class GridFourElements(QWidget):
         hbox.setContentsMargins(0, 0, 0, 0)
 
 
-        # Vertical splitters
-        vbox = QVBoxLayout(left)
-        vbox.setContentsMargins(0, 0, 0, 0)
-
-        leftSplitter = QSplitter(QtCore.Qt.Vertical)
-        leftSplitter.addWidget(botLeft)
-        leftSplitter.addWidget(topLeft)
-        leftSplitter.setStretchFactor(1, 1)
-        vbox.addWidget(leftSplitter)
-
+        # Vertical splitter
         vbox = QVBoxLayout(right)
         vbox.setContentsMargins(0, 0, 0, 0)
 

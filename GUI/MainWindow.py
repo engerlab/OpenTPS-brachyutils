@@ -1,11 +1,9 @@
 from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QToolBox
 
 from GUI.Panels.patientDataPanel import PatientDataPanel
-from GUI.Panels.viewerPanel import ViewerPanel
-from GUI.ViewControllers.gridFourElementController import GridFourElementController
+from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
 from GUI.ViewControllers.patientDataPanelController import PatientDataPanelController
-from GUI.Viewers.gridFourElements import GridFourElements
-from GUI.Viewers.viewerPanelController import ViewerPanelController
+from GUI.ViewControllers.viewerPanelControllers.viewerPanelController import ViewerPanelController
 
 
 class MainWindow(QMainWindow):

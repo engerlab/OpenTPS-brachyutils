@@ -1,9 +1,6 @@
-import pickle
-
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from GUI.ViewControllers.SliceViewerController import SliceViewerController
-from GUI.Viewers.sliceViewer import SliceViewerVTK
+from GUI.Panels.viewerPanel.ElementToolbar import ElementToolbar
 
 
 class GridElement(QWidget):
@@ -11,9 +8,11 @@ class GridElement(QWidget):
         QWidget.__init__(self)
 
         self._mainLayout = QVBoxLayout()
+        self._toolbar = ElementToolbar(viewController)
         self._viewController = viewController
         self._viewerWidget = None
 
+        self._mainLayout.addWidget(self._toolbar)
         self.setLayout(self._mainLayout)
         self._mainLayout.setContentsMargins(0, 0, 0, 0)
 
