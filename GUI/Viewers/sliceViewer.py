@@ -71,6 +71,7 @@ class SliceViewerVTK(QWidget):
 
     self.setView('axial')
 
+    self.setMainImage(self._viewerController.getMainImageController())
     self._viewerController.mainImageChangeSignal.connect(self.setMainImage)
 
   #overrides QWidget resizeEvent
@@ -103,7 +104,7 @@ class SliceViewerVTK(QWidget):
   def onLeftButtonPressed(self, obj=None, event='Press'):
     if 'Press' in event:
       self._leftButtonPress = True
-      if self._viewerController.isCrossHairEnabled():
+      if self._viewerController.getCrossHairEnabled():
         self.onMouseMove(None, None)
       else:
         self._iStyle.OnLeftButtonDown()
@@ -125,12 +126,12 @@ class SliceViewerVTK(QWidget):
 
     self._updateCurrentPositionText(point)
 
-    if self._leftButtonPress and self._viewerController.isCrossHairEnabled():
+    if self._leftButtonPress and self._viewerController.getCrossHairEnabled():
       self._mainImageController.setSelectedPosition(point)
     else:
       self._iStyle.OnMouseMove()
 
-      if self._leftButtonPress and self._viewerController.isWWLEnabled():
+      if self._leftButtonPress and self._viewerController.getWWLEnabled():
         self.__sendingWWL = True
         imageProperty = self._iStyle.GetCurrentImageProperty()
         self._mainImageController.setWWLValue((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
@@ -154,7 +155,7 @@ class SliceViewerVTK(QWidget):
 
     self._setResliceMatrix(matrix)
 
-    if self._viewerController.isCrossHairEnabled():
+    if self._viewerController.getCrossHairEnabled():
       worldPos = self._mainImageController.getSelectedPosition()
       if worldPos is None:
         return
@@ -300,11 +301,13 @@ class SliceViewerVTK(QWidget):
     self._iStyle.OnLeftButtonUp()
     self._iStyle.EndWindowLevel()
 
-    if self._viewerController.isWWLEnabled():
+    if self._viewerController.getWWLEnabled():
       self._iStyle.StartWindowLevel()
       self._iStyle.OnLeftButtonUp()
 
     self._iStyle.SetCurrentImageNumber(0)
+
+    self._setWWL(self._mainImageController.getWWLValue())
 
     self._connectAll()
 

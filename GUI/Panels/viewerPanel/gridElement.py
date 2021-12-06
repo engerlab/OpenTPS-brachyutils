@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from GUI.Panels.viewerPanel.elementToolbar import ElementToolbar
+from GUI.Panels.viewerPanel.gridElementToolbar import ElementToolbar
 
 
 class GridElement(QWidget):
@@ -19,10 +19,10 @@ class GridElement(QWidget):
         if not self._viewController.getDisplayView() is None:
             self.setDisplayWidget(self._viewController.getDisplayView())
 
-        self._viewController.displayChangeSignal.connect(self.setDisplayWidget)
+        self._viewController.displayChangedSignal.connect(self.setDisplayWidget)
 
     def setDisplayWidget(self, viewerWidget):
-        if not self._viewerWidget is None:
+        if not (self._viewerWidget is None):
             self._mainLayout.removeWidget(self._viewerWidget)
 
         self._mainLayout.addWidget(viewerWidget)

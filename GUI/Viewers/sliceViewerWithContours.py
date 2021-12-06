@@ -107,7 +107,7 @@ class SliceViewerVTK(QWidget):
   def _leftButtonCallback(self, obj, event):
     if 'Press' in event:
       self.leftButtonPress = True
-      if self._controller.isCrossHairEnabled():
+      if self._controller.getCrossHairEnabled():
         self.mouseMoveCallback(None, None)
       else:
         self.iStyle.OnLeftButtonDown()
@@ -132,12 +132,12 @@ class SliceViewerVTK(QWidget):
 
     self.updateCurrentPosition(point)
 
-    if self.leftButtonPress and self._controller.isCrossHairEnabled():
+    if self.leftButtonPress and self._controller.getCrossHairEnabled():
       self._mainImageController.setSelectedPosition(point)
     else:
       self.iStyle.OnMouseMove()
 
-      if self.leftButtonPress and self._controller.isWWLEnabled():
+      if self.leftButtonPress and self._controller.getWWLEnabled():
         self.__sendingWWL = True
         imageProperty = self.iStyle.GetCurrentImageProperty()
         self._mainImageController.setWWLValue((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
@@ -283,7 +283,7 @@ class SliceViewerVTK(QWidget):
     self.iStyle.OnLeftButtonUp()
     self.iStyle.EndWindowLevel()
 
-    if self._controller.isWWLEnabled():
+    if self._controller.getWWLEnabled():
       self.iStyle.StartWindowLevel()
       self.iStyle.OnLeftButtonUp()
 
@@ -334,7 +334,7 @@ class SliceViewerVTK(QWidget):
 
     self.setResliceMatrix(matrix)
 
-    if self._controller.isCrossHairEnabled():
+    if self._controller.getCrossHairEnabled():
       worldPos = self._mainImageController.getSelectedPosition()
       if worldPos is None:
         return

@@ -113,7 +113,7 @@ class PatientImageList(QTreeView):
         for imageController in imageControllers:
             self.appendImage(imageController)
 
-        if len(self.imageControllers)>0:
+        if len(imageControllers)>0:
             self._viewController.setSelectedImageController(imageControllers[0])
 
     def _treeClick(self, selection):

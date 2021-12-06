@@ -24,10 +24,16 @@ class SliceViewerController(QObject):
         self._contourControllers.append(contourController)
         self.contourAddedSignal.emit(self._contourControllers[-1])
 
-    def isCrossHairEnabled(self):
+    def getCrossHairEnabled(self):
         return self._crossHairEnabled
 
-    def isWWLEnabled(self):
+    def getMainImageController(self):
+        return self._mainImageController
+
+    def getSecondaryImageController(self):
+        return self._secondaryImageController
+
+    def getWWLEnabled(self):
         return self._wwlEnabled
 
     def removeContour(self, contourController):

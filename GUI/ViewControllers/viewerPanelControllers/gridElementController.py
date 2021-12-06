@@ -1,15 +1,19 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from GUI.ViewControllers.ViewersControllers.SliceViewerController import SliceViewerController
+from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
+from GUI.Viewers.dvhPlot import DVHPlot
+from GUI.Viewers.profilePlot import ProfilePlot
 from GUI.Viewers.sliceViewer import SliceViewerVTK
 
 
 class GridElementController(QObject):
     DISPLAY_DVH = 'DVH'
-    DISPLAY_GRAPH = 'GRAPH'
+    DISPLAY_NONE = 'None'
+    DISPLAY_PROFILE = 'PROFILE'
     DISPLAY_SLICEVIEWER = 'SLICE'
 
-    displayChangeSignal = pyqtSignal(object)
+    displayChangedSignal = pyqtSignal(object)
 
     def __init__(self, viewerPanelController):
         QObject.__init__(self)
@@ -44,20 +48,30 @@ class GridElementController(QObject):
 
         self._displayType = displayType
 
+        if self._displayType==self.DISPLAY_DVH:
+            self._view = DVHPlot()
+
+        if self._displayType==self.DISPLAY_NONE:
+            self._view = BlackEmptyPlot()
+
+        if self._displayType==self.DISPLAY_PROFILE:
+            self._view = ProfilePlot()
+
         if self._displayType==self.DISPLAY_SLICEVIEWER:
-            self._viewController = SliceViewerController()
+            if self._viewController is None:
+                self._viewController = SliceViewerController()
             self._view = SliceViewerVTK(self._viewController)
 
-            self.setDropEnabled(self._dropEnabled)
             self._viewerPanelController.crossHairEnabledSignal.connect(self._viewController.setCrossHairEnabled)
             self._viewerPanelController.windowLevelEnabledSignal.connect(self._viewController.setWindowLevelEnabled)
 
-            self.displayChangeSignal.emit(self._view)
+        self.setDropEnabled(self._dropEnabled)
+        self.displayChangedSignal.emit(self._view)
 
     def setDropEnabled(self, enabled):
         self._dropEnabled = enabled
 
-        if enabled:
+        if enabled and self._displayType==self.DISPLAY_SLICEVIEWER:
             self._view.setAcceptDrops(True)
             self._view.dragEnterEvent = lambda event: event.accept()
             self._view.dropEvent = lambda event: self._dropEvent(event)
