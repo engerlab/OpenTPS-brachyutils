@@ -9,10 +9,10 @@ class Image3DViewerController(Image3DController):
     selectedPositionChangedSignal = pyqtSignal(tuple)
 
     def __init__(self, image):
+        super().__init__(image)
+
         if hasattr(self, '_wwlValue'):
             return
-
-        super().__init__(image)
 
         self._wwlValue = (400, 0)
         self._selectedPosition = (0, 0, 0)
