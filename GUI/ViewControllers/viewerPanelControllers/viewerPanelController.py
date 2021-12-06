@@ -21,8 +21,8 @@ class ViewerPanelController(QObject):
         self._windowLevelEnabled = None
         self._gridController = None
         self._layout = self.LAYOUT_FOUR
-        self._parent = viewController
         self._view = None
+        self._viewController = viewController
 
         self.setCrossHairEnabled(False)
         self.setLayout(self.LAYOUT_FOUR)
@@ -32,7 +32,6 @@ class ViewerPanelController(QObject):
     def _dropEvent(self, e):
         if e.mimeData().hasText():
             if (e.mimeData().text() == 'image'):
-                print(e)
                 e.accept()
                 self._gridController.setMainImage(self.getSelectedImageController())
                 return
@@ -42,7 +41,7 @@ class ViewerPanelController(QObject):
         return self._independentViewsEnabled
 
     def getSelectedImageController(self):
-        return self._parent.getSelectedImageController()
+        return self._viewController.getSelectedImageController()
 
     def getViewerGrid(self):
         return self._view

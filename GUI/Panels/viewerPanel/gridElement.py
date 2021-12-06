@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from GUI.Panels.viewerPanel.ElementToolbar import ElementToolbar
+from GUI.Panels.viewerPanel.elementToolbar import ElementToolbar
 
 
 class GridElement(QWidget):
