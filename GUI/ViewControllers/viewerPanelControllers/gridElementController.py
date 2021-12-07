@@ -1,6 +1,5 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from GUI.ViewControllers.ViewersControllers.SliceViewerController import SliceViewerController
 from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewers.dvhPlot import DVHPlot
 from GUI.Viewers.profilePlot import ProfilePlot
@@ -20,8 +19,8 @@ class GridElementController(QObject):
 
         self._displayType = None
         self._dropEnabled = False
-        self._view = None
-        self._viewController = None
+        self._currentView = None
+        self._sliceViewer = None
         self._viewerPanelController = viewerPanelController
 
         self.setDisplayType(self.DISPLAY_SLICEVIEWER)
@@ -31,12 +30,13 @@ class GridElementController(QObject):
         if e.mimeData().hasText():
             if (e.mimeData().text() == 'image'):
                 e.accept()
-                self._viewController.setMainImage(self.getSelectedImageController())
+                if hasattr(self._currentView, 'setMainImage'):
+                    self.setMainImage(self.getSelectedImageController())
                 return
         e.ignore()
 
     def getDisplayView(self):
-        return self._view
+        return self._currentView
 
     def getSelectedImageController(self):
         print(self._viewerPanelController.getSelectedImageController().getName())
@@ -49,37 +49,42 @@ class GridElementController(QObject):
         self._displayType = displayType
 
         if self._displayType==self.DISPLAY_DVH:
-            self._view = DVHPlot()
+            self._currentView = DVHPlot()
 
         if self._displayType==self.DISPLAY_NONE:
-            self._view = BlackEmptyPlot()
+            self._currentView = BlackEmptyPlot()
 
         if self._displayType==self.DISPLAY_PROFILE:
-            self._view = ProfilePlot()
+            self._currentView = ProfilePlot()
+            self._currentView.newProfileSignal.connect(self._viewerPanelController.setLineWidgetEnabled)
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:
-            if self._viewController is None:
-                self._viewController = SliceViewerController()
-            self._view = SliceViewerVTK(self._viewController)
+            if self._sliceViewer is None:
+                self._sliceViewer = SliceViewerVTK()
 
-            self._viewerPanelController.crossHairEnabledSignal.connect(self._viewController.setCrossHairEnabled)
-            self._viewerPanelController.windowLevelEnabledSignal.connect(self._viewController.setWindowLevelEnabled)
+            self._currentView = self._sliceViewer
+
+            self._viewerPanelController.crossHairEnabledSignal.connect(self._currentView.setCrossHairEnabled)
+            self._viewerPanelController.windowLevelEnabledSignal.connect(self._currentView.setWWLEnabled)
+            self._viewerPanelController.lineWidgetEnabledSignal.connect(self._currentView.setLineWidgetEnabled)
 
         self.setDropEnabled(self._dropEnabled)
-        self.displayChangedSignal.emit(self._view)
+        self.displayChangedSignal.emit(self._currentView)
 
     def setDropEnabled(self, enabled):
         self._dropEnabled = enabled
 
         if enabled and self._displayType==self.DISPLAY_SLICEVIEWER:
-            self._view.setAcceptDrops(True)
-            self._view.dragEnterEvent = lambda event: event.accept()
-            self._view.dropEvent = lambda event: self._dropEvent(event)
+            self._currentView.setAcceptDrops(True)
+            self._currentView.dragEnterEvent = lambda event: event.accept()
+            self._currentView.dropEvent = lambda event: self._dropEvent(event)
         else:
-            self._view.setAcceptDrops(False)
+            self._currentView.setAcceptDrops(False)
 
     def setMainImage(self, imageController):
-        self._viewController.setMainImage(imageController)
+        if hasattr(self._currentView, 'setMainImage'):
+            self._currentView.setMainImage(imageController)
 
     def setSecondaryImage(self, imageController):
-        self._viewController.setSecondaryImage(imageController)
+        if hasattr(self._currentView, 'setSecondaryImage'):
+            self._currentView.setSecondaryImage(imageController)

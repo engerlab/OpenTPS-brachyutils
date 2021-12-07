@@ -9,6 +9,7 @@ class ViewerPanelController(QObject):
 
     crossHairEnabledSignal = pyqtSignal(bool)
     independentViewsEnabledSignal = pyqtSignal(bool)
+    lineWidgetEnabledSignal = pyqtSignal(object)
     viewerGridChangeSignal = pyqtSignal(object)
     windowLevelEnabledSignal = pyqtSignal(bool)
 
@@ -74,6 +75,9 @@ class ViewerPanelController(QObject):
         self._independentViewsEnabled = enabled
 
         self.independentViewsEnabledSignal.emit(self._independentViewsEnabled)
+
+    def setLineWidgetEnabled(self, callback):
+        self.lineWidgetEnabledSignal.emit(callback)
 
     def setWindowLevelEnabled(self, enabled):
         if enabled==self._windowLevelEnabled:

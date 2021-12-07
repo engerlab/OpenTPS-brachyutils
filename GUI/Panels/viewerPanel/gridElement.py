@@ -7,7 +7,7 @@ class GridElement(QWidget):
     def __init__(self, viewController):
         QWidget.__init__(self)
 
-        self._mainLayout = QVBoxLayout()
+        self._mainLayout = QVBoxLayout(self)
         self._toolbar = ElementToolbar(viewController)
         self._viewController = viewController
         self._viewerWidget = None

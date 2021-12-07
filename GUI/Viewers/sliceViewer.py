@@ -1,3 +1,4 @@
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import *
 import numpy as np
 
@@ -10,19 +11,28 @@ from vtkmodules import vtkImagingCore, vtkCommonMath
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkIOImage import vtkImageImport
-from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor, vtkCoordinate, vtkTextActor
+from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
+from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor
 
 from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
 
 
 class SliceViewerVTK(QWidget):
+  crossHairEnabledSignal = pyqtSignal(bool)
+  lineWidgeEnabledSignal = pyqtSignal(bool)
+  wwlEnabledSignal = pyqtSignal(bool)
 
-  def __init__(self, viewerController):
+  def __init__(self):
     QWidget.__init__(self)
 
+    self._crossHairEnabled = False
     self._dataImporter = vtkImageImport()
     self._iStyle = vtkInteractionStyle.vtkInteractorStyleImage()
     self._leftButtonPress = False
+    self._lineWidget = vtkLineWidget2()
+    self._lineWidgetCallback = None
+    self._lineWidgetEnabled = False
+    self._lineWidgetNoInteractionYet = False
     self._mainImageController = None
     self._mainActor = vtkRenderingCore.vtkImageActor()
     self._mainLayout = QVBoxLayout()
@@ -32,9 +42,9 @@ class SliceViewerVTK(QWidget):
     self._reslice = vtkImagingCore.vtkImageReslice()
     self.__sendingWWL = False
     self._textActor = vtkTextActor()
-    self._viewerController = viewerController
     self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
     self._vtkWidget = QVTKRenderWindowInteractor(self)
+    self._wwlEnabled = False
 
     self._renderWindow = self._vtkWidget.GetRenderWindow()
 
@@ -71,8 +81,7 @@ class SliceViewerVTK(QWidget):
 
     self.setView('axial')
 
-    self.setMainImage(self._viewerController.getMainImageController())
-    self._viewerController.mainImageChangeSignal.connect(self.setMainImage)
+    self._lineWidget.SetCurrentRenderer(self._renderer)
 
   #overrides QWidget resizeEvent
   def resizeEvent(self, event):
@@ -101,10 +110,41 @@ class SliceViewerVTK(QWidget):
   def getResliceMatrix(self):
     return self._reslice.GetResliceAxes()
 
+  def _lineWidgetInteraction(self, obj, event):
+    if not self._lineWidgetNoInteractionYet:
+      point1 = self._lineWidget.GetLineRepresentation().GetPoint1WorldPosition()
+      point2 = self._lineWidget.GetLineRepresentation().GetPoint2WorldPosition()
+
+      matrix = self._reslice.GetResliceAxes()
+      point1 = matrix.MultiplyPoint((point1[0], point1[1], 0, 1))
+      point2 = matrix.MultiplyPoint((point2[0], point2[1], 0, 1))
+
+      num = 1000
+      points0 = np.linspace(point1[0], point2[0], num)
+      points1 = np.linspace(point1[1], point2[1], num)
+      points2 = np.linspace(point1[2], point2[2], num)
+      data = np.array(points1)
+
+      imageData = self._reslice.GetInput(0)
+      for i, p0 in enumerate(points0):
+        ind = [0, 0, 0]
+        imageData.TransformPhysicalPointToContinuousIndex((p0, points1[i], points2[i]), ind)
+        data[i] = imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
+
+      print(data)
+      self._lineWidgetCallback(np.linspace(0, num, num), data)
+
+    self._lineWidgetNoInteractionYet = False
+
   def onLeftButtonPressed(self, obj=None, event='Press'):
     if 'Press' in event:
       self._leftButtonPress = True
-      if self._viewerController.getCrossHairEnabled():
+
+      if self._lineWidgetEnabled:
+        self._iStyle.OnLeftButtonDown()
+        return
+
+      if self._crossHairEnabled:
         self.onMouseMove(None, None)
       else:
         self._iStyle.OnLeftButtonDown()
@@ -126,19 +166,25 @@ class SliceViewerVTK(QWidget):
 
     self._updateCurrentPositionText(point)
 
-    if self._leftButtonPress and self._viewerController.getCrossHairEnabled():
-      self._mainImageController.setSelectedPosition(point)
+    if self._lineWidgetNoInteractionYet:
+      #TODO: not sure for point[2]
+      self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], point[2]))
+      self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], point[2]))
+      return
+
+    if self._leftButtonPress and self._crossHairEnabled:
+      self._mainImageController.setSelectedPosition(worldPos)
     else:
       self._iStyle.OnMouseMove()
 
-      if self._leftButtonPress and self._viewerController.getWWLEnabled():
+      if self._leftButtonPress and self._wwlEnabled:
         self.__sendingWWL = True
         imageProperty = self._iStyle.GetCurrentImageProperty()
         self._mainImageController.setWWLValue((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
         self.__sendingWWL = False
 
   def onScroll(self, obj=None, event='Forward'):
-    sliceSpacing = self._reslice.GetOutput().spacing[2]
+    sliceSpacing = self._reslice.GetOutput().GetSpacing()[2]
 
     if 'Forward' in event:
       deltaY = sliceSpacing
@@ -155,7 +201,7 @@ class SliceViewerVTK(QWidget):
 
     self._setResliceMatrix(matrix)
 
-    if self._viewerController.getCrossHairEnabled():
+    if self._crossHairEnabled:
       worldPos = self._mainImageController.getSelectedPosition()
       if worldPos is None:
         return
@@ -171,77 +217,36 @@ class SliceViewerVTK(QWidget):
       self._mainImageController.setSelectedPosition(point)
 
   def renderOverlay(self):
-    self._textActor.SetInput(self._mainText[0] + '\n' + self._mainText[1])
+    self._textActor.SetInput(self._mainText[0] + '\n' + self._mainText[1] + '\n' + self._mainText[2])
     self._renderWindow.Render()
 
-  def _setPosition(self, position):
-    if self._mainImageController is None:
+  def setCrossHairEnabled(self, enabled):
+    if enabled==self._crossHairEnabled:
       return
 
-    transfo_mat = vtkCommonMath.vtkMatrix4x4()
-    transfo_mat.DeepCopy(self._viewMatrix)
-    transfo_mat.Invert()
-    pos = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
-    pos = self._viewMatrix.MultiplyPoint((0, 0, pos[2], 1))
+    self._crossHairEnabled = enabled
+    if self._crossHairEnabled:
+      self.setWWLEnabled(False)
+    self.crossHairEnabledSignal.emit(self._crossHairEnabled)
 
-    self._reslice.Update()
-    matrix = self._reslice.GetResliceAxes()
-    matrix.SetElement(0, 3, pos[0])
-    matrix.SetElement(1, 3, pos[1])
-    matrix.SetElement(2, 3, pos[2])
+  def setLineWidgetEnabled(self, enabled):
+    # enabled is either a callback method or False
+    if not (enabled==False):
+      print('enabled')
+      self._lineWidgetCallback = enabled
+      self._lineWidget.AddObserver("InteractionEvent", self._lineWidgetInteraction)
+      self._lineWidget.AddObserver("EndInteractionEvent", self._lineWidgetInteraction)
+      self._lineWidget.SetInteractor(self._renderWindow.GetInteractor())
+      self._lineWidget.On()
+      self._lineWidget.GetLineRepresentation().SetLineColor(1, 0, 0)
+      self._lineWidgetNoInteractionYet = True
+      self._lineWidgetEnabled = True
+    else:
+      self._lineWidgetCallback = None
+      self._lineWidget.Off()
+      self._lineWidgetEnabled = False
 
-    self._renderWindow.Render()
-
-    self._updateCurrentPositionText(position)
-
-  def _setResliceMatrix(self, resliceMatrix):
-    self._reslice.SetResliceAxes(resliceMatrix)
-    self._renderWindow.Render()
-
-  def setView(self, viewName):
-    axial = vtkCommonMath.vtkMatrix4x4()
-    axial.DeepCopy((0, 0, 1, 0,
-                    0, -1, 0, 0,
-                    1, 0, 0, 0,
-                    0, 0, 0, 1))
-
-    coronal = vtkCommonMath.vtkMatrix4x4()
-    coronal.DeepCopy((0, 1, 0, 0,
-                       1, 0, 0, 0,
-                       0, 0, -1, 0,
-                       0, 0, 0, 1))
-
-    sagittal = vtkCommonMath.vtkMatrix4x4()
-    sagittal.DeepCopy((0, 1, 0, 0,
-                      0, 0, -1, 0,
-                      1, 0, 0, 0,
-                      0, 0, 0, 1))
-
-    if viewName=='sagittal':
-      resliceAxes = sagittal
-      self._viewMatrix.DeepCopy(sagittal)
-    if viewName=='axial':
-      resliceAxes = axial
-      self._viewMatrix.DeepCopy(axial)
-    if viewName=='coronal':
-      resliceAxes = coronal
-      self._viewMatrix.DeepCopy(coronal)
-
-    self._reslice.SetResliceAxes(resliceAxes)
-
-  def _setWWL(self, wwl):
-    if self._mainImageController is None:
-      return
-
-    if self.__sendingWWL:
-      return
-
-    imageProperty = self._iStyle.GetCurrentImageProperty()
-    if not (imageProperty is None):
-      imageProperty.SetColorWindow(wwl[0])
-      imageProperty.SetColorLevel(wwl[1])
-
-    self._renderWindow.Render()
+    self.lineWidgeEnabledSignal.emit(self._lineWidgetEnabled)
 
   def setMainImage(self, imageController):
     self._disconnectAll()
@@ -301,7 +306,7 @@ class SliceViewerVTK(QWidget):
     self._iStyle.OnLeftButtonUp()
     self._iStyle.EndWindowLevel()
 
-    if self._viewerController.getWWLEnabled():
+    if self._wwlEnabled:
       self._iStyle.StartWindowLevel()
       self._iStyle.OnLeftButtonUp()
 
@@ -313,18 +318,100 @@ class SliceViewerVTK(QWidget):
 
     self.updateNameText()
 
+  def _setPosition(self, position):
+    if self._mainImageController is None:
+      return
+
+    transfo_mat = vtkCommonMath.vtkMatrix4x4()
+    transfo_mat.DeepCopy(self._viewMatrix)
+    transfo_mat.Invert()
+    pos = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
+    pos = self._viewMatrix.MultiplyPoint((0, 0, pos[2], 1))
+
+    self._reslice.Update()
+    matrix = self._reslice.GetResliceAxes()
+    matrix.SetElement(0, 3, pos[0])
+    matrix.SetElement(1, 3, pos[1])
+    matrix.SetElement(2, 3, pos[2])
+
+    self._renderWindow.Render()
+
+    self._updateCurrentPositionText(position)
+
+  def _setResliceMatrix(self, resliceMatrix):
+    self._reslice.SetResliceAxes(resliceMatrix)
+    self._renderWindow.Render()
+
+  def setView(self, viewName):
+    axial = vtkCommonMath.vtkMatrix4x4()
+    axial.DeepCopy((0, 0, 1, 0,
+                    0, -1, 0, 0,
+                    1, 0, 0, 0,
+                    0, 0, 0, 1))
+
+    coronal = vtkCommonMath.vtkMatrix4x4()
+    coronal.DeepCopy((0, 1, 0, 0,
+                      1, 0, 0, 0,
+                      0, 0, -1, 0,
+                      0, 0, 0, 1))
+
+    sagittal = vtkCommonMath.vtkMatrix4x4()
+    sagittal.DeepCopy((0, 1, 0, 0,
+                       0, 0, -1, 0,
+                       1, 0, 0, 0,
+                       0, 0, 0, 1))
+
+    if viewName == 'sagittal':
+      resliceAxes = sagittal
+      self._viewMatrix.DeepCopy(sagittal)
+    if viewName == 'axial':
+      resliceAxes = axial
+      self._viewMatrix.DeepCopy(axial)
+    if viewName == 'coronal':
+      resliceAxes = coronal
+      self._viewMatrix.DeepCopy(coronal)
+
+    self._reslice.SetResliceAxes(resliceAxes)
+
+  def _setWWL(self, wwl):
+    if self._mainImageController is None:
+      return
+
+    if self.__sendingWWL:
+      return
+
+    imageProperty = self._iStyle.GetCurrentImageProperty()
+    if not (imageProperty is None):
+      imageProperty.SetColorWindow(wwl[0])
+      imageProperty.SetColorLevel(wwl[1])
+
+    self._renderWindow.Render()
+
+  def setWWLEnabled(self, enabled):
+    if enabled==self._wwlEnabled:
+      return
+
+    self._wwlEnabled = enabled
+
+    if self._wwlEnabled:
+      self.setCrossHairEnabled(False)
+    self.wwlEnabledSignal.emit(enabled)
+
   def _updateCurrentPositionText(self, position):
     try:
       imageData = self._reslice.GetInput(0)
       ind = [0, 0, 0]
       imageData.TransformPhysicalPointToContinuousIndex(position[0:3], ind)
       data = imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
-      self._mainText[0] = 'Value: ' + str(data)
+      self._mainText[0] = 'Value: ' + "{:.2f}".format(data)
+
+      self._mainText[1] = 'Pos: ' + "{:.2f}".format(position[0]) + ' ' + "{:.2f}".format(position[1]) + ' ' + "{:.2f}".format(position[2])
     except:
       self._mainText[0] = ''
+      self._mainText[1] = ''
 
     self.renderOverlay()
 
   def updateNameText(self):
-    self._mainText[1] = self._mainImageController.getName()
+    self._mainText[2] = self._mainImageController.getName()
     self.renderOverlay()
