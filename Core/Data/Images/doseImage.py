@@ -76,7 +76,7 @@ class DoseImage(Image3D):
 
 
     def copy(self):
-        pass
+        return super().copy()
         
         
     def exportDicom(self, outputFile, planUID=[]):
