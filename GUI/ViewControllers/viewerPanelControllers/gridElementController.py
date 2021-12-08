@@ -17,14 +17,25 @@ class GridElementController(QObject):
     def __init__(self, viewerPanelController):
         QObject.__init__(self)
 
+        self._currentView = None
         self._displayType = None
         self._dropEnabled = False
-        self._currentView = None
+        self._profileViewer = None
+        self._sliceViewer = None
         self._sliceViewer = None
         self._viewerPanelController = viewerPanelController
 
         self.setDisplayType(self.DISPLAY_SLICEVIEWER)
         self._viewerPanelController.independentViewsEnabledSignal.connect(self.setDropEnabled)
+
+    def _disconnectAll(self):
+        if self._displayType == self.DISPLAY_PROFILE:
+            self._currentView.newProfileSignal.disconnect(self._viewerPanelController.setLineWidgetEnabled)
+
+        if self._displayType==self.DISPLAY_SLICEVIEWER:
+            self._viewerPanelController.crossHairEnabledSignal.disconnect(self._currentView.setCrossHairEnabled)
+            self._viewerPanelController.windowLevelEnabledSignal.disconnect(self._currentView.setWWLEnabled)
+            self._viewerPanelController.lineWidgetEnabledSignal.disconnect(self._currentView.setLineWidgetEnabled)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
@@ -46,6 +57,11 @@ class GridElementController(QObject):
         if displayType==self._displayType:
             return
 
+        self._disconnectAll()
+
+        if not (self._currentView is None):
+            self._currentView.hide()
+
         self._displayType = displayType
 
         if self._displayType==self.DISPLAY_DVH:
@@ -55,7 +71,10 @@ class GridElementController(QObject):
             self._currentView = BlackEmptyPlot()
 
         if self._displayType==self.DISPLAY_PROFILE:
-            self._currentView = ProfilePlot()
+            if self._profileViewer is None:
+                self._profileViewer = ProfilePlot()
+
+            self._currentView = self._profileViewer
             self._currentView.newProfileSignal.connect(self._viewerPanelController.setLineWidgetEnabled)
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:
@@ -68,7 +87,8 @@ class GridElementController(QObject):
             self._viewerPanelController.windowLevelEnabledSignal.connect(self._currentView.setWWLEnabled)
             self._viewerPanelController.lineWidgetEnabledSignal.connect(self._currentView.setLineWidgetEnabled)
 
-        self.setDropEnabled(self._dropEnabled)
+            self.setDropEnabled(self._dropEnabled)
+
         self.displayChangedSignal.emit(self._currentView)
 
     def setDropEnabled(self, enabled):

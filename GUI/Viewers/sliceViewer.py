@@ -1,3 +1,5 @@
+from math import sqrt
+
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import *
 import numpy as np
@@ -9,10 +11,12 @@ import vtkmodules.vtkCommonCore as vtkCommonCore
 import vtkmodules.vtkInteractionStyle as vtkInteractionStyle
 from vtkmodules import vtkImagingCore, vtkCommonMath
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
-from vtkmodules.vtkCommonCore import vtkCommand
+from vtkmodules.vtkCommonColor import vtkNamedColors
+from vtkmodules.vtkCommonCore import vtkCommand, vtkPoints
+from vtkmodules.vtkCommonDataModel import vtkPolyLine, vtkCellArray, vtkPolyData
 from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
-from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor
+from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor
 
 from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
 
@@ -25,7 +29,9 @@ class SliceViewerVTK(QWidget):
   def __init__(self):
     QWidget.__init__(self)
 
+    self._crossHairActor = vtkActor()
     self._crossHairEnabled = False
+    self._crossHairMapper = vtkPolyDataMapper()
     self._dataImporter = vtkImageImport()
     self._iStyle = vtkInteractionStyle.vtkInteractorStyleImage()
     self._leftButtonPress = False
@@ -40,6 +46,7 @@ class SliceViewerVTK(QWidget):
     self._mainText = ['', '', '', '']
     self._renderer = vtkRenderingCore.vtkRenderer()
     self._reslice = vtkImagingCore.vtkImageReslice()
+    self._rightButtonPress = False
     self.__sendingWWL = False
     self._textActor = vtkTextActor()
     self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
@@ -83,6 +90,11 @@ class SliceViewerVTK(QWidget):
 
     self._lineWidget.SetCurrentRenderer(self._renderer)
 
+    self._crossHairActor.SetMapper(self._crossHairMapper)
+    colors = vtkNamedColors()
+    self._crossHairActor.GetProperty().SetColor(colors.GetColor3d('Tomato'))
+    self._renderer.AddActor(self._crossHairActor)
+
   #overrides QWidget resizeEvent
   def resizeEvent(self, event):
     QWidget.resizeEvent(self, event)
@@ -107,9 +119,6 @@ class SliceViewerVTK(QWidget):
     self._mainImageController.wwlChangedSignal.disconnect(self._setWWL)
     self._mainImageController.selectedPositionChangedSignal.disconnect(self._setPosition)
 
-  def getResliceMatrix(self):
-    return self._reslice.GetResliceAxes()
-
   def _lineWidgetInteraction(self, obj, event):
     if not self._lineWidgetNoInteractionYet:
       point1 = self._lineWidget.GetLineRepresentation().GetPoint1WorldPosition()
@@ -131,8 +140,8 @@ class SliceViewerVTK(QWidget):
         imageData.TransformPhysicalPointToContinuousIndex((p0, points1[i], points2[i]), ind)
         data[i] = imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
 
-      print(data)
-      self._lineWidgetCallback(np.linspace(0, num, num), data)
+      x = np.linspace(0, sqrt((point2[0]-point1[0])*(point2[0]-point1[0]) + (point2[1]-point1[1])*(point2[1]-point1[1]) + (point2[2]-point1[2])*(point2[2]-point1[2])), num)
+      self._lineWidgetCallback(x, data)
 
     self._lineWidgetNoInteractionYet = False
 
@@ -166,22 +175,32 @@ class SliceViewerVTK(QWidget):
 
     self._updateCurrentPositionText(point)
 
-    if self._lineWidgetNoInteractionYet:
+    if self._lineWidgetNoInteractionYet and self._lineWidgetEnabled:
       #TODO: not sure for point[2]
       self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], point[2]))
       self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], point[2]))
       return
 
     if self._leftButtonPress and self._crossHairEnabled:
-      self._mainImageController.setSelectedPosition(worldPos)
-    else:
+      self._mainImageController.setSelectedPosition((point[0], point[1], point[2]))
+
+    if self._leftButtonPress and self._wwlEnabled:
+      self._iStyle.OnMouseMove()
+      self.__sendingWWL = True
+      imageProperty = self._iStyle.GetCurrentImageProperty()
+      self._mainImageController.setWWLValue((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
+      self.__sendingWWL = False
+
+    if not self._leftButtonPress:
       self._iStyle.OnMouseMove()
 
-      if self._leftButtonPress and self._wwlEnabled:
-        self.__sendingWWL = True
-        imageProperty = self._iStyle.GetCurrentImageProperty()
-        self._mainImageController.setWWLValue((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
-        self.__sendingWWL = False
+  def onRightButtonPress(self, obj, event):
+    if 'Press' in event:
+      self._rightButtonPress = True
+      self._iStyle.OnRightButtonDown()
+    else:
+      self._rightButtonPress = False
+      self._iStyle.OnRightButtonUp()
 
   def onScroll(self, obj=None, event='Forward'):
     sliceSpacing = self._reslice.GetOutput().GetSpacing()[2]
@@ -192,15 +211,6 @@ class SliceViewerVTK(QWidget):
       deltaY = -sliceSpacing
 
     self._reslice.Update()
-    matrix = self._reslice.GetResliceAxes()
-    # move the center point that we are slicing through
-    center = matrix.MultiplyPoint((0, 0, deltaY, 1))
-    matrix.SetElement(0, 3, center[0])
-    matrix.SetElement(1, 3, center[1])
-    matrix.SetElement(2, 3, center[2])
-
-    self._setResliceMatrix(matrix)
-
     if self._crossHairEnabled:
       worldPos = self._mainImageController.getSelectedPosition()
       if worldPos is None:
@@ -212,8 +222,18 @@ class SliceViewerVTK(QWidget):
       tform.Invert()
       point = tform.MultiplyPoint((worldPos[0], worldPos[1], worldPos[2], 1))
 
-      point = matrix.MultiplyPoint((point[0], point[1], point[2]+deltaY, 1))
+    # Update reslice matrix
+    matrix = self._reslice.GetResliceAxes()
+    # move the center point that we are slicing through
+    center = matrix.MultiplyPoint((0, 0, deltaY, 1))
+    matrix.SetElement(0, 3, center[0])
+    matrix.SetElement(1, 3, center[1])
+    matrix.SetElement(2, 3, center[2])
 
+    self._setResliceMatrix(matrix)
+
+    if self._crossHairEnabled:
+      point = matrix.MultiplyPoint((point[0], point[1], point[2] , 1))
       self._mainImageController.setSelectedPosition(point)
 
   def renderOverlay(self):
@@ -232,7 +252,6 @@ class SliceViewerVTK(QWidget):
   def setLineWidgetEnabled(self, enabled):
     # enabled is either a callback method or False
     if not (enabled==False):
-      print('enabled')
       self._lineWidgetCallback = enabled
       self._lineWidget.AddObserver("InteractionEvent", self._lineWidgetInteraction)
       self._lineWidget.AddObserver("EndInteractionEvent", self._lineWidgetInteraction)
@@ -264,14 +283,14 @@ class SliceViewerVTK(QWidget):
     imageData = image.data
     imageOrigin = image.origin
     imageSpacing = image.spacing
-    #imageData = np.swapaxes(imageData, 0, 1)
+    imageData = np.swapaxes(imageData, 0, 2)
     num_array = np.array(np.ravel(imageData), dtype=np.float32)
 
     self._dataImporter.SetNumberOfScalarComponents(1)
-    self._dataImporter.SetDataExtent(0, shape[2] - 1, 0, shape[1] - 1, 0, shape[0] - 1)
-    self._dataImporter.SetWholeExtent(0, shape[2] - 1, 0, shape[1] - 1, 0, shape[0] - 1)
-    self._dataImporter.SetDataSpacing(imageSpacing[2], imageSpacing[1], imageSpacing[0])
-    self._dataImporter.SetDataOrigin(imageOrigin[2], imageOrigin[1], imageOrigin[0])
+    self._dataImporter.SetDataExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
+    self._dataImporter.SetWholeExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
+    self._dataImporter.SetDataSpacing(imageSpacing[0], imageSpacing[1], imageSpacing[2])
+    self._dataImporter.SetDataOrigin(imageOrigin[0], imageOrigin[1], imageOrigin[2])
     self._dataImporter.SetDataScalarTypeToFloat()
 
     data_string = num_array.tobytes()
@@ -313,6 +332,7 @@ class SliceViewerVTK(QWidget):
     self._iStyle.SetCurrentImageNumber(0)
 
     self._setWWL(self._mainImageController.getWWLValue())
+    self._setPosition(self._mainImageController.getSelectedPosition())
 
     self._connectAll()
 
@@ -325,8 +345,8 @@ class SliceViewerVTK(QWidget):
     transfo_mat = vtkCommonMath.vtkMatrix4x4()
     transfo_mat.DeepCopy(self._viewMatrix)
     transfo_mat.Invert()
-    pos = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
-    pos = self._viewMatrix.MultiplyPoint((0, 0, pos[2], 1))
+    posAfterInverse = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
+    pos = self._viewMatrix.MultiplyPoint((0, 0, posAfterInverse[2], 1))
 
     self._reslice.Update()
     matrix = self._reslice.GetResliceAxes()
@@ -334,9 +354,34 @@ class SliceViewerVTK(QWidget):
     matrix.SetElement(1, 3, pos[1])
     matrix.SetElement(2, 3, pos[2])
 
-    self._renderWindow.Render()
-
     self._updateCurrentPositionText(position)
+
+    if self._crossHairEnabled:
+      points = vtkPoints()
+      points.InsertNextPoint((posAfterInverse[0]-10, posAfterInverse[1], posAfterInverse[2]))
+      points.InsertNextPoint((posAfterInverse[0]+10, posAfterInverse[1], posAfterInverse[2]))
+      points.InsertNextPoint((posAfterInverse[0], posAfterInverse[1]-10, posAfterInverse[2]))
+      points.InsertNextPoint((posAfterInverse[0], posAfterInverse[1]+10, posAfterInverse[2]))
+
+      polyLine = vtkPolyLine()
+      polyLine.GetPointIds().SetNumberOfIds(2)
+      polyLine2 = vtkPolyLine()
+      polyLine2.GetPointIds().SetNumberOfIds(2)
+      for i in range(0, 2):
+        polyLine.GetPointIds().SetId(i, i)
+        polyLine2.GetPointIds().SetId(i, i+2)
+
+      cells = vtkCellArray()
+      cells.InsertNextCell(polyLine)
+      cells.InsertNextCell(polyLine2)
+
+      polyData = vtkPolyData()
+      polyData.SetPoints(points)
+      polyData.SetLines(cells)
+
+      self._crossHairMapper.SetInputData(polyData)
+
+    self._renderWindow.Render()
 
   def _setResliceMatrix(self, resliceMatrix):
     self._reslice.SetResliceAxes(resliceMatrix)
@@ -402,7 +447,7 @@ class SliceViewerVTK(QWidget):
       imageData = self._reslice.GetInput(0)
       ind = [0, 0, 0]
       imageData.TransformPhysicalPointToContinuousIndex(position[0:3], ind)
-      data = imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
+      data = imageData.GetScalarComponentAsFloat(round(ind[0]), round(ind[1]), round(ind[2]), 0)
       self._mainText[0] = 'Value: ' + "{:.2f}".format(data)
 
       self._mainText[1] = 'Pos: ' + "{:.2f}".format(position[0]) + ' ' + "{:.2f}".format(position[1]) + ' ' + "{:.2f}".format(position[2])

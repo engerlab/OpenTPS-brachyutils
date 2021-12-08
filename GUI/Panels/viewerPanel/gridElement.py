@@ -25,7 +25,9 @@ class GridElement(QWidget):
         if not (self._viewerWidget is None):
             self._mainLayout.removeWidget(self._viewerWidget)
 
-        self._mainLayout.addWidget(viewerWidget)
         self._viewerWidget = viewerWidget
+        self._mainLayout.addWidget(self._viewerWidget)
+        self._viewerWidget.show()
+
 
 

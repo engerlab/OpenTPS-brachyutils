@@ -1,4 +1,4 @@
-
+import numpy as np
 from PyQt5.QtCore import pyqtSignal
 
 from Controllers.DataControllers.image3DController import Image3DController
@@ -15,7 +15,8 @@ class Image3DViewerController(Image3DController):
             return
 
         self._wwlValue = (400, 0)
-        self._selectedPosition = (0, 0, 0)
+        # TODO: Not a huge fan of this. Data controller should provide getOrigin, etc.
+        self._selectedPosition = np.array(self.data.origin) + np.array(self.data.getGridSize())*np.array(self.data.spacing)/2.0
 
     def getSelectedPosition(self):
         return self._selectedPosition
