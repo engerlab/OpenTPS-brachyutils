@@ -372,10 +372,10 @@ class SliceViewerVTK(QWidget):
 
     if self._crossHairEnabled:
       points = vtkPoints()
-      points.InsertNextPoint((posAfterInverse[0]-10, posAfterInverse[1], posAfterInverse[2]))
-      points.InsertNextPoint((posAfterInverse[0]+10, posAfterInverse[1], posAfterInverse[2]))
-      points.InsertNextPoint((posAfterInverse[0], posAfterInverse[1]-10, posAfterInverse[2]))
-      points.InsertNextPoint((posAfterInverse[0], posAfterInverse[1]+10, posAfterInverse[2]))
+      points.InsertNextPoint((posAfterInverse[0]-10, posAfterInverse[1], 0.01))
+      points.InsertNextPoint((posAfterInverse[0]+10, posAfterInverse[1], 0.01))
+      points.InsertNextPoint((posAfterInverse[0], posAfterInverse[1]-10, 0.01))
+      points.InsertNextPoint((posAfterInverse[0], posAfterInverse[1]+10, 0.01))
 
       polyLine = vtkPolyLine()
       polyLine.GetPointIds().SetNumberOfIds(2)
