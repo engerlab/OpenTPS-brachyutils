@@ -19,16 +19,19 @@ from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
 from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor
 
 from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
+from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
 
 
 class SliceViewerVTK(QWidget):
   crossHairEnabledSignal = pyqtSignal(bool)
   lineWidgeEnabledSignal = pyqtSignal(bool)
   wwlEnabledSignal = pyqtSignal(bool)
+  wwlEnabledSignal = pyqtSignal(bool)
 
   def __init__(self):
     QWidget.__init__(self)
 
+    self._blackWidget = BlackEmptyPlot()
     self._crossHairActor = vtkActor()
     self._crossHairEnabled = False
     self._crossHairMapper = vtkPolyDataMapper()
@@ -56,7 +59,9 @@ class SliceViewerVTK(QWidget):
     self._renderWindow = self._vtkWidget.GetRenderWindow()
 
     self.setLayout(self._mainLayout)
-    self._mainLayout.addWidget(self._vtkWidget)
+    self._vtkWidget.hide()
+    self._mainLayout.addWidget(self._blackWidget)
+    self._blackWidget.show()
     self._mainLayout.setContentsMargins(0, 0, 0, 0)
 
     self._textActor.GetTextProperty().SetFontSize(14)
@@ -273,7 +278,17 @@ class SliceViewerVTK(QWidget):
     if imageController is None:
       self._reslice.RemoveAllInputs()
       self._mainImageController = None
+
+      self._mainLayout.removeWidget(self._vtkWidget)
+      self._vtkWidget.hide()
+      self._mainLayout.addWidget(self._blackWidget)
+      self._blackWidget.show()
       return
+
+    self._mainLayout.removeWidget(self._blackWidget)
+    self._blackWidget.hide()
+    self._mainLayout.addWidget(self._vtkWidget)
+    self._vtkWidget.show()
 
     self._mainImageController = Image3DViewerController(imageController)
 

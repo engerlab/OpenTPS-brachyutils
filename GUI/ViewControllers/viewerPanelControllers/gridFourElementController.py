@@ -1,5 +1,6 @@
 from GUI.ViewControllers.viewerPanelControllers.gridController import GridController
 from GUI.ViewControllers.viewerPanelControllers.gridElementController import GridElementController
+from GUI.Viewers.sliceViewer import SliceViewerVTK
 
 
 class GridFourElementController(GridController):
@@ -15,3 +16,15 @@ class GridFourElementController(GridController):
         self.appendGridElementController(self.controller1)
         self.appendGridElementController(self.controller2)
         self.appendGridElementController(self.controller3)
+
+        v = self.controller0.getDisplayView()
+        if isinstance(v, SliceViewerVTK):
+            v.setView('coronal')
+
+        v = self.controller1.getDisplayView()
+        if isinstance(v, SliceViewerVTK):
+            v.setView('axial')
+
+        v = self.controller2.getDisplayView()
+        if isinstance(v, SliceViewerVTK):
+            v.setView('sagittal')

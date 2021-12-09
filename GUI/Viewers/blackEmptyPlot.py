@@ -1,10 +1,16 @@
-from pyqtgraph import PlotWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
 
 
-class BlackEmptyPlot(PlotWidget):
+class BlackEmptyPlot(QWidget):
     def __init__(self):
-        PlotWidget.__init__(self)
+        QWidget.__init__(self)
 
-        self.getPlotItem().setContentsMargins(0, 0, 0, 0)
-        self.setBackground('k')
-        self.setTitle("No image")
+        self._layout = QHBoxLayout()
+        self.setLayout(self._layout)
+
+        self._layout.addStretch(1)
+        self.setContentsMargins(0, 0, 0, 0)
+
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet('background-color: black')

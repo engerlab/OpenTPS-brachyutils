@@ -103,3 +103,6 @@ class ViewerPanelController(QObject):
             return
 
         self.viewerGridChangeSignal.emit(self._view)
+
+        if self._layout == self.LAYOUT_FOUR:
+            self._view.setEqualSize()
