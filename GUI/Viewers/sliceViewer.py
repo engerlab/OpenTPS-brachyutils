@@ -1,6 +1,7 @@
+import os
 from math import sqrt
 
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QLocale
 from PyQt5.QtWidgets import *
 import numpy as np
 
@@ -14,9 +15,12 @@ from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkCommonColor import vtkNamedColors
 from vtkmodules.vtkCommonCore import vtkCommand, vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkPolyLine, vtkCellArray, vtkPolyData
+from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkIOImage import vtkImageImport
-from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
-from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor, vtkPropPicker
+from vtkmodules.vtkInteractionWidgets import vtkLineWidget2, vtkOrientationMarkerWidget
+from vtkmodules.vtkRenderingAnnotation import vtkAxesActor
+from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor, vtkPropPicker, \
+  vtkMapper, vtkDataSetMapper
 
 from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
 from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
@@ -92,14 +96,31 @@ class SliceViewerVTK(QWidget):
 
     self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
 
-    self.setView('axial')
-
     self._lineWidget.SetCurrentRenderer(self._renderer)
 
     self._crossHairActor.SetMapper(self._crossHairMapper)
     colors = vtkNamedColors()
     self._crossHairActor.GetProperty().SetColor(colors.GetColor3d('Tomato'))
     self._renderer.AddActor(self._crossHairActor)
+
+    self._stlReader = vtkSTLReader()
+    self._orientationActor = vtkActor()
+    self._orientationMapper = vtkDataSetMapper()
+    self._orientationActor.SetMapper(self._orientationMapper)
+    self._orientationActor.GetProperty().SetColor(colors.GetColor3d("Silver"))
+    self._orientationMapper.SetInputConnection(self._stlReader.GetOutputPort())
+    self._orientationWidget = vtkOrientationMarkerWidget()
+    self._orientationWidget.SetViewport(0.75,0.75,1.0,1.0)
+    self._orientationWidget.SetCurrentRenderer(self._renderer)
+    self._orientationWidget.SetInteractor(self._renderWindow.GetInteractor())
+    self._orientationWidget.SetOrientationMarker(self._orientationActor)
+    self._orientationWidget.EnabledOn()  # <== application freeze-crash
+    self._orientationWidget.InteractiveOff()
+    stlPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'viewer' + os.path.sep
+    self._stlReader.SetFileName(stlPath + "human_standing.stl")
+    self._stlReader.Update()
+
+    self.setView('axial')
 
   #overrides QWidget resizeEvent
   def resizeEvent(self, event):
@@ -438,6 +459,7 @@ class SliceViewerVTK(QWidget):
       self._viewMatrix.DeepCopy(coronal)
 
     self._reslice.SetResliceAxes(resliceAxes)
+    self._orientationActor.PokeMatrix(resliceAxes)
 
   def _setWWL(self, wwl):
     if self._mainImageController is None:
