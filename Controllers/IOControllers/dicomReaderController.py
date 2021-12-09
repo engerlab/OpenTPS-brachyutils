@@ -20,9 +20,14 @@ class DICOMReaderController(ModelController):
     #TODO: This is just for the refactoring workshop. We should do smthg much better
     def loadImage(self, dataPath):
         #image = DICOMReader.read(dataPath)
-        image = Image3D(data=np.zeros((100, 100, 100)), origin=(0, 0, 0), spacing=(1, 1, 1))
+        #image = Image3D(data=np.random.randint(2000, size=(100, 100, 100)), origin=(10, 20, 30), spacing=(1, 1, 1))
+        data = np.zeros((100, 100, 100))+100
+        data[10:20, 20:30, :] = 500
+
+        data[2:5, 2:5, :] = 500
+        image = Image3D(data=data, origin=(0, 0, 0), spacing=(1, 1, 1))
         imageController = Image3DController(image)
-        imageController.setName('image1')
+        imageController.setName('image' + str(len(self.patientListController.data)))
         patientController = PatientController(Patient())
         patientController.setName('Patient' + str(len(self.patientListController.data)))
         self.patientListController.append(patientController)

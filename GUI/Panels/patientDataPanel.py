@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QDir, QMimeData, Qt
+from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
     QStackedWidget, QListView, QLineEdit
@@ -84,6 +84,9 @@ class PatientImageList(QTreeView):
         item = PatientImageItem(imageController)
         self.rootNode.appendRow(item)
 
+        if self.rootNode.rowCount()>0:
+            self._treeClick(item.index())
+
     def mouseMoveEvent(self, event):
         drag = QDrag(self)
         mimeData = QMimeData()
@@ -109,6 +112,9 @@ class PatientImageList(QTreeView):
         imageControllers = patientController.getImageControllers()
         for imageController in imageControllers:
             self.appendImage(imageController)
+
+        if len(imageControllers)>0:
+            self._viewController.setSelectedImageController(imageControllers[0])
 
     def _treeClick(self, selection):
         self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
