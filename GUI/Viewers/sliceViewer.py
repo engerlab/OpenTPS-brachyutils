@@ -16,7 +16,7 @@ from vtkmodules.vtkCommonCore import vtkCommand, vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkPolyLine, vtkCellArray, vtkPolyData
 from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
-from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor
+from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor, vtkPropPicker
 
 from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
 from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
@@ -70,7 +70,8 @@ class SliceViewerVTK(QWidget):
     self._textActor.SetPosition(0.05, 0.05)
 
     self._renderer.SetBackground(0, 0, 0)
-    self._renderer.ResetCamera()
+    self._renderer.GetActiveCamera().SetParallelProjection(True)
+
     self._renderer.AddActor(self._mainActor)
     self._renderer.AddActor(self._textActor)
 
@@ -251,6 +252,10 @@ class SliceViewerVTK(QWidget):
     self._crossHairEnabled = enabled
     if self._crossHairEnabled:
       self.setWWLEnabled(False)
+      self._crossHairActor.VisibilityOn()
+    else:
+      self._crossHairActor.VisibilityOff()
+      self._renderWindow.Render()
     self.crossHairEnabledSignal.emit(self._crossHairEnabled)
 
   def setLineWidgetEnabled(self, enabled):
@@ -347,6 +352,8 @@ class SliceViewerVTK(QWidget):
 
     self._setWWL(self._mainImageController.getWWLValue())
     self._setPosition(self._mainImageController.getSelectedPosition())
+
+    self._renderer.ResetCamera()
 
     self._connectAll()
 
