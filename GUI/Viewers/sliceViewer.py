@@ -182,8 +182,8 @@ class SliceViewerVTK(QWidget):
 
     if self._lineWidgetNoInteractionYet and self._lineWidgetEnabled:
       #TODO: not sure for point[2]
-      self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], point[2]))
-      self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], point[2]))
+      self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], 0.01))
+      self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
       return
 
     if self._leftButtonPress and self._crossHairEnabled:
