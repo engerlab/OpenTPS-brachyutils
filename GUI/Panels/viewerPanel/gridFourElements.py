@@ -22,6 +22,10 @@ class GridFourElements(QWidget):
         self._topLeft.setFrameShape(QFrame.StyledPanel)
         self._topRight.setFrameShape(QFrame.StyledPanel)
 
+        self._leftSize = None
+        self._rightSize = None
+        self._size = None
+
         botLeftLayout = QVBoxLayout(self._botLeft)
         botRightLayout = QVBoxLayout(self._botRight)
         topLeftLayout = QVBoxLayout(self._topLeft)
@@ -84,10 +88,26 @@ class GridFourElements(QWidget):
     def resizeEvent(self, event):
         super().resizeEvent(event)
 
+
+        if not self._leftSize is None:
+            return
+            #This does not work
+            width_factor = self.width() / self._size[0]
+            height_factor = self.height() / self._size[1]
+
+            print((width_factor, height_factor))
+
+            self._left.resize(QSize(self._leftSize[0]*width_factor, self._leftSize[1]*height_factor))
+            self._right.resize(QSize(self._rightSize[0] * width_factor, self._rightSize[1] * height_factor))
+
+
         if self._setEqualSize:
             self.setEqualSize()
-
         self._setEqualSize = False
+
+        self._leftSize = (self._left.width(), self._left.height())
+        self._rightSize = (self._right.width(), self._right.height())
+        self._size = (self.width(), self.height())
 
     def setEqualSize(self):
         if not self.isVisible():

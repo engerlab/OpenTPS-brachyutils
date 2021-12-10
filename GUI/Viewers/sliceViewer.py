@@ -71,7 +71,7 @@ class SliceViewerVTK(QWidget):
     self._textActor.GetTextProperty().SetFontSize(14)
     self._textActor.GetTextProperty().SetColor(1, 0.5, 0)
     self._textActor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
-    self._textActor.SetPosition(0.05, 0.05)
+    self._textActor.SetPosition(0.02, 0.85)
 
     self._renderer.SetBackground(0, 0, 0)
     self._renderer.GetActiveCamera().SetParallelProjection(True)
@@ -110,7 +110,7 @@ class SliceViewerVTK(QWidget):
     self._orientationActor.GetProperty().SetColor(colors.GetColor3d("Silver"))
     self._orientationMapper.SetInputConnection(self._stlReader.GetOutputPort())
     self._orientationWidget = vtkOrientationMarkerWidget()
-    self._orientationWidget.SetViewport(0.75,0.75,1.0,1.0)
+    self._orientationWidget.SetViewport(0.8,0.0,1.0,0.2)
     self._orientationWidget.SetCurrentRenderer(self._renderer)
     self._orientationWidget.SetInteractor(self._renderWindow.GetInteractor())
     self._orientationWidget.SetOrientationMarker(self._orientationActor)
@@ -449,21 +449,21 @@ class SliceViewerVTK(QWidget):
 
   def setView(self, viewName):
     axial = vtkCommonMath.vtkMatrix4x4()
-    axial.DeepCopy((0, 0, 1, 0,
-                    0, -1, 0, 0,
-                    1, 0, 0, 0,
+    axial.DeepCopy((1, 0, 0, 0,
+                    0, 0, 1, 0,
+                    0, 1, 0, 0,
                     0, 0, 0, 1))
 
     coronal = vtkCommonMath.vtkMatrix4x4()
     coronal.DeepCopy((0, 1, 0, 0,
+                      0, 0, 1, 0,
                       1, 0, 0, 0,
-                      0, 0, -1, 0,
                       0, 0, 0, 1))
 
     sagittal = vtkCommonMath.vtkMatrix4x4()
-    sagittal.DeepCopy((0, 1, 0, 0,
+    sagittal.DeepCopy((1, 0, 0, 0,
+                       0, 1, 0, 0,
                        0, 0, -1, 0,
-                       1, 0, 0, 0,
                        0, 0, 0, 1))
 
     if viewName == 'sagittal':
