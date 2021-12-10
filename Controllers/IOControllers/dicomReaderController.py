@@ -28,9 +28,14 @@ class DICOMReaderController(ModelController):
         image = Image3D(data=data, origin=(0, 0, 0), spacing=(1, 1, 1))
         imageController = Image3DController(image)
         imageController.setName('image' + str(len(self.patientListController.data)))
+
+        image2 = Image3D(data=data, origin=(0, 0, 0), spacing=(1, 1, 1))
+        imageController2 = Image3DController(image2)
+        imageController2.setName('image' + str(len(self.patientListController.data)) + '_2')
+
+
         patientController = PatientController(Patient())
         patientController.setName('Patient' + str(len(self.patientListController.data)))
         self.patientListController.append(patientController)
         patientController.appendImage(imageController)
-
-        print(image)
+        patientController.appendImage(imageController2)

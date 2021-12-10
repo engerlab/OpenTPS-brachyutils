@@ -47,3 +47,5 @@ if __name__ == '__main__':
     print(p2.data)
     p3 =  DataController(data1)
     print(p1 == p3)
+    p4 = DataController(p1)
+    print(p1 == p3 == p4)

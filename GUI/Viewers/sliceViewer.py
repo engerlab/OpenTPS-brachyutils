@@ -142,9 +142,18 @@ class SliceViewerVTK(QWidget):
     if self._mainImageController is None:
       return
 
-    self._mainImageController.nameChangedSignal.disconnect(self.updateNameText)
-    self._mainImageController.wwlChangedSignal.disconnect(self._setWWL)
-    self._mainImageController.selectedPositionChangedSignal.disconnect(self._setPosition)
+    try:
+      self._mainImageController.nameChangedSignal.disconnect(self.updateNameText)
+    except:
+      pass
+    try:
+      self._mainImageController.wwlChangedSignal.disconnect(self._setWWL)
+    except:
+      pass
+    try:
+      self._mainImageController.selectedPositionChangedSignal.disconnect(self._setPosition)
+    except:
+      pass
 
   def _lineWidgetInteraction(self, obj, event):
     if not self._lineWidgetNoInteractionYet:
@@ -262,6 +271,9 @@ class SliceViewerVTK(QWidget):
       point = matrix.MultiplyPoint((point[0], point[1], point[2] , 1))
       self._mainImageController.setSelectedPosition(point)
 
+    if self._lineWidgetEnabled:
+      self._lineWidgetInteraction(None, None)
+
   def renderOverlay(self):
     self._textActor.SetInput(self._mainText[0] + '\n' + self._mainText[1] + '\n' + self._mainText[2])
     self._renderWindow.Render()
@@ -294,13 +306,14 @@ class SliceViewerVTK(QWidget):
       self._lineWidgetCallback = None
       self._lineWidget.Off()
       self._lineWidgetEnabled = False
+      self._renderWindow.Render()
 
     self.lineWidgeEnabledSignal.emit(self._lineWidgetEnabled)
 
   def setMainImage(self, imageController):
-    self._disconnectAll()
-
     if imageController is None:
+      self._disconnectAll()
+
       self._reslice.RemoveAllInputs()
       self._mainImageController = None
 
@@ -309,6 +322,11 @@ class SliceViewerVTK(QWidget):
       self._mainLayout.addWidget(self._blackWidget)
       self._blackWidget.show()
       return
+
+    if imageController == self._mainImageController:
+      return
+
+    self._disconnectAll()
 
     self._mainLayout.removeWidget(self._blackWidget)
     self._blackWidget.hide()
