@@ -18,6 +18,9 @@ class Image3DViewerController(Image3DController):
         # TODO: Not a huge fan of this. Data controller should provide getOrigin, etc.
         self._selectedPosition = np.array(self.data.origin) + np.array(self.data.getGridSize())*np.array(self.data.spacing)/2.0
 
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+
     def getSelectedPosition(self):
         return self._selectedPosition
 

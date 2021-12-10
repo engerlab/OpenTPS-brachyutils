@@ -86,9 +86,6 @@ class PatientImageList(QTreeView):
         item = PatientImageItem(imageController)
         self.rootNode.appendRow(item)
 
-        if self.rootNode.rowCount()>0:
-            self._treeClick(item.index())
-
     def mouseMoveEvent(self, event):
         drag = QDrag(self)
         mimeData = QMimeData()
