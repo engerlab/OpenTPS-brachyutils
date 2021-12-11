@@ -1,37 +1,152 @@
 import os
 import pydicom
+import logging
+
+from Core.IO.dicomReader import readDicomCT, readDicomDose
 
 
-class DataLoader:
+def loadAllData(inputPath, maxDepth=-1):
     """
-    The DataLoader class is responsible for finding and loading data from the file system.
+    Load all data found at the given input path.
+
+    Parameters
+    ----------
+    inputPath: str
+        Path to the file or folder containing the data to be loaded.
+
+    maxDepth: int, optional
+        Maximum subfolder depth where the function will check for data to be loaded.
+        Default is -1, which implies recursive search over infinite subfolder depth.
+
+    Returns
+    -------
+    dataList: list of data objects
+        The function returns a list of data objects containing the imported data.
 
     """
 
-    @staticmethod
-    def loadAllData(self, inputPath, maxDepth=-1):
-        """
-        Load all data found at the given path.
+    fileLists = listAllFiles(inputPath, maxDepth=maxDepth)
+    dataList = []
 
-        Parameters
-        ----------
-        inputPath: str
-            Path to the file or folder containing the data to be loaded.
+    # read Dicom files
+    dicomCT = {}
+    for filePath in fileLists["Dicom"]:
+        dcm = pydicom.dcmread(filePath)
 
-        maxDepth: int, optional
-            Maximum subfolder depth where the function will check for data to be loaded.
-            Default is -1, which implies recursive search over infinite subfolder depth.
+        # Dicom CT
+        if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
+            # Dicom CT are not loaded directly. All slices must first be classified according to SeriesInstanceUID.
+            newCT = 1
+            for key in dicomCT:
+                if key == dcm.SeriesInstanceUID:
+                    dicomCT[dcm.SeriesInstanceUID].append(filePath)
+                    newCT = 0
+            if newCT == 1:
+                dicomCT[dcm.SeriesInstanceUID] = [filePath]
 
-        Returns
-        -------
-        dataList: list of data objects
-            The function returns a list of data objects containing the imported data.
+        # Dicom dose
+        elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.2":
+            dose = readDicomDose(filePath)
+            dataList.append(dose)
 
-        """
+        # Dicom RT Plan
+        elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5":
+            logging.warning("WARNING: cannot import ", file_path, " because photon RT plan is not implemented yet")
+
+        # Dicom RT Ion Plan
+        elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
+            logging.warning("WARNING: cannot import " + filePath + " because RT ion plan import is not implemented yet")
+
+        # Dicom struct
+        elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.3":
+            logging.warning("WARNING: cannot import " + filePath + " because RT Struct import is not implemented yet")
+
+        else:
+            logging.warning("WARNING: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + filePath)
+
+    # import Dicom CT images
+    for key in dicomCT:
+        ct = readDicomCT(dicomCT[key])
+        dataList.append(ct)
+
+    # read MHD images
+    for filePath in fileLists["MHD"]:
+        logging.warning("WARNING: cannot import " + filePath + " because MHD import is not implemented yet")
 
 
-        dataList = []
+    return dataList
 
-        fileList = os.listdir(inputPath)
 
-        return dataList
+
+def listAllFiles(inputPath, maxDepth=-1):
+    """
+    List all files of compatible data format from given input path.
+
+    Parameters
+    ----------
+    inputPath: str
+        Path to the file or folder containing the data files to be listed.
+
+    maxDepth: int, optional
+        Maximum subfolder depth where the function will check for files to be listed.
+        Default is -1, which implies recursive search over infinite subfolder depth.
+
+    Returns
+    -------
+    fileLists: dictionary
+        The function returns a dictionary containing lists of data files classified according to their file format (Dicom, MHD).
+
+    """
+
+    fileLists = {
+        "Dicom": [],
+        "MHD": []
+    }
+
+
+    if os.path.isdir(inputPath):
+        inputPathContent = os.listdir(inputPath)
+    else:
+        inputPathContent = [inputPath]
+        inputPath = ""
+
+
+    for fileName in inputPathContent:
+        filePath = os.path.join(inputPath, fileName)
+
+        # folders
+        if os.path.isdir(filePath):
+            if(maxDepth != 0):
+                subfolderFileList = listAllFiles(filePath, maxDepth=maxDepth-1)
+                for key in fileLists:
+                    fileLists[key] += subfolderFileList[key]
+
+        # files
+        elif os.path.isfile(filePath):
+
+            # Is Dicom file ?
+            dcm = None
+            try:
+                dcm = pydicom.dcmread(filePath)
+            except:
+                pass
+            if(dcm != None):
+                fileLists["Dicom"].append(filePath)
+                continue
+
+
+            # Is MHD file ?
+            with open(filePath, 'rb') as fid:
+                data = fid.read(50*1024)  # read 50 kB, which should be more than enough for MHD header
+                if data.isascii():
+                    if("ElementDataFile" in data.decode('ascii')): # recognize key from MHD header
+                        fileLists["MHD"].append(filePath)
+                        continue
+
+            # Unknown file format
+            logging.info("INFO: cannot recognize file format of ", filePath)
+
+    return fileLists
+
+
+
