@@ -6,9 +6,9 @@ class DataController(QObject):
 
     def __new__(cls, data):
         if isinstance(data, DataController):
-            if isinstance(data, DataController):
+            if issubclass(cls, data.__class__):
                 data.__class__ = cls # Subclass the existing data controller
-                return data
+            return data
 
         if data is None:
             return None
@@ -26,15 +26,21 @@ class DataController(QObject):
         return dataController
 
     def __init__(self, data):
-        super().__init__()
-
         if isinstance(data, DataController):
             return
 
         if data is None:
             return
 
+        try:
+            hasattr(self, 'data')
+            return
+        except:
+            pass
+
         #else
+        # It is important to call super().__init__() now and not before because if we init QObject we loose previously initialized pyqtSignals
+        super().__init__()
         self.data = data
 
 

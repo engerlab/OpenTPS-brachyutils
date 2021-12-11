@@ -1,4 +1,5 @@
 import logging
+import pydicom
 
 from Core.Data.Images.image3D import Image3D
 
@@ -14,4 +15,7 @@ class CTImage(Image3D):
     def __str__(self):
         return "CT image: " + self.seriesInstanceUID
 
-    
+    def copy(self):
+        img = super().copy()
+        img.seriesInstanceUID = pydicom.uid.generate_uid()
+        return img

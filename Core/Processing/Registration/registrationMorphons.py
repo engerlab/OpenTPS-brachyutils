@@ -86,38 +86,38 @@ class RegistrationMorphons(Registration):
 
             # Resample fixed and moving images and field according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample_image(newGridSize, self.fixed.origin, newVoxelSpacing)
+            fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing)
             movingResampled = self.moving.copy()
-            movingResampled.resample_image(fixedResampled.getGridSize(), fixedResampled.origin,
+            movingResampled.resample(fixedResampled.getGridSize(), fixedResampled.origin,
                                            fixedResampled.spacing)
 
             if s != 0:
                 field.resampleToCTGrid(fixedResampled, 'Velocity')
-                certainty.resample_image(fixedResampled.getGridSize(), fixedResampled.origin,
-                                         fixedResampled.spacing, fill_value=0)
+                certainty.resample(fixedResampled.getGridSize(), fixedResampled.origin,
+                                         fixedResampled.spacing, fillValue=0)
             else:
-                field.initFieldWithZeros(fixedResampled.Image.shape, origin=fixedResampled.origin,
+                field.initFieldWithZeros(fixedResampled.data.shape, origin=fixedResampled.origin,
                                          spacing=fixedResampled.spacing)
                 certainty = fixedResampled.copy()
-                certainty.Image = np.zeros_like(certainty.Image)
+                certainty.data = np.zeros_like(certainty.data)
 
             # Compute phase on fixed image
             if (self.nbProcesses > 1):
-                pconv = partial(morphonsComplexConvS, fixedResampled.Image)
+                pconv = partial(morphonsComplexConvS, fixedResampled.data)
                 qFixed = pool.map(pconv, k)
             else:
                 qFixed = []
                 for n in range(6):
-                    qFixed.append(scipy.signal.fftconvolve(fixedResampled.Image, np.real(k[n]),
+                    qFixed.append(scipy.signal.fftconvolve(fixedResampled.data, np.real(k[n]),
                                                            mode='same') + scipy.signal.fftconvolve(
-                        fixedResampled.Image, np.imag(k[n]), mode='same') * 1j)
+                        fixedResampled.data, np.imag(k[n]), mode='same') * 1j)
 
             for i in range(iterations[s]):
 
                 # Deform moving image
                 deformed = movingResampled.copy()
                 if s != 0 or i != 0:
-                    deformed.Image = field.deformImage(deformed, fill_value='closest')
+                    deformed.data = field.deformImage(deformed, fillValue='closest')
 
                 # Compute phase difference
                 a11 = np.zeros_like(qFixed[0], dtype="float64")
@@ -131,14 +131,14 @@ class RegistrationMorphons(Registration):
                 b3 = np.zeros_like(qFixed[0], dtype="float64")
 
                 if (self.nbProcesses > 1):
-                    pconv = partial(morphonsComplexConvD, deformed.Image)
+                    pconv = partial(morphonsComplexConvD, deformed.data)
                     qDeformed = pool.map(pconv, k)
                 else:
                     qDeformed = []
                     for n in range(6):
                         qDeformed.append(
-                            scipy.signal.fftconvolve(deformed.Image, np.real(k[n]),
-                                                     mode='same') - scipy.signal.fftconvolve(deformed.Image,
+                            scipy.signal.fftconvolve(deformed.data, np.real(k[n]),
+                                                     mode='same') - scipy.signal.fftconvolve(deformed.data,
                                                                                              np.imag(k[n]),
                                                                                              mode='same') * 1j)
 
@@ -186,19 +186,19 @@ class RegistrationMorphons(Registration):
 
                 # Accumulate field and certainty
                 field.velocity[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,
-                                                                                             certainty.Image + certaintyUpdate + eps))
+                                                                                             certainty.data + certaintyUpdate + eps))
                 field.velocity[:, :, :, 1] += np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate,
-                                                                                             certainty.Image + certaintyUpdate + eps))
+                                                                                             certainty.data + certaintyUpdate + eps))
                 field.velocity[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
-                                                                                             certainty.Image + certaintyUpdate + eps))
-                certainty.Image = np.divide(np.power(certainty.Image, 2) + np.power(certaintyUpdate, 2),
-                                            certainty.Image + certaintyUpdate + eps)
+                                                                                             certainty.data + certaintyUpdate + eps))
+                certainty.data = np.divide(np.power(certainty.data, 2) + np.power(certaintyUpdate, 2),
+                                            certainty.data + certaintyUpdate + eps)
 
                 # Regularize velocity field and certainty
-                self.fieldRegularization(field, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.Image)
-                certainty.Image = self.normGaussConv(certainty.Image, certainty.Image, 1.25)
+                self.fieldRegularization(field, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
+                certainty.data = self.normGaussConv(certainty.data, certainty.data, 1.25)
 
         self.deformed = self.moving.copy()
-        self.deformed.Image = field.deformImage(self.deformed, fill_value='closest')
+        self.deformed.data = field.deformImage(self.deformed, fillValue='closest')
 
         return field

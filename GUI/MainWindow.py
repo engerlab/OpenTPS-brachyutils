@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QToolBox
 
 from GUI.Panels.patientDataPanel import PatientDataPanel
-from GUI.ViewControllers.gridFourElementController import GridFourElementController
+from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
 from GUI.ViewControllers.patientDataPanelController import PatientDataPanelController
-from GUI.Viewers.gridFourElements import GridFourElements
+from GUI.ViewControllers.viewerPanelControllers.viewerPanelController import ViewerPanelController
 
 
 class MainWindow(QMainWindow):
@@ -35,6 +35,6 @@ class MainWindow(QMainWindow):
         patientDataPanel = PatientDataPanel(patientDataPanelController)
         mainToolbox.addItem(patientDataPanel, 'Patient data')
 
-        mainGrid = GridFourElements(GridFourElementController(self._viewController))
-        mainLayout.addWidget(mainGrid)
+        viewerPanel = ViewerPanel(ViewerPanelController(self._viewController))
+        mainLayout.addWidget(viewerPanel)
 

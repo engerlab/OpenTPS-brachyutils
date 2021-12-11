@@ -1,8 +1,9 @@
 import pydicom
+import numpy as np
 import scipy.ndimage
 import math
 
-from Core.Processing.C_libraries.libInterp3_wrapper import *
+from Core.Processing.C_libraries.libInterp3_wrapper import Trilinear_Interpolation
 from Core.Data.Images.image3D import Image3D
 
 class DeformationField(Image3D):
@@ -11,12 +12,20 @@ class DeformationField(Image3D):
 
         Image3D.__init__(self)
 
-        self.velocity = []
-        self.displacement = []
+        self.velocity = None
+        self.displacement = None
 
     def print_field_info(self, prefix=""):
         print(prefix + "Deformation field: " + self.SOPInstanceUID)
         print(prefix + "   " + self.DcmFile)
+
+    def getGridSize(self):
+        if (self.velocity is None) and (self.displacement is None):
+            return (0, 0, 0)
+        elif self.displacement is None:
+            return self.velocity.shape[0:3]
+        else:
+            return self.displacement.shape[0:3]
 
     def initFieldWithZeros(self, gridSize, origin=[0, 0, 0], spacing=[1, 1, 1]) -> object:
         if (len(gridSize) == 3):
@@ -46,31 +55,11 @@ class DeformationField(Image3D):
         df.displacement = self.velocity
         return df
 
-    def import_Dicom_DF(self, CT_list, df_type='Velocity'):
-        if (self.isLoaded == 1):
-            print("Warning: Deformation Field " + self.SOPInstanceUID + " is already loaded")
-            return
+    def import_Dicom_DF(self, DcmFile, df_type='Velocity'):
 
-        dcm = pydicom.dcmread(self.DcmFile).DeformableRegistrationSequence[0]
-
-        # find associated CT image
-        ct = {}
-        try:
-            CT_ID = next(
-                (x for x, val in enumerate(CT_list) if val.FrameOfReferenceUID == dcm.SourceFrameOfReferenceUID), -1)
-            CT_ID = next((x for x, val in enumerate(CT_list) if val.FrameOfReferenceUID == dcm.FrameOfReferenceUID), -1)
-            ct = CT_list[CT_ID]
-        except:
-            pass
-
-        if (ct == {}):
-            print("Warning: No ct image has been found with the same frame of reference as DeformationField ")
-            print("DeformationField is imported on the first CT image.")
-            ct = CT_list[0]
+        dcm = pydicom.dcmread(DcmFile).DeformableRegistrationSequence[0]
 
         # import deformation field
-        self.CT_SeriesInstanceUID = ct.SeriesInstanceUID
-        self.FrameOfReferenceUID = dcm.SourceFrameOfReferenceUID
         dcm_field = dcm.DeformableRegistrationGridSequence[0]
 
         self.origin = dcm_field.ImagePositionPatient
@@ -87,33 +76,29 @@ class DeformationField(Image3D):
         if df_type == 'Velocity':
             self.velocity = field
             self.displacement = self.exponentiateField()
-            # Resample both the velocity and diplacement to the CT
-            self.resampleToCTGrid(ct, whichField='both')
         elif df_type == 'Displacement':
             self.displacement = field
-            self.resampleToCTGrid(ct, whichField='Displacement')
         else:
             print("Unknown deformation field type")
             return
-        self.isLoaded = 1
 
 
     def resampleToCTGrid(self, ct, whichField):
-        if (not ct.is_same_grid(self)):
+        if (not ct.hasSameGrid(self)):
             print('Resample deformation field to CT grid.')
             self.resampleDeformationField(ct.getGridSize(), ct.origin, ct.spacing, whichField)
 
     def resampleDeformationField(self, gridSize, origin, spacing, whichField='both'):
         if whichField == 'both':
-            assert self.velocity != []
-            assert self.displacement != []
+            assert not(self.velocity is None)
+            assert not(self.displacement is None)
             self.velocity = self.resampleVectorField(self.velocity, gridSize, origin, spacing)
             self.displacement = self.resampleVectorField(self.displacement, gridSize, origin, spacing)
         elif whichField == 'Velocity':
-            assert self.velocity != []
+            assert not(self.velocity is None)
             self.velocity = self.resampleVectorField(self.velocity, gridSize, origin, spacing)
         elif whichField == 'Displacement':
-            assert self.displacement != []
+            assert not(self.displacement is None)
             self.displacement = self.resampleVectorField(self.displacement, gridSize, origin, spacing)
         else:
             print("parameter whichField should either be 'both', 'Velocity' or 'Displacement'.")
@@ -173,32 +158,32 @@ class DeformationField(Image3D):
         self.displacement = self.velocity.copy() * 2 ** (-N)
 
         for r in range(N):
-            new_0 = self.applyDisplacementField(self.displacement[:, :, :, 0], self.displacement, fill_value=0)
-            new_1 = self.applyDisplacementField(self.displacement[:, :, :, 1], self.displacement, fill_value=0)
-            new_2 = self.applyDisplacementField(self.displacement[:, :, :, 2], self.displacement, fill_value=0)
+            new_0 = self.applyDisplacementField(self.displacement[:, :, :, 0], self.displacement, fillValue=0)
+            new_1 = self.applyDisplacementField(self.displacement[:, :, :, 1], self.displacement, fillValue=0)
+            new_2 = self.applyDisplacementField(self.displacement[:, :, :, 2], self.displacement, fillValue=0)
             self.displacement[:, :, :, 0] += new_0
             self.displacement[:, :, :, 1] += new_1
             self.displacement[:, :, :, 2] += new_2
 
         output = self.displacement
-        if saveDisplacement == 0: self.displacement = []
+        if saveDisplacement == 0: self.displacement = None
 
         return output
 
     def deformImage(self, Im, fillValue=-1000):
-        # Im is an image. The output is the matrix of voxels after deformation (i.e. deformed Im.Image)
+        # Im is an image. The output is the matrix of voxels after deformation (i.e. deformed Im.data)
 
-        if (self.displacement == []):
+        if (self.displacement is None):
             field = self.exponentiateField()
         else:
             field = self.displacement
 
         if tuple(self.getGridSize()) != tuple(Im.getGridSize()) or tuple(self.origin) != tuple(
-                Im.ImagePositionPatient) or tuple(self.spacing) != tuple(Im.spacing):
-            field = self.resampleVectorField(field, Im.getGridSize(), Im.ImagePositionPatient, Im.spacing)
+                Im.origin) or tuple(self.spacing) != tuple(Im.spacing):
+            field = self.resampleVectorField(field, Im.getGridSize(), Im.origin, Im.spacing)
             print("Warning: image and field dimensions do not match. Resample displacement field to image grid.")
 
-        deformed = self.applyDisplacementField(Im.Image, field, fillValue=fillValue)
+        deformed = self.applyDisplacementField(Im.data, field, fillValue=fillValue)
 
         return deformed
 
@@ -232,11 +217,11 @@ class DeformationField(Image3D):
 
     def computeFieldNorm(self, whichField='Displacement'):
         if whichField == 'Velocity':
-            assert self.velocity != []
+            assert not(self.velocity is None)
             return np.sqrt(
                 self.velocity[:, :, :, 0] ** 2 + self.velocity[:, :, :, 1] ** 2 + self.velocity[:, :, :, 2] ** 2)
         elif whichField == 'Displacement':
-            assert self.displacement != []
+            assert not(self.displacement is None)
             self.displacement
             return np.sqrt(
                 self.displacement[:, :, :, 0] ** 2 + self.displacement[:, :, :, 1] ** 2 + self.displacement[:, :, :,

@@ -44,4 +44,3 @@ class ViewController(QObject):
 
     def setSelectedImageController(self, imageController):
         self._selectedImageController = imageController
-

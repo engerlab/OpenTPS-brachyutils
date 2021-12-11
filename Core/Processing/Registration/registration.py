@@ -76,13 +76,13 @@ class Registration:
 
         # crop fixed image to ROI box
         if (self.roiBox == []):
-            fixed = self.fixed.Image
+            fixed = self.fixed.data
             origin = self.fixed.origin
             gridSize = self.fixed.getGridSize()
         else:
             start = self.roiBox[0]
             stop = self.roiBox[1]
-            fixed = self.fixed.Image[start[0]:stop[0], start[1]:stop[1], start[2]:stop[2]]
+            fixed = self.fixed.data[start[0]:stop[0], start[1]:stop[1], start[2]:stop[2]]
             origin = self.fixed.origin + np.array(
                 [start[1] * self.fixed.spacing[0], start[0] * self.fixed.spacing[1],
                  start[2] * self.fixed.spacing[2]])
@@ -93,10 +93,10 @@ class Registration:
         # deform moving image
         self.deformed = self.moving.copy()
         self.translateOrigin(self.deformed, translation)
-        self.deformed.resample_image(gridSize, origin, self.fixed.spacing)
+        self.deformed.resample(gridSize, origin, self.fixed.spacing)
 
         # compute metric
-        ssd = self.computeSSD(fixed, self.deformed.Image)
+        ssd = self.computeSSD(fixed, self.deformed.data)
         return ssd
 
     def computeSSD(self, fixed, deformed):
@@ -167,11 +167,11 @@ class Registration:
 
         if (keepFixedShape == True):
             diff = self.resampleMovingImage(keepFixedShape=True)
-            diff.Image = self.fixed.Image - diff.Image
+            diff.data = self.fixed.data - diff.data
 
         else:
             diff = self.resampleMovingImage(keepFixedShape=False)
             tmp = self.resampleFixedImage()
-            diff.Image = tmp.Image - diff.Image
+            diff.data = tmp.data - diff.data
 
         return diff
