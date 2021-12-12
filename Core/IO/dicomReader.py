@@ -3,6 +3,7 @@ import pydicom
 import numpy as np
 import logging
 
+from Core.Data.patientInfo import PatientInfo
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 
@@ -22,6 +23,7 @@ def readDicomCT(dcmFiles):
         The function returns the imported CT image
     """
 
+    # read dicom slices
     images = []
     sopInstanceUIDs = []
     sliceLocation = np.zeros(len(dcmFiles), dtype='float')
@@ -54,7 +56,11 @@ def readDicomCT(dcmFiles):
     pixelSpacing = (float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), meanSliceDistance)
     imagePositionPatient = (float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), sliceLocation[0])
 
-    image = CTImage(data=imageData, name=imgName, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sliceLocation=sliceLocation, sopInstanceUIDs=sopInstanceUIDs)
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate, sex=dcm.PatientSex)
+
+    # generate CT image object
+    image = CTImage(data=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sliceLocation=sliceLocation, sopInstanceUIDs=sopInstanceUIDs)
 
     return image
 
@@ -118,6 +124,10 @@ def readDicomDose(dcmFile):
             imageData = np.flip(imageData, 2)
             imagePositionPatient[2] = imagePositionPatient[2] - imageData.shape[2] * pixelSpacing[2]
 
-    image = DoseImage(data=imageData, name=imgName, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sopInstanceUID=dcm.SOPInstanceUID, planSOPInstanceUID=planSOPInstanceUID)
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate, sex=dcm.PatientSex)
+
+    # generate dose image object
+    image = DoseImage(data=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sopInstanceUID=dcm.SOPInstanceUID, planSOPInstanceUID=planSOPInstanceUID)
 
     return image

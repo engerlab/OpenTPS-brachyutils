@@ -35,13 +35,3 @@ class PatientListController(DataController):
         self.data.list.index(patient)
 
 
-
-
-
-
-if __name__ == '__main__':
-    p1 = PatientListController('jlj')
-    p2 = PatientListController('khkh')
-
-    # will return false
-    print(p1.patientAddedSignal == p2.patientAddedSignal)

@@ -3,6 +3,7 @@ from Core.Data.patientData import PatientData
 
 class DVH(PatientData):
     def __init__(self, dose=[], contour=[], maxDVH=100.0):
+        super().__init__()
         self.doseSOPInstanceUID = ""
         self.contourSOPInstanceUID = ""
         self.roiName = ""
