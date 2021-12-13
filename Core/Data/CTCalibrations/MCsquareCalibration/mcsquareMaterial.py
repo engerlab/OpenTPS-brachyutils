@@ -1,7 +1,6 @@
 import os
 
-#TODO: Import MCsquare when it is added to repository
-import MCsquare
+import Core.Processing.MCsquare as MCsquare
 
 class MCsquareMaterial:
     def __init__(self, density=0.0, electronDensity=0.0, name=None, number=0, sp=None, radiationLength=0.0):
