@@ -8,7 +8,6 @@ from Controllers.DataControllers.patientController import PatientController
 from Controllers.modelController import ModelController
 from Core.Data.Images.image3D import Image3D
 from Core.Data.patient import Patient
-from Core.IO.dicomReader import DICOMReader
 
 
 class DICOMReaderController(ModelController):
