@@ -3,7 +3,7 @@ import re
 import numpy as np
 from scipy.interpolate import interpolate
 
-from Data.CTCalibration.RayStationCalibration.RayStationMaterial import RayStationMaterial
+from Core.Data.CTCalibrations.RayStationCalibration.rayStationMaterial import RayStationMaterial
 
 
 class RayStationDensity2Material:

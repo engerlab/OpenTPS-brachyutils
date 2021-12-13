@@ -11,8 +11,11 @@ class PatientListController(DataController):
     def __init__(self, patientList):
         super().__init__(patientList)
 
-    def __setattr__(self, key, value):
-        super().__setattr__(key, value)
+    def __getitem__(self, index):
+        return PatientController(self.data[index])
+
+    def __len__(self):
+        return len(self.data)
 
     def append(self, patient):
         if isinstance(patient, PatientController):

@@ -1,12 +1,14 @@
 
 from Controllers.modelController import ModelController
+from Controllers.api import API
 from Core.IO import dataLoader
 
-class DataLoaderController(ModelController):
-    def __init__(self, patientList):
-        super().__init__(self, patientList)
+class DataLoaderController(API):
+    def __init__(self, patientListController):
+        super().__init__(self, patientListController)
 
-        self.apiMethods.loadData = self.loadData
+        API.__init__(self, patientListController)
+        self.registerToAPI(self.loadData.__name__, self.loadData)
 
 
     def loadData(self, dataPath):
