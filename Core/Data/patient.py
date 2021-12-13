@@ -1,7 +1,7 @@
 
 class Patient:
     """
-    A class Patient contains a list of images and plans
+    A class Patient contains patient information and lists of patient data (images, plans, etc...)
 
     Parameters
     ----------

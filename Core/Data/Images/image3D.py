@@ -11,13 +11,16 @@ def euclidean_dist(v1, v2):
 
 
 class Image3D(PatientData):
-    def __init__(self, data=None, name=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0)):
-
+    def __init__(self, data=None, name="3D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", frameOfReferenceUID=""):
+        super().__init__(patientInfo=patientInfo)
         self.data = data
         self.name = name
         self.origin = origin
         self.spacing = spacing
         self.angles = angles
+        self.frameOfReferenceUID = frameOfReferenceUID
+        self.seriesInstanceUID = seriesInstanceUID
+
 
     def __str__(self):
         gs = self.getGridSize()
@@ -36,9 +39,9 @@ class Image3D(PatientData):
         return img
 
     def hasSameGrid(self, otherImage):
-        if (self.getGridSize() == otherImage.getGridSize() and euclidean_dist(self.origin,
-                                                                         otherImage.origin) < 0.01 and euclidean_dist(
-                self.spacing, otherImage.spacing) < 0.01):
+        if (self.getGridSize() == otherImage.getGridSize() and 
+                euclidean_dist(self.origin, otherImage.origin) < 0.01 and 
+                euclidean_dist(self.spacing, otherImage.spacing) < 0.01):
             return True
         else:
             return False
@@ -56,12 +59,9 @@ class Image3D(PatientData):
         # resampling
         Init_gridSize = list(self.getGridSize())
 
-        interp_x = (origin[0] - self.origin[0] + np.arange(gridSize[1]) * spacing[0]) / \
-                   self.spacing[0]
-        interp_y = (origin[1] - self.origin[1] + np.arange(gridSize[0]) * spacing[1]) / \
-                   self.spacing[1]
-        interp_z = (origin[2] - self.origin[2] + np.arange(gridSize[2]) * spacing[2]) / \
-                   self.spacing[2]
+        interp_x = (origin[0] - self.origin[0] + np.arange(gridSize[1]) * spacing[0]) / self.spacing[0]
+        interp_y = (origin[1] - self.origin[1] + np.arange(gridSize[0]) * spacing[1]) / self.spacing[1]
+        interp_z = (origin[2] - self.origin[2] + np.arange(gridSize[2]) * spacing[2]) / self.spacing[2]
 
         # Correct for potential precision issues on the border of the grid
         interp_x[interp_x > Init_gridSize[1] - 1] = np.round(interp_x[interp_x > Init_gridSize[1] - 1] * 1e3) / 1e3

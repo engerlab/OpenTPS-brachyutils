@@ -9,6 +9,7 @@ from Core.Processing.Registration.registrationMorphons import RegistrationMorpho
 class Dynamic3DModel(PatientData):
 
     def __init__(self):
+        super().__init__()
         self.SOPInstanceUID = ""
         self.ModelName = "MidP"
         self.motionFieldList = []
