@@ -46,24 +46,24 @@ class RegistrationQuick(Registration):
         gridSize = np.array(self.moving.getGridSize()) * np.array(self.moving.spacing) / np.array(
             self.fixed.spacing)
         gridSize = gridSize.astype(np.int)
-        self.deformed.resample_image(gridSize, self.moving.origin, self.fixed.spacing)
+        self.deformed.resample(gridSize, self.moving.origin, self.fixed.spacing)
 
         # search shift in x
-        fixedProfile = np.sum(self.fixed.Image, (0, 2))
-        movingProfile = np.sum(self.deformed.Image, (0, 2))
+        fixedProfile = np.sum(self.fixed.data, (0, 2))
+        movingProfile = np.sum(self.deformed.data, (0, 2))
         shift = matchProfiles(fixedProfile, movingProfile)
         translation[0] = self.fixed.origin[0] - self.moving.origin[0] + shift * \
                          self.deformed.spacing[0]
         # search shift in y
-        fixedProfile = np.sum(self.fixed.Image, (1, 2))
-        movingProfile = np.sum(self.deformed.Image, (1, 2))
+        fixedProfile = np.sum(self.fixed.data, (1, 2))
+        movingProfile = np.sum(self.deformed.data, (1, 2))
         shift = matchProfiles(fixedProfile, movingProfile)
         translation[1] = self.fixed.origin[1] - self.moving.origin[1] + shift * \
                          self.deformed.spacing[1]
 
         # search shift in z
-        fixedProfile = np.sum(self.fixed.Image, (0, 1))
-        movingProfile = np.sum(self.deformed.Image, (0, 1))
+        fixedProfile = np.sum(self.fixed.data, (0, 1))
+        movingProfile = np.sum(self.deformed.data, (0, 1))
         shift = matchProfiles(fixedProfile, movingProfile)
         translation[2] = self.fixed.origin[2] - self.moving.origin[2] + shift * \
                          self.deformed.spacing[2]

@@ -2,8 +2,8 @@ from Core.Data.patientData import PatientData
 
 
 class Image2D(PatientData):
-    def __init__(self, data=None, name=None, origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0)):
-
+    def __init__(self, data=None, name="2D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0)):
+        super().__init__(patientInfo=patientInfo)
         self.data = data
         self.name = name
         self.origin = origin

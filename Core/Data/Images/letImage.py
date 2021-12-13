@@ -45,4 +45,4 @@ class LETImage(Image3D):
 
 
     def copy(self):
-        pass
+        return super().copy()

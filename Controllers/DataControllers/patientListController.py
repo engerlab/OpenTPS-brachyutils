@@ -11,6 +11,9 @@ class PatientListController(DataController):
     def __init__(self, patientList):
         super().__init__(patientList)
 
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+
     def append(self, patient):
         if isinstance(patient, PatientController):
             patient = patient.data
@@ -32,13 +35,3 @@ class PatientListController(DataController):
         self.data.list.index(patient)
 
 
-
-
-
-
-if __name__ == '__main__':
-    p1 = PatientListController('jlj')
-    p2 = PatientListController('khkh')
-
-    # will return false
-    print(p1.patientAddedSignal == p2.patientAddedSignal)

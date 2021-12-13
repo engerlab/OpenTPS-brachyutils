@@ -10,6 +10,14 @@ class Image3DController(DataController):
     def __init__(self, image):
         super().__init__(image)
 
+        if hasattr(self, '_uniqueImage3DControllerProperty'):
+            return
+
+        self._uniqueImage3DControllerProperty = True
+
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+
     def getName(self):
         return self.data.name
 

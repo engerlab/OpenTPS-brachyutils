@@ -1,8 +1,8 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QDir, QMimeData, Qt
+from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
-    QStackedWidget, QListView, QLineEdit
+    QStackedWidget, QListView, QLineEdit, QAbstractItemView
 
 from Controllers.modelController import ModelController
 
@@ -76,9 +76,11 @@ class PatientImageList(QTreeView):
         patientController = self._viewController.getCurrentPatientController()
         self.updateAll(patientController)
 
-        self.clicked.connect(self._treeClick)
+        self.setSelectionMode(self.SingleSelection)
 
+        self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDragEnabled(True)
+        self.setAcceptDrops(True)
 
     def appendImage(self, imageController):
         item = PatientImageItem(imageController)
@@ -110,9 +112,12 @@ class PatientImageList(QTreeView):
         for imageController in imageControllers:
             self.appendImage(imageController)
 
-    def _treeClick(self, selection):
-        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
+        if len(imageControllers)>0:
+            self._viewController.setSelectedImageController(imageControllers[0])
 
+    def dragEnterEvent(self, event):
+        selection = self.selectionModel().selectedIndexes()[0]
+        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
 
 class PatientImageItem(QStandardItem):
     def __init__(self, imageController):
