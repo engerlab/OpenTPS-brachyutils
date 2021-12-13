@@ -15,7 +15,7 @@ class DICOMReaderController(API):
         ModelController.__init__(self, patientListController)
         API.__init__(self, patientListController)
 
-        self.loadImage = self.loadImage
+        self.registerToAPI(self.loadImage.__name__, self.loadImage)
 
     #TODO: This is just for the refactoring workshop. We should do smthg much better
     def loadImage(self, dataPath):

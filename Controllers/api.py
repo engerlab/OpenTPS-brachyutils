@@ -3,21 +3,27 @@ from Controllers.DataControllers.patientController import PatientController
 from Controllers.modelController import ModelController
 
 class APIMethods:
-    pass
+    _methodNames = []
+    _methods = []
+
+    def __setattr__(self, key, value):
+        self._methods.append(value)
+        self._methodNames.append(key)
+        object.__setattr__(self, key, value)
+
+    def getMethodsAsString(self):
+        return self._methodNames
+
 
 class API(ModelController):
-    apiMethods = APIMethods()
+    _apiMethods = APIMethods()
     _logging = True
 
     def __init__(self, patientListController=None):
         ModelController.__init__(self, patientListController)
 
     def __getattr__(self, item):
-        return lambda *args, **kwargs: self._wrappedMethod(self.apiMethods.__getattribute__(item), *args, **kwargs)
-
-    def __setattr__(self, key, value):
-        print('Adding method ' + value.__name__ + ' to API')
-        self.apiMethods.__setattr__(key, value)
+        return lambda *args, **kwargs: self._wrappedMethod(self._apiMethods.__getattribute__(item), *args, **kwargs)
 
     def _convertArgToString(self, arg):
         argStr = ''
@@ -38,6 +44,9 @@ class API(ModelController):
 
     def enableLogging(self, enabled, fileName='default'):
         self._logging = enabled
+
+    def getMethodsAsString(self):
+        return self._apiMethods.getMethodsAsString()
 
     def _log(self, str):
         #TODO
@@ -65,3 +74,6 @@ class API(ModelController):
             self._log(callStr)
 
         method(*args, **kwargs)
+
+    def registerToAPI(self, methodName, method):
+        self._apiMethods.__setattr__(methodName, method)
