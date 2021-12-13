@@ -3,6 +3,8 @@ import scipy.ndimage
 import scipy.signal
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class Registration:
 
@@ -13,6 +15,24 @@ class Registration:
         self.roiBox = []
 
     def normGaussConv(self, data, cert, sigma):
+
+        """Apply normalized Gaussian convolution on input data.
+
+        Parameters
+        ----------
+        data : numpy array
+            data to be convolved.
+        cert : numpy array
+            certainty map associated to the data.
+        sigma : double
+            standard deviation of the Gaussian.
+
+        Returns
+        -------
+        numpy array
+            Convolved data.
+        """
+
         data = scipy.ndimage.gaussian_filter(np.multiply(data, cert), sigma=sigma)
         cert = scipy.ndimage.gaussian_filter(cert, sigma=sigma)
         z = (cert == 0)
@@ -21,7 +41,21 @@ class Registration:
         data = np.divide(data, cert)
         return data
 
-    def fieldRegularization(self, field, filterType="Gaussian", sigma=1.0, cert=None):
+    def regularizeField(self, field, filterType="Gaussian", sigma=1.0, cert=None):
+
+        """Regularize vector field using Gaussian convolution or normalized convolution.
+
+        Parameters
+        ----------
+        field : numpy array
+            vector field to be regularized.
+        filterType : string
+            type of filtering to be applied on the field.
+        sigma : double
+            standard deviation of the Gaussian.
+        cert : numpy array
+            certainty map associated to the data.
+        """
 
         if filterType == "Gaussian":
             field.velocity[:, :, :, 0] = scipy.ndimage.gaussian_filter(field.velocity[:, :, :, 0], sigma=sigma)
@@ -38,7 +72,7 @@ class Registration:
             return
 
         else:
-            print("Error: unknown filter for field fieldRegularization")
+            logger.error("Error: unknown filter for field regularizeField")
             return
 
     def setROI(self, ROI):
@@ -71,7 +105,7 @@ class Registration:
 
     def translateAndComputeSSD(self, translation=None):
 
-        if translation is None: 
+        if translation is None:
             translation = [0.0, 0.0, 0.0]
 
         # crop fixed image to ROI box
@@ -88,7 +122,7 @@ class Registration:
                  start[2] * self.fixed.spacing[2]])
             gridSize = list(fixed.shape)
 
-        print("Translation: " + str(translation))
+        logger.info("Translation: " + str(translation))
 
         # deform moving image
         self.deformed = self.moving.copy()
@@ -102,12 +136,11 @@ class Registration:
     def computeSSD(self, fixed, deformed):
         # compute metric
         ssd = np.sum(np.power(fixed - deformed, 2))
-        # print("SSD: " + str(ssd))
         return ssd
 
     def resampleMovingImage(self, keepFixedShape=True):
         if self.fixed == [] or self.moving == []:
-            print("Image not defined in registration object")
+            logger.error("Image not defined in registration object")
             return
 
         if keepFixedShape == True:
@@ -137,7 +170,7 @@ class Registration:
     def resampleFixedImage(self):
 
         if (self.fixed == [] or self.moving == []):
-            print("Image not defined in registration object")
+            logger.error("Image not defined in registration object")
             return
 
         X_min = min(self.fixed.origin[0], self.moving.origin[0])
@@ -162,7 +195,7 @@ class Registration:
     def computeImageDifference(self, keepFixedShape=True):
 
         if (self.fixed == [] or self.moving == []):
-            print("Image not defined in registration object")
+            logger.error("Image not defined in registration object")
             return
 
         if (keepFixedShape == True):

@@ -8,6 +8,8 @@ from functools import partial
 from Core.Data.Images.deformationField import DeformationField
 from Core.Processing.Registration.registration import Registration
 
+logger = logging.getLogger(__name__)
+
 
 def morphonsConv(im, k):
     return scipy.signal.fftconvolve(im, k, mode='same')
@@ -79,22 +81,19 @@ class RegistrationMorphons(Registration):
                                self.fixed.spacing[1] * (self.fixed.getGridSize()[0] - 1) / (newGridSize[0] - 1),
                                self.fixed.spacing[2] * (self.fixed.getGridSize()[2] - 1) / (newGridSize[2] - 1)]
 
-            print('Morphons scale:', s + 1, '/', len(scales), ' (',
-                  round(newVoxelSpacing[0] * 1e2) / 1e2, 'x',
-                  round(newVoxelSpacing[1] * 1e2) / 1e2, 'x',
-                  round(newVoxelSpacing[2] * 1e2) / 1e2, 'mm3)')
+            logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and field according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
             fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing)
             movingResampled = self.moving.copy()
             movingResampled.resample(fixedResampled.getGridSize(), fixedResampled.origin,
-                                           fixedResampled.spacing)
+                                     fixedResampled.spacing)
 
             if s != 0:
                 field.resampleToCTGrid(fixedResampled, 'Velocity')
                 certainty.resample(fixedResampled.getGridSize(), fixedResampled.origin,
-                                         fixedResampled.spacing, fillValue=0)
+                                   fixedResampled.spacing, fillValue=0)
             else:
                 field.initFieldWithZeros(fixedResampled.data.shape, origin=fixedResampled.origin,
                                          spacing=fixedResampled.spacing)
@@ -192,10 +191,10 @@ class RegistrationMorphons(Registration):
                 field.velocity[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
                                                                                              certainty.data + certaintyUpdate + eps))
                 certainty.data = np.divide(np.power(certainty.data, 2) + np.power(certaintyUpdate, 2),
-                                            certainty.data + certaintyUpdate + eps)
+                                           certainty.data + certaintyUpdate + eps)
 
                 # Regularize velocity field and certainty
-                self.fieldRegularization(field, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
+                self.regularizeField(field, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
                 certainty.data = self.normGaussConv(certainty.data, certainty.data, 1.25)
 
         self.deformed = self.moving.copy()

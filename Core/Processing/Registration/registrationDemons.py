@@ -4,6 +4,8 @@ import logging
 from Core.Data.Images.deformationField import DeformationField
 from Core.Processing.Registration.registration import Registration
 
+logger = logging.getLogger(__name__)
+
 
 class RegistrationDemons(Registration):
 
@@ -28,7 +30,7 @@ class RegistrationDemons(Registration):
         # Iterative loop
         for i in range(self.nIter):
             ssd = self.computeSSD(self.fixed.data, deformed)
-            print('Iteration ' + str(i + 1) + ': SSD=' + str(ssd))
+            logger.info('Iteration ' + str(i + 1) + ': SSD=' + str(ssd))
             gradMoving = np.gradient(deformed)
             squaredDiff = np.square(self.fixed.data - deformed)
             squaredNormGrad = np.square(gradFixed[0] + gradMoving[0]) + np.square(
@@ -43,7 +45,7 @@ class RegistrationDemons(Registration):
                     squaredDiff + squaredNormGrad + 1e-5)
 
             # Regularization (Gaussian filter)
-            self.fieldRegularization(field, filterType="Gaussian", sigma=1.0)
+            self.regularizeField(field, filterType="Gaussian", sigma=1.0)
 
             # deformation
             deformed = field.deformImage(self.moving)

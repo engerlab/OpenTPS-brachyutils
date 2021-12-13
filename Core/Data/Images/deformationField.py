@@ -2,9 +2,13 @@ import pydicom
 import numpy as np
 import scipy.ndimage
 import math
+import logging
 
 from Core.Processing.C_libraries.libInterp3_wrapper import Trilinear_Interpolation
 from Core.Data.Images.image3D import Image3D
+
+logger = logging.getLogger(__name__)
+
 
 class DeformationField(Image3D):
 
@@ -14,10 +18,6 @@ class DeformationField(Image3D):
 
         self.velocity = None
         self.displacement = None
-
-    def print_field_info(self, prefix=""):
-        print(prefix + "Deformation field: " + self.SOPInstanceUID)
-        print(prefix + "   " + self.DcmFile)
 
     def getGridSize(self):
         if (self.velocity is None) and (self.displacement is None):
@@ -31,7 +31,7 @@ class DeformationField(Image3D):
         if (len(gridSize) == 3):
             gridSize = tuple(gridSize) + (3,)
         elif (len(gridSize) == 4 and gridSize[3] != 3):
-            print("Error: last dimension of deformation field should be of size 3")
+            logger.error("Error: last dimension of deformation field should be of size 3")
             return
 
         self.velocity = np.zeros(gridSize)
@@ -79,13 +79,13 @@ class DeformationField(Image3D):
         elif df_type == 'Displacement':
             self.displacement = field
         else:
-            print("Unknown deformation field type")
+            logger.error("Unknown deformation field type")
             return
 
 
     def resampleToCTGrid(self, ct, whichField):
         if (not ct.hasSameGrid(self)):
-            print('Resample deformation field to CT grid.')
+            logger.info('Resample deformation field to CT grid.')
             self.resampleDeformationField(ct.getGridSize(), ct.origin, ct.spacing, whichField)
 
     def resampleDeformationField(self, gridSize, origin, spacing, whichField='both'):
@@ -101,7 +101,7 @@ class DeformationField(Image3D):
             assert not(self.displacement is None)
             self.displacement = self.resampleVectorField(self.displacement, gridSize, origin, spacing)
         else:
-            print("parameter whichField should either be 'both', 'Velocity' or 'Displacement'.")
+            logger.error("parameter whichField should either be 'both', 'Velocity' or 'Displacement'.")
             return
 
         self.origin = list(origin)
@@ -116,7 +116,7 @@ class DeformationField(Image3D):
             if (spacing[1] > self.spacing[1]): sigma[1] = 0.4 * (spacing[1] / self.spacing[1])
             if (spacing[2] > self.spacing[2]): sigma[2] = 0.4 * (spacing[2] / self.spacing[2])
             if (sigma != [0, 0, 0]):
-                print("Field is filtered before downsampling")
+                logger.info("Field is filtered before downsampling")
 
             for i in fieldComponents:
                 initField[:, :, :, i] = scipy.ndimage.gaussian_filter(initField[:, :, :, i], sigma)
@@ -153,7 +153,6 @@ class DeformationField(Image3D):
             self.velocity[:, :, :, 2])
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
-        # print("Field exponentiation (N=" + str(N) + ')')
 
         self.displacement = self.velocity.copy() * 2 ** (-N)
 
@@ -181,7 +180,7 @@ class DeformationField(Image3D):
         if tuple(self.getGridSize()) != tuple(Im.getGridSize()) or tuple(self.origin) != tuple(
                 Im.origin) or tuple(self.spacing) != tuple(Im.spacing):
             field = self.resampleVectorField(field, Im.getGridSize(), Im.origin, Im.spacing)
-            print("Warning: image and field dimensions do not match. Resample displacement field to image grid.")
+            logger.warn("Warning: image and field dimensions do not match. Resample displacement field to image grid.")
 
         deformed = self.applyDisplacementField(Im.data, field, fillValue=fillValue)
 
@@ -191,7 +190,7 @@ class DeformationField(Image3D):
         size = img.shape
 
         if (field.shape[0:3] != size):
-            print("Error: image dimensions must match with the vector field to apply the displacement field.")
+            logger.error("Error: image dimensions must match with the vector field to apply the displacement field.")
             return
 
         x = np.arange(size[0])
@@ -227,5 +226,5 @@ class DeformationField(Image3D):
                 self.displacement[:, :, :, 0] ** 2 + self.displacement[:, :, :, 1] ** 2 + self.displacement[:, :, :,
                                                                                           2] ** 2)
         else:
-            print("parameter whichField should either be 'Velocity' or 'Displacement'.")
+            logger.error("parameter whichField should either be 'Velocity' or 'Displacement'.")
             return -1

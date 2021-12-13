@@ -3,6 +3,8 @@ import logging
 
 from Core.Processing.Registration.registration import Registration
 
+logger = logging.getLogger(__name__)
+
 
 class RegistrationTranslation(Registration):
 
@@ -12,7 +14,7 @@ class RegistrationTranslation(Registration):
         self.initialTranslation = initialTranslation
 
     def compute(self):
-        print("\nStart rigid registration.\n")
+        logger.info("\nStart rigid registration.\n")
 
         opt = scipy.optimize.minimize(self.translateAndComputeSSD, self.initialTranslation, method='Powell',
                                       options={'xtol': 0.01, 'ftol': 0.0001, 'maxiter': 25, 'maxfev': 75})
