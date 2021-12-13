@@ -1,21 +1,15 @@
 
+from Core.Data.patientInfo import PatientInfo
+
+
 class Patient:
     """
     A class Patient contains patient information and lists of patient data (images, plans, etc...)
 
     Parameters
     ----------
-    age: int
-        Patient's age
-
-    name: str
-        Patient's name
-
-    patientID: int
-        ID of the patient
-
-    sex: str
-        sex of the patient
+    patientInfo: PatientInfo object
+        Object containing the patient information
 
     images: list
         List of images associated to patient of possibly different modalities
@@ -24,11 +18,12 @@ class Patient:
         List of plans associated to patient
 
     """
-    def __init__(self):
-        self.age = 0
-        self.name = None
-        self.patientID = None
-        self.sex = None
+    def __init__(self, patientInfo=None):
+        if(patientInfo == None):
+            self.patientInfo = PatientInfo()
+        else:
+            self.patientInfo = patientInfo
+
         self.images = []
         self.plans = []
 

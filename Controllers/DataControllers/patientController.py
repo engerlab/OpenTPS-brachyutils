@@ -20,7 +20,7 @@ class PatientController(DataController):
         self.imageAddedSignal.emit(Image3DController(image))
 
     def getName(self):
-        return self.data.name
+        return self.data.patientInfo.name
 
     def getImageControllers(self):
         return [Image3DController(image) for image in self.data.images]
@@ -39,7 +39,7 @@ class PatientController(DataController):
         self.imageRemovedSignal.emit(Image3DController(image))
 
     def setName(self, name):
-        self.data.name = name
+        self.data.patientInfo.name = name
 
     def getImageIndex(self, image):
         if isinstance(image, Image3DController):

@@ -28,9 +28,9 @@ class PatientDataPanel(QWidget):
         self.layout.addWidget(loadDataButton)
 
     def loadData(self):
-        #file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
-        #ModelController().getAPI().readDicomImage(file)
-        API().loadImage(None) #test
+        file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
+        API().loadData(file)
+        #API().loadDummyImages(None) #test
 
 
 class PatientComboBox(QComboBox):
