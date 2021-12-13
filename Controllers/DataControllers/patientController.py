@@ -25,6 +25,12 @@ class PatientController(DataController):
     def getImageControllers(self):
         return [Image3DController(image) for image in self.data.images]
 
+    def hasImage(self, image):
+        if isinstance(image, Image3DController):
+            image = image.data
+
+        return self.data.hasImage(image)
+
     def removeImage(self, image):
         if isinstance(image, Image3DController):
             image = image.data

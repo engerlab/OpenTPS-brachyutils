@@ -1,20 +1,21 @@
 import pickle
 
 import numpy as np
-from PyQt5.QtCore import QObject
 
 from Controllers.DataControllers.image3DController import Image3DController
 from Controllers.DataControllers.patientController import PatientController
+from Controllers.api import API
 from Controllers.modelController import ModelController
 from Core.Data.Images.image3D import Image3D
 from Core.Data.patient import Patient
 
 
-class DICOMReaderController(ModelController):
-    def __init__(self, patientList):
-        ModelController.__init__(self, patientList)
+class DICOMReaderController(API):
+    def __init__(self, patientListController):
+        ModelController.__init__(self, patientListController)
+        API.__init__(self, patientListController)
 
-        self.apiMethods.readDicomImage = self.loadImage
+        self.loadImage = self.loadImage
 
     #TODO: This is just for the refactoring workshop. We should do smthg much better
     def loadImage(self, dataPath):

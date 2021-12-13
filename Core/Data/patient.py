@@ -44,6 +44,18 @@ class Patient:
         """
         self.images.append(image)
 
+    def hasImage(self, image):
+        """
+         Check if image is in patient's image list
+
+        Parameters
+        ----------
+        image: object
+             image object
+
+        """
+        return image in self.images
+
     def removeImage(self, image):
         """
         Remove image from patient's image list
