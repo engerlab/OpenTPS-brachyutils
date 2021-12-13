@@ -44,12 +44,3 @@ class DataController(QObject):
         self.data = data
 
 
-if __name__ == '__main__':
-    data1 = 'jlj'
-
-    p1 = DataController(data1)
-    print(p1.data)
-    p2 = DataController('khkh')
-    print(p2.data)
-    p3 =  DataController(data1)
-    print(p1 == p3)
