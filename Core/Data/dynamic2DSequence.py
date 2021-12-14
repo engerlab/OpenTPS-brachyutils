@@ -5,7 +5,7 @@ from Core.Data.patientData import PatientData
 class Dynamic2DSequence(PatientData):
 
     def __init__(self, imageList = [], timingsList = [], sequenceName = "newSequence"):
-
+        super().__init__()
         self.sequenceName = sequenceName
         self.dyn2DImageList = imageList
         self.timingsList = timingsList

@@ -3,11 +3,11 @@ import ctypes
 import scipy.interpolate
 import platform
 
-def Trilinear_Interpolation(Image, GridSize, InterpolatedPoints, fill_value=0):
+def Trilinear_Interpolation(Image, GridSize, InterpolatedPoints, fillValue=0):
   try:
     # import C library
-    if(platform.system() == "Linux"): libInterp3 = ctypes.cdll.LoadLibrary("Process/C_libraries/libInterp3.so")
-    elif(platform.system() == "Windows"): libInterp3 = ctypes.cdll.LoadLibrary("Process/C_libraries/libInterp3.dll")
+    if(platform.system() == "Linux"): libInterp3 = ctypes.cdll.LoadLibrary("Core/Processing/C_libraries/libInterp3.so")
+    elif(platform.system() == "Windows"): libInterp3 = ctypes.cdll.LoadLibrary("Core/Processing/C_libraries/libInterp3.dll")
     else: print("Error: not compatible with " + platform.system() + " system.")
     float_array = np.ctypeslib.ndpointer(dtype=np.float32)
     int_array = np.ctypeslib.ndpointer(dtype=np.int32)
@@ -22,7 +22,7 @@ def Trilinear_Interpolation(Image, GridSize, InterpolatedPoints, fill_value=0):
     Intepolated_img = np.zeros(NumPoints, dtype=np.float32, order='C')
 
     # call C function
-    libInterp3.Trilinear_Interpolation(Img, Size, Points, NumPoints, fill_value, Intepolated_img)
+    libInterp3.Trilinear_Interpolation(Img, Size, Points, NumPoints, fillValue, Intepolated_img)
 
   except:
     print('Warning: accelerated 3D interpolation not enabled. The python implementation is used instead')
@@ -31,8 +31,8 @@ def Trilinear_Interpolation(Image, GridSize, InterpolatedPoints, fill_value=0):
     y = np.arange(GridSize[1])
     z = np.arange(GridSize[2])
 
-    Intepolated_img = scipy.interpolate.interpn((x,y,z), Image, InterpolatedPoints, method='linear', fill_value=fill_value, bounds_error=False)
-    # f_interp = scipy.interpolate.RegularGridInterpolator((x,y,z), Image, method='linear', fill_value=fill_value, bounds_error=False)
+    Intepolated_img = scipy.interpolate.interpn((x,y,z), Image, InterpolatedPoints, method='linear', fill_value=fillValue, bounds_error=False)
+    # f_interp = scipy.interpolate.RegularGridInterpolator((x,y,z), Image, method='linear', fill_value=fillValue, bounds_error=False)
     # self.Image = f_interp(InterpolatedPoints)
 
 

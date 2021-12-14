@@ -1,13 +1,12 @@
-from Core.Data.Image.image3D import Image3D
+from Core.Data.Images.image3D import Image3D
 
 
 class DoseImage(Image3D):
 
-    def __init__(self):
-        self.ctSeriesInstanceUID = ""
-        self.planSOPInstanceUID = ""
-        self.frameOfReferenceUID = ""
-        self.imgName = ""
+    def __init__(self, data=None, name="Dose image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", frameOfReferenceUID="", sopInstanceUID="", planSOPInstanceUID=""):
+        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID, frameOfReferenceUID=frameOfReferenceUID)
+        self.sopInstanceUID = sopInstanceUID
+        self.planSOPInstanceUID = planSOPInstanceUID
 
 
 
@@ -16,11 +15,6 @@ class DoseImage(Image3D):
         Overload __str__ function that is called when one print the object.
         """
 
-        pass
-    
-   
-  
-    def prepareImageForViewer(self, allowNegative=False):
         pass
     
     
@@ -67,16 +61,11 @@ class DoseImage(Image3D):
       
     def resampleToCtGrid(self, ct):
         pass
-    
-    
-      
-    def resampleImage(self, gridSize, offset, pixelSpacing):
-        pass
 
 
 
     def copy(self):
-        pass
+        return super().copy()
         
         
     def exportDicom(self, outputFile, planUID=[]):

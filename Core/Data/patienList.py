@@ -1,10 +1,13 @@
 
 class PatientList():
     def __init__(self):
-        self.list = None
+        self.list = []
 
     def __getitem__(self, index):
         return self.list[index]
+
+    def __len__(self):
+        return len(self.list)
 
     def append(self, patient):
         self.list.append(patient)
