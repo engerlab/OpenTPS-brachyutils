@@ -6,8 +6,7 @@ class DataController(QObject):
 
     def __new__(cls, data):
         if isinstance(data, DataController):
-            if issubclass(cls, data.__class__):
-                data.__class__ = cls # Subclass the existing data controller
+            data.__class__ = cls # Subclass the existing data controller
             return data
 
         if data is None:
