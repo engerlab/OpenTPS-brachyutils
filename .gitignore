@@ -6,3 +6,4 @@ README.sublime-workspace
 *.dat
 /test_*
 config.txt
+*py.sw*
