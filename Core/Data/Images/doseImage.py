@@ -17,11 +17,6 @@ class DoseImage(Image3D):
 
         pass
     
-   
-  
-    def prepareImageForViewer(self, allowNegative=False):
-        pass
-    
     
     
     def initializeFromMHD(self, imgName, mhdDose, ct, plan):
@@ -65,11 +60,6 @@ class DoseImage(Image3D):
     
       
     def resampleToCtGrid(self, ct):
-        pass
-    
-    
-      
-    def resampleImage(self, gridSize, offset, pixelSpacing):
         pass
 
 

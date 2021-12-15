@@ -4,6 +4,7 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
     QStackedWidget, QListView, QLineEdit, QAbstractItemView
 
+from Controllers.api import API
 from Controllers.modelController import ModelController
 
 
@@ -27,9 +28,9 @@ class PatientDataPanel(QWidget):
         self.layout.addWidget(loadDataButton)
 
     def loadData(self):
-        #file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
-        #ModelController().getAPI().readDicomImage(file)
-        ModelController().getAPI().readDicomImage(None) #test
+        file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
+        API().loadData(file)
+        #API().loadDummyImages(None) #test
 
 
 class PatientComboBox(QComboBox):

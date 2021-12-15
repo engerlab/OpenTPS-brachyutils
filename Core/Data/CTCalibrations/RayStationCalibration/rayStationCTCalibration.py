@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.interpolate import interpolate
 
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Data.CTCalibrations.RayStationCalibration.rayStationDensity2Material import RayStationDensity2Material
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.CTCalibrations.piecewiseHU2Density import PiecewiseHU2Density

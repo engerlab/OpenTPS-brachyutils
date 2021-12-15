@@ -12,9 +12,6 @@ class PatientController(DataController):
     def __init__(self, patient):
         super().__init__(patient)
 
-    def __setattr__(self, key, value):
-        super().__setattr__(key, value)
-
     def appendImage(self, image):
         if isinstance(image, Image3DController):
             image = image.data
@@ -23,10 +20,16 @@ class PatientController(DataController):
         self.imageAddedSignal.emit(Image3DController(image))
 
     def getName(self):
-        return self.data.name
+        return self.data.patientInfo.name
 
     def getImageControllers(self):
         return [Image3DController(image) for image in self.data.images]
+
+    def hasImage(self, image):
+        if isinstance(image, Image3DController):
+            image = image.data
+
+        return self.data.hasImage(image)
 
     def removeImage(self, image):
         if isinstance(image, Image3DController):
@@ -36,7 +39,7 @@ class PatientController(DataController):
         self.imageRemovedSignal.emit(Image3DController(image))
 
     def setName(self, name):
-        self.data.name = name
+        self.data.patientInfo.name = name
 
     def getImageIndex(self, image):
         if isinstance(image, Image3DController):

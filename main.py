@@ -13,19 +13,19 @@ from GUI.MainWindow import *
 
 
 if __name__ == '__main__':
-  app = QApplication.instance()
-  if not app:
-    app = QApplication([])
+    app = QApplication.instance()
+    if not app:
+        app = QApplication([])
 
-  patientList = PatientList()
-  patientListController = PatientListController(patientList)
+    patientList = PatientList()
+    patientListController = PatientListController(patientList)
 
-  #TODO Find a better way to instantiate the API
-  instantiateAPI(patientListController)
+    #TODO Find a better way to instantiate the API
+    instantiateAPI(patientListController)
 
-  # instantiate the main GUI window
-  viewController = ViewController(patientListController)
-  mainWindow = MainWindow(viewController)
-  mainWindow.show()
+    # instantiate the main GUI window
+    viewController = ViewController(patientListController)
+    mainWindow = MainWindow(viewController)
+    mainWindow.show()
 
-  app.exec_()
+    app.exec_()

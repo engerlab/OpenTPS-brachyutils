@@ -2,6 +2,7 @@ import os
 import re
 
 from Core.Data.CTCalibrations.MCsquareCalibration.G4StopPow import G4StopPow
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareElement import MCsquareElement
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
 
 
