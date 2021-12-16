@@ -2,7 +2,7 @@ import numpy as np
 from pydicom.uid import generate_uid
 
 from Core.Data.patientData import PatientData
-from Core.Data.Images.deformationField import DeformationField
+from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
 
 
@@ -21,7 +21,7 @@ class Dynamic3DModel(PatientData):
             print("Reference index is out of bound")
             return -1
 
-        averageField = DeformationField()
+        averageField = Deformation3D()
 
         # perform registrations
         self.motionFieldList = []
@@ -29,18 +29,17 @@ class Dynamic3DModel(PatientData):
         for i in range(len(CT4D.dyn3DImageList)):
 
             if i == refIndex:
-                self.motionFieldList.append(DeformationField())
+                self.motionFieldList.append(Deformation3D())
             else:
                 print('\nRegistering phase', refIndex, 'to phase', i, '...')
                 reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=morphonsResolution, nbProcesses=nbProcesses)
                 self.motionFieldList.append(reg.compute())
-                fieldShape = self.motionFieldList[i].velocity.shape[0:3]
                 if (max(averageField.getGridSize()) == 0):
-                    averageField.initFieldWithZeros(fieldShape)
+                    averageField.initFromImage(self.motionFieldList[i])
 
-            averageField.velocity += self.motionFieldList[i].velocity
+            averageField.data += self.motionFieldList[i].data
 
-        self.motionFieldList[refIndex].initFieldWithZeros(fieldShape)
+        self.motionFieldList[refIndex].initFromImage(averageField)
         averageField.velocity /= len(self.motionFieldList)
 
         # compute fields to midp

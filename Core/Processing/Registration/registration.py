@@ -58,17 +58,17 @@ class Registration:
         """
 
         if filterType == "Gaussian":
-            field.velocity[:, :, :, 0] = scipy.ndimage.gaussian_filter(field.velocity[:, :, :, 0], sigma=sigma)
-            field.velocity[:, :, :, 1] = scipy.ndimage.gaussian_filter(field.velocity[:, :, :, 1], sigma=sigma)
-            field.velocity[:, :, :, 2] = scipy.ndimage.gaussian_filter(field.velocity[:, :, :, 2], sigma=sigma)
+            field.velocity.data[:, :, :, 0] = scipy.ndimage.gaussian_filter(field.velocity.data[:, :, :, 0], sigma=sigma)
+            field.velocity.data[:, :, :, 1] = scipy.ndimage.gaussian_filter(field.velocity.data[:, :, :, 1], sigma=sigma)
+            field.velocity.data[:, :, :, 2] = scipy.ndimage.gaussian_filter(field.velocity.data[:, :, :, 2], sigma=sigma)
             return
 
         if filterType == "NormalizedGaussian":
             if cert is None:
-                cert = np.ones_like(field.velocity[:, :, :, 0])
-            field.velocity[:, :, :, 0] = self.normGaussConv(field.velocity[:, :, :, 0], cert, sigma)
-            field.velocity[:, :, :, 1] = self.normGaussConv(field.velocity[:, :, :, 1], cert, sigma)
-            field.velocity[:, :, :, 2] = self.normGaussConv(field.velocity[:, :, :, 2], cert, sigma)
+                cert = np.ones_like(field.velocity.data[:, :, :, 0])
+            field.velocity.data[:, :, :, 0] = self.normGaussConv(field.velocity.data[:, :, :, 0], cert, sigma)
+            field.velocity.data[:, :, :, 1] = self.normGaussConv(field.velocity.data[:, :, :, 1], cert, sigma)
+            field.velocity.data[:, :, :, 2] = self.normGaussConv(field.velocity.data[:, :, :, 2], cert, sigma)
             return
 
         else:
