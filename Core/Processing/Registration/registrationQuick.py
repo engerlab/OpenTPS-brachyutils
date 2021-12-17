@@ -3,6 +3,8 @@ import logging
 
 from Core.Processing.Registration.registration import Registration
 
+logger = logging.getLogger(__name__)
+
 
 def matchProfiles(fixed, moving):
     mse = []
@@ -34,10 +36,10 @@ class RegistrationQuick(Registration):
 
     def compute(self):
         if self.fixed == [] or self.moving == []:
-            print("Image not defined in registration object")
+            logger.error("Image not defined in registration object")
             return
 
-        print("\nStart quick translation search.\n")
+        logger.info("\nStart quick translation search.\n")
 
         translation = [0.0, 0.0, 0.0]
 
