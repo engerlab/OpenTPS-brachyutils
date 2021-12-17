@@ -2,10 +2,10 @@ import os
 
 import numpy as np
 
-from Data.CTCalibration.MCsquareCalibration.MCSquareMolecule import MCSquareMolecule
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMolecule import MCsquareMolecule
 
 
-class MCSquareHU2Material:
+class MCsquareHU2Material:
     def __init__(self, piecewiseTable=(None, None), fromFile=(None, 'default')):
         self.__hu = piecewiseTable[0]
         self.__materials = piecewiseTable[1]
@@ -45,7 +45,7 @@ class MCSquareHU2Material:
                 if len(lineSplit) > 1:
                     self.__hu.append(float(lineSplit[0]))
 
-                    material = MCSquareMolecule()
+                    material = MCsquareMolecule()
                     material.load(int(lineSplit[1]), materialsPath)
                     self.__materials.append(material)
 

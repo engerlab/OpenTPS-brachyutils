@@ -5,14 +5,14 @@ import logging
 from Core.IO.dicomReader import readDicomCT, readDicomDose
 
 
-def loadAllData(inputPath, maxDepth=-1):
+def loadAllData(inputPaths, maxDepth=-1):
     """
     Load all data found at the given input path.
 
     Parameters
     ----------
-    inputPath: str
-        Path to the file or folder containing the data to be loaded.
+    inputPaths: str or list
+        Path or list of paths pointing to the data to be loaded.
 
     maxDepth: int, optional
         Maximum subfolder depth where the function will check for data to be loaded.
@@ -25,7 +25,7 @@ def loadAllData(inputPath, maxDepth=-1):
 
     """
 
-    fileLists = listAllFiles(inputPath, maxDepth=maxDepth)
+    fileLists = listAllFiles(inputPaths, maxDepth=maxDepth)
     dataList = []
 
     # read Dicom files
@@ -78,14 +78,14 @@ def loadAllData(inputPath, maxDepth=-1):
 
 
 
-def listAllFiles(inputPath, maxDepth=-1):
+def listAllFiles(inputPaths, maxDepth=-1):
     """
-    List all files of compatible data format from given input path.
+    List all files of compatible data format from given input paths.
 
     Parameters
     ----------
-    inputPath: str
-        Path to the file or folder containing the data files to be listed.
+    inputPaths: str or list
+        Path or list of paths pointing to the data to be listed.
 
     maxDepth: int, optional
         Maximum subfolder depth where the function will check for files to be listed.
@@ -103,16 +103,26 @@ def listAllFiles(inputPath, maxDepth=-1):
         "MHD": []
     }
 
+    # if inputPaths is a list of path, then iteratively call this function with each path of the list
+    if(isinstance(inputPaths, list)):
+        for path in inputPaths:
+            lists = listAllFiles(path, maxDepth=maxDepth)
+            for key in fileLists:
+                fileLists[key] += lists[key]
 
-    if os.path.isdir(inputPath):
-        inputPathContent = os.listdir(inputPath)
+        return fileLists
+
+
+    # check content of the input path
+    if os.path.isdir(inputPaths):
+        inputPathContent = os.listdir(inputPaths)
     else:
-        inputPathContent = [inputPath]
-        inputPath = ""
+        inputPathContent = [inputPaths]
+        inputPaths = ""
 
 
     for fileName in inputPathContent:
-        filePath = os.path.join(inputPath, fileName)
+        filePath = os.path.join(inputPaths, fileName)
 
         # folders
         if os.path.isdir(filePath):

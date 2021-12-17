@@ -1,3 +1,5 @@
+import logging
+import sys
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
@@ -7,25 +9,31 @@ from Controllers.instantiateAPI import instantiateAPI
 from Core.Data.patienList import PatientList
 from GUI.ViewControllers.viewController import ViewController
 
+import parser
+
 QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid display bug for 4k resolutions with 200% GUI scale
 
 from GUI.MainWindow import *
 
+logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
-  app = QApplication.instance()
-  if not app:
-    app = QApplication([])
 
-  patientList = PatientList()
-  patientListController = PatientListController(patientList)
+    options = parser._parse_args(sys.argv[1:])
+    logger.info("Start Application")
+    app = QApplication.instance()
+    if not app:
+        app = QApplication([])
 
-  #TODO Find a better way to instantiate the API
-  instantiateAPI(patientListController)
+    patientList = PatientList()
+    patientListController = PatientListController(patientList)
 
-  # instantiate the main GUI window
-  viewController = ViewController(patientListController)
-  mainWindow = MainWindow(viewController)
-  mainWindow.show()
+    #TODO Find a better way to instantiate the API
+    instantiateAPI(patientListController)
 
-  app.exec_()
+    # instantiate the main GUI window
+    viewController = ViewController(patientListController)
+    mainWindow = MainWindow(viewController)
+    mainWindow.show()
+
+    app.exec_()
