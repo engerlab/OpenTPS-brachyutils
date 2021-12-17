@@ -7,4 +7,5 @@ README.sublime-workspace
 /test_*
 config.txt
 *py.sw*
+*.swp
 docs/build
