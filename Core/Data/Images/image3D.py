@@ -26,7 +26,7 @@ class Image3D(PatientData):
 
     def __str__(self):
         gs = self.getGridSize()
-        s = 'Image3D ' + str(gs[0]) + 'x' +  str(gs[1]) + '\n'
+        s = 'Image3D ' + str(gs[0]) + ' x ' +  str(gs[1]) +  ' x ' +  str(gs[2]) + '\n'
         return s
 
     def getGridSize(self):
