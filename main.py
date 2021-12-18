@@ -9,7 +9,7 @@ from Controllers.instantiateAPI import instantiateAPI
 from Core.Data.patientList import PatientList
 from GUI.ViewControllers.viewController import ViewController
 
-import logConfigParser
+from logConfigParser import parseArgs
 
 QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid display bug for 4k resolutions with 200% GUI scale
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
 
-    options = logConfigParser._parse_args(sys.argv[1:])
+    options = parseArgs(sys.argv[1:])
     logger.info("Start Application")
     app = QApplication.instance()
     if not app:
