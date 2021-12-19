@@ -46,7 +46,10 @@ class DataLoaderController(API):
                 patientController = self.patientListController.getPatientController(index)
 
             # add data to patient
-            if(isinstance(data, CTImage)):
+            if(isinstance(data, Image3D)):
+                imageController = Image3DController(data)
+                patientController.appendImage(imageController)
+            elif(isinstance(data, CTImage)):
                 imageController = CTImageController(data)
                 patientController.appendImage(imageController)
             elif(isinstance(data, DoseImage)):

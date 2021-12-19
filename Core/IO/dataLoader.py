@@ -3,6 +3,7 @@ import pydicom
 import logging
 
 from Core.IO.dicomReader import readDicomCT, readDicomDose
+from Core.IO import mhdReadWrite
 
 
 def loadAllData(inputPaths, maxDepth=-1):
@@ -71,8 +72,8 @@ def loadAllData(inputPaths, maxDepth=-1):
 
     # read MHD images
     for filePath in fileLists["MHD"]:
-        logging.warning("WARNING: cannot import " + filePath + " because MHD import is not implemented yet")
-
+        mhdImage = mhdReadWrite.importImageMHD(filePath)
+        dataList.append(mhdImage)
 
     return dataList
 
@@ -154,7 +155,7 @@ def listAllFiles(inputPaths, maxDepth=-1):
                         continue
 
             # Unknown file format
-            logging.info("INFO: cannot recognize file format of ", filePath)
+            logging.info("INFO: cannot recognize file format of " + filePath)
 
     return fileLists
 
