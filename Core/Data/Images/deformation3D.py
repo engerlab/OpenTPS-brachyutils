@@ -73,17 +73,21 @@ class Deformation3D(Image3D):
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def deformImage(self, Image, fillValue=-1000):
+    def deformImage(self, image, fillValue=-1000):
 
         if (self.displacement is None):
             field = self.velocity.exponentiateField()
         else:
             field = self.displacement
 
-        if tuple(self.getGridSize()) != tuple(Image.getGridSize()) or tuple(self.origin) != tuple(
-                Image.origin) or tuple(self.spacing) != tuple(Image.spacing):
-            field = self.resampleVectorField(field, Image.getGridSize(), Image.origin, Image.spacing)
+        if tuple(self.getGridSize()) != tuple(image.getGridSize()) or tuple(self.origin) != tuple(
+                image.origin) or tuple(self.spacing) != tuple(image.spacing):
+            field = field.copy()
+            field.resample(image.getGridSize(), image.origin, image.spacing)
             logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
 
-        Image.data = field.warp(Image.data, fillValue=fillValue)
+        image = image.copy()
+        image.data = field.warp(image.data, fillValue=fillValue)
+
+        return image
 

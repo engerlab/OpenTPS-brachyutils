@@ -91,7 +91,7 @@ class RegistrationMorphons(Registration):
                                      fixedResampled.spacing)
 
             if s != 0:
-                deformation.resampleToCTGrid(fixedResampled)
+                deformation.resampleToImageGrid(fixedResampled)
                 certainty.resample(fixedResampled.getGridSize(), fixedResampled.origin,
                                    fixedResampled.spacing, fillValue=0)
             else:
@@ -113,9 +113,7 @@ class RegistrationMorphons(Registration):
             for i in range(iterations[s]):
 
                 # Deform moving image
-                deformed = movingResampled.copy()
-                if s != 0 or i != 0:
-                    deformation.deformImage(deformed, fillValue='closest')
+                deformed = deformation.deformImage(movingResampled, fillValue='closest')
 
                 # Compute phase difference
                 a11 = np.zeros_like(qFixed[0], dtype="float64")
@@ -196,7 +194,6 @@ class RegistrationMorphons(Registration):
                 self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
                 certainty.data = self.normGaussConv(certainty.data, certainty.data, 1.25)
 
-        self.deformed = self.moving.copy()
-        self.deformed.data = deformation.deformImage(self.deformed, fillValue='closest')
+        self.deformed = deformation.deformImage(self.moving, fillValue='closest')
 
         return deformation

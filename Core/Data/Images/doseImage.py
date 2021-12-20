@@ -61,7 +61,7 @@ class DoseImage(Image3D):
     
     
       
-    def resampleToCtGrid(self, ct):
+    def resampleToImageGrid(self, ct):
         pass
 
 

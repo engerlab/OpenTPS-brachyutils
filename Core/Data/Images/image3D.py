@@ -32,7 +32,8 @@ class Image3D(PatientData):
     def getGridSize(self):
         if self.data is None:
             return (0, 0, 0)
-
+        elif np.size(self.data) == 0:
+            return (0, 0, 0)
         return self.data.shape[0:3]
 
     def copy(self):
@@ -98,7 +99,7 @@ class Image3D(PatientData):
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def resampleToCTGrid(self, ct, fillValue=0):
-        if (not ct.hasSameGrid(self)):
+    def resampleToImageGrid(self, image, fillValue=0):
+        if (not image.hasSameGrid(self)):
             logger.info('Resample field to CT grid.')
-            self.resample(ct.getGridSize(), ct.origin, ct.spacing, fillValue=fillValue)
+            self.resample(image.getGridSize(), image.origin, image.spacing, fillValue=fillValue)
