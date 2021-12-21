@@ -90,7 +90,7 @@ class Image3D(PatientData):
             field = np.zeros((*gridSize, vectorDimension))
             for i in range(vectorDimension):
                 fieldTemp = Trilinear_Interpolation(self.data[:, :, :, i], initGridSize, xi, fillValue=fillValue)
-                field[:, :, :, i] = fieldTemp.reshape((gridSize[1], gridSize[0], gridSize[2])).transpose(1, 0, 2) * self.spacing[i] / spacing[i]
+                field[:, :, :, i] = fieldTemp.reshape((gridSize[1], gridSize[0], gridSize[2])).transpose(1, 0, 2)
             self.data = field
         else:
             self.data = Trilinear_Interpolation(self.data, initGridSize, xi, fillValue=fillValue)

@@ -214,10 +214,6 @@ def readDicomVectorField(dcmFile):
         order='F').transpose(1, 2, 3, 0)
     fieldData = rawField.copy()
 
-    # convert from mm to pixels
-    for i in range(3):
-        fieldData[:, :, :, i] = fieldData[:, :, :, i] / pixelSpacing[i]
-
     # collect patient information
     patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                               sex=dcm.PatientSex)
