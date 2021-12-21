@@ -1,6 +1,7 @@
 from PyQt5.QtCore import pyqtSignal
 
 from Controllers.DataControllers.dataController import DataController
+from Controllers.DataControllers.roiContourController import ROIContourController
 
 
 class RTStructController(DataController):
@@ -19,3 +20,6 @@ class RTStructController(DataController):
 
     def notifyDataChange(self):
         self.dataChangedSignal.emit(self.data)
+
+    def getContourController(self, index):
+        return ROIContourController(self.data.contours[index])
