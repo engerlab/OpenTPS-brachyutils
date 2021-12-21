@@ -1,5 +1,6 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from GUI.Panels.viewerPanel.gridElementToolbar import ElementToolbar
 from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewers.dvhPlot import DVHPlot
 from GUI.Viewers.profilePlot import ProfilePlot
@@ -12,19 +13,20 @@ class GridElementController(QObject):
     DISPLAY_PROFILE = 'PROFILE'
     DISPLAY_SLICEVIEWER = 'SLICE'
 
-    displayChangedSignal = pyqtSignal(object)
-
-    def __init__(self, viewerPanelController):
+    def __init__(self, gridElement, viewerPanelController):
         QObject.__init__(self)
 
         self._currentView = None
         self._displayType = None
         self._dropEnabled = False
+        self._elementToolbar = ElementToolbar(self)
         self._profileViewer = None
         self._sliceViewer = None
         self._sliceViewer = None
+        self._view = gridElement
         self._viewerPanelController = viewerPanelController
 
+        self._view.setToolbar(self._elementToolbar)
         self.setDisplayType(self.DISPLAY_SLICEVIEWER)
         self._viewerPanelController.independentViewsEnabledSignal.connect(self.setDropEnabled)
 
@@ -89,7 +91,8 @@ class GridElementController(QObject):
 
             self.setDropEnabled(self._dropEnabled)
 
-        self.displayChangedSignal.emit(self._currentView)
+        self._view.setDisplayWidget(self._currentView)
+        self._elementToolbar.handleDisplayChange(self._currentView)
 
     def setDropEnabled(self, enabled):
         self._dropEnabled = enabled

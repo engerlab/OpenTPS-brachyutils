@@ -22,7 +22,8 @@ class GridController(QObject):
 
     def setMainImage(self, imageController):
         for controller in self._gridElementControllers:
-            controller.setMainImage(imageController)
+            if hasattr(controller, 'setMainImage'):
+                controller.setMainImage(imageController)
 
     def setSecondaryImage(self, imageController):
         for controller in self._gridElementControllers:
