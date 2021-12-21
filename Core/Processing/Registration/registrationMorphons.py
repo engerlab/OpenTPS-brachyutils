@@ -87,8 +87,7 @@ class RegistrationMorphons(Registration):
             fixedResampled = self.fixed.copy()
             fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.getGridSize(), fixedResampled.origin,
-                                     fixedResampled.spacing)
+            movingResampled.resample(fixedResampled.getGridSize(), fixedResampled.origin, fixedResampled.spacing)
 
             if s != 0:
                 deformation.resampleToImageGrid(fixedResampled)
@@ -176,9 +175,9 @@ class RegistrationMorphons(Registration):
                 fieldUpdate[z, 1] = 0
                 fieldUpdate[z, 2] = 0
                 certaintyUpdate[z] = 0
-                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)
-                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)
-                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)
+                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)*deformation.velocity.spacing[0]
+                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)*deformation.velocity.spacing[1]
+                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)*deformation.velocity.spacing[2]
 
                 # Accumulate deformation and certainty
                 deformation.velocity.data[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,

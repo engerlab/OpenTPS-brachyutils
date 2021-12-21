@@ -37,23 +37,21 @@ class VectorField3D(Image3D):
         xi = np.rollaxis(xi, 0, 4)
         xi = xi.reshape((xi.size // 3, 3))
         xi = xi.astype('float32')
-        xi[:, 0] += self.data[:, :, :, 0].transpose(1, 0, 2).reshape((xi.shape[0],))
-        xi[:, 1] += self.data[:, :, :, 1].transpose(1, 0, 2).reshape((xi.shape[0],))
-        xi[:, 2] += self.data[:, :, :, 2].transpose(1, 0, 2).reshape((xi.shape[0],))
+        xi[:, 0] += self.data[:, :, :, 0].transpose(1, 0, 2).reshape((xi.shape[0],))/self.spacing[0]
+        xi[:, 1] += self.data[:, :, :, 1].transpose(1, 0, 2).reshape((xi.shape[0],))/self.spacing[1]
+        xi[:, 2] += self.data[:, :, :, 2].transpose(1, 0, 2).reshape((xi.shape[0],))/self.spacing[2]
         if fillValue == 'closest':
             xi[:, 0] = np.maximum(np.minimum(xi[:, 0], size[0] - 1), 0)
             xi[:, 1] = np.maximum(np.minimum(xi[:, 1], size[1] - 1), 0)
             xi[:, 2] = np.maximum(np.minimum(xi[:, 2], size[2] - 1), 0)
             fillValue = -1000
-        # output = scipy.interpolate.interpn((x,y,z), data, xi, method='linear', fillValue=fillValue, bounds_error=False)
         output = Trilinear_Interpolation(data, size, xi, fillValue=fillValue)
         output = output.reshape((size[1], size[0], size[2])).transpose(1, 0, 2)
 
         return output
 
     def exponentiateField(self):
-        norm = np.square(self.data[:, :, :, 0]) + np.square(self.data[:, :, :, 1]) + np.square(
-            self.data[:, :, :, 2])
+        norm = np.square(self.data[:, :, :, 0]/self.spacing[0]) + np.square(self.data[:, :, :, 1]/self.spacing[1]) + np.square(self.data[:, :, :, 2]/self.spacing[2])
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
 
