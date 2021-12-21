@@ -2,6 +2,7 @@
 import logging
 import numpy as np
 
+from Controllers.modelController import ModelController
 from Core.Data.patient import Patient
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.ctImage import CTImage
@@ -13,12 +14,12 @@ from Controllers.DataControllers.doseImageController import DoseImageController
 from Controllers.DataControllers.patientController import PatientController
 from Controllers.api import API
 
-class DataLoaderController(API):
+class DataLoaderController(ModelController):
     def __init__(self, patientListController):
-        API.__init__(self, patientListController)
+        ModelController.__init__(self, patientListController)
 
-        self.registerToAPI(self.loadData.__name__, self.loadData)
-        self.registerToAPI(self.loadDummyImages.__name__, self.loadDummyImages)
+        API.registerToAPI(self.loadData.__name__, self.loadData)
+        API.registerToAPI(self.loadDummyImages.__name__, self.loadDummyImages)
 
 
     def loadData(self, dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):

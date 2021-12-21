@@ -75,5 +75,5 @@ class API(ModelController):
 
         method(*args, **kwargs)
 
-    def registerToAPI(self, methodName, method):
-        self._apiMethods.__setattr__(methodName, method)
+    def registerToAPI(methodName, method):
+        API._apiMethods.__setattr__(methodName, method)
