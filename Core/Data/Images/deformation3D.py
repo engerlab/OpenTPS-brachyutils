@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class Deformation3D(Image3D):
 
-    def __init__(self, data=None, name="3D Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), UID=""):
+    def __init__(self, data=None, name="Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), UID=""):
 
         super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, UID=UID)
 
@@ -30,40 +30,27 @@ class Deformation3D(Image3D):
     def initFromImage(self, image):
         self.velocity = VectorField3D()
         self.velocity.initFromImage(image)
+        self.displacement = None
         self.origin = image.origin
         self.spacing = image.spacing
+        self.angles = image.angles
+        self.patientInfo = image.patientInfo
 
-    def import_Dicom_DF(self, DcmFile, df_type='Velocity'):
+    def initFromVelocityField(self, field):
+        self.velocity = field
+        self.displacement = None
+        self.origin = field.origin
+        self.spacing = field.spacing
+        self.angles = field.angles
+        self.patientInfo = field.patientInfo
 
-        dcm = pydicom.dcmread(DcmFile).DeformableRegistrationSequence[0]
-
-        # import deformation field
-        dcm_field = dcm.DeformableRegistrationGridSequence[0]
-
-        self.origin = dcm_field.ImagePositionPatient
-        self.spacing = dcm_field.GridResolution
-
-        raw_field = np.frombuffer(dcm_field.VectorGridData, dtype=np.float32)
-        raw_field = raw_field.reshape(
-            (3, dcm_field.GridDimensions[0], dcm_field.GridDimensions[1], dcm_field.GridDimensions[2]),
-            order='F').transpose(1, 2, 3, 0)
-        field = raw_field.copy()
-        for i in range(3):
-            field[:, :, :, i] = field[:, :, :, i] / self.spacing[i]
-
-        if df_type == 'Velocity':
-            self.velocity = VectorField3D()
-            self.velocity.data = field
-            self.velocity.origin = self.origin
-            self.velocity.spacing = self.spacing
-        elif df_type == 'Displacement':
-            self.displacement = VectorField3D()
-            self.displacement.data = field
-            self.displacement.origin = self.origin
-            self.displacement.spacing = self.spacing
-        else:
-            logger.error("Unknown deformation field type")
-            return
+    def initFromDisplacementField(self, field):
+        self.velocity = None
+        self.displacement = field
+        self.origin = field.origin
+        self.spacing = field.spacing
+        self.angles = field.angles
+        self.patientInfo = field.patientInfo
 
     def resample(self, gridSize, origin, spacing, fillValue=0):
         if not(self.velocity is None):

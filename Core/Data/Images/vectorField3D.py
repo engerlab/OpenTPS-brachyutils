@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class VectorField3D(Image3D):
 
-    def __init__(self, data=None, name="3D Vector Field", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1),
+    def __init__(self, data=None, name="Vector Field", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1),
                  angles=(0, 0, 0), UID=""):
 
         super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles,

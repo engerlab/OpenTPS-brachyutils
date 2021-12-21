@@ -9,6 +9,7 @@ from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.roiStruct import ROIStruct
 from Core.Data.Images.roiContour import ROIContour
+from Core.Data.Images.vectorField3D import VectorField3D
 
 def readDicomCT(dcmFiles):
     """
@@ -206,3 +207,52 @@ def readDicomStruct(dcmFile, refImage):
     roiStruct.numContours = len(contours)
     return roiStruct
 
+def readDicomVectorField(dcmFile):
+    """
+    Read a Dicom vector field file and generate a vector field object.
+
+    Parameters
+    ----------
+    dcmFile: str
+        Path of the Dicom vector field file.
+
+    Returns
+    -------
+    field: vectorField3D object
+        The function returns the imported vector field
+    """
+
+    dcm = pydicom.dcmread(dcmFile)
+
+    # import vector field
+    dcmSeq = dcm.DeformableRegistrationSequence[0]
+    dcmField = dcmSeq.DeformableRegistrationGridSequence[0]
+
+    imagePositionPatient = dcmField.ImagePositionPatient
+    pixelSpacing = dcmField.GridResolution
+
+    rawField = np.frombuffer(dcmField.VectorGridData, dtype=np.float32)
+    rawField = rawField.reshape(
+        (3, dcmField.GridDimensions[0], dcmField.GridDimensions[1], dcmField.GridDimensions[2]),
+        order='F').transpose(1, 2, 3, 0)
+    fieldData = rawField.copy()
+
+    # convert from mm to pixels
+    for i in range(3):
+        fieldData[:, :, :, i] = fieldData[:, :, :, i] / pixelSpacing[i]
+
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                              sex=dcm.PatientSex)
+
+    # collect other information
+    if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
+        fieldName = dcm.SeriesDescription
+    else:
+        fieldName = dcm.SeriesInstanceUID
+
+    # generate dose image object
+    field = VectorField3D(data=fieldData, name=fieldName, patientInfo=patientInfo, origin=imagePositionPatient,
+                      spacing=pixelSpacing)
+
+    return field
