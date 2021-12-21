@@ -1,7 +1,9 @@
 from PyQt5.QtWidgets import QToolBox
 
 from GUI.Panels.patientDataPanel import PatientDataPanel
+from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.ViewControllers.patientDataPanelController import PatientDataPanelController
+from GUI.ViewControllers.scriptingController import ScriptingController
 
 
 class MainToolbar(QToolBox):
@@ -19,3 +21,7 @@ class MainToolbar(QToolBox):
         patientDataPanelController = PatientDataPanelController(self._viewController)
         patientDataPanel = PatientDataPanel(patientDataPanelController)
         self.addItem(patientDataPanel, 'Patient data')
+
+        scriptingPanel = ScriptingPanel()
+        self._scriptingController = ScriptingController(scriptingPanel)
+        self.addItem(scriptingPanel, 'Scripting')
