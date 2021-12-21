@@ -450,19 +450,19 @@ class SliceViewerVTK(QWidget):
   def setView(self, viewName):
     axial = vtkCommonMath.vtkMatrix4x4()
     axial.DeepCopy((1, 0, 0, 0,
-                    0, 0, 1, 0,
-                    0, 1, 0, 0,
-                    0, 0, 0, 1))
+                       0, 0, 1, 0,
+                       0, 1, 0, 0,
+                       0, 0, 0, 1))
 
     coronal = vtkCommonMath.vtkMatrix4x4()
-    coronal.DeepCopy((0, 1, 0, 0,
-                      0, 0, 1, 0,
+    coronal.DeepCopy((0, 0, -1, 0,
                       1, 0, 0, 0,
+                      0, 1, 0, 0,
                       0, 0, 0, 1))
 
     sagittal = vtkCommonMath.vtkMatrix4x4()
     sagittal.DeepCopy((1, 0, 0, 0,
-                       0, 1, 0, 0,
+                       0, -1, 0, 0,
                        0, 0, -1, 0,
                        0, 0, 0, 1))
 

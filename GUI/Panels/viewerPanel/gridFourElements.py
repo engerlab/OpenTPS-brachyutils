@@ -58,8 +58,8 @@ class GridFourElements(QWidget):
         vbox.setContentsMargins(0, 0, 0, 0)
 
         leftSplitter = QSplitter(QtCore.Qt.Vertical)
-        leftSplitter.addWidget(self._botLeft)
         leftSplitter.addWidget(self._topLeft)
+        leftSplitter.addWidget(self._botLeft)
         leftSplitter.setStretchFactor(1, 1)
         vbox.addWidget(leftSplitter)
 
@@ -67,8 +67,8 @@ class GridFourElements(QWidget):
         vbox.setContentsMargins(0, 0, 0, 0)
 
         rightSplitter = QSplitter(QtCore.Qt.Vertical)
-        rightSplitter.addWidget(self._botRight)
         rightSplitter.addWidget(self._topRight)
+        rightSplitter.addWidget(self._botRight)
         rightSplitter.setStretchFactor(1, 1)
         vbox.addWidget(rightSplitter)
 
