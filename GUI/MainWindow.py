@@ -1,4 +1,8 @@
+
+import os
+
 from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QToolBox
+from PyQt5.QtGui import QIcon
 
 from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
@@ -15,6 +19,7 @@ class MainWindow(QMainWindow):
         self._viewController = viewController
 
         self.setWindowTitle('OpenTPS')
+        self.setWindowIcon(QIcon('GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep + 'OpenTPS_icon.png'))
         self.resize(1400, 920)
 
         mainLayout = QHBoxLayout()

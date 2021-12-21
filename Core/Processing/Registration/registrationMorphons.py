@@ -5,8 +5,10 @@ import logging
 import multiprocessing as mp
 from functools import partial
 
-from Core.Data.Images.deformationField import DeformationField
+from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
+
+logger = logging.getLogger(__name__)
 
 
 def morphonsConv(im, k):
@@ -67,7 +69,7 @@ class RegistrationMorphons(Registration):
             np.float32(np.fromfile(os.path.join(morphonsPath, "kernel6_real.bin"), dtype="float64")) + np.float32(
                 np.fromfile(os.path.join(morphonsPath, "kernel6_imag.bin"), dtype="float64")) * 1j, (9, 9, 9)))
 
-        field = DeformationField()
+        deformation = Deformation3D()
 
         for s in range(len(scales)):
 
@@ -79,25 +81,21 @@ class RegistrationMorphons(Registration):
                                self.fixed.spacing[1] * (self.fixed.getGridSize()[0] - 1) / (newGridSize[0] - 1),
                                self.fixed.spacing[2] * (self.fixed.getGridSize()[2] - 1) / (newGridSize[2] - 1)]
 
-            print('Morphons scale:', s + 1, '/', len(scales), ' (',
-                  round(newVoxelSpacing[0] * 1e2) / 1e2, 'x',
-                  round(newVoxelSpacing[1] * 1e2) / 1e2, 'x',
-                  round(newVoxelSpacing[2] * 1e2) / 1e2, 'mm3)')
+            logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
-            # Resample fixed and moving images and field according to the considered scale (voxel spacing)
+            # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
             fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing)
             movingResampled = self.moving.copy()
             movingResampled.resample(fixedResampled.getGridSize(), fixedResampled.origin,
-                                           fixedResampled.spacing)
+                                     fixedResampled.spacing)
 
             if s != 0:
-                field.resampleToCTGrid(fixedResampled, 'Velocity')
+                deformation.resampleToImageGrid(fixedResampled)
                 certainty.resample(fixedResampled.getGridSize(), fixedResampled.origin,
-                                         fixedResampled.spacing, fillValue=0)
+                                   fixedResampled.spacing, fillValue=0)
             else:
-                field.initFieldWithZeros(fixedResampled.data.shape, origin=fixedResampled.origin,
-                                         spacing=fixedResampled.spacing)
+                deformation.initFromImage(fixedResampled)
                 certainty = fixedResampled.copy()
                 certainty.data = np.zeros_like(certainty.data)
 
@@ -115,9 +113,7 @@ class RegistrationMorphons(Registration):
             for i in range(iterations[s]):
 
                 # Deform moving image
-                deformed = movingResampled.copy()
-                if s != 0 or i != 0:
-                    deformed.data = field.deformImage(deformed, fillValue='closest')
+                deformed = deformation.deformImage(movingResampled, fillValue='closest')
 
                 # Compute phase difference
                 a11 = np.zeros_like(qFixed[0], dtype="float64")
@@ -160,7 +156,7 @@ class RegistrationMorphons(Registration):
                     b3 += qDirections[n][2] * vk
                     a33 += qDirections[n][2] * qDirections[n][2] * ck2
 
-                fieldUpdate = np.zeros_like(field.velocity)
+                fieldUpdate = np.zeros_like(deformation.velocity.data)
                 fieldUpdate[:, :, :, 0] = (a22 * a33 - np.power(a23, 2)) * b1 + (a13 * a23 - a12 * a33) * b2 + (
                         a12 * a23 - a13 * a22) * b3
                 fieldUpdate[:, :, :, 1] = (a13 * a23 - a12 * a33) * b1 + (a11 * a33 - np.power(a13, 2)) * b2 + (
@@ -184,21 +180,20 @@ class RegistrationMorphons(Registration):
                 fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)
                 fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)
 
-                # Accumulate field and certainty
-                field.velocity[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,
+                # Accumulate deformation and certainty
+                deformation.velocity.data[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,
                                                                                              certainty.data + certaintyUpdate + eps))
-                field.velocity[:, :, :, 1] += np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate,
+                deformation.velocity.data[:, :, :, 1] += np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate,
                                                                                              certainty.data + certaintyUpdate + eps))
-                field.velocity[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
+                deformation.velocity.data[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
                                                                                              certainty.data + certaintyUpdate + eps))
                 certainty.data = np.divide(np.power(certainty.data, 2) + np.power(certaintyUpdate, 2),
-                                            certainty.data + certaintyUpdate + eps)
+                                           certainty.data + certaintyUpdate + eps)
 
-                # Regularize velocity field and certainty
-                self.fieldRegularization(field, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
+                # Regularize velocity deformation and certainty
+                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
                 certainty.data = self.normGaussConv(certainty.data, certainty.data, 1.25)
 
-        self.deformed = self.moving.copy()
-        self.deformed.data = field.deformImage(self.deformed, fillValue='closest')
+        self.deformed = deformation.deformImage(self.moving, fillValue='closest')
 
-        return field
+        return deformation

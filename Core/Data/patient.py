@@ -17,6 +17,9 @@ class Patient:
     plans: list:
         List of plans associated to patient
 
+    rtStructs: list:
+        List of structure sets associated to patient
+
     """
     def __init__(self, patientInfo=None):
         if(patientInfo == None):
@@ -26,6 +29,21 @@ class Patient:
 
         self.images = []
         self.plans = []
+        self.rtStructs = []
+
+
+    def __str__(self):
+        string = "Patient name: " + self.patientInfo.name + "\n"
+        string += "  Images:\n"
+        for img in self.images:
+            string += "    " + img.name + "\n"
+        string += "  Plans:\n"
+        for plan in self.plans:
+            string += "    " + plan.name + "\n"
+        string += "  Structure sets:\n"
+        for struct in self.rtStructs:
+            string += "    " + struct.name + "\n"
+        return string
 
     def appendImage(self, image):
         """
@@ -62,4 +80,28 @@ class Patient:
 
         """
         self.images.remove(image)
+
+    def appendRTStruct(self, struct):
+        """
+        Append RTStruct object to patient's RTStruct list
+
+        Parameters
+        ----------
+        struct: RTStruct object
+            Structure set to append
+
+        """
+        self.rtStructs.append(struct)
+
+    def removeRTStruct(self, struct):
+        """
+        Remove RTStruct from patient's RTStruct list
+
+        Parameters
+        ----------
+        struct: RTStruct object
+            Structure set to remove
+
+        """
+        self.rtStructs.remove(struct)
 

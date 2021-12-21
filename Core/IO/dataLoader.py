@@ -2,7 +2,8 @@ import os
 import pydicom
 import logging
 
-from Core.IO.dicomReader import readDicomCT, readDicomDose
+from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct
+from Core.IO import mhdReadWrite
 
 
 def loadAllData(inputPaths, maxDepth=-1):
@@ -33,8 +34,13 @@ def loadAllData(inputPaths, maxDepth=-1):
     for filePath in fileLists["Dicom"]:
         dcm = pydicom.dcmread(filePath)
 
+        # Dicom field
+        if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or dcm.Modality == "REG":
+            field = readDicomVectorField(filePath)
+            dataList.append(field)
+
         # Dicom CT
-        if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
+        elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
             # Dicom CT are not loaded directly. All slices must first be classified according to SeriesInstanceUID.
             newCT = 1
             for key in dicomCT:
@@ -59,7 +65,8 @@ def loadAllData(inputPaths, maxDepth=-1):
 
         # Dicom struct
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.3":
-            logging.warning("WARNING: cannot import " + filePath + " because RT Struct import is not implemented yet")
+            struct = readDicomStruct(filePath)
+            dataList.append(struct)
 
         else:
             logging.warning("WARNING: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + filePath)
@@ -71,8 +78,8 @@ def loadAllData(inputPaths, maxDepth=-1):
 
     # read MHD images
     for filePath in fileLists["MHD"]:
-        logging.warning("WARNING: cannot import " + filePath + " because MHD import is not implemented yet")
-
+        mhdImage = mhdReadWrite.importImageMHD(filePath)
+        dataList.append(mhdImage)
 
     return dataList
 
@@ -154,7 +161,7 @@ def listAllFiles(inputPaths, maxDepth=-1):
                         continue
 
             # Unknown file format
-            logging.info("INFO: cannot recognize file format of ", filePath)
+            logging.info("INFO: cannot recognize file format of " + filePath)
 
     return fileLists
 

@@ -2,11 +2,14 @@ from PyQt5.QtCore import pyqtSignal
 
 from Controllers.DataControllers.dataController import DataController
 from Controllers.DataControllers.image3DController import Image3DController
+from Controllers.DataControllers.rtStructController import RTStructController
 
 
 class PatientController(DataController):
     imageAddedSignal = pyqtSignal(object)
     imageRemovedSignal = pyqtSignal(object)
+    rtStructAddedSignal = pyqtSignal(object)
+    rtStructRemovedSignal = pyqtSignal(object)
     nameChangedSignal = pyqtSignal(str)
 
     def __init__(self, patient):
@@ -18,6 +21,13 @@ class PatientController(DataController):
 
         self.data.appendImage(image)
         self.imageAddedSignal.emit(Image3DController(image))
+
+    def appendRTStruct(self, struct):
+        if isinstance(struct, RTStructController):
+            struct = struct.data
+
+        self.data.appendRTStruct(struct)
+        self.rtStructAddedSignal.emit(RTStructController(struct))
 
     def getName(self):
         return self.data.patientInfo.name
@@ -37,6 +47,13 @@ class PatientController(DataController):
 
         self.data.removeImage(image)
         self.imageRemovedSignal.emit(Image3DController(image))
+
+    def removeRTStruct(self, struct):
+        if isinstance(struct, RTStructController):
+            struct = struct.data
+
+        self.data.removeRTStruct(struct)
+        self.rtStructRemovedSignal.emit(RTStructController(struct))
 
     def setName(self, name):
         self.data.patientInfo.name = name

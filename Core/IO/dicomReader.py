@@ -1,12 +1,15 @@
 import os, sys
 import pydicom
 import numpy as np
+from PIL import Image, ImageDraw
 import logging
 
 from Core.Data.patientInfo import PatientInfo
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
-
+from Core.Data.rtStruct import RTStruct
+from Core.Data.roiContour import ROIContour
+from Core.Data.Images.vectorField3D import VectorField3D
 
 def readDicomCT(dcmFiles):
     """
@@ -131,3 +134,102 @@ def readDicomDose(dcmFile):
     image = DoseImage(data=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sopInstanceUID=dcm.SOPInstanceUID, planSOPInstanceUID=planSOPInstanceUID)
 
     return image
+
+
+
+def readDicomStruct(dcmFile):
+    """
+    Read a Dicom structure set file and generate a RTStruct object.
+
+    Parameters
+    ----------
+    dcmFile: str
+        Path of the Dicom RTstruct file.
+
+    Returns
+    -------
+    struct: RTStruct object
+        The function returns the imported structure set
+    """
+
+    # Read DICOM file
+    dcm = pydicom.dcmread(dcmFile)
+
+    if(hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""): structName = dcm.SeriesDescription
+    else: structName = dcm.SeriesInstanceUID
+
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate, sex=dcm.PatientSex)
+
+    # Create the object that will be returned. Takes the same patientInfo as the refImage it is linked to
+    struct = RTStruct(name=structName, patientInfo=patientInfo, seriesInstanceUID=dcm.SeriesInstanceUID, sopInstanceUID=dcm.SOPInstanceUID)
+
+    for dcmStruct in dcm.StructureSetROISequence:
+        referencedRoiId = next((x for x, val in enumerate(dcm.ROIContourSequence) if val.ReferencedROINumber == dcmStruct.ROINumber), -1)
+        dcmContour = dcm.ROIContourSequence[referencedRoiId]
+
+        if not hasattr(dcmContour, 'ContourSequence'):
+            logging.warning("This structure has no attribute ContourSequence. Skipping...")
+            continue
+
+        # Create ROIContour object
+        color = tuple([int(c) for c in list(dcmContour.ROIDisplayColor)])
+        contour = ROIContour(patientInfo=patientInfo, name=dcmStruct.ROIName, displayColor=color, referencedFrameOfReferenceUID=dcmStruct.ReferencedFrameOfReferenceUID)
+
+        for dcmSlice in dcmContour.ContourSequence:
+            contour.polygonMesh.append(dcmSlice.ContourData) # list of coordinates (XYZ) for the polygon
+            contour.referencedSOPInstanceUIDs.append(dcmSlice.ContourImageSequence[0].ReferencedSOPInstanceUID) # UID of the image of reference (eg. ct slice)
+
+        struct.appendContour(contour)
+
+    return struct
+
+def readDicomVectorField(dcmFile):
+    """
+    Read a Dicom vector field file and generate a vector field object.
+
+    Parameters
+    ----------
+    dcmFile: str
+        Path of the Dicom vector field file.
+
+    Returns
+    -------
+    field: vectorField3D object
+        The function returns the imported vector field
+    """
+
+    dcm = pydicom.dcmread(dcmFile)
+
+    # import vector field
+    dcmSeq = dcm.DeformableRegistrationSequence[0]
+    dcmField = dcmSeq.DeformableRegistrationGridSequence[0]
+
+    imagePositionPatient = dcmField.ImagePositionPatient
+    pixelSpacing = dcmField.GridResolution
+
+    rawField = np.frombuffer(dcmField.VectorGridData, dtype=np.float32)
+    rawField = rawField.reshape(
+        (3, dcmField.GridDimensions[0], dcmField.GridDimensions[1], dcmField.GridDimensions[2]),
+        order='F').transpose(1, 2, 3, 0)
+    fieldData = rawField.copy()
+
+    # convert from mm to pixels
+    for i in range(3):
+        fieldData[:, :, :, i] = fieldData[:, :, :, i] / pixelSpacing[i]
+
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                              sex=dcm.PatientSex)
+
+    # collect other information
+    if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
+        fieldName = dcm.SeriesDescription
+    else:
+        fieldName = dcm.SeriesInstanceUID
+
+    # generate dose image object
+    field = VectorField3D(data=fieldData, name=fieldName, patientInfo=patientInfo, origin=imagePositionPatient,
+                      spacing=pixelSpacing)
+
+    return field
