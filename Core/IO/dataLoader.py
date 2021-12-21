@@ -57,7 +57,7 @@ def loadAllData(inputPaths, maxDepth=-1):
 
         # Dicom RT Plan
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5":
-            logging.warning("WARNING: cannot import ", file_path, " because photon RT plan is not implemented yet")
+            logging.warning("WARNING: cannot import ", filePath, " because photon RT plan is not implemented yet")
 
         # Dicom RT Ion Plan
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
