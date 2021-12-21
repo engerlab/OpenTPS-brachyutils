@@ -104,11 +104,13 @@ class MCsquareConfig:
     self.config["Scoring_voxel_spacing"] = [0.15, 0.15, 0.15]
     self.config["Dose_weighting_algorithm"] = "Volume"
 
-  def export(self, filePath):
-    file_path = os.path.join(self.config["WorkDir"], filePath)
+  def __getitem__(self, key):
+    return self.config[key]
 
-    print("Write config file: " + file_path)
+  def __setitem__(self, key, value):
+    self.config[key] = value
 
+  def __str__(self):
     Module_folder = os.path.dirname(os.path.realpath(__file__))
     fid = open(os.path.join(Module_folder, "ConfigTemplate.txt"), 'r')
     Template = fid.read()
@@ -121,6 +123,4 @@ class MCsquareConfig:
       else:
         Template = Template.replace('{' + key.upper() + '}', str(self.config[key]))
 
-    fid = open(file_path, 'w')
-    fid.write(Template)
-    fid.close()
+    return Template
