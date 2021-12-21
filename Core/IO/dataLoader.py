@@ -2,7 +2,7 @@ import os
 import pydicom
 import logging
 
-from Core.IO.dicomReader import readDicomCT, readDicomDose
+from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomStruct
 from Core.IO import mhdReadWrite
 
 
@@ -60,7 +60,8 @@ def loadAllData(inputPaths, maxDepth=-1):
 
         # Dicom struct
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.3":
-            logging.warning("WARNING: cannot import " + filePath + " because RT Struct import is not implemented yet")
+            struct = readDicomStruct(filePath)
+            dataList.append(struct)
 
         else:
             logging.warning("WARNING: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + filePath)

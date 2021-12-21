@@ -1,10 +1,10 @@
 from Core.Data.Images.image3D import Image3D
 
-class ROIContour(Image3D):
-    def __init__(self, data=None, name=None, origin=(0, 0, 0), spacing=(1, 1, 1), displayColor = "0,0,0"):
-        super().__init__(data=data, name=name, origin=origin, spacing=spacing)
+class ROIMask(Image3D):
+    def __init__(self, data=None, name="ROI contour", patientInfo=patientInfo, origin=(0, 0, 0), spacing=(1, 1, 1), displayColor = (0,0,0), frameOfReferenceUID=None):
+        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing)
         self.displayColor = displayColor
-        self.contourSequence = []
+        self.frameOfReferenceUID = frameOfReferenceUID
 
     def changeColor(self, color):
         """

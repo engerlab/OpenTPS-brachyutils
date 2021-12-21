@@ -7,8 +7,8 @@ import logging
 from Core.Data.patientInfo import PatientInfo
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
-from Core.Data.roiStruct import ROIStruct
-from Core.Data.Images.roiContour import ROIContour
+from Core.Data.rtStruct import RTStruct
+from Core.Data.roiContour import ROIContour
 
 def readDicomCT(dcmFiles):
     """
@@ -134,75 +134,52 @@ def readDicomDose(dcmFile):
 
     return image
 
-def readDicomStruct(dcmFile, refImage):
+
+
+def readDicomStruct(dcmFile):
     """
-    Read a Dicom structure file and generate a ROIStruct image object.
+    Read a Dicom structure set file and generate a RTStruct object.
 
     Parameters
     ----------
     dcmFile: str
-        Path of the Dicom struct file.
+        Path of the Dicom RTstruct file.
 
     Returns
     -------
-    data: ROIStruct object
-        The function returns the imported roi structure object
+    struct: RTStruct object
+        The function returns the imported structure set
     """
+
     # Read DICOM file
     dcm = pydicom.dcmread(dcmFile)
-    # Create the object that will be returned. Takes the same patientInfo as the refImage it is linked to
-    roiStruct = ROIStruct(refImage.patientInfo)
-    roiStruct.seriesInstanceUID = dcm.SeriesInstanceUID
-    roiStruct.refImageSeriesInstanceUID = refImage.seriesInstanceUID
 
-    contours = []
+    if(hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""): structName = dcm.SeriesDescription
+    else: structName = dcm.SeriesInstanceUID
+
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate, sex=dcm.PatientSex)
+
+    # Create the object that will be returned. Takes the same patientInfo as the refImage it is linked to
+    struct = RTStruct(name=structName, patientInfo=patientInfo, seriesInstanceUID=dcm.SeriesInstanceUID, sopInstanceUID=dcm.SOPInstanceUID)
+
     for dcmStruct in dcm.StructureSetROISequence:
         referencedRoiId = next((x for x, val in enumerate(dcm.ROIContourSequence) if val.ReferencedROINumber == dcmStruct.ROINumber), -1)
         dcmContour = dcm.ROIContourSequence[referencedRoiId]
-
-        # Create ROIContour object
-        contour = ROIContour()
-        contour.seriesInstanceUID = roiStruct.seriesInstanceUID
-        contour.name = dcmStruct.ROIName
-        contour.displayColor = dcmContour.ROIDisplayColor
-
-        contour.data = np.zeros(refImage.getGridSize())
-        contour.spacing = refImage.spacing
-        contour.origin = refImage.origin
-
-        sopInstanceUIDMatch = 1
 
         if not hasattr(dcmContour, 'ContourSequence'):
             logging.warning("This structure has no attribute ContourSequence. Skipping...")
             continue
 
-        for dcmSlice in dcmContour.ContourSequence:
-            slice = {}
-            # list of DICOM coordinates
-            slice["XY_dcm"] = list(zip( np.array(dcmSlice.ContourData[0::3]), np.array(dcmSlice.ContourData[1::3]) ))
-            slice["Z_dcm"] = float(dcmSlice.ContourData[2])
-            # list of coordinates in the image frame
-            slice["XY_img"] = list(zip( ((np.array(dcmSlice.ContourData[0::3]) - refImage.origin[0]) / refImage.spacing[0]), ((np.array(dcmSlice.ContourData[1::3]) - refImage.origin[1]) / refImage.spacing[1]) ))
-            slice["Z_img"] = (slice["Z_dcm"] - refImage.origin[2]) / refImage.spacing[2]
-            slice["Slice_id"] = int(round(slice["Z_img"]))
-            
-            # convert polygon to mask (based on PIL - fast)
-            img = Image.new('L', (refImage.getGridSize()[0], refImage.getGridSize()[1]), 0)
-            if(len(slice["XY_img"]) > 1): ImageDraw.Draw(img).polygon(slice["XY_img"], outline=1, fill=1)
-            mask = np.array(img)
-            contour.data[:,:,slice["Slice_id"]] = np.logical_or(contour.data[:,:,slice["Slice_id"]], mask)
-            contour.contourSequence.append(slice)
-            
-            # check if the contour sequence is imported on the correct CT slice:
-            if(hasattr(dcmSlice, 'ContourImageSequence') and refImage.sopInstanceUIDs[slice["Slice_id"]] != dcmSlice.ContourImageSequence[0].ReferencedSOPInstanceUID):
-                sopInstanceUIDMatch = 0
-        
-        if sopInstanceUIDMatch != 1:
-            logging.warning("WARNING: some SOPInstanceUIDs don't match during importation of " + contour.name + " contour on CT image")
-    
-        contours.append(contour)
+        # Create ROIContour object
+        color = tuple([int(c) for c in list(dcmContour.ROIDisplayColor)])
+        contour = ROIContour(patientInfo=patientInfo, name=dcmStruct.ROIName, displayColor=color, referencedFrameOfReferenceUID=dcmStruct.ReferencedFrameOfReferenceUID)
 
-    roiStruct.contours = contours
-    roiStruct.numContours = len(contours)
-    return roiStruct
+        for dcmSlice in dcmContour.ContourSequence:
+            contour.polygonMesh.append(dcmSlice.ContourData) # list of coordinates (XYZ) for the polygon
+            contour.referencedSOPInstanceUIDs.append(dcmSlice.ContourImageSequence[0].ReferencedSOPInstanceUID) # UID of the image of reference (eg. ct slice)
+
+        struct.appendContour(contour)
+
+    return struct
 

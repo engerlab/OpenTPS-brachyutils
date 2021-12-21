@@ -1,12 +1,13 @@
+
 from Core.Data.patientData import PatientData
 
-class ROIStruct(PatientData):
-    def __init_(self, patientInfo=None):
+class RTStruct(PatientData):
+    def __init__(self, name="RT-struct", patientInfo=None, seriesInstanceUID="", sopInstanceUID=""):
         super().__init__(patientInfo=patientInfo)
+        self.name = name
         self.contours = []
-        self.numContours = 0
-        self.seriesInstanceUID = ""
-        self.refImageSeriesInstanceUID = ""
+        self.seriesInstanceUID = seriesInstanceUID
+        self.sopInstanceUID = sopInstanceUID
 
     def __str__(self):
         return "RTstruct " + self.seriesInstanceUID  
@@ -20,7 +21,6 @@ class ROIStruct(PatientData):
         contour : ROIContour
         """
         self.contours.append(contour)
-        self.numContours += 1
 
     def removeContour(self, contour):
         """
@@ -31,4 +31,3 @@ class ROIStruct(PatientData):
         contour : ROIContour
         """
         self.contours.remove(contour)
-        self.numContours -= 1
