@@ -1,9 +1,10 @@
 import numpy as np
-from pydicom.uid import generate_uid
+import logging
 
 from Core.Data.patientData import PatientData
-from Core.Data.Images.deformation3D import Deformation3D
-from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
+import Core.Processing.Registration.midPosition as midPosition
+
+logger = logging.getLogger(__name__)
 
 
 class Dynamic3DModel(PatientData):
@@ -15,56 +16,12 @@ class Dynamic3DModel(PatientData):
         self.motionFieldList = []
         self.midp = []
 
-    def computeMidPositionImage(self, CT4D, refIndex=0, morphonsResolution=2.5, nbProcesses=-1):
+    def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
 
         if refIndex >= len(CT4D.dyn3DImageList):
-            print("Reference index is out of bound")
-            return -1
+            logger.error("Reference index is out of bound")
 
-        averageField = Deformation3D()
-
-        # perform registrations
-        self.motionFieldList = []
-
-        for i in range(len(CT4D.dyn3DImageList)):
-
-            if i == refIndex:
-                self.motionFieldList.append(Deformation3D())
-            else:
-                print('\nRegistering phase', refIndex, 'to phase', i, '...')
-                reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=morphonsResolution, nbProcesses=nbProcesses)
-                self.motionFieldList.append(reg.compute())
-                if (max(averageField.getGridSize()) == 0):
-                    averageField.initFromImage(self.motionFieldList[i])
-
-            averageField.data += self.motionFieldList[i].data
-
-        self.motionFieldList[refIndex].initFromImage(averageField)
-        averageField.velocity /= len(self.motionFieldList)
-
-        # compute fields to midp
-        for i in range(len(CT4D.dyn3DImageList)):
-            self.motionFieldList[i].FieldName = 'def ' + CT4D.dyn3DImageList[i].ImgName
-            self.motionFieldList[i].velocity = averageField.velocity - self.motionFieldList[i].velocity
-
-        # deform images
-        def3DImageList = []
-        for i in range(len(CT4D.dyn3DImageList)):
-            def3DImageList.append(self.motionFieldList[i].deform_image(CT4D.dyn3DImageList[i],
-                                                                                fillValue='closest'))
-
-        # invert fields (to have them from midp to phases)
-        for i in range(len(CT4D.dyn3DImageList)):
-            self.motionFieldList[i].displacement = []
-            self.motionFieldList[i].velocity = -self.motionFieldList[i].velocity
-
-        # compute MidP
-        self.midp = CT4D.dyn3DImageList[0].copy()
-        self.midp.SOPInstanceUID = generate_uid()
-        self.midp.Image = np.median(def3DImageList, axis=0)
-
-        # set SOPInstanceUID
-        self.SOPInstanceUID = self.midp.SOPInstanceUID
+        self.midp, self.motionFieldList = midPosition.compute(CT4D, refIndex=refIndex, baseResolution=baseResolution, nbProcesses=nbProcesses)
 
 
     def generate3DImage(self, phase, amplitude=1.0):
@@ -77,9 +34,9 @@ class Dynamic3DModel(PatientData):
         phase2 = np.ceil(phase) % len(self.motionFieldList)
 
         field = self.motionFieldList[int(phase1)].copy()
-        field.displacement = []
+        field.displacement = None
         if phase1 == phase2:
-            field.velocity = amplitude * self.motionFieldList[int(phase1)].velocity
+            field.velocity.data = amplitude * self.motionFieldList[int(phase1)].velocity.data
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))
@@ -88,7 +45,4 @@ class Dynamic3DModel(PatientData):
                 return
             field.velocity = amplitude * (w1 * self.motionFieldList[int(phase1)].velocity + w2 * self.motionFieldList[int(phase2)].velocity)
 
-        output = self.midp.copy()
-        output.Image = field.deform_image(self.midp, fillValue='closest')
-
-        return output
+        return field.deformImage(self.midp, fillValue='closest')

@@ -47,7 +47,6 @@ class RegistrationDemons(Registration):
             self.regularizeField(field, filterType="Gaussian", sigma=1.0)
 
             # deformation
-            self.deformed = self.moving.copy()
-            field.deformImage(self.deformed)
+            self.deformed = field.deformImage(self.moving)
 
         return field
