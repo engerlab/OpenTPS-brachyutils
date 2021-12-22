@@ -1,7 +1,3 @@
-import pydicom
-import numpy as np
-import scipy.ndimage
-import math
 import logging
 
 from Core.Data.Images.image3D import Image3D
@@ -52,11 +48,11 @@ class Deformation3D(Image3D):
         self.angles = field.angles
         self.patientInfo = field.patientInfo
 
-    def resample(self, gridSize, origin, spacing, fillValue=0):
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
         if not(self.velocity is None):
-            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue)
+            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
         if not(self.displacement is None):
-            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue)
+            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
         self.origin = list(origin)
         self.spacing = list(spacing)
 
@@ -69,12 +65,12 @@ class Deformation3D(Image3D):
 
         if tuple(self.getGridSize()) != tuple(image.getGridSize()) or tuple(self.origin) != tuple(
                 image.origin) or tuple(self.spacing) != tuple(image.spacing):
+            logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
             field = field.copy()
             field.resample(image.getGridSize(), image.origin, image.spacing)
-            logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
+
 
         image = image.copy()
         image.data = field.warp(image.data, fillValue=fillValue)
 
         return image
-

@@ -15,3 +15,9 @@ class ROIMask(Image3D):
             RGB of the new color, format : 'r,g,b' like '0,0,0' for black for instance
         """
         self.displayColor = color
+
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
+        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32')
+        self.data = self.data >= 0.5
+        if not(outputType is None):
+            self.data = self.data.astype(outputType)
