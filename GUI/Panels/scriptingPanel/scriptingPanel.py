@@ -14,7 +14,7 @@ class ScriptingPanel(QWidget):
         self.setLayout(self.layout)
 
         self.newScriptButton = QPushButton('New scripting window')
-        self.newScriptButton.clicked.connect(self.newScriptingWindowSignal.emit)
+        self.newScriptButton.clicked.connect(self.newScriptingWindow)
         self.layout.addWidget(self.newScriptButton)
 
         # self.filesFrame = QFrame()
@@ -35,5 +35,6 @@ class ScriptingPanel(QWidget):
         # self.newScriptFile = ScriptingFileView(self._PatientList, self._toolbox_width)
         # self.filesLayout.addWidget(self.newScriptFile)
 
-    def run(self):
-        pass
+    def newScriptingWindow(self):
+        self.scriptingWindow = ScriptingWindow()
+        self.scriptingWindow.show()

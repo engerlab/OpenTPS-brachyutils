@@ -5,7 +5,6 @@ from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.ViewControllers.patientDataPanelController import PatientDataPanelController
 from GUI.ViewControllers.roiPanelController import ROIPanelController
-from GUI.ViewControllers.scriptingController import ScriptingController
 
 
 class MainToolbar(QToolBox):
@@ -31,6 +30,5 @@ class MainToolbar(QToolBox):
         patientDataPanelController.currentPatientChangedSignal.connect(self.roiPanelController.setCurrentPatient)
 
         scriptingPanel = ScriptingPanel()
-        self._scriptingController = ScriptingController(scriptingPanel)
         self.addItem(scriptingPanel, 'Scripting')
 
