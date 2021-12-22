@@ -6,10 +6,9 @@ from GUI.Panels.viewerPanel.gridElement import GridElement
 
 
 class GridFourElements(QWidget):
-    def __init__(self, viewerController):
+    def __init__(self):
         QWidget.__init__(self)
 
-        self._viewerController = viewerController
         self._setEqualSize = False #Use to set equal size before qwidget is effectively shown
 
         self._botLeft = QFrame(self)
@@ -26,21 +25,15 @@ class GridFourElements(QWidget):
         self._rightSize = None
         self._size = None
 
-        botLeftLayout = QVBoxLayout(self._botLeft)
-        botRightLayout = QVBoxLayout(self._botRight)
-        topLeftLayout = QVBoxLayout(self._topLeft)
-        topRightLayout = QVBoxLayout(self._topRight)
+        self._botLeftLayout = QVBoxLayout(self._botLeft)
+        self._botRightLayout = QVBoxLayout(self._botRight)
+        self._topLeftLayout = QVBoxLayout(self._topLeft)
+        self._topRightLayout = QVBoxLayout(self._topRight)
 
-        botLeftLayout.setContentsMargins(0, 0, 0, 0)
-        botRightLayout.setContentsMargins(0, 0, 0, 0)
-        topLeftLayout.setContentsMargins(0, 0, 0, 0)
-        topRightLayout.setContentsMargins(0, 0, 0, 0)
-
-        botLeftLayout.addWidget(GridElement(self._viewerController.controller0))
-        botRightLayout.addWidget(GridElement(self._viewerController.controller1))
-        topLeftLayout.addWidget(GridElement(self._viewerController.controller2))
-        topRightLayout.addWidget(GridElement(self._viewerController.controller3))
-
+        self._botLeftLayout.setContentsMargins(0, 0, 0, 0)
+        self._botRightLayout.setContentsMargins(0, 0, 0, 0)
+        self._topLeftLayout.setContentsMargins(0, 0, 0, 0)
+        self._topRightLayout.setContentsMargins(0, 0, 0, 0)
 
         # Horizontal splitter
         hbox = QHBoxLayout(self)
@@ -65,8 +58,8 @@ class GridFourElements(QWidget):
         vbox.setContentsMargins(0, 0, 0, 0)
 
         leftSplitter = QSplitter(QtCore.Qt.Vertical)
-        leftSplitter.addWidget(self._botLeft)
         leftSplitter.addWidget(self._topLeft)
+        leftSplitter.addWidget(self._botLeft)
         leftSplitter.setStretchFactor(1, 1)
         vbox.addWidget(leftSplitter)
 
@@ -74,8 +67,8 @@ class GridFourElements(QWidget):
         vbox.setContentsMargins(0, 0, 0, 0)
 
         rightSplitter = QSplitter(QtCore.Qt.Vertical)
-        rightSplitter.addWidget(self._botRight)
         rightSplitter.addWidget(self._topRight)
+        rightSplitter.addWidget(self._botRight)
         rightSplitter.setStretchFactor(1, 1)
         vbox.addWidget(rightSplitter)
 
@@ -84,6 +77,19 @@ class GridFourElements(QWidget):
         self._botRight.setMinimumSize(minimumSize)
         self._topLeft.setMinimumSize(minimumSize)
         self._topRight.setMinimumSize(minimumSize)
+
+    def addBotLeftWidget(self, widget):
+        self._botLeftLayout.addWidget(widget)
+
+    def addBotRightWidget(self, widget):
+        self._botRightLayout.addWidget(widget)
+
+    def addTopLeftWidget(self, widget):
+        self._topLeftLayout.addWidget(widget)
+
+    def addTopRightWidget(self, widget):
+        self._topRightLayout.addWidget(widget)
+
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

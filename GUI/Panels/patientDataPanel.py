@@ -5,7 +5,6 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushBut
     QStackedWidget, QListView, QLineEdit, QAbstractItemView
 
 from Controllers.api import API
-from Controllers.modelController import ModelController
 
 
 class PatientDataPanel(QWidget):

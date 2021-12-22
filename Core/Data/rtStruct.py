@@ -1,7 +1,8 @@
-
 from Core.Data.patientData import PatientData
+from Core.Data.Images.roiMask import ROIMask
 
 class RTStruct(PatientData):
+
     def __init__(self, name="RT-struct", patientInfo=None, seriesInstanceUID="", sopInstanceUID=""):
         super().__init__(patientInfo=patientInfo)
         self.name = name
@@ -11,6 +12,7 @@ class RTStruct(PatientData):
 
     def __str__(self):
         return "RTstruct " + self.seriesInstanceUID  
+
     
     def appendContour(self, contour):
         """
@@ -21,6 +23,7 @@ class RTStruct(PatientData):
         contour : ROIContour
         """
         self.contours.append(contour)
+
 
     def removeContour(self, contour):
         """

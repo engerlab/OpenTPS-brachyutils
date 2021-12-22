@@ -1,5 +1,6 @@
 from PyQt5.QtCore import QObject, pyqtSignal
 
+from GUI.Panels.viewerPanel.viewerToolbar import ViewerToolbar
 from GUI.ViewControllers.viewerPanelControllers.gridFourElementController import GridFourElementController
 from GUI.Panels.viewerPanel.gridFourElements import GridFourElements
 
@@ -10,25 +11,28 @@ class ViewerPanelController(QObject):
     crossHairEnabledSignal = pyqtSignal(bool)
     independentViewsEnabledSignal = pyqtSignal(bool)
     lineWidgetEnabledSignal = pyqtSignal(object)
-    viewerGridChangeSignal = pyqtSignal(object)
     windowLevelEnabledSignal = pyqtSignal(bool)
 
-    def __init__(self, viewController):
+    def __init__(self, viewerPanel, viewController):
         QObject.__init__(self)
 
         self._crossHairEnabled = None
         self._dropEnabled = False
-        self._independentViewsEnabled = None
+        self._independentViewsEnabled = True
         self._windowLevelEnabled = None
         self._gridController = None
         self._layout = self.LAYOUT_FOUR
-        self._view = None
+        self._view = viewerPanel
+        self._viewerGrid = None
+        self._viewToolbar = ViewerToolbar(self)
         self._viewController = viewController
 
-        self.setCrossHairEnabled(False)
+        self._view.setToolbar(self._viewToolbar)
         self.setLayout(self.LAYOUT_FOUR)
-        self.setIndependentViewsEnabled(False) # must be called after layout is set
+        self.setIndependentViewsEnabled(False)  # must be called after layout is set
+        self.setCrossHairEnabled(False)
         self.setWindowLevelEnabled(False)
+
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
@@ -45,7 +49,7 @@ class ViewerPanelController(QObject):
         return self._viewController.getSelectedImageController()
 
     def getViewerGrid(self):
-        return self._view
+        return self._viewerGrid
 
     def setCrossHairEnabled(self, enabled):
         if enabled==self._crossHairEnabled:
@@ -61,11 +65,11 @@ class ViewerPanelController(QObject):
         self._dropEnabled = enabled
 
         if enabled:
-            self._view.setAcceptDrops(True)
-            self._view.dragEnterEvent = lambda event: event.accept()
-            self._view.dropEvent = lambda event: self._dropEvent(event)
+            self._viewerGrid.setAcceptDrops(True)
+            self._viewerGrid.dragEnterEvent = lambda event: event.accept()
+            self._viewerGrid.dropEvent = lambda event: self._dropEvent(event)
         else:
-            self._view.setAcceptDrops(False)
+            self._viewerGrid.setAcceptDrops(False)
 
     def setIndependentViewsEnabled(self, enabled):
         if enabled==self._independentViewsEnabled:
@@ -96,13 +100,17 @@ class ViewerPanelController(QObject):
             self.independentViewsEnabledSignal.disconnect(self._gridController.setIndependentViewsEnabled)
 
         if self._layout==self.LAYOUT_FOUR:
-            self._gridController = GridFourElementController(self)
-            self._view = GridFourElements(self._gridController)
+            self._viewerGrid = GridFourElements()
+            self._gridController = GridFourElementController(self._viewerGrid, self)
 
-        if self._view==None:
+
+        if self._viewerGrid==None:
             return
 
-        self.viewerGridChangeSignal.emit(self._view)
+        self._view.setWidget(self._viewerGrid)
 
         if self._layout == self.LAYOUT_FOUR:
-            self._view.setEqualSize()
+            self._viewerGrid.setEqualSize()
+
+    def setMainImage(self, imageController):
+        self._viewController.setMainImage(imageController)

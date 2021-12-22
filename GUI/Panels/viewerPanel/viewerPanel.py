@@ -4,20 +4,17 @@ from GUI.Panels.viewerPanel.viewerToolbar import ViewerToolbar
 
 
 class ViewerPanel(QWidget):
-    def __init__(self, viewerController):
+    def __init__(self):
         QWidget.__init__(self)
 
         self._layout = QVBoxLayout(self)
-        self._toolbar = ViewerToolbar(viewerController)
-        self._viewerController = viewerController
         self._viewerWidget = None
 
+    def setToolbar(self, toolbar):
+        self._toolbar = toolbar
         self._layout.addWidget(self._toolbar)
-        self.setViewerGrid(self._viewerController.getViewerGrid())
 
-        self._viewerController.viewerGridChangeSignal.connect(self.setViewerGrid)
-
-    def setViewerGrid(self, viewerWidget):
+    def setWidget(self, viewerWidget):
         if not self._viewerWidget is None:
             self._layout.removeWidget(self._viewerWidget)
 

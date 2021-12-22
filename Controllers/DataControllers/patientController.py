@@ -35,6 +35,9 @@ class PatientController(DataController):
     def getImageControllers(self):
         return [Image3DController(image) for image in self.data.images]
 
+    def getRTStructControllers(self):
+        return [RTStructController(struct) for struct in self.data.rtStructs]
+
     def hasImage(self, image):
         if isinstance(image, Image3DController):
             image = image.data

@@ -35,8 +35,6 @@ class ElementToolbar(QToolBar):
         self.addAction(self._buttonGraph)
         self.addAction(self._buttonDVH)
 
-        self._controller.displayChangedSignal.connect(self._handleDisplayChange)
-
     def _handleButtonDVH(self, pressed):
         if self._buttonDVH.isChecked() != pressed:
             self._buttonDVH.setChecked(pressed)
@@ -67,6 +65,6 @@ class ElementToolbar(QToolBar):
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 
-    def _handleDisplayChange(self, view):
+    def handleDisplayChange(self, view):
         if isinstance(view, SliceViewerVTK):
             self._handleButtonViewer(True)
