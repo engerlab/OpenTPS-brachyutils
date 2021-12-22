@@ -1,6 +1,7 @@
 import copy
 import numpy as np
 import logging
+from pydicom.uid import generate_uid
 
 from Core.Data.patientData import PatientData
 import Core.Processing.ImageProcessing.resampler3D as resampler3D
@@ -13,15 +14,16 @@ def euclidean_dist(v1, v2):
 
 
 class Image3D(PatientData):
-    def __init__(self, data=None, name="3D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), UID=""):
+    def __init__(self, data=None, name="3D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), UID=None):
         super().__init__(patientInfo=patientInfo)
         self.data = data
         self.name = name
         self.origin = origin
         self.spacing = spacing
         self.angles = angles
+        if UID is None:
+            UID = generate_uid()
         self.UID = UID
-
 
     def __str__(self):
         gs = self.getGridSize()
