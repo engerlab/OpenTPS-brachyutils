@@ -32,7 +32,7 @@ class SliceViewerVTK(QWidget):
   wwlEnabledSignal = pyqtSignal(bool)
   wwlEnabledSignal = pyqtSignal(bool)
 
-  def __init__(self):
+  def __init__(self, viewController):
     QWidget.__init__(self)
 
     self._blackWidget = BlackEmptyPlot()
@@ -57,6 +57,7 @@ class SliceViewerVTK(QWidget):
     self.__sendingWWL = False
     self._textActor = vtkTextActor()
     self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
+    self._viewController = viewController
     self._vtkWidget = QVTKRenderWindowInteractor(self)
     self._wwlEnabled = False
 
@@ -121,6 +122,10 @@ class SliceViewerVTK(QWidget):
     self._stlReader.Update()
 
     self.setView('axial')
+
+    self._viewController.crossHairEnabledSignal.connect(self.setCrossHairEnabled)
+    self._viewController.lineWidgetEnabledSignal.connect(self.setLineWidgetEnabled)
+    self._viewController.windowLevelEnabledSignal.connect(self.setWWLEnabled)
 
   #overrides QWidget resizeEvent
   def resizeEvent(self, event):

@@ -1,17 +1,19 @@
 import os
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction
 
+import GUI.Panels.viewerPanel.gridElement as gridElement
 from GUI.Viewers.sliceViewer import SliceViewerVTK
 
 
-class ElementToolbar(QToolBar):
-    def __init__(self, controller):
+class GridElementToolbar(QToolBar):
+    displayTypeSignal = pyqtSignal(object)
+
+    def __init__(self):
         QToolBar.__init__(self)
 
-        self._controller = controller
         self.setIconSize(QSize(16, 16))
 
         iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
@@ -41,7 +43,7 @@ class ElementToolbar(QToolBar):
             return
 
         if pressed:
-            self._controller.setDisplayType(self._controller.DISPLAY_DVH)
+            self.displayTypeSignal.emit(gridElement.GridElement.DISPLAY_DVH)
             self._handleButtonViewer(False)
             self._handleButtonGraph(False)
 
@@ -51,7 +53,7 @@ class ElementToolbar(QToolBar):
             return
 
         if pressed:
-            self._controller.setDisplayType(self._controller.DISPLAY_PROFILE)
+            self.displayTypeSignal.emit(gridElement.GridElement.DISPLAY_PROFILE)
             self._handleButtonViewer(False)
             self._handleButtonDVH(False)
 
@@ -61,7 +63,7 @@ class ElementToolbar(QToolBar):
             return
 
         if pressed:
-            self._controller.setDisplayType(self._controller.DISPLAY_SLICEVIEWER)
+            self.displayTypeSignal.emit(gridElement.GridElement.DISPLAY_SLICEVIEWER)
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 

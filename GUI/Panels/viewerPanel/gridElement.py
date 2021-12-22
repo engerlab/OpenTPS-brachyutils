@@ -1,30 +1,106 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from GUI.Panels.viewerPanel.gridElementToolbar import ElementToolbar
+from GUI.Panels.viewerPanel.gridElementToolbar import GridElementToolbar
+from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
+from GUI.Viewers.dvhPlot import DVHPlot
+from GUI.Viewers.profilePlot import ProfilePlot
+from GUI.Viewers.sliceViewer import SliceViewerVTK
 
 
 class GridElement(QWidget):
-    def __init__(self):
+    DISPLAY_DVH = 'DVH'
+    DISPLAY_NONE = 'None'
+    DISPLAY_PROFILE = 'PROFILE'
+    DISPLAY_SLICEVIEWER = 'SLICE'
+
+    def __init__(self, viewController):
         QWidget.__init__(self)
 
+        self._currentViewer = None
+        self._displayType = None
+        self._dropEnabled = False
         self._mainLayout = QVBoxLayout(self)
-        self._toolbar = None
-        self._viewerWidget = None
+        self._profileViewer = None
+        self._sliceViewer = None
+        self._toolbar = GridElementToolbar()
+        self._viewController = viewController
 
         self.setLayout(self._mainLayout)
         self._mainLayout.setContentsMargins(0, 0, 0, 0)
 
+        self._toolbar.displayTypeSignal.connect(self.setDisplay)
+
+        self.setToolbar(self._toolbar)
+        self.setDisplay(self.DISPLAY_SLICEVIEWER)
+
+        self._viewController.independentViewsEnabledSignal.connect(self.setDropEnabled)
+        self.setDropEnabled(self._viewController.getIndependentViewsEnabled())
+        self._viewController.mainImageChangedSignal.connect(self.setMainImage)
+
+    def _dropEvent(self, e):
+        if e.mimeData().hasText():
+            if (e.mimeData().text() == 'image'):
+                e.accept()
+                if hasattr(self._currentViewer, 'setMainImage'):
+                    self.setMainImage(self._viewController.getSelectedImageController())
+                return
+        e.ignore()
+
+    def setDisplay(self, displayType):
+        if displayType==self._displayType:
+            return
+
+        if not (self._currentViewer is None):
+            self._currentViewer.hide()
+
+        self._displayType = displayType
+
+        if self._displayType==self.DISPLAY_DVH:
+            self._currentViewer = DVHPlot()
+
+        if self._displayType==self.DISPLAY_NONE:
+            self._currentViewer = BlackEmptyPlot()
+
+        if self._displayType==self.DISPLAY_PROFILE:
+            if self._profileViewer is None:
+                self._profileViewer = ProfilePlot(self._viewController)
+
+            self._currentViewer = self._profileViewer
+
+        if self._displayType==self.DISPLAY_SLICEVIEWER:
+            if self._sliceViewer is None:
+                self._sliceViewer = SliceViewerVTK(self._viewController)
+
+            self._currentViewer = self._sliceViewer
+
+            self.setDropEnabled(self._dropEnabled)
+
+        self._toolbar.handleDisplayChange(self._currentViewer)
+
+        if not (self._currentViewer is None):
+            self._mainLayout.removeWidget(self._currentViewer)
+
+        self._mainLayout.addWidget(self._currentViewer)
+        self._currentViewer.show()
+
+    def setDropEnabled(self, enabled):
+        self._dropEnabled = enabled
+
+        if enabled and self._displayType==self.DISPLAY_SLICEVIEWER:
+            self._currentViewer.setAcceptDrops(True)
+            self._currentViewer.dragEnterEvent = lambda event: event.accept()
+            self._currentViewer.dropEvent = lambda event: self._dropEvent(event)
+        else:
+            self._currentViewer.setAcceptDrops(False)
+
+    def setMainImage(self, imageController):
+        if hasattr(self._currentViewer, 'setMainImage'):
+            self._currentViewer.setMainImage(imageController)
+
+    def setSecondaryImage(self, imageController):
+        if hasattr(self._currentViewer, 'setSecondaryImage'):
+            self._currentViewer.setSecondaryImage(imageController)
+
     def setToolbar(self, toolbar):
         self._toolbar = toolbar
         self._mainLayout.addWidget(self._toolbar)
-
-    def setDisplayWidget(self, viewerWidget):
-        if not (self._viewerWidget is None):
-            self._mainLayout.removeWidget(self._viewerWidget)
-
-        self._viewerWidget = viewerWidget
-        self._mainLayout.addWidget(self._viewerWidget)
-        self._viewerWidget.show()
-
-
-

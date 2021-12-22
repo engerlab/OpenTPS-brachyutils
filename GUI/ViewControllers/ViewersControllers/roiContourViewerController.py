@@ -23,4 +23,4 @@ class ROIContourViewerController(ROIContourController):
 
     def setVisible(self, visible):
         self._visible = visible
-        self.visibleChangedsignal.emit(self._visible)
+        self.visibleChangedSignal.emit(self._visible)

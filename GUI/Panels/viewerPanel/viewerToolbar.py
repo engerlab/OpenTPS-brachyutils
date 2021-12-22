@@ -6,10 +6,10 @@ from PyQt5.QtWidgets import QToolBar, QAction
 
 
 class ViewerToolbar(QToolBar):
-    def __init__(self, controller):
+    def __init__(self, viewController):
         QToolBar.__init__(self)
 
-        self._controller = controller
+        self._viewController = viewController
         self.setIconSize(QSize(16, 16))
 
         iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
@@ -18,7 +18,7 @@ class ViewerToolbar(QToolBar):
         self._buttonChain.setStatusTip("Independent views")
         self._buttonChain.triggered.connect(self._handleButtonChain)
         self._buttonChain.setCheckable(True)
-        self._buttonChain.setChecked(self._controller.getIndependentViewsEnabled())
+        self._buttonChain.setChecked(self._viewController.getIndependentViewsEnabled())
 
         self._buttonContrast = QAction(QIcon(iconPath + "contrast.png"), "Window level", self)
         self._buttonContrast.setStatusTip("Window level")
@@ -37,9 +37,9 @@ class ViewerToolbar(QToolBar):
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonContrast)
 
-        self._controller.independentViewsEnabledSignal.connect(self._handleButtonChain)
-        self._controller.windowLevelEnabledSignal.connect(self._handleWindowLevel)
-        self._controller.crossHairEnabledSignal.connect(self._handleCrossHair)
+        self._viewController.independentViewsEnabledSignal.connect(self._handleButtonChain)
+        self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
+        self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
 
     def _handleButtonChain(self, pressed):
         # This is useful if controller emit a signal:
@@ -47,7 +47,7 @@ class ViewerToolbar(QToolBar):
             self._buttonChain.setChecked(pressed)
             return
 
-        self._controller.setIndependentViewsEnabled(pressed)
+        self._viewController.setIndependentViewsEnabled(pressed)
 
     def _handleCrossHair(self, pressed):
         # This is useful if controller emit a signal:
@@ -55,7 +55,7 @@ class ViewerToolbar(QToolBar):
             self._buttonCrossHair.setChecked(pressed)
             return
 
-        self._controller.setCrossHairEnabled(pressed)
+        self._viewController.setCrossHairEnabled(pressed)
 
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:
@@ -63,4 +63,4 @@ class ViewerToolbar(QToolBar):
             self._buttonContrast.setChecked(pressed)
             return
 
-        self._controller.setWindowLevelEnabled(pressed)
+        self._viewController.setWindowLevelEnabled(pressed)

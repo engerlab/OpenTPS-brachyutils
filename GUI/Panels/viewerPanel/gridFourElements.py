@@ -2,12 +2,14 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QHBoxLayout, QFrame, QSplitter, QWidget, QVBoxLayout
 
+from GUI.Panels.viewerPanel.grid import Grid
 from GUI.Panels.viewerPanel.gridElement import GridElement
+from GUI.Viewers.sliceViewer import SliceViewerVTK
 
 
-class GridFourElements(QWidget):
-    def __init__(self):
-        QWidget.__init__(self)
+class GridFourElements(Grid):
+    def __init__(self, viewController):
+        Grid.__init__(self, viewController)
 
         self._setEqualSize = False #Use to set equal size before qwidget is effectively shown
 
@@ -78,17 +80,26 @@ class GridFourElements(QWidget):
         self._topLeft.setMinimumSize(minimumSize)
         self._topRight.setMinimumSize(minimumSize)
 
-    def addBotLeftWidget(self, widget):
-        self._botLeftLayout.addWidget(widget)
-
-    def addBotRightWidget(self, widget):
-        self._botRightLayout.addWidget(widget)
-
-    def addTopLeftWidget(self, widget):
-        self._topLeftLayout.addWidget(widget)
-
-    def addTopRightWidget(self, widget):
-        self._topRightLayout.addWidget(widget)
+        gridElement = GridElement(self._viewController)
+        if isinstance(gridElement, SliceViewerVTK):
+            gridElement.setView('coronal')
+        self.appendGridElement(gridElement)
+        self._botLeftLayout.addWidget(gridElement)
+        gridElement = GridElement(self._viewController)
+        if isinstance(gridElement, SliceViewerVTK):
+            gridElement.setView('axial')
+        self.appendGridElement(gridElement)
+        self._botRightLayout.addWidget(gridElement)
+        gridElement = GridElement(self._viewController)
+        if isinstance(gridElement, SliceViewerVTK):
+            gridElement.setView('sagittal')
+        self.appendGridElement(gridElement)
+        self._topLeftLayout.addWidget(gridElement)
+        gridElement = GridElement(self._viewController)
+        if isinstance(gridElement, SliceViewerVTK):
+            gridElement.setView('sagittal')
+        self.appendGridElement(gridElement)
+        self._topRightLayout.addWidget(gridElement)
 
 
     def resizeEvent(self, event):

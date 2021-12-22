@@ -9,15 +9,14 @@ from pyqtgraph.exporters import ImageExporter
 
 
 class ProfilePlot(QWidget):
-    newProfileSignal = pyqtSignal(object)
-
-    def __init__(self):
+    def __init__(self, viewController):
         QWidget.__init__(self)
 
         self._layout = QHBoxLayout(self)
         self._profileCount = 0
         self._profilePlot = _ProfilePlot()
         self._toolbar = _ProfileToolbar()
+        self._viewController = viewController
 
         self._toolbar.newProfileSignal.connect(self.addProfile)
         self._toolbar.removeAllSignal.connect(self.removeAll)
@@ -34,14 +33,14 @@ class ProfilePlot(QWidget):
     def addProfile(self):
         pl = self._profilePlot.newProfile([0, 0], [0, 0], self._profileCount)
         self._profileCount += 1
-        self.newProfileSignal.emit(pl.setData)
+        self._viewController.setLineWidgetEnabled(True, pl.setData)
 
     def removeAll(self):
         self.validate()
         self._profilePlot.removeAll()
 
     def validate(self):
-        self.newProfileSignal.emit(False)
+        self._viewController.setLineWidgetEnabled(False)
 
 class QStringList:
     pass
