@@ -1,15 +1,14 @@
 from PyQt5.QtWidgets import QWidget, QSplitter, QHBoxLayout, QPushButton, QTextEdit, QStatusBar
 from PyQt5.QtCore import Qt
 
+from Controllers.api import API
 from GUI.Panels.scriptingPanel.pythonHighlighter import PythonHighlighter
 
 
 class ScriptingWindow(QWidget):
-    def __init__(self, scriptingController):
+    def __init__(self):
         QWidget.__init__(self)
         self.setWindowTitle('Script')
-
-        self._controller = scriptingController
 
         layout = QHBoxLayout()
 
@@ -46,7 +45,7 @@ class ScriptingWindow(QWidget):
 
             code = self.textEdit.toPlainText()
 
-            output = self._controller.run(code)
+            output = API.run(code)
             self.stdOutput.setText(output)
 
             self.statusBar.showMessage("Done.")

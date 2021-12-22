@@ -22,7 +22,7 @@ from vtkmodules.vtkRenderingAnnotation import vtkAxesActor
 from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor, vtkPropPicker, \
   vtkMapper, vtkDataSetMapper
 
-from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
+from GUI.ViewControllers.DataControllers.imaged3DViewerController import Image3DViewerController
 from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
 
 

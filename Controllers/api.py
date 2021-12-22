@@ -1,3 +1,6 @@
+import sys
+from io import StringIO
+
 from Controllers.DataControllers.image3DController import Image3DController
 from Controllers.DataControllers.patientController import PatientController
 from Controllers.modelController import ModelController
@@ -52,6 +55,24 @@ class API(ModelController):
         #TODO
         print(str)
 
+    def registerToAPI(methodName, method):
+        API._apiMethods.__setattr__(methodName, method)
+
+    @staticmethod
+    def run(code):
+        api = API()
+
+        old_stdout = sys.stdout
+        redirected_output = sys.stdout = StringIO()
+        try:
+            exec(code)
+        except Exception as err:
+            sys.stdout = old_stdout
+            return format(err)
+
+        sys.stdout = old_stdout
+        return redirected_output.getvalue()
+
     def _wrappedMethod(self, method, *args, **kwargs):
         argsStr = ''
 
@@ -74,6 +95,3 @@ class API(ModelController):
             self._log(callStr)
 
         method(*args, **kwargs)
-
-    def registerToAPI(methodName, method):
-        API._apiMethods.__setattr__(methodName, method)

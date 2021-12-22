@@ -4,8 +4,6 @@ from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.ViewControllers.patientDataPanelController import PatientDataPanelController
-from GUI.ViewControllers.roiPanelController import ROIPanelController
-from GUI.ViewControllers.scriptingController import ScriptingController
 
 
 class MainToolbar(QToolBox):
@@ -24,13 +22,12 @@ class MainToolbar(QToolBox):
         patientDataPanel = PatientDataPanel(patientDataPanelController)
         self.addItem(patientDataPanel, 'Patient data')
 
-        roiPanel = ROIPanel()
-        self.roiPanelController = ROIPanelController(roiPanel)
+        roiPanel = ROIPanel(self._viewController)
         self.addItem(roiPanel, 'ROI')
 
-        patientDataPanelController.currentPatientChangedSignal.connect(self.roiPanelController.setCurrentPatient)
+        # TODO: When we get rid of patientDataPanelController we shoud have currentPatientChangedSignal in ViewController
+        patientDataPanelController.currentPatientChangedSignal.connect(roiPanel.setCurrentPatient)
 
         scriptingPanel = ScriptingPanel()
-        self._scriptingController = ScriptingController(scriptingPanel)
         self.addItem(scriptingPanel, 'Scripting')
 
