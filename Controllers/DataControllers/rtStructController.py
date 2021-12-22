@@ -11,6 +11,12 @@ class RTStructController(DataController):
     def __init__(self, struct):
         super().__init__(struct)
 
+    def __getitem__(self, item):
+        return self.getContourController(item)
+
+    def __len__(self):
+        return len(self.data.contours)
+
     def getName(self):
         return self.data.name
 

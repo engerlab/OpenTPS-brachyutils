@@ -4,6 +4,7 @@ from Controllers.DataControllers.dataController import DataController
 
 
 class ROIContourController(DataController):
+    colorChangedSignal = pyqtSignal(object)
     nameChangedSignal = pyqtSignal(str)
     dataChangedSignal = pyqtSignal(object)
 
@@ -11,8 +12,15 @@ class ROIContourController(DataController):
         super().__init__(contour)
         self.binaryMasks = []
 
+    def getColor(self):
+        return self.data.displayColor
+
     def getName(self):
         return self.data.name
+
+    def setColor(self, color):
+        self.data.displayColor = color
+        self.colorChangedSignal.emit(self.data.displayColor)
 
     def setName(self, name):
         self.data.name = name
