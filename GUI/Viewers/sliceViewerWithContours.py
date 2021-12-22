@@ -13,7 +13,7 @@ from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor, vtkCoordinate, vtkTextActor
 
-from GUI.ViewControllers.ViewersControllers.imaged3DViewerController import Image3DViewerController
+from GUI.ViewControllers.DataControllers.imaged3DViewerController import Image3DViewerController
 
 
 class SliceViewerVTK(QWidget):

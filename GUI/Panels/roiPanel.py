@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QColor, QPixmap, QIcon
 
-from GUI.ViewControllers.ViewersControllers.roiContourViewerController import ROIContourViewerController
+from GUI.ViewControllers.DataControllers.roiContourViewerController import ROIContourViewerController
 
 
 class ROIPanel(QWidget):
