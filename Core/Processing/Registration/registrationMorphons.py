@@ -7,6 +7,7 @@ from functools import partial
 
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
+import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +192,7 @@ class RegistrationMorphons(Registration):
 
                 # Regularize velocity deformation and certainty
                 self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
-                certainty.data = self.normGaussConv(certainty.data, certainty.data, 1.25)
+                certainty.data = imageFilter3D.normGaussConv(certainty.data, certainty.data, 1.25)
 
         self.deformed = deformation.deformImage(self.moving, fillValue='closest')
 

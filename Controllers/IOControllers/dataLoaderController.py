@@ -7,6 +7,7 @@ from Core.Data.patient import Patient
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.vectorField3D import VectorField3D
 from Core.Data.rtStruct import RTStruct
 from Core.IO import dataLoader
 from Controllers.DataControllers.image3DController import Image3DController
@@ -14,6 +15,7 @@ from Controllers.DataControllers.ctImageController import CTImageController
 from Controllers.DataControllers.doseImageController import DoseImageController
 from Controllers.DataControllers.patientController import PatientController
 from Controllers.DataControllers.rtStructController import RTStructController
+from Controllers.DataControllers.vectorField3DController import VectorField3DController
 from Controllers.api import API
 
 class DataLoaderController(ModelController):
@@ -61,6 +63,9 @@ class DataLoaderController(ModelController):
             elif(isinstance(data, RTStruct)):
                 structController = RTStructController(data)
                 patientController.appendRTStruct(structController)
+            elif (isinstance(data, VectorField3D)):
+                fieldController = VectorField3DController(data)
+                patientController.appendRTStruct(fieldController)
             else:
                 logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
                 continue

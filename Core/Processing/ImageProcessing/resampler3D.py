@@ -1,7 +1,7 @@
 import numpy as np
-import scipy.ndimage
 import logging
 
+import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
 from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 
 logger = logging.getLogger(__name__)
@@ -25,9 +25,9 @@ def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpac
         logger.info("Data is filtered before downsampling")
         if vectorDimension > 1:
             for i in range(vectorDimension):
-                data[:, :, :, i] = scipy.ndimage.gaussian_filter(data[:, :, :, i], sigma)
+                data[:, :, :, i] = imageFilter3D.gaussConv(data[:, :, :, i], sigma)
         else:
-            data[:, :, :] = scipy.ndimage.gaussian_filter(data[:, :, :], sigma)
+            data[:, :, :] = imageFilter3D.gaussConv(data[:, :, :], sigma)
 
     interpX = (outputOrigin[0] - inputOrigin[0] + np.arange(outputGridSize[0]) * outputSpacing[0]) / inputSpacing[0]
     interpY = (outputOrigin[1] - inputOrigin[1] + np.arange(outputGridSize[1]) * outputSpacing[1]) / inputSpacing[1]
