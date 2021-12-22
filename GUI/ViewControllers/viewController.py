@@ -15,6 +15,7 @@ class ViewController(QObject):
     mainImageChangedSignal = pyqtSignal(object)
     patientAddedSignal = pyqtSignal(object)
     patientRemovedSignal = pyqtSignal(object)
+    showContourSignal = pyqtSignal(object)
     windowLevelEnabledSignal = pyqtSignal(bool)
 
     def __init__(self, patientListController, mainWindow):
@@ -113,3 +114,5 @@ class ViewController(QObject):
         self._windowLevelEnabled = enabled
         self.windowLevelEnabledSignal.emit(self._windowLevelEnabled)
 
+    def showContour(self, contourController):
+        self.showContourSignal.emit(contourController)

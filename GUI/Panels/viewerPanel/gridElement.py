@@ -5,6 +5,7 @@ from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewers.dvhPlot import DVHPlot
 from GUI.Viewers.profilePlot import ProfilePlot
 from GUI.Viewers.sliceViewer import SliceViewerVTK
+from GUI.Viewers.sliceViewerWithContours import SliceViewerWithContour
 
 
 class GridElement(QWidget):
@@ -46,6 +47,9 @@ class GridElement(QWidget):
                 return
         e.ignore()
 
+    def getCurrentViewer(self):
+        return self._currentViewer
+
     def setDisplay(self, displayType):
         if displayType==self._displayType:
             return
@@ -69,7 +73,7 @@ class GridElement(QWidget):
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
-                self._sliceViewer = SliceViewerVTK(self._viewController)
+                self._sliceViewer = SliceViewerWithContour(self._viewController)
 
             self._currentViewer = self._sliceViewer
 

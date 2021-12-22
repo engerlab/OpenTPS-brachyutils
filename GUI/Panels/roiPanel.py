@@ -17,7 +17,7 @@ class ROIPanel(QWidget):
 
   def addRTStruct(self, rtStructController):
     for contourController in rtStructController:
-      checkbox = ROIItem(ROIContourViewerController(contourController)).getCheckbox()
+      checkbox = ROIItem(ROIContourViewerController(contourController), self._viewController).getCheckbox()
 
       self.layout.addWidget(checkbox)
       self.items.append(checkbox)
@@ -41,8 +41,9 @@ class ROIPanel(QWidget):
 
 
 class ROIItem:
-  def __init__(self, contourController):
+  def __init__(self, contourController, viewController):
     self._contourController = contourController
+    self._viewController = viewController
 
     name = contourController.getName()
     color = contourController.getColor()
@@ -52,9 +53,7 @@ class ROIItem:
 
     self._contourController.visibleChangedSignal.connect(self.checkbox.setChecked)
 
-    # When we click on the checkbox:
-    stateChanged = lambda isChecked: self._contourController.setVisible(isChecked)
-    self.checkbox.clicked.connect(stateChanged)
+    self.checkbox.clicked.connect(lambda c: self.handleClick(c))
 
     pixmap = QPixmap(100, 100)
     pixmap.fill(QColor(color[0], color[1], color[2], 255))
@@ -65,3 +64,7 @@ class ROIItem:
 
   def getContourController(self):
     return self._contourController
+
+  def handleClick(self, isChecked):
+    self._contourController.setVisible(isChecked)
+    self._viewController.showContour(self._contourController)

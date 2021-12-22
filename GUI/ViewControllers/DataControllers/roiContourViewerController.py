@@ -13,7 +13,7 @@ class ROIContourViewerController(ROIContourController):
         if hasattr(self, '_wwlValue'):
             return
 
-        self._visible = True
+        self._visible = False
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
