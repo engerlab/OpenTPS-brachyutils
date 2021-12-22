@@ -4,7 +4,7 @@ import scipy.ndimage
 import math
 import logging
 
-from Core.Processing.C_libraries.libInterp3_wrapper import Trilinear_Interpolation
+from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 from Core.Data.Images.image3D import Image3D
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class VectorField3D(Image3D):
             xi[:, 1] = np.maximum(np.minimum(xi[:, 1], size[1] - 1), 0)
             xi[:, 2] = np.maximum(np.minimum(xi[:, 2], size[2] - 1), 0)
             fillValue = -1000
-        output = Trilinear_Interpolation(data, size, xi, fillValue=fillValue)
+        output = interpolateTrilinear(data, size, xi, fillValue=fillValue)
         output = output.reshape((size[1], size[0], size[2])).transpose(1, 0, 2)
 
         return output

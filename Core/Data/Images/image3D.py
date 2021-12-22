@@ -3,7 +3,7 @@ import numpy as np
 import scipy.ndimage
 import logging
 
-from Core.Processing.C_libraries.libInterp3_wrapper import Trilinear_Interpolation
+from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 from Core.Data.patientData import PatientData
 
 logger = logging.getLogger(__name__)
@@ -89,11 +89,11 @@ class Image3D(PatientData):
         if vectorDimension > 1:
             field = np.zeros((*gridSize, vectorDimension))
             for i in range(vectorDimension):
-                fieldTemp = Trilinear_Interpolation(self.data[:, :, :, i], initGridSize, xi, fillValue=fillValue)
+                fieldTemp = interpolateTrilinear(self.data[:, :, :, i], initGridSize, xi, fillValue=fillValue)
                 field[:, :, :, i] = fieldTemp.reshape((gridSize[1], gridSize[0], gridSize[2])).transpose(1, 0, 2)
             self.data = field
         else:
-            self.data = Trilinear_Interpolation(self.data, initGridSize, xi, fillValue=fillValue)
+            self.data = interpolateTrilinear(self.data, initGridSize, xi, fillValue=fillValue)
             self.data = self.data.reshape((gridSize[1], gridSize[0], gridSize[2])).transpose(1, 0, 2)
 
         self.origin = list(origin)
