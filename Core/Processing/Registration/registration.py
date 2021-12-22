@@ -1,7 +1,7 @@
 import numpy as np
-import scipy.ndimage
-import scipy.signal
 import logging
+
+import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
 
@@ -13,33 +13,6 @@ class Registration:
         self.moving = moving
         self.deformed = []
         self.roiBox = []
-
-    def normGaussConv(self, data, cert, sigma):
-
-        """Apply normalized Gaussian convolution on input data.
-
-        Parameters
-        ----------
-        data : numpy array
-            data to be convolved.
-        cert : numpy array
-            certainty map associated to the data.
-        sigma : double
-            standard deviation of the Gaussian.
-
-        Returns
-        -------
-        numpy array
-            Convolved data.
-        """
-
-        data = scipy.ndimage.gaussian_filter(np.multiply(data, cert), sigma=sigma)
-        cert = scipy.ndimage.gaussian_filter(cert, sigma=sigma)
-        z = (cert == 0)
-        data[z] = 0.0
-        cert[z] = 1.0
-        data = np.divide(data, cert)
-        return data
 
     def regularizeField(self, field, filterType="Gaussian", sigma=1.0, cert=None):
 
@@ -58,17 +31,17 @@ class Registration:
         """
 
         if filterType == "Gaussian":
-            field.velocity.data[:, :, :, 0] = scipy.ndimage.gaussian_filter(field.velocity.data[:, :, :, 0], sigma=sigma)
-            field.velocity.data[:, :, :, 1] = scipy.ndimage.gaussian_filter(field.velocity.data[:, :, :, 1], sigma=sigma)
-            field.velocity.data[:, :, :, 2] = scipy.ndimage.gaussian_filter(field.velocity.data[:, :, :, 2], sigma=sigma)
+            field.velocity.data[:, :, :, 0] = imageFilter3D.gaussConv(field.velocity.data[:, :, :, 0], sigma=sigma)
+            field.velocity.data[:, :, :, 1] = imageFilter3D.gaussConv(field.velocity.data[:, :, :, 1], sigma=sigma)
+            field.velocity.data[:, :, :, 2] = imageFilter3D.gaussConv(field.velocity.data[:, :, :, 2], sigma=sigma)
             return
 
         if filterType == "NormalizedGaussian":
             if cert is None:
                 cert = np.ones_like(field.velocity.data[:, :, :, 0])
-            field.velocity.data[:, :, :, 0] = self.normGaussConv(field.velocity.data[:, :, :, 0], cert, sigma)
-            field.velocity.data[:, :, :, 1] = self.normGaussConv(field.velocity.data[:, :, :, 1], cert, sigma)
-            field.velocity.data[:, :, :, 2] = self.normGaussConv(field.velocity.data[:, :, :, 2], cert, sigma)
+            field.velocity.data[:, :, :, 0] = imageFilter3D.normGaussConv(field.velocity.data[:, :, :, 0], cert, sigma)
+            field.velocity.data[:, :, :, 1] = imageFilter3D.normGaussConv(field.velocity.data[:, :, :, 1], cert, sigma)
+            field.velocity.data[:, :, :, 2] = imageFilter3D.normGaussConv(field.velocity.data[:, :, :, 2], cert, sigma)
             return
 
         else:
