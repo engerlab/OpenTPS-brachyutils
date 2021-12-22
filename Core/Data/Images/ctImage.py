@@ -20,5 +20,5 @@ class CTImage(Image3D):
         img.seriesInstanceUID = pydicom.uid.generate_uid()
         return img
 
-    def resample(self, gridSize, origin, spacing, fillValue=-1000):
-        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue)
+    def resample(self, gridSize, origin, spacing, fillValue=-1000, outputType=None):
+        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
