@@ -35,6 +35,15 @@ class RegistrationQuick(Registration):
         Registration.__init__(self, fixed, moving)
 
     def compute(self):
+
+        """Perform registration between fixed and moving images.
+
+            Returns
+            -------
+            list
+                Translation from moving to fixed images.
+            """
+
         if self.fixed == [] or self.moving == []:
             logger.error("Image not defined in registration object")
             return

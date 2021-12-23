@@ -36,6 +36,14 @@ class RegistrationMorphons(Registration):
 
     def compute(self):
 
+        """Perform registration between fixed and moving images.
+
+            Returns
+            -------
+            numpy array
+                Deformation from moving to fixed images.
+            """
+
         if self.nbProcesses < 0:
             self.nbProcesses = min(mp.cpu_count(), 6)
 

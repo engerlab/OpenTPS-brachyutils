@@ -14,6 +14,15 @@ class RegistrationTranslation(Registration):
         self.initialTranslation = initialTranslation
 
     def compute(self):
+
+        """Perform registration between fixed and moving images.
+
+            Returns
+            -------
+            numpy array
+                Translation from moving to fixed images.
+            """
+
         logger.info("\nStart rigid registration.\n")
 
         opt = scipy.optimize.minimize(self.translateAndComputeSSD, self.initialTranslation, method='Powell',

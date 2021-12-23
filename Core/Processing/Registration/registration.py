@@ -136,7 +136,7 @@ class Registration:
             gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
             resampled = self.moving.copy()
-            resampled.resample_image(gridSize, origin, self.fixed.spacing)
+            resampled.resample(gridSize, origin, self.fixed.spacing)
 
         return resampled
 
@@ -161,7 +161,7 @@ class Registration:
         gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
         resampled = self.fixed.copy()
-        resampled.resample_image(gridSize, origin, self.fixed.spacing)
+        resampled.resample(gridSize, origin, self.fixed.spacing)
 
         return resampled
 

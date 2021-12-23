@@ -9,6 +9,35 @@ logger = logging.getLogger(__name__)
 
 def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpacing,outputGridSize,fillValue=0,outputType=None):
 
+    """Resample 3D data according to new voxel grid using linear interpolation.
+
+    Parameters
+    ----------
+    data : numpy array
+        data to be resampled.
+    inputOrigin : list
+        origin of the input data voxel grid.
+    inputSpacing : list
+        spacing of the input data voxel grid.
+    inputGridSize : list
+        size of the input data voxel grid.
+    outputOrigin : list
+        origin of the output data voxel grid.
+    outputSpacing : list
+        spacing of the output data voxel grid.
+    outputGridSize : list
+        size of the output data voxel grid.
+    fillValue : scalar
+        interpolation value for locations outside the input voxel grid.
+    outputType : numpy data type
+        type of the output.
+
+    Returns
+    -------
+    numpy array
+        Resampled data.
+    """
+
     if outputType is None:
         outputType = data.dtype
 
@@ -55,6 +84,27 @@ def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpac
     return data.astype(outputType)
 
 def warp(data,field,spacing,fillValue=0,outputType=None):
+
+    """Warp 3D data based on 3D vector field using linear interpolation.
+
+    Parameters
+    ----------
+    data : numpy array
+        data to be warped.
+    field : numpy array
+        origin of the input data voxel grid.
+    spacing : list
+        spacing of the input data voxel grid.
+    fillValue : scalar
+        interpolation value for locations outside the input voxel grid.
+    outputType : numpy data type
+        type of the output.
+
+    Returns
+    -------
+    numpy array
+        Warped data.
+    """
 
     if outputType is None:
         outputType = data.dtype

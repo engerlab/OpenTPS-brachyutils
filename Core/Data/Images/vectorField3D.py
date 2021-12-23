@@ -17,14 +17,45 @@ class VectorField3D(Image3D):
                          UID=UID)
 
     def initFromImage(self, image):
+        """Initialize vector field using the voxel grid of the input image.
+
+            Parameters
+            ----------
+            image : numpy array
+                image from which the voxel grid is copied.
+            """
+
         self.data = np.zeros(tuple(image.getGridSize()) + (3,))
         self.origin = image.origin
         self.spacing = image.spacing
 
     def warp(self, data, fillValue=0):
+        """Warp 3D data using linear interpolation.
+
+        Parameters
+        ----------
+        data : numpy array
+            data to be warped.
+        fillValue : scalar
+            interpolation value for locations outside the input voxel grid.
+
+        Returns
+        -------
+        numpy array
+            Warped data.
+        """
+
         return resampler3D.warp(data,self.data,self.spacing,fillValue=fillValue)
 
     def exponentiateField(self):
+        """Exponentiate the vector field (e.g. to convert velocity in to displacement).
+
+        Returns
+        -------
+        numpy array
+            Displacement field.
+        """
+
         norm = np.square(self.data[:, :, :, 0]/self.spacing[0]) + np.square(self.data[:, :, :, 1]/self.spacing[1]) + np.square(self.data[:, :, :, 2]/self.spacing[2])
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
@@ -43,6 +74,12 @@ class VectorField3D(Image3D):
         return displacement
 
     def computeFieldNorm(self):
+        """Compute the voxel-wise norm of the vector field.
 
+        Returns
+        -------
+        numpy array
+            Voxel-wise norm of the vector field.
+        """
         return np.sqrt(
             self.data[:, :, :, 0] ** 2 + self.data[:, :, :, 1] ** 2 + self.data[:, :, :, 2] ** 2)

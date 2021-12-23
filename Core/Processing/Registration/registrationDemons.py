@@ -16,6 +16,14 @@ class RegistrationDemons(Registration):
 
     def compute(self):
 
+        """Perform registration between fixed and moving images.
+
+            Returns
+            -------
+            numpy array
+                Deformation from moving to fixed images.
+            """
+
         scales = self.baseResolution * np.asarray([11.3137, 8.0, 5.6569, 4.0, 2.8284, 2.0, 1.4142, 1.0])
         iterations = [10, 10, 10, 10, 10, 10, 5, 2]
 

@@ -10,6 +10,27 @@ logger = logging.getLogger(__name__)
 
 def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
 
+    """Compute mid-position image and corresponding deformations from a 4D image.
+
+    Parameters
+    ----------
+    CT4D : Dynamic3DSequence
+        4D image.
+    refIndex : int
+        index of the reference phase in the 4D image.
+    baseResolution : double
+        spacing of the highest registration resolution (i.e. spacing of the output deformation fields)
+    nbProcesses : int
+        number of processes to be used in Morphons registration (-1 = maximum number of processes)
+
+    Returns
+    -------
+    numpy array
+        MidP image.
+    list
+        List of deformations between MidP image and each phase of the 4D image
+    """
+
     averageField = Deformation3D()
 
     # perform registrations
