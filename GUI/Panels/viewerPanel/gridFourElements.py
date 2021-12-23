@@ -81,23 +81,23 @@ class GridFourElements(Grid):
         self._topRight.setMinimumSize(minimumSize)
 
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement, SliceViewerVTK):
-            gridElement.setView('coronal')
+        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
+            gridElement.getCurrentViewer().setView('axial')
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement, SliceViewerVTK):
-            gridElement.setView('axial')
+        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
+            gridElement.getCurrentViewer().setView('axial')
         self.appendGridElement(gridElement)
         self._botRightLayout.addWidget(gridElement)
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement, SliceViewerVTK):
-            gridElement.setView('sagittal')
+        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
+            gridElement.getCurrentViewer().setView('coronal')
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement, SliceViewerVTK):
-            gridElement.setView('sagittal')
+        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
+            gridElement.getCurrentViewer().setView('sagittal')
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
 
