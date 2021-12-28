@@ -32,8 +32,8 @@ if __name__ == '__main__':
     instantiateAPI(patientListController)
 
     # instantiate the main GUI window
-    mainWindow = MainWindow()
-    viewController = ViewController(patientListController, mainWindow)
-    mainWindow.show()
+    #mainWindow = MainWindow()
+    viewController = ViewController(patientListController)
+    viewController.mainWindow.show()
 
     app.exec_()

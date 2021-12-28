@@ -4,6 +4,7 @@ import logging
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from Controllers.DataControllers.patientController import PatientController
+from GUI.MainWindow import *
 from GUI.Panels.mainToolbar import MainToolbar
 from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
 
@@ -18,13 +19,13 @@ class ViewController(QObject):
     showContourSignal = pyqtSignal(object)
     windowLevelEnabledSignal = pyqtSignal(bool)
 
-    def __init__(self, patientListController, mainWindow):
+    def __init__(self, patientListController):#, mainWindow):
         QObject.__init__(self)
 
         self._crossHairEnabled = None
         self._independentViewsEnabled = False
         self._lineWidgetEnabled = False
-        self.mainWindow = mainWindow
+        self.mainWindow = MainWindow(self)
         self._windowLevelEnabled = None
 
         self.activePatientControllers = [PatientController(patient) for patient in patientListController.data]
@@ -32,11 +33,11 @@ class ViewController(QObject):
         self.multipleActivePatientsEnabled = False
         self._selectedImageController = None
 
-        mainToolbar = MainToolbar(self)
-        self.mainWindow.setLateralToolbar(mainToolbar)
-
-        viewerPanel = ViewerPanel(self)
-        self.mainWindow.setMainPanel(viewerPanel)
+        # mainToolbar = MainToolbar(self)
+        # self.mainWindow.setLateralToolbar(mainToolbar)
+        #
+        # viewerPanel = ViewerPanel(self)
+        # self.mainWindow.setMainPanel(viewerPanel)
 
         patientListController.patientAddedSignal.connect(self.appendActivePatientController)
         patientListController.patientRemovedSignal.connect(self.appendActivePatientController)

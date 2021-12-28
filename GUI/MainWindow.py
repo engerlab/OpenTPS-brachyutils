@@ -1,24 +1,47 @@
 
 import os
-
 from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QToolBox
 from PyQt5.QtGui import QIcon
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        QMainWindow.__init__(self)
+from GUI.Panels.mainToolbar import MainToolbar
+from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
 
-        self.toolbox_width = 270
+
+class MainWindow(QMainWindow):
+    def __init__(self, viewControler):
+        QMainWindow.__init__(self)
 
         self.setWindowTitle('OpenTPS')
         self.setWindowIcon(QIcon('GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep + 'OpenTPS_icon.png'))
         self.resize(1400, 920)
 
-        self.mainLayout = QHBoxLayout()
-
         centralWidget = QWidget()
-        centralWidget.setLayout(self.mainLayout)
         self.setCentralWidget(centralWidget)
+        self.mainLayout = QHBoxLayout()  ## not sure the "self" is necessary for mainLayout, it shoudnt be called outside this constructor
+        centralWidget.setLayout(self.mainLayout)
+
+        self._viewControler = viewControler
+
+        # create and add the tool panel on the left
+        self.toolbox_width = 270
+        self.mainToolbar = MainToolbar(self._viewControler)
+        self.mainToolbar.setFixedWidth(self.toolbox_width)
+        self.mainLayout.addWidget(self.mainToolbar)
+
+        # create and add the viewer panel
+        self.viewerPanel = ViewerPanel(self._viewControler)
+        self.mainLayout.addWidget(self.viewerPanel)
+        #self.mainWindow.setMainPanel(viewerPanel)
+
+
+
+
+        #self.mainLayout.addWidget(mainPanel)
+
+    # def setViewControler(self, viewControler):
+    #     self._viewControler = viewControler
+    #     self.mainToolbar.setViewControler(self._viewControler)
+    #     self.viewerPanel.setViewControler(self._viewControler)
 
     def setLateralToolbar(self, toolbar):
         self.mainLayout.addWidget(toolbar)
