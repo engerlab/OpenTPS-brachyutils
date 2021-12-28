@@ -4,7 +4,7 @@ import logging
 from PyQt5.QtCore import QObject, pyqtSignal
 
 from Controllers.DataControllers.patientController import PatientController
-from GUI.MainWindow import *
+from GUI.MainWindow import MainWindow
 
 
 class ViewController(QObject):
