@@ -5,8 +5,6 @@ from PyQt5.QtCore import QObject, pyqtSignal
 
 from Controllers.DataControllers.patientController import PatientController
 from GUI.MainWindow import *
-from GUI.Panels.mainToolbar import MainToolbar
-from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
 
 
 class ViewController(QObject):

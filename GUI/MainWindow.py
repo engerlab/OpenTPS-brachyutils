@@ -31,17 +31,6 @@ class MainWindow(QMainWindow):
         # create and add the viewer panel
         self.viewerPanel = ViewerPanel(self._viewControler)
         self.mainLayout.addWidget(self.viewerPanel)
-        #self.mainWindow.setMainPanel(viewerPanel)
-
-
-
-
-        #self.mainLayout.addWidget(mainPanel)
-
-    # def setViewControler(self, viewControler):
-    #     self._viewControler = viewControler
-    #     self.mainToolbar.setViewControler(self._viewControler)
-    #     self.viewerPanel.setViewControler(self._viewControler)
 
     def setLateralToolbar(self, toolbar):
         self.mainLayout.addWidget(toolbar)
