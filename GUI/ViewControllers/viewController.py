@@ -16,6 +16,7 @@ class ViewController(QObject):
     patientRemovedSignal = pyqtSignal(object)
     showContourSignal = pyqtSignal(object)
     windowLevelEnabledSignal = pyqtSignal(bool)
+    currentPatientChangedSignal = pyqtSignal(object)
 
     def __init__(self, patientListController):#, mainWindow):
         QObject.__init__(self)
@@ -30,12 +31,6 @@ class ViewController(QObject):
         self.logger = logging.getLogger(__name__)
         self.multipleActivePatientsEnabled = False
         self._selectedImageController = None
-
-        # mainToolbar = MainToolbar(self)
-        # self.mainWindow.setLateralToolbar(mainToolbar)
-        #
-        # viewerPanel = ViewerPanel(self)
-        # self.mainWindow.setMainPanel(viewerPanel)
 
         patientListController.patientAddedSignal.connect(self.appendActivePatientController)
         patientListController.patientRemovedSignal.connect(self.appendActivePatientController)
@@ -55,6 +50,15 @@ class ViewController(QObject):
         if self.multipleActivePatientsEnabled:
             self.logger.exception('Cannot getActivePatientController if multiple patients enabled')
             raise
+
+    def setCurrentPatientController(self, patientController):
+        self._currentPatientController = patientController
+        self.currentPatientChangedSignal.emit(self._currentPatientController)
+
+    def setSelectedImageController(self, imageController):
+        self._viewController.setSelectedImageController(imageController)
+    # def getCurrentPatientController(self):
+    #     return PatientController(self._currentPatientController)
 
     def getCrossHairEnabled(self):
         return self._crossHairEnabled

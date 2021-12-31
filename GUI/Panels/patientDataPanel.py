@@ -1,17 +1,30 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex
+from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex, pyqtSignal
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
     QStackedWidget, QListView, QLineEdit, QAbstractItemView
 
 from Controllers.api import API
+from Controllers.DataControllers.patientController import PatientController
 
 
 class PatientDataPanel(QWidget):
+
+    currentPatientChangedSignal = pyqtSignal(object)
+    patientAddedSignal = pyqtSignal(object)
+    patientRemovedSignal = pyqtSignal(object)
+
     def __init__(self, viewController):
         QWidget.__init__(self)
 
         self._viewController = viewController
+        self._currentPatientController = None
+
+        self._viewController.patientAddedSignal.connect(self.patientAddedSignal.emit)
+        self._viewController.patientAddedSignal.connect(self._handleNewPatient)
+
+        self._viewController.patientRemovedSignal.connect(self.patientRemovedSignal.emit)
+        self._viewController.patientRemovedSignal.connect(self._handleRemovedPatient)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -19,12 +32,45 @@ class PatientDataPanel(QWidget):
         patientBox = PatientComboBox(self._viewController)
         self.layout.addWidget(patientBox)
 
-        imageList = PatientImageList(self._viewController)
+        imageList = PatientImageList(self._viewController, self)
         self.layout.addWidget(imageList)
 
         loadDataButton = QPushButton('Load data')
         loadDataButton.clicked.connect(self.loadData)
         self.layout.addWidget(loadDataButton)
+
+
+    def _handleNewPatient(self, patientController):
+        if self._currentPatientController is None:
+            self.setCurrentPatientController(patientController)
+
+
+    def _handleRemovedPatient(self, patientController):
+        if self._currentPatientController == patientController:
+            self.setCurrentPatientController(None)
+
+
+    def getCurrentPatientController(self):
+        return PatientController(self._currentPatientController)
+
+
+    def getSelectedImageController(self):
+        return self._viewController.getSelectedImageController()
+
+
+    #@abstractmethod
+    def getLeftClickMenu(self):
+        pass
+
+
+    def setCurrentPatientController(self, patientController):
+        self._currentPatientController = patientController
+        self.currentPatientChangedSignal.emit(self._currentPatientController)
+
+
+    def setSelectedImageController(self, imageController):
+        self._viewController.setSelectedImageController(imageController)
+
 
     def loadData(self):
         file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
@@ -61,7 +107,7 @@ class PatientComboBox(QComboBox):
 
 
 class PatientImageList(QTreeView):
-    def __init__(self, viewController):
+    def __init__(self, viewController, patientDataPanel):
         QTreeView.__init__(self)
 
         self._viewController = viewController
@@ -73,7 +119,7 @@ class PatientImageList(QTreeView):
 
         self._viewController.currentPatientChangedSignal.connect(self.updateAll)
 
-        patientController = self._viewController.getCurrentPatientController()
+        patientController = patientDataPanel.getCurrentPatientController()
         self.updateAll(patientController)
 
         self.setSelectionMode(self.SingleSelection)
@@ -118,6 +164,7 @@ class PatientImageList(QTreeView):
     def dragEnterEvent(self, event):
         selection = self.selectionModel().selectedIndexes()[0]
         self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
+
 
 class PatientImageItem(QStandardItem):
     def __init__(self, imageController):
