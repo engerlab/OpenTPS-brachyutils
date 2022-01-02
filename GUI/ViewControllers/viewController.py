@@ -55,9 +55,6 @@ class ViewController(QObject):
         self._currentPatientController = patientController
         self.currentPatientChangedSignal.emit(self._currentPatientController)
 
-    def setSelectedImageController(self, imageController):
-        self._viewController.setSelectedImageController(imageController)
-
     def getCurrentPatientController(self):
         return PatientController(self._currentPatientController)
 

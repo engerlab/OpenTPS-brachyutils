@@ -2,7 +2,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex, pyqtSignal
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
-    QStackedWidget, QListView, QLineEdit, QAbstractItemView
+    QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction
 
 from Controllers.api import API
 from Controllers.DataControllers.patientController import PatientController
@@ -116,7 +116,6 @@ class PatientDataTree(QTreeView):
         self.patientDataPanel = patientDataPanel
         self._viewController = viewController
 
-        # FROM 4D branch
         self.setHeaderHidden(True)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -129,10 +128,10 @@ class PatientDataTree(QTreeView):
         self.setColumnHidden(1, True)
         self.expandAll()
 
-        self._viewController.currentPatientChangedSignal.connect(self.updateAll)
+        self._viewController.currentPatientChangedSignal.connect(self.updateDataTree)
 
         self.patientController = self.patientDataPanel.getCurrentPatientController()
-        self.updateAll(self.patientController)
+        self.updateDataTree(self.patientController)
 
         self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDragEnabled(True)
@@ -151,7 +150,7 @@ class PatientDataTree(QTreeView):
 
         drag.exec_(QtCore.Qt.CopyAction)
 
-    def updateAll(self, patientController):
+    def updateDataTree(self, patientController):
         self.treeModel.clear()
         self.rootNode = self.treeModel.invisibleRootItem()
 
@@ -179,9 +178,8 @@ class PatientDataTree(QTreeView):
 
     def setDataToDisplay(self, selection):
 
-        selection = self.selectionModel().selectedIndexes()[0]
         self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
-        self.patientController = self.patientDataPanel.getCurrentPatientController()
+        self.patientController = self.patientDataPanel.getCurrentPatientController()  # not used for now
 
         # there are 2 options here, using a signal emitted and received in the viewController
         # or simply calling the necessary viewController function as it is passed to every item in the panel anyway
