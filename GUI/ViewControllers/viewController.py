@@ -24,8 +24,11 @@ class ViewController(QObject):
         self._crossHairEnabled = None
         self._independentViewsEnabled = False
         self._lineWidgetEnabled = False
-        self.mainWindow = MainWindow(self)
         self._windowLevelEnabled = None
+
+        self.mainWindow = MainWindow(self)
+        # this is useful if used with the signal emitted from the PatientDataTree in the setDataToDisplay function
+        self.mainWindow.mainToolbar.patientDataPanel.patientDataTree.dataSelectedSignal.connect(self.setMainImage)
 
         self.activePatientControllers = [PatientController(patient) for patient in patientListController.data]
         self.logger = logging.getLogger(__name__)
@@ -35,9 +38,6 @@ class ViewController(QObject):
         patientListController.patientAddedSignal.connect(self.appendActivePatientController)
         patientListController.patientRemovedSignal.connect(self.appendActivePatientController)
 
-        #For Damien:
-        #Define mainImageSelectedSignal in mainToolbar
-        #mainToolbar.mainImageSelectedSignal.connect(viewerPanelController.setMainImage)
 
     # if self.multipleActivePatientsEnabled
     def appendActivePatientController(self, patientController):
@@ -57,8 +57,9 @@ class ViewController(QObject):
 
     def setSelectedImageController(self, imageController):
         self._viewController.setSelectedImageController(imageController)
-    # def getCurrentPatientController(self):
-    #     return PatientController(self._currentPatientController)
+
+    def getCurrentPatientController(self):
+        return PatientController(self._currentPatientController)
 
     def getCrossHairEnabled(self):
         return self._crossHairEnabled

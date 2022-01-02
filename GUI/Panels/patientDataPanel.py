@@ -29,11 +29,11 @@ class PatientDataPanel(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        patientBox = PatientComboBox(self._viewController)
-        self.layout.addWidget(patientBox)
+        self.patientBox = PatientComboBox(self._viewController)
+        self.layout.addWidget(self.patientBox)
 
-        imageList = PatientImageList(self._viewController, self)
-        self.layout.addWidget(imageList)
+        self.patientDataTree = PatientDataTree(self._viewController, self)
+        self.layout.addWidget(self.patientDataTree)
 
         loadDataButton = QPushButton('Load data')
         loadDataButton.clicked.connect(self.loadData)
@@ -106,12 +106,24 @@ class PatientComboBox(QComboBox):
         self.removeItem(self.findData(patientController))
 
 
-class PatientImageList(QTreeView):
+class PatientDataTree(QTreeView):
+
+    dataSelectedSignal = pyqtSignal(object)
+
     def __init__(self, viewController, patientDataPanel):
         QTreeView.__init__(self)
 
+        self.patientDataPanel = patientDataPanel
         self._viewController = viewController
 
+        # FROM 4D branch
+        self.setHeaderHidden(True)
+        self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.viewport().installEventFilter(self)
+        self.customContextMenuRequested.connect(lambda pos: self.TreeView_RightClick(pos))
+        self.resizeColumnToContents(0)
+        self.doubleClicked.connect(self.setDataToDisplay)
         self.treeModel = QStandardItemModel()
         self.setModel(self.treeModel)
         self.setColumnHidden(1, True)
@@ -119,10 +131,8 @@ class PatientImageList(QTreeView):
 
         self._viewController.currentPatientChangedSignal.connect(self.updateAll)
 
-        patientController = patientDataPanel.getCurrentPatientController()
-        self.updateAll(patientController)
-
-        self.setSelectionMode(self.SingleSelection)
+        self.patientController = self.patientDataPanel.getCurrentPatientController()
+        self.updateAll(self.patientController)
 
         self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDragEnabled(True)
@@ -161,9 +171,166 @@ class PatientImageList(QTreeView):
         if len(imageControllers)>0:
             self._viewController.setSelectedImageController(imageControllers[0])
 
+
     def dragEnterEvent(self, event):
         selection = self.selectionModel().selectedIndexes()[0]
         self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
+
+
+    def setDataToDisplay(self, selection):
+
+        selection = self.selectionModel().selectedIndexes()[0]
+        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
+        self.patientController = self.patientDataPanel.getCurrentPatientController()
+
+        # there are 2 options here, using a signal emitted and received in the viewController
+        # or simply calling the necessary viewController function as it is passed to every item in the panel anyway
+        # this is the example with an image selected but it must be differentiated for each relevant data type
+        # option with _viewController use, in this case the signal is not used and can be removed from the class
+        self._viewController.setMainImage(self.model().itemFromIndex(selection).imageController)
+        # option with signal
+        #self.dataSelectedSignal.emit(self.model().itemFromIndex(selection).imageController)
+
+        #from 4D branch
+        # selected_type = self.model().itemFromIndex(selection).whatsThis()
+        # print(selected_type)
+        # selected_UID = selection.model().data(selection.model().index(selection.row(), 1, selection.parent()))
+        # is_bold = selection.model().itemFromIndex(selection).font().bold()
+        #
+        # if is_bold and selected_type != 'CT':
+        #     print('Unselected for display:', selected_UID)
+        # else:
+        #     print('Selected for display:', selected_UID)
+        #
+        # if selected_type == 'CT':
+        #     self.Current_CT_changed.emit(selected_UID)
+        #     self.ROI_list_changed.emit()
+        #     return
+        # elif selected_type == 'dose':
+        #     if is_bold:
+        #         self.Current_dose_changed.emit("")
+        #     else:
+        #         self.Current_dose_changed.emit(selected_UID)
+        #     return
+        # elif selected_type == 'plan':
+        #     if is_bold:
+        #         self.Current_plan_changed.emit("")
+        #     else:
+        #         self.Current_plan_changed.emit(selected_UID)
+        #     return
+        # elif selected_type == 'field':
+        #     if is_bold:
+        #         self.Current_field_changed.emit("")
+        #     else:
+        #         self.Current_field_changed.emit(selected_UID)
+        #     return
+        #
+        # for seriesIndex, series in enumerate(self.Patients.list[0].Dyn4DSeqList):
+        #     serieRoot = series.SOPInstanceUID
+        #     if serieRoot == selected_UID:
+        #         print("Series selected", serieRoot, "seriesIndex:", seriesIndex)
+        #         self.DynamicImage_selected.emit([selected_UID, 'dyn4DSeq', seriesIndex])
+        #         return
+        #
+        # for seriesIndex, series in enumerate(self.Patients.list[0].Dyn2DSeqList):
+        #     serieRoot = series.SOPInstanceUID
+        #     if serieRoot == selected_UID:
+        #         print("Series selected", serieRoot, "seriesIndex:", seriesIndex)
+        #         self.DynamicImage_selected.emit([selected_UID, 'dyn2DSeq', seriesIndex])
+        #         return
+
+
+    def TreeView_RightClick(self, pos):
+
+        UIDs = []
+        data_types = []
+        pos = self.treeView.mapToGlobal(pos)
+        selected = self.treeView.selectedIndexes()
+        data_type = self.treeView.model().itemFromIndex(selected[0]).whatsThis()
+
+        for i in range(len(selected)):
+            UIDs.append(
+                self.treeView.model().data(self.treeView.model().index(selected[i].row(), 1, selected[i].parent())))
+            data_types.append(self.treeView.model().itemFromIndex(selected[i]).whatsThis())
+            if data_types[i] != data_type:
+                data_type = 'mixed'
+
+        if (len(UIDs) > 0):
+            self.context_menu = QMenu()
+
+            if (data_type == 'dose'):
+                self.export_action = QAction("Export")
+                self.export_action.triggered.connect(
+                    lambda checked, data_types=data_types, UIDs=UIDs: self.export_item(data_types, UIDs))
+                self.context_menu.addAction(self.export_action)
+
+            if (data_type != 'mixed'):
+                self.rename_action = QAction("Rename")
+                self.rename_action.triggered.connect(
+                    lambda checked, data_type=data_type, UIDs=UIDs: self.rename_item(data_type, UIDs))
+                self.context_menu.addAction(self.rename_action)
+
+            if (data_type == 'CT' and len(UIDs) > 1):
+                self.make_series_action = QAction("Make series")
+                self.make_series_action.triggered.connect(
+                    lambda checked, data_types=data_types, UIDs=UIDs: self.make_series(data_types, UIDs))
+                self.context_menu.addAction(self.make_series_action)
+
+            if (data_type == 'CT'):
+                self.crop_action = QAction("Crop")
+                self.crop_action.triggered.connect(
+                    lambda checked, data_type=data_type, UIDs=UIDs: self.crop_image(UIDs[0]))
+                self.context_menu.addAction(self.crop_action)
+
+            if (data_type == 'mixed' and len(UIDs) > 1 and data_types[0] == 'CT'):
+                fields_only = True
+                for i in range(len(data_types) - 1):
+                    if data_types[i + 1] != 'field':
+                        fields_only = False
+                if fields_only:
+                    self.make_4d_model_action = QAction("Make 4D model (MidP)")
+                    self.make_4d_model_action.triggered.connect(
+                        lambda checked, data_types=data_types, UIDs=UIDs: self.make_4d_model(data_types, UIDs))
+                    self.context_menu.addAction(self.make_4d_model_action)
+
+            if (data_type == '4DCT' and len(UIDs) == 1):
+                self.start_midp_action = QAction("Compute 4D model (MidP)")
+                self.start_midp_action.triggered.connect(
+                    lambda checked, data_types=data_types, UIDs=UIDs: self.start_midp(data_types, UIDs))
+                self.context_menu.addAction(self.start_midp_action)
+
+            if (data_type == 'plan' and len(UIDs) == 1):
+                plan = self.Patients.find_plan(UIDs[0])
+                if (plan.ScanMode == 'LINE'):
+                    self.convert_action = QAction("Convert line scanning to PBS plan")
+                    self.convert_action.triggered.connect(lambda checked: plan.convert_LineScanning_to_PBS())
+                    self.context_menu.addAction(self.convert_action)
+
+                self.display_spot_action = []
+                self.display_spot_action.append(QAction("Display spots (full plan)"))
+                self.display_spot_action[0].triggered.connect(
+                    lambda checked, beam=-1: self.Viewer_display_spots.emit(beam))
+                self.context_menu.addAction(self.display_spot_action[0])
+                for b in range(len(plan.Beams)):
+                    self.display_spot_action.append(QAction("Display spots (Beam " + str(b + 1) + ")"))
+                    self.display_spot_action[b + 1].triggered.connect(
+                        lambda checked, beam=b: self.Viewer_display_spots.emit(beam))
+                    self.context_menu.addAction(self.display_spot_action[b + 1])
+
+                self.remove_spot_action = QAction("Remove displayed spots")
+                self.remove_spot_action.triggered.connect(self.Viewer_clear_spots.emit)
+                self.context_menu.addAction(self.remove_spot_action)
+
+                self.print_plan_action = QAction("Print plan info")
+                self.print_plan_action.triggered.connect(plan.print_plan_stat)
+                self.context_menu.addAction(self.print_plan_action)
+
+            self.delete_action = QAction("Delete")
+            self.delete_action.triggered.connect(
+                lambda checked, data_types=data_types, UIDs=UIDs: self.delete_item(data_types, UIDs))
+            self.context_menu.addAction(self.delete_action)
+
+            self.context_menu.popup(pos)
 
 
 class PatientImageItem(QStandardItem):
