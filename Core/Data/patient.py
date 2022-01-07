@@ -30,6 +30,7 @@ class Patient:
         self.images = []
         self.plans = []
         self.rtStructs = []
+        self.dynamic3DSequences = []
 
 
     def __str__(self):
@@ -104,4 +105,28 @@ class Patient:
 
         """
         self.rtStructs.remove(struct)
+
+    def appendDyn3DSeq(self, dyn3DSeq):
+        """
+        Append dynamic3DSequence object to patient's dynamic3DSequences list
+
+        Parameters
+        ----------
+        dyn3DSeq: dynamic3DSequence object
+            Dynamic 3D Sequence set to append
+
+        """
+        self.dynamic3DSequences.append(dyn3DSeq)
+
+    def removeDyn3DSeq(self, dyn3DSeq):
+        """
+        Remove dynamic3DSequence from patient's dynamic3DSequences list
+
+        Parameters
+        ----------
+        dyn3DSeq: dynamic3DSequence object
+            Dynamic 3D Sequence set to remove
+
+        """
+        self.dynamic3DSequences.remove(dyn3DSeq)
 

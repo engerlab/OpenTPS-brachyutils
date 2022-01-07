@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSignal
 from Controllers.DataControllers.dataController import DataController
 from Controllers.DataControllers.image3DController import Image3DController
 from Controllers.DataControllers.rtStructController import RTStructController
+from Controllers.DataControllers.dynamicSequenceController import DynamicSequenceController
 
 
 class PatientController(DataController):
@@ -10,6 +11,8 @@ class PatientController(DataController):
     imageRemovedSignal = pyqtSignal(object)
     rtStructAddedSignal = pyqtSignal(object)
     rtStructRemovedSignal = pyqtSignal(object)
+    dyn3DSeqAddedSignal = pyqtSignal(object)
+    dyn3DSeqRemovedSignal = pyqtSignal(object)
     nameChangedSignal = pyqtSignal(str)
 
     def __init__(self, patient):
@@ -28,6 +31,13 @@ class PatientController(DataController):
 
         self.data.appendRTStruct(struct)
         self.rtStructAddedSignal.emit(RTStructController(struct))
+
+    def appendDyn3DSeq(self, dyn3DSeq):
+        if isinstance(dyn3DSeq, DynamicSequenceController):
+            dyn3DSeq = dyn3DSeq.data
+
+        self.data.appendDyn3DSeq(dyn3DSeq)
+        self.dyn3DSeqAddedSignal.emit(DynamicSequenceController(dyn3DSeq))
 
     def getName(self):
         return self.data.patientInfo.name
@@ -57,6 +67,13 @@ class PatientController(DataController):
 
         self.data.removeRTStruct(struct)
         self.rtStructRemovedSignal.emit(RTStructController(struct))
+
+    def removeDyn3DSeq(self, dyn3DSeq):
+        if isinstance(dyn3DSeq, DynamicSequenceController):
+            dyn3DSeq = dyn3DSeq.data
+
+        self.data.removeDyn3DSeq(dyn3DSeq)
+        self.dyn3DSeqRemovedSignal.emit(DynamicSequenceController(dyn3DSeq))
 
     def setName(self, name):
         self.data.patientInfo.name = name

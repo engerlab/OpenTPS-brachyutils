@@ -1,8 +1,11 @@
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 
 
 class DataController(QObject):
     _allDataControllers = []
+
+    nameChangedSignal = pyqtSignal(str)
+    dataChangedSignal = pyqtSignal(object)
 
     def __new__(cls, data):
         if isinstance(data, DataController):
@@ -44,5 +47,18 @@ class DataController(QObject):
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
+
+    def getType(self):
+        return self.data.__class__.__name__
+
+    def getName(self):
+        return self.data.name
+
+    def setName(self, name):
+        self.data.name = name
+        self.nameChangedSignal.emit(self.data.name)
+
+    def notifyDataChange(self):
+        self.dataChangedSignal.emit(self.data)
 
 

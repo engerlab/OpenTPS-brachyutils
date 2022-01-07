@@ -15,9 +15,8 @@ def euclidean_dist(v1, v2):
 
 class Image3D(PatientData):
     def __init__(self, data=None, name="3D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), UID=None):
-        super().__init__(patientInfo=patientInfo)
+        super().__init__(patientInfo=patientInfo, name=name)
         self.data = data
-        self.name = name
         self.origin = list(origin)
         self.spacing = list(spacing)
         self.angles = list(angles)
