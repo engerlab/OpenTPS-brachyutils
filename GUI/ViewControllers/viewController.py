@@ -18,7 +18,7 @@ class ViewController(QObject):
     windowLevelEnabledSignal = pyqtSignal(bool)
     currentPatientChangedSignal = pyqtSignal(object)
 
-    def __init__(self, patientListController):#, mainWindow):
+    def __init__(self, patientListController):
         QObject.__init__(self)
 
         self._crossHairEnabled = None
@@ -37,6 +37,9 @@ class ViewController(QObject):
 
         patientListController.patientAddedSignal.connect(self.appendActivePatientController)
         patientListController.patientRemovedSignal.connect(self.appendActivePatientController)
+
+        self.numberOfViewerPanelElement = 0
+        self.shownDataUIDsList = [] #this is to keep track of which data is currently shown, but not used yet
 
 
     # if self.multipleActivePatientsEnabled
@@ -101,6 +104,7 @@ class ViewController(QObject):
 
     def setMainImage(self, imageController):
         self.mainImageChangedSignal.emit(imageController)
+        self.shownDataUIDsList.append(imageController.data.seriesInstanceUID)
 
     def setSelectedImageController(self, imageController):
         self._selectedImageController = imageController

@@ -20,6 +20,8 @@ class ViewerPanel(QWidget):
 
         self.setToolbar(self._viewToolbar)
         self.setLayout(self.LAYOUT_FOUR)
+        if self._layoutType == 'LAYOUT_FOUR':
+            self._viewController.numberOfViewerPanelElement = 4
 
         self._viewController.independentViewsEnabledSignal.connect(lambda enabled: self.setDropEnabled(not enabled))
         self.setDropEnabled(not self._viewController.getIndependentViewsEnabled())
@@ -48,7 +50,7 @@ class ViewerPanel(QWidget):
         if not self._viewerGrid is None:
             self._layoutType.removeWidget(self._viewerGrid)
 
-        if self._layoutType==self.LAYOUT_FOUR:
+        if self._layoutType == self.LAYOUT_FOUR:
             self._viewerGrid = GridFourElements(self._viewController)
 
         if self._viewerGrid==None:

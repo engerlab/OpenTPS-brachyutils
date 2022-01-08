@@ -1,12 +1,14 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex, pyqtSignal
-from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
     QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog
 
 from Controllers.api import API
 from Controllers.DataControllers.patientController import PatientController
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
+
+
 
 class PatientDataPanel(QWidget):
 
@@ -68,8 +70,8 @@ class PatientDataPanel(QWidget):
         self.currentPatientChangedSignal.emit(self._currentPatientController)
 
 
-    def setSelectedImageController(self, imageController):
-        self._viewController.setSelectedImageController(imageController)
+    # def setSelectedImageController(self, imageController):
+    #     self._viewController.setSelectedImageController(imageController)
 
 
     def loadData(self):
@@ -78,6 +80,7 @@ class PatientDataPanel(QWidget):
         #API().loadDummyImages(None) #test
 
 
+## ------------------------------------------------------------------------------------------
 class PatientComboBox(QComboBox):
     def __init__(self, viewController):
         QComboBox.__init__(self)
@@ -106,6 +109,7 @@ class PatientComboBox(QComboBox):
         self.removeItem(self.findData(patientController))
 
 
+## ------------------------------------------------------------------------------------------
 class PatientDataTree(QTreeView):
 
     dataSelectedSignal = pyqtSignal(object)
@@ -139,6 +143,13 @@ class PatientDataTree(QTreeView):
 
     def appendImage(self, dataController):
         item = PatientDataItem(dataController)
+
+        # item = StandardItem(txt=ct.ImgName, type='CT')
+        # UID = StandardItem(txt=ct.SOPInstanceUID)
+        # if ct.SOPInstanceUID == self.displayed_uids[0]:
+        #     item.setFont(font_b)
+        # self.rootNode.appendRow([item, UID])
+
         self.rootNode.appendRow(item)
 
     def mouseMoveEvent(self, event):
@@ -151,8 +162,11 @@ class PatientDataTree(QTreeView):
         drag.exec_(QtCore.Qt.CopyAction)
 
     def updateDataTree(self, patientController): ## --> this version is specific to images --> must be changed to work with each data type using a dataController
+
         self.treeModel.clear()
         self.rootNode = self.treeModel.invisibleRootItem()
+        font_b = QFont()
+        font_b.setBold(True)
 
         if patientController is None:
             return
@@ -163,24 +177,79 @@ class PatientDataTree(QTreeView):
             pass
         patientController.imageAddedSignal.connect(self.appendImage)
 
+        #images
         imageControllers = patientController.getImageControllers()
         for imageController in imageControllers:
-            self.appendImage(imageController)
+            print(imageController.data.seriesInstanceUID)
+            # self.appendImage(imageController)
+            item = PatientDataItem(imageController)
+            self.rootNode.appendRow(item)
+
+            # item = StandardItem(txt=ct.ImgName, type='CT')
+            # UID = StandardItem(txt=ct.SOPInstanceUID)
+            # if ct.SOPInstanceUID == self.displayed_uids[0]:
+            #     item.setFont(font_b)
+            # self.rootNode.appendRow([item, UID])
 
         if len(imageControllers) > 0:
             self._viewController.setSelectedImageController(imageControllers[0])
 
+        # image sequences
+        sequenceControllers = patientController.getDynamic3DSequenceControllers()
+        for dynSeqController in sequenceControllers:
+            # item = PatientDataItem(dynSeqController)
+            # self.rootNode.appendRow(item)
+
+            """
+            I was here trying to make the extendable thing on the dyn series in the pannel.
+            What if instead of trying to put in bold the shown data, with the issues of UID that must saved for each viewer etc ...
+            We simply show the image, dose, dyn seq and plan name on the viewer or on a QTip that shown when the mouse is over it ?
+            """
+
+            serieRoot = PatientDataItem(dynSeqController)
+            # UIDRoot = StandardItem(txt=series.SOPInstanceUID)
+            # if series.SOPInstanceUID == self.displayed_uids[0]:
+            #     serieRoot.setFont(font_b)
+            imageControllers = dynSeqController.getImageControllers()
+            for imageController in imageControllers:
+                item = PatientDataItem(imageController)
+                # UID = PatientDataItem(txt=image.SOPInstanceUID)
+                # if image.SOPInstanceUID == self.displayed_uids[0]:
+                #     item.setFont(font_b)
+                # serieRoot.appendRow([item, UID])
+                serieRoot.appendRow(item)
+            # self.rootNode.appendRow([serieRoot, UIDRoot])
+            self.rootNode.appendRow(serieRoot)
+
+        # if len(dynSeqController) > 0:
+        #     self._viewController.setSelectedImageController(imageControllers[0])
+
+        ###### from 4D branch ###### ###### ###### ###### ###### ###### ######
+        # for series in self.Patients.list[0].Dyn4DSeqList:
+        #     if (series.isLoaded == 1):
+        #         serieRoot = StandardItem(txt=series.SequenceName, type='4DCT')
+        #         UIDRoot = StandardItem(txt=series.SOPInstanceUID)
+        #         if series.SOPInstanceUID == self.displayed_uids[0]:
+        #             serieRoot.setFont(font_b)
+        #         for image in series.dyn3DImageList:
+        #             item = StandardItem(txt=image.ImgName, type='CT')
+        #             UID = StandardItem(txt=image.SOPInstanceUID)
+        #             if image.SOPInstanceUID == self.displayed_uids[0]:
+        #                 item.setFont(font_b)
+        #             serieRoot.appendRow([item, UID])
+        #         self.rootNode.appendRow([serieRoot, UIDRoot])
+        ###### ###### ###### ###### ###### ###### ###### ###### ###### ######
 
     def dragEnterEvent(self, event):
         selection = self.selectionModel().selectedIndexes()[0]
-        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).imageController)
+        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).dataController)
 
 
     def setDataToDisplay(self, selection):
 
         self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).dataController)
         self.patientController = self.patientDataPanel.getCurrentPatientController()  # not used for now
-
+        self._viewController.shownDataUIDsList.append(self.model().itemFromIndex(selection).dataController.data.seriesInstanceUID)
         # there are 2 options here, using a signal emitted and received in the viewController
         # or simply calling the necessary viewController function as it is passed to every item in the panel anyway
         # this is the example with an image selected but it must be differentiated for each relevant data type
@@ -339,9 +408,11 @@ class PatientDataTree(QTreeView):
 
     def createDynamic3DSequence(self, data_types, selectedImages):
 
+        newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
+
         newSeq = Dynamic3DSequence()
         #newSeq.SOPInstanceUID = generate_uid()
-        newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
+
         if (okPressed):
             newSeq.name = newName
             for i in range(len(data_types)):
@@ -359,20 +430,30 @@ class PatientDataTree(QTreeView):
             #self.updateDataTreeView()
 
 
+## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):
-    def __init__(self, dataController):
+    def __init__(self, dataController, txt="", type="", color=QColor(125, 125, 125)):
         QStandardItem.__init__(self)
+        #super().__init__()
 
         self.dataController = dataController
         self.dataController.nameChangedSignal.connect(self.setName)
 
+        # if txt:
+        #     self.setText(txt)
+        # else:
         self.setName(self.dataController.getName())
 
+        # self.setEditable(False)
+        # self.setForeground(color)
+        # self.setText(txt)
+        # self.setWhatsThis(type)
 
     def setName(self, name):
         self.setText(name)
 
 
+## ------------------------------------------------------------------------------------------
 def _getOpenFilesAndDirs(parent=None, caption='', directory='',
                           filter='', initialFilter='', options=None):
     def updateText():

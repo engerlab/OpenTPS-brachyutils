@@ -48,6 +48,9 @@ class PatientController(DataController):
     def getRTStructControllers(self):
         return [RTStructController(struct) for struct in self.data.rtStructs]
 
+    def getDynamic3DSequenceControllers(self):
+        return [DynamicSequenceController(dynSeq) for dynSeq in self.data.dynamic3DSequences]
+
     def hasImage(self, image):
         if isinstance(image, Image3DController):
             image = image.data
