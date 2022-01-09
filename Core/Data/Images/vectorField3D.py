@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 class VectorField3D(Image3D):
 
     def __init__(self, data=None, name="Vector Field", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1),
-                 angles=(0, 0, 0), UID=""):
+                 angles=(0, 0, 0), seriesInstanceUID=""):
 
         super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles,
-                         UID=UID)
+                         seriesInstanceUID=seriesInstanceUID)
 
     def initFromImage(self, image):
         """Initialize vector field using the voxel grid of the input image.

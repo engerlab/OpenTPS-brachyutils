@@ -2,11 +2,14 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex, pyqtSignal
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
-    QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog
+    QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog, QHBoxLayout
+
+from pydicom.uid import generate_uid
 
 from Controllers.api import API
 from Controllers.DataControllers.patientController import PatientController
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.dynamic3DModel import Dynamic3DModel
 
 
 
@@ -37,9 +40,14 @@ class PatientDataPanel(QWidget):
         self.patientDataTree = PatientDataTree(self._viewController, self)
         self.layout.addWidget(self.patientDataTree)
 
-        loadDataButton = QPushButton('Load data')
+        self.buttonLayout = QHBoxLayout()
+        loadDataButton = QPushButton('Load Data')
         loadDataButton.clicked.connect(self.loadData)
-        self.layout.addWidget(loadDataButton)
+        self.buttonLayout.addWidget(loadDataButton)
+        # saveDataButton = QPushButton('Save Data')
+        # saveDataButton.clicked.connect(self.saveData)
+        # self.buttonLayout.addWidget(saveDataButton)
+        self.layout.addLayout(self.buttonLayout)
 
 
     def _handleNewPatient(self, patientController):
@@ -161,7 +169,12 @@ class PatientDataTree(QTreeView):
 
         drag.exec_(QtCore.Qt.CopyAction)
 
-    def updateDataTree(self, patientController): ## --> this version is specific to images --> must be changed to work with each data type using a dataController
+    def updateDataTree(self, patientController):
+
+        """
+        What if instead of trying to put in bold the shown data, with the issues of UID that must saved for each viewer etc ...
+        We simply show the image, dose, dyn seq and plan name on the viewer or on a QTip that shown when the mouse is over it ?
+        """
 
         self.treeModel.clear()
         self.rootNode = self.treeModel.invisibleRootItem()
@@ -180,65 +193,39 @@ class PatientDataTree(QTreeView):
         #images
         imageControllers = patientController.getImageControllers()
         for imageController in imageControllers:
-            print(imageController.data.seriesInstanceUID)
-            # self.appendImage(imageController)
             item = PatientDataItem(imageController)
             self.rootNode.appendRow(item)
-
-            # item = StandardItem(txt=ct.ImgName, type='CT')
-            # UID = StandardItem(txt=ct.SOPInstanceUID)
-            # if ct.SOPInstanceUID == self.displayed_uids[0]:
-            #     item.setFont(font_b)
-            # self.rootNode.appendRow([item, UID])
 
         if len(imageControllers) > 0:
             self._viewController.setSelectedImageController(imageControllers[0])
 
-        # image sequences
+        # dynamic sequences
         sequenceControllers = patientController.getDynamic3DSequenceControllers()
         for dynSeqController in sequenceControllers:
-            # item = PatientDataItem(dynSeqController)
-            # self.rootNode.appendRow(item)
-
-            """
-            I was here trying to make the extendable thing on the dyn series in the pannel.
-            What if instead of trying to put in bold the shown data, with the issues of UID that must saved for each viewer etc ...
-            We simply show the image, dose, dyn seq and plan name on the viewer or on a QTip that shown when the mouse is over it ?
-            """
-
             serieRoot = PatientDataItem(dynSeqController)
-            # UIDRoot = StandardItem(txt=series.SOPInstanceUID)
-            # if series.SOPInstanceUID == self.displayed_uids[0]:
-            #     serieRoot.setFont(font_b)
             imageControllers = dynSeqController.getImageControllers()
             for imageController in imageControllers:
                 item = PatientDataItem(imageController)
-                # UID = PatientDataItem(txt=image.SOPInstanceUID)
-                # if image.SOPInstanceUID == self.displayed_uids[0]:
-                #     item.setFont(font_b)
-                # serieRoot.appendRow([item, UID])
                 serieRoot.appendRow(item)
-            # self.rootNode.appendRow([serieRoot, UIDRoot])
             self.rootNode.appendRow(serieRoot)
 
         # if len(dynSeqController) > 0:
-        #     self._viewController.setSelectedImageController(imageControllers[0])
+        # self._viewController.setSelectedImageController(imageControllers[0])
 
-        ###### from 4D branch ###### ###### ###### ###### ###### ###### ######
-        # for series in self.Patients.list[0].Dyn4DSeqList:
-        #     if (series.isLoaded == 1):
-        #         serieRoot = StandardItem(txt=series.SequenceName, type='4DCT')
-        #         UIDRoot = StandardItem(txt=series.SOPInstanceUID)
-        #         if series.SOPInstanceUID == self.displayed_uids[0]:
-        #             serieRoot.setFont(font_b)
-        #         for image in series.dyn3DImageList:
-        #             item = StandardItem(txt=image.ImgName, type='CT')
-        #             UID = StandardItem(txt=image.SOPInstanceUID)
-        #             if image.SOPInstanceUID == self.displayed_uids[0]:
-        #                 item.setFont(font_b)
-        #             serieRoot.appendRow([item, UID])
-        #         self.rootNode.appendRow([serieRoot, UIDRoot])
-        ###### ###### ###### ###### ###### ###### ###### ###### ###### ######
+        # dynamic models
+        modelControllers = patientController.getDynamic3DModelControllers()
+        for modelController in modelControllers:
+            serieRoot = PatientDataItem(modelController)
+            fieldControllers = modelController.getVectorFieldControllers()
+            for fieldController in fieldControllers:
+                item = PatientDataItem(fieldController)
+                serieRoot.appendRow(item)
+            self.rootNode.appendRow(serieRoot)
+
+        # if len(dynSeqController) > 0:
+        # self._viewController.setSelectedImageController(imageControllers[0])
+
+
 
     def dragEnterEvent(self, event):
         selection = self.selectionModel().selectedIndexes()[0]
@@ -247,16 +234,21 @@ class PatientDataTree(QTreeView):
 
     def setDataToDisplay(self, selection):
 
-        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).dataController)
-        self.patientController = self.patientDataPanel.getCurrentPatientController()  # not used for now
-        self._viewController.shownDataUIDsList.append(self.model().itemFromIndex(selection).dataController.data.seriesInstanceUID)
-        # there are 2 options here, using a signal emitted and received in the viewController
-        # or simply calling the necessary viewController function as it is passed to every item in the panel anyway
-        # this is the example with an image selected but it must be differentiated for each relevant data type
-        # option with _viewController use, in this case the signal is not used and can be removed from the class
-        self._viewController.setMainImage(self.model().itemFromIndex(selection).dataController)
-        # option with signal
-        #self.dataSelectedSignal.emit(self.model().itemFromIndex(selection).imageController)
+        selectedDataController = self.model().itemFromIndex(selection).dataController
+        dataType = selectedDataController.getType()
+        # self.patientController = self.patientDataPanel.getCurrentPatientController()  # not used for now
+        # self._viewController.shownDataUIDsList.append(selectedDataController.data.seriesInstanceUID)  # not used for now
+
+        if dataType == 'CTImage':
+            self._viewController.setSelectedImageController(selectedDataController)
+
+            # there are 2 options here, using a signal emitted and received in the viewController
+            # or simply calling the necessary viewController function as it is passed to every item in the panel anyway
+            # this is the example with an image selected but it must be differentiated for each relevant data type
+            # option with _viewController use, in this case the signal is not used and can be removed from the class
+            self._viewController.setMainImage(selectedDataController)
+            # option with signal
+            #self.dataSelectedSignal.emit(self.model().itemFromIndex(selection).imageController)
 
         #from 4D branch
         # selected_type = self.model().itemFromIndex(selection).whatsThis()
@@ -332,72 +324,79 @@ class PatientDataTree(QTreeView):
         if (len(selected) > 0):
             self.context_menu = QMenu()
 
-            if (dataType == 'dose'):
-                self.export_action = QAction("Export")
-                self.export_action.triggered.connect(
-                    lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.export_item(data_types, UIDs))
-                self.context_menu.addAction(self.export_action)
+            # actions for dose data
+            # if (dataType == 'dose'):
+            #     self.export_action = QAction("Export")
+            #     self.export_action.triggered.connect(
+            #         lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.export_item(data_types, UIDs))
+            #     self.context_menu.addAction(self.export_action)
 
-            if (dataType != 'mixed'):
+            # actions for any single data
+            if (dataType != 'mixed' and len(selected) == 1):
                 self.rename_action = QAction("Rename")
                 self.rename_action.triggered.connect(
                     lambda checked, data_type=dataType, UIDs=UIDs: self.rename_item(data_type, UIDs))
                 self.context_menu.addAction(self.rename_action)
 
-            if (dataType == 'CTImage' and len(selected) > 1):
+            # actions for group of 3DImage
+            if (dataType == 'CTImage' and len(selected) > 1):  # to generalize to other modalities eventually
                 self.make_series_action = QAction("Make dynamic 3D sequence")
                 self.make_series_action.triggered.connect(
-                    lambda checked, data_types=selectedDataTypeList, selectedImages=selectedDataControllerList: self.createDynamic3DSequence(data_types, selectedImages))
+                    lambda checked, selectedImages=selectedDataControllerList: self.createDynamic3DSequence(selectedImages))
                 self.context_menu.addAction(self.make_series_action)
 
-            if (dataType == 'CTImage'):
-                self.crop_action = QAction("Crop")
-                self.crop_action.triggered.connect(
-                    lambda checked, data_type=dataType, UIDs=UIDs: self.crop_image(UIDs[0]))
-                self.context_menu.addAction(self.crop_action)
+            # actions for any 3DImage
+            # if (dataType == 'CTImage'):
+            #     self.crop_action = QAction("Crop")
+            #     self.crop_action.triggered.connect(
+            #         lambda checked, data_type=dataType, UIDs=UIDs: self.crop_image(UIDs[0]))
+            #     self.context_menu.addAction(self.crop_action)
 
-            if (dataType == 'mixed' and len(UIDs) > 1 and selectedDataTypeList[0] == 'CTImage'):
-                fields_only = True
-                for i in range(len(selectedDataTypeList) - 1):
-                    if selectedDataTypeList[i + 1] != 'field':
-                        fields_only = False
-                if fields_only:
-                    self.make_4d_model_action = QAction("Make 4D model (MidP)")
-                    self.make_4d_model_action.triggered.connect(
-                        lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.make_4d_model(data_types, UIDs))
-                    self.context_menu.addAction(self.make_4d_model_action)
+            # actions specific to an image selected with deformation fields
+            # if (dataType == 'mixed' and len(UIDs) > 1 and selectedDataTypeList[0] == 'CTImage'):
+            #     fields_only = True
+            #     for i in range(len(selectedDataTypeList) - 1):
+            #         if selectedDataTypeList[i + 1] != 'field':
+            #             fields_only = False
+            #     if fields_only:
+            #         self.make_4d_model_action = QAction("Make 4D model (MidP)")
+            #         self.make_4d_model_action.triggered.connect(
+            #             lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.make_4d_model(data_types, UIDs))
+            #         self.context_menu.addAction(self.make_4d_model_action)
 
-            if (dataType == '4DCT' and len(UIDs) == 1):
-                self.start_midp_action = QAction("Compute 4D model (MidP)")
-                self.start_midp_action.triggered.connect(
-                    lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.start_midp(data_types, UIDs))
-                self.context_menu.addAction(self.start_midp_action)
+            # actions for single Dynamic3DSequence
+            if (dataType == 'Dynamic3DSequence' and len(selected) == 1):# or dataType == 'Dynamic2DSequence'):
+                self.compute3DModelAction = QAction("Compute 4D model (MidP)")
+                self.compute3DModelAction.triggered.connect(
+                    lambda checked, selected3DSequence=selectedDataControllerList[0]: self.computeDynamic3DModel(selected3DSequence))
+                self.context_menu.addAction(self.compute3DModelAction)
 
-            if (dataType == 'plan' and len(UIDs) == 1):
-                plan = self.Patients.find_plan(UIDs[0])
-                if (plan.ScanMode == 'LINE'):
-                    self.convert_action = QAction("Convert line scanning to PBS plan")
-                    self.convert_action.triggered.connect(lambda checked: plan.convert_LineScanning_to_PBS())
-                    self.context_menu.addAction(self.convert_action)
-
-                self.display_spot_action = []
-                self.display_spot_action.append(QAction("Display spots (full plan)"))
-                self.display_spot_action[0].triggered.connect(
-                    lambda checked, beam=-1: self.Viewer_display_spots.emit(beam))
-                self.context_menu.addAction(self.display_spot_action[0])
-                for b in range(len(plan.Beams)):
-                    self.display_spot_action.append(QAction("Display spots (Beam " + str(b + 1) + ")"))
-                    self.display_spot_action[b + 1].triggered.connect(
-                        lambda checked, beam=b: self.Viewer_display_spots.emit(beam))
-                    self.context_menu.addAction(self.display_spot_action[b + 1])
-
-                self.remove_spot_action = QAction("Remove displayed spots")
-                self.remove_spot_action.triggered.connect(self.Viewer_clear_spots.emit)
-                self.context_menu.addAction(self.remove_spot_action)
-
-                self.print_plan_action = QAction("Print plan info")
-                self.print_plan_action.triggered.connect(plan.print_plan_stat)
-                self.context_menu.addAction(self.print_plan_action)
+            # # actions for plans
+            # if (dataType == 'plan' and len(UIDs) == 1):
+            #     plan = self.Patients.find_plan(UIDs[0])
+            #     if (plan.ScanMode == 'LINE'):
+            #         self.convert_action = QAction("Convert line scanning to PBS plan")
+            #         self.convert_action.triggered.connect(lambda checked: plan.convert_LineScanning_to_PBS())
+            #         self.context_menu.addAction(self.convert_action)
+            #
+            #     self.display_spot_action = []
+            #     self.display_spot_action.append(QAction("Display spots (full plan)"))
+            #     self.display_spot_action[0].triggered.connect(
+            #         lambda checked, beam=-1: self.Viewer_display_spots.emit(beam))
+            #     self.context_menu.addAction(self.display_spot_action[0])
+            #     for b in range(len(plan.Beams)):
+            #         self.display_spot_action.append(QAction("Display spots (Beam " + str(b + 1) + ")"))
+            #         self.display_spot_action[b + 1].triggered.connect(
+            #             lambda checked, beam=b: self.Viewer_display_spots.emit(beam))
+            #         self.context_menu.addAction(self.display_spot_action[b + 1])
+            #
+            #     self.remove_spot_action = QAction("Remove displayed spots")
+            #     self.remove_spot_action.triggered.connect(self.Viewer_clear_spots.emit)
+            #     self.context_menu.addAction(self.remove_spot_action)
+            #
+            #     self.print_plan_action = QAction("Print plan info")
+            #     self.print_plan_action.triggered.connect(plan.print_plan_stat)
+            #     self.context_menu.addAction(self.print_plan_action)
 
             self.delete_action = QAction("Delete")
             self.delete_action.triggered.connect(
@@ -406,42 +405,46 @@ class PatientDataTree(QTreeView):
 
             self.context_menu.popup(pos)
 
-    def createDynamic3DSequence(self, data_types, selectedImages):
+
+    def createDynamic3DSequence(self, selectedImageControllers):
 
         newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
 
-        newSeq = Dynamic3DSequence()
-        #newSeq.SOPInstanceUID = generate_uid()
-
         if (okPressed):
+            newSeq = Dynamic3DSequence()
             newSeq.name = newName
-            for i in range(len(data_types)):
-                if (data_types[i] == 'CTImage'):
-                    # patient_id = self.Patients.find_patient(UIDs[i])
-                    # ct = self.Patients.find_CT_image(UIDs[i])
-                    image = selectedImages[i].data
-                    newSeq.dyn3DImageList.append(image)
-                    self._viewController._currentPatientController.removeImage(image)
+            newSeq.seriesInstanceUID = generate_uid()
+
+            for i in range(len(selectedImageControllers)):
+                image = selectedImageControllers[i].data
+                newSeq.dyn3DImageList.append(image)
+                self._viewController._currentPatientController.removeImage(image)
 
             self._viewController._currentPatientController.appendDyn3DSeq(newSeq)
-            # newSeq.isLoaded = 1
-            # self.Patients.list[patient_id].Dyn4DSeqList.append(newSeq)
             self.updateDataTree(self._viewController._currentPatientController)
-            #self.updateDataTreeView()
+
+
+    def computeDynamic3DModel(self, selected3DSequenceController):
+
+        newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")
+
+        if (okPressed):
+            newMod = Dynamic3DModel()
+            newMod.name = newName
+            newMod.seriesInstanceUID = generate_uid()
+            newMod.computeMidPositionImage(selected3DSequenceController.data)
+            self._viewController._currentPatientController.appendDyn3DMod(newMod)
+            self.updateDataTree(self._viewController._currentPatientController)
 
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):
     def __init__(self, dataController, txt="", type="", color=QColor(125, 125, 125)):
         QStandardItem.__init__(self)
-        #super().__init__()
 
         self.dataController = dataController
         self.dataController.nameChangedSignal.connect(self.setName)
 
-        # if txt:
-        #     self.setText(txt)
-        # else:
         self.setName(self.dataController.getName())
 
         # self.setEditable(False)

@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class Deformation3D(Image3D):
 
-    def __init__(self, data=None, name="Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), UID="", velocity=None, displacement=None):
+    def __init__(self, data=None, name="Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", velocity=None, displacement=None):
 
         if (displacement is None) and not(velocity is None):
             origin = velocity.origin
@@ -32,7 +32,7 @@ class Deformation3D(Image3D):
             if patientInfo is None:
                 patientInfo = displacement.patientInfo
 
-        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, UID=UID)
+        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
 
         self.velocity = velocity
         self.displacement = displacement
