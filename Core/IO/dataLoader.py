@@ -4,6 +4,7 @@ import logging
 
 from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct
 from Core.IO import mhdReadWrite
+from Core.IO.serializedObjectIO import loadDataStructure
 
 
 def loadAllData(inputPaths, maxDepth=-1):
@@ -81,6 +82,11 @@ def loadAllData(inputPaths, maxDepth=-1):
         mhdImage = mhdReadWrite.importImageMHD(filePath)
         dataList.append(mhdImage)
 
+    # read serialized object files
+    for filePath in fileLists["Serialized"]:
+        dataList += loadDataStructure(filePath) # not append because loadDataStructure returns a list already
+
+
     return dataList
 
 
@@ -107,7 +113,8 @@ def listAllFiles(inputPaths, maxDepth=-1):
 
     fileLists = {
         "Dicom": [],
-        "MHD": []
+        "MHD": [],
+        "Serialized": []
     }
 
     # if inputPaths is a list of path, then iteratively call this function with each path of the list
@@ -159,6 +166,12 @@ def listAllFiles(inputPaths, maxDepth=-1):
                     if("ElementDataFile" in data.decode('ascii')): # recognize key from MHD header
                         fileLists["MHD"].append(filePath)
                         continue
+
+
+            # Is serialized file ?
+            if filePath.endswith('.p') or filePath.endswith('.pbz2'):
+                fileLists["Serialized"].append(filePath)
+
 
             # Unknown file format
             logging.info("INFO: cannot recognize file format of " + filePath)

@@ -36,6 +36,12 @@ class DataLoaderController(ModelController):
             patientController = self.patientListController.getPatientController(index)
 
         for data in dataList:
+
+            if (isinstance(data, Patient)):
+                patientController = PatientController(data)
+                self.patientListController.append(patientController)
+
+
             if importInPatient == None:
                 # check if patient already exists
                 index = self.patientListController.getIndexFromPatientID(data.patientInfo.patientID)
@@ -66,6 +72,8 @@ class DataLoaderController(ModelController):
             elif (isinstance(data, VectorField3D)):
                 fieldController = VectorField3DController(data)
                 patientController.appendRTStruct(fieldController)
+            elif (isinstance(data, Patient)):
+                pass  # see above, the Patient case is considered
             else:
                 logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
                 continue

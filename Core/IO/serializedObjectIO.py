@@ -1,9 +1,13 @@
+"""
+Made by damien (damien.dasnoy@uclouvain.be / damien.dasnoy@gmail.com)
+"""
 import bz2
 import _pickle as cPickle
 import pickle
 import os
 
 
+# ---------------------------------------------------------------------------------------------------
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
 
     if splitPatientsBool:
@@ -16,6 +20,7 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
         saveSerializedObject(patientList, savingPath, compressedBool=compressedBool)
 
 
+# ---------------------------------------------------------------------------------------------------
 def saveSerializedObject(patientList, savingPath, compressedBool=False):
 
     if compressedBool:
@@ -38,24 +43,27 @@ def saveSerializedObject(patientList, savingPath, compressedBool=False):
 
     print('Patient data structure saved in drive')
 
-def loadDataStructure(self, dictFilePath):
 
-    if dictFilePath.endswith('.p'):
+# ---------------------------------------------------------------------------------------------------
+def loadDataStructure(filePath):
+
+    if filePath.endswith('.p'):
         # option using basic pickle function
         # self.Patients.list.append(pickle.load(open(dictFilePath, "rb")).list[0])
 
         # option for large files
         max_bytes = 2 ** 31 - 1
         bytes_in = bytearray(0)
-        input_size = os.path.getsize(dictFilePath)
-        with open(dictFilePath, 'rb') as f_in:
+        input_size = os.path.getsize(filePath)
+        with open(filePath, 'rb') as f_in:
             for _ in range(0, input_size, max_bytes):
                 bytes_in += f_in.read(max_bytes)
-        self.list.append(pickle.loads(bytes_in).list[0])
+        data = pickle.loads(bytes_in)
 
-    elif dictFilePath.endswith('.pbz2'):
-        data = bz2.BZ2File(dictFilePath, 'rb')
+    elif filePath.endswith('.pbz2'):
+        data = bz2.BZ2File(filePath, 'rb')
         data = cPickle.load(data)
-        self.list.append(data.list[0])
 
-    print('Patient data structure load from drive')
+    print('Serialized data structure loaded')
+    return data
+

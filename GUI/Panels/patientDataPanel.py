@@ -45,7 +45,7 @@ class PatientDataPanel(QWidget):
         loadDataButton = QPushButton('Load Data')
         loadDataButton.clicked.connect(self.loadData)
         self.buttonLayout.addWidget(loadDataButton)
-        saveDataButton = QPushButton('Save Data')
+        saveDataButton = QPushButton('Save Data (Serialized)')
         saveDataButton.clicked.connect(self.saveData)
         self.buttonLayout.addWidget(saveDataButton)
         self.layout.addLayout(self.buttonLayout)
@@ -464,7 +464,7 @@ class PatientDataItem(QStandardItem):
 
         self.setName(self.dataController.getName())
 
-        # self.setEditable(False)
+        self.setEditable(False)
         # self.setForeground(color)
         # self.setText(txt)
         # self.setWhatsThis(type)
