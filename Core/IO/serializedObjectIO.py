@@ -1,0 +1,61 @@
+import bz2
+import _pickle as cPickle
+import pickle
+import os
+
+
+def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
+
+    if splitPatientsBool:
+        patientList = [[patient] for patient in patientList]
+        for patient in patientList:
+            patientName = '_' + patient[0].patientInfo.name
+            saveSerializedObject(patient, savingPath + patientName, compressedBool=compressedBool)
+
+    else:
+        saveSerializedObject(patientList, savingPath, compressedBool=compressedBool)
+
+
+def saveSerializedObject(patientList, savingPath, compressedBool=False):
+
+    if compressedBool:
+
+        print('Compress and save patient data structure in drive')
+        with bz2.BZ2File(savingPath + '_compressed.pbz2', 'w') as f:
+            cPickle.dump(patientList, f)
+
+    else:
+        print('Save patient data structure in drive')
+        # basic version
+        # pickle.dump(self.Patients, open(savingPath + ".p", "wb"), protocol=4)
+
+        # large file version
+        max_bytes = 2 ** 31 - 1
+        bytes_out = pickle.dumps(patientList)
+        with open(savingPath + ".p", 'wb') as f_out:
+            for idx in range(0, len(bytes_out), max_bytes):
+                f_out.write(bytes_out[idx:idx + max_bytes])
+
+    print('Patient data structure saved in drive')
+
+def loadDataStructure(self, dictFilePath):
+
+    if dictFilePath.endswith('.p'):
+        # option using basic pickle function
+        # self.Patients.list.append(pickle.load(open(dictFilePath, "rb")).list[0])
+
+        # option for large files
+        max_bytes = 2 ** 31 - 1
+        bytes_in = bytearray(0)
+        input_size = os.path.getsize(dictFilePath)
+        with open(dictFilePath, 'rb') as f_in:
+            for _ in range(0, input_size, max_bytes):
+                bytes_in += f_in.read(max_bytes)
+        self.list.append(pickle.loads(bytes_in).list[0])
+
+    elif dictFilePath.endswith('.pbz2'):
+        data = bz2.BZ2File(dictFilePath, 'rb')
+        data = cPickle.load(data)
+        self.list.append(data.list[0])
+
+    print('Patient data structure load from drive')

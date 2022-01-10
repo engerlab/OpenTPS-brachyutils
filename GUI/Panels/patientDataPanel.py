@@ -2,7 +2,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex, pyqtSignal
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
-    QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog, QHBoxLayout
+    QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog, QHBoxLayout, QCheckBox
 
 from pydicom.uid import generate_uid
 
@@ -10,6 +10,7 @@ from Controllers.api import API
 from Controllers.DataControllers.patientController import PatientController
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
+from Core.IO.serializedObjectIO import saveDataStructure
 
 
 
@@ -44,11 +45,12 @@ class PatientDataPanel(QWidget):
         loadDataButton = QPushButton('Load Data')
         loadDataButton.clicked.connect(self.loadData)
         self.buttonLayout.addWidget(loadDataButton)
-        # saveDataButton = QPushButton('Save Data')
-        # saveDataButton.clicked.connect(self.saveData)
-        # self.buttonLayout.addWidget(saveDataButton)
+        saveDataButton = QPushButton('Save Data')
+        saveDataButton.clicked.connect(self.saveData)
+        self.buttonLayout.addWidget(saveDataButton)
         self.layout.addLayout(self.buttonLayout)
 
+        self.dataPath = QDir.currentPath() # maybe not the ideal default data directory
 
     def _handleNewPatient(self, patientController):
         if self._currentPatientController is None:
@@ -78,15 +80,37 @@ class PatientDataPanel(QWidget):
         self.currentPatientChangedSignal.emit(self._currentPatientController)
 
 
-    # def setSelectedImageController(self, imageController):
-    #     self._viewController.setSelectedImageController(imageController)
-
-
     def loadData(self):
-        file = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
-        API().loadData(file)
+        filesOrFoldersList = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
+        self.updateDataDirectory(filesOrFoldersList[0])
+
+        API().loadData(filesOrFoldersList)
         #API().loadDummyImages(None) #test
 
+
+    def updateDataDirectory(self, filePath):
+        splitPath = filePath.split('/')
+        withoutLastElementPath = ''
+        for element in splitPath[:-1]:
+            withoutLastElementPath += element + '/'
+        self.dataPath = withoutLastElementPath
+
+
+    def saveData(self):
+        fileDialog = SaveData_dialog()
+        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
+
+        patientList = [patient.data for patient in self._viewController.activePatientControllers]
+
+        saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
+
+
+    ## temporary copy paste from 4D branch to take useful parts easier
+
+    # def load_data_struct(self, dictFilePath):
+    #
+    #     self.Patients.loadDataStructure(dictFilePath)
+    #     self.updateDataTreeView()
 
 ## ------------------------------------------------------------------------------------------
 class PatientComboBox(QComboBox):
@@ -151,13 +175,6 @@ class PatientDataTree(QTreeView):
 
     def appendImage(self, dataController):
         item = PatientDataItem(dataController)
-
-        # item = StandardItem(txt=ct.ImgName, type='CT')
-        # UID = StandardItem(txt=ct.SOPInstanceUID)
-        # if ct.SOPInstanceUID == self.displayed_uids[0]:
-        #     item.setFont(font_b)
-        # self.rootNode.appendRow([item, UID])
-
         self.rootNode.appendRow(item)
 
     def mouseMoveEvent(self, event):
@@ -499,3 +516,40 @@ def _getOpenFilesAndDirs(parent=None, caption='', directory='',
 
     dialog.exec_()
     return dialog.selectedFiles()
+
+
+## ------------------------------------------------------------------------------------------
+class SaveData_dialog(QFileDialog):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.defaultName = "Patient"
+
+    def getSaveFileName(self, parent=None,
+                        caption="Select folder and file name to save data tree",
+                        dir=".",
+                        filter='',
+                        initialFilter='',
+                        defaultName="Patient",
+                        options=None):
+
+        self.setWindowTitle(caption)
+        self.setDirectory(dir)
+        self.selectFile(defaultName)
+        self.setAcceptMode(QFileDialog.AcceptSave)  # bouton "Save"
+        self.setOption(QFileDialog.DontUseNativeDialog, True)
+
+        layout = self.layout()
+        # checkBoxLayout = QHBoxLayout
+        self.compressBox = QCheckBox("Compress Data", self)
+        self.compressBox.setToolTip('This will compress the data before saving them, it takes longer to save the data this way')
+        layout.addWidget(self.compressBox, 4, 0)
+        self.splitPatientsBox = QCheckBox("Split Patients", self)
+        self.splitPatientsBox.setToolTip('This will split patients into multiple files if multiple patients data are loaded')
+        layout.addWidget(self.splitPatientsBox, 4, 1)
+        self.setLayout(layout)
+
+        if self.exec_():
+            return self.selectedFiles()[0], self.compressBox.isChecked(), self.splitPatientsBox.isChecked()
+        else:
+            return "", ""
