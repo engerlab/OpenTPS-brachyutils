@@ -23,14 +23,12 @@ class ViewController():
         self._currentPatient = None
         self._independentViewsEnabled = False
         self._lineWidgetEnabled = False
+        self._mainImage = None
         self.multipleActivePatientsEnabled = False #TODO
         self._selectedImage = None
         self._windowLevelEnabled = None
 
         self.mainWindow = MainWindow(self)
-        # this is useful if used with the signal emitted from the PatientDataTree in the setDataToDisplay function
-        self.mainWindow.mainToolbar.patientDataPanel.patientDataTree.dataSelectedSignal.connect(self.setMainImage)
-
 
         self.logger = logging.getLogger(__name__)
 
@@ -48,15 +46,15 @@ class ViewController():
 
     @property
     def activePatients(self):
-        return self.activePatients
+        return [patient for patient in self._activePatients]
 
     # if self.multipleActivePatientsEnabled
     def appendActivePatient(self, patient):
-        self.activePatients.append(patient)
-        self.patientAddedSignal.emit(self.activePatients[-1])
+        self._activePatients.append(patient)
+        self.patientAddedSignal.emit(self._activePatients[-1])
 
     def removeActivePatient(self, patient):
-        self.activePatients.remove(patient)
+        self._activePatients.remove(patient)
         self.patientRemovedSignal.emit(patient)
 
     @property
@@ -110,16 +108,24 @@ class ViewController():
             self.lineWidgetEnabledSignal.emit(False)
 
     @property
+    def mainImage(self):
+        if self.independentViewsEnabled:
+            # mainImage is only available when only one image can be shown
+            raise()
+
+    @mainImage.setter
+    def mainImage(self, image):
+        self._mainImage = image
+        self.mainImageChangedSignal.emit(self._mainImage)
+        self.shownDataUIDsList.append(self._mainImage.seriesInstanceUID)
+
+    @property
     def selectedImage(self):
         return self._selectedImage
 
     @selectedImage.setter
     def selectedImage(self, image):
         self._selectedImage = image
-
-    def setMainImage(self, image):
-        self.mainImageChangedSignal.emit(image)
-        self.shownDataUIDsList.append(image.seriesInstanceUID)
 
     @property
     def windowLevelEnabled(self):

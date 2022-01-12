@@ -4,6 +4,8 @@ from math import sqrt
 from PyQt5.QtWidgets import *
 import numpy as np
 
+import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
+import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
 import vtkmodules.vtkCommonCore as vtkCommonCore
 import vtkmodules.vtkInteractionStyle as vtkInteractionStyle
@@ -120,7 +122,7 @@ class SliceViewerVTK(QWidget):
     self.setView('axial')
 
     self._viewController.crossHairEnabledSignal.connect(self._setCrossHairEnabled)
-    self._viewController.lineWidgetEnabledSignal.connect(self.setLineWidgetEnabled)
+    self._viewController.lineWidgetEnabledSignal.connect(self._setLineWidgetEnabled)
     self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
 
   @property
@@ -384,7 +386,7 @@ class SliceViewerVTK(QWidget):
       self._renderWindow.Render()
     self.crossHairEnabledSignal.emit(self._crossHairEnabled)
 
-  def setLineWidgetEnabled(self, enabled):
+  def _setLineWidgetEnabled(self, enabled):
     # enabled is either a callback method or False
     if not (enabled==False):
       self._lineWidgetCallback = enabled

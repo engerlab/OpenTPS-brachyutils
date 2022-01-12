@@ -1,5 +1,5 @@
 
-class ViewerData:
+class ViewerData(object):
     _allViewerDatas = []
 
     def __new__(cls, data):
@@ -20,7 +20,7 @@ class ViewerData:
         viewerData = super().__new__(cls)
         ViewerData._allViewerDatas.append(viewerData)
 
-        return ViewerData
+        return viewerData
 
     def __init__(self, data):
         if isinstance(data, ViewerData):
@@ -30,15 +30,21 @@ class ViewerData:
             return
 
         try:
-            hasattr(self, 'data')
-            return
+            if hasattr(self, 'data'):
+                return
         except:
             pass
 
-        #else
-        # It is important to call super().__init__() now and not before because if we init QObject we loose previously initialized pyqtSignals
         super().__init__()
         self.data = data
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
+
+    def __getattribute__(self, item):
+        try:
+            return super().__getattribute__(item)
+        except:
+            if item=='data':
+                raise()
+            return self.data.__getattribute__(item)

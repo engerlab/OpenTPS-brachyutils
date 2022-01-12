@@ -18,7 +18,7 @@ class ViewerToolbar(QToolBar):
         self._buttonChain.setStatusTip("Independent views")
         self._buttonChain.triggered.connect(self._handleButtonChain)
         self._buttonChain.setCheckable(True)
-        self._buttonChain.setChecked(self._viewController.getIndependentViewsEnabled())
+        self._buttonChain.setChecked(self._viewController.independentViewsEnabled)
 
         self._buttonContrast = QAction(QIcon(iconPath + "contrast.png"), "Window level", self)
         self._buttonContrast.setStatusTip("Window level")

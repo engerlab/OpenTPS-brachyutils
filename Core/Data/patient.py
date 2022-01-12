@@ -104,6 +104,11 @@ class Patient:
         self.imageRemovedSignal.emit(image)
 
     @property
+    def name(self):
+        #TODO
+        return None
+
+    @property
     def plans(self):
         # Doing this ensures that the user can't append directly to plans
         return [plan for plan in self._plans]

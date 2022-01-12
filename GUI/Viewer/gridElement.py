@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
+from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
 from GUI.Viewer.gridElementToolbar import GridElementToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.dvhPlot import DVHPlot
@@ -73,7 +74,7 @@ class GridElement(QWidget):
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
-                self._sliceViewer = SliceViewerWithContour(self._viewController)
+                self._sliceViewer = SliceViewerVTK(self._viewController)
 
             self._currentViewer = self._sliceViewer
 

@@ -8,24 +8,18 @@ class ViewerImage3D(ViewerData):
     def __init__(self, image):
         super().__init__(image)
 
-        self.wwlChangedSignal = Event(tuple)
-        self.selectedPositionChangedSignal = Event(tuple)
-
         if hasattr(self, '_wwlValue'):
             return
 
+        self.wwlChangedSignal = Event(tuple)
+        self.selectedPositionChangedSignal = Event(tuple)
+
         self._wwlValue = (400, 0)
         # TODO: Not a huge fan of this. Data controller should provide getOrigin, etc.
-        self._selectedPosition = np.array(self.data._origin) + np.array(self.data.gridSize()) * np.array(self.data._spacing) / 2.0
+        self._selectedPosition = np.array(self.data.origin) + np.array(self.data.gridSize) * np.array(self.data.spacing) / 2.0
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
-
-    def __getattr__(self, item):
-        if hasattr(self, item):
-            return super().__getattribute__(item)
-        else:
-            return self.data.__getattribute__(item)
 
     @property
     def selectedPosition(self):

@@ -33,14 +33,14 @@ class ProfilePlot(QWidget):
     def addProfile(self):
         pl = self._profilePlot.newProfile([0, 0], [0, 0], self._profileCount)
         self._profileCount += 1
-        self._viewController.setLineWidgetEnabled(True, pl.setData)
+        self._viewController._setLineWidgetEnabled(True, pl.setData)
 
     def removeAll(self):
         self.validate()
         self._profilePlot.removeAll()
 
     def validate(self):
-        self._viewController.setLineWidgetEnabled(False)
+        self._viewController._setLineWidgetEnabled(False)
 
 class QStringList:
     pass

@@ -51,12 +51,12 @@ class PatientDataPanel(QWidget):
         self.dataPath = QDir.currentPath() # maybe not the ideal default data directory
 
     def _handleNewPatient(self, patient):
-        if self._currentPatient is None:
-            self.currentPatient = patient
+        if self._viewController.currentPatient is None:
+            self._viewController.currentPatient = patient
 
     def _handleRemovedPatient(self, patient):
-        if self._currentPatient == patient:
-            self.currentPatient = None
+        if self._viewController.currentPatient == patient:
+            self._viewController.currentPatient = None
 
     def loadData(self):
         filesOrFoldersList = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
@@ -67,7 +67,7 @@ class PatientDataPanel(QWidget):
             withoutLastElementPath += element + '/'
         self.dataPath = withoutLastElementPath
 
-        API.loadData(filesOrFoldersList)
+        API().loadData(filesOrFoldersList)
 
     def saveData(self):
         fileDialog = SaveData_dialog()
@@ -113,9 +113,6 @@ class PatientComboBox(QComboBox):
 class PatientDataTree(QTreeView):
     def __init__(self, viewController, patientDataPanel):
         QTreeView.__init__(self)
-
-        # Events
-        self.dataSelectedSignal = Event(object)
 
         self.patientDataPanel = patientDataPanel
         self._viewController = viewController
@@ -426,7 +423,7 @@ def _getOpenFilesAndDirs(parent=None, caption='', directory='',
       # update the contents of the line edit widget with the selected files
       selected = []
       for index in view.selectionModel().selectedRows():
-        selected.append('"{}"'.format(index._imageArray()))
+        selected.append('"{}"'.format(index.data()))
       lineEdit.setText(' '.join(selected))
 
     dialog = QFileDialog(parent, windowTitle=caption)

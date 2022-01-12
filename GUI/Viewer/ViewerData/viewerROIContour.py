@@ -6,22 +6,15 @@ from GUI.Viewer.ViewerData.viewerData import ViewerData
 class ViewerROIContour(ViewerData):
     def __init__(self, roiContour):
         super().__init__(roiContour)
-
-        self.visibleChangedSignal = Event(bool)
-
         if hasattr(self, '_wwlValue'):
             return
+
+        self.visibleChangedSignal = Event(bool)
 
         self._visible = False
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
-
-    def __getattr__(self, item):
-        if hasattr(self, item):
-            return super().__getattribute__(item)
-        else:
-            return self.data.__getattribute__(item)
 
     @property
     def visible(self):
