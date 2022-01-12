@@ -74,7 +74,7 @@ class GridElement(QWidget):
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
-                self._sliceViewer = SliceViewerVTK(self._viewController)
+                self._sliceViewer = SliceViewerWithContour(self._viewController)
 
             self._currentViewer = self._sliceViewer
 

@@ -22,6 +22,7 @@ class ViewController():
         self._crossHairEnabled = None
         self._currentPatient = None
         self._independentViewsEnabled = False
+        self.lineWidgetCallback = lambda : None
         self._lineWidgetEnabled = False
         self._mainImage = None
         self.multipleActivePatientsEnabled = False #TODO
@@ -99,13 +100,9 @@ class ViewController():
         return self._lineWidgetEnabled
 
     @lineWidgetEnabled.setter
-    def lineWidgetEnabled(self, enabled, callback=None):
+    def lineWidgetEnabled(self, enabled):
         self._lineWidgetEnabled = enabled
-
-        if self._lineWidgetEnabled:
-            self.lineWidgetEnabledSignal.emit(callback)
-        else:
-            self.lineWidgetEnabledSignal.emit(False)
+        self.lineWidgetEnabledSignal.emit(self._lineWidgetEnabled)
 
     @property
     def mainImage(self):

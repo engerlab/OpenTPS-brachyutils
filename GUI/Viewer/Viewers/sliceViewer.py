@@ -388,8 +388,8 @@ class SliceViewerVTK(QWidget):
 
   def _setLineWidgetEnabled(self, enabled):
     # enabled is either a callback method or False
-    if not (enabled==False):
-      self._lineWidgetCallback = enabled
+    if enabled:
+      self._lineWidgetCallback = self._viewController.lineWidgetCallback
       self._lineWidget.AddObserver("InteractionEvent", self._lineWidgetInteraction)
       self._lineWidget.AddObserver("EndInteractionEvent", self._lineWidgetInteraction)
       self._lineWidget.SetInteractor(self._renderWindow.GetInteractor())

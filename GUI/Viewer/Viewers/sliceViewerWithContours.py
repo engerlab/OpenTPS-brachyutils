@@ -6,6 +6,7 @@ from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor
 
+from GUI.Viewer.ViewerData.viewerROIContour import ViewerROIContour
 from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
 
 
@@ -14,28 +15,30 @@ class SliceViewerWithContour(SliceViewerVTK):
   def __init__(self, viewController):
     SliceViewerVTK.__init__(self, viewController)
 
-    self.contourControllerList = []
-    self.contourList = []
-    self.contourReslices = []
+    self._contours = []
+    self._vtkContours = []
+    self._contourReslices = []
 
 
-    self._viewController.showContourSignal.connect(self.setNewContour)
+    self._viewController.showContourSignal.connect(self._setNewContour)
 
-  def setNewContour(self, contourController):
+  def _setNewContour(self, contour):
+    contour = ViewerROIContour(contour)
+
     if self._mainImage is None:
       return
 
-    if contourController in self.contourControllerList:
+    if contour in self._contours:
       return
 
-    self.contourControllerList.append(contourController)
+    self._contours.append(contour)
 
-    vtkContourObj = vtkContour(contourController, self._renderWindow)
-    vtkContourObj.build(self._mainImage._imageArray)
+    vtkContourObj = vtkContour(contour, self._renderWindow)
+    vtkContourObj.build(self._mainImage)
 
     self._renderer.AddActor(vtkContourObj.getActor())
-    self.contourReslices.append(vtkContourObj.getReslice())
-    self.contourList.append(vtkContourObj)
+    self._contourReslices.append(vtkContourObj.getReslice())
+    self._vtkContours.append(vtkContourObj)
 
     matrix = self._reslice.GetResliceAxes()
     vtkContourObj.getReslice().SetResliceAxes(matrix)
@@ -44,11 +47,11 @@ class SliceViewerWithContour(SliceViewerVTK):
 
 
 class vtkContour:
-  def __init__(self, contourController, renderWindow):
+  def __init__(self, contour, renderWindow):
     #TODO: disconnect contours
-    self._contourController = contourController
-    self._contourController.visibleChangedSignal.connect(self.setVisible)
-    self._contourController.colorChangedSignal.connect(self.reloadColor)
+    self._contour = contour
+    self._contour.visibleChangedSignal.connect(self.setVisible)
+    self._contour.colorChangedSignal.connect(self.reloadColor)
 
     self.renderWindow = renderWindow #Not very beautiful to pass renderWindow but fewer lines of code than trigering a render event
 
@@ -65,7 +68,7 @@ class vtkContour:
     return self.reslice
 
   def reloadColor(self):
-    imageColor = self._contourController.getColor()
+    imageColor = self._contour.color
 
     # Create a greyscale lookup table
     table = vtkCommonCore.vtkLookupTable()
@@ -87,11 +90,11 @@ class vtkContour:
     self.mapper.SetLookupTable(table)
 
   def build(self, referenceImage):
-    referenceShape = referenceImage.gridSize()
-    referenceOrigin = referenceImage._origin
-    referenceSpacing = referenceImage._spacing
+    referenceShape = referenceImage.gridSize
+    referenceOrigin = referenceImage.origin
+    referenceSpacing = referenceImage.spacing
 
-    mask = self._contourController.getBinaryMask(referenceImage)
+    mask = self._contour.getBinaryMask(origin=referenceOrigin, gridSize=referenceShape, spacing=referenceSpacing)
     maskData = mask._imageArray
     maskData = np.swapaxes(maskData, 0, 2)
     num_array = np.array(np.ravel(maskData), dtype=np.float32)
