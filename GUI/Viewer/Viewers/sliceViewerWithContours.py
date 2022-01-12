@@ -1,14 +1,12 @@
 import numpy as np
 
-import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
-import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 import vtkmodules.vtkCommonCore as vtkCommonCore
-from vtkmodules import vtkImagingCore, vtkCommonMath
+from vtkmodules import vtkImagingCore
 from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor
 
-from GUI.Viewers.sliceViewer import SliceViewerVTK
+from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
 
 
 class SliceViewerWithContour(SliceViewerVTK):
@@ -24,7 +22,7 @@ class SliceViewerWithContour(SliceViewerVTK):
     self._viewController.showContourSignal.connect(self.setNewContour)
 
   def setNewContour(self, contourController):
-    if self._mainImageController is None:
+    if self._mainImage is None:
       return
 
     if contourController in self.contourControllerList:
@@ -33,7 +31,7 @@ class SliceViewerWithContour(SliceViewerVTK):
     self.contourControllerList.append(contourController)
 
     vtkContourObj = vtkContour(contourController, self._renderWindow)
-    vtkContourObj.build(self._mainImageController.data)
+    vtkContourObj.build(self._mainImage._imageArray)
 
     self._renderer.AddActor(vtkContourObj.getActor())
     self.contourReslices.append(vtkContourObj.getReslice())
@@ -89,12 +87,12 @@ class vtkContour:
     self.mapper.SetLookupTable(table)
 
   def build(self, referenceImage):
-    referenceShape = referenceImage.getGridSize()
-    referenceOrigin = referenceImage.origin
-    referenceSpacing = referenceImage.spacing
+    referenceShape = referenceImage.gridSize()
+    referenceOrigin = referenceImage._origin
+    referenceSpacing = referenceImage._spacing
 
     mask = self._contourController.getBinaryMask(referenceImage)
-    maskData = mask.data
+    maskData = mask._imageArray
     maskData = np.swapaxes(maskData, 0, 2)
     num_array = np.array(np.ravel(maskData), dtype=np.float32)
 

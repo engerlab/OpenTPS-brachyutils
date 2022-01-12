@@ -1,9 +1,9 @@
 import sys
 from io import StringIO
 
-from Controllers.DataControllers.image3DController import Image3DController
-from Controllers.DataControllers.patientController import PatientController
-from Controllers.modelController import ModelController
+from Core.Data.Images.image3D import Image3D
+from Core.Data.patient import Patient
+
 
 class APIMethods:
     _methodNames = []
@@ -18,12 +18,12 @@ class APIMethods:
         return self._methodNames
 
 
-class API(ModelController):
+class API:
     _apiMethods = APIMethods()
     _logging = True
 
-    def __init__(self, patientListController=None):
-        ModelController.__init__(self, patientListController)
+    def __init__(self, patientList=None):
+        self.patientList = patientList
 
     def __getattr__(self, item):
         return lambda *args, **kwargs: self._wrappedMethod(self._apiMethods.__getattribute__(item), *args, **kwargs)
@@ -31,15 +31,15 @@ class API(ModelController):
     def _convertArgToString(self, arg):
         argStr = ''
 
-        if isinstance(arg, PatientController):
-            argStr = 'api.patientListController[' \
-                     + str(self.patientListController.getIndex(arg)) + ']'
-        elif isinstance(arg, Image3DController):
-            for patientController in self.patientListController:
-                if patientController.hasImage(arg):
-                    argStr = 'api.patientListController[' \
-                             + str(self.patientListController.getIndex(patientController)) + ']' \
-                             + '[' + str(patientController.getImageIndex(arg)) + ']'
+        if isinstance(arg, Patient):
+            argStr = 'api.patientList[' \
+                     + str(self.patientList.getIndex(arg)) + ']'
+        elif isinstance(arg, Image3D):
+            for patient in self.patientList:
+                if patient.hasImage(arg):
+                    argStr = 'api.patientList[' \
+                             + str(self.patientList.getIndex(patient)) + ']' \
+                             + '[' + str(patient.getImageIndex(arg)) + ']'
         else:
             argStr = str(arg)
 

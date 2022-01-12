@@ -1,11 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from GUI.Panels.viewerPanel.gridElementToolbar import GridElementToolbar
-from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
-from GUI.Viewers.dvhPlot import DVHPlot
-from GUI.Viewers.profilePlot import ProfilePlot
-from GUI.Viewers.sliceViewer import SliceViewerVTK
-from GUI.Viewers.sliceViewerWithContours import SliceViewerWithContour
+from GUI.Viewer.gridElementToolbar import GridElementToolbar
+from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
+from GUI.Viewer.Viewers.dvhPlot import DVHPlot
+from GUI.Viewer.Viewers.profilePlot import ProfilePlot
+from GUI.Viewer.Viewers.sliceViewerWithContours import SliceViewerWithContour
 
 
 class GridElement(QWidget):
@@ -29,28 +28,29 @@ class GridElement(QWidget):
         self.setLayout(self._mainLayout)
         self._mainLayout.setContentsMargins(0, 0, 0, 0)
 
-        self._toolbar.displayTypeSignal.connect(self.setDisplay)
+        self._toolbar.displayTypeSignal.connect(self._setDisplay)
 
-        self.setToolbar(self._toolbar)
-        self.setDisplay(self.DISPLAY_SLICEVIEWER)
+        self._setToolbar(self._toolbar)
+        self._setDisplay(self.DISPLAY_SLICEVIEWER)
 
-        self._viewController.independentViewsEnabledSignal.connect(self.setDropEnabled)
-        self.setDropEnabled(self._viewController.getIndependentViewsEnabled())
-        self._viewController.mainImageChangedSignal.connect(self.setMainImage)
+        self._viewController.independentViewsEnabledSignal.connect(self._setDropEnabled)
+        self._setDropEnabled(self._viewController.independentViewsEnabled)
+        self._viewController.mainImageChangedSignal.connect(self._setMainImage)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
             if (e.mimeData().text() == 'image'):
                 e.accept()
-                if hasattr(self._currentViewer, 'setMainImage'):
-                    self.setMainImage(self._viewController.getSelectedImageController())
+                if hasattr(self._currentViewer, 'mainImage'):
+                    self._setMainImage(self._viewController.selectedImage)
                 return
         e.ignore()
 
-    def getCurrentViewer(self):
+    @property
+    def currentViewer(self):
         return self._currentViewer
 
-    def setDisplay(self, displayType):
+    def _setDisplay(self, displayType):
         if displayType==self._displayType:
             return
 
@@ -77,7 +77,7 @@ class GridElement(QWidget):
 
             self._currentViewer = self._sliceViewer
 
-            self.setDropEnabled(self._dropEnabled)
+            self._setDropEnabled(self._dropEnabled)
 
         self._toolbar.handleDisplayChange(self._currentViewer)
 
@@ -87,7 +87,7 @@ class GridElement(QWidget):
         self._mainLayout.addWidget(self._currentViewer)
         self._currentViewer.show()
 
-    def setDropEnabled(self, enabled):
+    def _setDropEnabled(self, enabled):
         self._dropEnabled = enabled
 
         if enabled and self._displayType==self.DISPLAY_SLICEVIEWER:
@@ -97,14 +97,10 @@ class GridElement(QWidget):
         else:
             self._currentViewer.setAcceptDrops(False)
 
-    def setMainImage(self, imageController):
-        if hasattr(self._currentViewer, 'setMainImage'):
-            self._currentViewer.setMainImage(imageController)
+    def _setMainImage(self, image):
+        if hasattr(self._currentViewer, 'mainImage'):
+            self._currentViewer.mainImage = image
 
-    def setSecondaryImage(self, imageController):
-        if hasattr(self._currentViewer, 'setSecondaryImage'):
-            self._currentViewer.setSecondaryImage(imageController)
-
-    def setToolbar(self, toolbar):
+    def _setToolbar(self, toolbar):
         self._toolbar = toolbar
         self._mainLayout.addWidget(self._toolbar)

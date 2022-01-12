@@ -1,5 +1,6 @@
 
 from Core.Data.patientInfo import PatientInfo
+from Core.event import Event
 
 
 class Patient:
@@ -22,30 +23,47 @@ class Patient:
 
     """
     def __init__(self, patientInfo=None):
+        self.imageAddedSignal = Event(object)
+        self.imageRemovedSignal = Event(object)
+        self.rtStructAddedSignal = Event(object)
+        self.rtStructRemovedSignal = Event(object)
+        self.planAddedSignal = Event(object)
+        self.planRemovedSignal = Event(object)
+        self.dyn3DSeqAddedSignal = Event(object)
+        self.dyn3DSeqRemovedSignal = Event(object)
+        self.dyn3DModAddedSignal = Event(object)
+        self.dyn3DModRemovedSignal = Event(object)
+        self.nameChangedSignal = Event(str)
+
         if(patientInfo == None):
             self.patientInfo = PatientInfo()
         else:
             self.patientInfo = patientInfo
 
-        self.images = []
-        self.plans = []
-        self.rtStructs = []
-        self.dynamic3DSequences = []
-        self.dynamic3DModels = []
+        self._images = []
+        self._plans = []
+        self._rtStructs = []
+        self._dynamic3DSequences = []
+        self._dynamic3DModels = []
 
 
     def __str__(self):
         string = "Patient name: " + self.patientInfo.name + "\n"
         string += "  Images:\n"
-        for img in self.images:
+        for img in self._images:
             string += "    " + img.name + "\n"
         string += "  Plans:\n"
-        for plan in self.plans:
+        for plan in self._plans:
             string += "    " + plan.name + "\n"
         string += "  Structure sets:\n"
-        for struct in self.rtStructs:
+        for struct in self._rtStructs:
             string += "    " + struct.name + "\n"
         return string
+
+    @property
+    def images(self):
+        # Doing this ensures that the user can't append directly to images
+        return [image for image in self._images]
 
     def appendImage(self, image):
         """
@@ -57,7 +75,8 @@ class Patient:
             image object
 
         """
-        self.images.append(image)
+        self._images.append(image)
+        self.imageAddedSignal.emit(image)
 
     def hasImage(self, image):
         """
@@ -69,7 +88,7 @@ class Patient:
              image object
 
         """
-        return image in self.images
+        return image in self._images
 
     def removeImage(self, image):
         """
@@ -81,7 +100,26 @@ class Patient:
             the image object to removed
 
         """
-        self.images.remove(image)
+        self._images.remove(image)
+        self.imageRemovedSignal.emit(image)
+
+    @property
+    def plans(self):
+        # Doing this ensures that the user can't append directly to plans
+        return [plan for plan in self._plans]
+
+    def appendPlan(self, plan):
+        self._plans.append(plan)
+        self.planAddedSignal.emit(plan)
+
+    def removePlan(self, plan):
+        self._plans.remove(plan)
+        self.planRemovedSignal.emit(plan)
+
+    @property
+    def rtStructs(self):
+        # Doing this ensures that the user can't append directly to rtStructs
+        return [rtStruct for rtStruct in self._rtStructs]
 
     def appendRTStruct(self, struct):
         """
@@ -93,7 +131,8 @@ class Patient:
             Structure set to append
 
         """
-        self.rtStructs.append(struct)
+        self._rtStructs.append(struct)
+        self.rtStructAddedSignal.emit(struct)
 
     def removeRTStruct(self, struct):
         """
@@ -105,7 +144,13 @@ class Patient:
             Structure set to remove
 
         """
-        self.rtStructs.remove(struct)
+        self._rtStructs.remove(struct)
+        self.rtStructRemovedSignal.emit(struct)
+
+    @property
+    def dynamic3DSequences(self):
+        # Doing this ensures that the user can't append directly to dynamic3DSequences
+        return [dynamic3DSequence for dynamic3DSequence in self._dynamic3DSequences]
 
     def appendDyn3DSeq(self, dyn3DSeq):
         """
@@ -117,7 +162,8 @@ class Patient:
             Dynamic 3D Sequence set to append
 
         """
-        self.dynamic3DSequences.append(dyn3DSeq)
+        self._dynamic3DSequences.append(dyn3DSeq)
+        self.dyn3DSeqAddedSignal.emit(dyn3DSeq)
 
     def removeDyn3DSeq(self, dyn3DSeq):
         """
@@ -129,7 +175,13 @@ class Patient:
             Dynamic 3D Sequence set to remove
 
         """
-        self.dynamic3DSequences.remove(dyn3DSeq)
+        self._dynamic3DSequences.remove(dyn3DSeq)
+        self.dyn3DSeqRemovedSignal.emit(dyn3DSeq)
+
+    @property
+    def dynamic3DModels(self):
+        # Doing this ensures that the user can't append directly to dynamic3DModels
+        return [dynamic3DModel for dynamic3DModel in self._dynamic3DModels]
 
     def appendDyn3DMod(self, dyn3DMod):
         """
@@ -141,7 +193,8 @@ class Patient:
             Dynamic 3D Model set to append
 
         """
-        self.dynamic3DModels.append(dyn3DMod)
+        self._dynamic3DModels.append(dyn3DMod)
+        self.dyn3DModAddedSignal.emit(dyn3DMod)
 
     def removeDyn3DMod(self, dyn3DMod):
         """
@@ -153,5 +206,5 @@ class Patient:
             Dynamic 3D Model set to remove
 
         """
-        self.dynamic3DModels.remove(dyn3DMod)
-
+        self._dynamic3DModels.remove(dyn3DMod)
+        self.dyn3DModRemovedSignal.emit(dyn3DMod)

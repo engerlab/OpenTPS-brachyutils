@@ -1,10 +1,10 @@
 import copy
 import numpy as np
 import logging
-from pydicom.uid import generate_uid
 
 from Core.Data.patientData import PatientData
 import Core.Processing.ImageProcessing.resampler3D as resampler3D
+from Core.event import Event
 
 logger = logging.getLogger(__name__)
 
@@ -14,18 +14,21 @@ def euclidean_dist(v1, v2):
 
 
 class Image3D(PatientData):
-    def __init__(self, data=None, name="3D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
+    def __init__(self, imageArray=None, name="3D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
         super().__init__(patientInfo=patientInfo, name=name, seriesInstanceUID=seriesInstanceUID)
-        self.data = data
-        self.origin = list(origin)
-        self.spacing = list(spacing)
-        self.angles = list(angles)
+
+        self.dataChangedSignal = Event()
+
+        self._imageArray = imageArray
+        self._origin = list(origin)
+        self._spacing = list(spacing)
+        self._angles = list(angles)
         # if UID is None:
         #     UID = generate_uid()
         # self.UID = UID
 
     def __str__(self):
-        gs = self.getGridSize()
+        gs = self.gridSize
         s = 'Image3D ' + str(gs[0]) + ' x ' +  str(gs[1]) +  ' x ' +  str(gs[2]) + '\n'
         return s
 
@@ -34,7 +37,44 @@ class Image3D(PatientData):
         img.name = img.name + '_copy'
         return img
 
-    def getGridSize(self):
+    @property
+    def imageArray(self):
+        return self._imageArray
+
+    @imageArray.setter
+    def imageArray(self, array):
+        self._imageArray = array
+        self.dataChangedSignal.emit()
+
+    @property
+    def origin(self):
+        return self._origin
+
+    @origin.setter
+    def origin(self, origin):
+        self._origin = list(origin)
+        self.dataChangedSignal.emit()
+
+    @property
+    def spacing(self):
+        return self._spacing
+
+    @spacing.setter
+    def spacing(self, spacing):
+        self._spacing = list(spacing)
+        self.dataChangedSignal.emit()
+
+    @property
+    def angles(self):
+        return self._angles
+
+    @angles.setter
+    def angles(self, angles):
+        self._angles = list(angles)
+        self.dataChangedSignal.emit()
+
+    @property
+    def gridSize(self):
         """Compute the voxel grid size of the image.
 
             Returns
@@ -43,11 +83,11 @@ class Image3D(PatientData):
                 Image grid size.
             """
 
-        if self.data is None:
+        if self._imageArray is None:
             return (0, 0, 0)
-        elif np.size(self.data) == 0:
+        elif np.size(self._imageArray) == 0:
             return (0, 0, 0)
-        return self.data.shape[0:3]
+        return self._imageArray.shape[0:3]
 
 
     def hasSameGrid(self, otherImage):
@@ -64,9 +104,9 @@ class Image3D(PatientData):
                 True if grids are identical, False otherwise.
             """
 
-        if (self.getGridSize() == otherImage.getGridSize() and
-                euclidean_dist(self.origin, otherImage.origin) < 0.01 and 
-                euclidean_dist(self.spacing, otherImage.spacing) < 0.01):
+        if (self.gridSize == otherImage.gridSize and
+                euclidean_dist(self._origin, otherImage._origin) < 0.01 and
+                euclidean_dist(self._spacing, otherImage._spacing) < 0.01):
             return True
         else:
             return False
@@ -88,9 +128,9 @@ class Image3D(PatientData):
                 type of the output.
             """
 
-        self.data = resampler3D.resample(self.data,self.origin,self.spacing,list(self.getGridSize()),origin,spacing,gridSize,fillValue=fillValue,outputType=outputType)
-        self.origin = list(origin)
-        self.spacing = list(spacing)
+        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, list(self.gridSize), origin, spacing, gridSize, fillValue=fillValue, outputType=outputType)
+        self._origin = list(origin)
+        self._spacing = list(spacing)
 
     def resampleToImageGrid(self, otherImage, fillValue=0, outputType=None):
         """Resample image using the voxel grid of another image given as input, using linear interpolation.
@@ -107,4 +147,4 @@ class Image3D(PatientData):
 
         if (not otherImage.hasSameGrid(self)):
             logger.info('Resample field to CT grid.')
-            self.resample(otherImage.getGridSize(),otherImage.origin,otherImage.spacing,fillValue=fillValue,outputType=outputType)
+            self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType)

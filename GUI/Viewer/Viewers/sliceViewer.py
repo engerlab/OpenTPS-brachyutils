@@ -1,12 +1,9 @@
 import os
 from math import sqrt
 
-from PyQt5.QtCore import pyqtSignal, QLocale
 from PyQt5.QtWidgets import *
 import numpy as np
 
-import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
-import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
 import vtkmodules.vtkCommonCore as vtkCommonCore
 import vtkmodules.vtkInteractionStyle as vtkInteractionStyle
@@ -18,22 +15,21 @@ from vtkmodules.vtkCommonDataModel import vtkPolyLine, vtkCellArray, vtkPolyData
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkInteractionWidgets import vtkLineWidget2, vtkOrientationMarkerWidget
-from vtkmodules.vtkRenderingAnnotation import vtkAxesActor
-from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor, vtkPropPicker, \
-  vtkMapper, vtkDataSetMapper
+from vtkmodules.vtkRenderingCore import vtkCoordinate, vtkTextActor, vtkPolyDataMapper, vtkActor, vtkDataSetMapper
 
-from GUI.ViewControllers.DataControllers.imaged3DViewerController import Image3DViewerController
-from GUI.Viewers.blackEmptyPlot import BlackEmptyPlot
+from Core.event import Event
+from GUI.Viewer.ViewerData.viewerImage3D import ViewerImage3D
+from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 
 
 class SliceViewerVTK(QWidget):
-  crossHairEnabledSignal = pyqtSignal(bool)
-  lineWidgeEnabledSignal = pyqtSignal(bool)
-  wwlEnabledSignal = pyqtSignal(bool)
-  wwlEnabledSignal = pyqtSignal(bool)
-
   def __init__(self, viewController):
     QWidget.__init__(self)
+
+    self.crossHairEnabledSignal = Event(bool)
+    self.lineWidgeEnabledSignal = Event(bool)
+    self.wwlEnabledSignal = Event(bool)
+    self.wwlEnabledSignal = Event(bool)
 
     self._blackWidget = BlackEmptyPlot()
     self._crossHairActor = vtkActor()
@@ -46,7 +42,7 @@ class SliceViewerVTK(QWidget):
     self._lineWidgetCallback = None
     self._lineWidgetEnabled = False
     self._lineWidgetNoInteractionYet = False
-    self._mainImageController = None
+    self._mainImage = None
     self._mainActor = vtkRenderingCore.vtkImageActor()
     self._mainLayout = QVBoxLayout()
     self._mainMapper = self._mainActor.GetMapper()
@@ -123,40 +119,132 @@ class SliceViewerVTK(QWidget):
 
     self.setView('axial')
 
-    self._viewController.crossHairEnabledSignal.connect(self.setCrossHairEnabled)
+    self._viewController.crossHairEnabledSignal.connect(self._setCrossHairEnabled)
     self._viewController.lineWidgetEnabledSignal.connect(self.setLineWidgetEnabled)
-    self._viewController.windowLevelEnabledSignal.connect(self.setWWLEnabled)
+    self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
+
+  @property
+  def mainImage(self):
+    return self._mainImage
+
+  @mainImage.setter
+  def mainImage(self, image):
+    if image is None:
+      self._disconnectAll()
+
+      self._reslice.RemoveAllInputs()
+      self._mainImage = None
+
+      self._mainLayout.removeWidget(self._vtkWidget)
+      self._vtkWidget.hide()
+      self._mainLayout.addWidget(self._blackWidget)
+      self._blackWidget.show()
+      return
+
+    image = ViewerImage3D(image)
+    if image == self._mainImage:
+      return
+    #else
+    self._mainImage = image
+
+    self._disconnectAll()
+
+    self._mainLayout.removeWidget(self._blackWidget)
+    self._blackWidget.hide()
+    self._mainLayout.addWidget(self._vtkWidget)
+    self._vtkWidget.show()
+
+    shape = image.gridSize
+    imageData = image.imageArray
+    imageOrigin = image.origin
+    imageSpacing = image.spacing
+    imageData = np.swapaxes(imageData, 0, 2)
+    num_array = np.array(np.ravel(imageData), dtype=np.float32)
+
+    self._dataImporter.SetNumberOfScalarComponents(1)
+    self._dataImporter.SetDataExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
+    self._dataImporter.SetWholeExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
+    self._dataImporter.SetDataSpacing(imageSpacing[0], imageSpacing[1], imageSpacing[2])
+    self._dataImporter.SetDataOrigin(imageOrigin[0], imageOrigin[1], imageOrigin[2])
+    self._dataImporter.SetDataScalarTypeToFloat()
+
+    data_string = num_array.tobytes()
+    self._dataImporter.CopyImportVoidPointer(data_string, len(data_string))
+
+    self._reslice.SetInputConnection(self._dataImporter.GetOutputPort())
+
+    # Create a greyscale lookup table
+    table = vtkCommonCore.vtkLookupTable()
+    table.SetRange(-1024, 1500)  # image intensity range
+    table.SetValueRange(0.0, 1.0)  # from black to white
+    table.SetSaturationRange(0.0, 0.0)  # no color saturation
+    table.SetRampToLinear()
+    table.Build()
+
+    # Map the image through the lookup table
+    color = vtkImagingCore.vtkImageMapToColors()
+    color.SetLookupTable(table)
+    color.SetInputConnection(self._reslice.GetOutputPort())
+
+    self._mainMapper.SetInputConnection(color.GetOutputPort())
+
+    # Start interaction
+    self._renderWindow.GetInteractor().Start()
+
+    # Trick to instantiate image property in iStyle
+    self._iStyle.EndWindowLevel()
+    self._iStyle.OnLeftButtonDown()
+    self._iStyle.WindowLevel()
+    self._renderWindow.GetInteractor().SetEventPosition(400, 0)
+    self._iStyle.InvokeEvent(vtkCommand.StartWindowLevelEvent)
+    self._iStyle.OnLeftButtonUp()
+    self._iStyle.EndWindowLevel()
+
+    if self._wwlEnabled:
+      self._iStyle.StartWindowLevel()
+      self._iStyle.OnLeftButtonUp()
+
+    self._iStyle.SetCurrentImageNumber(0)
+
+    self._setWWL(self._mainImage.wwlValue)
+    self._setPosition(self._mainImage.selectedPosition)
+
+    self._renderer.ResetCamera()
+
+    self._connectAll()
+
+    self.updateNameText()
 
   #overrides QWidget resizeEvent
   def resizeEvent(self, event):
     QWidget.resizeEvent(self, event)
 
-    if not (self._mainImageController is None):
+    if not (self._mainImage is None):
       self._renderWindow.Render()
     #todo Trigger a reslice of QVTKRenderWindowInteractor
 
   def _connectAll(self):
-    if self._mainImageController is None:
+    if self._mainImage is None:
       return
 
-    self._mainImageController.nameChangedSignal.connect(self.updateNameText)
-    self._mainImageController.wwlChangedSignal.connect(self._setWWL)
-    self._mainImageController.selectedPositionChangedSignal.connect(self._setPosition)
+    self._mainImage.nameChangedSignal.connect(self.updateNameText)
+    self._mainImage.wwlChangedSignal.connect(self._setWWL)
+    self._mainImage.selectedPositionChangedSignal.connect(self._setPosition)
 
   def _disconnectAll(self):
-    if self._mainImageController is None:
+    if self._mainImage is None:
       return
 
     try:
-      self._mainImageController.nameChangedSignal.disconnect(self.updateNameText)
+      self._mainImage.nameChangedSignal.disconnect(self.updateNameText)
     except:
       pass
     try:
-      self._mainImageController.wwlChangedSignal.disconnect(self._setWWL)
+      self._mainImage.wwlChangedSignal.disconnect(self._setWWL)
     except:
       pass
     try:
-      self._mainImageController.selectedPositionChangedSignal.disconnect(self._setPosition)
+      self._mainImage.selectedPositionChangedSignal.disconnect(self._setPosition)
     except:
       pass
 
@@ -222,13 +310,13 @@ class SliceViewerVTK(QWidget):
       return
 
     if self._leftButtonPress and self._crossHairEnabled:
-      self._mainImageController.setSelectedPosition((point[0], point[1], point[2]))
+      self._mainImage.selectedPosition = (point[0], point[1], point[2])
 
     if self._leftButtonPress and self._wwlEnabled:
       self._iStyle.OnMouseMove()
       self.__sendingWWL = True
       imageProperty = self._iStyle.GetCurrentImageProperty()
-      self._mainImageController.setWWLValue((imageProperty.GetColorWindow(), imageProperty.GetColorLevel()))
+      self._mainImage.wwlValue = (imageProperty.GetColorWindow(), imageProperty.GetColorLevel())
       self.__sendingWWL = False
 
     if not self._leftButtonPress:
@@ -252,7 +340,7 @@ class SliceViewerVTK(QWidget):
 
     self._reslice.Update()
     if self._crossHairEnabled:
-      worldPos = self._mainImageController.getSelectedPosition()
+      worldPos = self._mainImage.selectedPosition
       if worldPos is None:
         return
 
@@ -274,7 +362,7 @@ class SliceViewerVTK(QWidget):
 
     if self._crossHairEnabled:
       point = matrix.MultiplyPoint((point[0], point[1], point[2] , 1))
-      self._mainImageController.setSelectedPosition(point)
+      self._mainImage.selectedPosition = point
 
     if self._lineWidgetEnabled:
       self._lineWidgetInteraction(None, None)
@@ -283,13 +371,13 @@ class SliceViewerVTK(QWidget):
     self._textActor.SetInput(self._mainText[0] + '\n' + self._mainText[1] + '\n' + self._mainText[2])
     self._renderWindow.Render()
 
-  def setCrossHairEnabled(self, enabled):
+  def _setCrossHairEnabled(self, enabled):
     if enabled==self._crossHairEnabled:
       return
 
     self._crossHairEnabled = enabled
     if self._crossHairEnabled:
-      self.setWWLEnabled(False)
+      self._setWWLEnabled(False)
       self._crossHairActor.VisibilityOn()
     else:
       self._crossHairActor.VisibilityOff()
@@ -315,96 +403,8 @@ class SliceViewerVTK(QWidget):
 
     self.lineWidgeEnabledSignal.emit(self._lineWidgetEnabled)
 
-  def setMainImage(self, imageController):
-    if imageController is None:
-      self._disconnectAll()
-
-      self._reslice.RemoveAllInputs()
-      self._mainImageController = None
-
-      self._mainLayout.removeWidget(self._vtkWidget)
-      self._vtkWidget.hide()
-      self._mainLayout.addWidget(self._blackWidget)
-      self._blackWidget.show()
-      return
-
-    if imageController == self._mainImageController:
-      return
-
-    self._disconnectAll()
-
-    self._mainLayout.removeWidget(self._blackWidget)
-    self._blackWidget.hide()
-    self._mainLayout.addWidget(self._vtkWidget)
-    self._vtkWidget.show()
-
-    self._mainImageController = Image3DViewerController(imageController)
-
-    image = self._mainImageController.data
-
-    shape = image.getGridSize()
-    imageData = image.data
-    imageOrigin = image.origin
-    imageSpacing = image.spacing
-    imageData = np.swapaxes(imageData, 0, 2)
-    num_array = np.array(np.ravel(imageData), dtype=np.float32)
-
-    self._dataImporter.SetNumberOfScalarComponents(1)
-    self._dataImporter.SetDataExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
-    self._dataImporter.SetWholeExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
-    self._dataImporter.SetDataSpacing(imageSpacing[0], imageSpacing[1], imageSpacing[2])
-    self._dataImporter.SetDataOrigin(imageOrigin[0], imageOrigin[1], imageOrigin[2])
-    self._dataImporter.SetDataScalarTypeToFloat()
-
-    data_string = num_array.tobytes()
-    self._dataImporter.CopyImportVoidPointer(data_string, len(data_string))
-
-    self._reslice.SetInputConnection(self._dataImporter.GetOutputPort())
-
-    # Create a greyscale lookup table
-    table = vtkCommonCore.vtkLookupTable()
-    table.SetRange(-1024, 1500)  # image intensity range
-    table.SetValueRange(0.0, 1.0)  # from black to white
-    table.SetSaturationRange(0.0, 0.0)  # no color saturation
-    table.SetRampToLinear()
-    table.Build()
-
-    # Map the image through the lookup table
-    color = vtkImagingCore.vtkImageMapToColors()
-    color.SetLookupTable(table)
-    color.SetInputConnection(self._reslice.GetOutputPort())
-
-    self._mainMapper.SetInputConnection(color.GetOutputPort())
-
-    # Start interaction
-    self._renderWindow.GetInteractor().Start()
-
-    #Trick to instantiate image property in iStyle
-    self._iStyle.EndWindowLevel()
-    self._iStyle.OnLeftButtonDown()
-    self._iStyle.WindowLevel()
-    self._renderWindow.GetInteractor().SetEventPosition(400, 0)
-    self._iStyle.InvokeEvent(vtkCommand.StartWindowLevelEvent)
-    self._iStyle.OnLeftButtonUp()
-    self._iStyle.EndWindowLevel()
-
-    if self._wwlEnabled:
-      self._iStyle.StartWindowLevel()
-      self._iStyle.OnLeftButtonUp()
-
-    self._iStyle.SetCurrentImageNumber(0)
-
-    self._setWWL(self._mainImageController.getWWLValue())
-    self._setPosition(self._mainImageController.getSelectedPosition())
-
-    self._renderer.ResetCamera()
-
-    self._connectAll()
-
-    self.updateNameText()
-
   def _setPosition(self, position):
-    if self._mainImageController is None:
+    if self._mainImage is None:
       return
 
     transfo_mat = vtkCommonMath.vtkMatrix4x4()
@@ -485,7 +485,7 @@ class SliceViewerVTK(QWidget):
     self._orientationActor.PokeMatrix(resliceAxes)
 
   def _setWWL(self, wwl):
-    if self._mainImageController is None:
+    if self._mainImage is None:
       return
 
     if self.__sendingWWL:
@@ -498,14 +498,14 @@ class SliceViewerVTK(QWidget):
 
     self._renderWindow.Render()
 
-  def setWWLEnabled(self, enabled):
+  def _setWWLEnabled(self, enabled):
     if enabled==self._wwlEnabled:
       return
 
     self._wwlEnabled = enabled
 
     if self._wwlEnabled:
-      self.setCrossHairEnabled(False)
+      self._setCrossHairEnabled(False)
     self.wwlEnabledSignal.emit(enabled)
 
   def _updateCurrentPositionText(self, position):
@@ -524,5 +524,5 @@ class SliceViewerVTK(QWidget):
     self.renderOverlay()
 
   def updateNameText(self):
-    self._mainText[2] = self._mainImageController.getName()
+    self._mainText[2] = self._mainImage.name
     self.renderOverlay()

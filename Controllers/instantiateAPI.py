@@ -1,10 +1,10 @@
 
-from Controllers.IOControllers.dataLoaderController import DataLoaderController
+from Controllers.dataLoaderController import DataLoaderController
 from Controllers.api import API
 
 
-def instantiateAPI(patientListController):
-    DataLoaderController(patientListController)
+def instantiateAPI(patientList):
+    DataLoaderController(patientList)
 
     print('Methods instantiated:')
     print(API().getMethodsAsString())

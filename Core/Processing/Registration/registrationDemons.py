@@ -32,21 +32,21 @@ class RegistrationDemons(Registration):
         for s in range(len(scales)):
 
             # Compute grid for new scale
-            newGridSize = [round(self.fixed.spacing[1] / scales[s] * self.fixed.getGridSize()[0]),
-                           round(self.fixed.spacing[0] / scales[s] * self.fixed.getGridSize()[1]),
-                           round(self.fixed.spacing[2] / scales[s] * self.fixed.getGridSize()[2])]
-            newVoxelSpacing = [self.fixed.spacing[0] * (self.fixed.getGridSize()[1] - 1) / (newGridSize[1] - 1),
-                               self.fixed.spacing[1] * (self.fixed.getGridSize()[0] - 1) / (newGridSize[0] - 1),
-                               self.fixed.spacing[2] * (self.fixed.getGridSize()[2] - 1) / (newGridSize[2] - 1)]
+            newGridSize = [round(self.fixed._spacing[1] / scales[s] * self.fixed.gridSize()[0]),
+                           round(self.fixed._spacing[0] / scales[s] * self.fixed.gridSize()[1]),
+                           round(self.fixed._spacing[2] / scales[s] * self.fixed.gridSize()[2])]
+            newVoxelSpacing = [self.fixed._spacing[0] * (self.fixed.gridSize()[1] - 1) / (newGridSize[1] - 1),
+                               self.fixed._spacing[1] * (self.fixed.gridSize()[0] - 1) / (newGridSize[0] - 1),
+                               self.fixed._spacing[2] * (self.fixed.gridSize()[2] - 1) / (newGridSize[2] - 1)]
 
             logger.info('Demons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing)
+            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.getGridSize(), fixedResampled.origin, fixedResampled.spacing)
-            gradFixed = np.gradient(fixedResampled.data)
+            movingResampled.resample(fixedResampled.gridSize(), fixedResampled._origin, fixedResampled._spacing)
+            gradFixed = np.gradient(fixedResampled._imageArray)
 
             if s != 0:
                 deformation.resampleToImageGrid(fixedResampled)
@@ -58,23 +58,23 @@ class RegistrationDemons(Registration):
                 # Deform moving image
                 deformed = deformation.deformImage(movingResampled, fillValue='closest')
 
-                ssd = self.computeSSD(fixedResampled.data, deformed.data)
+                ssd = self.computeSSD(fixedResampled._imageArray, deformed._imageArray)
                 logger.info('Iteration ' + str(i + 1) + ': SSD=' + str(ssd))
-                gradMoving = np.gradient(deformed.data)
-                squaredDiff = np.square(fixedResampled.data - deformed.data)
+                gradMoving = np.gradient(deformed._imageArray)
+                squaredDiff = np.square(fixedResampled._imageArray - deformed._imageArray)
                 squaredNormGrad = np.square(gradFixed[0] + gradMoving[0]) + np.square(
                     gradFixed[1] + gradMoving[1]) + np.square(gradFixed[2] + gradMoving[2])
 
                 # demons formula
-                deformation.velocity.data[:, :, :, 0] += 2 * (fixedResampled.data - deformed.data) * (
+                deformation.velocity._imageArray[:, :, :, 0] += 2 * (fixedResampled._imageArray - deformed._imageArray) * (
                             gradFixed[0] + gradMoving[0]) / ( squaredDiff + squaredNormGrad + 1e-5) * \
-                                                         deformation.velocity.spacing[0]
-                deformation.velocity.data[:, :, :, 1] += 2 * (fixedResampled.data - deformed.data) * (
+                                                                deformation.velocity._spacing[0]
+                deformation.velocity._imageArray[:, :, :, 1] += 2 * (fixedResampled._imageArray - deformed._imageArray) * (
                             gradFixed[1] + gradMoving[1]) / ( squaredDiff + squaredNormGrad + 1e-5) * \
-                                                         deformation.velocity.spacing[0]
-                deformation.velocity.data[:, :, :, 2] += 2 * (fixedResampled.data - deformed.data) * (
+                                                                deformation.velocity._spacing[0]
+                deformation.velocity._imageArray[:, :, :, 2] += 2 * (fixedResampled._imageArray - deformed._imageArray) * (
                             gradFixed[2] + gradMoving[2]) / ( squaredDiff + squaredNormGrad + 1e-5) * \
-                                                         deformation.velocity.spacing[0]
+                                                                deformation.velocity._spacing[0]
 
                 # Regularize velocity deformation and certainty
                 self.regularizeField(deformation, filterType="Gaussian", sigma=1.25)

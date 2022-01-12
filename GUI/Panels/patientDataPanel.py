@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QDir, QMimeData, Qt, QModelIndex, pyqtSignal
+from PyQt5.QtCore import QDir, QMimeData, Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
     QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog, QHBoxLayout, QCheckBox
@@ -7,24 +7,22 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushBut
 from pydicom.uid import generate_uid
 
 from Controllers.api import API
-from Controllers.DataControllers.patientController import PatientController
+from Core.Data.Images.ctImage import CTImage
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.IO.serializedObjectIO import saveDataStructure
-
+from Core.event import Event
 
 
 class PatientDataPanel(QWidget):
-
-    currentPatientChangedSignal = pyqtSignal(object)
-    patientAddedSignal = pyqtSignal(object)
-    patientRemovedSignal = pyqtSignal(object)
-
     def __init__(self, viewController):
         QWidget.__init__(self)
 
+        # Events
+        self.patientAddedSignal = Event(object)
+        self.patientRemovedSignal = Event(object)
+
         self._viewController = viewController
-        self._currentPatientController = None
 
         self._viewController.patientAddedSignal.connect(self.patientAddedSignal.emit)
         self._viewController.patientAddedSignal.connect(self._handleNewPatient)
@@ -52,65 +50,33 @@ class PatientDataPanel(QWidget):
 
         self.dataPath = QDir.currentPath() # maybe not the ideal default data directory
 
-    def _handleNewPatient(self, patientController):
-        if self._currentPatientController is None:
-            self.setCurrentPatientController(patientController)
+    def _handleNewPatient(self, patient):
+        if self._currentPatient is None:
+            self.currentPatient = patient
 
-
-    def _handleRemovedPatient(self, patientController):
-        if self._currentPatientController == patientController:
-            self.setCurrentPatientController(None)
-
-
-    def getCurrentPatientController(self):
-        return PatientController(self._currentPatientController)
-
-
-    def getSelectedImageController(self):
-        return self._viewController.getSelectedImageController()
-
-
-    #@abstractmethod
-    def getLeftClickMenu(self):
-        pass
-
-
-    def setCurrentPatientController(self, patientController):
-        self._currentPatientController = patientController
-        self.currentPatientChangedSignal.emit(self._currentPatientController)
-
+    def _handleRemovedPatient(self, patient):
+        if self._currentPatient == patient:
+            self.currentPatient = None
 
     def loadData(self):
         filesOrFoldersList = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
-        self.updateDataDirectory(filesOrFoldersList[0])
 
-        API().loadData(filesOrFoldersList)
-        #API().loadDummyImages(None) #test
-
-
-    def updateDataDirectory(self, filePath):
-        splitPath = filePath.split('/')
+        splitPath = filesOrFoldersList[0].split('/')
         withoutLastElementPath = ''
         for element in splitPath[:-1]:
             withoutLastElementPath += element + '/'
         self.dataPath = withoutLastElementPath
 
+        API.loadData(filesOrFoldersList)
 
     def saveData(self):
         fileDialog = SaveData_dialog()
-        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
+        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self._dataPath)
 
-        patientList = [patient.data for patient in self._viewController.activePatientControllers]
+        patientList = [patient._imageArray for patient in self._viewController._activePatients]
 
         saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
 
-
-    ## temporary copy paste from 4D branch to take useful parts easier
-
-    # def load_data_struct(self, dictFilePath):
-    #
-    #     self.Patients.loadDataStructure(dictFilePath)
-    #     self.updateDataTreeView()
 
 ## ------------------------------------------------------------------------------------------
 class PatientComboBox(QComboBox):
@@ -122,32 +88,34 @@ class PatientComboBox(QComboBox):
         self._viewController.patientAddedSignal.connect(self._addPatient)
         self._viewController.patientRemovedSignal.connect(self._removePatient)
 
-        self._setActivePatientController = lambda index: self._viewController.setCurrentPatientController(self.currentData())
-        self.currentIndexChanged.connect(self._setActivePatientController)
+        self.currentIndexChanged.connect(self._setActivePatient)
 
     def __del__(self):
-        self.currentIndexChanged.disconnect(self._setActivePatientController)
+        self.currentIndexChanged.disconnect(self._setActivePatient)
 
-    def _addPatient(self, patientController):
-        name = patientController.getName()
+    def _addPatient(self, patient):
+        name = patient.name
         if name is None:
             name = 'None'
 
-        self.addItem(name, patientController)
+        self.addItem(name, patient)
         if self.count() == 1:
-            self._viewController.setCurrentPatientController(patientController)
+            self._viewController.currentPatient = patient
 
-    def _removePatient(self, patientController):
-        self.removeItem(self.findData(patientController))
+    def _removePatient(self, patient):
+        self.removeItem(self.findData(patient))
+
+    def _setActivePatient(self, index):
+        self._viewController.currentPatient = self.currentData()
 
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataTree(QTreeView):
-
-    dataSelectedSignal = pyqtSignal(object)
-
     def __init__(self, viewController, patientDataPanel):
         QTreeView.__init__(self)
+
+        # Events
+        self.dataSelectedSignal = Event(object)
 
         self.patientDataPanel = patientDataPanel
         self._viewController = viewController
@@ -156,25 +124,24 @@ class PatientDataTree(QTreeView):
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.viewport().installEventFilter(self)
-        self.customContextMenuRequested.connect(lambda pos: self.DataTree_RightClick(pos))
+        self.customContextMenuRequested.connect(self._handleRightClick)
         self.resizeColumnToContents(0)
-        self.doubleClicked.connect(self.setDataToDisplay)
+        self.doubleClicked.connect(self._handleDoubleClick)
         self.treeModel = QStandardItemModel()
         self.setModel(self.treeModel)
         self.setColumnHidden(1, True)
         self.expandAll()
 
+        self.updateDataTree(self._viewController.currentPatient)
         self._viewController.currentPatientChangedSignal.connect(self.updateDataTree)
 
-        self.patientController = self.patientDataPanel.getCurrentPatientController()
-        self.updateDataTree(self.patientController)
 
         self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
 
-    def appendImage(self, dataController):
-        item = PatientDataItem(dataController)
+    def appendImage(self, image):
+        item = PatientDataItem(image)
         self.rootNode.appendRow(item)
 
     def mouseMoveEvent(self, event):
@@ -186,7 +153,7 @@ class PatientDataTree(QTreeView):
 
         drag.exec_(QtCore.Qt.CopyAction)
 
-    def updateDataTree(self, patientController):
+    def updateDataTree(self, patient):
 
         """
         What if instead of trying to put in bold the shown data, with the issues of UID that must saved for each viewer etc ...
@@ -198,74 +165,52 @@ class PatientDataTree(QTreeView):
         font_b = QFont()
         font_b.setBold(True)
 
-        if patientController is None:
+        if patient is None:
             return
 
         try:
-         patientController.imageAddedSignal.disconnect(self.appendImage)
+         patient.imageAddedSignal.disconnect(self.appendImage)
         except:
             pass
-        patientController.imageAddedSignal.connect(self.appendImage)
+        patient.imageAddedSignal.connect(self.appendImage)
+        #TODO: Same with other data
 
         #images
-        imageControllers = patientController.getImageControllers()
-        for imageController in imageControllers:
-            item = PatientDataItem(imageController)
+        images = patient.images
+        for image in images:
+            item = PatientDataItem(image)
             self.rootNode.appendRow(item)
 
-        if len(imageControllers) > 0:
-            self._viewController.setSelectedImageController(imageControllers[0])
+        if len(images) > 0:
+            self._viewController.selectedImage = images[0]
 
         # dynamic sequences
-        sequenceControllers = patientController.getDynamic3DSequenceControllers()
-        for dynSeqController in sequenceControllers:
-            serieRoot = PatientDataItem(dynSeqController)
-            imageControllers = dynSeqController.getImageControllers()
-            for imageController in imageControllers:
-                item = PatientDataItem(imageController)
+        for dynSeq in patient.dynamic3DSequences:
+            serieRoot = PatientDataItem(dynSeq)
+            for image in dynSeq.images:
+                item = PatientDataItem(image)
                 serieRoot.appendRow(item)
             self.rootNode.appendRow(serieRoot)
-
-        # if len(dynSeqController) > 0:
-        # self._viewController.setSelectedImageController(imageControllers[0])
 
         # dynamic models
-        modelControllers = patientController.getDynamic3DModelControllers()
-        for modelController in modelControllers:
-            serieRoot = PatientDataItem(modelController)
-            fieldControllers = modelController.getVectorFieldControllers()
-            for fieldController in fieldControllers:
-                item = PatientDataItem(fieldController)
+        for model in patient.dynamic3DModels:
+            serieRoot = PatientDataItem(model)
+            for field in model.vectorFields:
+                item = PatientDataItem(field)
                 serieRoot.appendRow(item)
             self.rootNode.appendRow(serieRoot)
-
-        # if len(dynSeqController) > 0:
-        # self._viewController.setSelectedImageController(imageControllers[0])
-
-
 
     def dragEnterEvent(self, event):
         selection = self.selectionModel().selectedIndexes()[0]
-        self._viewController.setSelectedImageController(self.model().itemFromIndex(selection).dataController)
+        self._viewController.selectedImage = self.model().itemFromIndex(selection).data
 
-
-    def setDataToDisplay(self, selection):
-
-        selectedDataController = self.model().itemFromIndex(selection).dataController
-        dataType = selectedDataController.getType()
+    def _handleDoubleClick(self, selection):
+        selectedData = self.model().itemFromIndex(selection).data
         # self.patientController = self.patientDataPanel.getCurrentPatientController()  # not used for now
         # self._viewController.shownDataUIDsList.append(selectedDataController.data.seriesInstanceUID)  # not used for now
 
-        if dataType == 'CTImage':
-            self._viewController.setSelectedImageController(selectedDataController)
-
-            # there are 2 options here, using a signal emitted and received in the viewController
-            # or simply calling the necessary viewController function as it is passed to every item in the panel anyway
-            # this is the example with an image selected but it must be differentiated for each relevant data type
-            # option with _viewController use, in this case the signal is not used and can be removed from the class
-            self._viewController.setMainImage(selectedDataController)
-            # option with signal
-            #self.dataSelectedSignal.emit(self.model().itemFromIndex(selection).imageController)
+        if isinstance(selectedData, CTImage):
+            self._viewController.mainImage = selectedData
 
         #from 4D branch
         # selected_type = self.model().itemFromIndex(selection).whatsThis()
@@ -316,17 +261,16 @@ class PatientDataTree(QTreeView):
         #         return
 
 
-    def DataTree_RightClick(self, pos):
-
+    def _handleRightClick(self, pos):
         UIDs = []
         selectedDataTypeList = []
         pos = self.mapToGlobal(pos)
         selected = self.selectedIndexes()
         selectedDataControllerList = [self.model().itemFromIndex(selectedData).dataController for selectedData in selected]
 
-        dataType = selectedDataControllerList[0].getType()
+        dataType = selectedDataControllerList[0].getDataClass()
 
-        selectedDataTypeList = [dataController.getType() for dataController in selectedDataControllerList]
+        selectedDataTypeList = [dataController.getDataClass() for dataController in selectedDataControllerList]
         print('In DataTree_RightClick, list of selected data types :', selectedDataTypeList)
 
         for i in range(len(selectedDataTypeList)):
@@ -342,21 +286,23 @@ class PatientDataTree(QTreeView):
             self.context_menu = QMenu()
 
             # actions for dose data
-            # if (dataType == 'dose'):
-            #     self.export_action = QAction("Export")
-            #     self.export_action.triggered.connect(
-            #         lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.export_item(data_types, UIDs))
-            #     self.context_menu.addAction(self.export_action)
-
-            # actions for any single data
-            if (dataType != 'mixed' and len(selected) == 1):
+            if ((dataType == 'Dose') and len(selected) == 1):
                 self.rename_action = QAction("Rename")
+                self.export_action = QAction("Export")
+                self.export_action.triggered.connect(
+                    lambda checked, data_type=dataType, UIDs=UIDs: self.export_item(dataType, UIDs))
                 self.rename_action.triggered.connect(
                     lambda checked, data_type=dataType, UIDs=UIDs: self.rename_item(data_type, UIDs))
                 self.context_menu.addAction(self.rename_action)
+                self.context_menu.addAction(self.export_action)
+
+            # actions for any single data
+            if (dataType != 'mixed'):
+                self.no_action = QAction("No action available for this group of data")
+                self.context_menu.addAction(self.no_action)
 
             # actions for group of 3DImage
-            if (dataType == 'CTImage' and len(selected) > 1):  # to generalize to other modalities eventually
+            if (dataType == CTImage and len(selected) > 1):  # to generalize to other modalities eventually
                 self.make_series_action = QAction("Make dynamic 3D sequence")
                 self.make_series_action.triggered.connect(
                     lambda checked, selectedImages=selectedDataControllerList: self.createDynamic3DSequence(selectedImages))
@@ -379,10 +325,10 @@ class PatientDataTree(QTreeView):
             #         self.make_4d_model_action = QAction("Make 4D model (MidP)")
             #         self.make_4d_model_action.triggered.connect(
             #             lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.make_4d_model(data_types, UIDs))
-            #         self.context_menu.addAction(self.make_4d_model_action)
+            #         self.context_menu.saddAction(self.make_4d_model_action)
 
             # actions for single Dynamic3DSequence
-            if (dataType == 'Dynamic3DSequence' and len(selected) == 1):# or dataType == 'Dynamic2DSequence'):
+            if (dataType == Dynamic3DSequence and len(selected) == 1):# or dataType == 'Dynamic2DSequence'):
                 self.compute3DModelAction = QAction("Compute 4D model (MidP)")
                 self.compute3DModelAction.triggered.connect(
                     lambda checked, selected3DSequence=selectedDataControllerList[0]: self.computeDynamic3DModel(selected3DSequence))
@@ -433,12 +379,12 @@ class PatientDataTree(QTreeView):
             newSeq.seriesInstanceUID = generate_uid()
 
             for i in range(len(selectedImageControllers)):
-                image = selectedImageControllers[i].data
+                image = selectedImageControllers[i]._imageArray
                 newSeq.dyn3DImageList.append(image)
-                self._viewController._currentPatientController.removeImage(image)
+                self._viewController._currentPatient.removeImage(image)
 
-            self._viewController._currentPatientController.appendDyn3DSeq(newSeq)
-            self.updateDataTree(self._viewController._currentPatientController)
+            self._viewController._currentPatient.appendDyn3DSeq(newSeq)
+            self.updateDataTree(self._viewController._currentPatient)
 
 
     def computeDynamic3DModel(self, selected3DSequenceController):
@@ -449,20 +395,20 @@ class PatientDataTree(QTreeView):
             newMod = Dynamic3DModel()
             newMod.name = newName
             newMod.seriesInstanceUID = generate_uid()
-            newMod.computeMidPositionImage(selected3DSequenceController.data)
-            self._viewController._currentPatientController.appendDyn3DMod(newMod)
-            self.updateDataTree(self._viewController._currentPatientController)
+            newMod.computeMidPositionImage(selected3DSequenceController._imageArray)
+            self._viewController._currentPatient.appendDyn3DMod(newMod)
+            self.updateDataTree(self._viewController._currentPatient)
 
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):
-    def __init__(self, dataController, txt="", type="", color=QColor(125, 125, 125)):
+    def __init__(self, data, txt="", type="", color=QColor(125, 125, 125)):
         QStandardItem.__init__(self)
 
-        self.dataController = dataController
-        self.dataController.nameChangedSignal.connect(self.setName)
+        self.data = data
+        self.data.nameChangedSignal.connect(self.setName)
 
-        self.setName(self.dataController.getName())
+        self.setName(self.data.name)
 
         self.setEditable(False)
         # self.setForeground(color)
@@ -480,7 +426,7 @@ def _getOpenFilesAndDirs(parent=None, caption='', directory='',
       # update the contents of the line edit widget with the selected files
       selected = []
       for index in view.selectionModel().selectedRows():
-        selected.append('"{}"'.format(index.data()))
+        selected.append('"{}"'.format(index._imageArray()))
       lineEdit.setText(' '.join(selected))
 
     dialog = QFileDialog(parent, windowTitle=caption)
