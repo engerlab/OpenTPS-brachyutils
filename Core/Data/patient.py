@@ -213,3 +213,27 @@ class Patient:
         """
         self._dynamic3DModels.remove(dyn3DMod)
         self.dyn3DModRemovedSignal.emit(dyn3DMod)
+
+    def removeData(self, data):
+        if isinstance(data, list):
+            for d in data:
+                self.removeData(d)
+            return
+
+        if data in self._images:
+            self.removeImage(data)
+
+        if data in self._plans:
+            self.removePlan(data)
+
+        if data in self._rtStructs:
+            self.removeRTStruct(data)
+
+        if data in self._rtStructs:
+            self.removeRTStruct(data)
+
+        if data in self._dynamic3DSequences:
+            self.removeDyn3DSeq(data)
+
+        if data in self._dynamic3DModels:
+            self.removeDyn3DMod(data)

@@ -215,7 +215,7 @@ class SliceViewerVTK(QWidget):
 
     self._connectAll()
 
-    self.updateNameText()
+    self.updateNameText(self._mainImage.name)
 
   #overrides QWidget resizeEvent
   def resizeEvent(self, event):
@@ -525,6 +525,6 @@ class SliceViewerVTK(QWidget):
 
     self.renderOverlay()
 
-  def updateNameText(self):
-    self._mainText[2] = self._mainImage.name
+  def updateNameText(self, name):
+    self._mainText[2] = name
     self.renderOverlay()

@@ -2,12 +2,15 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QDir, QMimeData, Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
-    QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog, QHBoxLayout, QCheckBox
+    QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog, QHBoxLayout, QCheckBox, \
+    QMessageBox
 
 from pydicom.uid import generate_uid
 
 from Controllers.api import API
 from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.IO.serializedObjectIO import saveDataStructure
@@ -71,9 +74,9 @@ class PatientDataPanel(QWidget):
 
     def saveData(self):
         fileDialog = SaveData_dialog()
-        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self._dataPath)
+        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
 
-        patientList = [patient._imageArray for patient in self._viewController._activePatients]
+        patientList = self._viewController._activePatients
 
         saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
 
@@ -141,6 +144,8 @@ class PatientDataTree(QTreeView):
         item = PatientDataItem(image)
         self.rootNode.appendRow(item)
 
+        self._viewController.currentPatient.imageRemovedSignal.connect(lambda image: self.rootNode.removeRow(item.row()))
+
     def mouseMoveEvent(self, event):
         drag = QDrag(self)
         mimeData = QMimeData()
@@ -166,7 +171,7 @@ class PatientDataTree(QTreeView):
             return
 
         try:
-         patient.imageAddedSignal.disconnect(self.appendImage)
+            patient.imageAddedSignal.disconnect(self.appendImage)
         except:
             pass
         patient.imageAddedSignal.connect(self.appendImage)
@@ -257,63 +262,54 @@ class PatientDataTree(QTreeView):
         #         self.DynamicImage_selected.emit([selected_UID, 'dyn2DSeq', seriesIndex])
         #         return
 
-
     def _handleRightClick(self, pos):
         UIDs = []
         selectedDataTypeList = []
         pos = self.mapToGlobal(pos)
         selected = self.selectedIndexes()
-        selectedDataControllerList = [self.model().itemFromIndex(selectedData).dataController for selectedData in selected]
+        selectedData = [self.model().itemFromIndex(selectedData).data for selectedData in selected]
 
-        dataType = selectedDataControllerList[0].getDataClass()
+        dataClass = selectedData[0].__class__
+        for data in selectedData:
+            if data.__class__ != dataClass:
+                dataClass = 'mixed'
+                break
 
-        selectedDataTypeList = [dataController.getDataClass() for dataController in selectedDataControllerList]
-        print('In DataTree_RightClick, list of selected data types :', selectedDataTypeList)
-
-        for i in range(len(selectedDataTypeList)):
-            # UIDs.append(
-            #     self.model().data(self.model().index(selected[i].row(), 1, selected[i].parent())))
-            # selectedDataTypeList.append(self.model().itemFromIndex(selected[i]).whatsThis())
-            if selectedDataTypeList[i] != dataType:
-                dataType = 'mixed'
-
-        print('Right clic options type: ', dataType)
+        print('Right click options class: ', dataClass)
 
         if (len(selected) > 0):
             self.context_menu = QMenu()
 
             # actions for dose data
-            if ((dataType == 'Dose') and len(selected) == 1):
+            if (dataClass == Image3D or issubclass(dataClass, Image3D)) and len(selected) == 1:
                 self.rename_action = QAction("Rename")
                 self.export_action = QAction("Export")
                 self.export_action.triggered.connect(
-                    lambda checked, data_type=dataType, UIDs=UIDs: self.export_item(dataType, UIDs))
-                self.rename_action.triggered.connect(
-                    lambda checked, data_type=dataType, UIDs=UIDs: self.rename_item(data_type, UIDs))
+                    lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
+                self.rename_action.triggered.connect(lambda checked : openRenameDataDialog(self, selectedData[0]))
                 self.context_menu.addAction(self.rename_action)
                 self.context_menu.addAction(self.export_action)
 
-            # actions for any single data
-            if (dataType != 'mixed'):
+            if dataClass == 'mixed':
                 self.no_action = QAction("No action available for this group of data")
                 self.context_menu.addAction(self.no_action)
 
             # actions for group of 3DImage
-            if (dataType == CTImage and len(selected) > 1):  # to generalize to other modalities eventually
+            if (dataClass == CTImage or issubclass(dataClass, CTImage)) and len(selected) > 1:  # to generalize to other modalities eventually
                 self.make_series_action = QAction("Make dynamic 3D sequence")
                 self.make_series_action.triggered.connect(
-                    lambda checked, selectedImages=selectedDataControllerList: self.createDynamic3DSequence(selectedImages))
+                    lambda checked, selectedImages=selectedData: self.createDynamic3DSequence(selectedImages))
                 self.context_menu.addAction(self.make_series_action)
 
             # actions for any 3DImage
-            # if (dataType == 'CTImage'):
+            # if (dataClass == 'CTImage'):
             #     self.crop_action = QAction("Crop")
             #     self.crop_action.triggered.connect(
-            #         lambda checked, data_type=dataType, UIDs=UIDs: self.crop_image(UIDs[0]))
+            #         lambda checked, data_type=dataClass, UIDs=UIDs: self.crop_image(UIDs[0]))
             #     self.context_menu.addAction(self.crop_action)
 
             # actions specific to an image selected with deformation fields
-            # if (dataType == 'mixed' and len(UIDs) > 1 and selectedDataTypeList[0] == 'CTImage'):
+            # if (dataClass == 'mixed' and len(UIDs) > 1 and selectedDataTypeList[0] == 'CTImage'):
             #     fields_only = True
             #     for i in range(len(selectedDataTypeList) - 1):
             #         if selectedDataTypeList[i + 1] != 'field':
@@ -325,14 +321,14 @@ class PatientDataTree(QTreeView):
             #         self.context_menu.saddAction(self.make_4d_model_action)
 
             # actions for single Dynamic3DSequence
-            if (dataType == Dynamic3DSequence and len(selected) == 1):# or dataType == 'Dynamic2DSequence'):
+            if (dataClass == Dynamic3DSequence and len(selected) == 1):# or dataClass == 'Dynamic2DSequence'):
                 self.compute3DModelAction = QAction("Compute 4D model (MidP)")
                 self.compute3DModelAction.triggered.connect(
-                    lambda checked, selected3DSequence=selectedDataControllerList[0]: self.computeDynamic3DModel(selected3DSequence))
+                    lambda checked, selected3DSequence=selectedData[0]: self.computeDynamic3DModel(selected3DSequence))
                 self.context_menu.addAction(self.compute3DModelAction)
 
             # # actions for plans
-            # if (dataType == 'plan' and len(UIDs) == 1):
+            # if (dataClass == 'plan' and len(UIDs) == 1):
             #     plan = self.Patients.find_plan(UIDs[0])
             #     if (plan.ScanMode == 'LINE'):
             #         self.convert_action = QAction("Convert line scanning to PBS plan")
@@ -359,14 +355,14 @@ class PatientDataTree(QTreeView):
             #     self.context_menu.addAction(self.print_plan_action)
 
             self.delete_action = QAction("Delete")
-            self.delete_action.triggered.connect(
-                lambda checked, data_types=selectedDataTypeList, UIDs=UIDs: self.delete_item(data_types, UIDs))
+            currentPatient = self._viewController.currentPatient
+            self.delete_action.triggered.connect(lambda checked : openDeleteDataDialog(self, selectedData, currentPatient))
             self.context_menu.addAction(self.delete_action)
 
             self.context_menu.popup(pos)
 
 
-    def createDynamic3DSequence(self, selectedImageControllers):
+    def createDynamic3DSequence(self, selectedImages):
 
         newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
 
@@ -375,26 +371,29 @@ class PatientDataTree(QTreeView):
             newSeq.name = newName
             newSeq.seriesInstanceUID = generate_uid()
 
-            for i in range(len(selectedImageControllers)):
-                image = selectedImageControllers[i]._imageArray
+            for i in range(len(selectedImages)):
+                image = selectedImages[i]
                 newSeq.dyn3DImageList.append(image)
-                self._viewController._currentPatient.removeImage(image)
+                self._viewController.currentPatient.removeImage(image)
 
-            self._viewController._currentPatient.appendDyn3DSeq(newSeq)
-            self.updateDataTree(self._viewController._currentPatient)
+            self._viewController.currentPatient.appendDyn3DSeq(newSeq)
+
+            # Should not be necessary because data tree listens to imageAdded/imageRemoved, etc.
+            self.updateDataTree(self._viewController.currentPatient)
 
 
-    def computeDynamic3DModel(self, selected3DSequenceController):
-
+    def computeDynamic3DModel(self, selected3DSequence):
         newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")
 
         if (okPressed):
             newMod = Dynamic3DModel()
             newMod.name = newName
             newMod.seriesInstanceUID = generate_uid()
-            newMod.computeMidPositionImage(selected3DSequenceController._imageArray)
-            self._viewController._currentPatient.appendDyn3DMod(newMod)
-            self.updateDataTree(self._viewController._currentPatient)
+            newMod.computeMidPositionImage(selected3DSequence)
+            self._viewController.currentPatient.appendDyn3DMod(newMod)
+
+            # Should not be necessary because data tree listens to imageAdded/imageRemoved, etc.
+            self.updateDataTree(self._viewController.currentPatient)
 
 
 ## ------------------------------------------------------------------------------------------
@@ -496,3 +495,18 @@ class SaveData_dialog(QFileDialog):
             return self.selectedFiles()[0], self.compressBox.isChecked(), self.splitPatientsBox.isChecked()
         else:
             return "", ""
+
+def openRenameDataDialog(widget, data):
+    text, ok = QInputDialog.getText(widget, 'Rename data', 'New name:')
+    if ok:
+        data.name = str(text)
+
+def openDeleteDataDialog(widget, data, patient):
+    msgBox = QMessageBox()
+    msgBox.setIcon(QMessageBox.Information)
+    msgBox.setText("Delete data")
+    msgBox.setWindowTitle("Delete selected data?")
+    msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+
+    if msgBox.exec() == QMessageBox.Ok:
+        patient.removeData(data)
