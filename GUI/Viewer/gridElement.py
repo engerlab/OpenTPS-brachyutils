@@ -105,12 +105,7 @@ class GridElement(QWidget):
             if not(image is None):
                 patient = self._viewController.patientList.getPatientByData(image)
                 patient.imageRemovedSignal.connect(self._handleImageRemoved)
-
-                VERSUS
-
-                patient = image.patient
-                patient.imageRemovedSignal.connect(self._handleImageRemoved)
-
+                
     def _handleImageRemoved(self, image):
         if hasattr(self._currentViewer, 'mainImage') and self._currentViewer.mainImage == image:
             self._setMainImage(None)
