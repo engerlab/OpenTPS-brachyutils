@@ -41,6 +41,7 @@ class Patient:
             self.patientInfo = patientInfo
 
         self._images = []
+        self._name = self.patientInfo.name
         self._plans = []
         self._rtStructs = []
         self._dynamic3DSequences = []
@@ -114,8 +115,12 @@ class Patient:
 
     @property
     def name(self):
-        #TODO
-        return None
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+        self.nameChangedSignal.emit(self._name)
 
     @property
     def plans(self):
