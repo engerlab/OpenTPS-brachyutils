@@ -104,6 +104,10 @@ class Patient:
             the image object to removed
 
         """
+
+        if not(image in self._images):
+            return
+
         self._images.remove(image)
         image.patient = None
         self.imageRemovedSignal.emit(image)
@@ -172,6 +176,13 @@ class Patient:
             Dynamic 3D Sequence set to append
 
         """
+        if dyn3DSeq in self._dynamic3DSequences:
+            return
+
+        self._dynamic3DSequences.append(dyn3DSeq)
+        dyn3DSeq.patient = self
+        self.dyn3DSeqAddedSignal.emit(dyn3DSeq)
+
         self._dynamic3DSequences.append(dyn3DSeq)
         self.dyn3DSeqAddedSignal.emit(dyn3DSeq)
 
@@ -185,7 +196,11 @@ class Patient:
             Dynamic 3D Sequence set to remove
 
         """
+        if not(dyn3DSeq in self._dynamic3DSequences):
+            return
+
         self._dynamic3DSequences.remove(dyn3DSeq)
+        dyn3DSeq.patient = None
         self.dyn3DSeqRemovedSignal.emit(dyn3DSeq)
 
     @property

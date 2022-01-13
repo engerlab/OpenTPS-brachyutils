@@ -144,7 +144,11 @@ class PatientDataTree(QTreeView):
         item = PatientDataItem(image)
         self.rootNode.appendRow(item)
 
-        self._viewController.currentPatient.imageRemovedSignal.connect(lambda image: self.rootNode.removeRow(item.row()))
+        image.patient.imageRemovedSignal.connect(lambda image: self._removeItem(item, image))
+
+    def _removeItem(self, item, image):
+        if image==item.data:
+            self.rootNode.removeRow(item.row())
 
     def mouseMoveEvent(self, event):
         drag = QDrag(self)
@@ -172,9 +176,11 @@ class PatientDataTree(QTreeView):
 
         try:
             patient.imageAddedSignal.disconnect(self.appendImage)
+            patient.dyn3DSeqRemovedSignal.disconnect(self.appendImage)
         except:
             pass
         patient.imageAddedSignal.connect(self.appendImage)
+        patient.dyn3DSeqRemovedSignal.connect(self.appendImage)
         #TODO: Same with other data
 
         #images
@@ -298,7 +304,7 @@ class PatientDataTree(QTreeView):
             if (dataClass == CTImage or issubclass(dataClass, CTImage)) and len(selected) > 1:  # to generalize to other modalities eventually
                 self.make_series_action = QAction("Make dynamic 3D sequence")
                 self.make_series_action.triggered.connect(
-                    lambda checked, selectedImages=selectedData: self.createDynamic3DSequence(selectedImages))
+                    lambda checked: self.createDynamic3DSequence(selectedData))
                 self.context_menu.addAction(self.make_series_action)
 
             # actions for any 3DImage
@@ -374,13 +380,10 @@ class PatientDataTree(QTreeView):
             for i in range(len(selectedImages)):
                 image = selectedImages[i]
                 newSeq.dyn3DImageList.append(image)
-                self._viewController.currentPatient.removeImage(image)
+                patient = image.patient
+                patient.removeImage(image)
 
-            self._viewController.currentPatient.appendDyn3DSeq(newSeq)
-
-            # Should not be necessary because data tree listens to imageAdded/imageRemoved, etc.
-            self.updateDataTree(self._viewController.currentPatient)
-
+            patient.appendDyn3DSeq(newSeq)
 
     def computeDynamic3DModel(self, selected3DSequence):
         newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")
