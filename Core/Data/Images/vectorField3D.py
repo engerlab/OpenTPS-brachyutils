@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 class VectorField3D(Image3D):
 
-    def __init__(self, data=None, name="Vector Field", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1),
+    def __init__(self, imageArray=None, name="Vector Field", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1),
                  angles=(0, 0, 0), seriesInstanceUID=""):
 
-        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles,
+        super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles,
                          seriesInstanceUID=seriesInstanceUID)
 
     def initFromImage(self, image):
@@ -25,9 +25,9 @@ class VectorField3D(Image3D):
                 image from which the voxel grid is copied.
             """
 
-        self.data = np.zeros(tuple(image.getGridSize()) + (3,))
-        self.origin = image.origin
-        self.spacing = image.spacing
+        self.data = np.zeros(tuple(image.gridSize()) + (3,))
+        self.origin = image._origin
+        self.spacing = image._spacing
 
     def warp(self, data, fillValue=0):
         """Warp 3D data using linear interpolation.
@@ -61,15 +61,15 @@ class VectorField3D(Image3D):
         if N < 1: N = 1
 
         displacement = self.copy()
-        displacement.data = displacement.data * 2 ** (-N)
+        displacement._imageArray = displacement._imageArray * 2 ** (-N)
 
         for r in range(N):
-            new_0 = displacement.warp(displacement.data[:, :, :, 0], fillValue=0)
-            new_1 = displacement.warp(displacement.data[:, :, :, 1], fillValue=0)
-            new_2 = displacement.warp(displacement.data[:, :, :, 2], fillValue=0)
-            displacement.data[:, :, :, 0] += new_0
-            displacement.data[:, :, :, 1] += new_1
-            displacement.data[:, :, :, 2] += new_2
+            new_0 = displacement.warp(displacement._imageArray[:, :, :, 0], fillValue=0)
+            new_1 = displacement.warp(displacement._imageArray[:, :, :, 1], fillValue=0)
+            new_2 = displacement.warp(displacement._imageArray[:, :, :, 2], fillValue=0)
+            displacement._imageArray[:, :, :, 0] += new_0
+            displacement._imageArray[:, :, :, 1] += new_1
+            displacement._imageArray[:, :, :, 2] += new_2
 
         return displacement
 

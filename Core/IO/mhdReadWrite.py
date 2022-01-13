@@ -56,14 +56,14 @@ def exportImageMHD(outputPath, image):
     rawPath = os.path.join(destFolder, rawFile)
 
     metaData = generateDefaultMetaData()
-    metaData["NDims"] = len(image.spacing)
-    metaData["DimSize"] = image.data.shape
-    metaData["ElementSpacing"] = tuple(image.spacing)
-    metaData["Offset"] = tuple(image.origin)
+    metaData["NDims"] = len(image._spacing)
+    metaData["DimSize"] = image._imageArray.shape
+    metaData["ElementSpacing"] = tuple(image._spacing)
+    metaData["Offset"] = tuple(image._origin)
     metaData["ElementDataFile"] = rawFile
 
     writeHeaderMHD(mhdPath, metaData=metaData)
-    writeBinaryMHD(rawPath, image.data, metaData=metaData)
+    writeBinaryMHD(rawPath, image._imageArray, metaData=metaData)
 
 
 
@@ -222,7 +222,7 @@ def readBinaryMHD(inputPath, metaData=None):
     data = data.reshape(metaData["DimSize"], order='F')
 
     # return Image3D object
-    image = Image3D(data=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+    image = Image3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
     return image
 
 

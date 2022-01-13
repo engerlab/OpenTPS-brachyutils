@@ -8,11 +8,13 @@ class Grid(QWidget):
         self._gridElements = []
         self._viewController = viewController
 
+    @property
+    def gridElements(self):
+        # Prevent from appending/removing to/from _gridElements
+        return [element for element in self._gridElements]
+
     def appendGridElement(self, gridElement):
         self._gridElements.append(gridElement)
-
-    def getGridElelements(self):
-        return self._gridElements
 
     def removeGridElement(self, gridElement):
         self._gridElements.remove(gridElement)

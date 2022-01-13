@@ -25,7 +25,7 @@ class MainToolbar(QToolBox):
         self.addItem(roiPanel, 'ROI')
 
         # TODO: When we get rid of patientDataPanelController we shoud have currentPatientChangedSignal in ViewController
-        self.patientDataPanel.currentPatientChangedSignal.connect(roiPanel.setCurrentPatient)
+        self._viewController.currentPatientChangedSignal.connect(roiPanel.setCurrentPatient)
 
         scriptingPanel = ScriptingPanel()
         self.addItem(scriptingPanel, 'Scripting')

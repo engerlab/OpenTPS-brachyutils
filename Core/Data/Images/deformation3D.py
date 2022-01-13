@@ -8,36 +8,36 @@ logger = logging.getLogger(__name__)
 
 class Deformation3D(Image3D):
 
-    def __init__(self, data=None, name="Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", velocity=None, displacement=None):
+    def __init__(self, imageArray=None, name="Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", velocity=None, displacement=None):
 
         if (displacement is None) and not(velocity is None):
-            origin = velocity.origin
-            spacing = velocity.spacing
+            origin = velocity._origin
+            spacing = velocity._spacing
             if patientInfo is None:
                 patientInfo = velocity.patientInfo
         elif (velocity is None) and not(displacement is None):
-            origin = displacement.origin
-            spacing = displacement.spacing
+            origin = displacement._origin
+            spacing = displacement._spacing
             if patientInfo is None:
                 patientInfo = displacement.patientInfo
         elif not(velocity is None) and not(displacement is None):
-            if velocity.origin == displacement.origin:
-                origin = velocity.origin
+            if velocity._origin == displacement._origin:
+                origin = velocity._origin
             else:
                 logger.error("Velocity and displacement fields have different origin. Cannot create deformation object.")
-            if velocity.spacing == displacement.spacing:
-                spacing = velocity.spacing
+            if velocity._spacing == displacement._spacing:
+                spacing = velocity._spacing
             else:
                 logger.error("Velocity and displacement fields have different spacing. Cannot create deformation object.")
             if patientInfo is None:
                 patientInfo = displacement.patientInfo
 
-        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
+        super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
 
         self.velocity = velocity
         self.displacement = displacement
 
-    def getGridSize(self):
+    def gridSize(self):
         """Compute the voxel grid size of the deformation.
 
             Returns
@@ -65,9 +65,9 @@ class Deformation3D(Image3D):
         self.velocity = VectorField3D()
         self.velocity.initFromImage(image)
         self.displacement = None
-        self.origin = image.origin
-        self.spacing = image.spacing
-        self.angles = image.angles
+        self.origin = image._origin
+        self.spacing = image._spacing
+        self.angles = image._angles
         self.patientInfo = image.patientInfo
 
     def initFromVelocityField(self, field):
@@ -81,9 +81,9 @@ class Deformation3D(Image3D):
 
         self.velocity = field
         self.displacement = None
-        self.origin = field.origin
-        self.spacing = field.spacing
-        self.angles = field.angles
+        self.origin = field._origin
+        self.spacing = field._spacing
+        self.angles = field._angles
         self.patientInfo = field.patientInfo
 
     def initFromDisplacementField(self, field):
@@ -97,9 +97,9 @@ class Deformation3D(Image3D):
 
         self.velocity = None
         self.displacement = field
-        self.origin = field.origin
-        self.spacing = field.spacing
-        self.angles = field.angles
+        self.origin = field._origin
+        self.spacing = field._spacing
+        self.angles = field._angles
         self.patientInfo = field.patientInfo
 
     def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
@@ -147,13 +147,13 @@ class Deformation3D(Image3D):
         else:
             field = self.displacement
 
-        if tuple(self.getGridSize()) != tuple(image.getGridSize()) or tuple(self.origin) != tuple(
-                image.origin) or tuple(self.spacing) != tuple(image.spacing):
+        if tuple(self.gridSize()) != tuple(image.gridSize()) or tuple(self.origin) != tuple(
+                image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
             field = field.copy()
-            field.resample(image.getGridSize(), image.origin, image.spacing)
+            field.resample(image.gridSize(), image._origin, image._spacing)
 
         image = image.copy()
-        image.data = field.warp(image.data, fillValue=fillValue)
+        image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
 
         return image

@@ -4,10 +4,9 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
-from Controllers.DataControllers.patientListController import PatientListController
 from Controllers.instantiateAPI import instantiateAPI
 from Core.Data.patientList import PatientList
-from GUI.ViewControllers.viewController import ViewController
+from GUI.viewController import ViewController
 
 from logConfigParser import parseArgs
 
@@ -25,13 +24,12 @@ if __name__ == '__main__':
         app = QApplication([])
 
     patientList = PatientList()
-    patientListController = PatientListController(patientList)
 
     #TODO Find a better way to instantiate the API
-    instantiateAPI(patientListController)
+    instantiateAPI(patientList)
 
     # instantiate the main GUI window
-    viewController = ViewController(patientListController)
+    viewController = ViewController(patientList)
     viewController.mainWindow.show()
 
     app.exec_()

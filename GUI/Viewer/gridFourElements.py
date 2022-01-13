@@ -1,10 +1,10 @@
 from PyQt5 import QtCore
 from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QHBoxLayout, QFrame, QSplitter, QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QHBoxLayout, QFrame, QSplitter, QVBoxLayout
 
-from GUI.Panels.viewerPanel.grid import Grid
-from GUI.Panels.viewerPanel.gridElement import GridElement
-from GUI.Viewers.sliceViewer import SliceViewerVTK
+from GUI.Viewer.grid import Grid
+from GUI.Viewer.gridElement import GridElement
+from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
 
 
 class GridFourElements(Grid):
@@ -81,23 +81,23 @@ class GridFourElements(Grid):
         self._topRight.setMinimumSize(minimumSize)
 
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
-            gridElement.getCurrentViewer().setView('axial')
+        if isinstance(gridElement.currentViewer, SliceViewerVTK):
+            gridElement.currentViewer.setView('axial')
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
-            gridElement.getCurrentViewer().setView('axial')
+        if isinstance(gridElement.currentViewer, SliceViewerVTK):
+            gridElement.currentViewer.setView('axial')
         self.appendGridElement(gridElement)
         self._botRightLayout.addWidget(gridElement)
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
-            gridElement.getCurrentViewer().setView('coronal')
+        if isinstance(gridElement.currentViewer, SliceViewerVTK):
+            gridElement.currentViewer.setView('coronal')
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = GridElement(self._viewController)
-        if isinstance(gridElement.getCurrentViewer(), SliceViewerVTK):
-            gridElement.getCurrentViewer().setView('sagittal')
+        if isinstance(gridElement.currentViewer, SliceViewerVTK):
+            gridElement.currentViewer.setView('sagittal')
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
 

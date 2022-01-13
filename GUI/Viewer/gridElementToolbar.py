@@ -4,15 +4,17 @@ from PyQt5.QtCore import QSize, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction
 
-import GUI.Panels.viewerPanel.gridElement as gridElement
-from GUI.Viewers.sliceViewer import SliceViewerVTK
+import GUI.Viewer.gridElement as gridElement
+from Core.event import Event
+from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
 
 
 class GridElementToolbar(QToolBar):
-    displayTypeSignal = pyqtSignal(object)
-
     def __init__(self):
         QToolBar.__init__(self)
+
+        # Events
+        self.displayTypeSignal = Event(object)
 
         self.setIconSize(QSize(16, 16))
 

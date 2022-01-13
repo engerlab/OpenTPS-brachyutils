@@ -35,7 +35,7 @@ class Dynamic3DModel(PatientData):
         field = self.deformationList[int(phase1)].copy()
         field.displacement = None
         if phase1 == phase2:
-            field.velocity.data = amplitude * self.deformationList[int(phase1)].velocity.data
+            field.velocity.data = amplitude * self.deformationList[int(phase1)].velocity._imageArray
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))

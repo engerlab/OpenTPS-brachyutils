@@ -18,7 +18,7 @@ class ViewerToolbar(QToolBar):
         self._buttonChain.setStatusTip("Independent views")
         self._buttonChain.triggered.connect(self._handleButtonChain)
         self._buttonChain.setCheckable(True)
-        self._buttonChain.setChecked(self._viewController.getIndependentViewsEnabled())
+        self._buttonChain.setChecked(self._viewController.independentViewsEnabled)
 
         self._buttonContrast = QAction(QIcon(iconPath + "contrast.png"), "Window level", self)
         self._buttonContrast.setStatusTip("Window level")
@@ -47,7 +47,7 @@ class ViewerToolbar(QToolBar):
             self._buttonChain.setChecked(pressed)
             return
 
-        self._viewController.setIndependentViewsEnabled(pressed)
+        self._viewController.independentViewsEnabled = pressed
 
     def _handleCrossHair(self, pressed):
         # This is useful if controller emit a signal:
@@ -55,7 +55,7 @@ class ViewerToolbar(QToolBar):
             self._buttonCrossHair.setChecked(pressed)
             return
 
-        self._viewController.setCrossHairEnabled(pressed)
+        self._viewController.crossHairEnabled = pressed
 
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:
@@ -63,4 +63,4 @@ class ViewerToolbar(QToolBar):
             self._buttonContrast.setChecked(pressed)
             return
 
-        self._viewController.setWindowLevelEnabled(pressed)
+        self._viewController.windowLevelEnabled = pressed

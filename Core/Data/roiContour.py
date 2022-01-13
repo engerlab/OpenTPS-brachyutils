@@ -4,17 +4,30 @@ import logging
 
 from Core.Data.patientData import PatientData
 from Core.Data.Images.roiMask import ROIMask
+from Core.event import Event
+
 
 class ROIContour(PatientData):
     def __init__(self, patientInfo=None, name="ROI contour", displayColor=(0,0,0), referencedFrameOfReferenceUID=None):
-        super().__init__(patientInfo=patientInfo)
-        self.name = name
-        self.displayColor = displayColor
+        super().__init__(patientInfo=patientInfo, name=name)
+
+        self.colorChangedSignal = Event(object)
+
+        self._displayColor = displayColor
         self.referencedFrameOfReferenceUID = referencedFrameOfReferenceUID
         self.referencedSOPInstanceUIDs = []
         self.polygonMesh = []
 
-    def generateBinaryMask(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
+    @property
+    def color(self):
+        return self._displayColor
+
+    @color.setter
+    def color(self, color):
+        self._displayColor = color
+        self.colorChangedSignal.emit(self._displayColor)
+
+    def getBinaryMask(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
         """
         Convert the polygon mesh to a binary mask image.
 
@@ -60,6 +73,5 @@ class ROIContour(PatientData):
             mask2D = np.array(img).transpose(1,0)
             mask3D[:,:,sliceZ] = np.logical_or(mask3D[:,:,sliceZ], mask2D)
 
-        mask = ROIMask(data=mask3D, name=self.name, patientInfo=self.patientInfo, origin=origin, spacing=spacing, displayColor=self.displayColor)
-
+        mask = ROIMask(imageArray=mask3D, name=self.name, patientInfo=self.patientInfo, origin=origin, spacing=spacing, displayColor=self._displayColor)
         return mask

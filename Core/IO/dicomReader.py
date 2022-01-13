@@ -63,7 +63,7 @@ def readDicomCT(dcmFiles):
     patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate, sex=dcm.PatientSex)
 
     # generate CT image object
-    image = CTImage(data=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sliceLocation=sliceLocation, sopInstanceUIDs=sopInstanceUIDs)
+    image = CTImage(imageArray=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sliceLocation=sliceLocation, sopInstanceUIDs=sopInstanceUIDs)
 
     return image
 
@@ -131,7 +131,7 @@ def readDicomDose(dcmFile):
     patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate, sex=dcm.PatientSex)
 
     # generate dose image object
-    image = DoseImage(data=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sopInstanceUID=dcm.SOPInstanceUID, planSOPInstanceUID=planSOPInstanceUID)
+    image = DoseImage(imageArray=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient, spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, frameOfReferenceUID=dcm.FrameOfReferenceUID, sopInstanceUID=dcm.SOPInstanceUID, planSOPInstanceUID=planSOPInstanceUID)
 
     return image
 
@@ -225,7 +225,7 @@ def readDicomVectorField(dcmFile):
         fieldName = dcm.SeriesInstanceUID
 
     # generate dose image object
-    field = VectorField3D(data=fieldData, name=fieldName, patientInfo=patientInfo, origin=imagePositionPatient,
-                      spacing=pixelSpacing)
+    field = VectorField3D(imageArray=fieldData, name=fieldName, patientInfo=patientInfo, origin=imagePositionPatient,
+                          spacing=pixelSpacing)
 
     return field

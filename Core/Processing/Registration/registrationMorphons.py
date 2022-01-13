@@ -83,40 +83,40 @@ class RegistrationMorphons(Registration):
         for s in range(len(scales)):
 
             # Compute grid for new scale
-            newGridSize = [round(self.fixed.spacing[1] / scales[s] * self.fixed.getGridSize()[0]),
-                           round(self.fixed.spacing[0] / scales[s] * self.fixed.getGridSize()[1]),
-                           round(self.fixed.spacing[2] / scales[s] * self.fixed.getGridSize()[2])]
-            newVoxelSpacing = [self.fixed.spacing[0] * (self.fixed.getGridSize()[1] - 1) / (newGridSize[1] - 1),
-                               self.fixed.spacing[1] * (self.fixed.getGridSize()[0] - 1) / (newGridSize[0] - 1),
-                               self.fixed.spacing[2] * (self.fixed.getGridSize()[2] - 1) / (newGridSize[2] - 1)]
+            newGridSize = [round(self.fixed._spacing[1] / scales[s] * self.fixed.gridSize()[0]),
+                           round(self.fixed._spacing[0] / scales[s] * self.fixed.gridSize()[1]),
+                           round(self.fixed._spacing[2] / scales[s] * self.fixed.gridSize()[2])]
+            newVoxelSpacing = [self.fixed._spacing[0] * (self.fixed.gridSize()[1] - 1) / (newGridSize[1] - 1),
+                               self.fixed._spacing[1] * (self.fixed.gridSize()[0] - 1) / (newGridSize[0] - 1),
+                               self.fixed._spacing[2] * (self.fixed.gridSize()[2] - 1) / (newGridSize[2] - 1)]
 
             logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing)
+            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.getGridSize(), fixedResampled.origin, fixedResampled.spacing)
+            movingResampled.resample(fixedResampled.gridSize(), fixedResampled._origin, fixedResampled._spacing)
 
             if s != 0:
                 deformation.resampleToImageGrid(fixedResampled)
-                certainty.resample(fixedResampled.getGridSize(), fixedResampled.origin,
-                                   fixedResampled.spacing, fillValue=0)
+                certainty.resample(fixedResampled.gridSize(), fixedResampled._origin,
+                                   fixedResampled._spacing, fillValue=0)
             else:
                 deformation.initFromImage(fixedResampled)
                 certainty = fixedResampled.copy()
-                certainty.data = np.zeros_like(certainty.data)
+                certainty._imageArray = np.zeros_like(certainty._imageArray)
 
             # Compute phase on fixed image
             if (self.nbProcesses > 1):
-                pconv = partial(morphonsComplexConvS, fixedResampled.data)
+                pconv = partial(morphonsComplexConvS, fixedResampled._imageArray)
                 qFixed = pool.map(pconv, k)
             else:
                 qFixed = []
                 for n in range(6):
-                    qFixed.append(scipy.signal.fftconvolve(fixedResampled.data, np.real(k[n]),
+                    qFixed.append(scipy.signal.fftconvolve(fixedResampled._imageArray, np.real(k[n]),
                                                            mode='same') + scipy.signal.fftconvolve(
-                        fixedResampled.data, np.imag(k[n]), mode='same') * 1j)
+                        fixedResampled._imageArray, np.imag(k[n]), mode='same') * 1j)
 
             for i in range(iterations[s]):
 
@@ -135,14 +135,14 @@ class RegistrationMorphons(Registration):
                 b3 = np.zeros_like(qFixed[0], dtype="float64")
 
                 if (self.nbProcesses > 1):
-                    pconv = partial(morphonsComplexConvD, deformed.data)
+                    pconv = partial(morphonsComplexConvD, deformed._imageArray)
                     qDeformed = pool.map(pconv, k)
                 else:
                     qDeformed = []
                     for n in range(6):
                         qDeformed.append(
-                            scipy.signal.fftconvolve(deformed.data, np.real(k[n]),
-                                                     mode='same') - scipy.signal.fftconvolve(deformed.data,
+                            scipy.signal.fftconvolve(deformed._imageArray, np.real(k[n]),
+                                                     mode='same') - scipy.signal.fftconvolve(deformed._imageArray,
                                                                                              np.imag(k[n]),
                                                                                              mode='same') * 1j)
 
@@ -164,7 +164,7 @@ class RegistrationMorphons(Registration):
                     b3 += qDirections[n][2] * vk
                     a33 += qDirections[n][2] * qDirections[n][2] * ck2
 
-                fieldUpdate = np.zeros_like(deformation.velocity.data)
+                fieldUpdate = np.zeros_like(deformation.velocity._imageArray)
                 fieldUpdate[:, :, :, 0] = (a22 * a33 - np.power(a23, 2)) * b1 + (a13 * a23 - a12 * a33) * b2 + (
                         a12 * a23 - a13 * a22) * b3
                 fieldUpdate[:, :, :, 1] = (a13 * a23 - a12 * a33) * b1 + (a11 * a33 - np.power(a13, 2)) * b2 + (
@@ -184,23 +184,23 @@ class RegistrationMorphons(Registration):
                 fieldUpdate[z, 1] = 0
                 fieldUpdate[z, 2] = 0
                 certaintyUpdate[z] = 0
-                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)*deformation.velocity.spacing[0]
-                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)*deformation.velocity.spacing[1]
-                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)*deformation.velocity.spacing[2]
+                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)*deformation.velocity._spacing[0]
+                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)*deformation.velocity._spacing[1]
+                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)*deformation.velocity._spacing[2]
 
                 # Accumulate deformation and certainty
-                deformation.velocity.data[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,
-                                                                                             certainty.data + certaintyUpdate + eps))
-                deformation.velocity.data[:, :, :, 1] += np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate,
-                                                                                             certainty.data + certaintyUpdate + eps))
-                deformation.velocity.data[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
-                                                                                             certainty.data + certaintyUpdate + eps))
-                certainty.data = np.divide(np.power(certainty.data, 2) + np.power(certaintyUpdate, 2),
-                                           certainty.data + certaintyUpdate + eps)
+                deformation.velocity._imageArray[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,
+                                                                                                               certainty._imageArray + certaintyUpdate + eps))
+                deformation.velocity._imageArray[:, :, :, 1] += np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate,
+                                                                                                               certainty._imageArray + certaintyUpdate + eps))
+                deformation.velocity._imageArray[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
+                                                                                                               certainty._imageArray + certaintyUpdate + eps))
+                certainty._imageArray = np.divide(np.power(certainty._imageArray, 2) + np.power(certaintyUpdate, 2),
+                                                  certainty._imageArray + certaintyUpdate + eps)
 
                 # Regularize velocity deformation and certainty
-                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.data)
-                certainty.data = imageFilter3D.normGaussConv(certainty.data, certainty.data, 1.25)
+                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty._imageArray)
+                certainty._imageArray = imageFilter3D.normGaussConv(certainty._imageArray, certainty._imageArray, 1.25)
 
         self.deformed = deformation.deformImage(self.moving, fillValue='closest')
 

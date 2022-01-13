@@ -1,10 +1,10 @@
 
 import os
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QToolBox
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget
 from PyQt5.QtGui import QIcon
 
 from GUI.Panels.mainToolbar import MainToolbar
-from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
+from GUI.Viewer.viewerPanel import ViewerPanel
 
 
 class MainWindow(QMainWindow):
