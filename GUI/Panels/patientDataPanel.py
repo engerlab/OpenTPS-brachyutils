@@ -509,4 +509,4 @@ def openDeleteDataDialog(widget, data, patient):
     msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
 
     if msgBox.exec() == QMessageBox.Ok:
-        patient.removeData(data)
+        patient.removePatientData(data)

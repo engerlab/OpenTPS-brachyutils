@@ -127,7 +127,10 @@ class SliceViewerVTK(QWidget):
 
   @property
   def mainImage(self):
-    return self._mainImage
+    if self._mainImage is None:
+      return None
+
+    return self._mainImage.data
 
   @mainImage.setter
   def mainImage(self, image):

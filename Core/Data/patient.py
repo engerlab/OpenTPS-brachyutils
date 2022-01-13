@@ -214,10 +214,13 @@ class Patient:
         self._dynamic3DModels.remove(dyn3DMod)
         self.dyn3DModRemovedSignal.emit(dyn3DMod)
 
-    def removeData(self, data):
+    def hasPatientData(self, data):
+        return (data in self._images) or (data in self._plans) or (data in self._dynamic3DModels) or (data in self._dynamic3DSequences) or (data in self._rtStructs)
+
+    def removePatientData(self, data):
         if isinstance(data, list):
             for d in data:
-                self.removeData(d)
+                self.removePatientData(d)
             return
 
         if data in self._images:

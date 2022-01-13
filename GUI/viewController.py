@@ -26,6 +26,7 @@ class ViewController():
         self._lineWidgetEnabled = False
         self._mainImage = None
         self.multipleActivePatientsEnabled = False #TODO
+        self._patientList = patientList
         self._selectedImage = None
         self._windowLevelEnabled = None
 
@@ -33,17 +34,27 @@ class ViewController():
 
         self.logger = logging.getLogger(__name__)
 
-        patientList.patientAddedSignal.connect(self.appendActivePatient)
-        patientList.patientRemovedSignal.connect(self.appendActivePatient)
+        self._patientList.patientAddedSignal.connect(self.appendActivePatient)
+        self._patientList.patientRemovedSignal.connect(self.appendActivePatient)
 
         self.numberOfViewerPanelElement = 0
         self.shownDataUIDsList = [] #this is to keep track of which data is currently shown, but not used yet
+
+    @property
+    def patientList(self):
+        return self._patientList
 
     @property
     def activePatient(self):
         if self.multipleActivePatientsEnabled:
             self.logger.exception('Cannot getActivePatient if multiple patients enabled')
             raise
+
+        if len(self._activePatients)>1:
+            self.logger.exception('Multiple patients disabled but more than one active patient')
+            raise
+
+        return self._activePatients[0]
 
     @property
     def activePatients(self):

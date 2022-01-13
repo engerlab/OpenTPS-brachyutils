@@ -40,6 +40,13 @@ class PatientList():
         index = next((x for x, val in enumerate(self._patients) if val.patientInfo.name == patientName), -1)
         return index
 
+    def getPatientByData(self, patientData):
+        for patient in self._patients:
+            if patient.hasPatientData(patientData):
+                return patient
+
+        return None
+
     def getPatientByPatientId(self, id):
         for i, patient in enumerate(self._patients):
             if patient.patientID==id:

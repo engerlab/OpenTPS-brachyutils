@@ -102,6 +102,19 @@ class GridElement(QWidget):
         if hasattr(self._currentViewer, 'mainImage'):
             self._currentViewer.mainImage = image
 
+            if not(image is None):
+                patient = self._viewController.patientList.getPatientByData(image)
+                patient.imageRemovedSignal.connect(self._handleImageRemoved)
+
+                VERSUS
+
+                patient = image.patient
+                patient.imageRemovedSignal.connect(self._handleImageRemoved)
+
+    def _handleImageRemoved(self, image):
+        if hasattr(self._currentViewer, 'mainImage') and self._currentViewer.mainImage == image:
+            self._setMainImage(None)
+
     def _setToolbar(self, toolbar):
         self._toolbar = toolbar
         self._mainLayout.addWidget(self._toolbar)
