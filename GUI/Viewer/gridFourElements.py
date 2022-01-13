@@ -130,10 +130,10 @@ class GridFourElements(Grid):
         if not self.isVisible():
             self._setEqualSize = True
 
-        halfSizeLeft = QSize(self.width()/2, self.height())
+        halfSizeLeft = QSize(int(self.width()/2), self.height())
         self._left.resize(halfSizeLeft)
 
-        halfSize = QSize(self._left.width(), self._left.height()/2)
+        halfSize = QSize(self._left.width(), int(self._left.height()/2))
         self._botLeft.resize(halfSize)
         self._botRight.resize(halfSize)
         self._topLeft.resize(halfSize)

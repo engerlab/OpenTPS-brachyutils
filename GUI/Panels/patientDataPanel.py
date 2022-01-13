@@ -93,8 +93,8 @@ class PatientComboBox(QComboBox):
 
         self.currentIndexChanged.connect(self._setActivePatient)
 
-    def __del__(self):
-        self.currentIndexChanged.disconnect(self._setActivePatient)
+    # def __del__(self):
+    #     self.currentIndexChanged.disconnect(self._setActivePatient)
 
     def _addPatient(self, patient):
         name = patient.name
