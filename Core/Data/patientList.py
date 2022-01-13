@@ -49,8 +49,8 @@ class PatientList():
 
     def getPatientByPatientId(self, id):
         for i, patient in enumerate(self._patients):
-            if patient.patientID==id:
-                return self._patients[i]
+            if patient.patientInfo.patientID==id:
+                return patient
 
     def remove(self, patient):
         self._patients.remove(patient)

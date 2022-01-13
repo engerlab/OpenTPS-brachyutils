@@ -21,6 +21,8 @@ class DataLoaderController:
 
         dataList = dataLoader.loadAllData(dataPath, maxDepth=maxDepth)
 
+        patient = None
+
         if not (importInPatient is None):
             patient = importInPatient
 
@@ -31,14 +33,13 @@ class DataLoaderController:
 
             if importInPatient is None:
                 # check if patient already exists
-                index = self._patientList.getIndexFromPatientID(data.patientInfo.patientID)
-                if index < 0:
-                    index = self._patientList.getIndexFromPatientName(data.patientInfo.name)
+                patient = self._patientList.getPatientByPatientId(data.patientInfo.patientID)
 
-                # create new patient if not found in PatientList
-                if index < 0:
-                    patient = Patient(patientInfo = data.patientInfo)
-                    self._patientList.append(patient)
+                # TODO: Get patient by name?
+
+            if patient is None:
+                patient = Patient(patientInfo = data.patientInfo)
+                self._patientList.append(patient)
 
             # add data to patient
             if(isinstance(data, Image3D)):
