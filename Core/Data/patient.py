@@ -41,7 +41,7 @@ class Patient:
             self.patientInfo = patientInfo
 
         self._images = []
-        self._name = None
+        self._name = self.patientInfo.name
         self._plans = []
         self._rtStructs = []
         self._dynamic3DSequences = []
