@@ -15,6 +15,7 @@ class PatientData:
             self.patientInfo = patientInfo
 
         self._name = name
+        self._patient = None
 
         if seriesInstanceUID:
             self.seriesInstanceUID = seriesInstanceUID
@@ -30,3 +31,17 @@ class PatientData:
     def name(self, name):
         self._name = name
         self.nameChangedSignal.emit(self._name)
+
+    @property
+    def patient(self):
+        return self._patient
+
+    @patient.setter
+    def patient(self, patient):
+        if patient == self._patient:
+            return
+
+        self._patient = patient
+
+        if not(self._patient is None):
+            self._patient.appendImage(self)

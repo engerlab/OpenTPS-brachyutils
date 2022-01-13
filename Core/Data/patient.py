@@ -75,7 +75,11 @@ class Patient:
             image object
 
         """
+        if image in self._images:
+            return
+
         self._images.append(image)
+        image.patient = self
         self.imageAddedSignal.emit(image)
 
     def hasImage(self, image):
@@ -101,6 +105,7 @@ class Patient:
 
         """
         self._images.remove(image)
+        image.patient = None
         self.imageRemovedSignal.emit(image)
 
     @property
