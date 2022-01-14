@@ -4,7 +4,7 @@ class Event:
         self._slots = []
         self.objectType = None
 
-        if len(args)>0:
+        if len(args) > 0:
             self.objectType = args[0]
 
     def connect(self, slot):
@@ -15,7 +15,7 @@ class Event:
 
     def emit(self, *args):
         if not(self.objectType is None):
-            if len(args)!=1:
+            if len(args) != 1:
                 raise ValueError('Incorrect argument')
             if not isinstance(args[0], self.objectType):
                 raise ValueError('Incorrect argument')

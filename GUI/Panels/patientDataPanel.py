@@ -13,7 +13,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
-from Core.IO.serializedObjectIO import saveDataStructure
+from Core.IO import serializedObjectIO
 from Core.event import Event
 
 
@@ -76,9 +76,9 @@ class PatientDataPanel(QWidget):
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
 
-        patientList = self._viewController.activePatients
-
-        saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
+        # patientList = self._viewController.activePatients
+        patientList = self._viewController._patientList
+        serializedObjectIO.saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
 
 
 ## ------------------------------------------------------------------------------------------

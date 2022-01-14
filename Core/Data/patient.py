@@ -40,8 +40,8 @@ class Patient:
         else:
             self.patientInfo = patientInfo
 
-        self._images = []
         self._name = self.patientInfo.name
+        self._images = []
         self._plans = []
         self._rtStructs = []
         self._dynamic3DSequences = []
@@ -60,6 +60,17 @@ class Patient:
         for struct in self._rtStructs:
             string += "    " + struct.name + "\n"
         return string
+
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+        self.nameChangedSignal.emit(self._name)
+
 
     @property
     def images(self):
@@ -113,14 +124,6 @@ class Patient:
         image.patient = None
         self.imageRemovedSignal.emit(image)
 
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, name):
-        self._name = name
-        self.nameChangedSignal.emit(self._name)
 
     @property
     def plans(self):
@@ -134,6 +137,7 @@ class Patient:
     def removePlan(self, plan):
         self._plans.remove(plan)
         self.planRemovedSignal.emit(plan)
+
 
     @property
     def rtStructs(self):
@@ -165,6 +169,7 @@ class Patient:
         """
         self._rtStructs.remove(struct)
         self.rtStructRemovedSignal.emit(struct)
+
 
     @property
     def dynamic3DSequences(self):
@@ -208,6 +213,7 @@ class Patient:
         dyn3DSeq.patient = None
         self.dyn3DSeqRemovedSignal.emit(dyn3DSeq)
 
+
     @property
     def dynamic3DModels(self):
         # Doing this ensures that the user can't append directly to dynamic3DModels
@@ -239,8 +245,10 @@ class Patient:
         self._dynamic3DModels.remove(dyn3DMod)
         self.dyn3DModRemovedSignal.emit(dyn3DMod)
 
+
     def hasPatientData(self, data):
         return (data in self._images) or (data in self._plans) or (data in self._dynamic3DModels) or (data in self._dynamic3DSequences) or (data in self._rtStructs)
+
 
     def removePatientData(self, data):
         if isinstance(data, list):
