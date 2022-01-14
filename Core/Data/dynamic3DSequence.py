@@ -7,7 +7,7 @@ class Dynamic3DSequence(PatientData):
     def __init__(self, imageList = [], timingsList = [], name="3D Dyn Seq", patientInfo=None):
         super().__init__(patientInfo=patientInfo, name=name)
 
-        self.dyn3DImageList = imageList
+        self.dyn3DImageList = [image for image in imageList]
 
         if timingsList:
             self.timingsList = timingsList
@@ -16,6 +16,12 @@ class Dynamic3DSequence(PatientData):
             self.inhaleDuration = 1800
             self.timingsList = self.prepareTimingsForViewer()
 
+    def __str__(self):
+        s = "Dyn series: " + self.name + '\n'
+        for image in self.dyn3DImageList:
+            s += str(image) + '\n'
+
+        return s
 
     def print_dynSeries_info(self, prefix=""):
         print(prefix + "Dyn series: " + self.name)

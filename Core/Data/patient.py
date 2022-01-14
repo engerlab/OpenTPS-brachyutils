@@ -127,6 +127,9 @@ class Patient:
         return [plan for plan in self._plans]
 
     def appendPlan(self, plan):
+        if plan in self._planss:
+            return
+
         self._plans.append(plan)
         self.planAddedSignal.emit(plan)
 
@@ -149,6 +152,10 @@ class Patient:
             Structure set to append
 
         """
+
+        if struct in self._rtStructs:
+            return
+
         self._rtStructs.append(struct)
         self.rtStructAddedSignal.emit(struct)
 
@@ -185,9 +192,6 @@ class Patient:
 
         self._dynamic3DSequences.append(dyn3DSeq)
         dyn3DSeq.patient = self
-        self.dyn3DSeqAddedSignal.emit(dyn3DSeq)
-
-        self._dynamic3DSequences.append(dyn3DSeq)
         self.dyn3DSeqAddedSignal.emit(dyn3DSeq)
 
     def removeDyn3DSeq(self, dyn3DSeq):
@@ -241,6 +245,27 @@ class Patient:
     def hasPatientData(self, data):
         return (data in self._images) or (data in self._plans) or (data in self._dynamic3DModels) or (data in self._dynamic3DSequences) or (data in self._rtStructs)
 
+    def appendPatienData(self, data):
+        if isinstance(data, list):
+            for d in data:
+                self.appendPatienData(d)
+            return
+
+        if data in self._images:
+            self.appendImage(data)
+
+        if data in self._plans:
+            self.appendPlan(data)
+
+        if data in self._rtStructs:
+            self.appendRTStruct(data)
+
+        if data in self._dynamic3DSequences:
+            self.appendDyn3DSeq(data)
+
+        if data in self._dynamic3DModels:
+            self.appendDyn3DMod(data)
+
     def removePatientData(self, data):
         if isinstance(data, list):
             for d in data:
@@ -252,9 +277,6 @@ class Patient:
 
         if data in self._plans:
             self.removePlan(data)
-
-        if data in self._rtStructs:
-            self.removeRTStruct(data)
 
         if data in self._rtStructs:
             self.removeRTStruct(data)
