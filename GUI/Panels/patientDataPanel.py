@@ -76,7 +76,7 @@ class PatientDataPanel(QWidget):
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
 
-        patientList = self._viewController._activePatients
+        patientList = self._viewController.activePatients
 
         saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
 
