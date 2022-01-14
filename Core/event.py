@@ -22,4 +22,8 @@ class Event:
 
 
         for slot in self._slots:
-            slot(*args)
+            try:
+                slot(*args)
+            except:
+                #TODO
+                pass
