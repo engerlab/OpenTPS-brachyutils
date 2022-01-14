@@ -110,7 +110,6 @@ class Patient:
             return
 
         self._images.remove(image)
-        image.patient = None
         self.imageRemovedSignal.emit(image)
 
     @property

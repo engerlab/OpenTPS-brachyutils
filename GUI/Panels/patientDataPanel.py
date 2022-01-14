@@ -140,6 +140,11 @@ class PatientDataTree(QTreeView):
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
 
+    def __del__(self):
+        for row in range(self.model().rowCount()):
+            item = self.model().itemFromIndex(self.model().index(row, 0))
+            item.data.patient.imageRemovedSignal.disconnect(self._removeData)
+
     def appendData(self, data):
         rootItem = PatientDataItem(data)
         self.rootNode.appendRow(rootItem)
@@ -150,10 +155,19 @@ class PatientDataTree(QTreeView):
                 rootItem.appendRow(item)
             self.rootNode.appendRow(rootItem)
 
-        data.patient.imageRemovedSignal.connect(lambda image: self._removeItem(rootItem, image))
+        data.patient.imageRemovedSignal.connect(self._removeData)
 
-    def _removeItem(self, item, image):
-        if image==item.data:
+    def _removeData(self, image):
+        items = []
+
+        for row in range(self.model().rowCount()):
+            item = self.model().itemFromIndex(self.model().index(row, 0))
+            items.append(item)
+            if image==item.data:
+                if not (item.data.patient is None):
+                    item.data.patient.imageRemovedSignal.disconnect(self._removeData)
+
+        for item in items:
             self.rootNode.removeRow(item.row())
 
     def mouseMoveEvent(self, event):
@@ -414,6 +428,9 @@ class PatientDataItem(QStandardItem):
         # self.setForeground(color)
         # self.setText(txt)
         # self.setWhatsThis(type)
+
+    def __del__(self):
+        self.data.nameChangedSignal.disconnect(self.setName)
 
     def setName(self, name):
         self.setText(name)
