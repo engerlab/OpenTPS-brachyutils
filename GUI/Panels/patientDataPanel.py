@@ -76,7 +76,7 @@ class PatientDataPanel(QWidget):
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
 
-        patientList = self._viewController._activePatients
+        patientList = self._viewController.activePatients
 
         saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
 
@@ -132,19 +132,25 @@ class PatientDataTree(QTreeView):
         self.setColumnHidden(1, True)
         self.expandAll()
 
-        self.updateDataTree(self._viewController.currentPatient)
-        self._viewController.currentPatientChangedSignal.connect(self.updateDataTree)
+        self.buildDataTree(self._viewController.currentPatient)
+        self._viewController.currentPatientChangedSignal.connect(self.buildDataTree)
 
 
         self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
 
-    def appendImage(self, image):
-        item = PatientDataItem(image)
-        self.rootNode.appendRow(item)
+    def appendData(self, data):
+        rootItem = PatientDataItem(data)
+        self.rootNode.appendRow(rootItem)
 
-        image.patient.imageRemovedSignal.connect(lambda image: self._removeItem(item, image))
+        if isinstance(data, Dynamic3DSequence):
+            for image in data.dyn3DImageList:
+                item = PatientDataItem(image)
+                rootItem.appendRow(item)
+            self.rootNode.appendRow(rootItem)
+
+        data.patient.imageRemovedSignal.connect(lambda image: self._removeItem(rootItem, image))
 
     def _removeItem(self, item, image):
         if image==item.data:
@@ -159,7 +165,7 @@ class PatientDataTree(QTreeView):
 
         drag.exec_(QtCore.Qt.CopyAction)
 
-    def updateDataTree(self, patient):
+    def buildDataTree(self, patient):
 
         """
         What if instead of trying to put in bold the shown data, with the issues of UID that must saved for each viewer etc ...
@@ -175,30 +181,25 @@ class PatientDataTree(QTreeView):
             return
 
         try:
-            patient.imageAddedSignal.disconnect(self.appendImage)
-            patient.dyn3DSeqRemovedSignal.disconnect(self.appendImage)
+            patient.imageAddedSignal.disconnect(self.appendData)
+            patient.dyn3DSeqRemovedSignal.disconnect(self.appendData)
         except:
             pass
-        patient.imageAddedSignal.connect(self.appendImage)
-        patient.dyn3DSeqRemovedSignal.connect(self.appendImage)
+        patient.imageAddedSignal.connect(self.appendData)
+        patient.dyn3DSeqRemovedSignal.connect(self.appendData)
         #TODO: Same with other data
 
         #images
         images = patient.images
         for image in images:
-            item = PatientDataItem(image)
-            self.rootNode.appendRow(item)
+            self.appendData(image)
 
         if len(images) > 0:
             self._viewController.selectedImage = images[0]
 
         # dynamic sequences
         for dynSeq in patient.dynamic3DSequences:
-            serieRoot = PatientDataItem(dynSeq)
-            for image in dynSeq.dyn3DImageList:
-                item = PatientDataItem(image)
-                serieRoot.appendRow(item)
-            self.rootNode.appendRow(serieRoot)
+            self.appendData(dynSeq)
 
         # dynamic models
         for model in patient.dynamic3DModels:
@@ -396,7 +397,7 @@ class PatientDataTree(QTreeView):
             self._viewController.currentPatient.appendDyn3DMod(newMod)
 
             # Should not be necessary because data tree listens to imageAdded/imageRemoved, etc.
-            self.updateDataTree(self._viewController.currentPatient)
+            self.buildDataTree(self._viewController.currentPatient)
 
 
 ## ------------------------------------------------------------------------------------------
