@@ -195,7 +195,7 @@ class PatientDataTree(QTreeView):
         # dynamic sequences
         for dynSeq in patient.dynamic3DSequences:
             serieRoot = PatientDataItem(dynSeq)
-            for image in dynSeq.images:
+            for image in dynSeq.dyn3DImageList:
                 item = PatientDataItem(image)
                 serieRoot.appendRow(item)
             self.rootNode.appendRow(serieRoot)
