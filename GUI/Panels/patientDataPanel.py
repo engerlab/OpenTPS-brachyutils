@@ -92,10 +92,14 @@ class PatientComboBox(QComboBox):
         self._viewController.patientAddedSignal.connect(self._addPatient)
         self._viewController.patientRemovedSignal.connect(self._removePatient)
 
+<<<<<<< HEAD
         self.currentIndexChanged.connect(self._setActivePatient)
 
     # def __del__(self):
     #     self.currentIndexChanged.disconnect(self._setActivePatient)
+=======
+        self.currentIndexChanged.connect(self._setCurrentPatient)
+>>>>>>> refactor
 
     def _addPatient(self, patient):
         name = patient.name
@@ -109,7 +113,7 @@ class PatientComboBox(QComboBox):
     def _removePatient(self, patient):
         self.removeItem(self.findData(patient))
 
-    def _setActivePatient(self, index):
+    def _setCurrentPatient(self, index):
         self._viewController.currentPatient = self.currentData()
 
 
@@ -118,6 +122,7 @@ class PatientDataTree(QTreeView):
     def __init__(self, viewController, patientDataPanel):
         QTreeView.__init__(self)
 
+        self._currentPatient = None
         self.patientDataPanel = patientDataPanel
         self._viewController = viewController
 
@@ -141,12 +146,7 @@ class PatientDataTree(QTreeView):
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
 
-    def __del__(self):
-        for row in range(self.model().rowCount()):
-            item = self.model().itemFromIndex(self.model().index(row, 0))
-            item.data.patient.imageRemovedSignal.disconnect(self._removeData)
-
-    def appendData(self, data):
+    def _appendData(self, data):
         rootItem = PatientDataItem(data)
         self.rootNode.appendRow(rootItem)
 
@@ -156,20 +156,16 @@ class PatientDataTree(QTreeView):
                 rootItem.appendRow(item)
             self.rootNode.appendRow(rootItem)
 
-        data.patient.imageRemovedSignal.connect(self._removeData)
-
-    def _removeData(self, image):
+    def _removeData(self, data):
         items = []
 
         for row in range(self.model().rowCount()):
             item = self.model().itemFromIndex(self.model().index(row, 0))
             items.append(item)
-            if image==item.data:
-                if not (item.data.patient is None):
-                    item.data.patient.imageRemovedSignal.disconnect(self._removeData)
 
         for item in items:
-            self.rootNode.removeRow(item.row())
+            if item.data == data:
+                self.rootNode.removeRow(item.row())
 
     def mouseMoveEvent(self, event):
         drag = QDrag(self)
@@ -181,43 +177,48 @@ class PatientDataTree(QTreeView):
         drag.exec_(QtCore.Qt.CopyAction)
 
     def buildDataTree(self, patient):
-
         """
         What if instead of trying to put in bold the shown data, with the issues of UID that must saved for each viewer etc ...
         We simply show the image, dose, dyn seq and plan name on the viewer or on a QTip that shown when the mouse is over it ?
         """
+
+        # Disconnect signals
+        if not(self._currentPatient is None):
+            self._currentPatient.imageAddedSignal.disconnect(self._appendData)
+            self._currentPatient.dyn3DSeqAddedSignal.disconnect(self._appendData)
+            self._currentPatient.dyn3DSeqRemovedSignal.disconnect(self._removeData)
+            self._currentPatient.imageRemovedSignal.disconnect(self._removeData)
 
         self.treeModel.clear()
         self.rootNode = self.treeModel.invisibleRootItem()
         font_b = QFont()
         font_b.setBold(True)
 
-        if patient is None:
+        self._currentPatient = patient
+
+        if self._currentPatient is None:
             return
 
-        try:
-            patient.imageAddedSignal.disconnect(self.appendData)
-            patient.dyn3DSeqRemovedSignal.disconnect(self.appendData)
-        except:
-            pass
-        patient.imageAddedSignal.connect(self.appendData)
-        patient.dyn3DSeqRemovedSignal.connect(self.appendData)
+        self._currentPatient.imageAddedSignal.connect(self._appendData)
+        self._currentPatient.imageRemovedSignal.connect(self._removeData)
+        self._currentPatient.dyn3DSeqAddedSignal.connect(self._appendData)
+        self._currentPatient.dyn3DSeqRemovedSignal.connect(self._removeData)
         #TODO: Same with other data
 
         #images
-        images = patient.images
+        images = self._currentPatient.images
         for image in images:
-            self.appendData(image)
+            self._appendData(image)
 
         if len(images) > 0:
             self._viewController.selectedImage = images[0]
 
         # dynamic sequences
         for dynSeq in patient.dynamic3DSequences:
-            self.appendData(dynSeq)
+            self._appendData(dynSeq)
 
         # dynamic models
-        for model in patient.dynamic3DModels:
+        for model in self._currentPatient.dynamic3DModels:
             serieRoot = PatientDataItem(model)
             for field in model.vectorFields:
                 item = PatientDataItem(field)
@@ -374,8 +375,7 @@ class PatientDataTree(QTreeView):
             #     self.context_menu.addAction(self.print_plan_action)
 
             self.delete_action = QAction("Delete")
-            currentPatient = self._viewController.currentPatient
-            self.delete_action.triggered.connect(lambda checked : openDeleteDataDialog(self, selectedData, currentPatient))
+            self.delete_action.triggered.connect(lambda checked : openDeleteDataDialog(self, selectedData, self._currentPatient))
             self.context_menu.addAction(self.delete_action)
 
             self.export_action = QAction("Export serialized")
@@ -387,7 +387,6 @@ class PatientDataTree(QTreeView):
 
 
     def createDynamic3DSequence(self, selectedImages):
-
         newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
 
         if (okPressed):
@@ -395,13 +394,14 @@ class PatientDataTree(QTreeView):
             newSeq.name = newName
             newSeq.seriesInstanceUID = generate_uid()
 
-            for i in range(len(selectedImages)):
-                image = selectedImages[i]
+            for i, image in enumerate(selectedImages):
                 newSeq.dyn3DImageList.append(image)
                 patient = image.patient
                 patient.removeImage(image)
 
             patient.appendDyn3DSeq(newSeq)
+
+            print(newSeq)
 
     def computeDynamic3DModel(self, selected3DSequence):
         newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")

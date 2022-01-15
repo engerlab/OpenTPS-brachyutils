@@ -46,5 +46,4 @@ class PatientData:
         self._patient = patient
 
         if not(self._patient is None):
-            #TODO: patientData might not be an image
-            self._patient.appendImage(self)
+            self._patient.appendPatienData(self)

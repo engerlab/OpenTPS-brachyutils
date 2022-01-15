@@ -11,7 +11,11 @@ class Event:
         self._slots.append(slot)
 
     def disconnect(self, slot):
-        self._slots.remove(slot)
+        try:
+            self._slots.remove(slot)
+        except Exception as e:
+            # TODO
+            print(e)
 
     def emit(self, *args):
         if not(self.objectType is None):
@@ -24,6 +28,6 @@ class Event:
         for slot in self._slots:
             try:
                 slot(*args)
-            except:
+            except Exception as e:
                 #TODO
-                pass
+                print(e)
