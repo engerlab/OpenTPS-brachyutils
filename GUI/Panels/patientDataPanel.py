@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushBut
     QMessageBox
 
 from pydicom.uid import generate_uid
+import pickle  ## temporary to test something
 
 from Controllers.api import API
 from Core.Data.Images.ctImage import CTImage
@@ -13,7 +14,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
-from Core.IO import serializedObjectIO
+from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObject
 from Core.event import Event
 
 
@@ -77,8 +78,8 @@ class PatientDataPanel(QWidget):
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
 
         # patientList = self._viewController.activePatients
-        patientList = self._viewController._patientList
-        serializedObjectIO.saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
+        patientList = [patient.dumpableCopy() for patient in self._viewController._patientList]
+        saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
 
 
 ## ------------------------------------------------------------------------------------------
@@ -304,12 +305,9 @@ class PatientDataTree(QTreeView):
             # actions for dose data
             if (dataClass == Image3D or issubclass(dataClass, Image3D)) and len(selected) == 1:
                 self.rename_action = QAction("Rename")
-                self.export_action = QAction("Export")
-                self.export_action.triggered.connect(
-                    lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
-                self.rename_action.triggered.connect(lambda checked : openRenameDataDialog(self, selectedData[0]))
+                self.rename_action.triggered.connect(lambda checked: openRenameDataDialog(self, selectedData[0]))
                 self.context_menu.addAction(self.rename_action)
-                self.context_menu.addAction(self.export_action)
+
 
             if dataClass == 'mixed':
                 self.no_action = QAction("No action available for this group of data")
@@ -380,6 +378,11 @@ class PatientDataTree(QTreeView):
             self.delete_action.triggered.connect(lambda checked : openDeleteDataDialog(self, selectedData, currentPatient))
             self.context_menu.addAction(self.delete_action)
 
+            self.export_action = QAction("Export serialized")
+            self.export_action.triggered.connect(
+                lambda checked, selectedData=selectedData: self.exportSerializedData(selectedData))
+            self.context_menu.addAction(self.export_action)
+
             self.context_menu.popup(pos)
 
 
@@ -412,6 +415,29 @@ class PatientDataTree(QTreeView):
 
             # Should not be necessary because data tree listens to imageAdded/imageRemoved, etc.
             self.buildDataTree(self._viewController.currentPatient)
+
+    def exportSerializedData(self, selectedData):
+
+        print('Export data as serialized objects')
+        print(type(selectedData))
+        print(type(selectedData[0]))
+
+        fileDialog = SaveData_dialog()
+        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.patientDataPanel.dataPath)
+
+        # item = selectedData[0]
+        # print(item.__class__)
+
+        # testItem = item.dumpableCopy()
+        dataList = [data.dumpableCopy() for data in selectedData]
+
+        # max_bytes = 2 ** 31 - 1
+        # bytes_out = pickle.dumps(testItem)
+        # with open(savingPath + ".p", 'wb') as f_out:
+        #     for idx in range(0, len(bytes_out), max_bytes):
+        #         f_out.write(bytes_out[idx:idx + max_bytes])
+
+        saveSerializedObject(dataList, savingPath, compressedBool=compressedBool)
 
 
 ## ------------------------------------------------------------------------------------------

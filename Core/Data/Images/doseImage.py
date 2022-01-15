@@ -72,3 +72,6 @@ class DoseImage(Image3D):
         
     def exportDicom(self, outputFile, planUID=[]):
         pass
+
+    def dumpableCopy(self):
+        return DoseImage(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, frameOfReferenceUID=self.frameOfReferenceUID, sopInstanceUID=self.sopInstanceUID, planSOPInstanceUID=self.planSOPInstanceUID)

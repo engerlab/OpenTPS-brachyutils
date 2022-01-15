@@ -4,10 +4,10 @@ from Core.Data.patientData import PatientData
 
 class Dynamic3DSequence(PatientData):
 
-    def __init__(self, imageList = [], timingsList = [], name="3D Dyn Seq", patientInfo=None):
+    def __init__(self, dyn3DImageList = [], timingsList = [], name="3D Dyn Seq", patientInfo=None):
         super().__init__(patientInfo=patientInfo, name=name)
 
-        self.dyn3DImageList = imageList
+        self.dyn3DImageList = dyn3DImageList
 
         if timingsList:
             self.timingsList = timingsList
@@ -27,3 +27,8 @@ class Dynamic3DSequence(PatientData):
         timingList = np.linspace(0, 4000, numberOfImages + 1)
 
         return timingList
+
+
+    def dumpableCopy(self):
+        dumpableImageCopiesList = [image.dumpableCopy() for image in self.dyn3DImageList]
+        return Dynamic3DSequence(dyn3DImageList=dumpableImageCopiesList, timingsList=self.timingsList, name=self.name, patientInfo=self.patientInfo)

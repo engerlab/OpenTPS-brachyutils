@@ -1,4 +1,5 @@
 from Core.event import Event
+import copy
 
 
 class PatientList():
@@ -55,3 +56,11 @@ class PatientList():
     def remove(self, patient):
         self._patients.remove(patient)
         self.patientRemovedSignal.emit(patient)
+
+    def dumpableCopy(self):
+
+        dumpablePatientListCopy = PatientList()
+        for patient in self._patients:
+            dumpablePatientListCopy._patients.append(patient.dumpableCopy())
+
+        return dumpablePatientListCopy()

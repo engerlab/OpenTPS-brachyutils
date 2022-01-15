@@ -272,3 +272,23 @@ class Patient:
 
         if data in self._dynamic3DModels:
             self.removeDyn3DMod(data)
+
+    def dumpableCopy(self):
+
+        dumpablePatientCopy = Patient(patientInfo=self.patientInfo)
+        for image in self._images:
+            dumpablePatientCopy._images.append(image.dumpableCopy())
+
+        for plan in self._plans:
+            dumpablePatientCopy._plans.append(plan.dumpableCopy())
+
+        for struct in self._rtStructs:
+            dumpablePatientCopy._rtStructs.append(struct.dumpableCopy())
+
+        for dynamic3DSequence in self._dynamic3DSequences:
+            dumpablePatientCopy._dynamic3DSequences.append(dynamic3DSequence.dumpableCopy())
+
+        for dynamic3DModel in self._dynamic3DModels:
+            dumpablePatientCopy._dynamic3DModels.append(dynamic3DModel.dumpableCopy())
+
+        return dumpablePatientCopy
