@@ -92,14 +92,7 @@ class PatientComboBox(QComboBox):
         self._viewController.patientAddedSignal.connect(self._addPatient)
         self._viewController.patientRemovedSignal.connect(self._removePatient)
 
-<<<<<<< HEAD
-        self.currentIndexChanged.connect(self._setActivePatient)
-
-    # def __del__(self):
-    #     self.currentIndexChanged.disconnect(self._setActivePatient)
-=======
         self.currentIndexChanged.connect(self._setCurrentPatient)
->>>>>>> refactor
 
     def _addPatient(self, patient):
         name = patient.name
