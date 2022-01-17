@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QDir, QMimeData, Qt, pyqtSignal
+from PyQt5.QtCore import QDir, QMimeData, Qt
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushButton, QFileDialog, QDialog, \
     QStackedWidget, QListView, QLineEdit, QAbstractItemView, QMenu, QAction, QInputDialog, QHBoxLayout, QCheckBox, \
@@ -9,7 +9,6 @@ from pydicom.uid import generate_uid
 
 from Controllers.api import API
 from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
@@ -295,15 +294,19 @@ class PatientDataTree(QTreeView):
         if (len(selected) > 0):
             self.context_menu = QMenu()
 
-            # actions for dose data
+            # actions for 3D images
             if (dataClass == Image3D or issubclass(dataClass, Image3D)) and len(selected) == 1:
                 self.rename_action = QAction("Rename")
                 self.export_action = QAction("Export")
+                self.superimpose_action = QAction("Superimpose")
+                self.rename_action.triggered.connect(lambda checked: openRenameDataDialog(self, selectedData[0]))
                 self.export_action.triggered.connect(
                     lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
-                self.rename_action.triggered.connect(lambda checked : openRenameDataDialog(self, selectedData[0]))
+                self.superimpose_action.triggered.connect(
+                    lambda checked: self._setSecondaryImage(selectedData[0]))
                 self.context_menu.addAction(self.rename_action)
                 self.context_menu.addAction(self.export_action)
+                self.context_menu.addAction(self.superimpose_action)
 
             if dataClass == 'mixed':
                 self.no_action = QAction("No action available for this group of data")
@@ -375,6 +378,9 @@ class PatientDataTree(QTreeView):
 
             self.context_menu.popup(pos)
 
+
+    def _setSecondaryImage(self, image):
+        self._viewController.secondaryImage = image
 
     def createDynamic3DSequence(self, selectedImages):
         newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")

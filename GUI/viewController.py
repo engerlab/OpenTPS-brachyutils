@@ -15,6 +15,7 @@ class ViewController():
         self.mainImageChangedSignal = Event(object)
         self.patientAddedSignal = Event(object)
         self.patientRemovedSignal = Event(object)
+        self.secondaryImageChangedSignal = Event(object)
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
 
@@ -126,6 +127,17 @@ class ViewController():
         self._mainImage = image
         self.mainImageChangedSignal.emit(self._mainImage)
         self.shownDataUIDsList.append(self._mainImage.seriesInstanceUID)
+
+    @property
+    def secondaryImage(self):
+        if self.independentViewsEnabled:
+            # mainImage is only available when only one image can be shown
+            raise()
+
+    @secondaryImage.setter
+    def secondaryImage(self, image):
+        self._secondaryImage = image
+        self.secondaryImageChangedSignal.emit(self._secondaryImage)
 
     @property
     def selectedImage(self):

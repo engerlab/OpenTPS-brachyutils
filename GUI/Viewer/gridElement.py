@@ -1,12 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
+from GUI.Viewer.Viewers.sliceViewerWithContours import SliceViewerWithContours
 from GUI.Viewer.gridElementToolbar import GridElementToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.dvhPlot import DVHPlot
 from GUI.Viewer.Viewers.profilePlot import ProfilePlot
-from GUI.Viewer.Viewers.sliceViewerWithContours import SliceViewerWithContour
-
 
 class GridElement(QWidget):
     DISPLAY_DVH = 'DVH'
@@ -37,6 +35,7 @@ class GridElement(QWidget):
         self._viewController.independentViewsEnabledSignal.connect(self._setDropEnabled)
         self._setDropEnabled(self._viewController.independentViewsEnabled)
         self._viewController.mainImageChangedSignal.connect(self._setMainImage)
+        self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
@@ -74,7 +73,7 @@ class GridElement(QWidget):
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
-                self._sliceViewer = SliceViewerWithContour(self._viewController)
+                self._sliceViewer = SliceViewerWithContours(self._viewController)
 
             self._currentViewer = self._sliceViewer
 
@@ -105,9 +104,19 @@ class GridElement(QWidget):
             if not(image is None):
                 image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
 
+    def _setSecondaryImage(self, image):
+        if hasattr(self._currentViewer, 'secondaryImage'):
+            self._currentViewer.secondaryImage = image
+
+            if not(image is None):
+                image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
+
     def _handleImageRemoved(self, image):
         if hasattr(self._currentViewer, 'mainImage') and self._currentViewer.mainImage == image:
             self._setMainImage(None)
+
+        if hasattr(self._currentViewer, 'secondaryImage') and self._currentViewer.secondaryImage == image:
+            self._setSecondaryImage(None)
 
     def _setToolbar(self, toolbar):
         self._toolbar = toolbar

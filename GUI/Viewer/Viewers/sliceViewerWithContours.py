@@ -7,13 +7,13 @@ from vtkmodules.vtkIOImage import vtkImageImport
 from vtkmodules.vtkRenderingCore import vtkPolyDataMapper, vtkActor
 
 from GUI.Viewer.ViewerData.viewerROIContour import ViewerROIContour
-from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
+from GUI.Viewer.Viewers.sliceViewerWithFusion import SliceViewerWithFusion
 
 
-class SliceViewerWithContour(SliceViewerVTK):
+class SliceViewerWithContours(SliceViewerWithFusion):
 
   def __init__(self, viewController):
-    SliceViewerVTK.__init__(self, viewController)
+    SliceViewerWithFusion.__init__(self, viewController)
 
     self._contours = []
     self._vtkContours = []
