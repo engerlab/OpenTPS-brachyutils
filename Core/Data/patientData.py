@@ -7,7 +7,9 @@ from Core.event import Event
 class PatientData:
 
     def __init__(self, patientInfo=None, name='', seriesInstanceUID=''):
+
         self.nameChangedSignal = Event(str)
+        # self.setEvents()
 
         if(patientInfo == None):
             self.patientInfo = PatientInfo(patientID="Unknown", name="Unknown patient")

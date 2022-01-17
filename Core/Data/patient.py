@@ -40,8 +40,8 @@ class Patient:
         else:
             self.patientInfo = patientInfo
 
-        self._images = []
         self._name = self.patientInfo.name
+        self._images = []
         self._plans = []
         self._rtStructs = []
         self._dynamic3DSequences = []
@@ -60,6 +60,17 @@ class Patient:
         for struct in self._rtStructs:
             string += "    " + struct.name + "\n"
         return string
+
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+        self.nameChangedSignal.emit(self._name)
+
 
     @property
     def images(self):
@@ -112,14 +123,6 @@ class Patient:
         self._images.remove(image)
         self.imageRemovedSignal.emit(image)
 
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, name):
-        self._name = name
-        self.nameChangedSignal.emit(self._name)
 
     @property
     def plans(self):
@@ -136,6 +139,7 @@ class Patient:
     def removePlan(self, plan):
         self._plans.remove(plan)
         self.planRemovedSignal.emit(plan)
+
 
     @property
     def rtStructs(self):
@@ -171,6 +175,7 @@ class Patient:
         """
         self._rtStructs.remove(struct)
         self.rtStructRemovedSignal.emit(struct)
+
 
     @property
     def dynamic3DSequences(self):
@@ -211,6 +216,7 @@ class Patient:
         dyn3DSeq.patient = None
         self.dyn3DSeqRemovedSignal.emit(dyn3DSeq)
 
+
     @property
     def dynamic3DModels(self):
         # Doing this ensures that the user can't append directly to dynamic3DModels
@@ -241,6 +247,7 @@ class Patient:
         """
         self._dynamic3DModels.remove(dyn3DMod)
         self.dyn3DModRemovedSignal.emit(dyn3DMod)
+
 
     def hasPatientData(self, data):
         return (data in self._images) or (data in self._plans) or (data in self._dynamic3DModels) or (data in self._dynamic3DSequences) or (data in self._rtStructs)
@@ -286,3 +293,24 @@ class Patient:
 
         if data in self._dynamic3DModels:
             self.removeDyn3DMod(data)
+
+
+    def dumpableCopy(self):
+
+        dumpablePatientCopy = Patient(patientInfo=self.patientInfo)
+        for image in self._images:
+            dumpablePatientCopy._images.append(image.dumpableCopy())
+
+        for plan in self._plans:
+            dumpablePatientCopy._plans.append(plan.dumpableCopy())
+
+        for struct in self._rtStructs:
+            dumpablePatientCopy._rtStructs.append(struct.dumpableCopy())
+
+        for dynamic3DSequence in self._dynamic3DSequences:
+            dumpablePatientCopy._dynamic3DSequences.append(dynamic3DSequence.dumpableCopy())
+
+        for dynamic3DModel in self._dynamic3DModels:
+            dumpablePatientCopy._dynamic3DModels.append(dynamic3DModel.dumpableCopy())
+
+        return dumpablePatientCopy

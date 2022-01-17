@@ -18,7 +18,15 @@ class CTImage(Image3D):
     def copy(self):
         img = super().copy()
         img.seriesInstanceUID = pydicom.uid.generate_uid()
+
         return img
 
     def resample(self, gridSize, origin, spacing, fillValue=-1000, outputType=None):
         Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
+
+    def dumpableCopy(self):
+        return CTImage(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin,
+                spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID,
+                frameOfReferenceUID=self.frameOfReferenceUID, sliceLocation=self.sliceLocation,
+                sopInstanceUIDs=self.sopInstanceUIDs)
+

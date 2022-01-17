@@ -32,3 +32,6 @@ class ROIMask(Image3D):
         self.data = self._imageArray >= 0.5
         if not(outputType is None):
             self.data = self.data.astype(outputType)
+
+    def dumpableCopy(self):
+        return ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
