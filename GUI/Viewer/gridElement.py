@@ -1,10 +1,15 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+import os
+
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QAction
 
 from GUI.Viewer.Viewers.sliceViewerWithContours import SliceViewerWithContours
 from GUI.Viewer.gridElementToolbar import GridElementToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.dvhPlot import DVHPlot
 from GUI.Viewer.Viewers.profilePlot import ProfilePlot
+from GUI.Viewer.imageFusionProperties import ImageFusionProperties
+
 
 class GridElement(QWidget):
     DISPLAY_DVH = 'DVH'
@@ -110,6 +115,12 @@ class GridElement(QWidget):
 
             if not(image is None):
                 image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
+
+                iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+                self._buttonProperties = QAction(QIcon(iconPath + "color-adjustment.png"), "Range", self)
+                self._buttonProperties.setStatusTip("Range")
+                self._buttonProperties.triggered.connect(lambda pressed: ImageFusionProperties(image, self).show())
+                self._toolbar.addAction(self._buttonProperties)
 
     def _handleImageRemoved(self, image):
         if hasattr(self._currentViewer, 'mainImage') and self._currentViewer.mainImage == image:

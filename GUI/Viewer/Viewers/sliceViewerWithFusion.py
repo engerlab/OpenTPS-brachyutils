@@ -6,7 +6,6 @@ from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import vtkTextActor
 
 from GUI.Viewer.ViewerData.viewerImage3D import ViewerImage3D
-from GUI.Viewer.Viewers.lookupTables import LookupTables
 from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
 
 
@@ -29,8 +28,8 @@ class SliceViewerWithFusion(SliceViewerVTK):
         self._secondaryTextActor.GetTextProperty().SetFontSize(14)
         self._secondaryTextActor.GetTextProperty().SetColor(1, 0.5, 0)
         self._secondaryTextActor.GetPositionCoordinate().SetCoordinateSystemToNormalizedViewport()
-        self._secondaryTextActor.SetPosition(0.5, 0.05)
-        self._secondaryTextActor.GetTextProperty().SetJustificationToRight()
+        self._secondaryTextActor.SetPosition(0.02, 0.02)
+        self._secondaryTextActor.GetTextProperty().SetJustificationToLeft()
         self._secondaryTextActor.GetTextProperty().SetVerticalJustificationToBottom()
         self._renderer.AddActor(self._secondaryTextActor)
 
@@ -86,14 +85,12 @@ class SliceViewerWithFusion(SliceViewerVTK):
         self._secondaryReslice.SetOutputDimensionality(2)
         self._secondaryReslice.SetInterpolationModeToNearestNeighbor()
 
-        # Map the image through the lookup table
-        self.setLookuptable(LookupTables.getFusion(0.5))
-        #TODO de-hardcode fusion range
-        self.setFusionRange((-1024, 2000))
-
         self._secondaryReslice.SetResliceAxes(self._reslice.GetResliceAxes())
 
         self._renderer.AddActor(self._secondaryActor)
+
+        self._secondaryColor.SetLookupTable(self._secondaryImage.lookupTable)
+        self._colorbarActor.SetLookupTable(self._secondaryImage.lookupTable)
 
         self._secondaryReslice.SetInputConnection(self._dataImporter.GetOutputPort())
         self._secondaryColor.SetInputConnection(self._secondaryReslice.GetOutputPort())
@@ -114,24 +111,29 @@ class SliceViewerWithFusion(SliceViewerVTK):
 
     def _connectAllSecondary(self):
         self._secondaryImage.nameChangedSignal.connect(self.updateSecondaryName)
+        self._secondaryImage.lookupTableChangedSignal.connect(self._setLookupTable)
 
     def _disconnectAllSecondary(self):
         if self._secondaryImage is None:
             return
 
         self._secondaryImage.nameChangedSignal.disconnect(self.updateSecondaryName)
+        self._secondaryImage.lookupTableChangedSignal.disconnect(self._setLookupTable)
 
-    def setLookuptable(self, lookuptable):
+    def _setLookupTable(self, lookuptable):
         self._secondaryColor.SetLookupTable(lookuptable)
         self._colorbarActor.SetLookupTable(lookuptable)
-
-    def setFusionRange(self, range):
-        self._secondaryColor.GetLookupTable().SetRange(range[0], range[1])  # image intensity range
+        self._renderWindow.Render()
 
     def setPosition(self, position):
         super().setPosition(position)
 
-    def showColorbar(self, visible):
+    @property
+    def colorbarOn(self):
+        return self._colorbarActor.GetVisibility()
+
+    @colorbarOn.setter
+    def colorbarOn(self, visible):
         if self._secondaryImage is None:
             return
 

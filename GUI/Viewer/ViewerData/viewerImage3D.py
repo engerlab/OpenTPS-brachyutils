@@ -2,6 +2,7 @@ import numpy as np
 
 from Core.event import Event
 from GUI.Viewer.ViewerData.viewerData import ViewerData
+from GUI.Viewer.Viewers.lookupTables import LookupTables
 
 
 class ViewerImage3D(ViewerData):
@@ -12,9 +13,14 @@ class ViewerImage3D(ViewerData):
             return
 
         self.wwlChangedSignal = Event(tuple)
+        self.lookupTableChangedSignal = Event(object)
         self.selectedPositionChangedSignal = Event(tuple)
 
         self._wwlValue = (400, 0)
+        self._lookupTableName = 'fusion'
+        self._range = (-1024, 1500)
+        self._opacity = 0.5
+        self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         # TODO: Not a huge fan of this. Data controller should provide getOrigin, etc.
         self._selectedPosition = np.array(self.data.origin) + np.array(self.data.gridSize) * np.array(self.data.spacing) / 2.0
 
@@ -41,3 +47,30 @@ class ViewerImage3D(ViewerData):
 
         self._wwlValue = (wwl[0], wwl[1])
         self.wwlChangedSignal.emit(self._wwlValue)
+
+    @property
+    def lookupTable(self):
+        return self._lookupTable
+
+    @lookupTable.setter
+    def lookupTable(self, lookupTableName):
+        self._lookupTable = LookupTables()[lookupTableName](self.range,self.opacity)
+        self.lookupTableChangedSignal.emit(self._lookupTable)
+
+    @property
+    def range(self):
+        return self._range
+
+    @range.setter
+    def range(self, range):
+        self._range = (range[0], range[1])
+        self.lookupTable = self._lookupTableName
+
+    @property
+    def opacity(self):
+        return self._opacity
+
+    @opacity.setter
+    def opacity(self, opacity):
+        self._opacity = opacity
+        self.lookupTable = self._lookupTableName

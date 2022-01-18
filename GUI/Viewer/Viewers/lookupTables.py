@@ -3,10 +3,17 @@ import vtkmodules.vtkCommonCore as vtkCommonCore
 
 
 class LookupTables:
+    def __getitem__(self, item):
+        if item=='fusion':
+            return LookupTables.getFusion
+
+        if item=='gray':
+            return LookupTables.getGray
+
     @staticmethod
-    def getFusion(opacity):
+    def getFusion(range, opacity):
         table = vtkCommonCore.vtkLookupTable()
-        table.SetRange(0, 1)  # image intensity range
+        table.SetRange(range[0], range[1])  # image intensity range
         table.SetValueRange(0.0, 1.0)  # from black to white
         table.SetSaturationRange(0.0, 0.0)  # no color saturation
         table.SetRampToLinear()
@@ -33,9 +40,9 @@ class LookupTables:
         return table
 
     @staticmethod
-    def getGray():
+    def getGray(range):
         table = vtkCommonCore.vtkLookupTable()
-        table.SetRange(-1024, 1500)  # image intensity range
+        table.SetRange(range[0], range[1])  # image intensity range
         table.SetValueRange(0.0, 1.0)  # from black to white
         table.SetSaturationRange(0.0, 0.0)  # no color saturation
         table.SetRampToLinear()
