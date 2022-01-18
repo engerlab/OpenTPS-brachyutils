@@ -9,12 +9,12 @@ class Dynamic3DSequence(PatientData):
 
         self.dyn3DImageList = dyn3DImageList
 
-        if timingsList:
+        if len(timingsList) > 0:
             self.timingsList = timingsList
         else:
             self.breathingPeriod = 4000
             self.inhaleDuration = 1800
-            self.timingsList = self.prepareTimingsForViewer()
+            self.timingsList = self.prepareTimings()
 
     def __str__(self):
         s = "Dyn series: " + self.name + '\n'
@@ -28,7 +28,7 @@ class Dynamic3DSequence(PatientData):
         print(prefix, len(self.dyn3DImageList), ' 3D images in the serie')
 
 
-    def prepareTimingsForViewer(self):
+    def prepareTimings(self):
         numberOfImages = len(self.dyn3DImageList)
         timingList = np.linspace(0, 4000, numberOfImages + 1)
 

@@ -37,6 +37,7 @@ class Deformation3D(Image3D):
         self.velocity = velocity
         self.displacement = displacement
 
+    @property
     def gridSize(self):
         """Compute the voxel grid size of the deformation.
 
@@ -49,9 +50,9 @@ class Deformation3D(Image3D):
         if (self.velocity is None) and (self.displacement is None):
             return (0, 0, 0)
         elif self.displacement is None:
-            return self.velocity.data.shape[0:3]
+            return self.velocity._imageArray.shape[0:3]
         else:
-            return self.displacement.data.shape[0:3]
+            return self.displacement._imageArray.shape[0:3]
 
     def initFromImage(self, image):
         """Initialize deformation using the voxel grid of the input image.
@@ -147,13 +148,12 @@ class Deformation3D(Image3D):
         else:
             field = self.displacement
 
-        if tuple(self.gridSize()) != tuple(image.gridSize()) or tuple(self.origin) != tuple(
-                image._origin) or tuple(self.spacing) != tuple(image._spacing):
+        if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
             field = field.copy()
-            field.resample(image.gridSize(), image._origin, image._spacing)
+            field.resample(image.gridSize, image._origin, image._spacing)
 
-        image = image.copy()
+        image = image.dumpableCopy()
         image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
 
         return image

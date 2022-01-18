@@ -83,24 +83,24 @@ class RegistrationMorphons(Registration):
         for s in range(len(scales)):
 
             # Compute grid for new scale
-            newGridSize = [round(self.fixed._spacing[1] / scales[s] * self.fixed.gridSize()[0]),
-                           round(self.fixed._spacing[0] / scales[s] * self.fixed.gridSize()[1]),
-                           round(self.fixed._spacing[2] / scales[s] * self.fixed.gridSize()[2])]
-            newVoxelSpacing = [self.fixed._spacing[0] * (self.fixed.gridSize()[1] - 1) / (newGridSize[1] - 1),
-                               self.fixed._spacing[1] * (self.fixed.gridSize()[0] - 1) / (newGridSize[0] - 1),
-                               self.fixed._spacing[2] * (self.fixed.gridSize()[2] - 1) / (newGridSize[2] - 1)]
+            newGridSize = [round(self.fixed._spacing[1] / scales[s] * self.fixed.gridSize[0]),
+                           round(self.fixed._spacing[0] / scales[s] * self.fixed.gridSize[1]),
+                           round(self.fixed._spacing[2] / scales[s] * self.fixed.gridSize[2])]
+            newVoxelSpacing = [self.fixed._spacing[0] * (self.fixed.gridSize[1] - 1) / (newGridSize[1] - 1),
+                               self.fixed._spacing[1] * (self.fixed.gridSize[0] - 1) / (newGridSize[0] - 1),
+                               self.fixed._spacing[2] * (self.fixed.gridSize[2] - 1) / (newGridSize[2] - 1)]
 
             logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
-            fixedResampled = self.fixed.copy()
+            fixedResampled = self.fixed.dumpableCopy()
             fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing)
-            movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize(), fixedResampled._origin, fixedResampled._spacing)
+            movingResampled = self.moving.dumpableCopy()
+            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing)
 
             if s != 0:
                 deformation.resampleToImageGrid(fixedResampled)
-                certainty.resample(fixedResampled.gridSize(), fixedResampled._origin,
+                certainty.resample(fixedResampled.gridSize, fixedResampled._origin,
                                    fixedResampled._spacing, fillValue=0)
             else:
                 deformation.initFromImage(fixedResampled)

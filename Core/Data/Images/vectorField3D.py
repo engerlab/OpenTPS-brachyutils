@@ -25,7 +25,12 @@ class VectorField3D(Image3D):
                 image from which the voxel grid is copied.
             """
 
-        self.data = np.zeros(tuple(image.gridSize()) + (3,))
+        # print('in vectorField3D initFromImage --> this if-fix is not ideal and should be changed. The issue comes from the gridSize which is a parameter ')
+        # if image.__class__ == "CTImage":
+        #     imgGridSize = image.gridSize
+        # if image.__class__ == "CTImage":
+        imgGridSize = image.gridSize
+        self._imageArray = np.zeros((imgGridSize[0], imgGridSize[1], imgGridSize[2], 3))
         self.origin = image._origin
         self.spacing = image._spacing
 
@@ -45,7 +50,7 @@ class VectorField3D(Image3D):
             Warped data.
         """
 
-        return resampler3D.warp(data,self.data,self.spacing,fillValue=fillValue)
+        return resampler3D.warp(data,self._imageArray,self.spacing,fillValue=fillValue)
 
     def exponentiateField(self):
         """Exponentiate the vector field (e.g. to convert velocity in to displacement).
@@ -56,7 +61,7 @@ class VectorField3D(Image3D):
             Displacement field.
         """
 
-        norm = np.square(self.data[:, :, :, 0]/self.spacing[0]) + np.square(self.data[:, :, :, 1]/self.spacing[1]) + np.square(self.data[:, :, :, 2]/self.spacing[2])
+        norm = np.square(self._imageArray[:, :, :, 0]/self.spacing[0]) + np.square(self._imageArray[:, :, :, 1]/self.spacing[1]) + np.square(self._imageArray[:, :, :, 2]/self.spacing[2])
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
 
@@ -82,4 +87,4 @@ class VectorField3D(Image3D):
             Voxel-wise norm of the vector field.
         """
         return np.sqrt(
-            self.data[:, :, :, 0] ** 2 + self.data[:, :, :, 1] ** 2 + self.data[:, :, :, 2] ** 2)
+            self._imageArray[:, :, :, 0] ** 2 + self._imageArray[:, :, :, 1] ** 2 + self._imageArray[:, :, :, 2] ** 2)

@@ -213,7 +213,7 @@ class PatientDataTree(QTreeView):
         # dynamic models
         for model in self._currentPatient.dynamic3DModels:
             serieRoot = PatientDataItem(model)
-            for field in model.vectorFields:
+            for field in model.deformationList:
                 item = PatientDataItem(field)
                 serieRoot.appendRow(item)
             self.rootNode.appendRow(serieRoot)
@@ -399,6 +399,7 @@ class PatientDataTree(QTreeView):
     def computeDynamic3DModel(self, selected3DSequence):
         newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")
 
+        print(type(selected3DSequence))
         if (okPressed):
             newMod = Dynamic3DModel()
             newMod.name = newName
