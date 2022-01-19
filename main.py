@@ -1,12 +1,15 @@
 import logging
+import os
 import sys
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
+from Controllers.api import API
 from Controllers.instantiateAPI import instantiateAPI
 from Core.Data.patientList import PatientList
 from GUI.viewController import ViewController
+import Script
 
 from logConfigParser import parseArgs
 
@@ -31,5 +34,16 @@ if __name__ == '__main__':
     # instantiate the main GUI window
     viewController = ViewController(patientList)
     viewController.mainWindow.show()
+
+    # Run start script
+    scriptPath = os.path.join(str(Script.__path__[0]), 'startScript.py')
+    try:
+        with open(scriptPath, 'r') as file:
+            code = file.read()
+
+        output = API.run(code)
+        print(output)
+    except Exception as err:
+        print(format(err))
 
     app.exec_()

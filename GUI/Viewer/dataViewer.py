@@ -1,14 +1,17 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+import os
 
-from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
-from GUI.Viewer.gridElementToolbar import GridElementToolbar
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QAction
+
+from GUI.Viewer.Viewers.imageViewer import ImageViewer
+from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.dvhPlot import DVHPlot
 from GUI.Viewer.Viewers.profilePlot import ProfilePlot
-from GUI.Viewer.Viewers.sliceViewerWithContours import SliceViewerWithContour
+from GUI.Viewer.imageFusionProperties import ImageFusionProperties
 
 
-class GridElement(QWidget):
+class DataViewer(QWidget):
     DISPLAY_DVH = 'DVH'
     DISPLAY_NONE = 'None'
     DISPLAY_PROFILE = 'PROFILE'
@@ -23,7 +26,7 @@ class GridElement(QWidget):
         self._mainLayout = QVBoxLayout(self)
         self._profileViewer = None
         self._sliceViewer = None
-        self._toolbar = GridElementToolbar()
+        self._toolbar = DataViewerToolbar()
         self._viewController = viewController
 
         self.setLayout(self._mainLayout)
@@ -37,13 +40,13 @@ class GridElement(QWidget):
         self._viewController.independentViewsEnabledSignal.connect(self._setDropEnabled)
         self._setDropEnabled(self._viewController.independentViewsEnabled)
         self._viewController.mainImageChangedSignal.connect(self._setMainImage)
+        self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
             if (e.mimeData().text() == 'image'):
                 e.accept()
-                if hasattr(self._currentViewer, 'mainImage'):
-                    self._setMainImage(self._viewController.selectedImage)
+                self._setMainImage(self._viewController.selectedImage)
                 return
         e.ignore()
 
@@ -74,7 +77,7 @@ class GridElement(QWidget):
 
         if self._displayType==self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
-                self._sliceViewer = SliceViewerWithContour(self._viewController)
+                self._sliceViewer = ImageViewer(self._viewController)
 
             self._currentViewer = self._sliceViewer
 
@@ -99,15 +102,31 @@ class GridElement(QWidget):
             self._currentViewer.setAcceptDrops(False)
 
     def _setMainImage(self, image):
-        if hasattr(self._currentViewer, 'mainImage'):
-            self._currentViewer.mainImage = image
+        if hasattr(self._currentViewer, 'primaryImage'):
+            self._currentViewer.primaryImage = image
 
             if not(image is None):
                 image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
 
+    def _setSecondaryImage(self, image):
+        if hasattr(self._currentViewer, 'secondaryImage'):
+            self._currentViewer.secondaryImage = image
+
+            if not(image is None):
+                image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
+
+                iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+                self._buttonProperties = QAction(QIcon(iconPath + "color-adjustment.png"), "Range", self)
+                self._buttonProperties.setStatusTip("Range")
+                self._buttonProperties.triggered.connect(lambda pressed: ImageFusionProperties(image, self).show())
+                self._toolbar.addAction(self._buttonProperties)
+
     def _handleImageRemoved(self, image):
-        if hasattr(self._currentViewer, 'mainImage') and self._currentViewer.mainImage == image:
+        if hasattr(self._currentViewer, 'primaryImage') and self._currentViewer.primaryImage == image:
             self._setMainImage(None)
+
+        if hasattr(self._currentViewer, 'secondaryImage') and self._currentViewer.secondaryImage == image:
+            self._setSecondaryImage(None)
 
     def _setToolbar(self, toolbar):
         self._toolbar = toolbar
