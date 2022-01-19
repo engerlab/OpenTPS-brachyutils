@@ -59,6 +59,8 @@ class SecondaryImageLayer:
         if image == self._image:
             return
 
+        self._disconnectAll()
+
         self._image = image
 
         self._color.SetLookupTable(self._image.lookupTable)
@@ -110,6 +112,9 @@ class SecondaryImageLayer:
         self._image.lookupTableChangedSignal.connect(self._setLookupTable)
 
     def _disconnectAll(self):
+        if self._image is None:
+            return
+
         self._image.lookupTableChangedSignal.disconnect(self._setLookupTable)
 
     def _setLookupTable(self, lookuptable):

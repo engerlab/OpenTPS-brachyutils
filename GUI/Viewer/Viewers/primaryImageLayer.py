@@ -60,6 +60,8 @@ class PrimaryImageLayer:
         if image == self._image:
             return
 
+        self._disconnectAll()
+
         self._image = image
 
         self._reslice.SetInputConnection(self._image.vtkOutputPort)
@@ -102,6 +104,9 @@ class PrimaryImageLayer:
         self._image.wwlChangedSignal.connect(self._setWWL)
 
     def _disconnectAll(self):
+        if self._image is None:
+            return
+        
         self._image.wwlChangedSignal.disconnect(self._setWWL)
 
     def _setWWL(self, wwl):
