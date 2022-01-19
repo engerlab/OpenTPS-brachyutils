@@ -14,6 +14,7 @@ from vtkmodules.vtkRenderingCore import vtkCoordinate
 from Core.event import Event
 from GUI.Viewer.ViewerData.viewerImage3D import ViewerImage3D
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
+from GUI.Viewer.Viewers.contourLayer import ContourLayer
 from GUI.Viewer.Viewers.crossHairLayer import CrossHairLayer
 from GUI.Viewer.Viewers.primaryImageLayer import PrimaryImageLayer
 from GUI.Viewer.Viewers.secondaryImageLayer import SecondaryImageLayer
@@ -51,8 +52,10 @@ class ImageViewer(QWidget):
         self._primaryImageLayer = PrimaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
         self._secondaryImageLayer = SecondaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
+        self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
 
-        self.viewType = self._viewType
+        self.viewType = self._viewType # Updates _viewMatrix
+        self._contourLayer.resliceAxes = self._viewMatrix
 
         self.setLayout(self._mainLayout)
         self._vtkWidget.hide()
@@ -74,9 +77,10 @@ class ImageViewer(QWidget):
         self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
         self._renderWindow.AddRenderer(self._renderer)
 
+        # TODO: Disconnect signals
         self._viewController.crossHairEnabledSignal.connect(self._setCrossHairEnabled)
         self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
-
+        self._viewController.showContourSignal.connect(self._contourLayer.setNewContour)
 
     @property
     def primaryImage(self):
@@ -94,13 +98,15 @@ class ImageViewer(QWidget):
             return
 
         self._primaryImageLayer.image = ViewerImage3D(image)
-        self._textLayer.setPrimaryTextLine(2, self._primaryImageLayer.image.name)
+        self._contourLayer.referenceImage = self.primaryImage
+        self._textLayer.setPrimaryTextLine(2, self.primaryImage.name)
 
         #TODO: disconnect signals
         self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
         self._primaryImageLayer.image.nameChangedSignal.connect(lambda name: self._textLayer.setPrimaryTextLine(2, name))
 
         self._primaryImageLayer.resliceAxes = self._viewMatrix
+        self._contourLayer.resliceAxes = self._viewMatrix
 
         self._mainLayout.removeWidget(self._blackWidget)
         self._blackWidget.hide()
@@ -178,6 +184,7 @@ class ImageViewer(QWidget):
 
         if not self.primaryImage is None:
             self._primaryImageLayer.resliceAxes = self._viewMatrix
+            self._contourLayer.resliceAxes = self._viewMatrix
             self._renderWindow.Render()
         if not self.secondaryImage is None:
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
@@ -303,7 +310,7 @@ class ImageViewer(QWidget):
         self._renderWindow.Render()
 
     def _handlePosition(self, position):
-        if self._crossHairEnabled:
+        if self._crossHairEnabled and self._leftButtonPress:
             transfo_mat = vtkCommonMath.vtkMatrix4x4()
             transfo_mat.DeepCopy(self._viewMatrix)
             transfo_mat.Invert()
