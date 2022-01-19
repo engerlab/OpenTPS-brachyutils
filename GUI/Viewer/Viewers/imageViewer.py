@@ -148,7 +148,14 @@ class ImageViewer(QWidget):
 
         self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
+        self._textLayer.setSecondaryTextLine(2, self.primaryImage.name)
+
+        #TODO: disconnect signal
+        self._primaryImageLayer.image.nameChangedSignal.connect(
+            lambda name: self._textLayer.setSecondaryTextLine(2, name))
+
         self._renderWindow.Render()
+
 
     @property
     def viewType(self):
@@ -327,3 +334,14 @@ class ImageViewer(QWidget):
         except:
             self._textLayer.setPrimaryTextLine(0, '')
             self._textLayer.setPrimaryTextLine(1, '')
+
+        if not self.secondaryImage is None:
+            try:
+                data = self._secondaryImageLayer.getDataAtPosition(position)
+
+                self._textLayer.setSecondaryTextLine(0, 'Value: ' + "{:.2f}".format(data))
+                self._textLayer.setSecondaryTextLine(1, 'Pos: ' + "{:.2f}".format(position[0]) + ' ' + "{:.2f}".format(
+                    position[1]) + ' ' + "{:.2f}".format(position[2]))
+            except:
+                self._textLayer.setSecondaryTextLine(0, '')
+                self._textLayer.setSecondaryTextLine(1, '')
