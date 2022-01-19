@@ -1,4 +1,5 @@
 import numpy as np
+from vtkmodules.vtkIOImage import vtkImageImport
 
 from Core.event import Event
 from GUI.Viewer.ViewerData.viewerData import ViewerData
@@ -16,6 +17,7 @@ class ViewerImage3D(ViewerData):
         self.lookupTableChangedSignal = Event(object)
         self.selectedPositionChangedSignal = Event(tuple)
 
+        self._dataImporter = vtkImageImport()
         self._wwlValue = (400, 0)
         self._lookupTableName = 'fusion'
         self._range = (-1024, 1500)
@@ -23,6 +25,7 @@ class ViewerImage3D(ViewerData):
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         # TODO: Not a huge fan of this. Data controller should provide getOrigin, etc.
         self._selectedPosition = np.array(self.data.origin) + np.array(self.data.gridSize) * np.array(self.data.spacing) / 2.0
+        self._vtkOutputPort = None
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -74,3 +77,26 @@ class ViewerImage3D(ViewerData):
     def opacity(self, opacity):
         self._opacity = opacity
         self.lookupTable = self._lookupTableName
+
+    @property
+    def vtkOutputPort(self):
+        if self._vtkOutputPort is None:
+            shape = self.gridSize
+            imageOrigin = self.origin
+            imageSpacing = self.spacing
+            imageData = np.swapaxes(self.imageArray, 0, 2)
+            num_array = np.array(np.ravel(imageData), dtype=np.float32)
+
+            self._dataImporter.SetNumberOfScalarComponents(1)
+            self._dataImporter.SetDataExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
+            self._dataImporter.SetWholeExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
+            self._dataImporter.SetDataSpacing(imageSpacing[0], imageSpacing[1], imageSpacing[2])
+            self._dataImporter.SetDataOrigin(imageOrigin[0], imageOrigin[1], imageOrigin[2])
+            self._dataImporter.SetDataScalarTypeToFloat()
+
+            data_string = num_array.tobytes()
+            self._dataImporter.CopyImportVoidPointer(data_string, len(data_string))
+
+            self._vtkOutputPort = self._dataImporter.GetOutputPort()
+
+        return self._vtkOutputPort

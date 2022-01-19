@@ -64,6 +64,8 @@ class PatientDataPanel(QWidget):
 
     def loadData(self):
         filesOrFoldersList = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
+        if len(filesOrFoldersList)<1:
+            return
 
         splitPath = filesOrFoldersList[0].split('/')
         withoutLastElementPath = ''

@@ -4,12 +4,12 @@ from PyQt5.QtCore import QSize, pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction
 
-import GUI.Viewer.gridElement as gridElement
+import GUI.Viewer.dataViewer as gridElement
 from Core.event import Event
 from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
 
 
-class GridElementToolbar(QToolBar):
+class DataViewerToolbar(QToolBar):
     def __init__(self):
         QToolBar.__init__(self)
 
@@ -45,7 +45,7 @@ class GridElementToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(gridElement.GridElement.DISPLAY_DVH)
+            self.displayTypeSignal.emit(gridElement.DataViewer.DISPLAY_DVH)
             self._handleButtonViewer(False)
             self._handleButtonGraph(False)
 
@@ -55,7 +55,7 @@ class GridElementToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(gridElement.GridElement.DISPLAY_PROFILE)
+            self.displayTypeSignal.emit(gridElement.DataViewer.DISPLAY_PROFILE)
             self._handleButtonViewer(False)
             self._handleButtonDVH(False)
 
@@ -65,7 +65,7 @@ class GridElementToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(gridElement.GridElement.DISPLAY_SLICEVIEWER)
+            self.displayTypeSignal.emit(gridElement.DataViewer.DISPLAY_SLICEVIEWER)
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 
