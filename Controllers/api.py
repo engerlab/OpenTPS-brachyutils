@@ -24,7 +24,15 @@ class APIMethods:
 class _API:
     _apiMethods = APIMethods()
     _logging = True
-    patientList = None
+    _dic = {"patientList": None}
+
+    @property
+    def patientList(self):
+        return _API._dic["patientList"]
+
+    @patientList.setter
+    def patientList(self, patientList):
+        _API._dic["patientList"] = patientList
 
     def __getattr__(self, item):
         return lambda *args, **kwargs: _API._wrappedMethod(_API._apiMethods.__getattribute__(item), *args, **kwargs)
@@ -35,13 +43,21 @@ class _API:
 
         if isinstance(arg, Patient):
             argStr = 'api.patientList[' \
-                     + str(_API.patientList.getIndex(arg)) + ']'
+                     + str(_API._dic["patientList"].getIndex(arg)) + ']'
         elif isinstance(arg, Image3D):
-            for patient in _API.patientList:
+            for patient in _API._dic["patientList"]:
                 if patient.hasImage(arg):
                     argStr = 'api.patientList[' \
-                             + str(_API.patientList.getIndex(patient)) + ']' \
-                             + '[' + str(patient.getImageIndex(arg)) + ']'
+                             + str(_API._dic["patientList"].getIndex(patient)) + ']' \
+                             + '.images[' \
+                             + str(patient.getImageIndex(arg)) + ']'
+        elif isinstance(arg, list):
+            argStr = '['
+            for elem in arg:
+                argStr += _API._convertArgToString(elem) + ','
+
+            argStr = argStr[:-1] + ']'
+
         else:
             argStr = str(arg)
 
