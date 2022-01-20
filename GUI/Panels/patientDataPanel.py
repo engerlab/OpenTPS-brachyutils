@@ -73,7 +73,7 @@ class PatientDataPanel(QWidget):
             withoutLastElementPath += element + '/'
         self.dataPath = withoutLastElementPath
 
-        API().loadData(filesOrFoldersList)
+        API.loadData(filesOrFoldersList)
 
     def saveData(self):
         fileDialog = SaveData_dialog()
