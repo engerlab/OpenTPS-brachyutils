@@ -8,7 +8,6 @@ import vtkmodules.vtkInteractionStyle as vtkInteractionStyle
 from vtkmodules import vtkCommonMath
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkCommonCore import vtkCommand
-from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.event import Event
@@ -17,6 +16,7 @@ from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.contourLayer import ContourLayer
 from GUI.Viewer.Viewers.crossHairLayer import CrossHairLayer
 from GUI.Viewer.Viewers.primaryImageLayer import PrimaryImageLayer
+from GUI.Viewer.Viewers.profileWidget import ProfileWidget
 from GUI.Viewer.Viewers.secondaryImageLayer import SecondaryImageLayer
 from GUI.Viewer.Viewers.textLayer import TextLayer
 
@@ -26,7 +26,7 @@ class ImageViewer(QWidget):
         QWidget.__init__(self)
 
         self.crossHairEnabledSignal = Event(bool)
-        self.lineWidgeEnabledSignal = Event(bool)
+        self.profileWidgeEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
 
@@ -34,11 +34,8 @@ class ImageViewer(QWidget):
         self._crossHairEnabled = False
         self._iStyle = vtkInteractionStyle.vtkInteractorStyleImage()
         self._leftButtonPress = False
-        self._lineWidget = vtkLineWidget2()
-        self._lineWidgetCallback = None
-        self._lineWidgetEnabled = False
-        self._lineWidgetNoInteractionYet = False
         self._mainLayout = QVBoxLayout()
+        self._profileWidgetNoInteractionYet = False # Used to know if initial position of profile widget must be set
         self._renderer = vtkRenderingCore.vtkRenderer()
         self.__sendingWWL = False
         self._viewController = viewController
@@ -48,8 +45,10 @@ class ImageViewer(QWidget):
         self._wwlEnabled = False
 
         self._renderWindow = self._vtkWidget.GetRenderWindow()
+
         self._crossHairLayer = CrossHairLayer(self._renderer, self._renderWindow)
         self._primaryImageLayer = PrimaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
+        self._profileWidget = ProfileWidget(self._renderer, self._renderWindow)
         self._secondaryImageLayer = SecondaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
@@ -79,8 +78,10 @@ class ImageViewer(QWidget):
 
         # TODO: Disconnect signals
         self._viewController.crossHairEnabledSignal.connect(self._setCrossHairEnabled)
-        self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
+        self._viewController.lineWidgetEnabledSignal.connect(self._setProfileWidgetEnabled)
         self._viewController.showContourSignal.connect(self._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
+
 
     @property
     def primaryImage(self):
@@ -131,9 +132,32 @@ class ImageViewer(QWidget):
 
         self._iStyle.SetCurrentImageNumber(0)
 
+        self._profileWidget.primaryReslice = self._primaryImageLayer._reslice #TODO : access of protected property is wrong
+
         self._renderer.ResetCamera()
 
         self._renderWindow.Render()
+
+    @property
+    def profileWidgetEnabled(self):
+        return self._profileWidget.enabled
+
+    @profileWidgetEnabled.setter
+    def profileWidgetEnabled(self, enabled):
+        if enabled==self._profileWidget.enabled:
+            return
+
+        if enabled and not self._profileWidget.enabled:
+            self._profileWidgetNoInteractionYet = True
+            self._profileWidget.callback = self._viewController.lineWidgetCallback
+        else:
+            self._profileWidgetNoInteractionYet = False
+        self._profileWidget.enabled = enabled
+
+        self.profileWidgeEnabledSignal.emit(self.profileWidgetEnabled)
+
+    def _setProfileWidgetEnabled(self, enabled):
+        self.profileWidgetEnabled = enabled
 
     @property
     def secondaryImage(self):
@@ -241,7 +265,7 @@ class ImageViewer(QWidget):
         if 'Press' in event:
             self._leftButtonPress = True
 
-            if self._lineWidgetEnabled:
+            if self.profileWidgetEnabled:
                 self._iStyle.OnLeftButtonDown()
                 return
 
@@ -264,9 +288,9 @@ class ImageViewer(QWidget):
 
         point = self._viewMatrix.MultiplyPoint((worldPos[0], worldPos[1], 0, 1))
 
-        if self._lineWidgetNoInteractionYet and self._lineWidgetEnabled:
-            self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], 0.01))
-            self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
+        if self.profileWidgetEnabled and self._profileWidgetNoInteractionYet and self._leftButtonPress:
+            self._profileWidget.setInitialPosition((worldPos[0], worldPos[1]))
+            self._profileWidgetNoInteractionYet = False
             return
 
         if self._crossHairEnabled and self._leftButtonPress:
@@ -312,8 +336,8 @@ class ImageViewer(QWidget):
             point = self._viewMatrix.MultiplyPoint((point[0], point[1], point[2], 1))
             self.primaryImage.selectedPosition = point
 
-        if self._lineWidgetEnabled:
-            self._lineWidgetInteraction(None, None)
+        if self.profileWidgetEnabled:
+            self.onprofileWidgetInteraction(None, None)
 
         self._renderWindow.Render()
 
