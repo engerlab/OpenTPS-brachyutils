@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QToolBar, QAction
 
 import GUI.Viewer.dataViewer as gridElement
 from Core.event import Event
-from GUI.Viewer.Viewers.sliceViewer import SliceViewerVTK
+from GUI.Viewer.Viewers.imageViewer import ImageViewer
 
 
 class DataViewerToolbar(QToolBar):
@@ -70,5 +70,5 @@ class DataViewerToolbar(QToolBar):
             self._handleButtonDVH(False)
 
     def handleDisplayChange(self, view):
-        if isinstance(view, SliceViewerVTK):
+        if isinstance(view, ImageViewer):
             self._handleButtonViewer(True)
