@@ -212,6 +212,7 @@ class ImageViewer(QWidget):
             self._crossHairLayer.visible = True
         else:
             self._crossHairLayer.visible = False
+            self._handlePosition(None)
             self._renderWindow.Render()
         self.crossHairEnabledSignal.emit(self._crossHairEnabled)
 
@@ -268,7 +269,7 @@ class ImageViewer(QWidget):
             self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
             return
 
-        if not self._wwlEnabled:
+        if self._crossHairEnabled and self._leftButtonPress:
             self.primaryImage.selectedPosition = (point[0], point[1], point[2])
 
         if self._leftButtonPress and self._wwlEnabled:
@@ -317,13 +318,22 @@ class ImageViewer(QWidget):
         self._renderWindow.Render()
 
     def _handlePosition(self, position):
-        if self._crossHairEnabled and self._leftButtonPress:
+        if self._crossHairEnabled:
             transfo_mat = vtkCommonMath.vtkMatrix4x4()
             transfo_mat.DeepCopy(self._viewMatrix)
             transfo_mat.Invert()
             posAfterInverse = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
 
             self._crossHairLayer.position = (posAfterInverse[0], posAfterInverse[1])
+        else:
+            self._textLayer.setPrimaryTextLine(0, '')
+            self._textLayer.setPrimaryTextLine(1, '')
+
+            if not self.secondaryImage is None:
+                self._textLayer.setSecondaryTextLine(0, '')
+                self._textLayer.setSecondaryTextLine(1, '')
+
+            return
 
         try:
             data = self._primaryImageLayer.getDataAtPosition(position)

@@ -106,7 +106,7 @@ class PrimaryImageLayer:
     def _disconnectAll(self):
         if self._image is None:
             return
-        
+
         self._image.wwlChangedSignal.disconnect(self._setWWL)
 
     def _setWWL(self, wwl):
