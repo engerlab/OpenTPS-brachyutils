@@ -406,18 +406,7 @@ class PatientDataTree(QTreeView):
         newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
 
         if (okPressed):
-            newSeq = Dynamic3DSequence()
-            newSeq.name = newName
-            newSeq.seriesInstanceUID = generate_uid()
-
-            for i, image in enumerate(selectedImages):
-                newSeq.dyn3DImageList.append(image)
-                patient = image.patient
-                patient.removeImage(image)
-
-            patient.appendDyn3DSeq(newSeq)
-
-            print(newSeq)
+            API.createDynamic3DSequence(selectedImages, newName)
 
     def computeDynamic3DModel(self, selected3DSequence):
         newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")

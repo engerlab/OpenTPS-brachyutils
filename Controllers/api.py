@@ -1,26 +1,20 @@
 import sys
 from io import StringIO
 
+from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.patient import Patient
 
 
 class APIMethods:
     _methodNames = []
-    _methods = []
 
     def __setattr__(self, key, value):
         print('Adding method to api: '+str(key))
-        if key in APIMethods._methodNames:
-            APIMethods._methods[APIMethods._methodNames==key] = value
-        else:
-            APIMethods._methods.append(value)
+        if not (key in APIMethods._methodNames):
             APIMethods._methodNames.append(key)
 
-    def __getattr__(self, item):
-        if item in APIMethods._methodNames:
-            return APIMethods._methods[APIMethods._methodNames==item]
-        raise()
+        object.__setattr__(self, key, value)
 
     @staticmethod
     def getMethodsAsString():
@@ -33,7 +27,7 @@ class _API:
     patientList = None
 
     def __getattr__(self, item):
-        return lambda *args, **kwargs: _API._wrappedMethod(_API._apiMethods.__getattr__(item), *args, **kwargs)
+        return lambda *args, **kwargs: _API._wrappedMethod(_API._apiMethods.__getattribute__(item), *args, **kwargs)
 
     @staticmethod
     def _convertArgToString(arg):
