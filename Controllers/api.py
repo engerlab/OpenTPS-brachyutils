@@ -1,9 +1,10 @@
+import os
 import sys
 from io import StringIO
 
-from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.patient import Patient
+import Script
 
 
 class APIMethods:
@@ -25,6 +26,13 @@ class _API:
     _apiMethods = APIMethods()
     _logging = True
     _dic = {"patientList": None}
+
+    def __init__(self):
+        # write log header
+        if _API._logging:
+            scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
+            with open(scriptPath, 'a') as f:
+                f.write('from Controllers.api import API\n')
 
     @property
     def patientList(self):
@@ -73,9 +81,10 @@ class _API:
         return _API._apiMethods.getMethodsAsString()
 
     @staticmethod
-    def _log(str):
-        #TODO
-        print(str)
+    def _log(cmd):
+        scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
+        with open(scriptPath, 'a') as f:
+            f.write(cmd + '\n')
 
     @staticmethod
     def registerToAPI(methodName, method):
