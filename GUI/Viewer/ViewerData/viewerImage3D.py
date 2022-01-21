@@ -23,7 +23,6 @@ class ViewerImage3D(ViewerData):
         self._range = (-1024, 1500)
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
-        # TODO: Not a huge fan of this. Data controller should provide getOrigin, etc.
         self._selectedPosition = np.array(self.data.origin) + np.array(self.data.gridSize) * np.array(self.data.spacing) / 2.0
         self._vtkOutputPort = None
 

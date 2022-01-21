@@ -1,26 +1,21 @@
+import os
 import sys
 from io import StringIO
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.patient import Patient
+import Script
 
 
 class APIMethods:
     _methodNames = []
-    _methods = []
 
     def __setattr__(self, key, value):
         print('Adding method to api: '+str(key))
-        if key in APIMethods._methodNames:
-            APIMethods._methods[APIMethods._methodNames==key] = value
-        else:
-            APIMethods._methods.append(value)
+        if not (key in APIMethods._methodNames):
             APIMethods._methodNames.append(key)
 
-    def __getattr__(self, item):
-        if item in APIMethods._methodNames:
-            return APIMethods._methods[APIMethods._methodNames==item]
-        raise()
+        object.__setattr__(self, key, value)
 
     @staticmethod
     def getMethodsAsString():
@@ -30,24 +25,48 @@ class APIMethods:
 class _API:
     _apiMethods = APIMethods()
     _logging = True
-    patientList = None
+    _dic = {"patientList": None}
+
+    def __init__(self):
+        # write log header
+        if _API._logging:
+            scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
+            with open(scriptPath, 'a') as f:
+                f.write('from Controllers.api import API\n')
+
+    @property
+    def patientList(self):
+        return _API._dic["patientList"]
+
+    @patientList.setter
+    def patientList(self, patientList):
+        _API._dic["patientList"] = patientList
 
     def __getattr__(self, item):
-        return lambda *args, **kwargs: _API._wrappedMethod(_API._apiMethods.__getattr__(item), *args, **kwargs)
+        return lambda *args, **kwargs: _API._wrappedMethod(_API._apiMethods.__getattribute__(item), *args, **kwargs)
 
     @staticmethod
     def _convertArgToString(arg):
         argStr = ''
 
         if isinstance(arg, Patient):
-            argStr = 'api.patientList[' \
-                     + str(_API.patientList.getIndex(arg)) + ']'
+            argStr = 'API.patientList[' \
+                     + str(_API._dic["patientList"].getIndex(arg)) + ']'
         elif isinstance(arg, Image3D):
-            for patient in _API.patientList:
+            for patient in _API._dic["patientList"]:
                 if patient.hasImage(arg):
-                    argStr = 'api.patientList[' \
-                             + str(_API.patientList.getIndex(patient)) + ']' \
-                             + '[' + str(patient.getImageIndex(arg)) + ']'
+                    argStr = 'API.patientList[' \
+                             + str(_API._dic["patientList"].getIndex(patient)) + ']' \
+                             + '.images[' \
+                             + str(patient.getImageIndex(arg)) + ']'
+        elif isinstance(arg, list):
+            argStr = '['
+            for elem in arg:
+                argStr += _API._convertArgToString(elem) + ','
+
+            argStr = argStr[:-1] + ']'
+        elif isinstance(arg, str):
+            argStr = '\'' + arg + '\''
         else:
             argStr = str(arg)
 
@@ -62,9 +81,10 @@ class _API:
         return _API._apiMethods.getMethodsAsString()
 
     @staticmethod
-    def _log(str):
-        #TODO
-        print(str)
+    def _log(cmd):
+        scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
+        with open(scriptPath, 'a') as f:
+            f.write(cmd + '\n')
 
     @staticmethod
     def registerToAPI(methodName, method):
@@ -100,7 +120,7 @@ class _API:
         if len(args)>0 or len(kwargs)>0 or argsStr[-1] == ',':
             argsStr = argsStr[:-1]
 
-        callStr = method.__name__ + '(' + argsStr + ')'
+        callStr = 'API.' + method.__name__ + '(' + argsStr + ')'
 
         if  _API._logging:
             _API._log(callStr)

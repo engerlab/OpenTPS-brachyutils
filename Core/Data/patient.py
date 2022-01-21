@@ -94,6 +94,9 @@ class Patient:
         image.patient = self
         self.imageAddedSignal.emit(image)
 
+    def getImageIndex(self, _images):
+        return self._images.index(_images)
+
     def hasImage(self, image):
         """
          Check if image is in patient's image list
