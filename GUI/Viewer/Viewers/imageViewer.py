@@ -85,7 +85,9 @@ class ImageViewer(QWidget):
 
     @property
     def primaryImage(self):
-        return self._primaryImageLayer.image
+        if self._primaryImageLayer.image is None:
+            return None
+        return self._primaryImageLayer.image.data
 
     @primaryImage.setter
     def primaryImage(self, image):
@@ -161,11 +163,17 @@ class ImageViewer(QWidget):
 
     @property
     def secondaryImage(self):
-        return self._secondaryImageLayer.image
+        if self._secondaryImageLayer.image is None:
+            return None
+        return self._secondaryImageLayer.image.data
 
     @secondaryImage.setter
     def secondaryImage(self, image):
         if self.primaryImage is None:
+            return
+
+        if image is None:
+            self._secondaryImageLayer.image = None
             return
 
         self._secondaryImageLayer.image = ViewerImage3D(image)

@@ -55,6 +55,8 @@ class SecondaryImageLayer:
             self.colorbarOn = False
             self._disconnectAll()
             self._image = None
+            self._mainActor.SetVisibility(False)
+            self._renderWindow.Render()
             return
 
         if image == self._image:
@@ -71,6 +73,8 @@ class SecondaryImageLayer:
         self._renderer.AddActor(self._mainActor)
         self._color.SetInputConnection(self._reslice.GetOutputPort())
         self._mainMapper.SetInputConnection(self._color.GetOutputPort())
+
+        self._mainActor.SetVisibility(True)
 
         self._connectAll()
 
