@@ -52,6 +52,7 @@ class SecondaryImageLayer:
     def image(self, image):
         if image is None:
             self._reslice.RemoveAllInputs()
+            self.colorbarOn = False
             self._disconnectAll()
             self._image = None
             return
@@ -72,6 +73,8 @@ class SecondaryImageLayer:
         self._mainMapper.SetInputConnection(self._color.GetOutputPort())
 
         self._connectAll()
+
+        self.colorbarOn = True # TODO: Get this from parent
 
     @property
     def resliceAxes(self):

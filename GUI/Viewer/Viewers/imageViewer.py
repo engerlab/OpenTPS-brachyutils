@@ -348,6 +348,12 @@ class ImageViewer(QWidget):
             transfo_mat.Invert()
             posAfterInverse = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
 
+            pos = self._viewMatrix.MultiplyPoint((0, 0, posAfterInverse[2], 1))
+
+            self._viewMatrix.SetElement(0, 3, pos[0])
+            self._viewMatrix.SetElement(1, 3, pos[1])
+            self._viewMatrix.SetElement(2, 3, pos[2])
+
             self._crossHairLayer.position = (posAfterInverse[0], posAfterInverse[1])
         else:
             self._textLayer.setPrimaryTextLine(0, '')
