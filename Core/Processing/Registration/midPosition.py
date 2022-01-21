@@ -45,7 +45,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
             logger.info('\nRegistering phase', refIndex, 'to phase', i, '...')
             reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=baseResolution, nbProcesses=nbProcesses)
             motionFieldList.append(reg.compute())
-            if (max(averageField.gridSize()) == 0):
+            if (max(averageField.gridSize) == 0):
                 averageField.initFromImage(motionFieldList[i])
             averageField.velocity._imageArray += motionFieldList[i].velocity._imageArray
 
@@ -68,7 +68,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
         motionFieldList[i].velocity._imageArray = -motionFieldList[i].velocity._imageArray
 
     # compute MidP
-    midp = CT4D.dyn3DImageList[0].copy()
+    midp = CT4D.dyn3DImageList[0].dumpableCopy()
     midp.UID = generate_uid()
     midp._imageArray = np.median(def3DImageList, axis=0)
     

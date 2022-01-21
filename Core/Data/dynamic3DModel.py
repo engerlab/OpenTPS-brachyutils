@@ -45,3 +45,8 @@ class Dynamic3DModel(PatientData):
             field.velocity = amplitude * (w1 * self.deformationList[int(phase1)].velocity + w2 * self.deformationList[int(phase2)].velocity)
 
         return field.deformImage(self.midp, fillValue='closest')
+
+    def dumpableCopy(self):
+
+        dumpableDefList = [deformation.dumpableCopy() for deformation in self.deformationList]
+        return Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
