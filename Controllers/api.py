@@ -42,12 +42,12 @@ class _API:
         argStr = ''
 
         if isinstance(arg, Patient):
-            argStr = 'api.patientList[' \
+            argStr = 'API.patientList[' \
                      + str(_API._dic["patientList"].getIndex(arg)) + ']'
         elif isinstance(arg, Image3D):
             for patient in _API._dic["patientList"]:
                 if patient.hasImage(arg):
-                    argStr = 'api.patientList[' \
+                    argStr = 'API.patientList[' \
                              + str(_API._dic["patientList"].getIndex(patient)) + ']' \
                              + '.images[' \
                              + str(patient.getImageIndex(arg)) + ']'
@@ -57,7 +57,8 @@ class _API:
                 argStr += _API._convertArgToString(elem) + ','
 
             argStr = argStr[:-1] + ']'
-
+        elif isinstance(arg, str):
+            argStr = '\'' + arg + '\''
         else:
             argStr = str(arg)
 
@@ -110,7 +111,7 @@ class _API:
         if len(args)>0 or len(kwargs)>0 or argsStr[-1] == ',':
             argsStr = argsStr[:-1]
 
-        callStr = method.__name__ + '(' + argsStr + ')'
+        callStr = 'API.' + method.__name__ + '(' + argsStr + ')'
 
         if  _API._logging:
             _API._log(callStr)
