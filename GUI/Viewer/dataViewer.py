@@ -1,7 +1,5 @@
-import os
 
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QAction
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
@@ -9,8 +7,6 @@ from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.dvhPlot import DVHPlot
 from GUI.Viewer.Viewers.profilePlot import ProfilePlot
-from GUI.Viewer.Viewers.imageFusionProperties import ImageFusionProperties
-
 
 class DataViewer(QWidget):
     DISPLAY_DVH = 'DVH'
@@ -80,6 +76,9 @@ class DataViewer(QWidget):
         if self._displayType==self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
                 self._sliceViewer = ImageViewer(self._viewController)
+                for action in self._sliceViewer.qActions:
+                    action.setParent(self._toolbar)
+                    self._toolbar.addAction(action)
 
             self._currentViewer = self._sliceViewer
 
@@ -120,16 +119,8 @@ class DataViewer(QWidget):
                 oldImage = self._currentViewer.secondaryImage
                 if oldImage is None:
                     return
-
-                for action in self._secondaryActions:
-                    self._toolbar.removeAction(action)
             else:
                 image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
-
-                self._secondaryActions = SecondaryImageActions(image)
-                for action in self._secondaryActions:
-                    action.setParent(self._toolbar)
-                    self._toolbar.addAction(action)
 
             self._currentViewer.secondaryImage = image
 

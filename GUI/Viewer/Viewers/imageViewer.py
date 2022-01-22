@@ -17,6 +17,7 @@ from GUI.Viewer.Viewers.contourLayer import ContourLayer
 from GUI.Viewer.Viewers.crossHairLayer import CrossHairLayer
 from GUI.Viewer.Viewers.primaryImageLayer import PrimaryImageLayer
 from GUI.Viewer.Viewers.profileWidget import ProfileWidget
+from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.Viewers.secondaryImageLayer import SecondaryImageLayer
 from GUI.Viewer.Viewers.textLayer import TextLayer
 
@@ -160,6 +161,11 @@ class ImageViewer(QWidget):
 
     def _setProfileWidgetEnabled(self, enabled):
         self.profileWidgetEnabled = enabled
+
+    @property
+    def qActions(self):
+        #TODO: actions to change view type
+        return SecondaryImageActions(self._secondaryImageLayer)
 
     @property
     def secondaryImage(self):
