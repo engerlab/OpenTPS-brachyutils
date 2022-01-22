@@ -309,13 +309,13 @@ class ImageViewer(QWidget):
             return
 
         if self._crossHairEnabled and self._leftButtonPress:
-            self.primaryImage.selectedPosition = (point[0], point[1], point[2])
+            self._primaryImageLayer.image.selectedPosition = (point[0], point[1], point[2])
 
         if self._leftButtonPress and self._wwlEnabled:
             self._iStyle.OnMouseMove()
             self.__sendingWWL = True
             imageProperty = self._iStyle.GetCurrentImageProperty()
-            self.primaryImage.wwlValue = (imageProperty.GetColorWindow(), imageProperty.GetColorLevel())
+            self._primaryImageLayer.image.wwlValue = (imageProperty.GetColorWindow(), imageProperty.GetColorLevel())
             self.__sendingWWL = False
 
         if not self._leftButtonPress:

@@ -11,6 +11,7 @@ from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.event import Event
+from GUI.Viewer.ViewerData.viewerDynSeq import ViewerDynSeq
 from GUI.Viewer.ViewerData.viewerImage3D import ViewerImage3D
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.contourLayer import ContourLayer
@@ -25,22 +26,23 @@ from GUI.Viewer.Viewers.imageViewer import ImageViewer
 
 class DynamicImageViewer(ImageViewer):
     def __init__(self, viewController):
-        super().__init__()
-        # QWidget.__init__(self)
+        super().__init__(viewController)
 
-        self._viewController = viewController
+        self._dynSeq = None
 
-        self.dynPrimaryImageList = []
-        self.dynSecondaryImageList = []
-        self.dynContourList = []
+    @property
+    def dynSeq(self):
+        return self._dynSeq.data
 
-        self.curDynIndex = 0
+    @dynSeq.setter
+    def dynSeq(self, seq):
+        self._dynSeq = ViewerDynSeq(seq)
+        self.primaryImage = seq.dyn3DImageList[0]
 
-    def updateAll(self):
+        self._dynSeq.vtkOutputPortChangedSignal.connect(self._setVTKInput)
 
-        self.curDynIndex += 1
-        self.primaryImage = self.dynPrimaryImageList[self.curDynIndex]
-
-
-
-
+    def _setVTKInput(self, vtkOutputPort):
+        self._primaryImageLayer._reslice.RemoveAllInputConnections(0)
+        self._primaryImageLayer._reslice.SetInputConnection(vtkOutputPort)
+        self._primaryImageLayer._reslice.Update()
+        self._renderWindow.Render()
