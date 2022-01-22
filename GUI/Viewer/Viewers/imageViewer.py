@@ -83,6 +83,8 @@ class ImageViewer(QWidget):
         self._viewController.showContourSignal.connect(self._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
 
+        # TODO: actions to change view type
+        self._qActions = SecondaryImageActions(self._secondaryImageLayer)
 
     @property
     def primaryImage(self):
@@ -164,8 +166,7 @@ class ImageViewer(QWidget):
 
     @property
     def qActions(self):
-        #TODO: actions to change view type
-        return SecondaryImageActions(self._secondaryImageLayer)
+        return self._qActions
 
     @property
     def secondaryImage(self):

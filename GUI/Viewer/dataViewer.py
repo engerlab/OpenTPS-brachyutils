@@ -59,6 +59,9 @@ class DataViewer(QWidget):
         if not (self._currentViewer is None):
             self._currentViewer.hide()
 
+        if self._displayType == self.DISPLAY_SLICEVIEWER and displayType != self.DISPLAY_SLICEVIEWER:
+            self._sliceViewer.qActions.hideAll()
+
         self._displayType = displayType
 
         if self._displayType==self.DISPLAY_DVH:
@@ -79,6 +82,8 @@ class DataViewer(QWidget):
                 for action in self._sliceViewer.qActions:
                     action.setParent(self._toolbar)
                     self._toolbar.addAction(action)
+
+            self._sliceViewer.qActions.resetVisibility()
 
             self._currentViewer = self._sliceViewer
 

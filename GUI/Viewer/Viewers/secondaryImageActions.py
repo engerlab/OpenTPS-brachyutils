@@ -13,12 +13,9 @@ class SecondaryImageActions:
         iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
 
         self._colorbarAction = QAction(QIcon(iconPath + "color.png"), "Colorbar")
-        self._image = None
+        self._image = secondaryImageLayer.image
         self._rangeAction = QAction(QIcon(iconPath + "color-adjustment.png"), "Range")
         self._secondaryImageLayer = secondaryImageLayer
-
-        if not secondaryImageLayer.image is None:
-            self._image = secondaryImageLayer.image.data
 
         self._colorbarAction.setStatusTip("Colorbar")
         self._colorbarAction.triggered.connect(self._setColorbarOn)
@@ -33,11 +30,18 @@ class SecondaryImageActions:
         self._secondaryImageLayer.imageChangedSignal.connect(self._updateImage)
         #TODO: connect to colorbarSignal
 
+    def hideAll(self):
+        for action in self._actions:
+            action.setVisible(False)
+
+    def resetVisibility(self):
+        self._updateImage(self._image)
+
     def _setColorbarOn(self, visible):
         self._secondaryImageLayer.colorbarOn = visible
 
     def _showImageProperties(self):
-        ImageFusionProperties(self._image).show()
+        ImageFusionProperties(self._image.data).show()
 
     def _updateImage(self, image):
         if image is None:
@@ -45,7 +49,7 @@ class SecondaryImageActions:
             self._colorbarAction.setVisible(False)
             self._rangeAction.setVisible(False)
         else:
-            self._image = image.data
+            self._image = image
             self._colorbarAction.setVisible(True)
             self._colorbarAction.setChecked(self._secondaryImageLayer.colorbarOn)
             self._rangeAction.setVisible(True)
