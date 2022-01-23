@@ -1,13 +1,13 @@
 
-
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.DataForViewer.dyn3DSeqForViewer import Dyn3DSeqForViewer
 
 
 class DynamicImageViewer(ImageViewer):
     def __init__(self, viewController):
-        super().__init__()
-        # QWidget.__init__(self)
+        super().__init__(viewController)
+
+        self._dynSeq = None
 
         self._viewController = viewController
         self.dynPrimImgSeq = None
@@ -30,6 +30,16 @@ class DynamicImageViewer(ImageViewer):
         self.primaryImage = self.dynPrimaryImageList[self.curDynIndex]
 
 
+    @property
+    def dynSeq(self):
+        return self._dynSeq.data
+
+    @dynSeq.setter
+    def dynSeq(self, seq):
+        self._dynSeq = Dyn3DSeqForViewer(seq)
+        self.primaryImage = seq.dyn3DImageList[0]
+
+
     def next_image(self):
         # self.timer.stop()
         self.currentImageIndex += 1
@@ -42,5 +52,8 @@ class DynamicImageViewer(ImageViewer):
             self.showVoxelInfo()
 
 
-
-
+    def _setVTKInput(self, vtkOutputPort):
+        self._primaryImageLayer._reslice.RemoveAllInputConnections(0)
+        self._primaryImageLayer._reslice.SetInputConnection(vtkOutputPort)
+        self._primaryImageLayer._reslice.Update()
+        self._renderWindow.Render()

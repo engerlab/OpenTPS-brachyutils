@@ -65,6 +65,12 @@ class _API:
                 argStr += _API._convertArgToString(elem) + ','
 
             argStr = argStr[:-1] + ']'
+        elif isinstance(arg, tuple):
+            argStr = '('
+            for elem in arg:
+                argStr += _API._convertArgToString(elem) + ','
+
+            argStr = argStr[:-1] + ')'
         elif isinstance(arg, str):
             argStr = '\'' + arg + '\''
         else:

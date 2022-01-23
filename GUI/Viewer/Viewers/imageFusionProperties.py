@@ -1,4 +1,4 @@
-import numpy as np
+
 from PyQt5.QtWidgets import QMainWindow, QGroupBox, QHBoxLayout, QWidget, QVBoxLayout
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg

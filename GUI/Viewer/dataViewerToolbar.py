@@ -39,6 +39,8 @@ class DataViewerToolbar(QToolBar):
         self.addAction(self._buttonGraph)
         self.addAction(self._buttonDVH)
 
+        self.addSeparator()
+
     def _handleButtonDVH(self, pressed):
         if self._buttonDVH.isChecked() != pressed:
             self._buttonDVH.setChecked(pressed)

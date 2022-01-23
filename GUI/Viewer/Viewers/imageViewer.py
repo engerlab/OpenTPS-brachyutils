@@ -18,6 +18,7 @@ from GUI.Viewer.Viewers.contourLayer import ContourLayer
 from GUI.Viewer.Viewers.crossHairLayer import CrossHairLayer
 from GUI.Viewer.Viewers.primaryImageLayer import PrimaryImageLayer
 from GUI.Viewer.Viewers.profileWidget import ProfileWidget
+from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.Viewers.secondaryImageLayer import SecondaryImageLayer
 from GUI.Viewer.Viewers.textLayer import TextLayer
 
@@ -83,11 +84,15 @@ class ImageViewer(QWidget):
         self._viewController.showContourSignal.connect(self._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
 
+        # TODO: actions to change view type
+        self._qActions = SecondaryImageActions(self._secondaryImageLayer)
 
 
     @property
     def primaryImage(self):
-        return self._primaryImageLayer.image
+        if self._primaryImageLayer.image is None:
+            return None
+        return self._primaryImageLayer.image.data
 
     @primaryImage.setter
     def primaryImage(self, image):
@@ -162,8 +167,14 @@ class ImageViewer(QWidget):
         self.profileWidgetEnabled = enabled
 
     @property
+    def qActions(self):
+        return self._qActions
+
+    @property
     def secondaryImage(self):
-        return self._secondaryImageLayer.image
+        if self._secondaryImageLayer.image is None:
+            return None
+        return self._secondaryImageLayer.image.data
 
     @secondaryImage.setter
     def secondaryImage(self, image):
@@ -171,6 +182,10 @@ class ImageViewer(QWidget):
             return
 
         self._secondaryImageLayer.image = Image3DForViewer(image)
+
+        if image is None:
+            self._secondaryImageLayer.image = None
+            return
 
         self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
@@ -296,13 +311,13 @@ class ImageViewer(QWidget):
             return
 
         if self._crossHairEnabled and self._leftButtonPress:
-            self.primaryImage.selectedPosition = (point[0], point[1], point[2])
+            self._primaryImageLayer.image.selectedPosition = (point[0], point[1], point[2])
 
         if self._leftButtonPress and self._wwlEnabled:
             self._iStyle.OnMouseMove()
             self.__sendingWWL = True
             imageProperty = self._iStyle.GetCurrentImageProperty()
-            self.primaryImage.wwlValue = (imageProperty.GetColorWindow(), imageProperty.GetColorLevel())
+            self._primaryImageLayer.image.wwlValue = (imageProperty.GetColorWindow(), imageProperty.GetColorLevel())
             self.__sendingWWL = False
 
         if not self._leftButtonPress:
@@ -349,6 +364,12 @@ class ImageViewer(QWidget):
             transfo_mat.DeepCopy(self._viewMatrix)
             transfo_mat.Invert()
             posAfterInverse = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
+
+            pos = self._viewMatrix.MultiplyPoint((0, 0, posAfterInverse[2], 1))
+
+            self._viewMatrix.SetElement(0, 3, pos[0])
+            self._viewMatrix.SetElement(1, 3, pos[1])
+            self._viewMatrix.SetElement(2, 3, pos[2])
 
             self._crossHairLayer.position = (posAfterInverse[0], posAfterInverse[1])
         else:

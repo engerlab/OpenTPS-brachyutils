@@ -8,9 +8,15 @@ from vtkmodules.vtkInteractionWidgets import vtkOrientationMarkerWidget, vtkScal
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
 
+from Core.event import Event
+
 
 class SecondaryImageLayer:
     def __init__(self, renderer, renderWindow, iStyle):
+
+        self.colorbarVisibilitySignal = Event(bool)
+        self.imageChangedSignal = Event(object)
+
         self._color = vtkImagingCore.vtkImageMapToColors()
         self._colorbarActor = vtkScalarBarActor()
         self._colorbarWidget = vtkScalarBarWidget()
@@ -52,8 +58,11 @@ class SecondaryImageLayer:
     def image(self, image):
         if image is None:
             self._reslice.RemoveAllInputs()
+            self.colorbarOn = False
             self._disconnectAll()
             self._image = None
+            self._mainActor.SetVisibility(False)
+            self._renderWindow.Render()
             return
 
         if image == self._image:
@@ -71,7 +80,13 @@ class SecondaryImageLayer:
         self._color.SetInputConnection(self._reslice.GetOutputPort())
         self._mainMapper.SetInputConnection(self._color.GetOutputPort())
 
+        self._mainActor.SetVisibility(True)
+
         self._connectAll()
+
+        self.colorbarOn = True # TODO: Get this from parent
+
+        self.imageChangedSignal.emit(self.image)
 
     @property
     def resliceAxes(self):
@@ -91,12 +106,17 @@ class SecondaryImageLayer:
         if self._image is None:
             return
 
+        if visible==self._colorbarActor.GetVisibility():
+            return
+
         if visible:
             self._colorbarActor.SetVisibility(True)
             self._colorbarWidget.On()
         else:
             self._colorbarActor.SetVisibility(False)
             self._colorbarWidget.Off()
+
+        self.colorbarVisibilitySignal.emit(visible)
 
         self._renderWindow.Render()
 

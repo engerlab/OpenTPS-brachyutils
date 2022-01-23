@@ -2,10 +2,17 @@ import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
 from Core.event import Event
+<<<<<<< HEAD:GUI/Viewer/DataForViewer/ROIContourForViewer.py
 from GUI.Viewer.DataForViewer.dataForViewer import DataForViewer
 
 
 class ROIContourForViewer(DataForViewer):
+=======
+from GUI.Viewer.ViewerData.dataMultiton import DataMultiton
+
+
+class ViewerROIContour(DataMultiton):
+>>>>>>> refactor:GUI/Viewer/ViewerData/viewerROIContour.py
     def __init__(self, roiContour):
         super().__init__(roiContour)
 

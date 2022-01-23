@@ -2,11 +2,19 @@ import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
 from Core.event import Event
+<<<<<<< HEAD:GUI/Viewer/DataForViewer/image3DForViewer.py
 from GUI.Viewer.DataForViewer.dataForViewer import DataForViewer
 from GUI.Viewer.Viewers.lookupTables import LookupTables
 
 
 class Image3DForViewer(DataForViewer):
+=======
+from GUI.Viewer.ViewerData.dataMultiton import DataMultiton
+from GUI.Viewer.Viewers.lookupTables import LookupTables
+
+
+class ViewerImage3D(DataMultiton):
+>>>>>>> refactor:GUI/Viewer/ViewerData/viewerImage3D.py
     def __init__(self, image):
         super().__init__(image)
 
