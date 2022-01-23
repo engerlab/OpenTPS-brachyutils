@@ -38,7 +38,6 @@ class ViewController():
         self._patientList.patientAddedSignal.connect(self.appendActivePatient)
         self._patientList.patientRemovedSignal.connect(self.appendActivePatient)
 
-        self.numberOfViewerPanelElement = 0
         self.shownDataUIDsList = [] #this is to keep track of which data is currently shown, but not used yet
 
     @property
@@ -100,7 +99,7 @@ class ViewController():
 
     @independentViewsEnabled.setter
     def independentViewsEnabled(self, enabled):
-        if enabled==self._independentViewsEnabled:
+        if enabled == self._independentViewsEnabled:
             return
 
         self._independentViewsEnabled = enabled

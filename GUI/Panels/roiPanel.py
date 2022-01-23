@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QColor, QPixmap, QIcon
 
-from GUI.Viewer.ViewerData.viewerROIContour import ViewerROIContour
+from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 
 
 class ROIPanel(QWidget):
@@ -17,7 +17,7 @@ class ROIPanel(QWidget):
 
   def addRTStruct(self, rtStruct):
     for contour in rtStruct.contours:
-      checkbox = ROIItem(ViewerROIContour(contour), self._viewController).getCheckbox()
+      checkbox = ROIItem(ROIContourForViewer(contour), self._viewController).getCheckbox()
 
       self.layout.addWidget(checkbox)
       self.items.append(checkbox)

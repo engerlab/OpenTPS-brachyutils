@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.widgets import RangeSlider
 
-from GUI.Viewer.ViewerData.viewerImage3D import ViewerImage3D
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.Viewers.imageProperies import ImageProperties
 
 
@@ -32,7 +32,7 @@ class ImageFusionProperties(QMainWindow):
         self._imageProperties.setLayout(vbox)
 
 
-        image = ViewerImage3D(image)
+        image = Image3DForViewer(image)
 
         self._figure = plt.figure()
 

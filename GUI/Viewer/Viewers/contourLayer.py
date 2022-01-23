@@ -5,7 +5,7 @@ from vtkmodules import vtkImagingCore, vtkCommonCore
 from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
-from GUI.Viewer.ViewerData.viewerROIContour import ViewerROIContour
+from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 
 
 class ContourLayer:
@@ -18,7 +18,7 @@ class ContourLayer:
         self._vtkContours = []
 
     def setNewContour(self, contour):
-        contour = ViewerROIContour(contour)
+        contour = ROIContourForViewer(contour)
 
         if contour in self._contours:
             return

@@ -1,6 +1,6 @@
 import os
 
-from PyQt5.QtCore import QSize, pyqtSignal
+from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction
 

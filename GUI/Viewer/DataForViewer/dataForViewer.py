@@ -1,29 +1,29 @@
 
-class ViewerData(object):
+class DataForViewer(object):
     _allViewerDatas = []
 
     def __new__(cls, data):
-        if isinstance(data, ViewerData):
-            data.__class__ = cls # Subclass the existing ViewerData
+        if isinstance(data, DataForViewer):
+            data.__class__ = cls # Subclass the existing DataForViewer
             return data
 
         if data is None:
             return None
 
-        # if there is already a ViewerData for this data instance
-        for viewerData in ViewerData._allViewerDatas:
+        # if there is already a DataForViewer for this data instance
+        for viewerData in DataForViewer._allViewerDatas:
             if viewerData.data == data:
-                # we might need to subclass the existing ViewerData:
-                return ViewerData.__new__(cls, viewerData)
+                # we might need to subclass the existing DataForViewer:
+                return DataForViewer.__new__(cls, viewerData)
 
         # else
         viewerData = super().__new__(cls)
-        ViewerData._allViewerDatas.append(viewerData)
+        DataForViewer._allViewerDatas.append(viewerData)
 
         return viewerData
 
     def __init__(self, data):
-        if isinstance(data, ViewerData):
+        if isinstance(data, DataForViewer):
             return
 
         if data is None:

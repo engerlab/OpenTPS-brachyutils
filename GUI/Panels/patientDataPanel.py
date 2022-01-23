@@ -226,10 +226,8 @@ class PatientDataTree(QTreeView):
 
     def _handleDoubleClick(self, selection):
         selectedData = self.model().itemFromIndex(selection).data
-        # self.patientController = self.patientDataPanel.getCurrentPatientController()  # not used for now
-        # self._viewController.shownDataUIDsList.append(selectedDataController.data.seriesInstanceUID)  # not used for now
 
-        if isinstance(selectedData, CTImage):
+        if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
             self._viewController.mainImage = selectedData
 
         #from 4D branch

@@ -2,13 +2,14 @@ import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
 from Core.event import Event
-from GUI.Viewer.ViewerData.viewerData import ViewerData
+from GUI.Viewer.DataForViewer.dataForViewer import DataForViewer
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.Viewers.lookupTables import LookupTables
 
 
-class ViewerImage3D(ViewerData):
-    def __init__(self, image):
-        super().__init__(image)
+class Dyn3DSeqForViewer(DataForViewer):
+    def __init__(self, dyn3DSeq):
+        super().__init__(dyn3DSeq)
 
         if hasattr(self, '_wwlValue'):
             return
@@ -24,10 +25,7 @@ class ViewerImage3D(ViewerData):
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         self._selectedPosition = np.array(self.data.origin) + np.array(self.data.gridSize) * np.array(self.data.spacing) / 2.0
-        self._vtkOutputPort = None
-
-    def __setattr__(self, key, value):
-        super().__setattr__(key, value)
+        self.vtkImageList = None
 
     @property
     def selectedPosition(self):
@@ -78,7 +76,7 @@ class ViewerImage3D(ViewerData):
         self.lookupTable = self._lookupTableName
 
     @property
-    def vtkOutputPort(self):
+    def getDataInVTKFormat(self):
         if self._vtkOutputPort is None:
             shape = self.gridSize
             imageOrigin = self.origin

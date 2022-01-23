@@ -2,10 +2,10 @@ import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
 from Core.event import Event
-from GUI.Viewer.ViewerData.viewerData import ViewerData
+from GUI.Viewer.DataForViewer.dataForViewer import DataForViewer
 
 
-class ViewerROIContour(ViewerData):
+class ROIContourForViewer(DataForViewer):
     def __init__(self, roiContour):
         super().__init__(roiContour)
 

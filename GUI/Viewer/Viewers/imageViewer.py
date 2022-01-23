@@ -1,6 +1,7 @@
 
 from PyQt5.QtWidgets import *
 
+
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
@@ -11,7 +12,7 @@ from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.event import Event
-from GUI.Viewer.ViewerData.viewerImage3D import ViewerImage3D
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.contourLayer import ContourLayer
 from GUI.Viewer.Viewers.crossHairLayer import CrossHairLayer
@@ -83,6 +84,7 @@ class ImageViewer(QWidget):
         self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
 
 
+
     @property
     def primaryImage(self):
         return self._primaryImageLayer.image
@@ -98,7 +100,7 @@ class ImageViewer(QWidget):
             self._blackWidget.show()
             return
 
-        self._primaryImageLayer.image = ViewerImage3D(image)
+        self._primaryImageLayer.image = Image3DForViewer(image)
         self._contourLayer.referenceImage = self.primaryImage
         self._textLayer.setPrimaryTextLine(2, self.primaryImage.name)
 
@@ -168,7 +170,7 @@ class ImageViewer(QWidget):
         if self.primaryImage is None:
             return
 
-        self._secondaryImageLayer.image = ViewerImage3D(image)
+        self._secondaryImageLayer.image = Image3DForViewer(image)
 
         self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
