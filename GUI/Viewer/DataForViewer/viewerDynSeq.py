@@ -1,11 +1,11 @@
 import threading
 
 from Core.event import Event
-from GUI.Viewer.ViewerData.viewerData import ViewerData
-from GUI.Viewer.ViewerData.viewerImage3D import ViewerImage3D
+from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 
 
-class ViewerDynSeq(ViewerData):
+class ViewerDynSeq(DataMultiton):
     def __init__(self, seq):
         super().__init__(seq)
 
@@ -26,7 +26,7 @@ class ViewerDynSeq(ViewerData):
         self._timer.start()
 
     def _setNextImage(self):
-        self._image = ViewerImage3D(self._images[self._ind])
+        self._image = Image3DForViewer(self._images[self._ind])
 
         self._ind += 1
 
