@@ -28,6 +28,7 @@ class ViewerPanel(QWidget):
 
         self._viewController.independentViewsEnabledSignal.connect(lambda enabled: self._setDropEnabled(not enabled))
         self._setDropEnabled(not self._viewController.independentViewsEnabled)
+        self._viewController.dynamicOrStaticModeChangedSignal.connect(self.switchMode)
 
         self.mode = 'static'
 
@@ -80,9 +81,38 @@ class ViewerPanel(QWidget):
         self._layout.addWidget(self._toolbar)
 
 
-    def switchMode(self, mode):
+    def isThereADynViewer(self):
 
-        self.mode=mode
+        print('!!!!!!!!!!!!!!!!!! i stopped here yesterday')
+        for viewer in self._viewerGrid._gridElements:
+            viewer.currentMode
+        ## TODO : check on each viewer if its data is dynamic or static
+        return False
+
+
+    def switchMode(self, data):
+
+        if (data.getType() == 'Dynamic3DSequence' or data.getType() == 'Dynamic2DSequence') and self.mode == 'static':
+            # switch to dynamic
+            self.mode = 'dynamic'
+            print('in if')
+
+        elif (data.getType() == 'Dynamic3DSequence' or data.getType() == 'Dynamic2DSequence') and self.mode == 'dynamic':
+            # stays dynamic
+            self.mode = 'dynamic'
+
+        elif not (isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence)) and self.mode == 'dynamic':
+
+            print('must check if all the viewers are static')
+            # must check if all the viewers are static to pass or not to static mode
+            self.mode = 'dynamic'
+
+        else:
+            self.mode == 'static'
+            # switch to static
+
+            self.mode = 'static'
+
         if self.mode == 'dynamic':
             self.timer.timeout.connect(self.checkIfUpdate)
             self.timer.start(self.refreshRate)

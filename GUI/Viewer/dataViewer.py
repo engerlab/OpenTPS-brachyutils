@@ -40,6 +40,8 @@ class DataViewer(QWidget):
         self._viewController.mainImageChangedSignal.connect(self._setMainImage)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
 
+        # self.dynamicDataList = []
+
     def _dropEvent(self, e):
         if e.mimeData().hasText():
             if (e.mimeData().text() == 'image'):
@@ -108,7 +110,7 @@ class DataViewer(QWidget):
             self._currentViewer.setAcceptDrops(False)
 
     def _setMainImage(self, image):
-        if hasattr(self._currentViewer, 'primaryImage'):
+        if hasattr(self._currentViewer, 'primaryImage'):    #why this if ?
             self._currentViewer.primaryImage = image
 
             if not(image is None):

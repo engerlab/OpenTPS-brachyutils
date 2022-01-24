@@ -37,7 +37,7 @@ class DynamicImageViewer(ImageViewer):
     @dynSeq.setter
     def dynSeq(self, seq):
         self._dynSeq = Dyn3DSeqForViewer(seq)
-        self.primaryImage = seq.dyn3DImageList[0]
+        self.primaryImage = self._dynSeq[0]
 
 
     def next_image(self):

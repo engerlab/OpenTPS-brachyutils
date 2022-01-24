@@ -12,6 +12,7 @@ class Dynamic2DSequence(PatientData):
         self.breathingPeriod = 4000
         self.inhaleDuration = 1800
 
+        self.isDynamic = True
 
     def print_dynSeries_info(self, prefix=""):
         print(prefix + "Dyn series: " + self.SequenceName)

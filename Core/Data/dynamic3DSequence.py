@@ -16,6 +16,8 @@ class Dynamic3DSequence(PatientData):
             self.inhaleDuration = 1800
             self.timingsList = self.prepareTimings()
 
+        self.isDynamic = True
+
     def __str__(self):
         s = "Dyn series: " + self.name + '\n'
         for image in self.dyn3DImageList:

@@ -18,6 +18,7 @@ class ViewController():
         self.secondaryImageChangedSignal = Event(object)
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
+        self.dynamicOrStaticModeChangedSignal = Event(object)
 
         self._activePatients = [patient for patient in patientList.patients]
         self._crossHairEnabled = None
@@ -125,6 +126,7 @@ class ViewController():
     def mainImage(self, image):
         self._mainImage = image
         self.mainImageChangedSignal.emit(self._mainImage)
+        self.dynamicOrStaticModeChangedSignal.emit(self._mainImage)
         self.shownDataUIDsList.append(self._mainImage.seriesInstanceUID)
 
     @property

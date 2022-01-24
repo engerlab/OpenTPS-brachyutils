@@ -2,12 +2,12 @@ import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
 from Core.event import Event
-from GUI.Viewer.DataForViewer.dataForViewer import DataForViewer
+from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.Viewers.lookupTables import LookupTables
 
 
-class Dyn3DSeqForViewer(DataForViewer):
+class Dyn3DSeqForViewer(DataMultiton):
     def __init__(self, dyn3DSeq):
         super().__init__(dyn3DSeq)
 

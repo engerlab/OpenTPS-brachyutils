@@ -230,54 +230,6 @@ class PatientDataTree(QTreeView):
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
             self._viewController.mainImage = selectedData
 
-        #from 4D branch
-        # selected_type = self.model().itemFromIndex(selection).whatsThis()
-        # print(selected_type)
-        # selected_UID = selection.model().data(selection.model().index(selection.row(), 1, selection.parent()))
-        # is_bold = selection.model().itemFromIndex(selection).font().bold()
-        #
-        # if is_bold and selected_type != 'CT':
-        #     print('Unselected for display:', selected_UID)
-        # else:
-        #     print('Selected for display:', selected_UID)
-        #
-        # if selected_type == 'CT':
-        #     self.Current_CT_changed.emit(selected_UID)
-        #     self.ROI_list_changed.emit()
-        #     return
-        # elif selected_type == 'dose':
-        #     if is_bold:
-        #         self.Current_dose_changed.emit("")
-        #     else:
-        #         self.Current_dose_changed.emit(selected_UID)
-        #     return
-        # elif selected_type == 'plan':
-        #     if is_bold:
-        #         self.Current_plan_changed.emit("")
-        #     else:
-        #         self.Current_plan_changed.emit(selected_UID)
-        #     return
-        # elif selected_type == 'field':
-        #     if is_bold:
-        #         self.Current_field_changed.emit("")
-        #     else:
-        #         self.Current_field_changed.emit(selected_UID)
-        #     return
-        #
-        # for seriesIndex, series in enumerate(self.Patients.list[0].Dyn4DSeqList):
-        #     serieRoot = series.SOPInstanceUID
-        #     if serieRoot == selected_UID:
-        #         print("Series selected", serieRoot, "seriesIndex:", seriesIndex)
-        #         self.DynamicImage_selected.emit([selected_UID, 'dyn4DSeq', seriesIndex])
-        #         return
-        #
-        # for seriesIndex, series in enumerate(self.Patients.list[0].Dyn2DSeqList):
-        #     serieRoot = series.SOPInstanceUID
-        #     if serieRoot == selected_UID:
-        #         print("Series selected", serieRoot, "seriesIndex:", seriesIndex)
-        #         self.DynamicImage_selected.emit([selected_UID, 'dyn2DSeq', seriesIndex])
-        #         return
-
     def _handleRightClick(self, pos):
         UIDs = []
         selectedDataTypeList = []
