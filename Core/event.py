@@ -31,3 +31,7 @@ class Event:
             except Exception as e:
                 #TODO
                 print(e)
+
+    @property
+    def slots(self):
+        return[slot for slot in self._slots]
