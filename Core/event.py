@@ -14,8 +14,7 @@ class Event:
         try:
             self._slots.remove(slot)
         except Exception as e:
-            # TODO
-            print(e)
+            raise(e)
 
     def emit(self, *args):
         if not(self.objectType is None):
@@ -29,8 +28,7 @@ class Event:
             try:
                 slot(*args)
             except Exception as e:
-                #TODO
-                print(e)
+                raise(e)
 
     @property
     def slots(self):
