@@ -7,9 +7,9 @@ from GUI.Viewer.viewerToolbar import ViewerToolbar
 
 
 class ViewerPanel(QWidget):
-    # LAYOUT_FOUR = 'LAYOUT_FOUR'
+    LAYOUT_FOUR = 'LAYOUT_FOUR'
 
-    def __init__(self, viewController, layoutType='2by2'):
+    def __init__(self, viewController, layoutType='LAYOUT_FOUR'):
         QWidget.__init__(self)
 
         self._dropEnabled = False
@@ -21,9 +21,8 @@ class ViewerPanel(QWidget):
         self._viewController = viewController
 
         self._setToolbar(self._viewToolbar)
-        self._layoutType = layoutType
-        self._setLayout(self._layoutType)
-        if self._layoutType == '2by2':
+        self._setLayout(layoutType)
+        if self._layoutType == self.LAYOUT_FOUR:
             self._viewController.numberOfViewerPanelElement = 4
 
         self._viewController.independentViewsEnabledSignal.connect(lambda enabled: self._setDropEnabled(not enabled))
@@ -64,7 +63,7 @@ class ViewerPanel(QWidget):
         if not self._viewerGrid is None:
             self._layoutType.removeWidget(self._viewerGrid)
 
-        if self._layoutType == '2by2':
+        if self._layoutType == self.LAYOUT_FOUR:
             self._viewerGrid = GridFourElements(self._viewController)
 
         if self._viewerGrid==None:
@@ -72,7 +71,7 @@ class ViewerPanel(QWidget):
 
         self._layout.addWidget(self._viewerGrid)
 
-        if self._layoutType == '2by2':
+        if self._layoutType == self.LAYOUT_FOUR:
             self._viewerGrid.setEqualSize()
 
     def _setToolbar(self, toolbar):

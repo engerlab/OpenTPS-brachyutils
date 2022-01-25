@@ -2,6 +2,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
+from GUI.Viewer.Viewers.dynamicImageViewer import DynamicImageViewer
 from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
@@ -13,6 +14,7 @@ class DataViewer(QWidget):
     DISPLAY_NONE = 'None'
     DISPLAY_PROFILE = 'PROFILE'
     DISPLAY_SLICEVIEWER = 'SLICE'
+    DISPLAY_DYNSLICEVIEWER = 'DYNSLICE'
 
     def __init__(self, viewController):
         QWidget.__init__(self)
@@ -55,7 +57,7 @@ class DataViewer(QWidget):
         return self._currentViewer
 
     def _setDisplay(self, displayType):
-        if displayType==self._displayType:
+        if displayType == self._displayType:
             return
 
         if not (self._currentViewer is None):
@@ -66,19 +68,19 @@ class DataViewer(QWidget):
 
         self._displayType = displayType
 
-        if self._displayType==self.DISPLAY_DVH:
+        if self._displayType == self.DISPLAY_DVH:
             self._currentViewer = DVHPlot()
 
-        if self._displayType==self.DISPLAY_NONE:
+        if self._displayType == self.DISPLAY_NONE:
             self._currentViewer = BlackEmptyPlot()
 
-        if self._displayType==self.DISPLAY_PROFILE:
+        if self._displayType == self.DISPLAY_PROFILE:
             if self._profileViewer is None:
                 self._profileViewer = ProfilePlot(self._viewController)
 
             self._currentViewer = self._profileViewer
 
-        if self._displayType==self.DISPLAY_SLICEVIEWER:
+        if self._displayType == self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
                 self._sliceViewer = ImageViewer(self._viewController)
                 for action in self._sliceViewer.qActions:
@@ -88,6 +90,19 @@ class DataViewer(QWidget):
             self._sliceViewer.qActions.resetVisibility()
 
             self._currentViewer = self._sliceViewer
+
+            self._setDropEnabled(self._dropEnabled)
+
+        if self._displayType == self.DISPLAY_DYNSLICEVIEWER:
+            if self._dynSliceViewer is None:
+                self._dynSliceViewer = DynamicImageViewer(self._viewController)
+                for action in self._dynSliceViewer.qActions:
+                    action.setParent(self._toolbar)
+                    self._toolbar.addAction(action)
+
+            self._dynSliceViewer.qActions.resetVisibility()
+
+            self._currentViewer = self._dynSliceViewer
 
             self._setDropEnabled(self._dropEnabled)
 
@@ -110,7 +125,7 @@ class DataViewer(QWidget):
             self._currentViewer.setAcceptDrops(False)
 
     def _setMainImage(self, image):
-        if hasattr(self._currentViewer, 'primaryImage'):    #why this if ?
+        if hasattr(self._currentViewer, 'primaryImage'):  ## check if the current viewer is an ImageViewer
             self._currentViewer.primaryImage = image
 
             if not(image is None):
