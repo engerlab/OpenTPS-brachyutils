@@ -4,13 +4,16 @@ from Controllers.api import API
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 
 
+@API.apiClass
 class DynamicSequenceController:
+    patientList = None
+
     def __init__(self, patientList):
-        self._patientList = patientList
+        self.patientList = patientList
 
-        API.registerToAPI(self.createDynamic3DSequence.__name__, self.createDynamic3DSequence)
-
-    def createDynamic3DSequence(self, selectedImages, newName):
+    @staticmethod
+    @API.apiMethod
+    def createDynamic3DSequence(selectedImages, newName):
         newSeq = Dynamic3DSequence()
         newSeq.name = newName
         newSeq.seriesInstanceUID = generate_uid()
