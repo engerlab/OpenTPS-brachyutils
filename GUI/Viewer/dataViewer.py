@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.Viewers.dynamicImageViewer import DynamicImageViewer
+from GUI.Viewer.Viewers.multiTypeImageViewer import MultiTypeImageViewer
 from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
@@ -10,14 +11,15 @@ from GUI.Viewer.Viewers.dvhPlot import DVHPlot
 from GUI.Viewer.Viewers.profilePlot import ProfilePlot
 
 class DataViewer(QWidget):
+
     DISPLAY_DVH = 'DVH'
     DISPLAY_NONE = 'None'
     DISPLAY_PROFILE = 'PROFILE'
     DISPLAY_SLICEVIEWER = 'SLICE'
     DISPLAY_DYNSLICEVIEWER = 'DYNSLICE'
-
-    MODE_DYNAMIC = 'DYNAMIC'
-    MODE_STATIC = 'STATIC'
+    #
+    # MODE_DYNAMIC = 'DYNAMIC'
+    # MODE_STATIC = 'STATIC'
 
     def __init__(self, viewController):
         QWidget.__init__(self)
@@ -41,7 +43,7 @@ class DataViewer(QWidget):
 
         self._setToolbar(self._toolbar)
         self._setDisplay(self.DISPLAY_SLICEVIEWER)
-        self._setMode(self.MODE_STATIC)
+        # self._setMode(self.MODE_STATIC)
 
         self._viewController.independentViewsEnabledSignal.connect(self._setDropEnabled)
         self._setDropEnabled(self._viewController.independentViewsEnabled)
@@ -87,7 +89,8 @@ class DataViewer(QWidget):
 
         if self._displayType == self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer is None:
-                self._sliceViewer = ImageViewer(self._viewController)
+                self._sliceViewer = MultiTypeImageViewer(self._viewController)
+                # self._sliceViewer = ImageViewer(self._viewController)
                 for action in self._sliceViewer.qActions:
                     action.setParent(self._toolbar)
                     self._toolbar.addAction(action)
@@ -98,19 +101,19 @@ class DataViewer(QWidget):
 
             self._setDropEnabled(self._dropEnabled)
 
-        if self._displayType == self.DISPLAY_DYNSLICEVIEWER:
-            if self._dynSliceViewer is None:
-                self._dynSliceViewer = DynamicImageViewer(self._viewController)
-                for action in self._dynSliceViewer.qActions:
-                    action.setParent(self._toolbar)
-                    self._toolbar.addAction(action)
-
-            self._dynSliceViewer.qActions.resetVisibility()
-
-            self._currentViewer = self._dynSliceViewer
-            print('1 in setDisplay dyn, self._currentViewer type = ', type(self._currentViewer))
-
-            self._setDropEnabled(self._dropEnabled)
+        # if self._displayType == self.DISPLAY_DYNSLICEVIEWER:
+        #     if self._dynSliceViewer is None:
+        #         self._dynSliceViewer = DynamicImageViewer(self._viewController)
+        #         for action in self._dynSliceViewer.qActions:
+        #             action.setParent(self._toolbar)
+        #             self._toolbar.addAction(action)
+        #
+        #     self._dynSliceViewer.qActions.resetVisibility()
+        #
+        #     self._currentViewer = self._dynSliceViewer
+        #     print('1 in setDisplay dyn, self._currentViewer type = ', type(self._currentViewer))
+        #
+        #     self._setDropEnabled(self._dropEnabled)
 
         self._toolbar.handleDisplayChange(self._currentViewer)
 
@@ -127,54 +130,62 @@ class DataViewer(QWidget):
 
 
     def _setDropEnabled(self, enabled):
-        print('in _setDropEnabled')
-        print(type(self._currentViewer))
+        # print('in _setDropEnabled')
+        # print(type(self._currentViewer))
         self._dropEnabled = enabled
 
-        if enabled and (self._displayType == self.DISPLAY_SLICEVIEWER or self._displayType == self.DISPLAY_DYNSLICEVIEWER):
+        if enabled and (self._displayType == self.DISPLAY_SLICEVIEWER):# or self._displayType == self.DISPLAY_DYNSLICEVIEWER):
             self._currentViewer.setAcceptDrops(True)
             self._currentViewer.dragEnterEvent = lambda event: event.accept()
             self._currentViewer.dropEvent = lambda event: self._dropEvent(event)
         else:
             self._currentViewer.setAcceptDrops(False)
-        print(type(self._currentViewer))
+        # print(type(self._currentViewer))
 
     def _setMainImage(self, image):
 
         print('in _setMainImage')
         print(type(image))
-        print(image.getType())
+        print(type(image.patient))
+        # print(image.getType())
+        #
+        # if image.getType() == 'CTImage' and self._displayMode == self.MODE_DYNAMIC: # we could use isinstance but in this case the imports must be added just for this if
+        #     print(' in set main image dynamic to static')
+        #     # switch from static to dynamic
+        #     self.switchMode(self.MODE_STATIC)
 
-        if image.getType() == 'CTImage' and self._displayMode == self.MODE_DYNAMIC: # we could use isinstance but in this case the imports must be added just for this if
-            print(' in set main image dynamic to static')
-            # switch from static to dynamic
-            self.switchMode(self.MODE_STATIC)
+        # elif image.getType() == 'Dynamic3DSequence' and self._displayMode == self.MODE_STATIC:
+        #     # switch from dynamic to static
+        #     print(' in set main image static to dynamic')
+        #     print('1 type(self.currentViewer) : ', type(self.currentViewer))
+        #     self.switchMode(self.MODE_DYNAMIC)
+        #     # print(type(self._currentViewer))
+        #     self._currentViewer.setDynamicPrimaryImg(image)
 
-        elif image.getType() == 'Dynamic3DSequence' and self._displayMode == self.MODE_STATIC:
-            # switch from dynamic to static
-            print(' in set main image static to dynamic')
-            print('1 type(self.currentViewer) : ', type(self.currentViewer))
-            self.switchMode(self.MODE_DYNAMIC)
-            # print(type(self._currentViewer))
-            self._currentViewer.setDynamicPrimaryImg(image)
+        # elif image.getType() == 'Dynamic3DSequence' and self._displayMode == self.MODE_DYNAMIC:
+        #     # stays dynamic
+        #     if hasattr(self._currentViewer, 'primaryImage'):  ## check if the current viewer is an ImageViewer ? Sylvain ?
+        #         self._currentViewer.primaryImage = image
+        #
+        #         if not (image is None):
+        #             image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
+        #
+        # elif image.getType() == 'CTImage' and self._displayMode == self.MODE_STATIC:
+        #     # stays static
 
-        elif image.getType() == 'Dynamic3DSequence' and self._displayMode == self.MODE_DYNAMIC:
-            # stays dynamic
-            if hasattr(self._currentViewer, 'primaryImage'):  ## check if the current viewer is an ImageViewer ? Sylvain ?
-                self._currentViewer.primaryImage = image
+        if hasattr(self._currentViewer, 'primaryImage'):  ## check if the current viewer is an ImageViewer ? Sylvain ?
+            self._currentViewer.primaryImage = image
 
-                if not (image is None):
-                    image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
+            # if not (image is None):
+            #     image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
 
-        elif image.getType() == 'CTImage' and self._displayMode == self.MODE_STATIC:
-            # stays static
-            if hasattr(self._currentViewer, 'primaryImage'):  ## check if the current viewer is an ImageViewer ? Sylvain ?
-                self._currentViewer.primaryImage = image
+        # if hasattr(self._currentViewer, 'primaryImage'):  ## check if the current viewer is an ImageViewer ? Sylvain ?
+        #     self._currentViewer.primaryImage = image
+        #
+        #     if not(image is None):
+        #         image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
 
-                if not(image is None):
-                    image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
-
-        print('----------------')
+        # print('----------------')
 
     def _setSecondaryImage(self, image):
         if hasattr(self._currentViewer, 'secondaryImage'):
@@ -202,13 +213,13 @@ class DataViewer(QWidget):
         self._toolbar = toolbar
         self._mainLayout.addWidget(self._toolbar)
 
-    def switchMode(self, mode):
-
-        print('2 start of switchMode, print(type(self._currentViewer)) : ', type(self._currentViewer))
-        self._setMode(mode)
-        if self._displayMode == self.MODE_DYNAMIC:
-            self._setDisplay(self.DISPLAY_DYNSLICEVIEWER)
-        elif self._displayMode == self.MODE_STATIC:
-            self._setDisplay(self.DISPLAY_SLICEVIEWER)
-
-        print('end of switchMode, print(type(self._currentViewer)) : ', type(self._currentViewer))
+    # def switchMode(self, mode):
+    #
+    #     print('2 start of switchMode, print(type(self._currentViewer)) : ', type(self._currentViewer))
+    #     self._setMode(mode)
+    #     if self._displayMode == self.MODE_DYNAMIC:
+    #         self._setDisplay(self.DISPLAY_DYNSLICEVIEWER)
+    #     elif self._displayMode == self.MODE_STATIC:
+    #         self._setDisplay(self.DISPLAY_SLICEVIEWER)
+    #
+    #     print('end of switchMode, print(type(self._currentViewer)) : ', type(self._currentViewer))

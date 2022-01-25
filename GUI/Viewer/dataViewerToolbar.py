@@ -10,6 +10,10 @@ from GUI.Viewer.Viewers.imageViewer import ImageViewer
 
 
 class DataViewerToolbar(QToolBar):
+
+    MODE_DYNAMIC = 'DYNAMIC'
+    MODE_STATIC = 'STATIC'
+
     def __init__(self):
         QToolBar.__init__(self)
 
@@ -40,6 +44,8 @@ class DataViewerToolbar(QToolBar):
         self.addAction(self._buttonDVH)
 
         self.addSeparator()
+
+        self._setMode(self.MODE_STATIC)
 
     def _handleButtonDVH(self, pressed):
         if self._buttonDVH.isChecked() != pressed:
@@ -82,3 +88,6 @@ class DataViewerToolbar(QToolBar):
             self._handleButtonViewer(True)
         print('in handle display change end')
         print(type(view))
+
+    def _setMode(self, mode):
+        self._displayMode = mode

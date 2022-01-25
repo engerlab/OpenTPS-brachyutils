@@ -23,10 +23,11 @@ class Dyn3DSeqForViewer(DataMultiton):
         self._range = (-1024, 1500)
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
-        self._selectedPosition = np.array(self.dyn3DSeq.dyn3DImageList[0].origin) + np.array(self.dyn3DSeq.dyn3DImageList[0].gridSize) * np.array(self.dyn3DSeq.dyn3DImageList[0].spacing) / 2.0
+        self._selectedPosition = np.array(dyn3DSeq.dyn3DImageList[0].origin) + np.array(dyn3DSeq.dyn3DImageList[0].gridSize) * np.array(dyn3DSeq.dyn3DImageList[0].spacing) / 2.0
 
         self._dataImporter = vtkImageImport()
-        self.vtkDyn3DImageList = self.getDataInVTKFormat(dyn3DSeq)
+        self._vtkOutputPort = None
+        self.image3DForViewerList = self.getImg3DForViewerList(dyn3DSeq.dyn3DImageList)
 
     @property
     def selectedPosition(self):
@@ -76,25 +77,10 @@ class Dyn3DSeqForViewer(DataMultiton):
         self._opacity = opacity
         self.lookupTable = self._lookupTableName
 
-    def getDataInVTKFormat(self, dyn3DSeq):
-        if self._vtkOutputPort is None:
-            shape = self.gridSize
-            imageOrigin = self.origin
-            imageSpacing = self.spacing
+    def getImg3DForViewerList(self, dyn3DSeqImgList):
 
-            self._dataImporter.SetNumberOfScalarComponents(1)
-            self._dataImporter.SetDataExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
-            self._dataImporter.SetWholeExtent(0, shape[0] - 1, 0, shape[1] - 1, 0, shape[2] - 1)
-            self._dataImporter.SetDataSpacing(imageSpacing[0], imageSpacing[1], imageSpacing[2])
-            self._dataImporter.SetDataOrigin(imageOrigin[0], imageOrigin[1], imageOrigin[2])
-            self._dataImporter.SetDataScalarTypeToFloat()
+        vtkImageList = []
+        for image in dyn3DSeqImgList:
+            vtkImageList.append(Image3DForViewer(image))
+        return vtkImageList
 
-            for image in dyn3DSeq.dyn3DImageList:
-                imageData = np.swapaxes(image.imageArray, 0, 2)
-                num_array = np.array(np.ravel(imageData), dtype=np.float32)
-                data_string = num_array.tobytes()
-                self._dataImporter.CopyImportVoidPointer(data_string, len(data_string))
-
-                self._vtkOutputPort = self._dataImporter.GetOutputPort()
-
-        return self._vtkOutputPort

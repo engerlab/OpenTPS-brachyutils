@@ -27,7 +27,7 @@ class ViewerPanel(QWidget):
 
         self._viewController.independentViewsEnabledSignal.connect(lambda enabled: self._setDropEnabled(not enabled))
         self._setDropEnabled(not self._viewController.independentViewsEnabled)
-        self._viewController.dynamicOrStaticModeChangedSignal.connect(self.switchMode)
+        # self._viewController.dynamicOrStaticModeChangedSignal.connect(self.switchMode)
 
         self.mode = 'static'
 
