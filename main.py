@@ -28,8 +28,9 @@ if __name__ == '__main__':
 
     patientList = PatientList()
 
-    #TODO Find a better way to instantiate the API
-    instantiateAPI(patientList)
+    API.patientList = patientList
+    print('Methods instantiated:')
+    print(API.getMethodsAsString())
 
     # instantiate the main GUI window
     viewController = ViewController(patientList)

@@ -10,13 +10,19 @@ from Core.Data.rtStruct import RTStruct
 from Core.IO import dataLoader
 from Controllers.api import API
 
+
+@API.apiClass
 class DataLoaderController:
+    patientList = None
+
     def __init__(self, patientList):
-        self._patientList = patientList
+        self.patientList = patientList
 
-        API.registerToAPI(self.loadData.__name__, self.loadData)
+        #API.registerToAPI(self.loadData.__name__, self.loadData)
 
-    def loadData(self, dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):
+    @staticmethod
+    @API.apiMethod
+    def loadData(dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):
         #TODO: implement ignoreExistingData
 
         dataList = dataLoader.loadAllData(dataPath, maxDepth=maxDepth)
@@ -30,17 +36,17 @@ class DataLoaderController:
             if (isinstance(data, Patient)):
                 patient = data
                 print('in dataLoaderController', patient.name)
-                self._patientList.append(patient)
+                DataLoaderController.patientList.append(patient)
 
             if importInPatient is None:
                 # check if patient already exists
-                patient = self._patientList.getPatientByPatientId(data.patientInfo.patientID)
+                patient = DataLoaderController.patientList.getPatientByPatientId(data.patientInfo.patientID)
 
                 # TODO: Get patient by name?
 
             if patient is None:
                 patient = Patient(patientInfo = data.patientInfo)
-                self._patientList.append(patient)
+                DataLoaderController.patientList.append(patient)
 
             # add data to patient
             if(isinstance(data, Image3D)):

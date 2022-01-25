@@ -44,7 +44,7 @@ class DataMultiton(object):
     def __getattribute__(self, item):
         try:
             return super().__getattribute__(item)
-        except:
+        except Exception as e:
             if item=='data':
-                raise()
+                raise(e)
             return self.data.__getattribute__(item)

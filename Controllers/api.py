@@ -26,6 +26,7 @@ class _API:
     _apiMethods = APIMethods()
     _logging = True
     _dic = {"patientList": None}
+    _apiClasses = []
 
     def __init__(self):
         # write log header
@@ -34,6 +35,20 @@ class _API:
             with open(scriptPath, 'a') as f:
                 f.write('from Controllers.api import API\n')
 
+    @staticmethod
+    def apiClass(cls):
+        if 'patientList' not in dir(cls):
+            raise(NotImplementedError('Error: patientList must be a property of API class'))
+
+        cls.patientList = _API.patientList
+        _API._apiClasses.append(cls)
+        return cls
+
+    @staticmethod
+    def apiMethod(method):
+        _API.registerToAPI(method.__name__, method)
+        return method
+
     @property
     def patientList(self):
         return _API._dic["patientList"]
@@ -41,6 +56,9 @@ class _API:
     @patientList.setter
     def patientList(self, patientList):
         _API._dic["patientList"] = patientList
+
+        for cls in _API._apiClasses:
+            cls.patientList = patientList
 
     def __getattr__(self, item):
         return lambda *args, **kwargs: _API._wrappedMethod(_API._apiMethods.__getattribute__(item), *args, **kwargs)
