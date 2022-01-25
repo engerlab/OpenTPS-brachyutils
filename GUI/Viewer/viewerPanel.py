@@ -2,6 +2,8 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from PyQt5.QtCore import QTimer
 
+from Core.Data.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from GUI.Viewer.gridFourElements import GridFourElements
 from GUI.Viewer.viewerToolbar import ViewerToolbar
 
