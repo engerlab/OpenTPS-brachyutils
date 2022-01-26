@@ -4,7 +4,10 @@ from Core.Data.patientData import PatientData
 
 class Dynamic3DSequence(PatientData):
 
-    def __init__(self, dyn3DImageList = [], timingsList = [], name="3D Dyn Seq", patientInfo=None):
+    LOOPED_MODE = 'LOOP'
+    ONESHOT_MODE = 'OS'
+
+    def __init__(self, dyn3DImageList = [], timingsList = [], name="3D Dyn Seq", repetitionMode='LOOP', patientInfo=None):
         super().__init__(patientInfo=patientInfo, name=name)
 
         self.dyn3DImageList = dyn3DImageList
@@ -17,6 +20,10 @@ class Dynamic3DSequence(PatientData):
             self.timingsList = self.prepareTimings()
 
         self.isDynamic = True
+        self.repetitionMode = repetitionMode
+
+        print('Dynamic 3D Sequence Created')
+
 
     def __str__(self):
         s = "Dyn series: " + self.name + '\n'
@@ -24,6 +31,7 @@ class Dynamic3DSequence(PatientData):
             s += str(image) + '\n'
 
         return s
+
 
     def print_dynSeries_info(self, prefix=""):
         print(prefix + "Dyn series: " + self.name)
@@ -33,7 +41,6 @@ class Dynamic3DSequence(PatientData):
     def prepareTimings(self):
         numberOfImages = len(self.dyn3DImageList)
         timingList = np.linspace(0, 4000, numberOfImages + 1)
-
         return timingList
 
 

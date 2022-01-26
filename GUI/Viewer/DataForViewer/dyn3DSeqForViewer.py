@@ -14,6 +14,8 @@ class Dyn3DSeqForViewer(DataMultiton):
         if hasattr(self, '_wwlValue'):
             return
 
+        self.dyn3DSeq = dyn3DSeq
+
         self.wwlChangedSignal = Event(tuple)
         self.lookupTableChangedSignal = Event(object)
         self.selectedPositionChangedSignal = Event(tuple)
@@ -24,10 +26,12 @@ class Dyn3DSeqForViewer(DataMultiton):
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         self._selectedPosition = np.array(dyn3DSeq.dyn3DImageList[0].origin) + np.array(dyn3DSeq.dyn3DImageList[0].gridSize) * np.array(dyn3DSeq.dyn3DImageList[0].spacing) / 2.0
+        self.isOver = False
 
         self._dataImporter = vtkImageImport()
         self._vtkOutputPort = None
         self.image3DForViewerList = self.getImg3DForViewerList(dyn3DSeq.dyn3DImageList)
+
 
     @property
     def selectedPosition(self):
@@ -82,5 +86,6 @@ class Dyn3DSeqForViewer(DataMultiton):
         vtkImageList = []
         for image in dyn3DSeqImgList:
             vtkImageList.append(Image3DForViewer(image))
+
         return vtkImageList
 

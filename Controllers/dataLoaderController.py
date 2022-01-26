@@ -35,7 +35,6 @@ class DataLoaderController:
         for data in dataList:
             if (isinstance(data, Patient)):
                 patient = data
-                print('in dataLoaderController', patient.name)
                 DataLoaderController.patientList.append(patient)
 
             if importInPatient is None:

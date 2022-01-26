@@ -9,7 +9,11 @@ from GUI.Viewer.viewerToolbar import ViewerToolbar
 
 
 class ViewerPanel(QWidget):
+
     LAYOUT_FOUR = 'LAYOUT_FOUR'
+
+    MODE_DYNAMIC = 'DYNAMIC'
+    MODE_STATIC = 'STATIC'
 
     def __init__(self, viewController, layoutType='LAYOUT_FOUR'):
         QWidget.__init__(self)
@@ -29,16 +33,20 @@ class ViewerPanel(QWidget):
 
         self._viewController.independentViewsEnabledSignal.connect(lambda enabled: self._setDropEnabled(not enabled))
         self._setDropEnabled(not self._viewController.independentViewsEnabled)
-        # self._viewController.dynamicOrStaticModeChangedSignal.connect(self.switchMode)
-
-        self.mode = 'static'
 
         # dynamic parameters
-        self.speedFactor = 1
-        self.refreshRate = 60
+        self.isDynamic = False
+        for dataViewer in self._viewerGrid._gridElements:
+            dataViewer._sliceViewer.dynamicModeChangedSignal.connect(self.getViewersDynamicStatus)
+        self.viewersDynamicStatusList = []
+        self.getViewersDynamicStatus()
+
+        self.currentSpeedCoef = 1
+        self.refreshRate = 200
         self.timerStepNumber = 0
         self.time = 0
         self.timer = QTimer()
+        self.timer.timeout.connect(self.checkIfUpdate)
 
 
     def _dropEvent(self, e):
@@ -82,42 +90,68 @@ class ViewerPanel(QWidget):
         self._layout.addWidget(self._toolbar)
 
 
-    def isThereADynViewer(self):
+    def getViewersDynamicStatus(self):
+        """
+        This function check the list self._viewerGrid._gridElements to get for each dataViewer its _sliceViewer viewerMode.
+        If one becomes dynamic, it switches the viewerPanel mode to dynamic.
+        If they all become static, it switches the viewerPanel mode to static.
+        """
+        self.viewersDynamicStatusList = [dataViewer._sliceViewer.viewerMode for dataViewer in self._viewerGrid._gridElements]
+        # print('Viewers dynamic status', self.viewersDynamicStatusList)
+        if (self.MODE_DYNAMIC in self.viewersDynamicStatusList) and self.isDynamic == False:
+            self.switchMode()
+        elif not(self.MODE_DYNAMIC in self.viewersDynamicStatusList) and self.isDynamic == True:
+            self.switchMode()
 
-        print('!!!!!!!!!!!!!!!!!! i stopped here yesterday')
-        for viewer in self._viewerGrid._gridElements:
-            viewer.currentMode
-        ## TODO : check on each viewer if its data is dynamic or static
-        return False
 
-
-    def switchMode(self, data):
-
-        if (data.getType() == 'Dynamic3DSequence' or data.getType() == 'Dynamic2DSequence') and self.mode == 'static':
-            # switch to dynamic
-            self.mode = 'dynamic'
-            print('in if')
-
-        elif (data.getType() == 'Dynamic3DSequence' or data.getType() == 'Dynamic2DSequence') and self.mode == 'dynamic':
-            # stays dynamic
-            self.mode = 'dynamic'
-
-        elif not (isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence)) and self.mode == 'dynamic':
-
-            print('must check if all the viewers are static')
-            # must check if all the viewers are static to pass or not to static mode
-            self.mode = 'dynamic'
-
-        else:
-            self.mode == 'static'
-            # switch to static
-
-            self.mode = 'static'
-
-        if self.mode == 'dynamic':
-            self.timer.timeout.connect(self.checkIfUpdate)
+    def switchMode(self):
+        """
+        This function switches the mode from dynamic to static and inversely. It starts or stops the timer accordingly.
+        """
+        self.isDynamic = not self.isDynamic
+        if self.isDynamic == True:
+            print('Switch viewerPanel to dynamic mode')
+            for dataViewer in self._viewerGrid._gridElements:
+                dataViewer._sliceViewer.curPrimaryImgIdx = 0
+                dataViewer._sliceViewer.loopStepNumber = 0
+            self.time = 0
             self.timer.start(self.refreshRate)
+
+        elif self.isDynamic == False:
+            self.timer.stop()
+            print('Switch viewerPanel to static mode')
 
 
     def checkIfUpdate(self):
-        print('coucou')
+        """
+        This function checks if an update must occur at this time.
+        It only works for dynamic3DSequences for now.
+        """
+        self.time += self.refreshRate * self.currentSpeedCoef
+
+        for dataViewerIndex, dataViewer in enumerate(self._viewerGrid._gridElements):
+
+            if self.viewersDynamicStatusList[dataViewerIndex] == self.MODE_DYNAMIC:
+                dyn3DSeqForViewer = dataViewer._sliceViewer.primaryImage
+                timingsList = dyn3DSeqForViewer.dyn3DSeq.timingsList
+                loopShift = timingsList[-1] * dataViewer._sliceViewer.loopStepNumber
+                curIndex = dataViewer._sliceViewer.curPrimaryImgIdx
+
+                if self.time-loopShift > timingsList[curIndex+1]:
+                    newIndex = self.lookForClosestIndex(self.time-loopShift, curIndex, timingsList, dataViewer)
+                    dataViewer._sliceViewer.nextImage(newIndex)
+
+
+    def lookForClosestIndex(self, time, curIndex, timingsList, dataViewer):
+        """
+        This function return the index of the last position in timingList lower than time,
+        meaning the time has passed this event and an update must occur.
+        If the curIndex has reached the end of the timingsList, it returns 0
+        """
+        while timingsList[curIndex + 1] < time:
+            curIndex += 1
+            if curIndex == len(timingsList) - 1:    # has reach the end
+                dataViewer._sliceViewer.loopStepNumber += 1
+                return 0
+
+        return curIndex

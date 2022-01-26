@@ -18,7 +18,6 @@ class ViewController():
         self.secondaryImageChangedSignal = Event(object)
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
-        # self.dynamicOrStaticModeChangedSignal = Event(object)
 
         self._activePatients = [patient for patient in patientList.patients]
         self._crossHairEnabled = None

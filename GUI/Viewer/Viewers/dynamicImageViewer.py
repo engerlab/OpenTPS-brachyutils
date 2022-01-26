@@ -1,11 +1,5 @@
-import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
-import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
-import vtkmodules.vtkRenderingCore as vtkRenderingCore
-import vtkmodules.vtkInteractionStyle as vtkInteractionStyle
-from vtkmodules import vtkCommonMath
-from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+
 from vtkmodules.vtkCommonCore import vtkCommand
-from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.DataForViewer.dyn3DSeqForViewer import Dyn3DSeqForViewer
@@ -15,8 +9,6 @@ class DynamicImageViewer(ImageViewer):
     def __init__(self, viewController):
         super().__init__(viewController)
 
-
-        print('in init DynamicImageViewer')
         self._viewController = viewController
 
         self.dynPrimaryImgSeq = None
@@ -32,19 +24,12 @@ class DynamicImageViewer(ImageViewer):
         self.curSecondaryImgIdx = 0
         self.curContourImgIdx = 0
 
-        self.primaryImage = None
+        self.loopStepNumber = 0
 
-    # def setDynamicPrimaryImg(self, dynSeq):
-
-
-
-    # def updateAll(self):
-    #     self.curDynIndex += 1
-    #     self.primaryImage = self.vtkDynPrimaryImgSeq[self.curDynIndex]
 
     @property
     def primaryImage(self):
-        if self.dynPrimaryImgSeqForViewer is None:
+        if self._primaryImageLayer.image is None:
             return None
         return self.dynPrimaryImgSeqForViewer
 
@@ -107,4 +92,7 @@ class DynamicImageViewer(ImageViewer):
 
         self._renderWindow.Render()
 
-
+    def nextImage(self, index):
+        self.curPrimaryImgIdx = index
+        self._primaryImageLayer.image = self.dynPrimaryImgSeqForViewer.image3DForViewerList[self.curPrimaryImgIdx]
+        self._renderWindow.Render()

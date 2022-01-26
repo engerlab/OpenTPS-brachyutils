@@ -68,26 +68,18 @@ class DataViewerToolbar(QToolBar):
             self._handleButtonDVH(False)
 
     def _handleButtonViewer(self, pressed):
-        print(' in _handleButtonViewer')
         if self._buttonViewer.isChecked() != pressed:
-            print('in first if ')
             self._buttonViewer.setChecked(pressed)
             return
 
         if pressed:
-            print('in second if ')
             self.displayTypeSignal.emit(gridElement.DataViewer.DISPLAY_SLICEVIEWER)
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 
     def handleDisplayChange(self, view):
-        print('in handle display change start')
-        print(type(view))
         if isinstance(view, ImageViewer):
-            print('in ifinstance')
             self._handleButtonViewer(True)
-        print('in handle display change end')
-        print(type(view))
 
     def _setMode(self, mode):
         self._displayMode = mode

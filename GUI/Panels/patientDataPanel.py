@@ -381,18 +381,7 @@ class PatientDataTree(QTreeView):
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.patientDataPanel.dataPath)
 
-        # item = selectedData[0]
-        # print(item.__class__)
-
-        # testItem = item.dumpableCopy()
         dataList = [data.dumpableCopy() for data in selectedData]
-
-        # max_bytes = 2 ** 31 - 1
-        # bytes_out = pickle.dumps(testItem)
-        # with open(savingPath + ".p", 'wb') as f_out:
-        #     for idx in range(0, len(bytes_out), max_bytes):
-        #         f_out.write(bytes_out[idx:idx + max_bytes])
-
         saveSerializedObject(dataList, savingPath, compressedBool=compressedBool)
 
 
