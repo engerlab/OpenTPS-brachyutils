@@ -14,13 +14,12 @@ class DynamicSequenceController:
     @staticmethod
     @API.apiMethod
     def createDynamic3DSequence(selectedImages, newName):
-        newSeq = Dynamic3DSequence()
-        newSeq.name = newName
-        newSeq.seriesInstanceUID = generate_uid()
 
-        for i, image in enumerate(selectedImages):
-            newSeq.dyn3DImageList.append(image)
+        newSeq = Dynamic3DSequence(dyn3DImageList=selectedImages, name=newName)
+
+        for image in selectedImages:
             patient = image.patient
             patient.removeImage(image)
 
+        newSeq.seriesInstanceUID = generate_uid()
         patient.appendDyn3DSeq(newSeq)
