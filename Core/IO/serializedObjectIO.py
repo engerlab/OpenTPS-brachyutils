@@ -23,14 +23,16 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
 # ---------------------------------------------------------------------------------------------------
 def saveSerializedObject(dataList, savingPath, compressedBool=False):
 
-    if compressedBool:
+    if type(dataList) != list:
+        dataList = [dataList]
 
-        print('Compress and save patient data structure in drive')
+    if compressedBool:
+        print('Compress and save serialized data structure in drive')
         with bz2.BZ2File(savingPath + '_compressed.pbz2', 'w') as f:
             cPickle.dump(dataList, f)
 
     else:
-        print('Save patient data structure in drive')
+        print('Save serialized data structure in drive')
         # basic version
         # pickle.dump(self.Patients, open(savingPath + ".p", "wb"), protocol=4)
 
@@ -41,7 +43,7 @@ def saveSerializedObject(dataList, savingPath, compressedBool=False):
             for idx in range(0, len(bytes_out), max_bytes):
                 f_out.write(bytes_out[idx:idx + max_bytes])
 
-    print('Patient data structure saved in drive')
+    print('Serialized data structure saved in drive')
 
 
 # ---------------------------------------------------------------------------------------------------

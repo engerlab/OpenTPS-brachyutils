@@ -57,6 +57,8 @@ class RegistrationMorphons(Registration):
         qDirections = [[0, 0.5257, 0.8507], [0, -0.5257, 0.8507], [0.5257, 0.8507, 0], [-0.5257, 0.8507, 0],
                        [0.8507, 0, 0.5257], [0.8507, 0, -0.5257]]
 
+        print('!!!!! in class RegistrationMorphons function compute in file registrationMorphons.py')
+        print('!!!!! --> this path works for the GUI but not if used in an external script')
         morphonsPath = os.path.abspath("./Core/Processing/Registration/Morphons_kernels")
         k = []
         k.append(np.reshape(
