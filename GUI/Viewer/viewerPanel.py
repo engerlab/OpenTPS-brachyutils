@@ -116,9 +116,11 @@ class ViewerPanel(QWidget):
                 dataViewer._sliceViewer.loopStepNumber = 0
             self.time = 0
             self.timer.start(self.refreshRate)
+            self._viewToolbar.addDynamicButtons()
 
         elif self.isDynamic == False:
             self.timer.stop()
+            self._viewToolbar.removeDynamicButtons()
             print('Switch viewerPanel to static mode')
 
 

@@ -14,6 +14,8 @@ class ViewerToolbar(QToolBar):
 
         iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
 
+        self._buttonOpen = QAction(QIcon(iconPath + "folder-open.png"), "Open files or folder", self)
+
         self._buttonChain = QAction(QIcon(iconPath+"chain-unchain.png"), "Independent views", self)
         self._buttonChain.setStatusTip("Independent views")
         self._buttonChain.triggered.connect(self._handleButtonChain)
@@ -30,12 +32,32 @@ class ViewerToolbar(QToolBar):
         self._buttonCrossHair.triggered.connect(self._handleCrossHair)
         self._buttonCrossHair.setCheckable(True)
 
-        self._buttonOpen = QAction(QIcon(iconPath + "folder-open.png"), "Open files or folder", self)
-
         self.addAction(self._buttonOpen)
         self.addAction(self._buttonChain)
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonContrast)
+
+        self.addSeparator()
+
+        ## dynamic options buttons
+        self._buttonFaster = QAction(QIcon(iconPath + "fast.png"), "Speed", self)
+        self._buttonFaster.setStatusTip("Speed up the dynamic viewers evolution")
+        self._buttonFaster.triggered.connect(self._handleFaster)
+
+        self._buttonSlower = QAction(QIcon(iconPath + "slow.png"), "Speed", self)
+        self._buttonSlower.setStatusTip("Slows the dynamic viewers evolution")
+        self._buttonSlower.triggered.connect(self._handleSlower)
+
+        self._buttonPlayPause = QAction(QIcon(iconPath + "pause.png"), "Speed", self)
+        self._buttonPlayPause.setStatusTip("Classical Play Pause of course")
+        self._buttonPlayPause.triggered.connect(self._handlePlayPause)
+
+        self._buttonRefreshRate = QAction('RR', self)
+        self._buttonRefreshRate.setStatusTip("Change the refresh rate of the dynamic viewers")
+        self._buttonRefreshRate.triggered.connect(self._handleRefreshRate)
+
+
+        # self.addDynamicButtons()
 
         self._viewController.independentViewsEnabledSignal.connect(self._handleButtonChain)
         self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
@@ -64,3 +86,36 @@ class ViewerToolbar(QToolBar):
             return
 
         self._viewController.windowLevelEnabled = pressed
+
+    def addDynamicButtons(self):
+        print('dynamic buttons added')
+
+        self.addAction(self._buttonSlower)
+        self.addAction(self._buttonPlayPause)
+        self.addAction(self._buttonFaster)
+        self.addAction(self._buttonRefreshRate)
+
+    def removeDynamicButtons(self):
+        print('dynamic buttons removed')
+        self.removeAction(self._buttonSlower)
+        self.removeAction(self._buttonPlayPause)
+        self.removeAction(self._buttonFaster)
+        self.removeAction(self._buttonRefreshRate)
+
+    def _handleFaster(self, pressed):
+        # if self._buttonChain.isChecked() != pressed:
+        #     self._buttonChain.setChecked(pressed)
+        #     return
+        #
+        # self._viewController.independentViewsEnabled = pressed
+        return 0
+
+    def _handleSlower(self, pressed):
+        return 0
+
+    def _handlePlayPause(self, pressed):
+        return 0
+
+    def _handleRefreshRate(self, pressed):
+        return 0
+
