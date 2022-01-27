@@ -1,5 +1,6 @@
 from Core.IO.dicomReader import readDicomCT
 from Core.IO.dataLoader import listAllFiles, loadAllData
+from Core.IO.serializedObjectIO import saveSerializedObject
 
 ## option 1 specific to dicoms
 dataPath = "/home/damien/Code/opentps/tests/MidP_ct/"
@@ -12,3 +13,7 @@ print(type(image1))
 dataList = loadAllData(dataPath)
 img2 = dataList[0]
 print(type(img2)) ## print the type of the first element
+
+## save data as serialized object
+savingPath = '/home/damien/Desktop/' + 'PatientTest_CT.p'
+saveSerializedObject(img2, savingPath)

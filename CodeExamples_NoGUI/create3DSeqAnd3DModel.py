@@ -1,5 +1,11 @@
-from Core.IO.dicomReader import readDicomCT
-from Core.IO.dataLoader import listAllFiles, loadAllData
+"""
+This file contains an example on how to:
+- read data from a 4DCT folder
+- create a dynamic 3D sequence with the 4DCT data
+- create a dynamic 3D model with the dynamic 3D sequence
+- save these objects in serialized format in drive
+"""
+from Core.IO.dataLoader import loadAllData
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObject
 from Core.Data.dynamic3DModel import Dynamic3DModel
