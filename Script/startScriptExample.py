@@ -8,7 +8,7 @@ This file will contain each command that the user will execute using the program
 To save some commands to execute automatically at the next program start, the user has to:
 - Use the program normally to first do manually the sequence of actions you would like to save.
 - Create an empty startScript.py file in the Script folder
-- Copy the content of the API_log.py file in the new startScript.py file (or only the commands you want to keep)
+- Copy the content of the API_log.py file in the new startScript.py file (only the commands you want to keep, this file is not emptied automaticaly)
 - Save the file (usually automatic)
 - Close and relaunch the program
 
