@@ -40,6 +40,7 @@ class MultiTypeImageViewer(QWidget):
             return super().__getattribute__(item)
         except:
             return self._viewer.__getattribute__(item)
+
     @property
     def primaryImage(self):
         if self._viewer is None:

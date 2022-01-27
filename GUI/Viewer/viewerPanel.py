@@ -22,8 +22,14 @@ class ViewerPanel(QWidget):
         self._layout = QVBoxLayout(self)
         self._layoutType = None
         self._viewerGrid = None
+
         self._viewToolbar = ViewerToolbar(viewController)
+        self._viewToolbar.playPauseSignal.connect(self.playOrPause)
+        self._viewToolbar.fasterSignal.connect(self.playFaster)
+        self._viewToolbar.slowerSignal.connect(self.playSlower)
+        self._viewToolbar.refreshRateChangedSignal.connect(self.setRefreshRate)
         self._layout.addWidget(self._viewToolbar)
+
         self._viewController = viewController
 
         self._setToolbar(self._viewToolbar)
@@ -42,7 +48,7 @@ class ViewerPanel(QWidget):
         self.getViewersDynamicStatus()
 
         self.currentSpeedCoef = 1
-        self.refreshRate = 200
+        self.refreshRate = 41 ## 24 img/sec
         self.timerStepNumber = 0
         self.time = 0
         self.timer = QTimer()
@@ -157,3 +163,22 @@ class ViewerPanel(QWidget):
                 return 0
 
         return curIndex
+
+
+    def playOrPause(self, playPauseBool):
+        if playPauseBool:
+            self.currentSpeedCoef = 1
+        else:
+            self.currentSpeedCoef = 0
+
+
+    def playFaster(self):
+        self.currentSpeedCoef *= 2
+
+
+    def playSlower(self):
+        self.currentSpeedCoef /= 2
+
+
+    def setRefreshRate(self):
+        return 0
