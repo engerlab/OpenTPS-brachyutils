@@ -386,6 +386,7 @@ class ImageViewer(QWidget):
             data = self._primaryImageLayer.getDataAtPosition(position)
 
             self._textLayer.setPrimaryTextLine(0, 'Value: ' + "{:.2f}".format(data))
+            # self._textLayer.setPrimaryTextLine(0, 'ValueNumpy: ' + "{:.2f}".format(dataNumpy))
             self._textLayer.setPrimaryTextLine(1,  'Pos: ' + "{:.2f}".format(position[0]) + ' ' + "{:.2f}".format(
                 position[1]) + ' ' + "{:.2f}".format(position[2]))
         except:

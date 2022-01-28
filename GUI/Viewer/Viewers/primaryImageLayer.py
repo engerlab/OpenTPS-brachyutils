@@ -9,6 +9,8 @@ from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkInteractionWidgets import vtkOrientationMarkerWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
 
+import numpy as np
+
 
 class PrimaryImageLayer:
     def __init__(self, renderer, renderWindow, iStyle):
@@ -93,12 +95,29 @@ class PrimaryImageLayer:
         self._orientationActor.PokeMatrix(resliceAxes)
 
     def getDataAtPosition(self, position):
-        imageData = self._reslice.GetInput(0)
-        ind = [0, 0, 0]
-        imageData.TransformPhysicalPointToContinuousIndex(position[0:3], ind)
-        data = imageData.GetScalarComponentAsFloat(round(ind[0]), round(ind[1]), round(ind[2]), 0)
 
-        return data
+        ## old version to get the value from the vtk image
+        # imageData = self._reslice.GetInput(0)
+        # ind = [0, 0, 0]
+        # imageData.TransformPhysicalPointToContinuousIndex(position[0:3], ind)
+        # dataVTK = imageData.GetScalarComponentAsFloat(round(ind[0]), round(ind[1]), round(ind[2]), 0)
+
+        ## new version to get the value from the numpy image
+        voxelIndex = self.getVoxelIndexFromPosition(position)
+        dataNumpy = self._image.imageArray[voxelIndex[0], voxelIndex[1], voxelIndex[2]]
+
+        return dataNumpy
+
+    def getVoxelIndexFromPosition(self, position):
+
+        positionInMM = np.array(position)
+        origin = np.array(self._image.origin) ## dataMultiton magic makes all this available here
+        spacing = np.array(self._image.spacing)
+
+        shiftedPosInMM = positionInMM - origin
+        posInVoxels = np.round(np.divide(shiftedPosInMM, spacing)).astype(np.int)
+
+        return posInVoxels
 
     def _connectAll(self):
         self._image.wwlChangedSignal.connect(self._setWWL)
