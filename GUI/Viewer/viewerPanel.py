@@ -48,7 +48,8 @@ class ViewerPanel(QWidget):
         self.getViewersDynamicStatus()
 
         self.currentSpeedCoef = 1
-        self.refreshRate = 41 ## 24 img/sec
+        self.refreshRateInFramePerSec = 24
+        self.refreshRateInMS = int(round(1000 / self.refreshRateInFramePerSec))
         self.timerStepNumber = 0
         self.time = 0
         self.timer = QTimer()
@@ -121,7 +122,7 @@ class ViewerPanel(QWidget):
                 dataViewer._sliceViewer.curPrimaryImgIdx = 0
                 dataViewer._sliceViewer.loopStepNumber = 0
             self.time = 0
-            self.timer.start(self.refreshRate)
+            self.timer.start(self.refreshRateInMS)
             self._viewToolbar.addDynamicButtons()
 
         elif self.isDynamic == False:
@@ -135,7 +136,7 @@ class ViewerPanel(QWidget):
         This function checks if an update must occur at this time.
         It only works for dynamic3DSequences for now.
         """
-        self.time += self.refreshRate * self.currentSpeedCoef
+        self.time += self.refreshRateInMS * self.currentSpeedCoef
 
         for dataViewerIndex, dataViewer in enumerate(self._viewerGrid._gridElements):
 
@@ -180,5 +181,13 @@ class ViewerPanel(QWidget):
         self.currentSpeedCoef /= 2
 
 
-    def setRefreshRate(self):
-        return 0
+    def setRefreshRate(self, refreshRate):
+        self.refreshRateInFramePerSec = refreshRate
+        if self.refreshRateInFramePerSec < 0.2:
+            self.refreshRateInFramePerSec = 0.2
+        if self.refreshRateInFramePerSec > 200:
+            self.refreshRateInFramePerSec = 200
+        self.refreshRateInMS = int(round(1000 / self.refreshRateInFramePerSec))
+        self.timer.stop()
+        self.timer.start(self.refreshRateInMS)
+        print('Refresh Rate Set to', self.refreshRateInFramePerSec, 'frames/sec --> Check every', self.refreshRateInMS, 'ms')

@@ -88,9 +88,9 @@ class Image3DForViewer(DataMultiton):
             imageOrigin = self.origin
             imageSpacing = self.spacing
             imageData = np.swapaxes(self.imageArray, 0, 2)
-            print('in vtkOutputPort numpy array image', type(self.imageArray), type(self.imageArray[0,0,0]))
-            print(self.imageArray.nbytes)
-            print(sys.getsizeof(self.imageArray))
+            # print('in vtkOutputPort numpy array image', type(self.imageArray), type(self.imageArray[0,0,0]))
+            # print(self.imageArray.nbytes)
+            # print(sys.getsizeof(self.imageArray))
             num_array = np.array(np.ravel(imageData), dtype=np.float32)
 
             self._dataImporter.SetNumberOfScalarComponents(1)
@@ -104,9 +104,9 @@ class Image3DForViewer(DataMultiton):
             self._dataImporter.CopyImportVoidPointer(data_string, len(data_string))
 
             self._vtkOutputPort = self._dataImporter.GetOutputPort()
-            print('in vtkOutputPort vtk image')
-            print(type(self._vtkOutputPort), self._dataImporter.GetDataScalarTypeAsString())
-            print(sys.getsizeof(self._vtkOutputPort))
+            # print('in vtkOutputPort vtk image')
+            # print(type(self._vtkOutputPort), self._dataImporter.GetDataScalarTypeAsString())
+            # print(sys.getsizeof(self._vtkOutputPort))
 
         # return numpyArrayToVTKImage(self.imageArray)
         return self._vtkOutputPort
@@ -125,7 +125,7 @@ def numpyArrayToVTKImage(numpyArray):
     vtk_datatype = VTK_FLOAT
     numpyArray = np.flipud(numpyArray) ## might change the original array, maybe put this in the numpy_to_vtk call like the .ravel()
 
-    vtkArray = numpy_to_vtk(numpyArray.ravel(), deep=True, array_type = vtk_datatype)
+    vtkArray = numpy_to_vtk(numpyArray.ravel(), deep=True, array_type=vtk_datatype)
     vtkArray.SetNumberOfComponents(numpyArray.shape[2])
 
     vtkImage.SetSpacing([1, 1, 1])

@@ -1,8 +1,8 @@
 import os
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QToolBar, QAction
+from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QScrollBar, QVBoxLayout
 from Core.event import Event
 
 
@@ -45,15 +45,15 @@ class ViewerToolbar(QToolBar):
         self.addSeparator()
 
         ## dynamic options buttons
-        self._buttonFaster = QAction(QIcon(self.iconPath + "fast.png"), "Speed", self)
+        self._buttonFaster = QAction(QIcon(self.iconPath + "fast.png"), "Faster", self)
         self._buttonFaster.setStatusTip("Speed up the dynamic viewers evolution")
         self._buttonFaster.triggered.connect(self._handleFaster)
 
-        self._buttonSlower = QAction(QIcon(self.iconPath + "slow.png"), "Speed", self)
+        self._buttonSlower = QAction(QIcon(self.iconPath + "slow.png"), "Slower", self)
         self._buttonSlower.setStatusTip("Slows the dynamic viewers evolution")
         self._buttonSlower.triggered.connect(self._handleSlower)
 
-        self._buttonPlayPause = QAction(QIcon(self.iconPath + "play.png"), "Speed", self)
+        self._buttonPlayPause = QAction(QIcon(self.iconPath + "play.png"), "Play/Pause", self)
         self._buttonPlayPause.setStatusTip("Classical Play Pause of course")
         self._buttonPlayPause.triggered.connect(self._handlePlayPause)
         self.playPauseStatus = self.PLAY_STATUS
@@ -65,7 +65,8 @@ class ViewerToolbar(QToolBar):
         self.fasterSignal = Event()
         self.slowerSignal = Event()
         self.playPauseSignal = Event(bool)
-        self.refreshRateChangedSignal = Event(int)
+        self.refreshRateChangedSignal = Event(float)
+        self.refreshRateValue = 24
         # self.addDynamicButtons()
 
         self._viewController.independentViewsEnabledSignal.connect(self._handleButtonChain)
@@ -131,5 +132,37 @@ class ViewerToolbar(QToolBar):
 
 
     def _handleRefreshRate(self):
-        return 0
 
+        refreshRateDialog = RefreshRateDialog(self.refreshRateValue)
+
+        if (refreshRateDialog.exec()):
+            self.refreshRateValue = float(refreshRateDialog.rRValueLine.text())
+            self.refreshRateChangedSignal.emit(self.refreshRateValue)
+
+
+class RefreshRateDialog(QDialog):
+
+    def __init__(self, refreshRateValue):
+        QDialog.__init__(self)
+
+        self.RRVal = refreshRateValue
+
+        self.main_layout = QVBoxLayout()
+        self.setLayout(self.main_layout)
+
+        # self.slider = QScrollBar(self)   ## to select the refresh rate with a scroll bar, not used for now
+        # self.slider.setOrientation(Qt.Horizontal)
+        # self.slider.sliderMoved.connect(self.sliderval)
+        # self.main_layout.addWidget(self.slider)
+
+        self.rRValueLine = QLineEdit(str(self.RRVal))
+        self.main_layout.addWidget(self.rRValueLine)
+
+        okButton = QPushButton("ok", self)
+        okButton.clicked.connect(self.accept)
+        self.main_layout.addWidget(okButton)
+
+
+    def sliderval(self):
+        # getting current position of the slider
+        value = self.slider.sliderPosition()
