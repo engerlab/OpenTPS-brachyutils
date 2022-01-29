@@ -22,7 +22,7 @@ class MultiTypeImageViewer(QWidget):
         self._viewController = viewController
 
         self._mode = self.MODE_STATIC
-        self.dynamicModeChangedSignal = Event()
+        self.dynamicModeChangedSignal = Event(object)
 
         self._dynamicViewer = DynamicImageViewer(self._viewController)
         self._mainLayout.addWidget(self._dynamicViewer)
@@ -49,6 +49,7 @@ class MultiTypeImageViewer(QWidget):
 
     @primaryImage.setter
     def primaryImage(self, image):
+
         if isinstance(image, Dynamic3DSequence):
             self.viewerMode = self.MODE_DYNAMIC
         else:
@@ -66,7 +67,7 @@ class MultiTypeImageViewer(QWidget):
             return
 
         self._mode = mode
-        self.dynamicModeChangedSignal.emit()
+        self.dynamicModeChangedSignal.emit(self._dynamicViewer)
         self._viewer.hide()
 
         if self._mode == self.MODE_DYNAMIC:

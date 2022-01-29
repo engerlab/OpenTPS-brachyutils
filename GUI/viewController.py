@@ -3,7 +3,7 @@ import logging
 
 from Core.event import Event
 from GUI.MainWindow import MainWindow
-
+from GUI.Viewer.dynamicDisplayController import DynamicDisplayController
 
 class ViewController():
     def __init__(self, patientList):
@@ -32,6 +32,9 @@ class ViewController():
         self._windowLevelEnabled = None
 
         self.mainWindow = MainWindow(self)
+        self.dynamicDisplayController = DynamicDisplayController(self)
+        self.dynamicDisplayController.connectViewerUnits(self.mainWindow.viewerPanel._viewerGrid)
+        self.dynamicDisplayController.setToolBar(self.mainWindow.viewerPanel._viewToolbar)
 
         self.logger = logging.getLogger(__name__)
 

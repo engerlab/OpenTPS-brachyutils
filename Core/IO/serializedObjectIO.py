@@ -66,8 +66,8 @@ def loadDataStructure(filePath):
         data = bz2.BZ2File(filePath, 'rb')
         data = cPickle.load(data)
 
-    print('Serialized data structure loaded')
-    for item in data:
-        print(type(item))
+    print('Serialized data list of', len(data), 'items loaded')
+    for itemIndex, item in enumerate(data):
+        print(itemIndex + 1, type(item))
     return data
 
