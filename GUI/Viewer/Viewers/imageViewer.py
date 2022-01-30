@@ -87,6 +87,12 @@ class ImageViewer(QWidget):
         # TODO: actions to change view type
         self._qActions = SecondaryImageActions(self._secondaryImageLayer)
 
+    def hideEvent(self, QHideEvent):
+        self._qActions.hideAll()
+
+    def showEvent(self, QShowEvent):
+        self._qActions.resetVisibility()
+
 
     @property
     def primaryImage(self):
