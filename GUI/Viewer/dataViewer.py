@@ -1,14 +1,28 @@
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
+from Core.Data.Images.image3D import Image3D
+from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.Viewers.dynamicImageViewer import DynamicImageViewer
-from GUI.Viewer.Viewers.multiTypeImageViewer import MultiTypeImageViewer
-from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.dvhPlot import DVHPlot
 from GUI.Viewer.Viewers.profilePlot import ProfilePlot
+
+class SliceViewerDescriptor():
+    def __get__(self, instance, objType=None):
+        if not hasattr(instance, '_dynViewer'):
+            instance._dynViewer = DynamicImageViewer(instance._viewController)
+            instance._staticViewer = ImageViewer(instance._viewController)
+
+        if instance._viewerDisplayMode == instance.VIEWER_STATIC:
+            return instance._staticViewer
+        elif instance._viewerDisplayMode == instance.VIEWER_DYN:
+            return instance._dynViewer
+        else:
+            raise ValueError("_viewerDisplayMode has invalid value.")
+
 
 class DataViewer(QWidget):
 
@@ -16,7 +30,12 @@ class DataViewer(QWidget):
     DISPLAY_NONE = 'None'
     DISPLAY_PROFILE = 'PROFILE'
     DISPLAY_SLICEVIEWER = 'SLICE'
-    DISPLAY_DYNSLICEVIEWER = 'DYNSLICE'
+
+    VIEWER_STATIC = 'STATIC'
+    VIEWER_DYN = 'DYN'
+
+    sliceViewer = SliceViewerDescriptor()
+
 
     def __init__(self, viewController):
         QWidget.__init__(self)
@@ -28,10 +47,13 @@ class DataViewer(QWidget):
         self._mainLayout = QVBoxLayout(self)
         self._profileViewer = None
         self._secondaryActions = None
-        self._sliceViewer = None
-        self._dynSliceViewer = None
         self._toolbar = DataViewerToolbar()
         self._viewController = viewController
+        self._viewerDisplayMode = self.VIEWER_STATIC
+
+        for action in self.sliceViewer.qActions:
+            action.setParent(self._toolbar)
+            self._toolbar.addAction(action)
 
         self.setLayout(self._mainLayout)
         self._mainLayout.setContentsMargins(0, 0, 0, 0)
@@ -67,9 +89,6 @@ class DataViewer(QWidget):
         if not (self._currentViewer is None):
             self._currentViewer.hide()
 
-        if self._displayType == self.DISPLAY_SLICEVIEWER and displayType != self.DISPLAY_SLICEVIEWER:
-            self._sliceViewer.qActions.hideAll()
-
         self._displayType = displayType
 
         if self._displayType == self.DISPLAY_DVH:
@@ -85,14 +104,8 @@ class DataViewer(QWidget):
             self._currentViewer = self._profileViewer
 
         if self._displayType == self.DISPLAY_SLICEVIEWER:
-            if self._sliceViewer is None:
-                self._sliceViewer = MultiTypeImageViewer(self._viewController)
-                for action in self._sliceViewer.qActions:
-                    action.setParent(self._toolbar)
-                    self._toolbar.addAction(action)
-
-            self._sliceViewer.qActions.resetVisibility()
-            self._currentViewer = self._sliceViewer
+            self.sliceViewer.qActions.resetVisibility()
+            self._currentViewer = self.sliceViewer
             self._setDropEnabled(self._dropEnabled)
 
         self._toolbar.handleDisplayChange(self._currentViewer)
@@ -108,7 +121,7 @@ class DataViewer(QWidget):
     def _setDropEnabled(self, enabled):
         self._dropEnabled = enabled
 
-        if enabled and (self._displayType == self.DISPLAY_SLICEVIEWER):# or self._displayType == self.DISPLAY_DYNSLICEVIEWER):
+        if enabled and (self._displayType == self.DISPLAY_SLICEVIEWER):
             self._currentViewer.setAcceptDrops(True)
             self._currentViewer.dragEnterEvent = lambda event: event.accept()
             self._currentViewer.dropEvent = lambda event: self._dropEvent(event)
@@ -117,13 +130,27 @@ class DataViewer(QWidget):
 
 
     def _setMainImage(self, image):
+        self._currentViewer.hide()
+        if self._displayType == self.DISPLAY_SLICEVIEWER:
+            if isinstance(image, Image3D):
+                self._viewerDisplayMode = self.VIEWER_STATIC
+            elif isinstance(image, Dynamic3DSequence):
+                self._viewerDisplayMode = self.VIEWER_DYN
+            elif image is None:
+                pass
+            else:
+                raise ValueError('Image type not supported')
 
-        if hasattr(self._currentViewer, 'primaryImage'):  ## check if the current viewer is an ImageViewer ? Sylvain ?
             self._currentViewer.primaryImage = image
+
+            if not image is None:
+                image.patient.imageRemovedSignal.connect(self._handleImageRemoved)
+
+            self._currentViewer.show()
 
 
     def _setSecondaryImage(self, image):
-        if hasattr(self._currentViewer, 'secondaryImage'):
+        if self._displayType == self.DISPLAY_SLICEVIEWER:
             if self._currentViewer.secondaryImage == image:
                 self._setSecondaryImage(None) # Currently default behavior but is it a good idea?
                 return
@@ -139,10 +166,10 @@ class DataViewer(QWidget):
 
 
     def _handleImageRemoved(self, image):
-        if hasattr(self._currentViewer, 'primaryImage') and self._currentViewer.primaryImage == image:
+        if self._displayType == self.DISPLAY_SLICEVIEWER and self._currentViewer.primaryImage == image:
             self._setMainImage(None)
 
-        if hasattr(self._currentViewer, 'secondaryImage') and self._currentViewer.secondaryImage == image:
+        if self._displayType == self.DISPLAY_SLICEVIEWER and self._currentViewer.secondaryImage == image:
             self._setSecondaryImage(None)
 
 
