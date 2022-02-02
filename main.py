@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
 from API.api import API
-from API.instantiateAPI import instantiateAPI
 from Core.Data.patientList import PatientList
 from GUI.viewController import ViewController
 import Script
