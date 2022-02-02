@@ -15,6 +15,8 @@ class _API:
     _logging = True
     _dic = {"patientList": None}
     _apiClasses = []
+    _logLock = False
+    _logKey = None
 
     def __init__(self):
         pass
@@ -32,7 +34,11 @@ class _API:
         if not isstatic:
             raise ValueError('method cannot be a non static class method')
 
-        return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
+        key = object()
+        if not API._logLock:
+            API._logKey = key
+
+        return lambda *args, **kwargs: _API._wrappedMethod(key, method, *args, **kwargs)
 
     @property
     def patientList(self):
@@ -104,42 +110,52 @@ class _API:
         return redirected_output.getvalue()
 
     @staticmethod
-    def _wrappedMethod(method, *args, **kwargs):
-        argsStr = ''
+    def _wrappedMethod(key, method, *args, **kwargs):
+        if not _API._logLock:
+            argsStr = ''
 
-        if len(args) > 0:
-            for arg in args:
-                argStr = _API._convertArgToString(arg)
-                argsStr += argStr + ','
+            if len(args) > 0:
+                for arg in args:
+                    argStr = _API._convertArgToString(arg)
+                    argsStr += argStr + ','
 
-        if len(kwargs)>0:
-            for arg in kwargs.values():
-                argStr = _API._convertArgToString(arg)
-                argsStr += argStr + ','
+            if len(kwargs)>0:
+                for arg in kwargs.values():
+                    argStr = _API._convertArgToString(arg)
+                    argsStr += argStr + ','
 
-        if len(args)>0 or len(kwargs)>0 or argsStr[-1] == ',':
-            argsStr = argsStr[:-1]
+            if len(args)>0 or len(kwargs)>0 or argsStr[-1] == ',':
+                argsStr = argsStr[:-1]
 
-        callStr = method.__name__ + '(' + argsStr + ')'
+            callStr = method.__name__ + '(' + argsStr + ')'
 
-        isFunction = True
-        isstatic = True
+            isFunction = True
+            isstatic = True
+            try:
+                cls = get_class_that_defined_method(method)
+                if not cls is None:
+                    isstatic = isinstance(inspect.getattr_static(cls, method.__name__), staticmethod)
+                    isFunction = False
+            except:
+                pass
+            if isstatic and not isFunction:
+                callStr = cls.__name__ + '.' + callStr
+            elif not isstatic and not isFunction:
+                raise ValueError('method cannot be a non static class method')
+
+            if  _API._logging:
+                _API._log(callStr)
+
+        _logLock = True
         try:
-            cls = get_class_that_defined_method(method)
-            if not cls is None:
-                isstatic = isinstance(inspect.getattr_static(cls, method.__name__), staticmethod)
-                isFunction = False
-        except:
-            pass
-        if isstatic and not isFunction:
-            callStr = cls.__name__ + '.' + callStr
-        elif not isstatic and not isFunction:
-            raise ValueError('method cannot be a non static class method')
+            method(*args, **kwargs)
+        except Exception as e:
+            if _API._logLock and key==_API._logKey:
+                _API._logLock = False
+            raise(e)
 
-        if  _API._logging:
-            _API._log(callStr)
-
-        method(*args, **kwargs)
+        if _API._logLock and key == _API._logKey:
+            _API._logLock = False
 
 API = _API()
 
