@@ -30,7 +30,7 @@ class Dynamic3DSequence(PatientData):
 
     @staticmethod
     @API.apiMethod
-    def fromImagesInPatientList(patientList: PatientList, selectedImages, newName):
+    def fromImagesInPatientList(selectedImages, newName):
         newSeq = Dynamic3DSequence(dyn3DImageList=selectedImages, name=newName)
 
         for image in selectedImages:

@@ -22,9 +22,6 @@ class _API:
 
     @staticmethod
     def apiMethod(method):
-        if method.__code__.co_varnames[0] != 'patientList':
-            raise(NameError('The first argument of an API method must be patientList'))
-
         isstatic = True
         try:
             cls = get_class_that_defined_method(method)
@@ -52,7 +49,9 @@ class _API:
     def _convertArgToString(arg):
         argStr = ''
 
-        if isinstance(arg, Patient):
+        if isinstance(arg, PatientList):
+            argStr = 'API.patientList'
+        elif isinstance(arg, Patient):
             argStr = 'API.patientList[' \
                      + str(_API._dic["patientList"].getIndex(arg)) + ']'
         elif isinstance(arg, Image3D):
@@ -140,10 +139,7 @@ class _API:
         if  _API._logging:
             _API._log(callStr)
 
-        if isinstance(args[0], PatientList):
-            method(args[0], args[1:], **kwargs)
-        else:
-            method(_API._dic["patientList"], *args, **kwargs)
+        method(*args, **kwargs)
 
 API = _API()
 
