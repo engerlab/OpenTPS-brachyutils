@@ -1,3 +1,4 @@
+import inspect
 import os
 import sys
 from io import StringIO
@@ -35,17 +36,12 @@ class _API:
             with open(scriptPath, 'a') as f:
                 f.write('from API.api import API\n')
 
-    @staticmethod
-    def apiClass(cls):
-        if 'patientList' not in dir(cls):
-            raise(NotImplementedError('Error: patientList must be a property of API class'))
-
-        cls.patientList = _API.patientList
-        _API._apiClasses.append(cls)
-        return cls
 
     @staticmethod
     def apiMethod(method):
+        if method.__code__.co_varnames[0] != 'patientList':
+            raise(NameError('The first argument of an API method must be patientList'))
+
         _API.registerToAPI(method.__name__, method)
         return method
 
@@ -149,6 +145,14 @@ class _API:
         if  _API._logging:
             _API._log(callStr)
 
-        method(*args, **kwargs)
+        method(_API.patientList, *args, **kwargs)
 
 API = _API()
+
+# This loads API_methods
+import API.API_methods as _methods
+_dirs = os.listdir(str(_methods.__path__[0]))
+for file in _dirs:
+    name, ext = os.path.splitext(file)
+    if ext=='.py':
+        exec('from API.API_methods import ' + name)
