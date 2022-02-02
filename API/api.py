@@ -1,40 +1,23 @@
+import functools
 import inspect
 import os
 import sys
+import types
 from io import StringIO
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.patient import Patient
 import Script
-
-
-class APIMethods:
-    _methodNames = []
-
-    def __setattr__(self, key, value):
-        print('Adding method to api: '+str(key))
-        if not (key in APIMethods._methodNames):
-            APIMethods._methodNames.append(key)
-
-        object.__setattr__(self, key, value)
-
-    @staticmethod
-    def getMethodsAsString():
-        return APIMethods._methodNames
+from Core.Data.patientList import PatientList
 
 
 class _API:
-    _apiMethods = APIMethods()
     _logging = True
     _dic = {"patientList": None}
     _apiClasses = []
 
     def __init__(self):
-        # write log header
-        if _API._logging:
-            scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
-            with open(scriptPath, 'a') as f:
-                f.write('from API.api import API\n')
+        pass
 
 
     @staticmethod
@@ -42,8 +25,17 @@ class _API:
         if method.__code__.co_varnames[0] != 'patientList':
             raise(NameError('The first argument of an API method must be patientList'))
 
-        _API.registerToAPI(method.__name__, method)
-        return method
+        isstatic = True
+        try:
+            cls = get_class_that_defined_method(method)
+            if not cls is None:
+                isstatic = isinstance(inspect.getattr_static(cls, method.__name__), staticmethod)
+        except:
+            pass
+        if not isstatic:
+            raise ValueError('method cannot be a non static class method')
+
+        return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
 
     @property
     def patientList(self):
@@ -55,9 +47,6 @@ class _API:
 
         for cls in _API._apiClasses:
             cls.patientList = patientList
-
-    def __getattr__(self, item):
-        return lambda *args, **kwargs: _API._wrappedMethod(_API._apiMethods.__getattribute__(item), *args, **kwargs)
 
     @staticmethod
     def _convertArgToString(arg):
@@ -97,18 +86,10 @@ class _API:
         _API._logging = enabled
 
     @staticmethod
-    def getMethodsAsString():
-        return _API._apiMethods.getMethodsAsString()
-
-    @staticmethod
     def _log(cmd):
         scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
         with open(scriptPath, 'a') as f:
             f.write(cmd + '\n')
-
-    @staticmethod
-    def registerToAPI(methodName, method):
-        _API._apiMethods.__setattr__(methodName, method)
 
     @staticmethod
     def run(code):
@@ -140,19 +121,44 @@ class _API:
         if len(args)>0 or len(kwargs)>0 or argsStr[-1] == ',':
             argsStr = argsStr[:-1]
 
-        callStr = 'API.' + method.__name__ + '(' + argsStr + ')'
+        callStr = method.__name__ + '(' + argsStr + ')'
+
+        isFunction = True
+        isstatic = True
+        try:
+            cls = get_class_that_defined_method(method)
+            if not cls is None:
+                isstatic = isinstance(inspect.getattr_static(cls, method.__name__), staticmethod)
+                isFunction = False
+        except:
+            pass
+        if isstatic and not isFunction:
+            callStr = cls.__name__ + '.' + callStr
+        elif not isstatic and not isFunction:
+            raise ValueError('method cannot be a non static class method')
 
         if  _API._logging:
             _API._log(callStr)
 
-        method(_API._dic["patientList"], *args, **kwargs)
+        if isinstance(args[0], PatientList):
+            method(args[0], args[1:], **kwargs)
+        else:
+            method(_API._dic["patientList"], *args, **kwargs)
 
 API = _API()
 
-# This loads API_methods
-import API.API_methods as _methods
-_dirs = os.listdir(str(_methods.__path__[0]))
-for file in _dirs:
-    name, ext = os.path.splitext(file)
-    if ext=='.py':
-        exec('from API.API_methods import ' + name)
+def get_class_that_defined_method(meth):
+    if isinstance(meth, functools.partial):
+        return get_class_that_defined_method(meth.func)
+    if inspect.ismethod(meth) or (inspect.isbuiltin(meth) and getattr(meth, '__self__', None) is not None and getattr(meth.__self__, '__class__', None)):
+        for cls in inspect.getmro(meth.__self__.__class__):
+            if meth.__name__ in cls.__dict__:
+                return cls
+        meth = getattr(meth, '__func__', meth)  # fallback to __qualname__ parsing
+    if inspect.isfunction(meth):
+        cls = getattr(inspect.getmodule(meth),
+                      meth.__qualname__.split('.<locals>', 1)[0].rsplit('.', 1)[0],
+                      None)
+        if isinstance(cls, type):
+            return cls
+    return getattr(meth, '__objclass__', None)  # handle special descriptor objects

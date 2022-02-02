@@ -28,8 +28,6 @@ if __name__ == '__main__':
     patientList = PatientList()
 
     API.patientList = patientList
-    print('Methods instantiated:')
-    print(API.getMethodsAsString())
 
     # instantiate the main GUI window
     viewController = ViewController(patientList)

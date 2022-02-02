@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushBut
 from pydicom.uid import generate_uid
 import pickle  ## temporary to test something
 
+import Core.IO.dataLoader as dataLoader
 from API.api import API
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
@@ -73,7 +74,7 @@ class PatientDataPanel(QWidget):
             withoutLastElementPath += element + '/'
         self.dataPath = withoutLastElementPath
 
-        API.loadData(filesOrFoldersList)
+        dataLoader.loadData(filesOrFoldersList)
 
     def saveData(self):
         fileDialog = SaveData_dialog()
@@ -356,7 +357,7 @@ class PatientDataTree(QTreeView):
         newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
 
         if (okPressed):
-            API.createDynamic3DSequence(selectedImages, newName)
+            Dynamic3DSequence.fromImagesInPatientList(selectedImages, newName)
 
     def computeDynamic3DModel(self, selected3DSequence):
         newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")
