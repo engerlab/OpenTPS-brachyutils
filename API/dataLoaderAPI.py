@@ -11,11 +11,11 @@ from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.Data.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.rtStruct import RTStruct
 from Core.IO import dataLoader
-from Controllers.api import API
+from API.api import API
 
 
 @API.apiClass
-class DataLoaderController:
+class DataLoaderAPI:
     patientList = None
 
     def __init__(self, patientList):
@@ -38,17 +38,17 @@ class DataLoaderController:
         for data in dataList:
             if (isinstance(data, Patient)):
                 patient = data
-                DataLoaderController.patientList.append(patient)
+                DataLoaderAPI.patientList.append(patient)
 
             if importInPatient is None:
                 # check if patient already exists
-                patient = DataLoaderController.patientList.getPatientByPatientId(data.patientInfo.patientID)
+                patient = DataLoaderAPI.patientList.getPatientByPatientId(data.patientInfo.patientID)
 
                 # TODO: Get patient by name?
 
             if patient is None:
                 patient = Patient(patientInfo = data.patientInfo)
-                DataLoaderController.patientList.append(patient)
+                DataLoaderAPI.patientList.append(patient)
 
             # add data to patient
             if(isinstance(data, Image3D)):

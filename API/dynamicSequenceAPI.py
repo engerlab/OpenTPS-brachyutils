@@ -1,6 +1,6 @@
 from pydicom.uid import generate_uid
 
-from Controllers.api import API
+from API.api import API
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 
 

@@ -13,14 +13,14 @@ To save some commands to execute automatically at the next program start, the us
 - Close and relaunch the program
 
 You should always copy the line:
-from Controllers.api import API
+from API.api import API
 
 Here under are some examples
 """
 
 
 # ------- Simple load data example --------
-from Controllers.api import API
+from API.api import API
 API.loadData(['/home/damien/Desktop/Patient0/Patient0_dynSeq.p'])
 
 

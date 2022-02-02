@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushBut
 from pydicom.uid import generate_uid
 import pickle  ## temporary to test something
 
-from Controllers.api import API
+from API.api import API
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence

@@ -33,7 +33,7 @@ class _API:
         if _API._logging:
             scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
             with open(scriptPath, 'a') as f:
-                f.write('from Controllers.api import API\n')
+                f.write('from API.api import API\n')
 
     @staticmethod
     def apiClass(cls):
