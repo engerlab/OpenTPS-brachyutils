@@ -2,21 +2,15 @@ import functools
 import inspect
 import os
 import sys
-import types
 from io import StringIO
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.patient import Patient
 import Script
-from Core.Data.patientList import PatientList
+
 
 
 class _API:
-    _logging = True
-    _dic = {"patientList": None}
+    _dic = {"patientList": None, "logging": True, "logLock": False, "logKey": None}
     _apiClasses = []
-    _logLock = False
-    _logKey = None
 
     def __init__(self):
         pass
@@ -34,11 +28,7 @@ class _API:
         if not isstatic:
             raise ValueError('method cannot be a non static class method')
 
-        key = object()
-        if not API._logLock:
-            API._logKey = key
-
-        return lambda *args, **kwargs: _API._wrappedMethod(key, method, *args, **kwargs)
+        return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
 
     @property
     def patientList(self):
@@ -53,13 +43,21 @@ class _API:
 
     @staticmethod
     def _convertArgToString(arg):
+        from Core.Data.Images.image3D import Image3D
+        from Core.Data.patient import Patient
+        from Core.Data.patientList import PatientList
+
         argStr = ''
 
         if isinstance(arg, PatientList):
             argStr = 'API.patientList'
         elif isinstance(arg, Patient):
-            argStr = 'API.patientList[' \
-                     + str(_API._dic["patientList"].getIndex(arg)) + ']'
+            ind = _API._dic["patientList"].getIndex(arg)
+            if ind<0:
+                argStr = 'Error: Image or patient not found in patient'
+            else:
+                argStr = 'API.patientList[' \
+                         + str(ind) + ']'
         elif isinstance(arg, Image3D):
             for patient in _API._dic["patientList"]:
                 if patient.hasImage(arg):
@@ -67,6 +65,8 @@ class _API:
                              + str(_API._dic["patientList"].getIndex(patient)) + ']' \
                              + '.images[' \
                              + str(patient.getImageIndex(arg)) + ']'
+            if argStr=='':
+                argStr = 'Error: Image or patient not found in patient or patient list'
         elif isinstance(arg, list):
             argStr = '['
             for elem in arg:
@@ -88,7 +88,7 @@ class _API:
 
     @staticmethod
     def enableLogging(enabled, fileName='default'):
-        _API._logging = enabled
+        _API._dic["logging"] = enabled
 
     @staticmethod
     def _log(cmd):
@@ -110,8 +110,8 @@ class _API:
         return redirected_output.getvalue()
 
     @staticmethod
-    def _wrappedMethod(key, method, *args, **kwargs):
-        if not _API._logLock:
+    def _wrappedMethod(method, *args, **kwargs):
+        if not _API._dic["logLock"]:
             argsStr = ''
 
             if len(args) > 0:
@@ -134,28 +134,30 @@ class _API:
             try:
                 cls = get_class_that_defined_method(method)
                 if not cls is None:
-                    isstatic = isinstance(inspect.getattr_static(cls, method.__name__), staticmethod)
+                    #isstatic = isinstance(inspect.getattr_static(cls, method.__name__), staticmethod)
                     isFunction = False
             except:
                 pass
             if isstatic and not isFunction:
                 callStr = cls.__name__ + '.' + callStr
-            elif not isstatic and not isFunction:
-                raise ValueError('method cannot be a non static class method')
 
-            if  _API._logging:
+            if  _API._dic["logging"]:
                 _API._log(callStr)
 
-        _logLock = True
+        key = object()
+        if not _API._dic["logLock"]:
+            _API._dic["logKey"] = key
+            _API._dic["logLock"] = True
+
         try:
             method(*args, **kwargs)
         except Exception as e:
-            if _API._logLock and key==_API._logKey:
-                _API._logLock = False
+            if key==_API._dic["logKey"]:
+                _API._dic["logLock"] = False
             raise(e)
 
-        if _API._logLock and key == _API._logKey:
-            _API._logLock = False
+        if key == _API._dic["logKey"]:
+            _API._dic["logLock"] = False
 
 API = _API()
 

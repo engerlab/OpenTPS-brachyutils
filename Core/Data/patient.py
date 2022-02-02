@@ -1,5 +1,6 @@
 
 from Core.Data.patientInfo import PatientInfo
+from Core.api import API
 from Core.event import Event
 
 
@@ -77,6 +78,7 @@ class Patient:
         # Doing this ensures that the user can't append directly to images
         return [image for image in self._images]
 
+    @API.apiMethod
     def appendImage(self, image):
         """
         Append image to patient's image list
@@ -109,6 +111,7 @@ class Patient:
         """
         return image in self._images
 
+    @API.apiMethod
     def removeImage(self, image):
         """
         Remove image from patient's image list
