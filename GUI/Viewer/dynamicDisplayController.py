@@ -32,8 +32,8 @@ class DynamicDisplayController():
 
     def connectViewerUnits(self, grid): ## to call after the grid is created or changed --> not a fan but I don't see how to do this better
         for dataViewer in grid._gridElements:
-            dataViewer._sliceViewer.dynamicModeChangedSignal.connect(self.addOrRemoveDynamicViewer)
-
+            dataViewer.dynViewerAddedSignal.connect(self.addDynamicViewer)
+            dataViewer.dynViewerRemovedSignal.connect(self.removeDynamicViewer)
 
     def setToolBar(self, viewerPanelToolBar):
         self._viewerPanelToolBar = viewerPanelToolBar
@@ -47,25 +47,31 @@ class DynamicDisplayController():
         self._viewerPanelToolBar.refreshRateChangedSignal.connect(self.setRefreshRate)
 
 
-    def addOrRemoveDynamicViewer(self, viewer):
+    def addDynamicViewer(self, viewer):
+        if viewer not in self.dynamicViewerUnitList:
+            self.dynamicViewerUnitList.append(viewer)
+        else:
+            return
+        if self.isDynamic == False:
+            self.setDynamicMode(True)
 
+    def removeDynamicViewer(self, viewer):
         if viewer in self.dynamicViewerUnitList:
             viewer.curPrimaryImgIdx = 0
             viewer.loopStepNumber = 0
             self.dynamicViewerUnitList.remove(viewer)
-            if not self.dynamicViewerUnitList:
-                self.switchMode()
         else:
-            self.dynamicViewerUnitList.append(viewer)
-            if self.isDynamic == False:
-                self.switchMode()
+            return
+        if not self.dynamicViewerUnitList:
+            self.setDynamicMode(False)
 
 
-    def switchMode(self):
+
+    def setDynamicMode(self, mode):
         """
         This function switches the mode from dynamic to static and inversely. It starts or stops the timer accordingly.
         """
-        self.isDynamic = not self.isDynamic
+        self.isDynamic = mode
         if self.isDynamic == True:
             print('Switch to dynamic mode')
             self.time = 0

@@ -96,3 +96,11 @@ class DynamicImageViewer(ImageViewer):
         self.curPrimaryImgIdx = index
         self._primaryImageLayer.image = self.dynPrimaryImgSeqForViewer.image3DForViewerList[self.curPrimaryImgIdx]
         self._renderWindow.Render()
+
+    @property
+    def secondaryImage(self):
+        return None
+
+    @property
+    def qActions(self):
+        return []
