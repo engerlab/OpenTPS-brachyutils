@@ -1,9 +1,8 @@
 import numpy as np
 from pydicom.uid import generate_uid
 
-from API.api import API
+from Core.api import API
 from Core.Data.patientData import PatientData
-from Core.Data.patientList import PatientList
 
 
 class Dynamic3DSequence(PatientData):

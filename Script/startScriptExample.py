@@ -20,7 +20,7 @@ Here under are some examples
 
 
 # ------- Simple load data example --------
-from API.api import API
+from Core.api import API
 API.loadData(['/home/damien/Desktop/Patient0/Patient0_dynSeq.p'])
 
 

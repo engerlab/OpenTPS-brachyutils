@@ -2,7 +2,7 @@ import os
 import pydicom
 import logging
 
-from API.api import API
+from Core.api import API
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D

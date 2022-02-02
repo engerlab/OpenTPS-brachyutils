@@ -3,7 +3,7 @@ import os
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFrame, QMessageBox, QFileDialog, QLabel, QHBoxLayout
 
-from API.api import API
+from Core.api import API
 from GUI.Panels.scriptingPanel.scriptingWindow import ScriptingWindow
 
 
