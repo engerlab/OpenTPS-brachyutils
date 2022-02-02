@@ -145,7 +145,7 @@ class _API:
         if  _API._logging:
             _API._log(callStr)
 
-        method(_API.patientList, *args, **kwargs)
+        method(_API._dic["patientList"], *args, **kwargs)
 
 API = _API()
 
