@@ -54,7 +54,7 @@ class PatientList():
             if patient.patientInfo.patientID==id:
                 return patient
 
-    @API.apiMethod
+    @API.loggedViaAPI
     def remove(self, patient):
         self._patients.remove(patient)
         self.patientRemovedSignal.emit(patient)

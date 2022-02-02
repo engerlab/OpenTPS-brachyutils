@@ -34,7 +34,7 @@ class PatientData:
     def name(self, name):
         self.setName(name)
 
-    @API.apiMethod
+    @API.loggedViaAPI
     def setName(self, name):
         self._name = name
         self.nameChangedSignal.emit(self._name)
@@ -45,6 +45,10 @@ class PatientData:
 
     @patient.setter
     def patient(self, patient):
+        self.setPatient(patient)
+
+    @API.loggedViaAPI
+    def setPatient(self, patient):
         if patient == self._patient:
             return
 

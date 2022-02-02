@@ -78,7 +78,7 @@ class Patient:
         # Doing this ensures that the user can't append directly to images
         return [image for image in self._images]
 
-    @API.apiMethod
+    @API.loggedViaAPI
     def appendImage(self, image):
         """
         Append image to patient's image list
@@ -111,7 +111,7 @@ class Patient:
         """
         return image in self._images
 
-    @API.apiMethod
+    @API.loggedViaAPI
     def removeImage(self, image):
         """
         Remove image from patient's image list

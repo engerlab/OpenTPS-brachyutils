@@ -16,7 +16,7 @@ from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField
 from Core.IO import mhdReadWrite
 from Core.IO.serializedObjectIO import loadDataStructure
 
-@API.apiMethod
+@API.loggedViaAPI
 def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):
     #TODO: implement ignoreExistingData
 

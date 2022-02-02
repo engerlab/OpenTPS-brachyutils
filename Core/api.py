@@ -7,7 +7,6 @@ from io import StringIO
 import Script
 
 
-
 class _API:
     _dic = {"patientList": None, "logging": True, "logLock": False, "logKey": None}
     _apiClasses = []
@@ -17,7 +16,7 @@ class _API:
 
 
     @staticmethod
-    def apiMethod(method):
+    def loggedViaAPI(method):
         isstatic = True
         try:
             cls = get_class_that_defined_method(method)

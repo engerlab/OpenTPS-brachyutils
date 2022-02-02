@@ -28,7 +28,7 @@ class Dynamic3DSequence(PatientData):
         print('Dynamic 3D Sequence Created')
 
     @staticmethod
-    @API.apiMethod
+    @API.loggedViaAPI
     def fromImagesInPatientList(selectedImages, newName):
         newSeq = Dynamic3DSequence(dyn3DImageList=selectedImages, name=newName)
 
