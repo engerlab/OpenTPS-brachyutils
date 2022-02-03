@@ -16,8 +16,7 @@ class APILogger:
             f.write(cmd + '\n')
 
 class _API:
-    _dic = {"patientList": None, "logging": True, "logLock": False, "logKey": None}
-    _apiClasses = []
+    _dic = {"enabled": False, "patientList": None, "logging": True, "logLock": False, "logKey": None}
     _loggerFunctions = []
 
     def __init__(self):
@@ -44,6 +43,14 @@ class _API:
         return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
 
     @property
+    def enabled(self):
+        return _API._dic["enabled"]
+
+    @enabled.setter
+    def enabled(self, e):
+        _API._dic["enabled"] = e
+
+    @property
     def patientList(self):
         return _API._dic["patientList"]
 
@@ -51,8 +58,8 @@ class _API:
     def patientList(self, patientList):
         _API._dic["patientList"] = patientList
 
-        for cls in _API._apiClasses:
-            cls.patientList = patientList
+        if _API._dic["patientList"] is None:
+            self.enabled = False
 
     @staticmethod
     def _convertArgToString(arg):
@@ -125,6 +132,10 @@ class _API:
 
     @staticmethod
     def _wrappedMethod(method, *args, **kwargs):
+        if not _API._dic["enabled"]:
+            method(*args, **kwargs)
+            return
+
         if not _API._dic["logLock"]:
             argsStr = ''
 
