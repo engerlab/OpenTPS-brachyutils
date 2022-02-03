@@ -1,19 +1,33 @@
 import functools
 import inspect
+import logging
 import os
 import sys
 from io import StringIO
 
 import Script
 
+class APILogger:
+    def __init__(self):
+        self.scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
+
+    def print(self, cmd):
+        with open(self.scriptPath, 'a') as f:
+            f.write(cmd + '\n')
 
 class _API:
     _dic = {"patientList": None, "logging": True, "logLock": False, "logKey": None}
     _apiClasses = []
+    _loggerFunctions = []
 
     def __init__(self):
         pass
 
+    def appendLoggingFunction(self, func):
+        self._loggerFunctions.append(func)
+
+    def removeLoggingFunction(self, func):
+        self._loggerFunctions.append(func)
 
     @staticmethod
     def loggedViaAPI(method):
@@ -91,9 +105,10 @@ class _API:
 
     @staticmethod
     def _log(cmd):
-        scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
-        with open(scriptPath, 'a') as f:
-            f.write(cmd + '\n')
+        for logFunction in _API._loggerFunctions:
+            logFunction(cmd)
+
+        logging.info(cmd)
 
     @staticmethod
     def run(code):
