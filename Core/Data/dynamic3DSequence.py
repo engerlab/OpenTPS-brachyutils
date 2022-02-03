@@ -63,7 +63,6 @@ class Dynamic3DSequence(PatientData):
 
     def sortImgsByName(self, imgList):
         imgList = sorted(imgList, key=lambda img: img.name)
-        # positionList = sorted(positionList, key=lambda pos: pos[0])
         return imgList
 
 
