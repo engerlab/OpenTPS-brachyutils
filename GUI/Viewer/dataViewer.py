@@ -1,9 +1,9 @@
+from typing import Union
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
-from Core.event import Event
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.Viewers.dynamicImageViewer import DynamicImageViewer
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
@@ -101,7 +101,7 @@ class DataViewer(QWidget):
         e.ignore()
 
     @property
-    def currentViewer(self):
+    def currentViewer(self) -> Union[ImageViewer, DVHPlot, BlackEmptyPlot, ProfilePlot]:
         return self._currentViewer
 
     def _setDisplay(self, displayType):
@@ -139,7 +139,7 @@ class DataViewer(QWidget):
         self._currentViewer.show()
 
 
-    def _setDropEnabled(self, enabled):
+    def _setDropEnabled(self, enabled: bool):
         self._dropEnabled = enabled
 
         if enabled and (self._displayType == self.DISPLAY_SLICEVIEWER):
@@ -150,7 +150,7 @@ class DataViewer(QWidget):
             self.setAcceptDrops(False)
 
 
-    def _setMainImage(self, image):
+    def _setMainImage(self, image: Union[Image3D, Dynamic3DSequence]):
         self._sliceViewer.hide()
         if self._displayType == self.DISPLAY_SLICEVIEWER:
 
@@ -181,7 +181,7 @@ class DataViewer(QWidget):
             self._sliceViewer.show()
 
 
-    def _setSecondaryImage(self, image):
+    def _setSecondaryImage(self, image: Image3D):
         if self._displayType == self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer.secondaryImage == image:
                 self._setSecondaryImage(None) # Currently default behavior but is it a good idea?
@@ -197,7 +197,7 @@ class DataViewer(QWidget):
             self._sliceViewer.secondaryImage = image
 
 
-    def _handleImageRemoved(self, image):
+    def _handleImageRemoved(self, image: Image3D):
         if self._displayType == self.DISPLAY_SLICEVIEWER and self._sliceViewer.primaryImage == image:
             self._setMainImage(None)
 
