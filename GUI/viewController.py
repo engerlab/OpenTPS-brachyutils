@@ -18,6 +18,7 @@ class ViewController():
         self.secondaryImageChangedSignal = Event(object)
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
+        #self.dynamicViewerSwitchedOnSignal = Event(object)
 
         self._activePatients = [patient for patient in patientList.patients]
         self._crossHairEnabled = None
@@ -31,10 +32,11 @@ class ViewController():
         self._selectedImage = None
         self._windowLevelEnabled = None
 
-        self.mainWindow = MainWindow(self)
         self.dynamicDisplayController = DynamicDisplayController(self)
-        self.dynamicDisplayController.connectViewerUnits(self.mainWindow.viewerPanel._viewerGrid)
-        self.dynamicDisplayController.setToolBar(self.mainWindow.viewerPanel._viewToolbar)
+        self.mainWindow = MainWindow(self)
+
+        # self.dynamicDisplayController.connectViewerUnits(self.mainWindow.viewerPanel._viewerGrid)
+        # self.dynamicDisplayController.setToolBar(self.mainWindow.viewerPanel._viewToolbar)
 
         self.logger = logging.getLogger(__name__)
 

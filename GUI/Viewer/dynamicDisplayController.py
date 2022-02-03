@@ -3,23 +3,16 @@ from PyQt5.QtCore import QTimer
 
 class DynamicDisplayController():
 
-    MODE_DYNAMIC = 'DYNAMIC'
-    MODE_STATIC = 'STATIC'
+    # MODE_DYNAMIC = 'DYNAMIC'
+    # MODE_STATIC = 'STATIC'
 
     def __init__(self, viewController):
 
         self._viewController = viewController
         self._viewerPanelToolBar = None
 
-        # dynamic parameters
         self.isDynamic = False
-
         self.dynamicViewerUnitList = []
-        # for dataViewer in self._viewerGrid._gridElements:
-        #     dataViewer._sliceViewer.dynamicModeChangedSignal.connect(self.addDynamicViewer)
-
-        # self.viewersDynamicStatusList = []
-        # self.getViewersDynamicStatus()
 
         self.currentSpeedCoef = 1
         self.refreshRateInFramePerSec = 24
@@ -29,11 +22,6 @@ class DynamicDisplayController():
         self.timer = QTimer()
         self.timer.timeout.connect(self.checkIfUpdate)
 
-
-    def connectViewerUnits(self, grid): ## to call after the grid is created or changed --> not a fan but I don't see how to do this better
-        for dataViewer in grid._gridElements:
-            dataViewer.dynViewerAddedSignal.connect(self.addDynamicViewer)
-            dataViewer.dynViewerRemovedSignal.connect(self.removeDynamicViewer)
 
     def setToolBar(self, viewerPanelToolBar):
         self._viewerPanelToolBar = viewerPanelToolBar
@@ -48,30 +36,31 @@ class DynamicDisplayController():
 
 
     def addDynamicViewer(self, viewer):
+        # print('in displayController addDynViewer', type(viewer))
         if viewer not in self.dynamicViewerUnitList:
             self.dynamicViewerUnitList.append(viewer)
         else:
             return
         if self.isDynamic == False:
-            self.setDynamicMode(True)
+            self.switchDynamicMode()
+
 
     def removeDynamicViewer(self, viewer):
+        # print('in displayController removeDynamicViewer', type(viewer))
         if viewer in self.dynamicViewerUnitList:
-            viewer.curPrimaryImgIdx = 0
-            viewer.loopStepNumber = 0
+            viewer.resetDynamicParameters()
             self.dynamicViewerUnitList.remove(viewer)
         else:
             return
         if not self.dynamicViewerUnitList:
-            self.setDynamicMode(False)
+            self.switchDynamicMode()
 
 
-
-    def setDynamicMode(self, mode):
+    def switchDynamicMode(self):
         """
         This function switches the mode from dynamic to static and inversely. It starts or stops the timer accordingly.
         """
-        self.isDynamic = mode
+        self.isDynamic = not self.isDynamic
         if self.isDynamic == True:
             print('Switch to dynamic mode')
             self.time = 0

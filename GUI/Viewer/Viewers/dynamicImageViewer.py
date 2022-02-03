@@ -104,3 +104,10 @@ class DynamicImageViewer(ImageViewer):
     @property
     def qActions(self):
         return []
+
+    def resetDynamicParameters(self):
+        self.curPrimaryImgIdx = 0
+        self.curSecondaryImgIdx = 0
+        self.curContourImgIdx = 0
+
+        self.loopStepNumber = 0

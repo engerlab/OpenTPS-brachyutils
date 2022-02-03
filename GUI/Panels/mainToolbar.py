@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QToolBox
 from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
+from GUI.Panels.xRayProjectionPanel.xRayProjectionsPanel import XRayProjectionPanel
 
 
 class MainToolbar(QToolBox):
@@ -29,4 +30,7 @@ class MainToolbar(QToolBox):
 
         scriptingPanel = ScriptingPanel()
         self.addItem(scriptingPanel, 'Scripting')
+
+        xRayProjPanel = XRayProjectionPanel(self._viewController)
+        self.addItem(xRayProjPanel, 'Coucou')
 

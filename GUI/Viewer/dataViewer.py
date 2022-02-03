@@ -17,20 +17,12 @@ class SliceViewerDescriptor():
             instance._dynViewer = DynamicImageViewer(instance._viewController)
             instance._staticViewer = ImageViewer(instance._viewController)
 
-            # This is for retro-compatibility with commit ad806a77 but there is a better way to do it
-            instance.dynViewerAddedSignal = Event(object)
-            instance.dynViewerRemovedSignal = Event(object)
-
         if instance._viewerDisplayMode == instance.VIEWER_STATIC:
-            # This is for retro-compatibility with commit ad806a77 but there is a better way to do it
-            instance.dynViewerRemovedSignal.emit(instance._dynViewer)
-
             return instance._staticViewer
-        elif instance._viewerDisplayMode == instance.VIEWER_DYN:
-            # This is for retro-compatibility with commit ad806a77 but there is a better way to do it
-            instance.dynViewerAddedSignal.emit(instance._dynViewer)
 
+        elif instance._viewerDisplayMode == instance.VIEWER_DYN:
             return instance._dynViewer
+        
         else:
             raise ValueError("_viewerDisplayMode has invalid value.")
 
@@ -141,10 +133,19 @@ class DataViewer(QWidget):
     def _setMainImage(self, image):
         self._sliceViewer.hide()
         if self._displayType == self.DISPLAY_SLICEVIEWER:
+
+            ## these two ifs check if the viewer display mode switches and notifies the dynamicDisplayController if necessary
             if isinstance(image, Image3D):
-                self._viewerDisplayMode = self.VIEWER_STATIC
+                if self._viewerDisplayMode == self.VIEWER_DYN:
+                    self._viewController.dynamicDisplayController.removeDynamicViewer(self._sliceViewer)
+                    self._viewerDisplayMode = self.VIEWER_STATIC
+
             elif isinstance(image, Dynamic3DSequence):
-                self._viewerDisplayMode = self.VIEWER_DYN
+                if self._viewerDisplayMode == self.VIEWER_STATIC:
+                    self._viewerDisplayMode = self.VIEWER_DYN
+                    self._viewController.dynamicDisplayController.addDynamicViewer(self._sliceViewer)
+            ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ## ##
+
             elif image is None:
                 pass
             else:

@@ -31,6 +31,7 @@ class ViewerPanel(QWidget):
         self._layout.addWidget(self._viewToolbar)
 
         self._viewController = viewController
+        self._viewController.dynamicDisplayController.setToolBar(self._viewToolbar)
 
         self._setToolbar(self._viewToolbar)
         self._setLayout(layoutType)
