@@ -1,3 +1,4 @@
+import typing
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -25,11 +26,11 @@ class CrossHairLayer:
         self._crossHairActor.VisibilityOff()
 
     @property
-    def position(self):
+    def position(self) -> typing.Sequence:
         return self._position
 
     @position.setter
-    def position(self, position):
+    def position(self, position: typing.Sequence):
         points = vtkPoints()
         points.InsertNextPoint((position[0] - 10, position[1], 0.01))
         points.InsertNextPoint((position[0] + 10, position[1], 0.01))
@@ -58,10 +59,10 @@ class CrossHairLayer:
         self._renderWindow.Render()
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         return self._visible
 
     @visible.setter
-    def visible(self, visible):
+    def visible(self, visible: bool):
         self._crossHairActor.SetVisibility(visible)
         self._visible = visible
