@@ -13,7 +13,7 @@ class Dynamic3DSequence(PatientData):
     def __init__(self, dyn3DImageList = [], timingsList = [], name="3D Dyn Seq", repetitionMode='LOOP', patientInfo=None):
         super().__init__(patientInfo=patientInfo, name=name)
 
-        self.dyn3DImageList = dyn3DImageList
+        self.dyn3DImageList = self.sortImgsByName(dyn3DImageList)
 
         if len(timingsList) > 0:
             self.timingsList = timingsList
@@ -25,7 +25,9 @@ class Dynamic3DSequence(PatientData):
         self.isDynamic = True
         self.repetitionMode = repetitionMode
 
-        print('Dynamic 3D Sequence Created')
+        print('Dynamic 3D Sequence Created with ', len(self.dyn3DImageList), 'images')
+        for img in self.dyn3DImageList:
+            print('   ', img.name)
 
     @staticmethod
     @API.loggedViaAPI
@@ -57,6 +59,11 @@ class Dynamic3DSequence(PatientData):
         numberOfImages = len(self.dyn3DImageList)
         timingList = np.linspace(0, 4000, numberOfImages + 1)
         return timingList
+
+
+    def sortImgsByName(self, imgList):
+        imgList = sorted(imgList, key=lambda img: img.name)
+        return imgList
 
 
     def dumpableCopy(self):
