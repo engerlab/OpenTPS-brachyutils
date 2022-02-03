@@ -233,6 +233,7 @@ class PatientDataTree(QTreeView):
         selectedData = self.model().itemFromIndex(selection).data
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
+            print(selectedData.patient)
             self._viewController.mainImage = selectedData
 
     def _handleRightClick(self, pos):
