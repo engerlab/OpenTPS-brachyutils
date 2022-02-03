@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Optional
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
@@ -150,7 +150,7 @@ class DataViewer(QWidget):
             self.setAcceptDrops(False)
 
 
-    def _setMainImage(self, image: Union[Image3D, Dynamic3DSequence]):
+    def _setMainImage(self, image: Optional[Union[Image3D, Dynamic3DSequence]]):
         self._sliceViewer.hide()
         if self._displayType == self.DISPLAY_SLICEVIEWER:
 
@@ -181,7 +181,7 @@ class DataViewer(QWidget):
             self._sliceViewer.show()
 
 
-    def _setSecondaryImage(self, image: Image3D):
+    def _setSecondaryImage(self, image: Optional[Image3D]):
         if self._displayType == self.DISPLAY_SLICEVIEWER:
             if self._sliceViewer.secondaryImage == image:
                 self._setSecondaryImage(None) # Currently default behavior but is it a good idea?
