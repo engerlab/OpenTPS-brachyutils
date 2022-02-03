@@ -399,6 +399,7 @@ class PatientDataItem(QStandardItem):
         # self.setText(txt)
         # self.setWhatsThis(type)
 
+    # No effect: it seems that C destructor of QStandardItem does not trigger __del__
     def __del__(self):
         self.data.nameChangedSignal.disconnect(self.setName)
 
