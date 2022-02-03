@@ -160,6 +160,7 @@ class PatientDataTree(QTreeView):
         for item in items:
             if item.data == data:
                 self.rootNode.removeRow(item.row())
+                item.disconnectAll() #Do this explicitely to be sure signals are disconnected
 
     def mouseMoveEvent(self, event):
         drag = QDrag(self)
@@ -183,6 +184,11 @@ class PatientDataTree(QTreeView):
             self._currentPatient.dyn3DSeqRemovedSignal.disconnect(self._removeData)
             self._currentPatient.imageRemovedSignal.disconnect(self._removeData)
 
+        # Do this explicitely to be sure signals are disconnected
+        for row in range(self.model().rowCount()):
+            item = self.model().itemFromIndex(self.model().index(row, 0))
+            if isinstance(item, PatientDataItem):
+                item.disconnectAll()
         self.treeModel.clear()
         self.rootNode = self.treeModel.invisibleRootItem()
         font_b = QFont()
@@ -399,9 +405,12 @@ class PatientDataItem(QStandardItem):
         # self.setText(txt)
         # self.setWhatsThis(type)
 
+    def disconnectAll(self):
+        self.data.nameChangedSignal.disconnect(self.setName)
+
     # No effect: it seems that C destructor of QStandardItem does not trigger __del__
     def __del__(self):
-        self.data.nameChangedSignal.disconnect(self.setName)
+        self.disconnectAll()
 
     def setName(self, name):
         self.setText(name)
