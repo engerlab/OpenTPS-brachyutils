@@ -1,3 +1,4 @@
+import typing
 
 from PyQt5.QtWidgets import *
 
@@ -11,6 +12,7 @@ from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
+from Core.Data.Images.image3D import Image3D
 from Core.event import Event
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
@@ -78,12 +80,6 @@ class ImageViewer(QWidget):
         self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
         self._renderWindow.AddRenderer(self._renderer)
 
-        # TODO: Disconnect signals
-        self._viewController.crossHairEnabledSignal.connect(self._setCrossHairEnabled)
-        self._viewController.lineWidgetEnabledSignal.connect(self._setProfileWidgetEnabled)
-        self._viewController.showContourSignal.connect(self._contourLayer.setNewContour)
-        self._viewController.windowLevelEnabledSignal.connect(self._setWWLEnabled)
-
         # TODO: actions to change view type
         self._qActions = SecondaryImageActions(self._secondaryImageLayer)
 
@@ -95,13 +91,13 @@ class ImageViewer(QWidget):
 
 
     @property
-    def primaryImage(self):
+    def primaryImage(self) -> Image3D:
         if self._primaryImageLayer.image is None:
             return None
         return self._primaryImageLayer.image.data
 
     @primaryImage.setter
-    def primaryImage(self, image):
+    def primaryImage(self, image: Image3D):
         if image is None:
             self._primaryImageLayer.image = None
 
@@ -152,11 +148,11 @@ class ImageViewer(QWidget):
         self._renderWindow.Render()
 
     @property
-    def profileWidgetEnabled(self):
+    def profileWidgetEnabled(self) -> bool:
         return self._profileWidget.enabled
 
     @profileWidgetEnabled.setter
-    def profileWidgetEnabled(self, enabled):
+    def profileWidgetEnabled(self, enabled: bool):
         if enabled==self._profileWidget.enabled:
             return
 
@@ -169,21 +165,21 @@ class ImageViewer(QWidget):
 
         self.profileWidgeEnabledSignal.emit(self.profileWidgetEnabled)
 
-    def _setProfileWidgetEnabled(self, enabled):
+    def setProfileWidgetEnabled(self, enabled):
         self.profileWidgetEnabled = enabled
 
     @property
-    def qActions(self):
+    def qActions(self) -> SecondaryImageActions:
         return self._qActions
 
     @property
-    def secondaryImage(self):
+    def secondaryImage(self) -> Image3D:
         if self._secondaryImageLayer.image is None:
             return None
         return self._secondaryImageLayer.image.data
 
     @secondaryImage.setter
-    def secondaryImage(self, image):
+    def secondaryImage(self, image: Image3D):
         if self.primaryImage is None:
             return
 
@@ -245,11 +241,11 @@ class ImageViewer(QWidget):
             self._renderWindow.Render()
 
     @property
-    def crossHairEnabled(self):
+    def crossHairEnabled(self) -> bool:
         return self._crossHairEnabled
 
     @crossHairEnabled.setter
-    def crossHairEnabled(self, enabled):
+    def crossHairEnabled(self, enabled: bool):
         if enabled == self._crossHairEnabled:
             return
 
@@ -263,15 +259,15 @@ class ImageViewer(QWidget):
             self._renderWindow.Render()
         self.crossHairEnabledSignal.emit(self._crossHairEnabled)
 
-    def _setCrossHairEnabled(self, enabled):
+    def setCrossHairEnabled(self, enabled: bool):
         self.crossHairEnabled = enabled
 
     @property
-    def wwlEnabled(self):
+    def wwlEnabled(self) -> bool:
         return self._wwlEnabled
 
     @wwlEnabled.setter
-    def wwlEnabled(self, enabled):
+    def wwlEnabled(self, enabled: bool):
         if enabled == self._wwlEnabled:
             return
 
@@ -281,7 +277,7 @@ class ImageViewer(QWidget):
             self.crossHairEnabled = False
         self.wwlEnabledSignal.emit(enabled)
 
-    def _setWWLEnabled(self, enabled):
+    def setWWLEnabled(self, enabled: bool):
         self.wwlEnabled = enabled
 
     def onLeftButtonPressed(self, obj=None, event='Press'):
@@ -364,7 +360,7 @@ class ImageViewer(QWidget):
 
         self._renderWindow.Render()
 
-    def _handlePosition(self, position):
+    def _handlePosition(self, position: typing.Sequence):
         if self._crossHairEnabled:
             transfo_mat = vtkCommonMath.vtkMatrix4x4()
             transfo_mat.DeepCopy(self._viewMatrix)

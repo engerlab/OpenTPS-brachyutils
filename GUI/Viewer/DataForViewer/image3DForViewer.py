@@ -1,7 +1,7 @@
+import typing
+
 import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
-
-import sys
 
 from Core.event import Event
 
@@ -34,20 +34,20 @@ class Image3DForViewer(DataMultiton):
         super().__setattr__(key, value)
 
     @property
-    def selectedPosition(self):
+    def selectedPosition(self) -> tuple:
         return self._selectedPosition
 
     @selectedPosition.setter
-    def selectedPosition(self, position):
+    def selectedPosition(self, position: typing.Sequence):
         self._selectedPosition = (position[0], position[1], position[2])
         self.selectedPositionChangedSignal.emit(self._selectedPosition)
 
     @property
-    def wwlValue(self):
+    def wwlValue(self) -> tuple:
         return self._wwlValue
 
     @wwlValue.setter
-    def wwlValue(self, wwl):
+    def wwlValue(self, wwl: typing.Sequence):
         if (wwl[0]==self._wwlValue[0]) and (wwl[1]==self._wwlValue[1]):
             return
 
@@ -64,20 +64,20 @@ class Image3DForViewer(DataMultiton):
         self.lookupTableChangedSignal.emit(self._lookupTable)
 
     @property
-    def range(self):
+    def range(self) -> tuple:
         return self._range
 
     @range.setter
-    def range(self, range):
+    def range(self, range: typing.Sequence):
         self._range = (range[0], range[1])
         self.lookupTable = self._lookupTableName
 
     @property
-    def opacity(self):
+    def opacity(self) -> float:
         return self._opacity
 
     @opacity.setter
-    def opacity(self, opacity):
+    def opacity(self, opacity: float):
         self._opacity = opacity
         self.lookupTable = self._lookupTableName
 

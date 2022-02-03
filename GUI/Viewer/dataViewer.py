@@ -18,9 +18,29 @@ class SliceViewerDescriptor():
             instance._staticViewer = ImageViewer(instance._viewController)
 
         if instance._viewerDisplayMode == instance.VIEWER_STATIC:
+            instance._viewController.crossHairEnabledSignal.connect(instance._staticViewer.setCrossHairEnabled)
+            instance._viewController.lineWidgetEnabledSignal.connect(instance._staticViewer.setProfileWidgetEnabled)
+            instance._viewController.showContourSignal.connect(instance._staticViewer._contourLayer.setNewContour)
+            instance._viewController.windowLevelEnabledSignal.connect(instance._staticViewer.setWWLEnabled)
+
+            instance._viewController.crossHairEnabledSignal.disconnect(instance._dynViewer.setCrossHairEnabled)
+            instance._viewController.lineWidgetEnabledSignal.disconnect(instance._dynViewer.setProfileWidgetEnabled)
+            instance._viewController.showContourSignal.disconnect(instance._dynViewer._contourLayer.setNewContour)
+            instance._viewController.windowLevelEnabledSignal.disconnect(instance._dynViewer.setWWLEnabled)
+
             return instance._staticViewer
 
         elif instance._viewerDisplayMode == instance.VIEWER_DYN:
+            instance._viewController.crossHairEnabledSignal.connect(instance._dynViewer.setCrossHairEnabled)
+            instance._viewController.lineWidgetEnabledSignal.connect(instance._dynViewer.setProfileWidgetEnabled)
+            instance._viewController.showContourSignal.connect(instance._dynViewer._contourLayer.setNewContour)
+            instance._viewController.windowLevelEnabledSignal.connect(instance._dynViewer.setWWLEnabled)
+
+            instance._viewController.crossHairEnabledSignal.disconnect(instance._staticViewer.setCrossHairEnabled)
+            instance._viewController.lineWidgetEnabledSignal.disconnect(instance._staticViewer.setProfileWidgetEnabled)
+            instance._viewController.showContourSignal.disconnect(instance._staticViewer._contourLayer.setNewContour)
+            instance._viewController.windowLevelEnabledSignal.disconnect(instance._staticViewer.setWWLEnabled)
+
             return instance._dynViewer
         
         else:
