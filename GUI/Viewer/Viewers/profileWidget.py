@@ -1,3 +1,4 @@
+import typing
 from math import sqrt
 
 import numpy as np
@@ -20,11 +21,11 @@ class ProfileWidget:
         self._lineWidget.SetCurrentRenderer(self._renderer)
 
     @property
-    def enabled(self):
+    def enabled(self) -> bool:
         return self._lineWidgetEnabled
 
     @enabled.setter
-    def enabled(self, enabled):
+    def enabled(self, enabled: bool):
         if enabled == self._lineWidgetEnabled:
             return
 
@@ -58,7 +59,7 @@ class ProfileWidget:
     def primaryReslice(self, reslice):
         self._primaryReslice = reslice
 
-    def setInitialPosition(self, worldPos):
+    def setInitialPosition(self, worldPos: typing.Sequence):
         self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], 0.01))
         self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
 
