@@ -1,6 +1,7 @@
 import pydicom
 
 from Core.Data.patientInfo import PatientInfo
+from Core.api import API
 from Core.event import Event
 
 
@@ -31,6 +32,10 @@ class PatientData:
 
     @name.setter
     def name(self, name):
+        self.setName(name)
+
+    @API.loggedViaAPI
+    def setName(self, name):
         self._name = name
         self.nameChangedSignal.emit(self._name)
 
@@ -40,6 +45,10 @@ class PatientData:
 
     @patient.setter
     def patient(self, patient):
+        self.setPatient(patient)
+
+    @API.loggedViaAPI
+    def setPatient(self, patient):
         if patient == self._patient:
             return
 

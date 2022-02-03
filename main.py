@@ -5,7 +5,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
-from API.api import API
+from Core.api import API, APILogger
 from Core.Data.patientList import PatientList
 from GUI.viewController import ViewController
 import Script
@@ -28,8 +28,7 @@ if __name__ == '__main__':
     patientList = PatientList()
 
     API.patientList = patientList
-    print('Methods instantiated:')
-    print(API.getMethodsAsString())
+    API.appendLoggingFunction(APILogger().print)
 
     # instantiate the main GUI window
     viewController = ViewController(patientList)

@@ -5,6 +5,7 @@ from PyQt5.QtGui import QIcon
 
 from GUI.Panels.mainToolbar import MainToolbar
 from GUI.Viewer.viewerPanel import ViewerPanel
+from GUI.statusBar import StatusBar
 
 
 class MainWindow(QMainWindow):
@@ -31,6 +32,10 @@ class MainWindow(QMainWindow):
         # create and add the viewer panel
         self.viewerPanel = ViewerPanel(self._viewControler)
         self.mainLayout.addWidget(self.viewerPanel)
+
+        self.statusBar = StatusBar()
+        self.setStatusBar(self.statusBar)
+        self.statusBar.show()
 
     def setLateralToolbar(self, toolbar):
         self.mainLayout.addWidget(toolbar)

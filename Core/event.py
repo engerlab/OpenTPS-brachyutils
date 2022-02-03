@@ -13,10 +13,8 @@ class Event:
 
 
     def disconnect(self, slot):
-        try:
+        if slot in self._slots:
             self._slots.remove(slot)
-        except Exception as e:
-            raise(e)
 
 
     def emit(self, *args):

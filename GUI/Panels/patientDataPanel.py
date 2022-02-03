@@ -6,9 +6,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTreeView, QComboBox, QPushBut
     QMessageBox, QMainWindow
 
 from pydicom.uid import generate_uid
-import pickle  ## temporary to test something
 
-from API.api import API
+import Core.IO.dataLoader as dataLoader
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
@@ -73,7 +72,7 @@ class PatientDataPanel(QWidget):
             withoutLastElementPath += element + '/'
         self.dataPath = withoutLastElementPath
 
-        API.loadData(filesOrFoldersList)
+        dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
 
     def saveData(self):
         fileDialog = SaveData_dialog()
@@ -161,6 +160,7 @@ class PatientDataTree(QTreeView):
         for item in items:
             if item.data == data:
                 self.rootNode.removeRow(item.row())
+                item.disconnectAll() #Do this explicitely to be sure signals are disconnected
 
     def mouseMoveEvent(self, event):
         drag = QDrag(self)
@@ -184,6 +184,11 @@ class PatientDataTree(QTreeView):
             self._currentPatient.dyn3DSeqRemovedSignal.disconnect(self._removeData)
             self._currentPatient.imageRemovedSignal.disconnect(self._removeData)
 
+        # Do this explicitely to be sure signals are disconnected
+        for row in range(self.model().rowCount()):
+            item = self.model().itemFromIndex(self.model().index(row, 0))
+            if isinstance(item, PatientDataItem):
+                item.disconnectAll()
         self.treeModel.clear()
         self.rootNode = self.treeModel.invisibleRootItem()
         font_b = QFont()
@@ -356,7 +361,7 @@ class PatientDataTree(QTreeView):
         newName, okPressed = QInputDialog.getText(self, "Set series name", "Series name:", QLineEdit.Normal, "4DCT")
 
         if (okPressed):
-            API.createDynamic3DSequence(selectedImages, newName)
+            Dynamic3DSequence.fromImagesInPatientList(selectedImages, newName)
 
     def computeDynamic3DModel(self, selected3DSequence):
         newName, okPressed = QInputDialog.getText(self, "Set dynamic 3D model name", "3D model name:", QLineEdit.Normal, "MidP")
@@ -400,8 +405,12 @@ class PatientDataItem(QStandardItem):
         # self.setText(txt)
         # self.setWhatsThis(type)
 
-    def __del__(self):
+    def disconnectAll(self):
         self.data.nameChangedSignal.disconnect(self.setName)
+
+    # No effect: it seems that C destructor of QStandardItem does not trigger __del__
+    def __del__(self):
+        self.disconnectAll()
 
     def setName(self, name):
         self.setText(name)

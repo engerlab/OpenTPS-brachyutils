@@ -1,3 +1,4 @@
+from Core.api import API
 from Core.event import Event
 import copy
 
@@ -53,6 +54,7 @@ class PatientList():
             if patient.patientInfo.patientID==id:
                 return patient
 
+    @API.loggedViaAPI
     def remove(self, patient):
         self._patients.remove(patient)
         self.patientRemovedSignal.emit(patient)

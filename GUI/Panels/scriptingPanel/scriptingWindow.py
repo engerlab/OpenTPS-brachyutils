@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QSplitter, QHBoxLayout, QPushButton, QTextEdit, QStatusBar
 from PyQt5.QtCore import Qt
 
-from API.api import API
+from Core.api import API
 from GUI.Panels.scriptingPanel.pythonHighlighter import PythonHighlighter
 
 

@@ -1,6 +1,9 @@
 import numpy as np
+from pydicom.uid import generate_uid
 
+from Core.api import API
 from Core.Data.patientData import PatientData
+
 
 class Dynamic3DSequence(PatientData):
 
@@ -25,6 +28,18 @@ class Dynamic3DSequence(PatientData):
         print('Dynamic 3D Sequence Created with ', len(self.dyn3DImageList), 'images')
         for img in self.dyn3DImageList:
             print('   ', img.name)
+
+    @staticmethod
+    @API.loggedViaAPI
+    def fromImagesInPatientList(selectedImages, newName):
+        newSeq = Dynamic3DSequence(dyn3DImageList=selectedImages, name=newName)
+
+        for image in selectedImages:
+            patient = image.patient
+            patient.removeImage(image)
+
+        newSeq.seriesInstanceUID = generate_uid()
+        patient.appendDyn3DSeq(newSeq)
 
 
     def __str__(self):
