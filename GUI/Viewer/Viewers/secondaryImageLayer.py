@@ -1,3 +1,4 @@
+from typing import Sequence, Optional
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -9,6 +10,7 @@ from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
 
 from Core.event import Event
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 
 
 class SecondaryImageLayer:
@@ -48,14 +50,14 @@ class SecondaryImageLayer:
         self._reslice.SetInterpolationModeToNearestNeighbor()
 
     @property
-    def image(self):
+    def image(self) -> Optional[Image3DForViewer]:
         if self._image is None:
             return None
 
         return self._image
 
     @image.setter
-    def image(self, image):
+    def image(self, image: Optional[Image3DForViewer]):
         if image is None:
             self._reslice.RemoveAllInputs()
             self.colorbarOn = False
@@ -98,11 +100,11 @@ class SecondaryImageLayer:
         self._orientationActor.PokeMatrix(resliceAxes)
 
     @property
-    def colorbarOn(self):
+    def colorbarOn(self) -> bool:
         return self._colorbarActor.GetVisibility()
 
     @colorbarOn.setter
-    def colorbarOn(self, visible):
+    def colorbarOn(self, visible: bool):
         if self._image is None:
             return
 
@@ -120,7 +122,7 @@ class SecondaryImageLayer:
 
         self._renderWindow.Render()
 
-    def getDataAtPosition(self, position):
+    def getDataAtPosition(self, position: Sequence):
         imageData = self._reslice.GetInput(0)
         ind = [0, 0, 0]
         imageData.TransformPhysicalPointToContinuousIndex(position[0:3], ind)
