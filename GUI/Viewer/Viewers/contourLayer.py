@@ -1,3 +1,4 @@
+import typing
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -38,7 +39,7 @@ class ContourLayer:
         self._renderWindow.Render()
 
     @property
-    def referenceImage(self) -> Image3D:
+    def referenceImage(self) -> typing.Optional[Image3D]:
         return self._referenceImage
 
     @referenceImage.setter
