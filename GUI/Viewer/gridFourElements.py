@@ -11,75 +11,74 @@ class GridFourElements(Grid):
     def __init__(self, viewController):
         Grid.__init__(self, viewController)
 
+        self._minimumSize = QSize(200, 200)
         self._setEqualSize = False #Use to set equal size before qwidget is effectively shown
 
-        self._botLeft = QFrame(self)
-        self._botRight = QFrame(self)
-        self._topLeft = QFrame(self)
-        self._topRight = QFrame(self)
+        # Containers for the 4 grid elements
+        self._botLeftGridElementContainer = QFrame(self)
+        self._botRightGridElementContainer = QFrame(self)
+        self._topLeftGridElementContainer = QFrame(self)
+        self._topRightGridElementContainer = QFrame(self)
 
-        self._botLeft.setFrameShape(QFrame.StyledPanel)
-        self._botRight.setFrameShape(QFrame.StyledPanel)
-        self._topLeft.setFrameShape(QFrame.StyledPanel)
-        self._topRight.setFrameShape(QFrame.StyledPanel)
+        # Layouts for the 4 grid elements
+        self._botLeftLayout = QVBoxLayout(self._botLeftGridElementContainer)
+        self._botRightLayout = QVBoxLayout(self._botRightGridElementContainer)
+        self._topLeftLayout = QVBoxLayout(self._topLeftGridElementContainer)
+        self._topRightLayout = QVBoxLayout(self._topRightGridElementContainer)
 
-        self._leftSize = None
-        self._rightSize = None
-        self._size = None
-
-        self._botLeftLayout = QVBoxLayout(self._botLeft)
-        self._botRightLayout = QVBoxLayout(self._botRight)
-        self._topLeftLayout = QVBoxLayout(self._topLeft)
-        self._topRightLayout = QVBoxLayout(self._topRight)
+        # Set shape, size and margins
+        self._botLeftGridElementContainer.setFrameShape(QFrame.StyledPanel)
+        self._botRightGridElementContainer.setFrameShape(QFrame.StyledPanel)
+        self._topLeftGridElementContainer.setFrameShape(QFrame.StyledPanel)
+        self._topRightGridElementContainer.setFrameShape(QFrame.StyledPanel)
 
         self._botLeftLayout.setContentsMargins(0, 0, 0, 0)
         self._botRightLayout.setContentsMargins(0, 0, 0, 0)
         self._topLeftLayout.setContentsMargins(0, 0, 0, 0)
         self._topRightLayout.setContentsMargins(0, 0, 0, 0)
 
-        # Horizontal splitter
-        hbox = QHBoxLayout(self)
+        self._botLeftGridElementContainer.setMinimumSize(self._minimumSize)
+        self._botRightGridElementContainer.setMinimumSize(self._minimumSize)
+        self._topLeftGridElementContainer.setMinimumSize(self._minimumSize)
+        self._topRightGridElementContainer.setMinimumSize(self._minimumSize)
 
-        self._left = QFrame(self)
-        self._left.setFrameShape(QFrame.StyledPanel)
+        # Horizontal splitting
+        self._mainLayout = QHBoxLayout(self)
 
-        self._right = QFrame(self)
-        self._right.setFrameShape(QFrame.StyledPanel)
+        self._leftPart = QFrame(self)
+        self._leftPart.setFrameShape(QFrame.StyledPanel)
+
+        self._rightPart = QFrame(self)
+        self._rightPart.setFrameShape(QFrame.StyledPanel)
 
         self._horizontalSplitter = QSplitter(QtCore.Qt.Horizontal)
-        self._horizontalSplitter.addWidget(self._left)
-        self._horizontalSplitter.addWidget(self._right)
+        self._horizontalSplitter.addWidget(self._leftPart)
+        self._horizontalSplitter.addWidget(self._rightPart)
         self._horizontalSplitter.setStretchFactor(1, 1)
 
-        hbox.addWidget(self._horizontalSplitter)
-        hbox.setContentsMargins(0, 0, 0, 0)
+        self._mainLayout.addWidget(self._horizontalSplitter)
+        self._mainLayout.setContentsMargins(0, 0, 0, 0)
 
+        # Vertical splitting
+        leftPartLayout = QVBoxLayout(self._leftPart)
+        leftPartLayout.setContentsMargins(0, 0, 0, 0)
 
-        # Vertical splitters
-        vbox = QVBoxLayout(self._left)
-        vbox.setContentsMargins(0, 0, 0, 0)
+        leftPartSplitter = QSplitter(QtCore.Qt.Vertical)
+        leftPartSplitter.addWidget(self._topLeftGridElementContainer)
+        leftPartSplitter.addWidget(self._botLeftGridElementContainer)
+        leftPartSplitter.setStretchFactor(1, 1)
+        leftPartLayout.addWidget(leftPartSplitter)
 
-        leftSplitter = QSplitter(QtCore.Qt.Vertical)
-        leftSplitter.addWidget(self._topLeft)
-        leftSplitter.addWidget(self._botLeft)
-        leftSplitter.setStretchFactor(1, 1)
-        vbox.addWidget(leftSplitter)
+        rightPartLayout = QVBoxLayout(self._rightPart)
+        rightPartLayout.setContentsMargins(0, 0, 0, 0)
 
-        vbox = QVBoxLayout(self._right)
-        vbox.setContentsMargins(0, 0, 0, 0)
+        rightPartSplitter = QSplitter(QtCore.Qt.Vertical)
+        rightPartSplitter.addWidget(self._topRightGridElementContainer)
+        rightPartSplitter.addWidget(self._botRightGridElementContainer)
+        rightPartSplitter.setStretchFactor(1, 1)
+        rightPartLayout.addWidget(rightPartSplitter)
 
-        rightSplitter = QSplitter(QtCore.Qt.Vertical)
-        rightSplitter.addWidget(self._topRight)
-        rightSplitter.addWidget(self._botRight)
-        rightSplitter.setStretchFactor(1, 1)
-        vbox.addWidget(rightSplitter)
-
-        minimumSize = QSize(200, 200)
-        self._botLeft.setMinimumSize(minimumSize)
-        self._botRight.setMinimumSize(minimumSize)
-        self._topLeft.setMinimumSize(minimumSize)
-        self._topRight.setMinimumSize(minimumSize)
-
+        # Fill grid elements with data viewers
         gridElement = DataViewer(self._viewController)
         if isinstance(gridElement.currentViewer, ImageViewer):
             gridElement.currentViewer.viewType = 'axial'
@@ -101,40 +100,23 @@ class GridFourElements(Grid):
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
 
-
     def resizeEvent(self, event):
         super().resizeEvent(event)
-
-
-        if not self._leftSize is None:
-            return
-            #This does not work
-            width_factor = self.width() / self._size[0]
-            height_factor = self.height() / self._size[1]
-
-            print((width_factor, height_factor))
-
-            self._left.resize(QSize(self._leftSize[0]*width_factor, self._leftSize[1]*height_factor))
-            self._right.resize(QSize(self._rightSize[0] * width_factor, self._rightSize[1] * height_factor))
-
 
         if self._setEqualSize:
             self.setEqualSize()
         self._setEqualSize = False
 
-        self._leftSize = (self._left.width(), self._left.height())
-        self._rightSize = (self._right.width(), self._right.height())
-        self._size = (self.width(), self.height())
-
     def setEqualSize(self):
         if not self.isVisible():
             self._setEqualSize = True
 
-        halfSizeLeft = QSize(int(self.width()/2), self.height())
-        self._left.resize(halfSizeLeft)
+        # We first resize left part and then we resize everything which has the side effect to resize right part
+        leftPartHalfSize = QSize(int(self.width()/2), self.height())
+        self._leftPart.resize(leftPartHalfSize)
 
-        halfSize = QSize(self._left.width(), int(self._left.height()/2))
-        self._botLeft.resize(halfSize)
-        self._botRight.resize(halfSize)
-        self._topLeft.resize(halfSize)
-        self._topRight.resize(halfSize)
+        halfSize = QSize(self._leftPart.width(), int(self._leftPart.height() / 2))
+        self._botLeftGridElementContainer.resize(halfSize)
+        self._botRightGridElementContainer.resize(halfSize)
+        self._topLeftGridElementContainer.resize(halfSize)
+        self._topRightGridElementContainer.resize(halfSize)
