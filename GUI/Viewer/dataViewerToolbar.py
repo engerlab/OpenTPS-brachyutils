@@ -4,7 +4,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction
 
-import GUI.Viewer.dataViewer as gridElement
+import GUI.Viewer.dataViewer as dataViewer
 from Core.event import Event
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 
@@ -53,7 +53,7 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(gridElement.DataViewer.DISPLAY_DVH)
+            self.displayTypeSignal.emit(dataViewer.ViewerTypes.VIEWER_DVH)
             self._handleButtonViewer(False)
             self._handleButtonGraph(False)
 
@@ -63,7 +63,7 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(gridElement.DataViewer.DISPLAY_PROFILE)
+            self.displayTypeSignal.emit(dataViewer.ViewerTypes.VIEWER_PROFILE)
             self._handleButtonViewer(False)
             self._handleButtonDVH(False)
 
@@ -73,7 +73,7 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(gridElement.DataViewer.DISPLAY_SLICEVIEWER)
+            self.displayTypeSignal.emit(dataViewer.ViewerTypes.VIEWER_SLICES)
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 
