@@ -101,6 +101,7 @@ class DataViewer(QWidget):
 
         :type: ProfilePlot
         """
+        return self._profileViewer
 
     @property
     def cachedStaticImageViewer(self) -> ImageViewer:
