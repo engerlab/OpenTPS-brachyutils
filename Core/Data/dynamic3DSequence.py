@@ -36,7 +36,7 @@ class Dynamic3DSequence(PatientData):
 
         for image in selectedImages:
             patient = image.patient
-            patient._removeImage(image)
+            patient.removeImage(image)
 
         newSeq.seriesInstanceUID = generate_uid()
         patient.appendDyn3DSeq(newSeq)

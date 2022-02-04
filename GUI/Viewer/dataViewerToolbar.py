@@ -53,7 +53,7 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.viewerTypes.VIEWER_DVH)
+            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.VIEWER_DVH)
             self._handleButtonViewer(False)
             self._handleButtonGraph(False)
 
@@ -63,7 +63,7 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.viewerTypes.VIEWER_PROFILE)
+            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.VIEWER_PROFILE)
             self._handleButtonViewer(False)
             self._handleButtonDVH(False)
 
@@ -73,12 +73,12 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.viewerTypes.VIEWER_IMAGE_AUTO)
+            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.VIEWER_IMAGE)
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 
     def handleDisplayChange(self, viewerType):
-        if viewerType==dataViewer.DataViewer.viewerTypes.VIEWER_IMAGE or viewerType==dataViewer.DataViewer.viewerTypes.VIEWER_IMAGE_DYN:
+        if viewerType==dataViewer.DataViewer.DisplayTypes.VIEWER_IMAGE:
             self._buttonViewer.setChecked(True)
 
     def _setMode(self, mode):
