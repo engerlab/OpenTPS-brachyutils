@@ -1,3 +1,4 @@
+from enum import Enum
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from PyQt5.QtCore import QTimer
@@ -8,14 +9,14 @@ from GUI.Viewer.gridFourElements import GridFourElements
 from GUI.Viewer.viewerToolbar import ViewerToolbar
 
 
+class LayoutType(Enum):
+    GRID_2BY2 = 'GRID_2BY2'
+
 class ViewerPanel(QWidget):
-
-    LAYOUT_FOUR = 'LAYOUT_FOUR'
-
     MODE_DYNAMIC = 'DYNAMIC'
     MODE_STATIC = 'STATIC'
 
-    def __init__(self, viewController, layoutType='LAYOUT_FOUR'):
+    def __init__(self, viewController, layoutType=LayoutType.GRID_2BY2):
         QWidget.__init__(self)
 
         self._dropEnabled = False
@@ -34,8 +35,8 @@ class ViewerPanel(QWidget):
         self._viewController.dynamicDisplayController.setToolBar(self._viewToolbar)
 
         self._setToolbar(self._viewToolbar)
-        self._setLayout(layoutType)
-        if self._layoutType == self.LAYOUT_FOUR:
+        self._setLayoutType(layoutType)
+        if self._layoutType == LayoutType.GRID_2BY2:
             self._viewController.numberOfViewerPanelElement = 4
 
         self._viewController.independentViewsEnabledSignal.connect(lambda enabled: self._setDropEnabled(not enabled))
@@ -75,13 +76,13 @@ class ViewerPanel(QWidget):
         else:
             self._viewerGrid.setAcceptDrops(False)
 
-    def _setLayout(self, layoutType):
+    def _setLayoutType(self, layoutType):
         self._layoutType = layoutType
 
         if not self._viewerGrid is None:
             self._layoutType.removeWidget(self._viewerGrid)
 
-        if self._layoutType == self.LAYOUT_FOUR:
+        if self._layoutType == LayoutType.GRID_2BY2:
             self._viewerGrid = GridFourElements(self._viewController)
 
         if self._viewerGrid==None:
@@ -89,7 +90,7 @@ class ViewerPanel(QWidget):
 
         self._layout.addWidget(self._viewerGrid)
 
-        if self._layoutType == self.LAYOUT_FOUR:
+        if self._layoutType == LayoutType.GRID_2BY2:
             self._viewerGrid.setEqualSize()
 
     def _setToolbar(self, toolbar):
