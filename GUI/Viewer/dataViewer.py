@@ -45,12 +45,14 @@ class DataViewer(QWidget):
 
         self._currentViewer = None
         self._dropEnabled = False
-        self._secondaryActions = None
         self._toolbar = DataViewerToolbar()
         self._viewerType = None
-        self.viewerQActions = []
         self._viewController = viewController
 
+        self.setLayout(self._mainLayout)
+        self._mainLayout.setContentsMargins(0, 0, 0, 0)
+
+        # Cached viewers:
         self._dvhViewer = DVHPlot()
         self._dynViewer = DynamicImageViewer(viewController)
         self._mainLayout = QVBoxLayout(self)
@@ -64,9 +66,6 @@ class DataViewer(QWidget):
         self._dynViewer.hide()
         self._staticViewer.hide()
 
-        self.setLayout(self._mainLayout)
-        self._mainLayout.setContentsMargins(0, 0, 0, 0)
-
         self._mainLayout.addWidget(self._toolbar)
         self._mainLayout.addWidget(self._dynViewer)
         self._mainLayout.addWidget(self._staticViewer)
@@ -74,12 +73,12 @@ class DataViewer(QWidget):
         self._mainLayout.addWidget(self._noneViewer)
         self._mainLayout.addWidget(self._dvhViewer)
 
-        self._toolbar.displayTypeSignal.connect(self._setViewerType)
-
         self._setViewerType(self.viewerTypes.DEFAULT)
 
 
         # This is the logical part. Should we migrate this to a dedicated controller?
+        self._toolbar.displayTypeSignal.connect(self._setViewerType)
+
         self._viewController.independentViewsEnabledSignal.connect(self._setDropEnabled)
         self._viewController.mainImageChangedSignal.connect(self._setMainImage)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
@@ -87,7 +86,7 @@ class DataViewer(QWidget):
         self._setDropEnabled(self._viewController.independentViewsEnabled)
 
     @property
-    def cachedDynamicImageViewer(self):
+    def cachedDynamicImageViewer(self) -> DynamicImageViewer:
         """
             The dynamic image viewer currently in cache (read-only)
 
@@ -96,7 +95,15 @@ class DataViewer(QWidget):
         return self._dynViewer
 
     @property
-    def cachedStaticImageViewer(self):
+    def cachedProfileViewer(self) -> ProfilePlot:
+        """
+        The profile viewer currently in cache (read-only)
+
+        :type: ProfilePlot
+        """
+
+    @property
+    def cachedStaticImageViewer(self) -> ImageViewer:
         """
             The static image viewer currently in cache (read-only)
 
