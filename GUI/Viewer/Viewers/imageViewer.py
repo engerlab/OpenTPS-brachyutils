@@ -1,4 +1,5 @@
 import typing
+from enum import Enum
 
 from PyQt5.QtWidgets import *
 
@@ -26,6 +27,15 @@ from GUI.Viewer.Viewers.textLayer import TextLayer
 
 
 class ImageViewer(QWidget):
+    class viewerTypes(Enum):
+        AXIAL = 'axial'
+        CORONAL = 'coronal'
+        SAGITTAL = 'sagittal'
+        DEFAULT = 'sagittal'
+
+    _viewerTypesList = iter(list(viewerTypes))
+
+
     def __init__(self, viewController):
         QWidget.__init__(self)
 
@@ -44,7 +54,7 @@ class ImageViewer(QWidget):
         self.__sendingWWL = False
         self._viewController = viewController
         self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
-        self._viewType = 'axial'
+        self._viewType = self.viewerTypes.DEFAULT
         self._vtkWidget = QVTKRenderWindowInteractor(self)
         self._wwlEnabled = False
 
@@ -225,12 +235,14 @@ class ImageViewer(QWidget):
                            0, 0, -1, 0,
                            0, 0, 0, 1))
 
-        if self._viewType == 'sagittal':
+        if self._viewType == self.viewerTypes.SAGITTAL:
             self._viewMatrix = sagittal
-        if self._viewType == 'axial':
+        if self._viewType == self.viewerTypes.AXIAL:
             self._viewMatrix = axial
-        if self._viewType == 'coronal':
+        if self._viewType == self.viewerTypes.CORONAL:
             self._viewMatrix = coronal
+        else:
+            ValueError('Invalid viewType')
 
         if not self.primaryImage is None:
             self._primaryImageLayer.resliceAxes = self._viewMatrix

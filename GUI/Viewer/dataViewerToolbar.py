@@ -73,13 +73,13 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.viewerTypes.VIEWER_SLICES)
+            self.displayTypeSignal.emit(dataViewer.DataViewer.viewerTypes.VIEWER_IMAGE_AUTO)
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 
-    def handleDisplayChange(self, view):
-        if isinstance(view, ImageViewer):
-            self._handleButtonViewer(True)
+    def handleDisplayChange(self, viewerType):
+        if viewerType==dataViewer.DataViewer.viewerTypes.VIEWER_IMAGE or viewerType==dataViewer.DataViewer.viewerTypes.VIEWER_IMAGE_DYN:
+            self._buttonViewer.setChecked(True)
 
     def _setMode(self, mode):
         self._displayMode = mode

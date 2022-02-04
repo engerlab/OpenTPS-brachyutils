@@ -80,23 +80,15 @@ class GridFourElements(Grid):
 
         # Fill grid elements with data viewers
         gridElement = DataViewer(self._viewController)
-        if isinstance(gridElement.currentViewer, ImageViewer):
-            gridElement.currentViewer.viewType = 'axial'
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
-        if isinstance(gridElement.currentViewer, ImageViewer):
-            gridElement.currentViewer.viewType = 'axial'
         self.appendGridElement(gridElement)
         self._botRightLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
-        if isinstance(gridElement.currentViewer, ImageViewer):
-            gridElement.currentViewer.viewType = 'coronal'
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
-        if isinstance(gridElement.currentViewer, ImageViewer):
-            gridElement.currentViewer.viewType = 'sagittal'
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
 

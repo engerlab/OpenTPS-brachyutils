@@ -61,14 +61,6 @@ Core.Data.dynamic3DSequence module
    :undoc-members:
    :show-inheritance:
 
-Core.Data.patienList module
----------------------------
-
-.. automodule:: Core.Data.patienList
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Core.Data.patient module
 ------------------------
 
@@ -81,6 +73,38 @@ Core.Data.patientData module
 ----------------------------
 
 .. automodule:: Core.Data.patientData
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Core.Data.patientInfo module
+----------------------------
+
+.. automodule:: Core.Data.patientInfo
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Core.Data.patientList module
+----------------------------
+
+.. automodule:: Core.Data.patientList
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Core.Data.roiContour module
+---------------------------
+
+.. automodule:: Core.Data.roiContour
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Core.Data.rtStruct module
+-------------------------
+
+.. automodule:: Core.Data.rtStruct
    :members:
    :undoc-members:
    :show-inheritance:
