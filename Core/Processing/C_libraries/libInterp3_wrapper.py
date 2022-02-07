@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import ctypes
 import scipy.interpolate
@@ -6,8 +7,8 @@ import platform
 def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0):
   try:
     # import C library
-    if(platform.system() == "Linux"): libInterp3 = ctypes.cdll.LoadLibrary("Core/Processing/C_libraries/libInterp3.so")
-    elif(platform.system() == "Windows"): libInterp3 = ctypes.cdll.LoadLibrary("Core/Processing/C_libraries/libInterp3.dll")
+    if(platform.system() == "Linux"): libInterp3 = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "libInterp3.so"))
+    elif(platform.system() == "Windows"): libInterp3 = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "libInterp3.dll"))
     else: print("Error: not compatible with " + platform.system() + " system.")
     float_array = np.ctypeslib.ndpointer(dtype=np.float32)
     int_array = np.ctypeslib.ndpointer(dtype=np.int32)

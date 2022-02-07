@@ -57,9 +57,7 @@ class RegistrationMorphons(Registration):
         qDirections = [[0, 0.5257, 0.8507], [0, -0.5257, 0.8507], [0.5257, 0.8507, 0], [-0.5257, 0.8507, 0],
                        [0.8507, 0, 0.5257], [0.8507, 0, -0.5257]]
 
-        print('!!!!! in class RegistrationMorphons function compute in file registrationMorphons.py')
-        print('!!!!! --> this path works for the GUI but not if used in an external script')
-        morphonsPath = os.path.abspath("./Core/Processing/Registration/Morphons_kernels")
+        morphonsPath = os.path.join(os.path.dirname(__file__), 'Morphons_kernels')
         k = []
         k.append(np.reshape(
             np.float32(np.fromfile(os.path.join(morphonsPath, "kernel1_real.bin"), dtype="float64")) + np.float32(
@@ -95,9 +93,9 @@ class RegistrationMorphons(Registration):
             logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
-            fixedResampled = self.fixed.dumpableCopy()
+            fixedResampled = self.fixed.copy()
             fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing)
-            movingResampled = self.moving.dumpableCopy()
+            movingResampled = self.moving.copy()
             movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing)
 
             if s != 0:

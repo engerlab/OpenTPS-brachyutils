@@ -42,7 +42,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
             emptyField = Deformation3D()
             motionFieldList.append(emptyField)
         else:
-            logger.info('\nRegistering phase', refIndex, 'to phase', i, '...')
+            logger.info('\nRegistering phase' + str(refIndex) + 'to phase' + str(i) + '...')
             reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=baseResolution, nbProcesses=nbProcesses)
             motionFieldList.append(reg.compute())
             if (max(averageField.gridSize) == 0):

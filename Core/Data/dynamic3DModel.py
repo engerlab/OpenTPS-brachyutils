@@ -35,14 +35,14 @@ class Dynamic3DModel(PatientData):
         field = self.deformationList[int(phase1)].copy()
         field.displacement = None
         if phase1 == phase2:
-            field.velocity.data = amplitude * self.deformationList[int(phase1)].velocity._imageArray
+            field.velocity._imageArray = amplitude * self.deformationList[int(phase1)].velocity._imageArray
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))
             if abs(w1+w2-1.0) > 1e-6:
                 logger.error('Error in phase interpolation.')
                 return
-            field.velocity = amplitude * (w1 * self.deformationList[int(phase1)].velocity + w2 * self.deformationList[int(phase2)].velocity)
+            field.velocity._imageArray = amplitude * (w1 * self.deformationList[int(phase1)].velocity._imageArray + w2 * self.deformationList[int(phase2)].velocity._imageArray)
 
         return field.deformImage(self.midp, fillValue='closest')
 
