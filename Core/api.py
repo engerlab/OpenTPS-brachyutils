@@ -42,10 +42,7 @@ class _API:
         if not isstatic:
             raise ValueError('method cannot be a non static class method')
 
-        if not _API._staticVars["enabled"]:
-            return lambda *args, **kwargs: method(*args, **kwargs)
-        else:
-            return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
+        return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
 
     @property
     def enabled(self):
@@ -130,6 +127,9 @@ class _API:
 
     @staticmethod
     def _wrappedMethod(method, *args, **kwargs):
+        if not _API._staticVars["enabled"]:
+            return lambda *args, **kwargs: method(*args, **kwargs)
+
         if not _API._staticVars["logLock"]:
             argsStr = ''
 
@@ -204,4 +204,4 @@ class EventTestCase(unittest.TestCase):
 
     def testDisabled(self):
         self.assertFalse(API.enabled)
-        self.assertTrue(self.loggedMethod)
+        self.assertTrue(self.loggedMethod())
