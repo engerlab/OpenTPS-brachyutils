@@ -17,7 +17,7 @@ from GUI.Viewer.Viewers.profilePlot import ProfilePlot
 class DroppedObject:
     """
     This class aims to standardized object dropping
-    TODO: we might want to move this to another filer
+    TODO: we might want to move this to another file
     """
     class DropTypes:
         # DropTypes is not an Enum because Enum does not preserve string type of class attributes. But we want Drop types
