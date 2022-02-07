@@ -3,6 +3,7 @@ import os
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction
 
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.Viewers.imageFusionProperties import ImageFusionProperties
 
 
@@ -37,13 +38,13 @@ class SecondaryImageActions:
     def resetVisibility(self):
         self._updateImage(self._image)
 
-    def _setColorbarOn(self, visible):
+    def _setColorbarOn(self, visible: bool):
         self._secondaryImageLayer.colorbarOn = visible
 
     def _showImageProperties(self):
         ImageFusionProperties(self._image.data).show()
 
-    def _updateImage(self, image):
+    def _updateImage(self, image: Image3DForViewer):
         if image is None:
             self._image = None
             self._colorbarAction.setVisible(False)

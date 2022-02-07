@@ -4,6 +4,5 @@ from Core.Data.patientData import PatientData
 from Core.IO.dataLoader import loadData
 from Core.api import API
 
-loadData(API.patientList,['/home/sylvain/Documents/4DCT/4DCT/p20','/home/sylvain/Documents/4DCT/4DCT/p30','/home/sylvain/Documents/4DCT/4DCT/p40'])
-
+loadData(API.patientList,['/home/sylvain/Documents/MIROPT_data/'])
 

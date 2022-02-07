@@ -1,6 +1,7 @@
 import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
+from Core.Data.Images.image3D import Image3D
 from Core.event import Event
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
 
@@ -23,19 +24,19 @@ class ROIContourForViewer(DataMultiton):
         super().__setattr__(key, value)
 
     @property
-    def referenceImage(self):
+    def referenceImage(self) -> Image3D:
         return self._referenceImage
 
     @referenceImage.setter
-    def referenceImage(self, image):
+    def referenceImage(self, image: Image3D):
         self._referenceImage = image
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         return self._visible
 
     @visible.setter
-    def visible(self, visible):
+    def visible(self, visible: bool):
         self._visible = visible
         self.visibleChangedSignal.emit(self._visible)
 

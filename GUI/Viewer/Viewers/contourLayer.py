@@ -1,3 +1,4 @@
+import typing
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -5,6 +6,8 @@ from vtkmodules import vtkImagingCore, vtkCommonCore
 from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
+from Core.Data.Images.image3D import Image3D
+from Core.Data.roiContour import ROIContour
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 
 
@@ -17,13 +20,13 @@ class ContourLayer:
         self._resliceAxes = None
         self._vtkContours = []
 
-    def setNewContour(self, contour):
+    def setNewContour(self, contour: ROIContour):
         contour = ROIContourForViewer(contour)
 
         if contour in self._contours:
             return
 
-        contour.referenceImage = self._referenceImage
+        contour.referenceImage = self.referenceImage
 
         self._contours.append(contour)
 
@@ -36,11 +39,11 @@ class ContourLayer:
         self._renderWindow.Render()
 
     @property
-    def referenceImage(self):
+    def referenceImage(self) -> typing.Optional[Image3D]:
         return self._referenceImage
 
     @referenceImage.setter
-    def referenceImage(self, image):
+    def referenceImage(self, image: Image3D):
         self._referenceImage = image
 
         for contour in self._contours:
@@ -120,6 +123,6 @@ class vtkContour:
         # contourActor.GetProperty().SetColor(imageColor[0], imageColor[1], imageColor[2])
         self.mapper.SetLookupTable(table)
 
-    def setVisible(self, visible):
+    def setVisible(self, visible: bool):
         self.actor.SetVisibility(visible)
         self.renderWindow.Render()

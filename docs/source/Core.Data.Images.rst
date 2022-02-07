@@ -12,10 +12,10 @@ Core.Data.Images.ctImage module
    :undoc-members:
    :show-inheritance:
 
-Core.Data.Images.deformationField module
-----------------------------------------
+Core.Data.Images.deformation3D module
+-------------------------------------
 
-.. automodule:: Core.Data.Images.deformationField
+.. automodule:: Core.Data.Images.deformation3D
    :members:
    :undoc-members:
    :show-inheritance:
@@ -52,10 +52,26 @@ Core.Data.Images.letImage module
    :undoc-members:
    :show-inheritance:
 
-Core.Data.Images.radioImage module
-----------------------------------
+Core.Data.Images.roiMask module
+-------------------------------
 
-.. automodule:: Core.Data.Images.radioImage
+.. automodule:: Core.Data.Images.roiMask
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Core.Data.Images.vectorField3D module
+-------------------------------------
+
+.. automodule:: Core.Data.Images.vectorField3D
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Core.Data.Images.xRayImage module
+---------------------------------
+
+.. automodule:: Core.Data.Images.xRayImage
    :members:
    :undoc-members:
    :show-inheritance:

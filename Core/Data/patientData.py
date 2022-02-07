@@ -1,3 +1,5 @@
+import copy
+
 import pydicom
 
 from Core.Data.patientInfo import PatientInfo
@@ -25,6 +27,23 @@ class PatientData:
         else:
             self.seriesInstanceUID = pydicom.uid.generate_uid()
 
+    def deepCopyWithoutEvent(self):
+        newObj = copy.deepcopy(self)
+        return newObj._recuresivelyResetEvents()
+
+    def _recuresivelyResetEvents(self):
+        # Loop on all attributes and remove Events
+        for attrKey, attrVal in self.__dict__.items():
+            try:
+                if isinstance(attrVal, Event):
+                    self.__dict__[attrKey] = None
+                else:
+                    self.__dict__[attrKey] = attrVal._recuresivelyResetEvents()
+            except:
+                # newObj.__dict__[attrKey] is a base type instance not an object
+                pass
+
+        return self
 
     @property
     def name(self):

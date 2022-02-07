@@ -60,6 +60,8 @@ class _API:
 
         if _API._dic["patientList"] is None:
             self.enabled = False
+        else:
+            self.enabled = True
 
     @staticmethod
     def _convertArgToString(arg):

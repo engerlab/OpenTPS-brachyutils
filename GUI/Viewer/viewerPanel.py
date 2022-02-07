@@ -1,21 +1,20 @@
+from enum import Enum
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
-from PyQt5.QtCore import QTimer
 
-from Core.Data.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from GUI.Viewer.dataViewer import DroppedObject
 from GUI.Viewer.gridFourElements import GridFourElements
 from GUI.Viewer.viewerToolbar import ViewerToolbar
 
 
+class LayoutTypes(Enum):
+    GRID_2BY2 = 'GRID_2BY2'
+
 class ViewerPanel(QWidget):
+    MODE_DYNAMIC = 'DYNAMIC' # Not used anymore?
+    MODE_STATIC = 'STATIC' # Not used anymore?
 
-    LAYOUT_FOUR = 'LAYOUT_FOUR'
-
-    MODE_DYNAMIC = 'DYNAMIC'
-    MODE_STATIC = 'STATIC'
-
-    def __init__(self, viewController, layoutType='LAYOUT_FOUR'):
+    def __init__(self, viewController, layoutType=LayoutTypes.GRID_2BY2):
         QWidget.__init__(self)
 
         self._dropEnabled = False
@@ -34,9 +33,9 @@ class ViewerPanel(QWidget):
         self._viewController.dynamicDisplayController.setToolBar(self._viewToolbar)
 
         self._setToolbar(self._viewToolbar)
-        self._setLayout(layoutType)
-        if self._layoutType == self.LAYOUT_FOUR:
-            self._viewController.numberOfViewerPanelElement = 4
+        self._setLayoutType(layoutType)
+        if self._layoutType == LayoutTypes.GRID_2BY2: # Not used anymore?
+            self._viewController.numberOfViewerPanelElement = 4 # Not used anymore?
 
         self._viewController.independentViewsEnabledSignal.connect(lambda enabled: self._setDropEnabled(not enabled))
         self._setDropEnabled(not self._viewController.independentViewsEnabled)
@@ -59,7 +58,7 @@ class ViewerPanel(QWidget):
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
-            if (e.mimeData().text() == 'image'):
+            if (e.mimeData().text() == DroppedObject.DropTypes.IMAGE):
                 e.accept()
                 self._viewController.mainImage = self._viewController.selectedImage
                 return
@@ -75,21 +74,20 @@ class ViewerPanel(QWidget):
         else:
             self._viewerGrid.setAcceptDrops(False)
 
-    def _setLayout(self, layoutType):
+    def _setLayoutType(self, layoutType):
         self._layoutType = layoutType
 
         if not self._viewerGrid is None:
             self._layoutType.removeWidget(self._viewerGrid)
 
-        if self._layoutType == self.LAYOUT_FOUR:
+        if self._layoutType == LayoutTypes.GRID_2BY2:
             self._viewerGrid = GridFourElements(self._viewController)
-
-        if self._viewerGrid==None:
+        elif self._viewerGrid==None:
             return
 
         self._layout.addWidget(self._viewerGrid)
 
-        if self._layoutType == self.LAYOUT_FOUR:
+        if self._layoutType == LayoutTypes.GRID_2BY2:
             self._viewerGrid.setEqualSize()
 
     def _setToolbar(self, toolbar):
