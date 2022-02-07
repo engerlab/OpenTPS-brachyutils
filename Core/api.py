@@ -3,9 +3,11 @@ import inspect
 import logging
 import os
 import sys
+import unittest
 from io import StringIO
 
 import Script
+
 
 class APILogger:
     def __init__(self):
@@ -16,7 +18,7 @@ class APILogger:
             f.write(cmd + '\n')
 
 class _API:
-    _dic = {"enabled": False, "patientList": None, "logging": True, "logLock": False, "logKey": None}
+    _staticVars = {"enabled": False, "patientList": None, "logging": True, "logLock": False, "logKey": None}
     _loggerFunctions = []
 
     def __init__(self):
@@ -40,28 +42,26 @@ class _API:
         if not isstatic:
             raise ValueError('method cannot be a non static class method')
 
-        return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
+        if not _API._staticVars["enabled"]:
+            return lambda *args, **kwargs: method(*args, **kwargs)
+        else:
+            return lambda *args, **kwargs: _API._wrappedMethod(method, *args, **kwargs)
 
     @property
     def enabled(self):
-        return _API._dic["enabled"]
+        return _API._staticVars["enabled"]
 
     @enabled.setter
     def enabled(self, e):
-        _API._dic["enabled"] = e
+        _API._staticVars["enabled"] = e
 
     @property
     def patientList(self):
-        return _API._dic["patientList"]
+        return _API._staticVars["patientList"]
 
     @patientList.setter
     def patientList(self, patientList):
-        _API._dic["patientList"] = patientList
-
-        if _API._dic["patientList"] is None:
-            self.enabled = False
-        else:
-            self.enabled = True
+        _API._staticVars["patientList"] = patientList
 
     @staticmethod
     def _convertArgToString(arg):
@@ -74,17 +74,17 @@ class _API:
         if isinstance(arg, PatientList):
             argStr = 'API.patientList'
         elif isinstance(arg, Patient):
-            ind = _API._dic["patientList"].getIndex(arg)
+            ind = _API._staticVars["patientList"].getIndex(arg)
             if ind<0:
                 argStr = 'Error: Image or patient not found in patient'
             else:
                 argStr = 'API.patientList[' \
                          + str(ind) + ']'
         elif isinstance(arg, Image3D):
-            for patient in _API._dic["patientList"]:
+            for patient in _API._staticVars["patientList"]:
                 if patient.hasImage(arg):
                     argStr = 'API.patientList[' \
-                             + str(_API._dic["patientList"].getIndex(patient)) + ']' \
+                             + str(_API._staticVars["patientList"].getIndex(patient)) + ']' \
                              + '.images[' \
                              + str(patient.getImageIndex(arg)) + ']'
             if argStr=='':
@@ -109,10 +109,6 @@ class _API:
         return argStr
 
     @staticmethod
-    def enableLogging(enabled, fileName='default'):
-        _API._dic["logging"] = enabled
-
-    @staticmethod
     def _log(cmd):
         for logFunction in _API._loggerFunctions:
             logFunction(cmd)
@@ -134,11 +130,7 @@ class _API:
 
     @staticmethod
     def _wrappedMethod(method, *args, **kwargs):
-        if not _API._dic["enabled"]:
-            method(*args, **kwargs)
-            return
-
-        if not _API._dic["logLock"]:
+        if not _API._staticVars["logLock"]:
             argsStr = ''
 
             if len(args) > 0:
@@ -168,23 +160,23 @@ class _API:
             if isstatic and not isFunction:
                 callStr = cls.__name__ + '.' + callStr
 
-            if  _API._dic["logging"]:
+            if  _API._staticVars["logging"]:
                 _API._log(callStr)
 
         key = object()
-        if not _API._dic["logLock"]:
-            _API._dic["logKey"] = key
-            _API._dic["logLock"] = True
+        if not _API._staticVars["logLock"]:
+            _API._staticVars["logKey"] = key
+            _API._staticVars["logLock"] = True
 
         try:
             method(*args, **kwargs)
         except Exception as e:
-            if key==_API._dic["logKey"]:
-                _API._dic["logLock"] = False
+            if key==_API._staticVars["logKey"]:
+                _API._staticVars["logLock"] = False
             raise(e)
 
-        if key == _API._dic["logKey"]:
-            _API._dic["logLock"] = False
+        if key == _API._staticVars["logKey"]:
+            _API._staticVars["logLock"] = False
 
 API = _API()
 
@@ -203,3 +195,13 @@ def get_class_that_defined_method(meth):
         if isinstance(cls, type):
             return cls
     return getattr(meth, '__objclass__', None)  # handle special descriptor objects
+
+
+class EventTestCase(unittest.TestCase):
+    @API.loggedViaAPI
+    def loggedMethod(self):
+        return True
+
+    def testDisabled(self):
+        self.assertFalse(API.enabled)
+        self.assertTrue(self.loggedMethod)

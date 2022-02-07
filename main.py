@@ -29,6 +29,7 @@ if __name__ == '__main__':
 
     API.patientList = patientList
     API.appendLoggingFunction(APILogger().print)
+    API.enabled = True
 
     # instantiate the main GUI window
     viewController = ViewController(patientList)
