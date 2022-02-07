@@ -29,16 +29,16 @@ class PatientData:
 
     def deepCopyWithoutEvent(self):
         newObj = copy.deepcopy(self)
-        return newObj._recuresivelyResetEvent()
+        return newObj._recuresivelyResetEvents()
 
-    def _recuresivelyResetEvent(self):
+    def _recuresivelyResetEvents(self):
         # Loop on all attributes and remove Events
         for attrKey, attrVal in self.__dict__.items():
             try:
                 if isinstance(attrVal, Event):
                     self.__dict__[attrKey] = None
                 else:
-                    self.__dict__[attrKey] = attrVal._recuresivelyResetEvent()
+                    self.__dict__[attrKey] = attrVal._recuresivelyResetEvents()
             except:
                 # newObj.__dict__[attrKey] is a base type instance not an object
                 pass
