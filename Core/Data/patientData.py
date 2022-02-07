@@ -96,4 +96,6 @@ class EventTestCase(unittest.TestCase):
         newObj = obj.deepCopyWithoutEvent()
         self.assertIsNone(newObj.field2)
         self.assertIsNone(newObj.field3.field2)
+        self.assertEqual(newObj.field1, 'a string')
+        self.assertEqual(newObj.field3.field1, 'a string')
 
