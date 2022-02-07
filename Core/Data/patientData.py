@@ -1,4 +1,5 @@
 import copy
+import unittest
 
 import pydicom
 
@@ -78,3 +79,21 @@ class PatientData:
 
     def getType(self):
         return self.__class__.__name__
+
+
+class EventTestCase(unittest.TestCase):
+    class testObj(PatientData):
+        def __init__(self):
+            super().__init__()
+
+            self.field1 = 'a string'
+            self.field2 = Event()
+            self.field3 = copy.deepcopy(self)
+
+    def testDeepCopyWithoutEvent(self):
+        obj = self.testObj()
+
+        newObj = obj.deepCopyWithoutEvent()
+        self.assertIsNone(newObj.field2)
+        self.assertIsNone(newObj.field3.field2)
+
