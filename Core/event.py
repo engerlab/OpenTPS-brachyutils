@@ -31,6 +31,7 @@ class Event:
             except:
                 pass
 
+        return newEvent
 
     def connect(self, slot):
         """
