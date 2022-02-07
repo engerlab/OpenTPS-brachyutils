@@ -65,7 +65,7 @@ class VectorField3D(Image3D):
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
 
-        displacement = self.copy()
+        displacement = self.deepCopyWithoutEvent()
         displacement._imageArray = displacement._imageArray * 2 ** (-N)
 
         for r in range(N):

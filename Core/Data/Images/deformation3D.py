@@ -150,7 +150,7 @@ class Deformation3D(Image3D):
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
-            field = field.copy()
+            field = field.deepCopyWithoutEvent()
             field.resample(image.gridSize, image._origin, image._spacing)
 
         image = image.dumpableCopy()
