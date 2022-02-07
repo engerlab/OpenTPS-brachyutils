@@ -1,10 +1,6 @@
 GUI package
 ===========
 
-.. uml:: GUI
-   :classes:
-   :packages:
-
 Subpackages
 -----------
 
@@ -12,8 +8,7 @@ Subpackages
    :maxdepth: 4
 
    GUI.Panels
-   GUI.ViewControllers
-   GUI.Viewers
+   GUI.Viewer
 
 Submodules
 ----------
@@ -22,6 +17,22 @@ GUI.MainWindow module
 ---------------------
 
 .. automodule:: GUI.MainWindow
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+GUI.statusBar module
+--------------------
+
+.. automodule:: GUI.statusBar
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+GUI.viewController module
+-------------------------
+
+.. automodule:: GUI.viewController
    :members:
    :undoc-members:
    :show-inheritance:

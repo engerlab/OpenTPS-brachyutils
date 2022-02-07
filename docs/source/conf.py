@@ -34,7 +34,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',  # Core library for html generation from docstrings
     'sphinx.ext.autosummary',  # Create neat summary tables
-    'sphinx_pyreverse'
+    'sphinx_pyreverse',
+    'sphinx.ext.doctest'
 ]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 napoleon_google_docstring = False 

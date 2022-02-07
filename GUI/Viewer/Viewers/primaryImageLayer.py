@@ -1,3 +1,4 @@
+from typing import Optional, Sequence
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -10,6 +11,8 @@ from vtkmodules.vtkInteractionWidgets import vtkOrientationMarkerWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
 
 import numpy as np
+
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 
 
 class PrimaryImageLayer:
@@ -45,14 +48,14 @@ class PrimaryImageLayer:
         self._reslice.SetInterpolationModeToNearestNeighbor()
 
     @property
-    def image(self):
+    def image(self) -> Optional[Image3DForViewer]:
         if self._image is None:
             return None
 
         return self._image
 
     @image.setter
-    def image(self, image):
+    def image(self, image: Optional[Image3DForViewer]):
         if image is None:
             self._reslice.RemoveAllInputs()
             self._disconnectAll()
@@ -94,7 +97,7 @@ class PrimaryImageLayer:
         self._reslice.SetResliceAxes(resliceAxes)
         self._orientationActor.PokeMatrix(resliceAxes)
 
-    def getDataAtPosition(self, position):
+    def getDataAtPosition(self, position: Sequence):
 
         ## old version to get the value from the vtk image
         # imageData = self._reslice.GetInput(0)
@@ -108,7 +111,7 @@ class PrimaryImageLayer:
 
         return dataNumpy
 
-    def getVoxelIndexFromPosition(self, position):
+    def getVoxelIndexFromPosition(self, position: Sequence):
 
         positionInMM = np.array(position)
         origin = np.array(self._image.origin) ## dataMultiton magic makes all this available here
@@ -128,7 +131,7 @@ class PrimaryImageLayer:
 
         self._image.wwlChangedSignal.disconnect(self._setWWL)
 
-    def _setWWL(self, wwl):
+    def _setWWL(self, wwl: Sequence):
         imageProperty = self._iStyle.GetCurrentImageProperty()
         if not (imageProperty is None):
             imageProperty.SetColorWindow(wwl[0])

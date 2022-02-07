@@ -1,5 +1,14 @@
 
 class Event:
+    """
+    A class that implements signal/slot mechanism similarly to pyQtSignal
+
+    >>> signal = Event(bool)
+    >>> signal.connect(lambda x: print(x))
+    >>> signal.emit(True)
+    True
+
+    """
     def __init__(self, *args):
         self._slots = []
         self.objectType = None
@@ -9,15 +18,24 @@ class Event:
 
 
     def connect(self, slot):
+        """
+        Connects a slot
+        """
         self._slots.append(slot)
 
 
     def disconnect(self, slot):
+        """
+        Disconnects a slot
+        """
         if slot in self._slots:
             self._slots.remove(slot)
 
 
     def emit(self, *args):
+        """
+        Triggers execution of all connected slots with specified arguments
+        """
         if not(self.objectType is None):
             if len(args) != 1:
                 raise ValueError('Incorrect argument')
@@ -33,4 +51,7 @@ class Event:
 
     @property
     def slots(self):
+        """
+        List of slots (read-only)
+        """
         return[slot for slot in self._slots]
