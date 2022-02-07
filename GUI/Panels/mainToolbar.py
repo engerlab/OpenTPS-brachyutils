@@ -7,8 +7,6 @@ from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
 
 
 class MainToolbar(QToolBox):
-    # For Damien:
-    # Define mainImageSelectedSignal and connect it to patientDataPanelController.mainImageSelectedSignal (also to be defined)
 
     def __init__(self, viewController):
         QToolBox.__init__(self)

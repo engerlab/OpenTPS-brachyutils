@@ -1,3 +1,5 @@
+import copy
+
 
 class Event:
     """
@@ -15,6 +17,19 @@ class Event:
 
         if len(args) > 0:
             self.objectType = args[0]
+
+
+    def __deepcopy__(self, memodict={}):
+        newEvent = Event()
+
+        newEvent.objectType = self.objectType
+
+        for slot in self._slots:
+            try:
+                newSlot = copy.deepcopy(slot)
+                newEvent.slots.append(newSlot)
+            except:
+                pass
 
 
     def connect(self, slot):

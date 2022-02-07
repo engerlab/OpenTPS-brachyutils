@@ -104,7 +104,7 @@ class RegistrationMorphons(Registration):
                                    fixedResampled._spacing, fillValue=0)
             else:
                 deformation.initFromImage(fixedResampled)
-                certainty = fixedResampled.copy()
+                certainty = fixedResampled.deepCopyWithoutEvent()
                 certainty._imageArray = np.zeros_like(certainty._imageArray)
 
             # Compute phase on fixed image
