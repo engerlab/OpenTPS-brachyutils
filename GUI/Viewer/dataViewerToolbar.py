@@ -5,15 +5,10 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction
 
 from Core.event import Event
-from GUI.Viewer.Viewers.imageViewer import ImageViewer
 import GUI.Viewer.dataViewer as dataViewer
 
 
 class DataViewerToolbar(QToolBar):
-
-    MODE_DYNAMIC = 'DYNAMIC'
-    MODE_STATIC = 'STATIC'
-
     def __init__(self):
         QToolBar.__init__(self)
 
@@ -29,10 +24,10 @@ class DataViewerToolbar(QToolBar):
         self._buttonDVH.triggered.connect(self._handleButtonDVH)
         self._buttonDVH.setCheckable(True)
 
-        self._buttonGraph = QAction(QIcon(iconPath + "chart.png"), "Graph", self)
-        self._buttonGraph.setStatusTip("Graph")
-        self._buttonGraph.triggered.connect(self._handleButtonGraph)
-        self._buttonGraph.setCheckable(True)
+        self._buttonProfile = QAction(QIcon(iconPath + "chart.png"), "Graph", self)
+        self._buttonProfile.setStatusTip("Graph")
+        self._buttonProfile.triggered.connect(self._handleButtonGraph)
+        self._buttonProfile.setCheckable(True)
 
         self._buttonViewer = QAction(QIcon(iconPath + "x-ray.png"), "Image viewer", self)
         self._buttonViewer.setStatusTip("Image viewer")
@@ -40,12 +35,10 @@ class DataViewerToolbar(QToolBar):
         self._buttonViewer.setCheckable(True)
 
         self.addAction(self._buttonViewer)
-        self.addAction(self._buttonGraph)
+        self.addAction(self._buttonProfile)
         self.addAction(self._buttonDVH)
 
         self.addSeparator()
-
-        self._setMode(self.MODE_STATIC)
 
     def _handleButtonDVH(self, pressed):
         if self._buttonDVH.isChecked() != pressed:
@@ -53,17 +46,17 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.VIEWER_DVH)
+            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.DISPLAY_DVH)
             self._handleButtonViewer(False)
             self._handleButtonGraph(False)
 
     def _handleButtonGraph(self, pressed):
-        if self._buttonGraph.isChecked() != pressed:
-            self._buttonGraph.setChecked(pressed)
+        if self._buttonProfile.isChecked() != pressed:
+            self._buttonProfile.setChecked(pressed)
             return
 
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.VIEWER_PROFILE)
+            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.DISPLAY_PROFILE)
             self._handleButtonViewer(False)
             self._handleButtonDVH(False)
 
@@ -73,13 +66,10 @@ class DataViewerToolbar(QToolBar):
             return
 
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.VIEWER_IMAGE)
+            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.DISPLAY_IMAGE)
             self._handleButtonGraph(False)
             self._handleButtonDVH(False)
 
-    def handleDisplayChange(self, viewerType):
-        if viewerType==dataViewer.DataViewer.DisplayTypes.VIEWER_IMAGE:
+    def setViewerType(self, viewerType):
+        if viewerType==dataViewer.DataViewer.DisplayTypes.DISPLAY_IMAGE:
             self._buttonViewer.setChecked(True)
-
-    def _setMode(self, mode):
-        self._displayMode = mode

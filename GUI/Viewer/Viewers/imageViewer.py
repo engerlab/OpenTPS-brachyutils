@@ -21,7 +21,6 @@ from GUI.Viewer.Viewers.contourLayer import ContourLayer
 from GUI.Viewer.Viewers.crossHairLayer import CrossHairLayer
 from GUI.Viewer.Viewers.primaryImageLayer import PrimaryImageLayer
 from GUI.Viewer.Viewers.profileWidget import ProfileWidget
-from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.Viewers.secondaryImageLayer import SecondaryImageLayer
 from GUI.Viewer.Viewers.textLayer import TextLayer
 
@@ -89,16 +88,6 @@ class ImageViewer(QWidget):
 
         self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
         self._renderWindow.AddRenderer(self._renderer)
-
-        # TODO: actions to change view type
-        self._qActions = SecondaryImageActions(self._secondaryImageLayer)
-
-    def hideEvent(self, QHideEvent):
-        self._qActions.hideAll()
-
-    def showEvent(self, QShowEvent):
-        self._qActions.resetVisibility()
-
 
     @property
     def primaryImage(self) -> Image3D:
@@ -179,10 +168,6 @@ class ImageViewer(QWidget):
         self.profileWidgetEnabled = enabled
 
     @property
-    def qActions(self) -> SecondaryImageActions:
-        return self._qActions
-
-    @property
     def secondaryImage(self) -> Image3D:
         if self._secondaryImageLayer.image is None:
             return None
@@ -208,6 +193,10 @@ class ImageViewer(QWidget):
             lambda name: self._textLayer.setSecondaryTextLine(2, name))
 
         self._renderWindow.Render()
+
+    @property
+    def secondaryImageLayer(self):
+        return self._secondaryImageLayer
 
 
     @property

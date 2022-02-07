@@ -2,6 +2,7 @@ from enum import Enum
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
+from GUI.Viewer.dataViewer import DroppedObject
 from GUI.Viewer.gridFourElements import GridFourElements
 from GUI.Viewer.viewerToolbar import ViewerToolbar
 
@@ -57,7 +58,7 @@ class ViewerPanel(QWidget):
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():
-            if (e.mimeData().text() == 'image'):
+            if (e.mimeData().text() == DroppedObject.DropTypes.IMAGE):
                 e.accept()
                 self._viewController.mainImage = self._viewController.selectedImage
                 return
