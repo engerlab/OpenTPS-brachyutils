@@ -34,7 +34,7 @@ class Image3D(PatientData):
 
     def copy(self):
         img = copy.deepcopy(self)
-        # img.name = img.name + '_copy'
+        img.name = img.name + '_copy'
         return img
 
     @property
