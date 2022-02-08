@@ -3,7 +3,7 @@ from Core.IO.dataLoader import listAllFiles, loadAllData
 from Core.IO.serializedObjectIO import saveSerializedObject
 
 ## option 1 specific to dicoms
-dataPath = "/home/damien/Code/opentps/tests/MidP_ct/"
+dataPath = ""
 filesList = listAllFiles(dataPath)
 print(filesList)
 image1 = readDicomCT(filesList['Dicom'])

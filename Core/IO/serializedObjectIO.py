@@ -9,8 +9,6 @@ import os
 
 # ---------------------------------------------------------------------------------------------------
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
-    print('in saveDataStructure')
-    print(patientList[0].images[0].patient)
 
     if splitPatientsBool:
         patientList = [[patient] for patient in patientList]
