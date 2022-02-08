@@ -1,6 +1,7 @@
 import copy
 import unittest
 
+import numpy as np
 import pydicom
 
 from Core.Data.patientInfo import PatientInfo
@@ -9,6 +10,7 @@ from Core.event import Event
 
 
 class PatientData:
+    _staticVars = {"deepCopyingWithoutEvent": False}
 
     def __init__(self, patientInfo=None, name='', seriesInstanceUID=''):
 
@@ -28,8 +30,27 @@ class PatientData:
         else:
             self.seriesInstanceUID = pydicom.uid.generate_uid()
 
+    def __deepcopy__(self, memodict={}):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memodict[id(self)] = result
+        for attrKey, attrVal in self.__dict__.items():
+            # Do not deep copy numpy array
+            if self._staticVars["deepCopyingWithoutEvent"] and isinstance(attrVal, np.ndarray):
+                setattr(result, attrKey, attrVal)
+            else:
+                setattr(result, attrKey, copy.deepcopy(attrVal, memodict))
+        return result
+
     def deepCopyWithoutEvent(self):
-        newObj = copy.deepcopy(self)
+        self._staticVars["deepCopyingWithoutEvent"] = True
+        try:
+            newObj = copy.deepcopy(self)
+        except Exception as e:
+            self._staticVars["deepCopyingWithoutEvent"] = False
+            raise(e)
+        self._staticVars["deepCopyingWithoutEvent"] = False
+
         return newObj._recuresivelyResetEvents()
 
     def _recuresivelyResetEvents(self, checkedItems = []):
