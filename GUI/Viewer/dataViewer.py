@@ -8,6 +8,7 @@ from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.event import Event
 from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.Viewers.dynamicImageViewer import DynamicImageViewer
+from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.Viewers.dvhPlot import DVHPlot
@@ -291,6 +292,8 @@ class DataViewer(QWidget):
     ####################################################################################################################
     # This is the logical part of the viewer. Should we migrate this to a dedicated controller?
     def _iniializeControl(self):
+        SecondaryImageActions(self._staticImageViewer.secondaryImageLayer).addToToolbar(self._toolbar)
+
         self._viewController.independentViewsEnabledSignal.connect(self.enableDropForMainImage)
         self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplaydMode)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
