@@ -2,7 +2,6 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QHBoxLayout, QFrame, QSplitter, QVBoxLayout
 
-from GUI.Viewer.Viewers.imageViewer import ImageViewer
 from GUI.Viewer.grid import Grid
 from GUI.Viewer.dataViewer import DataViewer
 
@@ -80,17 +79,22 @@ class GridFourElements(Grid):
 
         # Fill grid elements with data viewers
         gridElement = DataViewer(self._viewController)
-        self.appendGridElement(gridElement)
-        self._botLeftLayout.addWidget(gridElement)
-        gridElement = DataViewer(self._viewController)
-        self.appendGridElement(gridElement)
-        self._botRightLayout.addWidget(gridElement)
-        gridElement = DataViewer(self._viewController)
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.AXIAL
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.CORONAL
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
+        gridElement = DataViewer(self._viewController)
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.SAGITTAL
+        self.appendGridElement(gridElement)
+        self._botLeftLayout.addWidget(gridElement)
+        gridElement = DataViewer(self._viewController)
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.SAGITTAL
+        self.appendGridElement(gridElement)
+        self._botRightLayout.addWidget(gridElement)
+
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
