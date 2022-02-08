@@ -180,6 +180,16 @@ class DataViewer(QWidget):
 
     @displayMode.setter
     def displayMode(self, mode):
+        if mode == self._displayMode:
+            return
+
+        # Notify dynamicDisplayController - we have a problem of multiple responsibilities here
+        previousModeWasStatic = self.displayMode == self.DisplayModes.STATIC
+        if previousModeWasStatic:
+            self._viewController.dynamicDisplayController.addDynamicViewer(self.cachedDynamicImageViewer)
+        else:
+            self._viewController.dynamicDisplayController.removeDynamicViewer(self.cachedDynamicImageViewer)
+
         self._displayMode = mode
 
         # Reset display
@@ -227,10 +237,6 @@ class DataViewer(QWidget):
         self._currentViewer.show()
 
     def _setCurrentViewerToDynamicImageViewer(self):
-        # Notify dynamicDisplayController - we have a problem of multiple responsibilities here
-        if self.displayType == self.DisplayTypes.DISPLAY_IMAGE:
-            self._viewController.dynamicDisplayController.addDynamicViewer(self.cachedDynamicImageViewer)
-
         self._currentViewer = self._dynImageViewer
         self.dropEnabled = self._dropEnabled
 
@@ -238,10 +244,6 @@ class DataViewer(QWidget):
         self._viewController.windowLevelEnabledSignal.disconnect(self._staticImageViewer.setWWLEnabled)
 
     def _setCurrentViewerToStaticImageViewer(self):
-        # Notify dynamicDisplayController to stop dynamic image viewer - we have a problem of multiple responsibilities here
-        if self.displayMode == self.DisplayModes.DYNAMIC:
-            self._viewController.dynamicDisplayController.removeDynamicViewer(self.cachedDynamicImageViewer)
-
         self._currentViewer = self._staticImageViewer
         self.dropEnabled = self._dropEnabled
 
@@ -308,9 +310,24 @@ class DataViewer(QWidget):
         if enabled:
             # It might seems weird to have a signal connected within the class but it is if someday we want to move the logical part out of this class.
             # See also comment on dropEnabled : Should we implement drop directly in ImageViewer?
-            self.droppedImageSignal.connect(self._setMainImage)
+            self.droppedImageSignal.connect(self._setMainImageAnSwitchDisplaydMode)
         else:
-            self.droppedImageSignal.disconnect(self._setMainImage)
+            self.droppedImageSignal.disconnect(self._setMainImageAnSwitchDisplaydMode)
+
+    def _setMainImageAnSwitchDisplaydMode(self, image):
+        """
+            Switch display mode according to image type and then display image
+        """
+        if isinstance(image, Image3D):
+            self.displayMode = self.DisplayModes.STATIC
+        elif isinstance(image, Dynamic3DSequence):
+            self.displayMode = self.DisplayModes.DYNAMIC
+        elif image is None:
+            pass
+        else:
+            raise ValueError('Image type not supported')
+
+        self._setMainImage(image)
 
     def _setMainImage(self, image: Optional[Union[Image3D, Dynamic3DSequence]]):
         """
@@ -328,19 +345,6 @@ class DataViewer(QWidget):
 
         if not image is None:
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
-
-    def _setMainImageAnSwitchDisplaydMode(self, image):
-        if isinstance(image, Image3D):
-            self.displayMode = self.DisplayModes.STATIC
-        elif isinstance(image, Dynamic3DSequence):
-            self.displayMode = self.DisplayModes.DYNAMIC
-        elif image is None:
-            pass
-        else:
-            raise ValueError('Image type not supported')
-
-        self._setMainImage(image)
-
 
     def _setSecondaryImage(self, image: Optional[Image3D]):
         """
