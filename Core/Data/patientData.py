@@ -28,10 +28,6 @@ class PatientData:
         else:
             self.seriesInstanceUID = pydicom.uid.generate_uid()
 
-    def shallowCopyWithoutEvent(self):
-        newObj = copy.copy(self)
-        return newObj._recuresivelyResetEvents()
-
     def deepCopyWithoutEvent(self):
         newObj = copy.deepcopy(self)
         return newObj._recuresivelyResetEvents()

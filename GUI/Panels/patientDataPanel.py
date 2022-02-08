@@ -386,9 +386,10 @@ class PatientDataTree(QTreeView):
         print(type(selectedData[0]))
 
         fileDialog = SaveData_dialog()
-        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.patientDataPanel.dataPath)
+        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None,
+                                                                                   dir=self.patientDataPanel.dataPath)
 
-        dataList = [data.dumpableCopy() for data in selectedData]
+        dataList = [data.deepCopyWithoutEvent() for data in selectedData]
         saveSerializedObject(dataList, savingPath, compressedBool=compressedBool)
 
 
