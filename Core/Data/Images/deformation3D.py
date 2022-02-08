@@ -153,10 +153,12 @@ class Deformation3D(Image3D):
             field = field.deepCopyWithoutEvent()
             field.resample(image.gridSize, image._origin, image._spacing)
 
-        image = image.dumpableCopy()
+        image = image.copy()
         image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
 
         return image
 
     def dumpableCopy(self):
-        return Deformation3D(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, velocity=self.velocity, displacement=self.displacement)
+        dumpableDef = Deformation3D(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, velocity=self.velocity, displacement=self.displacement)
+        # dumpableDef.patient = self.patient
+        return dumpableDef

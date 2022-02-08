@@ -49,4 +49,6 @@ class Dynamic3DModel(PatientData):
     def dumpableCopy(self):
 
         dumpableDefList = [deformation.dumpableCopy() for deformation in self.deformationList]
-        return Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
+        dumpableModel = Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
+        dumpableModel.patient = self.patient
+        return dumpableModel

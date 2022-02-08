@@ -30,7 +30,9 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
     for data in dataList:
         if (isinstance(data, Patient)):
             patient = data
+            patient.setSelfInData()  ## this gives the patient to each of its data, it makes a data impossible to copy because it will start an infinite loop between a patient and its data
             patientList.append(patient)
+
 
         if importInPatient is None:
             # check if patient already exists

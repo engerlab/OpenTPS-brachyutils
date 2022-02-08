@@ -1,3 +1,5 @@
+import copy
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QDir, QMimeData, Qt
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
@@ -173,10 +175,6 @@ class PatientDataTree(QTreeView):
         drag.exec_(QtCore.Qt.CopyAction)
 
     def buildDataTree(self, patient):
-        """
-        What if instead of trying to put in bold the shown data, with the issues of UID that must saved for each viewer etc ...
-        We simply show the image, dose, dyn seq and plan name on the viewer or on a QTip that shown when the mouse is over it ?
-        """
 
         # Disconnect signals
         if not(self._currentPatient is None):
@@ -258,20 +256,24 @@ class PatientDataTree(QTreeView):
             # actions for 3D images
             if (dataClass == Image3D or issubclass(dataClass, Image3D)) and len(selected) == 1:
                 self.rename_action = QAction("Rename")
-                self.export_action = QAction("Export")
-                self.superimpose_action = QAction("Superimpose")
-                self.info_action = QAction("Info")
                 self.rename_action.triggered.connect(lambda checked: openRenameDataDialog(self, selectedData[0]))
-                self.export_action.triggered.connect(
-                    lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
-                self.superimpose_action.triggered.connect(
-                    lambda checked: self._setSecondaryImage(selectedData[0]))
-                self.info_action.triggered.connect(
-                    lambda checked: self._showImageInfo(selectedData[0]))
                 self.context_menu.addAction(self.rename_action)
+
+                self.export_action = QAction("Export")
+                self.export_action.triggered.connect(lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
                 self.context_menu.addAction(self.export_action)
+
+                self.superimpose_action = QAction("Superimpose")
+                self.superimpose_action.triggered.connect(lambda checked: self._setSecondaryImage(selectedData[0]))
                 self.context_menu.addAction(self.superimpose_action)
+
+                self.info_action = QAction("Info")
+                self.info_action.triggered.connect(lambda checked: self._showImageInfo(selectedData[0]))
                 self.context_menu.addAction(self.info_action)
+
+                self.copy_action = QAction("Copy")
+                self.copy_action.triggered.connect(lambda checked: self.copyData(selectedData[0]))
+                self.context_menu.addAction(self.copy_action)
 
             if dataClass == 'mixed':
                 self.no_action = QAction("No action available for this group of data")
@@ -391,6 +393,13 @@ class PatientDataTree(QTreeView):
         dataList = [data.dumpableCopy() for data in selectedData]
         saveSerializedObject(dataList, savingPath, compressedBool=compressedBool)
 
+
+    def copyData(self, selectedData):
+        print('in copyData')
+        print(type(selectedData))
+        new_img = copy.deepcopy(selectedData)
+        new_img.name = selectedData.name + '_copy'
+        self._currentPatient.appendImage(new_img)
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):

@@ -34,4 +34,6 @@ class ROIMask(Image3D):
             self.data = self.data.astype(outputType)
 
     def dumpableCopy(self):
-        return ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
+        dumpableMask = ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
+        # dumpableMask.patient = self.patient
+        return dumpableMask

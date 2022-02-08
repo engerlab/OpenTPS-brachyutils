@@ -68,4 +68,6 @@ class Dynamic3DSequence(PatientData):
 
     def dumpableCopy(self):
         dumpableImageCopiesList = [image.dumpableCopy() for image in self.dyn3DImageList]
-        return Dynamic3DSequence(dyn3DImageList=dumpableImageCopiesList, timingsList=self.timingsList, name=self.name, patientInfo=self.patientInfo)
+        dumpableSeq = Dynamic3DSequence(dyn3DImageList=dumpableImageCopiesList, timingsList=self.timingsList, name=self.name, patientInfo=self.patientInfo)
+        dumpableSeq.patient = self.patient
+        return dumpableSeq

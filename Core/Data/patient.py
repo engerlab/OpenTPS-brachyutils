@@ -320,3 +320,35 @@ class Patient:
             dumpablePatientCopy._dynamic3DModels.append(dynamic3DModel.dumpableCopy())
 
         return dumpablePatientCopy
+
+    def setSelfInData(self):
+        for image in self._images:
+            image.patient = self
+
+        for plan in self._plans:
+            plan.patient = self
+
+        for struct in self._rtStructs:
+            struct.patient = self
+
+        for dynamic3DSequence in self._dynamic3DSequences:
+            dynamic3DSequence.patient = self
+
+        for dynamic3DModel in self._dynamic3DModels:
+            dynamic3DModel.patient = self
+
+    def removeSelfFromData(self):
+        for image in self._images:
+            image.patient = None
+
+        for plan in self._plans:
+            plan.patient = None
+
+        for struct in self._rtStructs:
+            struct.patient = None
+
+        for dynamic3DSequence in self._dynamic3DSequences:
+            dynamic3DSequence.patient = None
+
+        for dynamic3DModel in self._dynamic3DModels:
+            dynamic3DModel.patient = None
