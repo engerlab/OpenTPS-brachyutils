@@ -10,7 +10,7 @@ from Core.event import Event
 
 
 class PatientData:
-    _staticVars = {"deepCopyingWithoutEvent": False}
+    _staticVars = {"deepCopyingExceptNdArray": False}
 
     def __init__(self, patientInfo=None, name='', seriesInstanceUID=''):
 
@@ -36,21 +36,25 @@ class PatientData:
         memodict[id(self)] = result
         for attrKey, attrVal in self.__dict__.items():
             # Do not deep copy numpy array
-            if self._staticVars["deepCopyingWithoutEvent"] and isinstance(attrVal, np.ndarray):
+            if self._staticVars["deepCopyingExceptNdArray"] and isinstance(attrVal, np.ndarray):
                 setattr(result, attrKey, attrVal)
             else:
                 setattr(result, attrKey, copy.deepcopy(attrVal, memodict))
         return result
 
-    def deepCopyWithoutEvent(self):
-        self._staticVars["deepCopyingWithoutEvent"] = True
+    def deepCopyWithoutEventExceptNdArray(self):
+        self._staticVars["deepCopyingExceptNdArray"] = True
         try:
             newObj = copy.deepcopy(self)
         except Exception as e:
-            self._staticVars["deepCopyingWithoutEvent"] = False
+            self._staticVars["deepCopyingExceptNdArray"] = False
             raise(e)
-        self._staticVars["deepCopyingWithoutEvent"] = False
+        self._staticVars["deepCopyingExceptNdArray"] = False
 
+        return newObj._recuresivelyResetEvents()
+
+    def deepCopyWithoutEvent(self):
+        newObj = copy.deepcopy(self)
         return newObj._recuresivelyResetEvents()
 
     def _recuresivelyResetEvents(self, checkedItems = []):
