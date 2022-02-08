@@ -5,7 +5,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
-from Core.api import API, APILogger
+from Core.api import API, FileLogger
 from Core.Data.patientList import PatientList
 from GUI.viewController import ViewController
 import Script
@@ -28,8 +28,8 @@ if __name__ == '__main__':
     patientList = PatientList()
 
     API.patientList = patientList
-    API.appendLoggingFunction(APILogger().print)
-    API.enabled = True
+    API.logger.appendLoggingFunction(FileLogger().print)
+    API.logger.enabled = True
 
     # instantiate the main GUI window
     viewController = ViewController(patientList)
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         with open(scriptPath, 'r') as file:
             code = file.read()
 
-        output = API.run(code)
+        output = API.interpreter.run(code)
         print(output)
     except Exception as err:
         print(format(err))

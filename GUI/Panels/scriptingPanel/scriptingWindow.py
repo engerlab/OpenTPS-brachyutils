@@ -45,7 +45,7 @@ class ScriptingWindow(QWidget):
 
             code = self.textEdit.toPlainText()
 
-            output = API.run(code)
+            output = API.interpreter.run(code)
             self.stdOutput.setText(output)
 
             self.statusBar.showMessage("Done.")
