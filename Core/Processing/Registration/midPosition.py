@@ -68,7 +68,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
         motionFieldList[i].velocity._imageArray = -motionFieldList[i].velocity._imageArray
 
     # compute MidP
-    midp = CT4D.dyn3DImageList[0].dumpableCopy()
+    midp = CT4D.dyn3DImageList[0].copy()
     midp.UID = generate_uid()
     midp._imageArray = np.median(def3DImageList, axis=0)
     
