@@ -1,3 +1,5 @@
+import copy
+
 from PyQt5 import QtCore
 from PyQt5.QtCore import QDir, QMimeData, Qt
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QDrag, QFont, QColor
@@ -389,8 +391,7 @@ class PatientDataTree(QTreeView):
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None,
                                                                                    dir=self.patientDataPanel.dataPath)
 
-        dataList = [data.deepCopyWithoutEvent() for data in selectedData]
-        saveSerializedObject(dataList, savingPath, compressedBool=compressedBool)
+        saveSerializedObject(selectedData, savingPath, compressedBool=compressedBool)
 
 
 ## ------------------------------------------------------------------------------------------
