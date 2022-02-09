@@ -11,6 +11,7 @@ class Event:
     True
 
     """
+
     def __init__(self, *args):
         self._slots = []
         self.objectType = None
@@ -18,6 +19,11 @@ class Event:
         if len(args) > 0:
             self.objectType = args[0]
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Don't pickle methods in _slots
+        state["_slots"] = []
+        return state
 
     def __deepcopy__(self, memodict={}):
         newEvent = Event()

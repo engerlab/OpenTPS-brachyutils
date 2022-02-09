@@ -17,6 +17,8 @@ class SecondaryImageActions:
 
         iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
 
+        self._separator = None
+
         self._colorbarAction = QAction(QIcon(iconPath + "color.png"), "Colorbar")
         self._colorbarAction.setStatusTip("Colorbar")
         self._colorbarAction.triggered.connect(self._setColorbarOn)
@@ -31,6 +33,7 @@ class SecondaryImageActions:
         #TODO: connect to colorbarSignal
 
     def addToToolbar(self, toolbar:DataViewerToolbar):
+        self._separator = toolbar.addSeparator()
         toolbar.addAction(self._colorbarAction)
         toolbar.addAction(self._rangeAction)
 
@@ -47,6 +50,8 @@ class SecondaryImageActions:
         self._image = image
 
         if self._image is None:
+            if not self._separator is None:
+                self._separator.setVisible(False)
             self._colorbarAction.setVisible(False)
             self._rangeAction.setVisible(False)
         else:

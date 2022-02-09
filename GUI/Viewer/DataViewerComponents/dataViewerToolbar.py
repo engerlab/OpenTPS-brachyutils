@@ -36,8 +36,6 @@ class DataViewerToolbar(QToolBar):
 
         self._dataViewer.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
 
-        self.addSeparator()
-
     def _handleButtonDVH(self, pressed):
         if pressed:
             self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_DVH

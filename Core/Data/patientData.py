@@ -30,50 +30,6 @@ class PatientData:
         else:
             self.seriesInstanceUID = pydicom.uid.generate_uid()
 
-    def __deepcopy__(self, memodict={}):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memodict[id(self)] = result
-        for attrKey, attrVal in self.__dict__.items():
-            # Do not deep copy numpy array
-            if self._staticVars["deepCopyingExceptNdArray"] and isinstance(attrVal, np.ndarray):
-                setattr(result, attrKey, attrVal)
-            else:
-                setattr(result, attrKey, copy.deepcopy(attrVal, memodict))
-        return result
-
-    def deepCopyWithoutEventExceptNdArray(self):
-        self._staticVars["deepCopyingExceptNdArray"] = True
-        try:
-            newObj = copy.deepcopy(self)
-        except Exception as e:
-            self._staticVars["deepCopyingExceptNdArray"] = False
-            raise(e)
-        self._staticVars["deepCopyingExceptNdArray"] = False
-
-        return newObj._recuresivelyResetEvents()
-
-    def deepCopyWithoutEvent(self):
-        newObj = copy.deepcopy(self)
-        return newObj._recuresivelyResetEvents()
-
-    def _recuresivelyResetEvents(self, checkedItems = []):
-        # Loop on all attributes and remove Events
-        for attrKey, attrVal in self.__dict__.items():
-            try:
-                if isinstance(attrVal, Event):
-                    self.__dict__[attrKey] = Event(object)
-                elif attrVal not in checkedItems :
-                    checkedItems.append(attrVal) # Avoid infinite loop
-                    self.__dict__[attrKey] = attrVal._recuresivelyResetEvents(checkedItems=checkedItems)
-                else:
-                    pass
-            except:
-                # newObj.__dict__[attrKey] is a base type instance not an object
-                pass
-
-        return self
-
     @property
     def name(self):
         return self._name
