@@ -46,7 +46,8 @@ class SecondaryImageActions:
         self._secondaryImageLayer.colorbarOn = visible
 
     def _showImageProperties(self):
-        ImageFusionPropEditor(self._image.data).show()
+        self._imageFusionProp = ImageFusionPropEditor(self._image.data)
+        self._imageFusionProp.show()
 
     def _updateImage(self, image: Optional[Image3DForViewer]):
         self._image = image

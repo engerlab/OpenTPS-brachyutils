@@ -58,8 +58,8 @@ class ImageViewer(QWidget):
 
         self._crossHairLayer = CrossHairLayer(self._renderer, self._renderWindow)
         self._primaryImageLayer = PrimaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
-        self._profileWidget = ProfileWidget(self._renderer, self._renderWindow)
         self._secondaryImageLayer = SecondaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
+        self._profileWidget = ProfileWidget(self._renderer, self._renderWindow)
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
 
@@ -334,7 +334,7 @@ class ImageViewer(QWidget):
 
         point = (0., 0., 0., 0.)
         if self._crossHairEnabled:
-            worldPos = self.primaryImage.selectedPosition
+            worldPos = Image3DForViewer(self.primaryImage).selectedPosition
             if worldPos is None:
                 return
 
@@ -351,10 +351,7 @@ class ImageViewer(QWidget):
 
         if self._crossHairEnabled:
             point = self._viewMatrix.MultiplyPoint((point[0], point[1], point[2], 1))
-            self.primaryImage.selectedPosition = point
-
-        if self.profileWidgetEnabled:
-            self.onprofileWidgetInteraction(None, None)
+            Image3DForViewer(self.primaryImage).selectedPosition = point
 
         self._renderWindow.Render()
 

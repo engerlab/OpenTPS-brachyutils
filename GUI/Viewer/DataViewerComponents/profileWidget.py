@@ -57,13 +57,20 @@ class ProfileWidget:
 
     @primaryReslice.setter
     def primaryReslice(self, reslice):
+        if not self._primaryReslice is None:
+            self._primaryReslice.RemoveObserver("EndEvent", self.onprofileWidgetInteraction)
+
         self._primaryReslice = reslice
+        self._primaryReslice.AddObserver("EndEvent", self.onprofileWidgetInteraction)
 
     def setInitialPosition(self, worldPos: typing.Sequence):
         self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], 0.01))
         self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
 
     def onprofileWidgetInteraction(self, obj, event):
+        if not self.enabled:
+            return
+
         point1 = self._lineWidget.GetLineRepresentation().GetPoint1WorldPosition()
         point2 = self._lineWidget.GetLineRepresentation().GetPoint2WorldPosition()
 

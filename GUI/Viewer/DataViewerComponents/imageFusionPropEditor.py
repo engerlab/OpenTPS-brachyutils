@@ -1,5 +1,5 @@
-
-from PyQt5.QtWidgets import QMainWindow, QGroupBox, QHBoxLayout, QWidget, QVBoxLayout
+from PyQt5.QtGui import QIntValidator, QDoubleValidator
+from PyQt5.QtWidgets import QMainWindow, QGroupBox, QHBoxLayout, QWidget, QVBoxLayout, QLabel, QLineEdit
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.widgets import RangeSlider
@@ -13,7 +13,7 @@ class ImageFusionPropEditor(QMainWindow):
         super().__init__(parent)
 
         self.setWindowTitle('Secondary image')
-        self.resize(400, 600)
+        self.resize(800, 600)
 
         centralWidget = QWidget()
         self.setCentralWidget(centralWidget)
@@ -60,8 +60,52 @@ class ImageFusionPropEditor(QMainWindow):
         self._canvas = FigureCanvasQTAgg(self._figure)
         vbox.addWidget(self._canvas)
 
+        self._rangeEditor = RangeEditor(image)
+        vbox.addWidget(self._rangeEditor)
+
+        self._image.rangeChangedSignal.connect(self._updateSliderRange)
+
+    def _updateSliderRange(self, range):
+        self.slider.set_val(range)
+
     def _update(self, val):
         self._image.range = val
         col = (self.bin_centers - val[0]) / (val[1] - val[0])
         for c, p in zip(col, self.patches):
             plt.setp(p, 'facecolor', self.cm(c))
+
+class RangeEditor(QWidget):
+    def __init__(self, image, parent=None):
+        super().__init__(parent)
+
+        self._image = image
+
+        self._mainLayout = QHBoxLayout(self)
+        self.setLayout(self._mainLayout)
+
+        self._txt = QLabel(self)
+        self._txt.setText('Range: ')
+
+        self._rangeEdit0 = QLineEdit(self)
+        self._rangeEdit1 = QLineEdit(self)
+
+        self.onlyInt = QDoubleValidator()
+        self._rangeEdit0.setValidator(self.onlyInt)
+        self._rangeEdit1.setValidator(self.onlyInt)
+
+        self._mainLayout.addWidget(self._txt)
+        self._mainLayout.addWidget(self._rangeEdit0)
+        self._mainLayout.addWidget(self._rangeEdit1)
+
+        self.setRangeValue(self._image.range)
+
+        self._rangeEdit0.textEdited.connect(self._handleTextEdited)
+        self._rangeEdit1.textEdited.connect(self._handleTextEdited)
+        self._image.rangeChangedSignal.connect(self.setRangeValue)
+
+    def setRangeValue(self, range):
+        self._rangeEdit0.setText(str(range[0]))
+        self._rangeEdit1.setText(str(range[1]))
+
+    def _handleTextEdited(self, *args):
+        self._image.range = (float(self._rangeEdit0.text()), float(self._rangeEdit1.text()))

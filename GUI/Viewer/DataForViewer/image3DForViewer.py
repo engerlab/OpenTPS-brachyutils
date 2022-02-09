@@ -20,6 +20,7 @@ class Image3DForViewer(DataMultiton):
         self.wwlChangedSignal = Event(tuple)
         self.lookupTableChangedSignal = Event(object)
         self.selectedPositionChangedSignal = Event(tuple)
+        self.rangeChangedSignal = Event(tuple)
 
         self._dataImporter = vtkImageImport()
         self._wwlValue = (400, 0)
@@ -69,8 +70,13 @@ class Image3DForViewer(DataMultiton):
 
     @range.setter
     def range(self, range: typing.Sequence):
+        if range[0]==self._range[0] and range[1]==self._range[1]:
+            return
+
         self._range = (range[0], range[1])
         self.lookupTable = self._lookupTableName
+
+        self.rangeChangedSignal.emit(self._range)
 
     @property
     def opacity(self) -> float:

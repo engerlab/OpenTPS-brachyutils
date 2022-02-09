@@ -210,6 +210,10 @@ class DataViewer(QWidget):
 
         if self._displayType == self.DisplayTypes.DISPLAY_IMAGE:
             self._setCurrentViewerToDynamicImageViewer()
+        elif self._displayType == self.DisplayTypes.DISPLAY_PROFILE:
+            self._currentViewer = self._staticProfileviewer
+        elif self._displayType == self.DisplayTypes.NONE:
+            self._currentViewer = self._noneViewer
         else:
             raise ValueError('Invalid display type: ' + str(self._displayType))
 
