@@ -15,18 +15,13 @@ class MainToolbar(QToolBox):
 
         self.setStyleSheet("QToolBox::tab {font: bold; color: #000000; font-size: 16px;}")
 
-        # initialize the 1st toolbox panel (patient data)
-        self.patientDataPanel = PatientDataPanel(self._viewController)
-        self.addItem(self.patientDataPanel, 'Patient data')
-
-        # initialize the 2nd toolbox panel (ROI)
+        # initialize toolbox panels
+        patientDataPanel = PatientDataPanel(self._viewController)
         roiPanel = ROIPanel(self._viewController)
-        self.addItem(roiPanel, 'ROI')
-
-        # TODO: When we get rid of patientDataPanelController we shoud have currentPatientChangedSignal in ViewController
-        self._viewController.currentPatientChangedSignal.connect(roiPanel.setCurrentPatient)
-
         scriptingPanel = ScriptingPanel()
+
+        self.addItem(patientDataPanel, 'Patient data')
+        self.addItem(roiPanel, 'ROI')
         self.addItem(scriptingPanel, 'Scripting')
 
         # xRayProjPanel = XRayProjectionPanel(self._viewController)
