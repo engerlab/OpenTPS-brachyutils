@@ -62,7 +62,7 @@ class PatientData:
         for attrKey, attrVal in self.__dict__.items():
             try:
                 if isinstance(attrVal, Event):
-                    self.__dict__[attrKey] = Event(object)
+                    self.__dict__[attrKey] = Event(attrVal.objectType)
                 elif attrVal not in checkedItems :
                     checkedItems.append(attrVal) # Avoid infinite loop
                     self.__dict__[attrKey] = attrVal._recuresivelyResetEvents(checkedItems=checkedItems)
