@@ -21,7 +21,7 @@ class Event:
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        # Don't pickle baz
+        # Don't pickle methods in _slots
         state["_slots"] = []
         return state
 
