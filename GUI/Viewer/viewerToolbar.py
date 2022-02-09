@@ -23,7 +23,7 @@ class ViewerToolbar(QToolBar):
 
         self._buttonIndependentViews = QAction(QIcon(self.iconPath + "chain-unchain.png"), "Independent views", self)
         self._buttonIndependentViews.setStatusTip("Independent views")
-        self._buttonIndependentViews.triggered.connect(self._handleButtonChain)
+        self._buttonIndependentViews.triggered.connect(self._handleButtonIndependentViews)
         self._buttonIndependentViews.setCheckable(True)
         self._buttonIndependentViews.setChecked(self._viewController.independentViewsEnabled)
 
@@ -69,11 +69,11 @@ class ViewerToolbar(QToolBar):
         self.refreshRateValue = 24
         # self.addDynamicButtons()
 
-        self._viewController.independentViewsEnabledSignal.connect(self._handleButtonChain)
+        self._viewController.independentViewsEnabledSignal.connect(self._handleButtonIndependentViews)
         self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
         self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
 
-    def _handleButtonChain(self, pressed):
+    def _handleButtonIndependentViews(self, pressed):
         # This is useful if controller emit a signal:
         if self._buttonIndependentViews.isChecked() != pressed:
             self._buttonIndependentViews.setChecked(pressed)
