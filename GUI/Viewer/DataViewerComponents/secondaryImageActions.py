@@ -28,7 +28,7 @@ class SecondaryImageActions:
         self._rangeAction.setStatusTip("Range")
         self._rangeAction.triggered.connect(self._showImageProperties)
 
-        self._updateImage(self._image) # To update visibility
+        self.resetVisibility()
         self._secondaryImageLayer.imageChangedSignal.connect(self._updateImage)
         #TODO: connect to colorbarSignal
 
@@ -36,6 +36,8 @@ class SecondaryImageActions:
         self._separator = toolbar.addSeparator()
         toolbar.addAction(self._colorbarAction)
         toolbar.addAction(self._rangeAction)
+
+        self.resetVisibility()
 
     def resetVisibility(self):
         self._updateImage(self._image)
@@ -55,6 +57,8 @@ class SecondaryImageActions:
             self._colorbarAction.setVisible(False)
             self._rangeAction.setVisible(False)
         else:
+            if not self._separator is None:
+                self._separator.setVisible(True)
             self._colorbarAction.setVisible(True)
             self._colorbarAction.setChecked(self._secondaryImageLayer.colorbarOn)
             self._rangeAction.setVisible(True)
