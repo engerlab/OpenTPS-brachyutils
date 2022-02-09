@@ -333,6 +333,8 @@ class Patient:
 
         for dynamic3DSequence in self._dynamic3DSequences:
             dynamic3DSequence.patient = self
+            for image in dynamic3DSequence.dyn3DImageList:
+                image.patient = self
 
         for dynamic3DModel in self._dynamic3DModels:
             dynamic3DModel.patient = self
