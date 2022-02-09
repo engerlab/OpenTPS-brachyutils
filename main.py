@@ -41,7 +41,7 @@ if __name__ == '__main__':
         with open(scriptPath, 'r') as file:
             code = file.read()
 
-        output = API.interpreter._runCode(code)
+        output = API.interpreter.run(code)
         print(output)
     except Exception as err:
         print(format(err))
