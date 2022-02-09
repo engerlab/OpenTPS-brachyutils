@@ -21,16 +21,16 @@ class ViewerToolbar(QToolBar):
 
         self._buttonOpen = QAction(QIcon(self.iconPath + "folder-open.png"), "Open files or folder", self)
 
-        self._buttonChain = QAction(QIcon(self.iconPath+"chain-unchain.png"), "Independent views", self)
-        self._buttonChain.setStatusTip("Independent views")
-        self._buttonChain.triggered.connect(self._handleButtonChain)
-        self._buttonChain.setCheckable(True)
-        self._buttonChain.setChecked(self._viewController.independentViewsEnabled)
+        self._buttonIndependentViews = QAction(QIcon(self.iconPath + "chain-unchain.png"), "Independent views", self)
+        self._buttonIndependentViews.setStatusTip("Independent views")
+        self._buttonIndependentViews.triggered.connect(self._handleButtonChain)
+        self._buttonIndependentViews.setCheckable(True)
+        self._buttonIndependentViews.setChecked(self._viewController.independentViewsEnabled)
 
-        self._buttonContrast = QAction(QIcon(self.iconPath + "contrast.png"), "Window level", self)
-        self._buttonContrast.setStatusTip("Window level")
-        self._buttonContrast.triggered.connect(self._handleWindowLevel)
-        self._buttonContrast.setCheckable(True)
+        self._buttonWindowLevel = QAction(QIcon(self.iconPath + "contrast.png"), "Window level", self)
+        self._buttonWindowLevel.setStatusTip("Window level")
+        self._buttonWindowLevel.triggered.connect(self._handleWindowLevel)
+        self._buttonWindowLevel.setCheckable(True)
 
         self._buttonCrossHair = QAction(QIcon(self.iconPath + "geolocation.png"), "Crosshair", self)
         self._buttonCrossHair.setStatusTip("Crosshair")
@@ -38,9 +38,9 @@ class ViewerToolbar(QToolBar):
         self._buttonCrossHair.setCheckable(True)
 
         self.addAction(self._buttonOpen)
-        self.addAction(self._buttonChain)
+        self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
-        self.addAction(self._buttonContrast)
+        self.addAction(self._buttonWindowLevel)
 
         self.addSeparator()
 
@@ -75,8 +75,8 @@ class ViewerToolbar(QToolBar):
 
     def _handleButtonChain(self, pressed):
         # This is useful if controller emit a signal:
-        if self._buttonChain.isChecked() != pressed:
-            self._buttonChain.setChecked(pressed)
+        if self._buttonIndependentViews.isChecked() != pressed:
+            self._buttonIndependentViews.setChecked(pressed)
             return
 
         self._viewController.independentViewsEnabled = pressed
@@ -91,8 +91,8 @@ class ViewerToolbar(QToolBar):
 
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:
-        if self._buttonContrast.isChecked() != pressed:
-            self._buttonContrast.setChecked(pressed)
+        if self._buttonWindowLevel.isChecked() != pressed:
+            self._buttonWindowLevel.setChecked(pressed)
             return
 
         self._viewController.windowLevelEnabled = pressed
