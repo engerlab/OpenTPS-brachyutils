@@ -14,7 +14,7 @@ from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObject
 from Core.event import Event
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.imagePropEditor import ImagePropEditor
+from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
 from GUI.Viewer.dataViewer import DroppedObject
 
 

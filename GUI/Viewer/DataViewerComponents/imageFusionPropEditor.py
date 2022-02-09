@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.widgets import RangeSlider
 
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.imagePropEditor import ImagePropEditor
+from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
 
 
 class ImageFusionPropEditor(QMainWindow):

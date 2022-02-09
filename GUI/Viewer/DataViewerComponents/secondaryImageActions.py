@@ -5,7 +5,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction
 
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.imageFusionPropEditor import ImageFusionPropEditor
+from GUI.Viewer.DataViewerComponents.imageFusionPropEditor import ImageFusionPropEditor
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImageLayer import SecondaryImageLayer
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 
