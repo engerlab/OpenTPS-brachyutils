@@ -104,9 +104,9 @@ class ScriptingFileView(QWidget):
         msg.setWindowTitle(os.path.basename(self._scriptPath))
         msg.setIcon(QMessageBox.Information)
 
-        try:
-            code = self._readFile()
+        code = self._readFile()
 
+        try:
             output = API.interpreter.run(code)
             msg.setText(output)
         except Exception as err:
@@ -119,5 +119,5 @@ class ScriptingFileView(QWidget):
 
         with open(self._scriptPath, 'r') as file:
             code = file.read()
-            
+
         return code
