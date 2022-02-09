@@ -1,7 +1,7 @@
 
 from vtkmodules.vtkCommonCore import vtkCommand
 
-from GUI.Viewer.Viewers.imageViewer import ImageViewer
+from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 from GUI.Viewer.DataForViewer.dyn3DSeqForViewer import Dyn3DSeqForViewer
 
 

@@ -65,6 +65,7 @@ class SecondaryImageLayer:
             self._image = None
             self._mainActor.SetVisibility(False)
             self._renderWindow.Render()
+            self.imageChangedSignal.emit(self._image)
             return
 
         if image == self._image:
@@ -88,7 +89,7 @@ class SecondaryImageLayer:
 
         self.colorbarOn = True # TODO: Get this from parent
 
-        self.imageChangedSignal.emit(self.image)
+        self.imageChangedSignal.emit(self._image)
 
     @property
     def resliceAxes(self):

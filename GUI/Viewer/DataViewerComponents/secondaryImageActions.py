@@ -1,39 +1,38 @@
 import os
+from typing import Optional
 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction
 
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.Viewers.imageFusionProperties import ImageFusionProperties
+from GUI.Viewer.DataViewerComponents.imageFusionPropEditor import ImageFusionPropEditor
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImageLayer import SecondaryImageLayer
+from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 
 
 class SecondaryImageActions:
-    def __init__(self, secondaryImageLayer):
-        self._actions = []
+    def __init__(self, secondaryImageLayer: SecondaryImageLayer):
+        self._image = secondaryImageLayer.image
+        self._secondaryImageLayer = secondaryImageLayer
 
         iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
 
         self._colorbarAction = QAction(QIcon(iconPath + "color.png"), "Colorbar")
-        self._image = secondaryImageLayer.image
-        self._rangeAction = QAction(QIcon(iconPath + "color-adjustment.png"), "Range")
-        self._secondaryImageLayer = secondaryImageLayer
-
         self._colorbarAction.setStatusTip("Colorbar")
         self._colorbarAction.triggered.connect(self._setColorbarOn)
         self._colorbarAction.setCheckable(True)
+
+        self._rangeAction = QAction(QIcon(iconPath + "color-adjustment.png"), "Range")
         self._rangeAction.setStatusTip("Range")
         self._rangeAction.triggered.connect(self._showImageProperties)
 
-        self._actions.append(self._colorbarAction)
-        self._actions.append(self._rangeAction)
-
-        self._updateImage(self._image) #TO update visibility
+        self._updateImage(self._image) # To update visibility
         self._secondaryImageLayer.imageChangedSignal.connect(self._updateImage)
         #TODO: connect to colorbarSignal
 
-    def hideAll(self):
-        for action in self._actions:
-            action.setVisible(False)
+    def addToToolbar(self, toolbar:DataViewerToolbar):
+        toolbar.addAction(self._colorbarAction)
+        toolbar.addAction(self._rangeAction)
 
     def resetVisibility(self):
         self._updateImage(self._image)
@@ -42,21 +41,15 @@ class SecondaryImageActions:
         self._secondaryImageLayer.colorbarOn = visible
 
     def _showImageProperties(self):
-        ImageFusionProperties(self._image.data).show()
+        ImageFusionPropEditor(self._image.data).show()
 
-    def _updateImage(self, image: Image3DForViewer):
-        if image is None:
-            self._image = None
+    def _updateImage(self, image: Optional[Image3DForViewer]):
+        self._image = image
+
+        if self._image is None:
             self._colorbarAction.setVisible(False)
             self._rangeAction.setVisible(False)
         else:
-            self._image = image
             self._colorbarAction.setVisible(True)
             self._colorbarAction.setChecked(self._secondaryImageLayer.colorbarOn)
             self._rangeAction.setVisible(True)
-
-    def __getitem__(self, item):
-        return self._actions[item]
-
-    def __len__(self):
-        return len(self._actions)

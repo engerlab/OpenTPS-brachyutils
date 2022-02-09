@@ -6,12 +6,13 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.event import Event
-from GUI.Viewer.Viewers.imageViewer import ImageViewer
-from GUI.Viewer.Viewers.dynamicImageViewer import DynamicImageViewer
-from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
-from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
-from GUI.Viewer.Viewers.dvhPlot import DVHPlot
-from GUI.Viewer.Viewers.profilePlot import ProfilePlot
+from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
+from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
+from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
+from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
+from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
+from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
+from GUI.Viewer.DataViewerComponents.profilePlot import ProfilePlot
 
 
 class DroppedObject:
@@ -63,6 +64,7 @@ class DataViewer(QWidget):
 
         # It might seems weird to have a signal which is only used within the class but it is if someday we want to move the logical part out of this class.
         self.droppedImageSignal = Event(object)
+        self.displayTypeChangedSignal = Event(object)
 
         self._currentViewer = None
         self._displayMode = self.DisplayModes.DEFAULT
@@ -75,7 +77,7 @@ class DataViewer(QWidget):
         self.setLayout(self._mainLayout)
         self._mainLayout.setContentsMargins(0, 0, 0, 0)
 
-        self._toolbar = DataViewerToolbar()
+        self._toolbar = DataViewerToolbar(self)
 
         # For responsiveness, we instantiate all possible viewers and hide them == cached viewers:
         self._dvhViewer = DVHPlot()
@@ -98,8 +100,6 @@ class DataViewer(QWidget):
         self._mainLayout.addWidget(self._dvhViewer)
 
         self._setDisplayType(self.DisplayTypes.DEFAULT)
-
-        self._toolbar.displayTypeSignal.connect(self._setDisplayType)
 
         # Logical control of the DataViewer is set here. We might want to move this to dedicated controller class
         self._iniializeControl()
@@ -171,6 +171,8 @@ class DataViewer(QWidget):
         else:
             self._setDisplayInStaticMode(displayType)
 
+        self.displayTypeChangedSignal.emit(displayType)
+
     @property
     def displayMode(self):
         """
@@ -211,8 +213,6 @@ class DataViewer(QWidget):
         else:
             raise ValueError('Invalid display type: ' + str(self._displayType))
 
-        self._toolbar.setViewerType(self.displayType)
-
         self._currentViewer.show()
 
     def _setDisplayInStaticMode(self, displayType):
@@ -231,8 +231,6 @@ class DataViewer(QWidget):
             self._setCurrentViewerToStaticImageViewer()
         else:
             raise ValueError('Invalid display type: ' + str(self._displayType))
-
-        self._toolbar.setViewerType(self.displayType)
 
         self._currentViewer.show()
 
@@ -294,6 +292,8 @@ class DataViewer(QWidget):
     ####################################################################################################################
     # This is the logical part of the viewer. Should we migrate this to a dedicated controller?
     def _iniializeControl(self):
+        SecondaryImageActions(self._staticImageViewer.secondaryImageLayer).addToToolbar(self._toolbar)
+
         self._viewController.independentViewsEnabledSignal.connect(self.enableDropForMainImage)
         self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplaydMode)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)

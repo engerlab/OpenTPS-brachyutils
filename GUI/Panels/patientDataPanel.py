@@ -16,7 +16,7 @@ from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObject
 from Core.event import Event
-from GUI.Viewer.Viewers.imageProperies import ImageProperties
+from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
 from GUI.Viewer.dataViewer import DroppedObject
 
 
@@ -355,7 +355,7 @@ class PatientDataTree(QTreeView):
         w = QMainWindow(self)
         w.setWindowTitle('Image info')
         w.resize(400, 400)
-        w.setCentralWidget(ImageProperties(image, self))
+        w.setCentralWidget(ImagePropEditor(image, self))
         w.show()
 
     def _setSecondaryImage(self, image):
@@ -388,11 +388,10 @@ class PatientDataTree(QTreeView):
         print(type(selectedData[0]))
 
         fileDialog = SaveData_dialog()
-        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.patientDataPanel.dataPath)
-
-        dataList = [data.shallowCopyWithoutEvent() for data in selectedData]
+        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None,
+                                                                                   dir=self.patientDataPanel.dataPath)
+        dataList = [data.deepCopyWithoutEvent() for data in selectedData]
         saveSerializedObject(dataList, savingPath, compressedBool=compressedBool)
-
 
     def copyData(self, selectedData):
         print('in copyData')

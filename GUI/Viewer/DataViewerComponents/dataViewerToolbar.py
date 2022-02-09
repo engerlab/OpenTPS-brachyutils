@@ -4,16 +4,12 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction
 
-from Core.event import Event
-import GUI.Viewer.dataViewer as dataViewer
-
 
 class DataViewerToolbar(QToolBar):
-    def __init__(self):
+    def __init__(self, dataViewer):
         QToolBar.__init__(self)
 
-        # Events
-        self.displayTypeSignal = Event(object)
+        self._dataViewer = dataViewer
 
         self.setIconSize(QSize(16, 16))
 
@@ -38,38 +34,33 @@ class DataViewerToolbar(QToolBar):
         self.addAction(self._buttonProfile)
         self.addAction(self._buttonDVH)
 
+        self._dataViewer.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
+
         self.addSeparator()
 
     def _handleButtonDVH(self, pressed):
-        if self._buttonDVH.isChecked() != pressed:
-            self._buttonDVH.setChecked(pressed)
-            return
-
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.DISPLAY_DVH)
-            self._handleButtonViewer(False)
-            self._handleButtonGraph(False)
+            self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_DVH
 
     def _handleButtonGraph(self, pressed):
-        if self._buttonProfile.isChecked() != pressed:
-            self._buttonProfile.setChecked(pressed)
-            return
-
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.DISPLAY_PROFILE)
-            self._handleButtonViewer(False)
-            self._handleButtonDVH(False)
+            self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_PROFILE
 
     def _handleButtonViewer(self, pressed):
-        if self._buttonViewer.isChecked() != pressed:
-            self._buttonViewer.setChecked(pressed)
-            return
-
         if pressed:
-            self.displayTypeSignal.emit(dataViewer.DataViewer.DisplayTypes.DISPLAY_IMAGE)
-            self._handleButtonGraph(False)
-            self._handleButtonDVH(False)
+            self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_IMAGE
 
-    def setViewerType(self, viewerType):
-        if viewerType==dataViewer.DataViewer.DisplayTypes.DISPLAY_IMAGE:
+    def _handleDisplayTypeChange(self, displayType):
+        self._uncheckAllDisplayButton()
+
+        if displayType == self._dataViewer.DisplayTypes.DISPLAY_DVH:
+            self._buttonDVH.setChecked(True)
+        elif displayType == self._dataViewer.DisplayTypes.DISPLAY_PROFILE:
+            self._buttonProfile.setChecked(True)
+        elif displayType == self._dataViewer.DisplayTypes.DISPLAY_IMAGE:
             self._buttonViewer.setChecked(True)
+
+    def _uncheckAllDisplayButton(self):
+        self._buttonDVH.setChecked(False)
+        self._buttonProfile.setChecked(False)
+        self._buttonViewer.setChecked(False)

@@ -3,9 +3,6 @@ from enum import Enum
 
 from PyQt5.QtWidgets import *
 
-
-import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
-import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
 import vtkmodules.vtkInteractionStyle as vtkInteractionStyle
 from vtkmodules import vtkCommonMath
@@ -16,13 +13,13 @@ from vtkmodules.vtkRenderingCore import vtkCoordinate
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
-from GUI.Viewer.Viewers.contourLayer import ContourLayer
-from GUI.Viewer.Viewers.crossHairLayer import CrossHairLayer
-from GUI.Viewer.Viewers.primaryImageLayer import PrimaryImageLayer
-from GUI.Viewer.Viewers.profileWidget import ProfileWidget
-from GUI.Viewer.Viewers.secondaryImageLayer import SecondaryImageLayer
-from GUI.Viewer.Viewers.textLayer import TextLayer
+from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.crossHairLayer import CrossHairLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImageLayer import PrimaryImageLayer
+from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImageLayer import SecondaryImageLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.textLayer import TextLayer
 
 
 class ImageViewer(QWidget):

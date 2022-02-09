@@ -6,7 +6,7 @@ from vtkmodules.vtkIOImage import vtkImageImport
 from Core.event import Event
 
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
-from GUI.Viewer.Viewers.lookupTables import LookupTables
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables import LookupTables
 
 
 class Image3DForViewer(DataMultiton):
@@ -115,7 +115,8 @@ class Image3DForViewer(DataMultiton):
 ## test numpy to vtk
 from vtkmodules.vtkCommonDataModel import vtkImageData
 from vtkmodules.vtkCommonCore import VTK_FLOAT
-from vtkmodules.util.numpy_support import numpy_to_vtk, vtk_to_numpy
+from vtkmodules.util.numpy_support import numpy_to_vtk
+
 
 def numpyArrayToVTKImage(numpyArray):
 
