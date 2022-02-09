@@ -17,7 +17,7 @@ print(len(dataList))
 print(type(dataList[0]))
 
 ## create a Dynamic3DSequence and change its name
-dynseq = Dynamic3DSequence(dyn3DImageList=dataList)
+dynseq = Dynamic3DSequence(dyn3DImageList=dataList[:3])
 print(type(dynseq))
 print(dynseq.name, dynseq.breathingPeriod)
 dynseq.name = 'new4DCT'
@@ -27,13 +27,13 @@ print(type(dynseq.dyn3DImageList[0]))
 
 ## save it as a serialized object
 savingPath = '/home/damien/Desktop/' + 'PatientTest_dynSeq.p'
-saveSerializedObject(dynseq, savingPath)
+# saveSerializedObject(dynseq, savingPath)
 
 ## create Dynamic3DModel
 newMod = Dynamic3DModel()
 newMod.name = 'MidP'
 newMod.seriesInstanceUID = generate_uid()
-newMod.computeMidPositionImage(dynseq)
+newMod.computeMidPositionImage(dynseq, baseResolution=8)
 
 ## save it as a serialized object
 savingPath = '/home/damien/Desktop/' + 'PatientTest_dynMod.p'
