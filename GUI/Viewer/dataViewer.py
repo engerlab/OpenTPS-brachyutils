@@ -6,13 +6,13 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.event import Event
-from GUI.Viewer.Viewers.imageViewer import ImageViewer
-from GUI.Viewer.Viewers.dynamicImageViewer import DynamicImageViewer
-from GUI.Viewer.Viewers.secondaryImageActions import SecondaryImageActions
+from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
+from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
+from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
-from GUI.Viewer.Viewers.blackEmptyPlot import BlackEmptyPlot
-from GUI.Viewer.Viewers.dvhPlot import DVHPlot
-from GUI.Viewer.Viewers.profilePlot import ProfilePlot
+from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
+from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
+from GUI.Viewer.DataViewerComponents.profilePlot import ProfilePlot
 
 
 class DroppedObject:

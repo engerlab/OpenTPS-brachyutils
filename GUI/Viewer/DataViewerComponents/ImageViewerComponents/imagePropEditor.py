@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QApplicat
 from Core.event import Event
 
 
-class ImageProperties(QWidget):
+class ImagePropEditor(QWidget):
     def __init__(self, image, parent=None):
         super().__init__(parent=parent)
 

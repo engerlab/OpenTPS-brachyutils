@@ -4,7 +4,7 @@ from vtkmodules.vtkIOImage import vtkImageImport
 from Core.event import Event
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.Viewers.lookupTables import LookupTables
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables import LookupTables
 
 
 class Dyn3DSeqForViewer(DataMultiton):

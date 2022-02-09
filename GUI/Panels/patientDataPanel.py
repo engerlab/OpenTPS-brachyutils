@@ -14,7 +14,7 @@ from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObject
 from Core.event import Event
-from GUI.Viewer.Viewers.imageProperies import ImageProperties
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.imagePropEditor import ImagePropEditor
 from GUI.Viewer.dataViewer import DroppedObject
 
 
@@ -353,7 +353,7 @@ class PatientDataTree(QTreeView):
         w = QMainWindow(self)
         w.setWindowTitle('Image info')
         w.resize(400, 400)
-        w.setCentralWidget(ImageProperties(image, self))
+        w.setCentralWidget(ImagePropEditor(image, self))
         w.show()
 
     def _setSecondaryImage(self, image):

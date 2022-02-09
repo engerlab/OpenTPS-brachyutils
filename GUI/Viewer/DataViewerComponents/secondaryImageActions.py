@@ -5,8 +5,8 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction
 
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.Viewers.imageFusionProperties import ImageFusionProperties
-from GUI.Viewer.Viewers.secondaryImageLayer import SecondaryImageLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.imageFusionPropEditor import ImageFusionPropEditor
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImageLayer import SecondaryImageLayer
 from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
 
 
@@ -41,7 +41,7 @@ class SecondaryImageActions:
         self._secondaryImageLayer.colorbarOn = visible
 
     def _showImageProperties(self):
-        ImageFusionProperties(self._image.data).show()
+        ImageFusionPropEditor(self._image.data).show()
 
     def _updateImage(self, image: Optional[Image3DForViewer]):
         self._image = image
