@@ -9,7 +9,7 @@ from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
 from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
-from GUI.Viewer.dataViewerToolbar import DataViewerToolbar
+from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
 from GUI.Viewer.DataViewerComponents.profilePlot import ProfilePlot
