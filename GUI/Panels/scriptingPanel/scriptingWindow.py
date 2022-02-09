@@ -11,44 +11,42 @@ class ScriptingWindow(QWidget):
         self.setWindowTitle('Script')
 
         layout = QHBoxLayout()
-
-        splitter1 = QSplitter(Qt.Horizontal)
-        splitter1.setOrientation(Qt.Horizontal)
-
-        splitter2 = QSplitter(Qt.Vertical)
-        splitter1.setOrientation(Qt.Horizontal)
-        splitter2.addWidget(splitter1)
-
-        layout.addWidget(splitter2)
-
-
-        self.newRunButton = QPushButton('Run')
-        self.newRunButton.clicked.connect(self.run)
-        splitter2.addWidget(self.newRunButton)
-
-        self.textEdit = QTextEdit()
-        highlighter = PythonHighlighter(self.textEdit)
-        splitter1.addWidget(self.textEdit)
-
-        self.stdOutput = QTextEdit()
-        self.stdOutput.setReadOnly(True)
-        splitter1.addWidget(self.stdOutput)
-
-        self.statusBar = QStatusBar()
-        splitter2.addWidget(self.statusBar)
-
         self.setLayout(layout)
 
-    def run(self):
+        horizontalSplitter = QSplitter(Qt.Horizontal)
+        verticalSplitter = QSplitter(Qt.Vertical)
+        verticalSplitter.addWidget(horizontalSplitter)
+
+        layout.addWidget(verticalSplitter)
+
+        self._runButton = QPushButton('Run')
+        self._runButton.clicked.connect(self._runCode)
+
+        self._statusBar = QStatusBar()
+
+        verticalSplitter.addWidget(self._runButton)
+        verticalSplitter.addWidget(self._statusBar)
+
+        self._codeTextEdit = QTextEdit()
+        PythonHighlighter(self._codeTextEdit)
+
+        self._stdOutput = QTextEdit()
+        self._stdOutput.setReadOnly(True)
+
+        horizontalSplitter.addWidget(self._codeTextEdit)
+        horizontalSplitter.addWidget(self._stdOutput)
+
+
+    def _runCode(self):
         try:
-            self.statusBar.showMessage("Executing...")
+            self._statusBar.showMessage("Executing...")
 
-            code = self.textEdit.toPlainText()
+            output = API.interpreter.run(self._getCode())
+            self._stdOutput.setText(output)
 
-            output = API.interpreter.run(code)
-            self.stdOutput.setText(output)
-
-            self.statusBar.showMessage("Done.")
+            self._statusBar.showMessage("Done.")
         except Exception as err:
-            self.statusBar.showMessage(format(err))
+            self._statusBar.showMessage(format(err))
 
+    def _getCode(self):
+        return self._codeTextEdit.toPlainText()

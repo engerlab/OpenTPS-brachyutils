@@ -107,7 +107,7 @@ class ScriptingFileView(QWidget):
         code = self._readFile()
 
         try:
-            output = API.interpreter.run(code)
+            output = API.interpreter._runCode(code)
             msg.setText(output)
         except Exception as err:
             msg.setText(format(err))
