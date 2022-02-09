@@ -13,35 +13,34 @@ class ScriptingPanel(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self.layout)
+        self._layout = QVBoxLayout()
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self._layout)
 
-        self.newScriptButton = QPushButton('New scripting window')
-        self.newScriptButton.clicked.connect(self.newScriptingWindow)
-        self.layout.addWidget(self.newScriptButton)
+        self._newScriptingWindowButton = QPushButton('New scripting window')
+        self._newScriptingWindowButton.clicked.connect(self.newScriptingWindow)
+        self._layout.addWidget(self._newScriptingWindowButton)
 
-        self.filesFrame = QFrame()
-        self.filesFrame.setFrameShape(QFrame.StyledPanel)
-        self.layout.addWidget(self.filesFrame)
+        self._newScriptFileViewButton = QPushButton('Select new script file')
+        self._newScriptFileViewButton.clicked.connect(self.newScriptFile)
+        self._layout.addWidget(self._newScriptFileViewButton)
 
-        self.filesLayout = QVBoxLayout()
-        self.filesLayout.setContentsMargins(0, 0, 0, 0)
-        self.filesFrame.setLayout(self.filesLayout)
+        self._scriptFileViewsFrame = QFrame()
+        self._scriptFileViewsFrame.setFrameShape(QFrame.StyledPanel)
+        self._layout.addWidget(self._scriptFileViewsFrame)
 
-        self.newScriptFileButton = QPushButton('Select new script file')
-        self.newScriptFileButton.clicked.connect(self.newScriptFile)
-        self.layout.addWidget(self.newScriptFileButton)
+        self._scriptFileViewsLayout = QVBoxLayout()
+        self._scriptFileViewsLayout.setContentsMargins(0, 0, 0, 0)
+        self._scriptFileViewsFrame.setLayout(self._scriptFileViewsLayout)
 
-        self.layout.addStretch()
-
-    def newScriptFile(self):
-        self.newScriptFile = ScriptingFileView()
-        self.filesLayout.addWidget(self.newScriptFile)
+        self._layout.addStretch()
 
     def newScriptingWindow(self):
         self.scriptingWindow = ScriptingWindow()
         self.scriptingWindow.show()
+
+    def newScriptFile(self):
+        self._scriptFileViewsLayout.addWidget(ScriptingFileView())
 
 
 class ScriptingFileView(QWidget):
@@ -50,52 +49,63 @@ class ScriptingFileView(QWidget):
     def __init__(self):
         QWidget.__init__(self)
 
-        self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self.layout)
+        self._layout = QVBoxLayout()
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self._layout)
 
-        self.topFrame = QFrame()
-        self.topFrame.setFrameShape(QFrame.StyledPanel)
-        self.layout.addWidget(self.topFrame)
+        self._topFrame = QFrame()
+        self._topFrame.setFrameShape(QFrame.StyledPanel)
+        self._layout.addWidget(self._topFrame)
 
-        self.bottomFrame = QFrame()
-        self.bottomFrame.setFrameShape(QFrame.StyledPanel)
-        self.layout.addWidget(self.bottomFrame)
+        self._bottomFrame = QFrame()
+        self._bottomFrame.setFrameShape(QFrame.StyledPanel)
+        self._layout.addWidget(self._bottomFrame)
 
         topLayout = QHBoxLayout()
         topLayout.setContentsMargins(0, 0, 0, 0)
-        self.topFrame.setLayout(topLayout)
+        self._topFrame.setLayout(topLayout)
 
         bottomLayout = QHBoxLayout()
         bottomLayout.setContentsMargins(0, 0, 0, 0)
-        self.bottomFrame.setLayout(bottomLayout)
+        self._bottomFrame.setLayout(bottomLayout)
 
         closeButton = QPushButton('X')
         closeButton.clicked.connect(self.close)
-        topLayout.addWidget(closeButton)
 
-        self.newScriptFileButton = QPushButton('Select file')
-        self.newScriptFileButton.clicked.connect(self.selectFile)
-        topLayout.addWidget(self.newScriptFileButton)
+        selectFileButton = QPushButton('Select file')
+        selectFileButton.clicked.connect(self._selectAndSetFile)
 
         runButton = QPushButton('Run')
-        runButton.clicked.connect(self.runFile)
+        runButton.clicked.connect(self._runFile)
+
+        topLayout.addWidget(closeButton)
+        topLayout.addWidget(selectFileButton)
         topLayout.addWidget(runButton)
 
-        self.fileLabel = QLabel()
-        bottomLayout.addWidget(self.fileLabel)
+        self._fileNameLabel = QLabel()
+        bottomLayout.addWidget(self._fileNameLabel)
 
     def close(self):
         self.setParent(None)
 
-    def runFile(self):
+    def _selectAndSetFile(self):
+        self._scriptPath = self._openFileSelection()
+        self._setFileNameLabel()
+
+    def _openFileSelection(self):
+        filePath, _ = QFileDialog.getOpenFileName(self, "Select a python script", self._scriptPath, "python script (*.py)")
+        return filePath
+
+    def _setFileNameLabel(self):
+        self._fileNameLabel.setText(os.path.basename(self._scriptPath))
+
+    def _runFile(self):
         msg = QMessageBox()
         msg.setWindowTitle(os.path.basename(self._scriptPath))
         msg.setIcon(QMessageBox.Information)
 
         try:
-            with open(self._scriptPath, 'r') as file:
-                code = file.read()
+            code = self._readFile()
 
             output = API.interpreter.run(code)
             msg.setText(output)
@@ -104,7 +114,10 @@ class ScriptingFileView(QWidget):
 
         msg.exec_()
 
-    def selectFile(self):
-        self._scriptPath, _ = QFileDialog.getOpenFileName(self, "Select a python script", self._scriptPath, "python script (*.py)")
+    def _readFile(self):
+        code = ''
 
-        self.fileLabel.setText(os.path.basename(self._scriptPath))
+        with open(self._scriptPath, 'r') as file:
+            code = file.read()
+            
+        return code
