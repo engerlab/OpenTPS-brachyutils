@@ -10,13 +10,14 @@ from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkInteractionWidgets import vtkOrientationMarkerWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
 
-import numpy as np
-
+from Core.event import Event
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 
 
 class PrimaryImageLayer:
     def __init__(self, renderer, renderWindow, iStyle):
+        self.imageChangedSignal = Event(object)
+
         colors = vtkNamedColors()
 
         self._colorMapper = vtkImagingCore.vtkImageMapToColors()
@@ -64,26 +65,25 @@ class PrimaryImageLayer:
 
     @image.setter
     def image(self, image: Optional[Image3DForViewer]):
-        if image is None:
-            self._reslice.RemoveAllInputs()
-            self._disconnectAll()
-            self._image = None
-            return
+        self._setImage(image)
 
+    def _setImage(self, image: Optional[Image3DForViewer]):
         if image == self._image:
             return
 
+        self._image = image
+        self._reslice.RemoveAllInputs()
         self._disconnectAll()
 
-        self._image = image
+        if not (self._image is None):
+            self._reslice.SetInputConnection(self._image.vtkOutputPort)
 
-        self._reslice.RemoveAllInputs()
-        self._reslice.SetInputConnection(self._image.vtkOutputPort)
+            self._setInitialGrayRange(self._image.range)
+            self._setWWL(self._image.wwlValue)
 
-        self._setInitialGrayRange(self._image.range)
-        self._setWWL(self._image.wwlValue)
+            self._connectAll()
 
-        self._connectAll()
+        self.imageChangedSignal.emit(self._image)
 
     def _setInitialGrayRange(self, range:tuple):
         """
