@@ -104,6 +104,9 @@ class ImageViewer(QWidget):
             return
 
         self._primaryImageLayer.image = Image3DForViewer(image)
+        self._inializeViewer()
+
+    def _inializeViewer(self):
         self._contourLayer.referenceImage = self.primaryImage
         self._textLayer.setPrimaryTextLine(2, self.primaryImage.name)
 
