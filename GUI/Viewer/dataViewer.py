@@ -12,7 +12,7 @@ from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImage
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.profilePlot import ProfilePlot
+from GUI.Viewer.DataViewerComponents.profilePlot import ProfilePlot
 
 
 class DroppedObject:
