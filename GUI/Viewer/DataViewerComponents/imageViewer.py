@@ -95,30 +95,32 @@ class ImageViewer(QWidget):
     @primaryImage.setter
     def primaryImage(self, image: Image3D):
         if image is None:
-            self._primaryImageLayer.image = None
+            self._resetPrimaryImageLayer()
+        else:
+            self._setPrimaryImage(image)
 
-            self._mainLayout.removeWidget(self._vtkWidget)
-            self._vtkWidget.hide()
-            self._mainLayout.addWidget(self._blackWidget)
-            self._blackWidget.show()
-            return
+    def _resetPrimaryImageLayer(self):
+        self._primaryImageLayer.image = None
+        self._mainLayout.removeWidget(self._vtkWidget)
+        self._vtkWidget.hide()
+        self._mainLayout.addWidget(self._blackWidget)
+        self._blackWidget.show()
 
+    def _setPrimaryImage(self, image):
         self._primaryImageLayer.image = Image3DForViewer(image)
-        self._inializeViewer()
 
-    def _inializeViewer(self):
-        self._contourLayer.referenceImage = self.primaryImage
-        self._textLayer.setPrimaryTextLine(2, self.primaryImage.name)
+        self._contourLayer.referenceImage = image
+        self._textLayer.setPrimaryTextLine(2, image.name)
 
         #TODO: disconnect signals
-        self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
-        self._primaryImageLayer.image.nameChangedSignal.connect(lambda name: self._textLayer.setPrimaryTextLine(2, name))
+        self._primaryImageLayer.image .selectedPositionChangedSignal.connect(self._handlePosition)
+        self._primaryImageLayer.image .nameChangedSignal.connect(lambda name: self._textLayer.setPrimaryTextLine(2, name))
 
         self._primaryImageLayer.resliceAxes = self._viewMatrix
         self._contourLayer.resliceAxes = self._viewMatrix
 
-        self._mainLayout.removeWidget(self._blackWidget)
         self._blackWidget.hide()
+        self._mainLayout.removeWidget(self._blackWidget)
         self._mainLayout.addWidget(self._vtkWidget)
         self._vtkWidget.show()
 

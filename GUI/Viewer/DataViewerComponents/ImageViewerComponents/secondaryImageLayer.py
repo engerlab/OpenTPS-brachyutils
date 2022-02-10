@@ -37,10 +37,11 @@ class SecondaryImageLayer(PrimaryImageLayer):
 
         if image is None:
             self.colorbarOn = False
-            return
+        else:
+            self._setLookupTable(self._image.lookupTable)
+            self.colorbarOn = True # TODO: Get this from parent
 
-        self._setLookupTable(self._image.lookupTable)
-        self.colorbarOn = True # TODO: Get this from parent
+        self._renderWindow.Render()
 
     @property
     def colorbarOn(self) -> bool:

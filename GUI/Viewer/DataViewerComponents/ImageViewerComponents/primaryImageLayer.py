@@ -44,8 +44,6 @@ class PrimaryImageLayer:
         self._orientationWidget.SetInteractor(self._renderWindow.GetInteractor())
         self._orientationWidget.SetOrientationMarker(self._orientationActor)
 
-        self._renderer.AddActor(self._mainActor)
-
         self._reslice.SetOutputDimensionality(2)
         self._reslice.SetInterpolationModeToNearestNeighbor()
 
@@ -72,8 +70,10 @@ class PrimaryImageLayer:
             return
 
         self._image = image
-        self._reslice.RemoveAllInputs()
+
         self._disconnectAll()
+        self._renderer.RemoveActor(self._mainActor)
+        self._reslice.RemoveAllInputs()
 
         if not (self._image is None):
             self._reslice.SetInputConnection(self._image.vtkOutputPort)
@@ -83,7 +83,11 @@ class PrimaryImageLayer:
 
             self._connectAll()
 
+            self._renderer.AddActor(self._mainActor)
+
         self.imageChangedSignal.emit(self._image)
+
+        self._renderWindow.Render()
 
     def _setInitialGrayRange(self, range:tuple):
         """
