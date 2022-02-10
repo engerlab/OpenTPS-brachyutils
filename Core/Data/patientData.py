@@ -12,7 +12,7 @@ from Core.event import Event
 class PatientData:
     _staticVars = {"deepCopyingExceptNdArray": False}
 
-    def __init__(self, patientInfo=None, patient=None, name='', seriesInstanceUID=''):
+    def __init__(self, patientInfo=None, name='', seriesInstanceUID=''):
 
         self.nameChangedSignal = Event(str)
         # self.setEvents()
@@ -36,6 +36,7 @@ class PatientData:
 
     @name.setter
     def name(self, name):
+        self._name = name
         self.setName(name)
 
     @API.loggedViaAPI
