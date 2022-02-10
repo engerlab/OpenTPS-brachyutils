@@ -19,6 +19,7 @@ class PrimaryImageLayer:
     def __init__(self, renderer, renderWindow, iStyle):
         colors = vtkNamedColors()
 
+        self._colorMapper = vtkImagingCore.vtkImageMapToColors()
         self._image = None
         self._iStyle = iStyle
         self._mainActor = vtkRenderingCore.vtkImageActor()
@@ -47,8 +48,15 @@ class PrimaryImageLayer:
         self._reslice.SetOutputDimensionality(2)
         self._reslice.SetInterpolationModeToNearestNeighbor()
 
+        self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
+        self._mainMapper.SetInputConnection(self._colorMapper.GetOutputPort())
+
     @property
     def image(self) -> Optional[Image3DForViewer]:
+        """
+        Image displayed
+        :type:Optional[Image3DForViewer]
+        """
         if self._image is None:
             return None
 
@@ -69,58 +77,41 @@ class PrimaryImageLayer:
 
         self._image = image
 
+        self._reslice.RemoveAllInputs()
         self._reslice.SetInputConnection(self._image.vtkOutputPort)
 
-        # Create a greyscale lookup table
+        self._setInitialGrayRange(self._image.range)
+        self._setWWL(self._image.wwlValue)
+
+        self._connectAll()
+
+    def _setInitialGrayRange(self, range:tuple):
+        """
+        Set grayscale range
+        Parameters
+        ----------
+        range(tuple): range
+        """
         table = vtkCommonCore.vtkLookupTable()
-        table.SetRange(-1024, 1500)  # image intensity range
+        table.SetRange(range[0], range[1])  # image intensity range
         table.SetValueRange(0.0, 1.0)  # from black to white
         table.SetSaturationRange(0.0, 0.0)  # no color saturation
         table.SetRampToLinear()
         table.Build()
 
-        # Map the image through the lookup table
-        color = vtkImagingCore.vtkImageMapToColors()
-        color.SetLookupTable(table)
-        color.SetInputConnection(self._reslice.GetOutputPort())
-
-        self._mainMapper.SetInputConnection(color.GetOutputPort())
-
-        self._connectAll()
+        self._colorMapper.SetLookupTable(table)
 
     @property
     def resliceAxes(self):
+        """
+        Reslice axes
+        """
         return self._reslice.GetResliceAxes()
 
     @resliceAxes.setter
     def resliceAxes(self, resliceAxes):
         self._reslice.SetResliceAxes(resliceAxes)
         self._orientationActor.PokeMatrix(resliceAxes)
-
-    def getDataAtPosition(self, position: Sequence):
-
-        ## old version to get the value from the vtk image
-        # imageData = self._reslice.GetInput(0)
-        # ind = [0, 0, 0]
-        # imageData.TransformPhysicalPointToContinuousIndex(position[0:3], ind)
-        # dataVTK = imageData.GetScalarComponentAsFloat(round(ind[0]), round(ind[1]), round(ind[2]), 0)
-
-        ## new version to get the value from the numpy image
-        voxelIndex = self.getVoxelIndexFromPosition(position)
-        dataNumpy = self._image.imageArray[voxelIndex[0], voxelIndex[1], voxelIndex[2]]
-
-        return dataNumpy
-
-    def getVoxelIndexFromPosition(self, position: Sequence):
-
-        positionInMM = np.array(position)
-        origin = np.array(self._image.origin) ## dataMultiton magic makes all this available here
-        spacing = np.array(self._image.spacing)
-
-        shiftedPosInMM = positionInMM - origin
-        posInVoxels = np.round(np.divide(shiftedPosInMM, spacing)).astype(np.int)
-
-        return posInVoxels
 
     def _connectAll(self):
         self._image.wwlChangedSignal.connect(self._setWWL)
@@ -132,6 +123,12 @@ class PrimaryImageLayer:
         self._image.wwlChangedSignal.disconnect(self._setWWL)
 
     def _setWWL(self, wwl: Sequence):
+        """
+            Set window level
+            Parameters
+             ----------
+            range(Sequence): (window width, window level)
+        """
         imageProperty = self._iStyle.GetCurrentImageProperty()
         if not (imageProperty is None):
             imageProperty.SetColorWindow(wwl[0])

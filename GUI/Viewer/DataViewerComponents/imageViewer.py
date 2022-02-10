@@ -383,7 +383,7 @@ class ImageViewer(QWidget):
             return
 
         try:
-            data = self._primaryImageLayer.getDataAtPosition(position)
+            data = self._primaryImageLayer.image.getDataAtPosition(position)
 
             self._textLayer.setPrimaryTextLine(0, 'Value: ' + "{:.2f}".format(data))
             # self._textLayer.setPrimaryTextLine(0, 'ValueNumpy: ' + "{:.2f}".format(dataNumpy))
@@ -395,7 +395,7 @@ class ImageViewer(QWidget):
 
         if not self.secondaryImage is None:
             try:
-                data = self._secondaryImageLayer.getDataAtPosition(position)
+                data = self._secondaryImageLayer.image.getDataAtPosition(position)
 
                 self._textLayer.setSecondaryTextLine(0, 'Value: ' + "{:.2f}".format(data))
                 self._textLayer.setSecondaryTextLine(1, 'Pos: ' + "{:.2f}".format(position[0]) + ' ' + "{:.2f}".format(
