@@ -81,7 +81,7 @@ class DynamicDisplayController():
         self.time += self.refreshRateInMS * self.currentSpeedCoef
         for dynamicViewerUnit in self.dynamicViewerUnitList:
             dyn3DSeqForViewer = dynamicViewerUnit.primaryImage
-            timingsList = dyn3DSeqForViewer.dyn3DSeq.timingsList
+            timingsList = dyn3DSeqForViewer.data.timingsList
             loopShift = timingsList[-1] * dynamicViewerUnit.loopStepNumber
             curIndex = dynamicViewerUnit.curPrimaryImgIdx
 

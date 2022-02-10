@@ -210,6 +210,10 @@ class DataViewer(QWidget):
 
         if self._displayType == self.DisplayTypes.DISPLAY_IMAGE:
             self._setCurrentViewerToDynamicImageViewer()
+        elif self._displayType == self.DisplayTypes.DISPLAY_PROFILE:
+            self._currentViewer = self._staticProfileviewer
+        elif self._displayType == self.DisplayTypes.NONE:
+            self._currentViewer = self._noneViewer
         else:
             raise ValueError('Invalid display type: ' + str(self._displayType))
 
@@ -239,19 +243,28 @@ class DataViewer(QWidget):
         self.dropEnabled = self._dropEnabled
 
         self._viewController.crossHairEnabledSignal.disconnect(self._staticImageViewer.setCrossHairEnabled)
+        self._viewController.lineWidgetEnabledSignal.disconnect(self._staticImageViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.disconnect(self._staticImageViewer._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.disconnect(self._staticImageViewer.setWWLEnabled)
+
+        self._viewController.crossHairEnabledSignal.connect(self._dynImageViewer.setCrossHairEnabled)
+        self._viewController.lineWidgetEnabledSignal.connect(self._dynImageViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connect(self._dynImageViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.connect(self._dynImageViewer.setWWLEnabled)
 
     def _setCurrentViewerToStaticImageViewer(self):
         self._currentViewer = self._staticImageViewer
         self.dropEnabled = self._dropEnabled
 
+        self._viewController.crossHairEnabledSignal.disconnect(self._dynImageViewer.setCrossHairEnabled)
+        self._viewController.lineWidgetEnabledSignal.disconnect(self._dynImageViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.disconnect(self._dynImageViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.disconnect(self._dynImageViewer.setWWLEnabled)
+
         self._viewController.crossHairEnabledSignal.connect(self._staticImageViewer.setCrossHairEnabled)
         self._viewController.lineWidgetEnabledSignal.connect(self._staticImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.connect(self._staticImageViewer._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.connect(self._staticImageViewer.setWWLEnabled)
-
-        self._viewController.crossHairEnabledSignal.disconnect(self._dynImageViewer.setCrossHairEnabled)
-        self._viewController.windowLevelEnabledSignal.disconnect(self._dynImageViewer.setWWLEnabled)
 
     @property
     def dropEnabled(self) -> bool:

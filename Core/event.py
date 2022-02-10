@@ -21,7 +21,7 @@ class Event:
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        # Don't pickle methods in _slots
+        # Don't pickle methods in _slots. Those methods might be linked to object that cannot be pickled (eg. the whole progamm)
         state["_slots"] = []
         return state
 

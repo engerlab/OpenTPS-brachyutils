@@ -16,6 +16,19 @@ class Dynamic3DModel(PatientData):
         self.deformationList = deformationList
 
     def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
+        """Compute the mid-position image from the 4DCT by means of deformable registration between breathing phases.
+
+            Parameters
+            ----------
+            CT4D : dynamic3DSequence
+                4D CT
+            refIndex : int
+                index of the reference phase in the 4D CT (default = 0)
+            baseResolution : float
+                smallest voxel resolution for deformable registration multi-scale processing
+            nbProcesses : int
+                number of processes to be used in the deformable registration
+            """
 
         if refIndex >= len(CT4D.dyn3DImageList):
             logger.error("Reference index is out of bound")
@@ -24,8 +37,23 @@ class Dynamic3DModel(PatientData):
 
 
     def generate3DImage(self, phase, amplitude=1.0):
+        """Generate a 3D image by deforming the mid-position according to a specified phase of the breathing cycle, optionally using a magnification factor for this deformation.
+
+            Parameters
+            ----------
+            phase : float
+                respiratory phase indicating which (combination of) deformation fields to be used in image generation
+            amplitude : float
+                magnification factor applied on the deformation to the selected phase
+
+            Returns
+            -------
+            image3D
+                generated 3D image.
+            """
+
         if self.midp is None or self.deformationList is None:
-            logger.error('Model is empty. Mid-position image and deformation fields must be computed first.')
+            logger.error('Model is empty. Mid-position image and deformation fields must be computed first using computeMidPositionImage().')
             return
 
         phase *= len(self.deformationList)

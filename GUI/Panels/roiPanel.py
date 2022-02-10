@@ -15,12 +15,17 @@ class ROIPanel(QWidget):
 
     self.setLayout(self.layout)
 
+    self.setCurrentPatient(self._viewController.currentPatient)
+    self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
+
   def addRTStruct(self, rtStruct):
     for contour in rtStruct.contours:
       checkbox = ROIItem(ROIContourForViewer(contour), self._viewController).getCheckbox()
 
       self.layout.addWidget(checkbox)
       self.items.append(checkbox)
+
+    self.layout.addStretch()
 
   def removeRTStruct(self, contour):
     for item in self.items:

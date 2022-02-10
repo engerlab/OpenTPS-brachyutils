@@ -19,6 +19,9 @@ class ProfileWidget:
         self._renderWindow = renderWindow
 
         self._lineWidget.SetCurrentRenderer(self._renderer)
+        self._lineWidget.AddObserver("InteractionEvent", self.onprofileWidgetInteraction)
+        self._lineWidget.AddObserver("EndInteractionEvent", self.onprofileWidgetInteraction)
+        self._lineWidget.SetInteractor(self._renderWindow.GetInteractor())
 
     @property
     def enabled(self) -> bool:
@@ -30,9 +33,6 @@ class ProfileWidget:
             return
 
         if enabled:
-            self._lineWidget.AddObserver("InteractionEvent", self.onprofileWidgetInteraction)
-            self._lineWidget.AddObserver("EndInteractionEvent", self.onprofileWidgetInteraction)
-            self._lineWidget.SetInteractor(self._renderWindow.GetInteractor())
             self._lineWidget.On()
             self._lineWidget.GetLineRepresentation().SetLineColor(1, 0, 0)
             self._lineWidgetEnabled = True
@@ -57,15 +57,25 @@ class ProfileWidget:
 
     @primaryReslice.setter
     def primaryReslice(self, reslice):
+        if not self._primaryReslice is None:
+            self._primaryReslice.RemoveObserver(self._endEventObserver)
+
         self._primaryReslice = reslice
+        self._endEventObserver = self._primaryReslice.AddObserver("EndEvent", self.onprofileWidgetInteraction)
 
     def setInitialPosition(self, worldPos: typing.Sequence):
         self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], 0.01))
         self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
 
     def onprofileWidgetInteraction(self, obj, event):
+        if not self.enabled:
+            return
+
         point1 = self._lineWidget.GetLineRepresentation().GetPoint1WorldPosition()
         point2 = self._lineWidget.GetLineRepresentation().GetPoint2WorldPosition()
+
+        if point1[1]==point1[2]==point2[1]==point2[2]:
+            return
 
         matrix = self._primaryReslice.GetResliceAxes()
         point1 = matrix.MultiplyPoint((point1[0], point1[1], 0, 1))
