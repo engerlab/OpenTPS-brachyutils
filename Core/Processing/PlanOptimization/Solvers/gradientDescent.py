@@ -1,5 +1,35 @@
+import logging
+
+import numpy as np
+
+from Core.Processing.PlanOptimization.Solvers.solver import ConvexSolver
+
+logger = logging.getLogger(__name__)
+
 
 class GradientDescent(ConvexSolver):
+    """
+        Gradient descent algorithm.
+        Can be used for problems with any number of smooth functions.
+    """
+
     def __init__(self, **kwargs):
         super(GradientDescent, self).__init__(**kwargs)
 
+    def prepareFunctions(self, functions, x0):
+
+        for f in functions:
+            if 'GRAD' in f.cap(x0):
+                self.smoothFuns.append(f)
+            else:
+                logger.error('{} requires each function to '
+                             'implement grad().'.format(self.__class__.__name__))
+
+        logger.info('minimizing {} smooth '
+                    'functions.'.format(self.__class__.__name__, len(self.smoothFuns)))
+
+    def optimizeWeights(self):
+        grad = np.zeros_like(self.sol)
+        for f in self.smoothFuns:
+            grad += f.grad(self.sol)
+        self.sol[:] -= self.step * grad

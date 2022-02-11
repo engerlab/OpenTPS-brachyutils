@@ -52,5 +52,5 @@ class Optimizer:
 
 
     def solve(self):
-        res = self.solver.solve
+        res =
         return res
