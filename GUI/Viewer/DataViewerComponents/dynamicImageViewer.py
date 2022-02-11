@@ -36,6 +36,7 @@ class DynamicImageViewer(ImageViewer):
     @primaryImage.setter
     def primaryImage(self, dyn3DImgSeq):
         if dyn3DImgSeq is None:
+            self.dynPrimaryImgSeq = None
             self.dynPrimaryImgSeqForViewer = None
             super().image = None
         elif dyn3DImgSeq != self.dynPrimaryImgSeq:
