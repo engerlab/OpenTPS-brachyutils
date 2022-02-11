@@ -4,6 +4,14 @@ Core.Processing.Registration package
 Submodules
 ----------
 
+Core.Processing.Registration.midPosition module
+-----------------------------------------------
+
+.. automodule:: Core.Processing.Registration.midPosition
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Core.Processing.Registration.registration module
 ------------------------------------------------
 

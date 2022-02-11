@@ -35,6 +35,15 @@ class RegistrationQuick(Registration):
         Registration.__init__(self, fixed, moving)
 
     def compute(self):
+
+        """Perform registration between fixed and moving images.
+
+            Returns
+            -------
+            list
+                Translation from moving to fixed images.
+            """
+
         if self.fixed == [] or self.moving == []:
             logger.error("Image not defined in registration object")
             return
@@ -45,30 +54,30 @@ class RegistrationQuick(Registration):
 
         # resample moving to same resolution as fixed
         self.deformed = self.moving.copy()
-        gridSize = np.array(self.moving.getGridSize()) * np.array(self.moving.spacing) / np.array(
-            self.fixed.spacing)
+        gridSize = np.array(self.moving.gridSize()) * np.array(self.moving._spacing) / np.array(
+            self.fixed._spacing)
         gridSize = gridSize.astype(np.int)
-        self.deformed.resample(gridSize, self.moving.origin, self.fixed.spacing)
+        self.deformed.resample(gridSize, self.moving._origin, self.fixed._spacing)
 
         # search shift in x
-        fixedProfile = np.sum(self.fixed.data, (0, 2))
-        movingProfile = np.sum(self.deformed.data, (0, 2))
+        fixedProfile = np.sum(self.fixed._imageArray, (0, 2))
+        movingProfile = np.sum(self.deformed._imageArray, (0, 2))
         shift = matchProfiles(fixedProfile, movingProfile)
-        translation[0] = self.fixed.origin[0] - self.moving.origin[0] + shift * \
-                         self.deformed.spacing[0]
+        translation[0] = self.fixed._origin[0] - self.moving._origin[0] + shift * \
+                         self.deformed._spacing[0]
         # search shift in y
-        fixedProfile = np.sum(self.fixed.data, (1, 2))
-        movingProfile = np.sum(self.deformed.data, (1, 2))
+        fixedProfile = np.sum(self.fixed._imageArray, (1, 2))
+        movingProfile = np.sum(self.deformed._imageArray, (1, 2))
         shift = matchProfiles(fixedProfile, movingProfile)
-        translation[1] = self.fixed.origin[1] - self.moving.origin[1] + shift * \
-                         self.deformed.spacing[1]
+        translation[1] = self.fixed._origin[1] - self.moving._origin[1] + shift * \
+                         self.deformed._spacing[1]
 
         # search shift in z
-        fixedProfile = np.sum(self.fixed.data, (0, 1))
-        movingProfile = np.sum(self.deformed.data, (0, 1))
+        fixedProfile = np.sum(self.fixed._imageArray, (0, 1))
+        movingProfile = np.sum(self.deformed._imageArray, (0, 1))
         shift = matchProfiles(fixedProfile, movingProfile)
-        translation[2] = self.fixed.origin[2] - self.moving.origin[2] + shift * \
-                         self.deformed.spacing[2]
+        translation[2] = self.fixed._origin[2] - self.moving._origin[2] + shift * \
+                         self.deformed._spacing[2]
 
         self.translateOrigin(self.deformed, translation)
 

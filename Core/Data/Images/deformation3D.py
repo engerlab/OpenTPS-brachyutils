@@ -1,7 +1,3 @@
-import pydicom
-import numpy as np
-import scipy.ndimage
-import math
 import logging
 
 from Core.Data.Images.image3D import Image3D
@@ -12,78 +8,157 @@ logger = logging.getLogger(__name__)
 
 class Deformation3D(Image3D):
 
-    def __init__(self, data=None, name="3D Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), UID=""):
+    def __init__(self, imageArray=None, name="Deformation", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", velocity=None, displacement=None):
 
-        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, UID=UID)
+        if (displacement is None) and not(velocity is None):
+            origin = velocity._origin
+            spacing = velocity._spacing
+            if patientInfo is None:
+                patientInfo = velocity.patientInfo
+        elif (velocity is None) and not(displacement is None):
+            origin = displacement._origin
+            spacing = displacement._spacing
+            if patientInfo is None:
+                patientInfo = displacement.patientInfo
+        elif not(velocity is None) and not(displacement is None):
+            if velocity._origin == displacement._origin:
+                origin = velocity._origin
+            else:
+                logger.error("Velocity and displacement fields have different origin. Cannot create deformation object.")
+            if velocity._spacing == displacement._spacing:
+                spacing = velocity._spacing
+            else:
+                logger.error("Velocity and displacement fields have different spacing. Cannot create deformation object.")
+            if patientInfo is None:
+                patientInfo = displacement.patientInfo
 
-        self.velocity = None
-        self.displacement = None
+        super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
 
-    def getGridSize(self):
+        self.velocity = velocity
+        self.displacement = displacement
+
+    @property
+    def gridSize(self):
+        """Compute the voxel grid size of the deformation.
+
+            Returns
+            -------
+            list
+                Grid size of velocity field and/or displacement field.
+            """
+
         if (self.velocity is None) and (self.displacement is None):
             return (0, 0, 0)
         elif self.displacement is None:
-            return self.velocity.data.shape[0:3]
+            return self.velocity._imageArray.shape[0:3]
         else:
-            return self.displacement.data.shape[0:3]
+            return self.displacement._imageArray.shape[0:3]
 
     def initFromImage(self, image):
+        """Initialize deformation using the voxel grid of the input image.
+
+            Parameters
+            ----------
+            image : numpy array
+                image from which the voxel grid is copied.
+            """
+
         self.velocity = VectorField3D()
         self.velocity.initFromImage(image)
-        self.origin = image.origin
-        self.spacing = image.spacing
+        self.displacement = None
+        self.origin = image._origin
+        self.spacing = image._spacing
+        self.angles = image._angles
+        self.patientInfo = image.patientInfo
 
-    def import_Dicom_DF(self, DcmFile, df_type='Velocity'):
+    def initFromVelocityField(self, field):
+        """Initialize deformation using the input field as velocity.
 
-        dcm = pydicom.dcmread(DcmFile).DeformableRegistrationSequence[0]
+            Parameters
+            ----------
+            field : numpy array
+                field used as velocity in the deformation.
+            """
 
-        # import deformation field
-        dcm_field = dcm.DeformableRegistrationGridSequence[0]
+        self.velocity = field
+        self.displacement = None
+        self.origin = field._origin
+        self.spacing = field._spacing
+        self.angles = field._angles
+        self.patientInfo = field.patientInfo
 
-        self.origin = dcm_field.ImagePositionPatient
-        self.spacing = dcm_field.GridResolution
+    def initFromDisplacementField(self, field):
+        """Initialize deformation using the input field as displacement.
 
-        raw_field = np.frombuffer(dcm_field.VectorGridData, dtype=np.float32)
-        raw_field = raw_field.reshape(
-            (3, dcm_field.GridDimensions[0], dcm_field.GridDimensions[1], dcm_field.GridDimensions[2]),
-            order='F').transpose(1, 2, 3, 0)
-        field = raw_field.copy()
-        for i in range(3):
-            field[:, :, :, i] = field[:, :, :, i] / self.spacing[i]
+            Parameters
+            ----------
+            field : numpy array
+                field used as displacement in the deformation.
+            """
 
-        if df_type == 'Velocity':
-            self.velocity = VectorField3D()
-            self.velocity.data = field
-            self.velocity.origin = self.origin
-            self.velocity.spacing = self.spacing
-        elif df_type == 'Displacement':
-            self.displacement = VectorField3D()
-            self.displacement.data = field
-            self.displacement.origin = self.origin
-            self.displacement.spacing = self.spacing
-        else:
-            logger.error("Unknown deformation field type")
-            return
+        self.velocity = None
+        self.displacement = field
+        self.origin = field._origin
+        self.spacing = field._spacing
+        self.angles = field._angles
+        self.patientInfo = field.patientInfo
 
-    def resample(self, gridSize, origin, spacing, fillValue=0):
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
+        """Resample deformation (velocity and/or displacement field) according to new voxel grid using linear interpolation.
+
+            Parameters
+            ----------
+            gridSize : list
+                size of the resampled deformation voxel grid.
+            origin : list
+                origin of the resampled deformation voxel grid.
+            spacing : list
+                spacing of the resampled deformation voxel grid.
+            fillValue : scalar
+                interpolation value for locations outside the input voxel grid.
+            outputType : numpy data type
+                type of the output.
+            """
+
         if not(self.velocity is None):
-            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue)
+            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
         if not(self.displacement is None):
-            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue)
+            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def deformImage(self, Image, fillValue=-1000):
+    def deformImage(self, image, fillValue=-1000):
+        """Deform 3D image using linear interpolation.
+
+            Parameters
+            ----------
+            image : numpy array
+                image to be deformed.
+            fillValue : scalar
+                interpolation value for locations outside the input voxel grid.
+
+            Returns
+            -------
+            numpy array
+                Deformed image.
+            """
 
         if (self.displacement is None):
             field = self.velocity.exponentiateField()
         else:
             field = self.displacement
 
-        if tuple(self.getGridSize()) != tuple(Image.getGridSize()) or tuple(self.origin) != tuple(
-                Image.origin) or tuple(self.spacing) != tuple(Image.spacing):
-            field = self.resampleVectorField(field, Image.getGridSize(), Image.origin, Image.spacing)
+        if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
+            field = field.deepCopyWithoutEvent()
+            field.resample(image.gridSize, image._origin, image._spacing)
 
-        Image.data = field.warp(Image.data, fillValue=fillValue)
+        image = image.copy()
+        image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
 
+        return image
+
+    def dumpableCopy(self):
+        dumpableDef = Deformation3D(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, velocity=self.velocity, displacement=self.displacement)
+        # dumpableDef.patient = self.patient
+        return dumpableDef

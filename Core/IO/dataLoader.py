@@ -2,7 +2,70 @@ import os
 import pydicom
 import logging
 
-from Core.IO.dicomReader import readDicomCT, readDicomDose
+from Core.api import API
+from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.vectorField3D import VectorField3D
+from Core.Data.dynamic3DModel import Dynamic3DModel
+from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.patient import Patient
+from Core.Data.patientList import PatientList
+from Core.Data.rtStruct import RTStruct
+from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct
+from Core.IO import mhdReadWrite
+from Core.IO.serializedObjectIO import loadDataStructure
+
+@API.loggedViaAPI
+def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):
+    #TODO: implement ignoreExistingData
+
+    dataList = loadAllData(dataPath, maxDepth=maxDepth)
+
+    patient = None
+
+    if not (importInPatient is None):
+        patient = importInPatient
+
+    for data in dataList:
+        if (isinstance(data, Patient)):
+            patient = data
+            patient.setSelfInData()  ## this gives the patient to each of its data, it makes a data impossible to copy because it will start an infinite loop between a patient and its data
+            patientList.append(patient)
+
+
+        if importInPatient is None:
+            # check if patient already exists
+            patient = patientList.getPatientByPatientId(data.patientInfo.patientID)
+
+            # TODO: Get patient by name?
+
+        if patient is None:
+            patient = Patient(patientInfo = data.patientInfo)
+            patientList.append(patient)
+
+        # add data to patient
+        if(isinstance(data, Image3D)):
+            patient.appendImage(data)
+        elif(isinstance(data, CTImage)):
+            patient.appendImage(data)
+        elif(isinstance(data, DoseImage)):
+            patient.appendImage(data)
+        elif(isinstance(data, RTStruct)):
+            patient.appendRTStruct(data)
+        elif (isinstance(data, VectorField3D)):
+            patient.appendRTStruct(data)
+        elif (isinstance(data, Dynamic3DSequence)):
+            patient.appendDyn3DSeq(data)
+        # elif (isinstance(data, Dynamic2DSequence)): ## not implemented in patient yet, maybe only one function for both 2D and 3D dynamic sequences ?
+        #     patient.appendDyn2DSeq(data)
+        elif (isinstance(data, Dynamic3DModel)):
+            patient.appendDyn3DMod(data)
+        elif (isinstance(data, Patient)):
+            pass  # see above, the Patient case is considered
+        else:
+            logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
+            continue
 
 
 def loadAllData(inputPaths, maxDepth=-1):
@@ -33,8 +96,13 @@ def loadAllData(inputPaths, maxDepth=-1):
     for filePath in fileLists["Dicom"]:
         dcm = pydicom.dcmread(filePath)
 
+        # Dicom field
+        if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or dcm.Modality == "REG":
+            field = readDicomVectorField(filePath)
+            dataList.append(field)
+
         # Dicom CT
-        if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
+        elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
             # Dicom CT are not loaded directly. All slices must first be classified according to SeriesInstanceUID.
             newCT = 1
             for key in dicomCT:
@@ -51,7 +119,7 @@ def loadAllData(inputPaths, maxDepth=-1):
 
         # Dicom RT Plan
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5":
-            logging.warning("WARNING: cannot import ", file_path, " because photon RT plan is not implemented yet")
+            logging.warning("WARNING: cannot import ", filePath, " because photon RT plan is not implemented yet")
 
         # Dicom RT Ion Plan
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
@@ -59,7 +127,8 @@ def loadAllData(inputPaths, maxDepth=-1):
 
         # Dicom struct
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.3":
-            logging.warning("WARNING: cannot import " + filePath + " because RT Struct import is not implemented yet")
+            struct = readDicomStruct(filePath)
+            dataList.append(struct)
 
         else:
             logging.warning("WARNING: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + filePath)
@@ -71,7 +140,12 @@ def loadAllData(inputPaths, maxDepth=-1):
 
     # read MHD images
     for filePath in fileLists["MHD"]:
-        logging.warning("WARNING: cannot import " + filePath + " because MHD import is not implemented yet")
+        mhdImage = mhdReadWrite.importImageMHD(filePath)
+        dataList.append(mhdImage)
+
+    # read serialized object files
+    for filePath in fileLists["Serialized"]:
+        dataList += loadDataStructure(filePath) # not append because loadDataStructure returns a list already
 
 
     return dataList
@@ -100,7 +174,8 @@ def listAllFiles(inputPaths, maxDepth=-1):
 
     fileLists = {
         "Dicom": [],
-        "MHD": []
+        "MHD": [],
+        "Serialized": []
     }
 
     # if inputPaths is a list of path, then iteratively call this function with each path of the list
@@ -153,8 +228,14 @@ def listAllFiles(inputPaths, maxDepth=-1):
                         fileLists["MHD"].append(filePath)
                         continue
 
+
+            # Is serialized file ?
+            if filePath.endswith('.p') or filePath.endswith('.pbz2'):
+                fileLists["Serialized"].append(filePath)
+
+
             # Unknown file format
-            logging.info("INFO: cannot recognize file format of ", filePath)
+            logging.info("INFO: cannot recognize file format of " + filePath)
 
     return fileLists
 

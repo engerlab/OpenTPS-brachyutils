@@ -1,19 +1,19 @@
 import logging
+import os
 import sys
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
-from Controllers.DataControllers.patientListController import PatientListController
-from Controllers.instantiateAPI import instantiateAPI
+from Core.api import API, FileLogger
 from Core.Data.patientList import PatientList
-from GUI.ViewControllers.viewController import ViewController
+from GUI.viewController import ViewController
+import Script
 
 from logConfigParser import parseArgs
 
 QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid display bug for 4k resolutions with 200% GUI scale
 
-from GUI.MainWindow import *
 
 logger = logging.getLogger(__name__)
 
@@ -26,14 +26,24 @@ if __name__ == '__main__':
         app = QApplication([])
 
     patientList = PatientList()
-    patientListController = PatientListController(patientList)
 
-    #TODO Find a better way to instantiate the API
-    instantiateAPI(patientListController)
+    API.patientList = patientList
+    API.logger.appendLoggingFunction(FileLogger().print)
+    API.logger.enabled = True
 
     # instantiate the main GUI window
-    viewController = ViewController(patientListController)
-    mainWindow = MainWindow(viewController)
-    mainWindow.show()
+    viewController = ViewController(patientList)
+    viewController.mainWindow.show()
+
+    # Run start script
+    scriptPath = os.path.join(str(Script.__path__[0]), 'startScript.py')
+    try:
+        with open(scriptPath, 'r') as file:
+            code = file.read()
+
+        output = API.interpreter.run(code)
+        print(output)
+    except Exception as err:
+        print(format(err))
 
     app.exec_()

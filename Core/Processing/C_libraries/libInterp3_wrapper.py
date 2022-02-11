@@ -1,39 +1,39 @@
+import os
 import numpy as np
 import ctypes
 import scipy.interpolate
 import platform
 
-def Trilinear_Interpolation(Image, GridSize, InterpolatedPoints, fillValue=0):
+def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0):
   try:
     # import C library
-    if(platform.system() == "Linux"): libInterp3 = ctypes.cdll.LoadLibrary("Core/Processing/C_libraries/libInterp3.so")
-    elif(platform.system() == "Windows"): libInterp3 = ctypes.cdll.LoadLibrary("Core/Processing/C_libraries/libInterp3.dll")
+    if(platform.system() == "Linux"): libInterp3 = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "libInterp3.so"))
+    elif(platform.system() == "Windows"): libInterp3 = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "libInterp3.dll"))
     else: print("Error: not compatible with " + platform.system() + " system.")
     float_array = np.ctypeslib.ndpointer(dtype=np.float32)
     int_array = np.ctypeslib.ndpointer(dtype=np.int32)
     libInterp3.Trilinear_Interpolation.argtypes = [float_array, int_array, float_array, ctypes.c_int, ctypes.c_float, float_array]
-    libInterp3.Trilinear_Interpolation.restype  = ctypes.c_void_p
+    libInterp3.Trilinear_Interpolation.restype = ctypes.c_void_p
 
     # prepare inputs for C library
-    Img = np.array(Image, dtype=np.float32, order='C')
-    Size = np.array(GridSize, dtype=np.int32, order='C')
-    Points = np.array(InterpolatedPoints, dtype=np.float32, order='C')
-    NumPoints = InterpolatedPoints.shape[0]
-    Intepolated_img = np.zeros(NumPoints, dtype=np.float32, order='C')
+    Img = np.array(image, dtype=np.float32, order='C')
+    Size = np.array(gridSize, dtype=np.int32, order='C')
+    Points = np.array(interpolatedPoints, dtype=np.float32, order='C')
+    NumPoints = interpolatedPoints.shape[0]
+    interpolatedImage = np.zeros(NumPoints, dtype=np.float32, order='C')
 
     # call C function
-    libInterp3.Trilinear_Interpolation(Img, Size, Points, NumPoints, fillValue, Intepolated_img)
+    libInterp3.Trilinear_Interpolation(Img, Size, Points, NumPoints, fillValue, interpolatedImage)
 
   except:
     print('Warning: accelerated 3D interpolation not enabled. The python implementation is used instead')
     # voxel coordinates of the original image
-    x = np.arange(GridSize[0])
-    y = np.arange(GridSize[1])
-    z = np.arange(GridSize[2])
+    x = np.arange(gridSize[0])
+    y = np.arange(gridSize[1])
+    z = np.arange(gridSize[2])
 
-    Intepolated_img = scipy.interpolate.interpn((x,y,z), Image, InterpolatedPoints, method='linear', fill_value=fillValue, bounds_error=False)
-    # f_interp = scipy.interpolate.RegularGridInterpolator((x,y,z), Image, method='linear', fill_value=fillValue, bounds_error=False)
-    # self.Image = f_interp(InterpolatedPoints)
+    interpolatedImage = scipy.interpolate.interpn((x,y,z), image, interpolatedPoints, method='linear', fill_value=fillValue, bounds_error=False)
+    # f_interp = scipy.interpolate.RegularGridInterpolator((x,y,z), image, method='linear', fill_value=fillValue, bounds_error=False)
+    # self.image = f_interp(interpolatedPoints)
 
-
-  return Intepolated_img
+  return interpolatedImage

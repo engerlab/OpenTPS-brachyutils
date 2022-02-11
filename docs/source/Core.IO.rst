@@ -4,6 +4,14 @@ Core.IO package
 Submodules
 ----------
 
+Core.IO.dataLoader module
+-------------------------
+
+.. automodule:: Core.IO.dataLoader
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Core.IO.dicomReader module
 --------------------------
 
@@ -12,10 +20,18 @@ Core.IO.dicomReader module
    :undoc-members:
    :show-inheritance:
 
-Core.IO.serializedObjectReader module
--------------------------------------
+Core.IO.mhdReadWrite module
+---------------------------
 
-.. automodule:: Core.IO.serializedObjectReader
+.. automodule:: Core.IO.mhdReadWrite
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Core.IO.serializedObjectIO module
+---------------------------------
+
+.. automodule:: Core.IO.serializedObjectIO
    :members:
    :undoc-members:
    :show-inheritance:

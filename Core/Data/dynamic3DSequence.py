@@ -1,25 +1,73 @@
 import numpy as np
+from pydicom.uid import generate_uid
 
+from Core.api import API
 from Core.Data.patientData import PatientData
+
 
 class Dynamic3DSequence(PatientData):
 
-    def __init__(self, imageList = [], timingsList = [], sequenceName = "newSequence"):
-        super().__init__()
-        self.sequenceName = sequenceName
-        self.dyn3DImageList = imageList
-        self.timingsList = timingsList
-        self.breathingPeriod = 4000
-        self.inhaleDuration = 1800
+    LOOPED_MODE = 'LOOP'
+    ONESHOT_MODE = 'OS'
+
+    def __init__(self, dyn3DImageList = [], timingsList = [], name="3D Dyn Seq", repetitionMode='LOOP', patientInfo=None):
+        super().__init__(patientInfo=patientInfo, name=name)
+
+        self.dyn3DImageList = self.sortImgsByName(dyn3DImageList)
+
+        if len(timingsList) > 0:
+            self.timingsList = timingsList
+        else:
+            self.breathingPeriod = 4000
+            self.inhaleDuration = 1800
+            self.timingsList = self.prepareTimings()
+
+        self.isDynamic = True
+        self.repetitionMode = repetitionMode
+
+        print('Dynamic 3D Sequence Created with ', len(self.dyn3DImageList), 'images')
+        for img in self.dyn3DImageList:
+            print('   ', img.name)
+
+    @staticmethod
+    @API.loggedViaAPI
+    def fromImagesInPatientList(selectedImages, newName):
+        newSeq = Dynamic3DSequence(dyn3DImageList=selectedImages, name=newName)
+
+        for image in selectedImages:
+            patient = image.patient
+            patient.removeImage(image)
+
+        newSeq.seriesInstanceUID = generate_uid()
+        patient.appendDyn3DSeq(newSeq)
+
+
+    def __str__(self):
+        s = "Dyn series: " + self.name + '\n'
+        for image in self.dyn3DImageList:
+            s += str(image) + '\n'
+
+        return s
 
 
     def print_dynSeries_info(self, prefix=""):
-        print(prefix + "Dyn series: " + self.SequenceName)
+        print(prefix + "Dyn series: " + self.name)
         print(prefix, len(self.dyn3DImageList), ' 3D images in the serie')
 
 
-    def prepareTimingsForViewer(self):
+    def prepareTimings(self):
         numberOfImages = len(self.dyn3DImageList)
         timingList = np.linspace(0, 4000, numberOfImages + 1)
-
         return timingList
+
+
+    def sortImgsByName(self, imgList):
+        imgList = sorted(imgList, key=lambda img: img.name)
+        return imgList
+
+
+    def dumpableCopy(self):
+        dumpableImageCopiesList = [image.dumpableCopy() for image in self.dyn3DImageList]
+        dumpableSeq = Dynamic3DSequence(dyn3DImageList=dumpableImageCopiesList, timingsList=self.timingsList, name=self.name, patientInfo=self.patientInfo)
+        # dumpableSeq.patient = self.patient
+        return dumpableSeq

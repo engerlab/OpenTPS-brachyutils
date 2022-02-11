@@ -1,94 +1,82 @@
 import numpy as np
-from pydicom.uid import generate_uid
+import logging
 
 from Core.Data.patientData import PatientData
-from Core.Data.Images.deformation3D import Deformation3D
-from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
+import Core.Processing.Registration.midPosition as midPosition
+
+logger = logging.getLogger(__name__)
 
 
 class Dynamic3DModel(PatientData):
 
-    def __init__(self):
+    def __init__(self, name="new3DModel", midp=None, deformationList=[]):
         super().__init__()
-        self.SOPInstanceUID = ""
-        self.ModelName = "MidP"
-        self.motionFieldList = []
-        self.midp = []
+        self.name = name
+        self.midp = midp
+        self.deformationList = deformationList
 
-    def computeMidPositionImage(self, CT4D, refIndex=0, morphonsResolution=2.5, nbProcesses=-1):
+    def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
+        """Compute the mid-position image from the 4DCT by means of deformable registration between breathing phases.
+
+            Parameters
+            ----------
+            CT4D : dynamic3DSequence
+                4D CT
+            refIndex : int
+                index of the reference phase in the 4D CT (default = 0)
+            baseResolution : float
+                smallest voxel resolution for deformable registration multi-scale processing
+            nbProcesses : int
+                number of processes to be used in the deformable registration
+            """
 
         if refIndex >= len(CT4D.dyn3DImageList):
-            print("Reference index is out of bound")
-            return -1
+            logger.error("Reference index is out of bound")
 
-        averageField = Deformation3D()
-
-        # perform registrations
-        self.motionFieldList = []
-
-        for i in range(len(CT4D.dyn3DImageList)):
-
-            if i == refIndex:
-                self.motionFieldList.append(Deformation3D())
-            else:
-                print('\nRegistering phase', refIndex, 'to phase', i, '...')
-                reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=morphonsResolution, nbProcesses=nbProcesses)
-                self.motionFieldList.append(reg.compute())
-                if (max(averageField.getGridSize()) == 0):
-                    averageField.initFromImage(self.motionFieldList[i])
-
-            averageField.data += self.motionFieldList[i].data
-
-        self.motionFieldList[refIndex].initFromImage(averageField)
-        averageField.velocity /= len(self.motionFieldList)
-
-        # compute fields to midp
-        for i in range(len(CT4D.dyn3DImageList)):
-            self.motionFieldList[i].FieldName = 'def ' + CT4D.dyn3DImageList[i].ImgName
-            self.motionFieldList[i].velocity = averageField.velocity - self.motionFieldList[i].velocity
-
-        # deform images
-        def3DImageList = []
-        for i in range(len(CT4D.dyn3DImageList)):
-            def3DImageList.append(self.motionFieldList[i].deform_image(CT4D.dyn3DImageList[i],
-                                                                                fillValue='closest'))
-
-        # invert fields (to have them from midp to phases)
-        for i in range(len(CT4D.dyn3DImageList)):
-            self.motionFieldList[i].displacement = []
-            self.motionFieldList[i].velocity = -self.motionFieldList[i].velocity
-
-        # compute MidP
-        self.midp = CT4D.dyn3DImageList[0].copy()
-        self.midp.SOPInstanceUID = generate_uid()
-        self.midp.Image = np.median(def3DImageList, axis=0)
-
-        # set SOPInstanceUID
-        self.SOPInstanceUID = self.midp.SOPInstanceUID
+        self.midp, self.deformationList = midPosition.compute(CT4D, refIndex=refIndex, baseResolution=baseResolution, nbProcesses=nbProcesses)
 
 
     def generate3DImage(self, phase, amplitude=1.0):
-        if not(bool(self.midp)):
-            print('Model is empty. Mid-position image must be computed first.')
+        """Generate a 3D image by deforming the mid-position according to a specified phase of the breathing cycle, optionally using a magnification factor for this deformation.
+
+            Parameters
+            ----------
+            phase : float
+                respiratory phase indicating which (combination of) deformation fields to be used in image generation
+            amplitude : float
+                magnification factor applied on the deformation to the selected phase
+
+            Returns
+            -------
+            image3D
+                generated 3D image.
+            """
+
+        if self.midp is None or self.deformationList is None:
+            logger.error('Model is empty. Mid-position image and deformation fields must be computed first using computeMidPositionImage().')
             return
 
-        phase *= len(self.motionFieldList)
-        phase1 = np.floor(phase) % len(self.motionFieldList)
-        phase2 = np.ceil(phase) % len(self.motionFieldList)
+        phase *= len(self.deformationList)
+        phase1 = np.floor(phase) % len(self.deformationList)
+        phase2 = np.ceil(phase) % len(self.deformationList)
 
-        field = self.motionFieldList[int(phase1)].copy()
-        field.displacement = []
+        field = self.deformationList[int(phase1)].copy()
+        field.displacement = None
         if phase1 == phase2:
-            field.velocity = amplitude * self.motionFieldList[int(phase1)].velocity
+            field.velocity._imageArray = amplitude * self.deformationList[int(phase1)].velocity._imageArray
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))
             if abs(w1+w2-1.0) > 1e-6:
-                print('Error in phase interpolation.')
+                logger.error('Error in phase interpolation.')
                 return
-            field.velocity = amplitude * (w1 * self.motionFieldList[int(phase1)].velocity + w2 * self.motionFieldList[int(phase2)].velocity)
+            field.velocity._imageArray = amplitude * (w1 * self.deformationList[int(phase1)].velocity._imageArray + w2 * self.deformationList[int(phase2)].velocity._imageArray)
 
-        output = self.midp.copy()
-        output.Image = field.deform_image(self.midp, fillValue='closest')
+        return field.deformImage(self.midp, fillValue='closest')
 
-        return output
+    def dumpableCopy(self):
+
+        dumpableDefList = [deformation.dumpableCopy() for deformation in self.deformationList]
+        dumpableModel = Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
+        dumpableModel.patient = self.patient
+        return dumpableModel

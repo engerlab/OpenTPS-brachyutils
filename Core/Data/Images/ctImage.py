@@ -5,11 +5,11 @@ from Core.Data.Images.image3D import Image3D
 
 
 class CTImage(Image3D):
-    def __init__(self, data=None, name="CT image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", frameOfReferenceUID="", sliceLocation=[], sopInstanceUIDs=[]):
-        super().__init__(data=data, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, UID=seriesInstanceUID)
+    def __init__(self, imageArray=None, name="CT image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", frameOfReferenceUID="", sliceLocation=[], sopInstanceUIDs=[]):
+        super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
         self.frameOfReferenceUID = frameOfReferenceUID
         self.seriesInstanceUID = seriesInstanceUID
-        self.sliceLocation=sliceLocation
+        self.sliceLocation = sliceLocation
         self.sopInstanceUIDs = sopInstanceUIDs
     
     def __str__(self):
@@ -18,7 +18,20 @@ class CTImage(Image3D):
     def copy(self):
         img = super().copy()
         img.seriesInstanceUID = pydicom.uid.generate_uid()
+
         return img
 
-    def resample(self, gridSize, origin, spacing, fillValue=-1000):
-        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue)
+    def resample(self, gridSize, origin, spacing, fillValue=-1000, outputType=None):
+        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
+
+    def dumpableCopy(self):
+
+        dumpableImg = CTImage(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin,
+                spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID,
+                frameOfReferenceUID=self.frameOfReferenceUID, sliceLocation=self.sliceLocation,
+                sopInstanceUIDs=self.sopInstanceUIDs)
+
+        # dumpableImg.patient = self.patient
+
+        return dumpableImg
+

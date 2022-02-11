@@ -1,40 +1,45 @@
-from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget, QToolBox
 
-from GUI.Panels.patientDataPanel import PatientDataPanel
-from GUI.Panels.viewerPanel.viewerPanel import ViewerPanel
-from GUI.ViewControllers.patientDataPanelController import PatientDataPanelController
-from GUI.ViewControllers.viewerPanelControllers.viewerPanelController import ViewerPanelController
+import os
+from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget
+from PyQt5.QtGui import QIcon
+
+from GUI.Panels.mainToolbar import MainToolbar
+from GUI.Viewer.viewerPanel import ViewerPanel
+from GUI.statusBar import StatusBar
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, viewController):
+    def __init__(self, viewControler):
         QMainWindow.__init__(self)
 
-        self.toolbox_width = 270
-
-        self._viewController = viewController
-
         self.setWindowTitle('OpenTPS')
+        self.setWindowIcon(QIcon('GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep + 'OpenTPS_icon.png'))
         self.resize(1400, 920)
 
-        mainLayout = QHBoxLayout()
-
         centralWidget = QWidget()
-        centralWidget.setLayout(mainLayout)
         self.setCentralWidget(centralWidget)
+        self.mainLayout = QHBoxLayout()  ## not sure the "self" is necessary for mainLayout, it shoudnt be called outside this constructor
+        centralWidget.setLayout(self.mainLayout)
 
-        mainToolbox = QToolBox()
-        mainToolbox.setStyleSheet("QToolBox::tab {font: bold; color: #000000; font-size: 16px;}")
-        mainToolbox.setFixedWidth(self.toolbox_width)
+        self._viewControler = viewControler
 
-        mainLayout.addWidget(mainToolbox)
+        # create and add the tool panel on the left
+        self.toolbox_width = 270
+        self.mainToolbar = MainToolbar(self._viewControler)
+        self.mainToolbar.setFixedWidth(self.toolbox_width)
+        self.mainLayout.addWidget(self.mainToolbar)
 
+        # create and add the viewer panel
+        self.viewerPanel = ViewerPanel(self._viewControler)
+        self.mainLayout.addWidget(self.viewerPanel)
 
-        # initialize the 1st toolbox panel (patient data)
-        patientDataPanelController = PatientDataPanelController(self._viewController)
-        patientDataPanel = PatientDataPanel(patientDataPanelController)
-        mainToolbox.addItem(patientDataPanel, 'Patient data')
+        self.statusBar = StatusBar()
+        self.setStatusBar(self.statusBar)
+        self.statusBar.show()
 
-        viewerPanel = ViewerPanel(ViewerPanelController(self._viewController))
-        mainLayout.addWidget(viewerPanel)
+    def setLateralToolbar(self, toolbar):
+        self.mainLayout.addWidget(toolbar)
+        toolbar.setFixedWidth(self.toolbox_width)
 
+    def setMainPanel(self, mainPanel):
+        self.mainLayout.addWidget(mainPanel)
