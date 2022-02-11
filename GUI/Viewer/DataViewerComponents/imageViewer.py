@@ -12,6 +12,7 @@ from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
+from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
@@ -98,7 +99,7 @@ class ImageViewer(QWidget):
         if image is None:
             self._resetPrimaryImageLayer()
         else:
-            self._setPrimaryImage(image)
+            self._setPrimaryImageForViewer(Image3DForViewer(image))
 
     def _resetPrimaryImageLayer(self):
         self._primaryImageLayer.image = None
@@ -107,9 +108,8 @@ class ImageViewer(QWidget):
         self._mainLayout.addWidget(self._blackWidget)
         self._blackWidget.show()
 
-    def _setPrimaryImage(self, image):
-        self._primaryImageLayer.image = Image3DForViewer(image)
-
+    def _setPrimaryImageForViewer(self, image:GenericImageForViewer):
+        self._primaryImageLayer.image = image
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)
 

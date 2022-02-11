@@ -35,24 +35,13 @@ class DynamicImageViewer(ImageViewer):
 
     @primaryImage.setter
     def primaryImage(self, dyn3DImgSeq):
-
         if dyn3DImgSeq is None:
-            self._primaryImageLayer.image = None
-
-            self._mainLayout.removeWidget(self._vtkWidget)
-            self._vtkWidget.hide()
-            self._mainLayout.addWidget(self._blackWidget)
-            self._blackWidget.show()
-            return
-
-
-        if dyn3DImgSeq != self.dynPrimaryImgSeq:
+            self.dynPrimaryImgSeqForViewer = None
+            super().image = None
+        elif dyn3DImgSeq != self.dynPrimaryImgSeq:
             self.dynPrimaryImgSeq = dyn3DImgSeq
             self.dynPrimaryImgSeqForViewer = Dyn3DSeqForViewer(self.dynPrimaryImgSeq)
-
-            self._primaryImageLayer.image = self.dynPrimaryImgSeqForViewer
-
-            self._initializeViewer()
+            super()._setPrimaryImageForViewer(self.dynPrimaryImgSeqForViewer)
 
     def nextImage(self, index):
         self.curPrimaryImgIdx = index
