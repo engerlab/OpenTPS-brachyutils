@@ -8,43 +8,39 @@ from pyqtgraph import PlotWidget, PlotCurveItem
 from pyqtgraph.exporters import ImageExporter
 
 
-class ProfilePlot(QWidget):
-    def __init__(self, viewController):
+class ProfileViewer(QWidget):
+    def __init__(self, viewController, nbProfiles=1):
         QWidget.__init__(self)
 
         self._layout = QHBoxLayout(self)
-        self._profileCount = 0
-        self._profilePlot = _ProfilePlot()
-        self._toolbar = _ProfileToolbar()
+        self._toolbar = _ProfileToolbar(self, viewController)
         self._viewController = viewController
 
-        self._toolbar.newProfileSignal.connect(self.addProfile)
-        self._toolbar.removeAllSignal.connect(self.removeAll)
-        self._toolbar.saveSignal.connect(self._profilePlot.export)
-        self._toolbar.validateSignal.connect(self.validate)
+        self._profilePlot = _ProfilePlot()
+        self._profiles = []
+
+        for i in range(nbProfiles):
+            self._profiles.append(self._profilePlot.newProfile([0, 0], [0, 0], i))
 
         self._layout.setContentsMargins(0, 0, 0, 0)
-
+        self.setLayout(self._layout)
         self._layout.addWidget(self._toolbar)
         self._layout.addWidget(self._profilePlot)
 
-        self.setLayout(self._layout)
+    @property
+    def nbProfiles(self):
+        return len(self._profiles)
 
-    def addProfile(self):
-        pl = self._profilePlot.newProfile([0, 0], [0, 0], self._profileCount)
-        self._profileCount += 1
-        self._viewController.lineWidgetCallback = pl.setData
-        self._viewController.lineWidgetEnabled = True
+    @property
+    def profiles(self):
+        return [profile for profile in self._profiles]
 
-    def removeAll(self):
-        self.validate()
-        self._profilePlot.removeAll()
+    def erase(self):
+        for profile in self._profiles:
+            profile.setData([0, 0], [0, 0])
 
-    def validate(self):
-        self._viewController.lineWidgetEnabled = False
-
-class QStringList:
-    pass
+    def export(self):
+        self._profilePlot.export()
 
 
 class _ProfilePlot(PlotWidget):
@@ -61,21 +57,26 @@ class _ProfilePlot(PlotWidget):
     def export(self):
         exporter = ImageExporter(self.getPlotItem())
 
+        fileName = self.fileDialogForExporter(exporter)
+
+        if fileName is None:
+            return
+
+        exporter.export(fileName[0])
+
+    def fileDialogForExporter(self, exporter):
         dlg = QFileDialog()
         dlg.setAcceptMode(QFileDialog.AcceptSave)
         dlg.setFileMode(QFileDialog.AnyFile)
+
         supportedExtensions = exporter.getSupportedImageFormats()
         str = ''
         for extension in supportedExtensions:
             str += extension + ' (' + extension + ')' + ';;'
-        str  = str[:-2]
+        str = str[:-2]
 
-        filename = dlg.getSaveFileName(filter=str)
-
-        if filename is None:
-            return
-
-        exporter.export(filename[0])
+        fileName = dlg.getSaveFileName(filter=str)
+        return fileName
 
     def newProfile(self, x, y, color):
         pl = PlotCurveItem(x, y, pen=({'color': color}))
@@ -91,14 +92,11 @@ class _ProfilePlot(PlotWidget):
         self._items = []
 
 class _ProfileToolbar(QWidget):
-    newProfileSignal = pyqtSignal()
-    removeAllSignal = pyqtSignal()
-    saveSignal = pyqtSignal()
-    validateSignal = pyqtSignal()
-
-    def __init__(self):
+    def __init__(self, profileViewer, viewController):
         QWidget.__init__(self)
 
+        self._profileViewer = profileViewer
+        self._viewController = viewController
         self._layout = QVBoxLayout(self)
 
         self.setLayout(self._layout)
@@ -109,32 +107,33 @@ class _ProfileToolbar(QWidget):
         self._buttonNewProfile = QPushButton()
         self._buttonNewProfile.setIcon(icon)
         self._buttonNewProfile.setIconSize(QSize(16, 16))
-        self._buttonNewProfile.clicked.connect(self.newProfileSignal.emit)
+        self._buttonNewProfile.clicked.connect(self._setProfileWidgetEnabled)
 
         icon = QIcon(iconPath + "cross.png")
-        self._buttonRemoveAll = QPushButton()
-        self._buttonRemoveAll.setIcon(icon)
-        self._buttonRemoveAll.setIconSize(QSize(16, 16))
-        self._buttonRemoveAll.clicked.connect(self.removeAllSignal.emit)
+        self._buttonStop = QPushButton()
+        self._buttonStop.setIcon(icon)
+        self._buttonStop.setIconSize(QSize(16, 16))
+        self._buttonStop.clicked.connect(self._setProfileWidgetDisabled)
 
         icon = QIcon(iconPath + "disk.png")
         self._buttonSave = QPushButton()
         self._buttonSave.setIcon(icon)
         self._buttonSave.setIconSize(QSize(16, 16))
-        self._buttonSave.clicked.connect(self.saveSignal.emit)
-
-        icon = QIcon(iconPath + "tick-button.png")
-        self._buttonValidate = QPushButton()
-        self._buttonValidate.setIcon(icon)
-        self._buttonValidate.setIconSize(QSize(16, 16))
-        self._buttonValidate.clicked.connect(self.validateSignal.emit)
+        self._buttonSave.clicked.connect(self._profileViewer.export)
 
         self.setLayout(self._layout)
 
         self.setAutoFillBackground(True)
         self._layout.addWidget(self._buttonNewProfile)
-        self._layout.addWidget(self._buttonValidate)
-        self._layout.addWidget(self._buttonRemoveAll)
+        self._layout.addWidget(self._buttonStop)
         self._layout.addWidget(self._buttonSave)
 
         self._layout.addStretch(1)
+
+    def _setProfileWidgetEnabled(self):
+        self._viewController.profileWidgetEnabled = True
+        self._viewController.profileWidgetCallback.setPrimaryImageData = lambda x, y: self._profileViewer.profiles[0].setData(x, y)
+
+    def _setProfileWidgetDisabled(self):
+        self._viewController.profileWidgetEnabled = False
+        self._viewController.profileWidgetCallback.setPrimaryImageData = lambda: None

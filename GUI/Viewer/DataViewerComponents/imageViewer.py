@@ -160,7 +160,7 @@ class ImageViewer(QWidget):
 
         if enabled and not self._profileWidget.enabled:
             self._profileWidgetNoInteractionYet = True
-            self._profileWidget.callback = self._viewController.lineWidgetCallback
+            self._profileWidget.callback = self._viewController.profileWidgetCallback
         else:
             self._profileWidgetNoInteractionYet = False
         self._profileWidget.enabled = enabled

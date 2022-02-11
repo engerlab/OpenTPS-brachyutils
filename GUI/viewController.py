@@ -3,6 +3,7 @@ import logging
 
 from Core.event import Event
 from GUI.MainWindow import MainWindow
+from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget
 from GUI.Viewer.dynamicDisplayController import DynamicDisplayController
 
 class ViewController():
@@ -11,7 +12,7 @@ class ViewController():
         self.crossHairEnabledSignal = Event(bool)
         self.currentPatientChangedSignal = Event(object)
         self.independentViewsEnabledSignal = Event(bool)
-        self.lineWidgetEnabledSignal = Event(object)
+        self.profileWidgetEnabledSignal = Event(object)
         self.mainImageChangedSignal = Event(object)
         self.patientAddedSignal = Event(object)
         self.patientRemovedSignal = Event(object)
@@ -24,8 +25,8 @@ class ViewController():
         self._crossHairEnabled = None
         self._currentPatient = None
         self._independentViewsEnabled = False
-        self.lineWidgetCallback = lambda : None
-        self._lineWidgetEnabled = False
+        self.profileWidgetCallback = ProfileWidget.ProfileWidgetCallback()
+        self._profileWidgetEnabled = False
         self._mainImage = None
         self.multipleActivePatientsEnabled = False #TODO
         self._patientList = patientList
@@ -112,13 +113,13 @@ class ViewController():
         self.independentViewsEnabledSignal.emit(self._independentViewsEnabled)
 
     @property
-    def lineWidgetEnabled(self):
-        return self._lineWidgetEnabled
+    def profileWidgetEnabled(self):
+        return self._profileWidgetEnabled
 
-    @lineWidgetEnabled.setter
-    def lineWidgetEnabled(self, enabled):
-        self._lineWidgetEnabled = enabled
-        self.lineWidgetEnabledSignal.emit(self._lineWidgetEnabled)
+    @profileWidgetEnabled.setter
+    def profileWidgetEnabled(self, enabled):
+        self._profileWidgetEnabled = enabled
+        self.profileWidgetEnabledSignal.emit(self._profileWidgetEnabled)
 
     @property
     def mainImage(self):

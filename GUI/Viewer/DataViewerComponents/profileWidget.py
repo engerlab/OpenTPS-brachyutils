@@ -8,6 +8,18 @@ from Core.event import Event
 
 
 class ProfileWidget:
+    class ProfileWidgetCallback:
+        def __init__(self):
+            self._setPrimaryImageData = lambda : None
+
+        @property
+        def setPrimaryImageData(self):
+            return self._setPrimaryImageData
+
+        @setPrimaryImageData.setter
+        def setPrimaryImageData(self, func):
+            self._setPrimaryImageData = func
+
     def __init__(self, renderer, renderWindow):
         self.lineWidgeEnabledSignal = Event(bool)
 
@@ -95,4 +107,4 @@ class ProfileWidget:
 
         x = np.linspace(0, sqrt((point2[0] - point1[0]) * (point2[0] - point1[0]) + (point2[1] - point1[1]) * (
                     point2[1] - point1[1]) + (point2[2] - point1[2]) * (point2[2] - point1[2])), num)
-        self._lineWidgetCallback(x, data)
+        self._lineWidgetCallback.setPrimaryImageData(x, data)
