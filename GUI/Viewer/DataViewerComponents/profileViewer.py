@@ -4,7 +4,7 @@ from PyQt5.QtCore import QSize, pyqtSignal
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QToolBar, QAction, QHBoxLayout, QGridLayout, QLabel, QPushButton, \
     QFileDialog
-from pyqtgraph import PlotWidget, PlotCurveItem
+from pyqtgraph import PlotWidget, PlotCurveItem, mkPen
 from pyqtgraph.exporters import ImageExporter
 
 
@@ -20,20 +20,20 @@ class ProfileViewer(QWidget):
         self._profiles = []
 
         for i in range(nbProfiles):
-            self._profiles.append(self._profilePlot.newProfile([0, 0], [0, 0], i))
+            self._profiles.append(self._profilePlot.newProfile([0, 0], [0, 0]))
 
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
         self._layout.addWidget(self._toolbar)
         self._layout.addWidget(self._profilePlot)
 
+    def drawProfile(self, profileIndex, *args, **kwargs):
+        self._profilePlot.removeItem(self._profiles[profileIndex])
+        self._profiles[profileIndex] = self._profilePlot.newProfile(*args, **kwargs)
+
     @property
     def nbProfiles(self):
         return len(self._profiles)
-
-    @property
-    def profiles(self):
-        return [profile for profile in self._profiles]
 
     def erase(self):
         for profile in self._profiles:
@@ -47,7 +47,7 @@ class _ProfilePlot(PlotWidget):
     def __init__(self):
         PlotWidget.__init__(self)
 
-        self._items = []
+        self.addLegend()
         self.getPlotItem().setContentsMargins(5, 0, 20, 5)
         self.setBackground('k')
         self.setTitle("Profiles")
@@ -78,18 +78,11 @@ class _ProfilePlot(PlotWidget):
         fileName = dlg.getSaveFileName(filter=str)
         return fileName
 
-    def newProfile(self, x, y, color):
-        pl = PlotCurveItem(x, y, pen=({'color': color}))
+    def newProfile(self, *args, **kwargs):
+        pl = PlotCurveItem(*args, **kwargs)
         self.addItem(pl)
-        self._items.append(pl)
 
         return pl
-
-    def removeAll(self):
-        for item in self._items:
-            self.removeItem(item)
-
-        self._items = []
 
 class _ProfileToolbar(QWidget):
     def __init__(self, profileViewer, viewController):
@@ -132,11 +125,13 @@ class _ProfileToolbar(QWidget):
 
     def _setProfileWidgetEnabled(self):
         self._viewController.profileWidgetEnabled = True
-        self._viewController.profileWidgetCallback.setPrimaryImageData = lambda x, y: self._profileViewer.profiles[0].setData(x, y)
-        self._viewController.profileWidgetCallback.setSecondaryImageData = lambda x, y: self._profileViewer.profiles[1].setData(x, y)
+        self._viewController.profileWidgetCallback.setPrimaryImageData = \
+            lambda *args, **kwargs: self._profileViewer.drawProfile(0, *args, **kwargs, pen=mkPen(0, width=1))
+        self._viewController.profileWidgetCallback.setSecondaryImageData = \
+            lambda *args, **kwargs: self._profileViewer.drawProfile(1, *args, **kwargs, pen=mkPen(1, width=1))
 
 
     def _setProfileWidgetDisabled(self):
         self._viewController.profileWidgetEnabled = False
-        self._viewController.profileWidgetCallback.setPrimaryImageData = lambda: None
-        self._viewController.profileWidgetCallback.setSecondaryImageData = lambda: None
+        self._viewController.profileWidgetCallback.setPrimaryImageData = lambda *args, **kwargs: None
+        self._viewController.profileWidgetCallback.setSecondaryImageData = lambda *args, **kwargs: None

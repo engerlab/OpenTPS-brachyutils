@@ -65,6 +65,9 @@ class ImageViewer(QWidget):
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
 
+        self._profileWidget.primaryLayer = self._primaryImageLayer
+        self._profileWidget.secondaryLayer = self._secondaryImageLayer
+
         self.viewType = self._viewType # Updates _viewMatrix
         self._contourLayer.resliceAxes = self._viewMatrix
 
@@ -143,8 +146,6 @@ class ImageViewer(QWidget):
 
         self._iStyle.SetCurrentImageNumber(0)
 
-        self._profileWidget.primaryReslice = self._primaryImageLayer._reslice #TODO : access of protected property is wrong
-
         self._renderer.ResetCamera()
 
         self._renderWindow.Render()
@@ -194,8 +195,6 @@ class ImageViewer(QWidget):
         #TODO: disconnect signal
         self._secondaryImageLayer.image.nameChangedSignal.connect(
             lambda name: self._textLayer.setSecondaryTextLine(2, name))
-
-        self._profileWidget.secondaryReslice = self._secondaryImageLayer._reslice  # TODO : access of protected property is wrong
 
         self._renderWindow.Render()
 
