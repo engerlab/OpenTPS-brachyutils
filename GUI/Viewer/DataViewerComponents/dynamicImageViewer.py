@@ -52,7 +52,7 @@ class DynamicImageViewer(ImageViewer):
 
             self._primaryImageLayer.image = self.dynPrimaryImgSeqForViewer
 
-            self._inializeViewer()
+            self._initializeViewer()
 
     def nextImage(self, index):
         self.curPrimaryImgIdx = index
