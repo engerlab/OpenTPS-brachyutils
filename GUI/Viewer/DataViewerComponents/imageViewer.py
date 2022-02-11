@@ -192,8 +192,10 @@ class ImageViewer(QWidget):
         self._textLayer.setSecondaryTextLine(2, self.primaryImage.name)
 
         #TODO: disconnect signal
-        self._primaryImageLayer.image.nameChangedSignal.connect(
+        self._secondaryImageLayer.image.nameChangedSignal.connect(
             lambda name: self._textLayer.setSecondaryTextLine(2, name))
+
+        self._profileWidget.secondaryReslice = self._secondaryImageLayer._reslice  # TODO : access of protected property is wrong
 
         self._renderWindow.Render()
 

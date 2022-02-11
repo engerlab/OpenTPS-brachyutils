@@ -9,7 +9,7 @@ from pyqtgraph.exporters import ImageExporter
 
 
 class ProfileViewer(QWidget):
-    def __init__(self, viewController, nbProfiles=1):
+    def __init__(self, viewController, nbProfiles=2):
         QWidget.__init__(self)
 
         self._layout = QHBoxLayout(self)
@@ -133,7 +133,10 @@ class _ProfileToolbar(QWidget):
     def _setProfileWidgetEnabled(self):
         self._viewController.profileWidgetEnabled = True
         self._viewController.profileWidgetCallback.setPrimaryImageData = lambda x, y: self._profileViewer.profiles[0].setData(x, y)
+        self._viewController.profileWidgetCallback.setSecondaryImageData = lambda x, y: self._profileViewer.profiles[1].setData(x, y)
+
 
     def _setProfileWidgetDisabled(self):
         self._viewController.profileWidgetEnabled = False
         self._viewController.profileWidgetCallback.setPrimaryImageData = lambda: None
+        self._viewController.profileWidgetCallback.setSecondaryImageData = lambda: None

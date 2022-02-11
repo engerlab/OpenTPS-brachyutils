@@ -10,7 +10,8 @@ from Core.event import Event
 class ProfileWidget:
     class ProfileWidgetCallback:
         def __init__(self):
-            self._setPrimaryImageData = lambda : None
+            self._setPrimaryImageData = lambda x,y: None
+            self._setSecondaryImageData = lambda x,y: None
 
         @property
         def setPrimaryImageData(self):
@@ -20,6 +21,14 @@ class ProfileWidget:
         def setPrimaryImageData(self, func):
             self._setPrimaryImageData = func
 
+        @property
+        def setSecondaryImageData(self):
+            return self._setSecondaryImageData
+
+        @setSecondaryImageData.setter
+        def setSecondaryImageData(self, func):
+            self._setSecondaryImageData = func
+
     def __init__(self, renderer, renderWindow):
         self.lineWidgeEnabledSignal = Event(bool)
 
@@ -27,6 +36,7 @@ class ProfileWidget:
         self._lineWidgetCallback = None
         self._lineWidgetEnabled = False
         self._primaryReslice = None
+        self._secondaryReslice = None
         self._renderer = renderer
         self._renderWindow = renderWindow
 
@@ -75,6 +85,14 @@ class ProfileWidget:
         self._primaryReslice = reslice
         self._endEventObserver = self._primaryReslice.AddObserver("EndEvent", self.onprofileWidgetInteraction)
 
+    @property
+    def secondaryReslice(self):
+        return self._secondaryReslice
+
+    @secondaryReslice.setter
+    def secondaryReslice(self, reslice):
+        self._secondaryReslice = reslice
+
     def setInitialPosition(self, worldPos: typing.Sequence):
         self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], 0.01))
         self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
@@ -93,18 +111,33 @@ class ProfileWidget:
         point1 = matrix.MultiplyPoint((point1[0], point1[1], 0, 1))
         point2 = matrix.MultiplyPoint((point2[0], point2[1], 0, 1))
 
+        x, y = self._resliceDataBewteenTwoPoints(self._primaryReslice, point1, point2)
+        self._lineWidgetCallback.setPrimaryImageData(x, y)
+
+        x, y = self._resliceDataBewteenTwoPoints(self._secondaryReslice, point1, point2)
+        self._lineWidgetCallback.setSecondaryImageData(x, y)
+
+    def _resliceDataBewteenTwoPoints(self, resliceFilter, point1, point2):
+        if resliceFilter is None:
+            return ([0, 0], [0, 0])
+
         num = 1000
         points0 = np.linspace(point1[0], point2[0], num)
         points1 = np.linspace(point1[1], point2[1], num)
         points2 = np.linspace(point1[2], point2[2], num)
         data = np.array(points1)
 
-        imageData = self._primaryReslice.GetInput(0)
-        for i, p0 in enumerate(points0):
-            ind = [0, 0, 0]
-            imageData.TransformPhysicalPointToContinuousIndex((p0, points1[i], points2[i]), ind)
-            data[i] = imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
-
         x = np.linspace(0, sqrt((point2[0] - point1[0]) * (point2[0] - point1[0]) + (point2[1] - point1[1]) * (
-                    point2[1] - point1[1]) + (point2[2] - point1[2]) * (point2[2] - point1[2])), num)
-        self._lineWidgetCallback.setPrimaryImageData(x, data)
+                point2[1] - point1[1]) + (point2[2] - point1[2]) * (point2[2] - point1[2])), num)
+
+        for i, p0 in enumerate(points0):
+            data[i] = self._dataFromPhysicalPoint(resliceFilter, (p0, points1[i], points2[i]))
+
+        return (x, data)
+
+    def _dataFromPhysicalPoint(self, resliceFilter, point):
+        imageData = resliceFilter.GetInput(0)
+
+        ind = [0, 0, 0]
+        imageData.TransformPhysicalPointToContinuousIndex(point, ind)
+        return imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
