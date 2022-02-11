@@ -1,4 +1,6 @@
 import copy
+from typing import Sequence
+
 import numpy as np
 import logging
 
@@ -148,3 +150,19 @@ class Image3D(PatientData):
         if (not otherImage.hasSameGrid(self)):
             logger.info('Resample field to CT grid.')
             self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType)
+
+    def getDataAtPosition(self, position: Sequence):
+        voxelIndex = self.getVoxelIndexFromPosition(position)
+        dataNumpy = self.imageArray[voxelIndex[0], voxelIndex[1], voxelIndex[2]]
+
+        return dataNumpy
+
+    def getVoxelIndexFromPosition(self, position: Sequence):
+        positionInMM = np.array(position)
+        origin = np.array(self.origin)
+        spacing = np.array(self.spacing)
+
+        shiftedPosInMM = positionInMM - origin
+        posInVoxels = np.round(np.divide(shiftedPosInMM, spacing)).astype(np.int)
+
+        return posInVoxels

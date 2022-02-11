@@ -91,8 +91,9 @@ class APILogger:
         loggerEnabled = APILogger._staticVars["enabled"]
         loggerAlreadyLogging = APILogger._staticVars["logLock"]
 
+        print(loggerEnabled)
         if not loggerEnabled:
-            return lambda *args, **kwargs: method(*args, **kwargs)
+            return method(*args, **kwargs)
 
         newLogKey = APILogger.LogKey()
 
@@ -105,12 +106,13 @@ class APILogger:
 
         # In any case we must execute the method
         try:
-            method(*args, **kwargs)
+            res = method(*args, **kwargs)
         except Exception as e:
             APILogger._tryUnlockLogger(newLogKey)
             raise (e)
 
         APILogger._tryUnlockLogger(newLogKey)
+        return res
 
     @staticmethod
     def _lockLogger(key):

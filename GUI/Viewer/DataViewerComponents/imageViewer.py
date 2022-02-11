@@ -12,6 +12,7 @@ from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
+from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
@@ -39,6 +40,7 @@ class ImageViewer(QWidget):
         self.profileWidgeEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
+        self.viewTypeChangedSignal = Event(object)
 
         self._blackWidget = BlackEmptyPlot()
         self._crossHairEnabled = False
@@ -95,30 +97,31 @@ class ImageViewer(QWidget):
     @primaryImage.setter
     def primaryImage(self, image: Image3D):
         if image is None:
-            self._primaryImageLayer.image = None
+            self._resetPrimaryImageLayer()
+        else:
+            self._setPrimaryImageForViewer(Image3DForViewer(image))
 
-            self._mainLayout.removeWidget(self._vtkWidget)
-            self._vtkWidget.hide()
-            self._mainLayout.addWidget(self._blackWidget)
-            self._blackWidget.show()
-            return
+    def _resetPrimaryImageLayer(self):
+        self._primaryImageLayer.image = None
+        self._mainLayout.removeWidget(self._vtkWidget)
+        self._vtkWidget.hide()
+        self._mainLayout.addWidget(self._blackWidget)
+        self._blackWidget.show()
 
-        self._primaryImageLayer.image = Image3DForViewer(image)
-        self._inializeViewer()
-
-    def _inializeViewer(self):
-        self._contourLayer.referenceImage = self.primaryImage
-        self._textLayer.setPrimaryTextLine(2, self.primaryImage.name)
+    def _setPrimaryImageForViewer(self, image:GenericImageForViewer):
+        self._primaryImageLayer.image = image
+        self._contourLayer.referenceImage = image
+        self._textLayer.setPrimaryTextLine(2, image.name)
 
         #TODO: disconnect signals
-        self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
-        self._primaryImageLayer.image.nameChangedSignal.connect(lambda name: self._textLayer.setPrimaryTextLine(2, name))
+        self._primaryImageLayer.image .selectedPositionChangedSignal.connect(self._handlePosition)
+        self._primaryImageLayer.image .nameChangedSignal.connect(lambda name: self._textLayer.setPrimaryTextLine(2, name))
 
         self._primaryImageLayer.resliceAxes = self._viewMatrix
         self._contourLayer.resliceAxes = self._viewMatrix
 
-        self._mainLayout.removeWidget(self._blackWidget)
         self._blackWidget.hide()
+        self._mainLayout.removeWidget(self._blackWidget)
         self._mainLayout.addWidget(self._vtkWidget)
         self._vtkWidget.show()
 
@@ -205,6 +208,9 @@ class ImageViewer(QWidget):
 
     @viewType.setter
     def viewType(self, viewType):
+        if self._viewType == viewType:
+            return
+
         self._viewType = viewType
         axial = vtkCommonMath.vtkMatrix4x4()
         axial.DeepCopy((1, 0, 0, 0,
@@ -240,6 +246,8 @@ class ImageViewer(QWidget):
         if not self.secondaryImage is None:
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
             self._renderWindow.Render()
+
+        self.viewTypeChangedSignal.emit(self._viewType)
 
     @property
     def crossHairEnabled(self) -> bool:
@@ -383,7 +391,7 @@ class ImageViewer(QWidget):
             return
 
         try:
-            data = self._primaryImageLayer.getDataAtPosition(position)
+            data = self._primaryImageLayer.image.getDataAtPosition(position)
 
             self._textLayer.setPrimaryTextLine(0, 'Value: ' + "{:.2f}".format(data))
             # self._textLayer.setPrimaryTextLine(0, 'ValueNumpy: ' + "{:.2f}".format(dataNumpy))
@@ -395,7 +403,7 @@ class ImageViewer(QWidget):
 
         if not self.secondaryImage is None:
             try:
-                data = self._secondaryImageLayer.getDataAtPosition(position)
+                data = self._secondaryImageLayer.image.getDataAtPosition(position)
 
                 self._textLayer.setSecondaryTextLine(0, 'Value: ' + "{:.2f}".format(data))
                 self._textLayer.setSecondaryTextLine(1, 'Pos: ' + "{:.2f}".format(position[0]) + ' ' + "{:.2f}".format(
