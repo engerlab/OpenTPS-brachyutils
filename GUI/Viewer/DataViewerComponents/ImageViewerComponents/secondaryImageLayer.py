@@ -53,9 +53,6 @@ class SecondaryImageLayer(PrimaryImageLayer):
 
     @colorbarOn.setter
     def colorbarOn(self, visible: bool):
-        if self._image is None:
-            return
-
         if visible==self._colorbarActor.GetVisibility():
             return
 

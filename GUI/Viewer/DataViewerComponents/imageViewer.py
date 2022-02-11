@@ -39,6 +39,7 @@ class ImageViewer(QWidget):
         self.profileWidgeEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
+        self.viewTypeChangedSignal = Event(object)
 
         self._blackWidget = BlackEmptyPlot()
         self._crossHairEnabled = False
@@ -207,6 +208,9 @@ class ImageViewer(QWidget):
 
     @viewType.setter
     def viewType(self, viewType):
+        if self._viewType == viewType:
+            return
+
         self._viewType = viewType
         axial = vtkCommonMath.vtkMatrix4x4()
         axial.DeepCopy((1, 0, 0, 0,
@@ -242,6 +246,8 @@ class ImageViewer(QWidget):
         if not self.secondaryImage is None:
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
             self._renderWindow.Render()
+
+        self.viewTypeChangedSignal.emit(self._viewType)
 
     @property
     def crossHairEnabled(self) -> bool:

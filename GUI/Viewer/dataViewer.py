@@ -8,6 +8,7 @@ from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
+from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerActions
 from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
@@ -102,7 +103,7 @@ class DataViewer(QWidget):
         self._setDisplayType(self.DisplayTypes.DEFAULT)
 
         # Logical control of the DataViewer is set here. We might want to move this to dedicated controller class
-        self._iniializeControl()
+        self._initializeControl()
 
     @property
     def cachedDynamicImageViewer(self) -> DynamicImageViewer:
@@ -304,14 +305,32 @@ class DataViewer(QWidget):
 
     ####################################################################################################################
     # This is the logical part of the viewer. Should we migrate this to a dedicated controller?
-    def _iniializeControl(self):
-        SecondaryImageActions(self._staticImageViewer.secondaryImageLayer).addToToolbar(self._toolbar)
+    def _initializeControl(self):
+        self._secondaryImageActions = SecondaryImageActions(self._staticImageViewer.secondaryImageLayer)
+        self._imageViewerActions = ImageViewerActions(self._staticImageViewer)
+
+        self._secondaryImageActions.addToToolbar(self._toolbar)
+        self._imageViewerActions.addToToolbar(self._toolbar)
+
+        self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
 
         self._viewController.independentViewsEnabledSignal.connect(self.enableDropForMainImage)
         self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplaydMode)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
 
         self.enableDropForMainImage(self._viewController.independentViewsEnabled)
+
+        self._handleDisplayTypeChange(self.displayType) # Initialize with current display type
+
+    def _handleDisplayTypeChange(self, displayType):
+        self._imageViewerActions.hide()
+        self._secondaryImageActions.hide()
+
+        if displayType==self.DisplayTypes.DISPLAY_IMAGE:
+            self._imageViewerActions.setImageViewer(self._currentViewer)
+            self._imageViewerActions.show()
+            self._secondaryImageActions.show()
+
 
     def enableDropForMainImage(self, enabled):
         """
