@@ -139,3 +139,10 @@ class PrimaryImageLayer:
             imageProperty.SetColorLevel(wwl[1])
 
             self._renderWindow.Render()
+
+    def _resliceDataFromPhysicalPoint(self, point):
+        imageData = self._reslice.GetInput(0)
+
+        ind = [0, 0, 0]
+        imageData.TransformPhysicalPointToContinuousIndex(point, ind)
+        return imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
