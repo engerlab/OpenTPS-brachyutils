@@ -24,16 +24,22 @@ def createExternalPoints(imgSize):
     return externalPoints
 
 
-def createWeightMaps(internalPoints, imageSize):
+def createWeightMaps(internalPoints, imageGridSize, imageOrigin, pixelSpacing):
     """
 
     """
-    X = np.linspace(0, imageSize[0]-1, imageSize[0])
-    Y = np.linspace(0, imageSize[1]-1, imageSize[1])
-    Z = np.linspace(0, imageSize[2]-1, imageSize[2])
+    ## get points coordinates in voxels (no need to get them in int, it will not be used to access image values)
+    for pointIndex in range(len(internalPoints)):
+        for i in range(3):
+            internalPoints[pointIndex][i] = (internalPoints[pointIndex][i] - imageOrigin[i]) / pixelSpacing[i]
 
-    X, Y, Z = np.meshgrid(X, Y, Z)  # 3D grid for interpolation
-    externalPoints = createExternalPoints(imageSize)
+    X = np.linspace(0, imageGridSize[0] - 1, imageGridSize[0])
+    Y = np.linspace(0, imageGridSize[1] - 1, imageGridSize[1])
+    Z = np.linspace(0, imageGridSize[2] - 1, imageGridSize[2])
+
+    X, Y, Z = np.meshgrid(X, Y, Z, indexing='ij')  # 3D grid for interpolation
+
+    externalPoints = createExternalPoints(imageGridSize)
 
     pointList = externalPoints + internalPoints
     externalValues = np.ones(8)/len(internalPoints)
@@ -60,7 +66,7 @@ def getWeightMapsAsImage3DList(internalPoints, ref3DImage):
     """
 
     """
-    weightMapList = createWeightMaps(internalPoints, ref3DImage.gridSize)
+    weightMapList = createWeightMaps(internalPoints, ref3DImage.gridSize, ref3DImage.origin, ref3DImage.spacing)
     image3DList = []
     for weightMapIndex, weightMap in enumerate(weightMapList):
         image3DList.append(Image3D(imageArray=weightMap, name='weightMap_'+str(weightMapIndex+1), origin=ref3DImage.origin, spacing=ref3DImage.spacing, angles=ref3DImage.angles))
