@@ -48,22 +48,90 @@ im2 = df2.deformImage(Model4D.midp, fillValue='closest')
 df3, wm = generateDeformationFromTrackers(Model4D, [0, 2/4], [2, 2], trackers)
 im3 = df3.deformImage(Model4D.midp, fillValue='closest')
 
+
+
+#
+#
+# fig, ax = plt.subplots(3, 3)
+# s0 = wm[0].imageArray[:, 12, :].T[::-1, ::1]
+# s1 = wm[1].imageArray[:, 12, :].T[::-1, ::1]
+# ax[0,0].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
+# ax[0,0].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+# ax[1,0].imshow(s0, cmap='Reds', origin='upper', vmin=np.min(s0), vmax=np.max(s0))
+# ax[2,0].imshow(s1, cmap='Blues', origin='upper', vmin=np.min(s1), vmax=np.max(s1))
+#
+# s0 = wm[0].imageArray[12, :, :].T[::-1, ::1]
+# s1 = wm[1].imageArray[12, :, :].T[::-1, ::1]
+# ax[0,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
+# ax[0,1].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+# ax[1,1].imshow(s0, cmap='Reds', origin='upper', vmin=np.min(s0), vmax=np.max(s0))
+# ax[2,1].imshow(s1, cmap='Blues', origin='upper', vmin=np.min(s1), vmax=np.max(s1))
+#
+# s0 = wm[0].imageArray[:, :, 12].T[::-1, ::1]
+# s1 = wm[1].imageArray[:, :, 12].T[::-1, ::1]
+# ax[0,2].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
+# ax[0,2].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+# ax[1,2].imshow(s0, cmap='Reds', origin='upper', vmin=np.min(s0), vmax=np.max(s0))
+# ax[2,2].imshow(s1, cmap='Blues', origin='upper', vmin=np.min(s1), vmax=np.max(s1))
+#
+# plt.show()
+
+
+
+
+
+
 for i in range(len(trackers)):
-    wm[i].resampleToImageGrid(im1)
+    print([np.min(wm[i]._imageArray), np.max(wm[i]._imageArray)])
+    wm[i].resampleToImageGrid(Model4D.midp)
+    print([np.min(wm[i]._imageArray), np.max(wm[i]._imageArray)])
 
 
 
 
-fig, ax = plt.subplots(1, 3)
-ax[0].imshow(Model4D.midp.imageArray[:, 49, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-ax[0].imshow(wm[0].imageArray[:, 49, :].T[::-1, ::1], cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[0].imshow(wm[1].imageArray[:, 49, :].T[::-1, ::1], cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[1].imshow(Model4D.midp.imageArray[49, :, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-ax[1].imshow(wm[0].imageArray[49, :, :].T[::-1, ::1], cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[1].imshow(wm[1].imageArray[49, :, :].T[::-1, ::1], cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[2].imshow(Model4D.midp.imageArray[:, :, 49].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-ax[2].imshow(wm[0].imageArray[:, :, 49].T[::-1, ::1], cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[2].imshow(wm[1].imageArray[:, :, 49].T[::-1, ::1], cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+fig, ax = plt.subplots(3, 3)
+ax[0,0].imshow(Model4D.midp.imageArray[:, 49, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+s0 = wm[0].imageArray[:, 49, :].T[::-1, ::1]
+s1 = wm[1].imageArray[:, 49, :].T[::-1, ::1]
+ax[0,0].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[0,0].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[1,0].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
+ax[2,0].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1)
+ax[0,0].plot(50,100-30,'ro')
+ax[0,0].plot(120,100-30,'bo')
+ax[1,0].plot(50,100-30,'ro')
+ax[2,0].plot(120,100-30,'bo')
+ax[1,0].plot(50,100-30,'ro')
+ax[2,0].plot(120,100-30,'bo')
+
+ax[0,1].imshow(Model4D.midp.imageArray[49, :, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+s0 = wm[0].imageArray[49, :, :].T[::-1, ::1]
+s1 = wm[1].imageArray[49, :, :].T[::-1, ::1]
+ax[0,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[0,1].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[1,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
+ax[2,1].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1)
+ax[0,1].plot(50,100-30,'ro')
+ax[0,1].plot(50,100-30,'bo')
+ax[1,1].plot(50,100-30,'ro')
+ax[2,1].plot(50,100-30,'bo')
+ax[1,1].plot(50,100-30,'ro')
+ax[2,1].plot(50,100-30,'bo')
+
+ax[0,2].imshow(Model4D.midp.imageArray[:, :, 49].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+s0 = wm[0].imageArray[:, :, 49].T[::-1, ::1]
+s1 = wm[1].imageArray[:, :, 49].T[::-1, ::1]
+ax[0,2].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[0,2].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[1,2].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
+ax[2,2].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1)
+ax[0,2].plot(50,50,'ro')
+ax[0,2].plot(120,50,'bo')
+ax[1,2].plot(50,50,'ro')
+ax[2,2].plot(120,50,'bo')
+ax[1,2].plot(50,50,'ro')
+ax[2,2].plot(120,50,'bo')
+
 plt.show()
 
 

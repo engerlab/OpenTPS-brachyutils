@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
+import copy
 import logging
 from Core.Data.Images.image3D import Image3D
 
@@ -14,22 +15,23 @@ def createExternalPoints(imgSize):
     zHalfSize = imgSize[2] / 2
 
     externalPoints = [[-xHalfSize, -yHalfSize, -zHalfSize],
-                      [imgSize[0] + xHalfSize, -yHalfSize, -zHalfSize],
-                      [imgSize[0] + xHalfSize, -yHalfSize, imgSize[2] + zHalfSize],
                       [-xHalfSize, -yHalfSize, imgSize[2] + zHalfSize],
                       [-xHalfSize, imgSize[1] + yHalfSize, -zHalfSize],
+                      [-xHalfSize, imgSize[1] + yHalfSize, imgSize[2] + zHalfSize],
+                      [imgSize[0] + xHalfSize, -yHalfSize, -zHalfSize],
+                      [imgSize[0] + xHalfSize, -yHalfSize, imgSize[2] + zHalfSize],
                       [imgSize[0] + xHalfSize, imgSize[1] + yHalfSize, -zHalfSize],
-                      [imgSize[0] + xHalfSize, imgSize[1] + yHalfSize, imgSize[2] + zHalfSize],
-                      [-xHalfSize, imgSize[1] + yHalfSize, imgSize[2] + zHalfSize]]
+                      [imgSize[0] + xHalfSize, imgSize[1] + yHalfSize, imgSize[2] + zHalfSize]]
 
     return externalPoints
 
 
-def createWeightMaps(internalPoints, imageGridSize, imageOrigin, pixelSpacing):
+def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSpacing):
     """
 
     """
     ## get points coordinates in voxels (no need to get them in int, it will not be used to access image values)
+    internalPoints = copy.deepcopy(absoluteInternalPoints)
     for pointIndex in range(len(internalPoints)):
         for i in range(3):
             internalPoints[pointIndex][i] = (internalPoints[pointIndex][i] - imageOrigin[i]) / pixelSpacing[i]
