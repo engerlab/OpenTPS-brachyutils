@@ -175,7 +175,6 @@ class PatientDataTree(QTreeView):
         drag.exec_(QtCore.Qt.CopyAction)
 
     def buildDataTree(self, patient):
-
         # Disconnect signals
         if not(self._currentPatient is None):
             self._currentPatient.imageAddedSignal.disconnect(self._appendData)
@@ -194,7 +193,7 @@ class PatientDataTree(QTreeView):
         font_b.setBold(True)
 
         self._currentPatient = patient
-
+        
         if self._currentPatient is None:
             return
 
@@ -374,7 +373,7 @@ class PatientDataTree(QTreeView):
             newMod.name = newName
             newMod.seriesInstanceUID = generate_uid()
             newMod.computeMidPositionImage(selected3DSequence)
-            self._viewController.currentPatient.appendDyn3DMod(newMod)
+            self._viewController.currentPatient.appendPatientData(newMod)
 
             # Should not be necessary because data tree listens to imageAdded/imageRemoved, etc.
             self.buildDataTree(self._viewController.currentPatient)
@@ -397,7 +396,7 @@ class PatientDataTree(QTreeView):
         print(new_img.patientInfo)
         # new_img.patient = selectedData
         new_img.name = selectedData.name + '_copy'
-        self._currentPatient.appendImage(new_img)
+        self._currentPatient.appendPatientData(new_img)
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):
