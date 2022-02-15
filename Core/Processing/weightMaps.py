@@ -91,21 +91,46 @@ def generateDeformationFromTrackers(midpModel, phases, amplitudes, internalPoint
             'The number of amplitudes should be the same as the number of internal points.')
         return
 
-    weightMaps = getWeightMapsAsImage3DList(internalPoints, midpModel.deformationList[0])
+    weightMapList = getWeightMapsAsImage3DList(internalPoints, midpModel.deformationList[0])
+
+    field = generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, weightMapList)
+
+    return field, weightMapList
+
+
+def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, weightMapList):
+    """
+
+    """
+    if midpModel.midp is None or midpModel.deformationList is None:
+        logger.error(
+            'Model is empty. Mid-position image and deformation fields must be computed first using computeMidPositionImage().')
+        return
+    if len(phases) != len(weightMapList):
+        logger.error(
+            'The number of phases should be the same as the number of weight maps.')
+        return
+    if len(amplitudes) != len(weightMapList):
+        logger.error(
+            'The number of amplitudes should be the same as the number of weight maps.')
+        return
 
     field = midpModel.deformationList[0].copy()
     field.displacement = None
-    field.velocity._imageArray = field.velocity._imageArray*0
+    field.velocity._imageArray = field.velocity._imageArray * 0
 
-    for i in range(len(internalPoints)):
+    for i in range(len(weightMapList)):
 
-        phase = phases[i]*len(midpModel.deformationList)
+        phase = phases[i] * len(midpModel.deformationList)
         phase1 = np.floor(phase) % len(midpModel.deformationList)
         phase2 = np.ceil(phase) % len(midpModel.deformationList)
 
         if phase1 == phase2:
             for j in range(3):
-                field.velocity._imageArray[:,:,:,j] += amplitudes[i] * np.multiply(weightMaps[i].imageArray,midpModel.deformationList[int(phase1)].velocity.imageArray[:,:,:,j])
+                field.velocity._imageArray[:, :, :, j] += amplitudes[i] * np.multiply(weightMapList[i].imageArray,
+                                                                                      midpModel.deformationList[
+                                                                                          int(phase1)].velocity.imageArray[
+                                                                                      :, :, :, j])
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))
@@ -113,14 +138,9 @@ def generateDeformationFromTrackers(midpModel, phases, amplitudes, internalPoint
                 logger.error('Error in phase interpolation.')
                 return
             for j in range(3):
-                field.velocity._imageArray[:,:,:,j] += amplitudes[i] * np.multiply(weightMaps[i].imageArray,(
-                            w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:,:,:,j] + w2 * midpModel.deformationList[
-                        int(phase2)].velocity.imageArray[:,:,:,j]))
+                field.velocity._imageArray[:, :, :, j] += amplitudes[i] * np.multiply(weightMapList[i].imageArray, (
+                        w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:, :, :, j] + w2 *
+                        midpModel.deformationList[
+                            int(phase2)].velocity.imageArray[:, :, :, j]))
 
-    return field, weightMaps
-
-
-def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, weightMapList):
-    """
-
-    """
+    return field

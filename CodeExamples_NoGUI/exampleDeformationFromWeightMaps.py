@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.Images.ctImage import CTImage
-from Core.Processing.weightMaps import generateDeformationFromTrackers
+from Core.Processing.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 
 # GENERATE SYNTHETIC 4D INPUT SEQUENCE
 CT4D = Dynamic3DSequence()
@@ -33,6 +33,7 @@ phase3[100:140,30:70,30:] = -800
 phase3[48:58,45:55,40:50] = 0
 CT4D.dyn3DImageList.append(CTImage(imageArray=phase3, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
 
+# CREATE TRACKER POSITIONS
 trackers = [[50, 50, 30],
            [120, 50, 30]]
 
@@ -45,50 +46,14 @@ df1, wm = generateDeformationFromTrackers(Model4D, [0, 2/4], [1, 1], trackers)
 im1 = df1.deformImage(Model4D.midp, fillValue='closest')
 df2, wm = generateDeformationFromTrackers(Model4D, [0.5/4, 1.5/4], [1, 1], trackers)
 im2 = df2.deformImage(Model4D.midp, fillValue='closest')
-df3, wm = generateDeformationFromTrackers(Model4D, [0, 2/4], [2, 2], trackers)
+df3 = generateDeformationFromTrackersAndWeightMaps(Model4D, [0, 2/4], [2, 2], wm)
 im3 = df3.deformImage(Model4D.midp, fillValue='closest')
 
-
-
-#
-#
-# fig, ax = plt.subplots(3, 3)
-# s0 = wm[0].imageArray[:, 12, :].T[::-1, ::1]
-# s1 = wm[1].imageArray[:, 12, :].T[::-1, ::1]
-# ax[0,0].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-# ax[0,0].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-# ax[1,0].imshow(s0, cmap='Reds', origin='upper', vmin=np.min(s0), vmax=np.max(s0))
-# ax[2,0].imshow(s1, cmap='Blues', origin='upper', vmin=np.min(s1), vmax=np.max(s1))
-#
-# s0 = wm[0].imageArray[12, :, :].T[::-1, ::1]
-# s1 = wm[1].imageArray[12, :, :].T[::-1, ::1]
-# ax[0,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-# ax[0,1].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-# ax[1,1].imshow(s0, cmap='Reds', origin='upper', vmin=np.min(s0), vmax=np.max(s0))
-# ax[2,1].imshow(s1, cmap='Blues', origin='upper', vmin=np.min(s1), vmax=np.max(s1))
-#
-# s0 = wm[0].imageArray[:, :, 12].T[::-1, ::1]
-# s1 = wm[1].imageArray[:, :, 12].T[::-1, ::1]
-# ax[0,2].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-# ax[0,2].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-# ax[1,2].imshow(s0, cmap='Reds', origin='upper', vmin=np.min(s0), vmax=np.max(s0))
-# ax[2,2].imshow(s1, cmap='Blues', origin='upper', vmin=np.min(s1), vmax=np.max(s1))
-#
-# plt.show()
-
-
-
-
-
-
+# RESAMPLE WEIGHT MAPS TO IMAGE RESOLUTION
 for i in range(len(trackers)):
-    print([np.min(wm[i]._imageArray), np.max(wm[i]._imageArray)])
     wm[i].resampleToImageGrid(Model4D.midp)
-    print([np.min(wm[i]._imageArray), np.max(wm[i]._imageArray)])
 
-
-
-
+# DISPLAY RESULTS
 fig, ax = plt.subplots(3, 3)
 ax[0,0].imshow(Model4D.midp.imageArray[:, 49, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
 s0 = wm[0].imageArray[:, 49, :].T[::-1, ::1]
@@ -103,7 +68,6 @@ ax[1,0].plot(50,100-30,'ro')
 ax[2,0].plot(120,100-30,'bo')
 ax[1,0].plot(50,100-30,'ro')
 ax[2,0].plot(120,100-30,'bo')
-
 ax[0,1].imshow(Model4D.midp.imageArray[49, :, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
 s0 = wm[0].imageArray[49, :, :].T[::-1, ::1]
 s1 = wm[1].imageArray[49, :, :].T[::-1, ::1]
@@ -117,7 +81,6 @@ ax[1,1].plot(50,100-30,'ro')
 ax[2,1].plot(50,100-30,'bo')
 ax[1,1].plot(50,100-30,'ro')
 ax[2,1].plot(50,100-30,'bo')
-
 ax[0,2].imshow(Model4D.midp.imageArray[:, :, 49].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
 s0 = wm[0].imageArray[:, :, 49].T[::-1, ::1]
 s1 = wm[1].imageArray[:, :, 49].T[::-1, ::1]
@@ -132,10 +95,6 @@ ax[2,2].plot(120,50,'bo')
 ax[1,2].plot(50,50,'ro')
 ax[2,2].plot(120,50,'bo')
 
-plt.show()
-
-
-# DISPLAY RESULTS
 fig, ax = plt.subplots(2, 4)
 fig.tight_layout()
 y_slice = round(Model4D.midp.imageArray.shape[1]/2)-1
