@@ -15,7 +15,7 @@ class Dynamic3DModel(PatientData):
         self.midp = midp
         self.deformationList = deformationList
 
-    def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
+    def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=1):
         """Compute the mid-position image from the 4DCT by means of deformable registration between breathing phases.
 
             Parameters
@@ -63,14 +63,14 @@ class Dynamic3DModel(PatientData):
         field = self.deformationList[int(phase1)].copy()
         field.displacement = None
         if phase1 == phase2:
-            field.velocity._imageArray = amplitude * self.deformationList[int(phase1)].velocity._imageArray
+            field.velocity._imageArray = amplitude * self.deformationList[int(phase1)].velocity.imageArray
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))
             if abs(w1+w2-1.0) > 1e-6:
                 logger.error('Error in phase interpolation.')
                 return
-            field.velocity._imageArray = amplitude * (w1 * self.deformationList[int(phase1)].velocity._imageArray + w2 * self.deformationList[int(phase2)].velocity._imageArray)
+            field.velocity._imageArray = amplitude * (w1 * self.deformationList[int(phase1)].velocity.imageArray + w2 * self.deformationList[int(phase2)].velocity.imageArray)
 
         return field.deformImage(self.midp, fillValue='closest')
 

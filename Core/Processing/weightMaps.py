@@ -1,8 +1,9 @@
 import numpy as np
 from scipy.interpolate import LinearNDInterpolator
+import logging
 from Core.Data.Images.image3D import Image3D
-import time
 
+logger = logging.getLogger(__name__)
 
 def createExternalPoints(imgSize):
     """
@@ -32,7 +33,7 @@ def createWeightMaps(internalPoints, imageSize):
     Y = np.linspace(0, imageSize[1]-1, imageSize[1])
     Z = np.linspace(0, imageSize[2]-1, imageSize[2])
 
-    X, Y, Z = np.meshgrid(X, Y, Z)  # 3D grid for interpolation
+    X, Y, Z = np.meshgrid(Y, X, Z)  # 3D grid for interpolation
     externalPoints = createExternalPoints(imageSize)
 
     pointList = externalPoints + internalPoints
@@ -41,7 +42,6 @@ def createWeightMaps(internalPoints, imageSize):
     weightMapList = []
 
     for pointIndex in range(len(internalPoints)):
-        # startTime = time.time()
 
         internalValues = np.zeros(len(internalPoints))
         internalValues[pointIndex] = 1
@@ -49,9 +49,7 @@ def createWeightMaps(internalPoints, imageSize):
 
         interp = LinearNDInterpolator(pointList, values)
         weightMap = interp(X, Y, Z)
-        # stopTime = time.time()
         weightMapList.append(weightMap)
-        # print(stopTime-startTime)
 
     return weightMapList
 
@@ -66,3 +64,55 @@ def getWeightMapsAsImage3DList(internalPoints, ref3DImage):
         image3DList.append(Image3D(imageArray=weightMap, name='weightMap_'+str(weightMapIndex+1), origin=ref3DImage.origin, spacing=ref3DImage.spacing, angles=ref3DImage.angles))
 
     return image3DList
+
+
+def generateDeformationFromTrackers(midpModel, phases, amplitudes, internalPoints):
+    """
+
+    """
+    if midpModel.midp is None or midpModel.deformationList is None:
+        logger.error(
+            'Model is empty. Mid-position image and deformation fields must be computed first using computeMidPositionImage().')
+        return
+    if len(phases) != len(internalPoints):
+        logger.error(
+            'The number of phases should be the same as the number of internal points.')
+        return
+    if len(amplitudes) != len(internalPoints):
+        logger.error(
+            'The number of amplitudes should be the same as the number of internal points.')
+        return
+
+    weightMaps = getWeightMapsAsImage3DList(internalPoints, midpModel.deformationList[0])
+
+    field = midpModel.deformationList[0].copy()
+    field.displacement = None
+    field.velocity._imageArray = field.velocity._imageArray*0
+
+    for i in range(len(internalPoints)):
+
+        phase = phases[i]*len(midpModel.deformationList)
+        phase1 = np.floor(phase) % len(midpModel.deformationList)
+        phase2 = np.ceil(phase) % len(midpModel.deformationList)
+
+        if phase1 == phase2:
+            for j in range(3):
+                field.velocity._imageArray[:,:,:,j] += amplitudes[i] * np.multiply(weightMaps[i].imageArray,midpModel.deformationList[int(phase1)].velocity.imageArray[:,:,:,j])
+        else:
+            w1 = abs(phase - np.ceil(phase))
+            w2 = abs(phase - np.floor(phase))
+            if abs(w1 + w2 - 1.0) > 1e-6:
+                logger.error('Error in phase interpolation.')
+                return
+            for j in range(3):
+                field.velocity._imageArray[:,:,:,j] += amplitudes[i] * np.multiply(weightMaps[i].imageArray,(
+                            w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:,:,:,j] + w2 * midpModel.deformationList[
+                        int(phase2)].velocity.imageArray[:,:,:,j]))
+
+    return field, weightMaps
+
+
+def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, weightMapList):
+    """
+
+    """
