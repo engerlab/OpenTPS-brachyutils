@@ -252,39 +252,38 @@ class PatientDataTree(QTreeView):
 
         if (len(selected) > 0):
             self.context_menu = QMenu()
+            if not dataClass == 'mixed':
+                # actions for 3D images
+                if (dataClass == Image3D or issubclass(dataClass, Image3D)) and len(selected) == 1:
+                    self.rename_action = QAction("Rename")
+                    self.rename_action.triggered.connect(lambda checked: openRenameDataDialog(self, selectedData[0]))
+                    self.context_menu.addAction(self.rename_action)
 
-            # actions for 3D images
-            if (dataClass == Image3D or issubclass(dataClass, Image3D)) and len(selected) == 1:
-                self.rename_action = QAction("Rename")
-                self.rename_action.triggered.connect(lambda checked: openRenameDataDialog(self, selectedData[0]))
-                self.context_menu.addAction(self.rename_action)
+                    # self.export_action = QAction("Export")
+                    # self.export_action.triggered.connect(lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
+                    # self.context_menu.addAction(self.export_action)
 
-                self.export_action = QAction("Export")
-                self.export_action.triggered.connect(lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
-                self.context_menu.addAction(self.export_action)
+                    self.superimpose_action = QAction("Superimpose")
+                    self.superimpose_action.triggered.connect(lambda checked: self._setSecondaryImage(selectedData[0]))
+                    self.context_menu.addAction(self.superimpose_action)
 
-                self.superimpose_action = QAction("Superimpose")
-                self.superimpose_action.triggered.connect(lambda checked: self._setSecondaryImage(selectedData[0]))
-                self.context_menu.addAction(self.superimpose_action)
+                    self.info_action = QAction("Info")
+                    self.info_action.triggered.connect(lambda checked: self._showImageInfo(selectedData[0]))
+                    self.context_menu.addAction(self.info_action)
 
-                self.info_action = QAction("Info")
-                self.info_action.triggered.connect(lambda checked: self._showImageInfo(selectedData[0]))
-                self.context_menu.addAction(self.info_action)
+                    self.copy_action = QAction("Copy")
+                    self.copy_action.triggered.connect(lambda checked: self.copyData(selectedData[0]))
+                    self.context_menu.addAction(self.copy_action)
 
-                self.copy_action = QAction("Copy")
-                self.copy_action.triggered.connect(lambda checked: self.copyData(selectedData[0]))
-                self.context_menu.addAction(self.copy_action)
+                # actions for group of 3DImage
+                if (dataClass == CTImage or issubclass(dataClass, CTImage)) and len(selected) > 1:  # to generalize to other modalities eventually
+                    self.make_series_action = QAction("Make dynamic 3D sequence")
+                    self.make_series_action.triggered.connect(lambda checked: self.createDynamic3DSequence(selectedData))
+                    self.context_menu.addAction(self.make_series_action)
 
             if dataClass == 'mixed':
                 self.no_action = QAction("No action available for this group of data")
                 self.context_menu.addAction(self.no_action)
-
-            # actions for group of 3DImage
-            if (dataClass == CTImage or issubclass(dataClass, CTImage)) and len(selected) > 1:  # to generalize to other modalities eventually
-                self.make_series_action = QAction("Make dynamic 3D sequence")
-                self.make_series_action.triggered.connect(
-                    lambda checked: self.createDynamic3DSequence(selectedData))
-                self.context_menu.addAction(self.make_series_action)
 
             # actions for any 3DImage
             # if (dataClass == 'CTImage'):
@@ -344,8 +343,7 @@ class PatientDataTree(QTreeView):
             self.context_menu.addAction(self.delete_action)
 
             self.export_action = QAction("Export serialized")
-            self.export_action.triggered.connect(
-                lambda checked, selectedData=selectedData: self.exportSerializedData(selectedData))
+            self.export_action.triggered.connect(lambda checked, selectedData=selectedData: self.exportSerializedData(selectedData))
             self.context_menu.addAction(self.export_action)
 
             self.context_menu.popup(pos)
@@ -384,8 +382,9 @@ class PatientDataTree(QTreeView):
     def exportSerializedData(self, selectedData):
 
         print('Export data as serialized objects')
-        print(type(selectedData))
-        print(type(selectedData[0]))
+        for data in selectedData:
+            type(data)
+            print('  ', type(data), data.name)
 
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.patientDataPanel.dataPath)
@@ -393,9 +392,10 @@ class PatientDataTree(QTreeView):
         saveSerializedObject(selectedData, savingPath, compressedBool=compressedBool)
 
     def copyData(self, selectedData):
-        print('in copyData')
-        print(type(selectedData))
+        print('Create a copy of the data:', selectedData.name, type(selectedData))
         new_img = copy.deepcopy(selectedData)
+        print(new_img.patientInfo)
+        # new_img.patient = selectedData
         new_img.name = selectedData.name + '_copy'
         self._currentPatient.appendImage(new_img)
 
