@@ -4,15 +4,19 @@ from Core.Data.patientData import PatientData
 
 class Dynamic2DSequence(PatientData):
 
-    def __init__(self, imageList = [], timingsList = [], sequenceName = "newSequence"):
-        super().__init__()
-        self.sequenceName = sequenceName
-        self.dyn2DImageList = imageList
+    def __init__(self, dyn2DImageList = [], timingsList = [], name="2D Dyn Seq", repetitionMode='LOOP', patientInfo=None):
+        super().__init__(patientInfo=patientInfo, name=name)
+
+        self.dyn2DImageList = dyn2DImageList
         self.timingsList = timingsList
         self.breathingPeriod = 4000
         self.inhaleDuration = 1800
 
         self.isDynamic = True
+
+        print('Dynamic 2D Sequence', self.name, 'Created with ', len(self.dyn2DImageList), 'images')
+        for img in self.dyn2DImageList:
+            print('   ', img.name)
 
     def print_dynSeries_info(self, prefix=""):
         print(prefix + "Dyn series: " + self.SequenceName)

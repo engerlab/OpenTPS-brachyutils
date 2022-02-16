@@ -32,6 +32,8 @@ class Patient:
         self.planRemovedSignal = Event(object)
         self.dyn3DSeqAddedSignal = Event(object)
         self.dyn3DSeqRemovedSignal = Event(object)
+        self.dyn2DSeqAddedSignal = Event(object)
+        self.dyn2DSeqRemovedSignal = Event(object)
         self.dyn3DModAddedSignal = Event(object)
         self.dyn3DModRemovedSignal = Event(object)
         self.nameChangedSignal = Event(str)
@@ -221,6 +223,45 @@ class Patient:
         self._dynamic3DSequences.remove(dyn3DSeq)
         dyn3DSeq.patient = None
         self.dyn3DSeqRemovedSignal.emit(dyn3DSeq)
+
+    @property
+    def dynamic2DSequences(self):
+        # Doing this ensures that the user can't append directly to dynamic2DSequences
+        return [dynamic2DSequence for dynamic2DSequence in self._dynamic2DSequences]
+
+    def appendDyn2DSeq(self, dyn2DSeq):
+        """
+        Append dynamic2DSequence object to patient's dynamic2DSequences list
+
+        Parameters
+        ----------
+        dyn2DSeq: dynamic2DSequence object
+            Dynamic 2D Sequence set to append
+
+        """
+        if dyn2DSeq in self._dynamic2DSequences:
+            return
+
+        self._dynamic2DSequences.append(dyn2DSeq)
+        dyn2DSeq.patient = self
+        self.dyn2DSeqAddedSignal.emit(dyn2DSeq)
+
+    def removeDyn2DSeq(self, dyn2DSeq):
+        """
+        Remove dynamic2DSequence from patient's dynamic2DSequences list
+
+        Parameters
+        ----------
+        dyn2DSeq: dynamic2DSequence object
+            Dynamic 2D Sequence set to remove
+
+        """
+        if not (dyn2DSeq in self._dynamic2DSequences):
+            return
+
+        self._dynamic2DSequences.remove(dyn2DSeq)
+        dyn2DSeq.patient = None
+        self.dyn2DSeqRemovedSignal.emit(dyn2DSeq)
 
 
     @property

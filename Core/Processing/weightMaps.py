@@ -1,9 +1,17 @@
 import numpy as np
+<<<<<<< HEAD
 from scipy.interpolate import LinearNDInterpolator, interpn
 from Core.Data.Images.image3D import Image3D
 import time
 import matplotlib.pyplot as plt
+=======
+from scipy.interpolate import LinearNDInterpolator
+import copy
+import logging
+from Core.Data.Images.image3D import Image3D
+>>>>>>> refactor_4D
 
+logger = logging.getLogger(__name__)
 
 def createExternalPoints(imgSize, numberOfPointsPerEdge = 0):
     """
@@ -12,6 +20,7 @@ def createExternalPoints(imgSize, numberOfPointsPerEdge = 0):
     xHalfSize = imgSize[0] / 2
     yHalfSize = imgSize[1] / 2
     zHalfSize = imgSize[2] / 2
+
     externalPoints = []
 
     if numberOfPointsPerEdge <= 1:
@@ -86,11 +95,12 @@ def createExternalPoints(imgSize, numberOfPointsPerEdge = 0):
     return externalPoints
 
 
-def createWeightMaps(internalPoints, imageGridSize, imageOrigin, pixelSpacing):
+def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSpacing):
     """
 
     """
     ## get points coordinates in voxels (no need to get them in int, it will not be used to access image values)
+    internalPoints = copy.deepcopy(absoluteInternalPoints)
     for pointIndex in range(len(internalPoints)):
         for i in range(3):
             internalPoints[pointIndex][i] = (internalPoints[pointIndex][i] - imageOrigin[i]) / pixelSpacing[i]
@@ -111,7 +121,10 @@ def createWeightMaps(internalPoints, imageGridSize, imageOrigin, pixelSpacing):
     weightMapList = []
 
     for pointIndex in range(len(internalPoints)):
+<<<<<<< HEAD
         startTime = time.time()
+=======
+>>>>>>> refactor_4D
 
         internalValues = np.zeros(len(internalPoints))
         internalValues[pointIndex] = 1
@@ -119,10 +132,14 @@ def createWeightMaps(internalPoints, imageGridSize, imageOrigin, pixelSpacing):
 
         interp = LinearNDInterpolator(pointList, values)
         weightMap = interp(X, Y, Z)
+<<<<<<< HEAD
 
         stopTime = time.time()
         weightMapList.append(weightMap)
         print(pointIndex, 'weight map creation duration', stopTime-startTime)
+=======
+        weightMapList.append(weightMap)
+>>>>>>> refactor_4D
 
     return weightMapList
 
@@ -138,6 +155,7 @@ def getWeightMapsAsImage3DList(internalPoints, ref3DImage):
 
     return image3DList
 
+<<<<<<< HEAD
 def showPoints(pointList):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -150,3 +168,76 @@ def showPoints(pointList):
     ax.set_zlabel('Z Label')
 
     plt.show()
+=======
+
+def generateDeformationFromTrackers(midpModel, phases, amplitudes, internalPoints):
+    """
+
+    """
+    if midpModel.midp is None or midpModel.deformationList is None:
+        logger.error(
+            'Model is empty. Mid-position image and deformation fields must be computed first using computeMidPositionImage().')
+        return
+    if len(phases) != len(internalPoints):
+        logger.error(
+            'The number of phases should be the same as the number of internal points.')
+        return
+    if len(amplitudes) != len(internalPoints):
+        logger.error(
+            'The number of amplitudes should be the same as the number of internal points.')
+        return
+
+    weightMapList = getWeightMapsAsImage3DList(internalPoints, midpModel.deformationList[0])
+
+    field = generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, weightMapList)
+
+    return field, weightMapList
+
+
+def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, weightMapList):
+    """
+
+    """
+    if midpModel.midp is None or midpModel.deformationList is None:
+        logger.error(
+            'Model is empty. Mid-position image and deformation fields must be computed first using computeMidPositionImage().')
+        return
+    if len(phases) != len(weightMapList):
+        logger.error(
+            'The number of phases should be the same as the number of weight maps.')
+        return
+    if len(amplitudes) != len(weightMapList):
+        logger.error(
+            'The number of amplitudes should be the same as the number of weight maps.')
+        return
+
+    field = midpModel.deformationList[0].copy()
+    field.displacement = None
+    field.velocity._imageArray = field.velocity._imageArray * 0
+
+    for i in range(len(weightMapList)):
+
+        phase = phases[i] * len(midpModel.deformationList)
+        phase1 = np.floor(phase) % len(midpModel.deformationList)
+        phase2 = np.ceil(phase) % len(midpModel.deformationList)
+
+        if phase1 == phase2:
+            for j in range(3):
+                field.velocity._imageArray[:, :, :, j] += amplitudes[i] * np.multiply(weightMapList[i].imageArray,
+                                                                                      midpModel.deformationList[
+                                                                                          int(phase1)].velocity.imageArray[
+                                                                                      :, :, :, j])
+        else:
+            w1 = abs(phase - np.ceil(phase))
+            w2 = abs(phase - np.floor(phase))
+            if abs(w1 + w2 - 1.0) > 1e-6:
+                logger.error('Error in phase interpolation.')
+                return
+            for j in range(3):
+                field.velocity._imageArray[:, :, :, j] += amplitudes[i] * np.multiply(weightMapList[i].imageArray, (
+                        w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:, :, :, j] + w2 *
+                        midpModel.deformationList[
+                            int(phase2)].velocity.imageArray[:, :, :, j]))
+
+    return field
+>>>>>>> refactor_4D
