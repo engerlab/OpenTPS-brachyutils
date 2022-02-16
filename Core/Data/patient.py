@@ -115,9 +115,6 @@ class Patient:
     def getPatientDataOfType(self, type):
         return [data for data in self._patientData if isinstance(data, type)]
 
-    def getPatientDataIndex(self, data):
-        return self._patientData.index(data)
-
     def hasPatientData(self, data):
         return (data in self._patientData)
 
@@ -143,6 +140,11 @@ class Patient:
 
         if data in self._patientData:
             self._patientData.remove(data)
+
+            for otherData in self._patientData:
+                if otherData.doReferencePatientData(data):
+                    otherData.removePatientData(data)
+
             self.patientDataRemovedSignal.emit(data)
 
     @API.loggedViaAPI

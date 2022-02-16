@@ -219,11 +219,15 @@ class APILogger:
                 argStr = 'API.patientList[' \
                          + str(_API._staticVars["patientList"].getIndex(patient)) + ']' \
                          + '.patientData[' \
-                         + str(patient.getPatientDataIndex(image)) + ']'
+                         + str(APILogger.getPatientDataIndex(patient, image)) + ']'
         if argStr == '':
             argStr = 'Error: Image or patient not found in patient or patient list'
 
         return argStr
+
+    @staticmethod
+    def getPatientDataIndex(patient, data):
+        return patient.patientData.index(data)
 
     @staticmethod
     def _listToString(l: list):
