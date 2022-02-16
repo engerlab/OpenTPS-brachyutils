@@ -1,15 +1,13 @@
 import numpy as np
-<<<<<<< HEAD
+
 from scipy.interpolate import LinearNDInterpolator, interpn
 from Core.Data.Images.image3D import Image3D
 import time
 import matplotlib.pyplot as plt
-=======
 from scipy.interpolate import LinearNDInterpolator
 import copy
 import logging
 from Core.Data.Images.image3D import Image3D
->>>>>>> refactor_4D
 
 logger = logging.getLogger(__name__)
 
@@ -23,68 +21,52 @@ def createExternalPoints(imgSize, numberOfPointsPerEdge = 0):
 
     externalPoints = []
 
-    if numberOfPointsPerEdge <= 1:
-        externalPoints += [[-xHalfSize, -yHalfSize, -zHalfSize],
-                          [imgSize[0] + xHalfSize, -yHalfSize, -zHalfSize],
-                          [imgSize[0] + xHalfSize, -yHalfSize, imgSize[2] + zHalfSize],
-                          [-xHalfSize, -yHalfSize, imgSize[2] + zHalfSize],
-                          [-xHalfSize, imgSize[1] + yHalfSize, -zHalfSize],
-                          [imgSize[0] + xHalfSize, imgSize[1] + yHalfSize, -zHalfSize],
-                          [imgSize[0] + xHalfSize, imgSize[1] + yHalfSize, imgSize[2] + zHalfSize],
-                          [-xHalfSize, imgSize[1] + yHalfSize, imgSize[2] + zHalfSize]]
+    if numberOfPointsPerEdge < 2:
+        numberOfPointsPerEdge = 2
 
-    if numberOfPointsPerEdge == 1:
-        externalPoints += [[xHalfSize, imgSize[1] + yHalfSize, zHalfSize],
-                          [xHalfSize, -yHalfSize, zHalfSize],
-                          [imgSize[0] + xHalfSize, yHalfSize, zHalfSize],
-                          [-xHalfSize, yHalfSize, zHalfSize],
-                          [xHalfSize, yHalfSize, imgSize[2] + zHalfSize],
-                          [xHalfSize, yHalfSize, -zHalfSize]]
+    ## in Z
+    dim1 = np.linspace(-xHalfSize, imgSize[0] + xHalfSize, numberOfPointsPerEdge)
+    dim2 = np.linspace(-yHalfSize, imgSize[1] + yHalfSize, numberOfPointsPerEdge)
 
-    elif numberOfPointsPerEdge > 2:
-        print('in elif')
-        ## in Z
-        dim1 = np.linspace(-xHalfSize, imgSize[0] + xHalfSize, numberOfPointsPerEdge)
-        dim2 = np.linspace(-yHalfSize, imgSize[1] + yHalfSize, numberOfPointsPerEdge)
+    dim1, dim2 = np.meshgrid(dim1, dim2)
+    coordinate_grid = np.array([dim1, dim2])
+    coordinate_grid = coordinate_grid.transpose(1, 2, 0)
 
-        dim1, dim2 = np.meshgrid(dim1, dim2)
-        coordinate_grid = np.array([dim1, dim2])
-        coordinate_grid = coordinate_grid.transpose(1, 2, 0)
-
-        for i in range(coordinate_grid.shape[0]):
-            for j in range(coordinate_grid.shape[1]):
-                externalPoints.append([coordinate_grid[i, j][0], coordinate_grid[i, j][1], -zHalfSize])
-                externalPoints.append([coordinate_grid[i, j][0], coordinate_grid[i, j][1], imgSize[2] + zHalfSize])
+    for i in range(coordinate_grid.shape[0]):
+        for j in range(coordinate_grid.shape[1]):
+            externalPoints.append([coordinate_grid[i, j][0], coordinate_grid[i, j][1], -zHalfSize])
+            externalPoints.append([coordinate_grid[i, j][0], coordinate_grid[i, j][1], imgSize[2] + zHalfSize])
 
 
-        ## in X
-        dim1 = np.linspace(-zHalfSize, imgSize[2] + zHalfSize, numberOfPointsPerEdge)
-        dim2 = np.linspace(-yHalfSize, imgSize[1] + yHalfSize, numberOfPointsPerEdge)
+    ## in X
+    dim1 = np.linspace(-zHalfSize, imgSize[2] + zHalfSize, numberOfPointsPerEdge)
+    dim2 = np.linspace(-yHalfSize, imgSize[1] + yHalfSize, numberOfPointsPerEdge)
 
-        dim1, dim2 = np.meshgrid(dim1, dim2)
-        coordinate_grid = np.array([dim1, dim2])
-        coordinate_grid = coordinate_grid.transpose(1, 2, 0)
+    dim1, dim2 = np.meshgrid(dim1, dim2)
+    coordinate_grid = np.array([dim1, dim2])
+    coordinate_grid = coordinate_grid.transpose(1, 2, 0)
 
-        for i in range(coordinate_grid.shape[0]):
-            for j in range(coordinate_grid.shape[1]):
-                externalPoints.append([-xHalfSize, coordinate_grid[i, j][1], coordinate_grid[i, j][0]])
-                externalPoints.append([imgSize[0] + xHalfSize, coordinate_grid[i, j][1], coordinate_grid[i, j][0], ])
-        #
-        #
-        # in Y
-        dim1 = np.linspace(-xHalfSize, imgSize[0] + xHalfSize, numberOfPointsPerEdge)
-        dim2 = np.linspace(-zHalfSize, imgSize[2] + zHalfSize, numberOfPointsPerEdge)
-
-        dim1, dim2 = np.meshgrid(dim1, dim2)
-        coordinate_grid = np.array([dim1, dim2])
-        coordinate_grid = coordinate_grid.transpose(1, 2, 0)
-
-        for i in range(coordinate_grid.shape[0]):
-            for j in range(coordinate_grid.shape[1]):
-                externalPoints.append([coordinate_grid[i, j][0], -yHalfSize, coordinate_grid[i, j][1]])
-                externalPoints.append([coordinate_grid[i, j][0], imgSize[1] + yHalfSize, coordinate_grid[i, j][1]])
+    for i in range(coordinate_grid.shape[0]):
+        for j in range(coordinate_grid.shape[1]):
+            externalPoints.append([-xHalfSize, coordinate_grid[i, j][1], coordinate_grid[i, j][0]])
+            externalPoints.append([imgSize[0] + xHalfSize, coordinate_grid[i, j][1], coordinate_grid[i, j][0], ])
 
 
+    # in Y
+    dim1 = np.linspace(-xHalfSize, imgSize[0] + xHalfSize, numberOfPointsPerEdge)
+    dim2 = np.linspace(-zHalfSize, imgSize[2] + zHalfSize, numberOfPointsPerEdge)
+
+    dim1, dim2 = np.meshgrid(dim1, dim2)
+    coordinate_grid = np.array([dim1, dim2])
+    coordinate_grid = coordinate_grid.transpose(1, 2, 0)
+
+    for i in range(coordinate_grid.shape[0]):
+        for j in range(coordinate_grid.shape[1]):
+            externalPoints.append([coordinate_grid[i, j][0], -yHalfSize, coordinate_grid[i, j][1]])
+            externalPoints.append([coordinate_grid[i, j][0], imgSize[1] + yHalfSize, coordinate_grid[i, j][1]])
+
+
+    ## remove duplicate points
     externalPoints = sorted(externalPoints, key=lambda tup: (tup[0], tup[1], tup[2]))
     checkedIndex = len(externalPoints)-1
     while checkedIndex > 0:
@@ -113,7 +95,7 @@ def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSp
 
     externalPoints = createExternalPoints(imageGridSize, numberOfPointsPerEdge=5)
 
-    showPoints(externalPoints)
+    # showPoints(externalPoints)
 
     pointList = externalPoints + internalPoints
     externalValues = np.ones(len(externalPoints))/len(internalPoints)
@@ -121,10 +103,8 @@ def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSp
     weightMapList = []
 
     for pointIndex in range(len(internalPoints)):
-<<<<<<< HEAD
-        startTime = time.time()
-=======
->>>>>>> refactor_4D
+
+        # startTime = time.time()
 
         internalValues = np.zeros(len(internalPoints))
         internalValues[pointIndex] = 1
@@ -132,14 +112,11 @@ def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSp
 
         interp = LinearNDInterpolator(pointList, values)
         weightMap = interp(X, Y, Z)
-<<<<<<< HEAD
 
-        stopTime = time.time()
+        # stopTime = time.time()
+        # print(pointIndex, 'weight map creation duration', stopTime-startTime)
+
         weightMapList.append(weightMap)
-        print(pointIndex, 'weight map creation duration', stopTime-startTime)
-=======
-        weightMapList.append(weightMap)
->>>>>>> refactor_4D
 
     return weightMapList
 
@@ -155,7 +132,7 @@ def getWeightMapsAsImage3DList(internalPoints, ref3DImage):
 
     return image3DList
 
-<<<<<<< HEAD
+
 def showPoints(pointList):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
@@ -168,7 +145,7 @@ def showPoints(pointList):
     ax.set_zlabel('Z Label')
 
     plt.show()
-=======
+
 
 def generateDeformationFromTrackers(midpModel, phases, amplitudes, internalPoints):
     """
@@ -240,4 +217,4 @@ def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, 
                             int(phase2)].velocity.imageArray[:, :, :, j]))
 
     return field
->>>>>>> refactor_4D
+
