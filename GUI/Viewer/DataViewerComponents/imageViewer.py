@@ -68,7 +68,7 @@ class ImageViewer(QWidget):
         self._profileWidget.primaryLayer = self._primaryImageLayer
         self._profileWidget.secondaryLayer = self._secondaryImageLayer
 
-        self.viewType = self._viewType # Updates _viewMatrix
+        self._setViewType(self._viewType)
         self._contourLayer.resliceAxes = self._viewMatrix
 
         self.setLayout(self._mainLayout)
@@ -212,24 +212,27 @@ class ImageViewer(QWidget):
         if self._viewType == viewType:
             return
 
-        self._viewType = viewType
-        axial = vtkCommonMath.vtkMatrix4x4()
-        axial.DeepCopy((1, 0, 0, 0,
-                        0, 0, 1, 0,
-                        0, 1, 0, 0,
-                        0, 0, 0, 1))
+        self._setViewType(viewType)
 
+    def _setViewType(self, viewType):
+        self._viewType = viewType
         coronal = vtkCommonMath.vtkMatrix4x4()
-        coronal.DeepCopy((0, 0, -1, 0,
-                          1, 0, 0, 0,
+        coronal.DeepCopy((1, 0, 0, 0,
+                          0, 0, 1, 0,
                           0, 1, 0, 0,
                           0, 0, 0, 1))
 
         sagittal = vtkCommonMath.vtkMatrix4x4()
-        sagittal.DeepCopy((1, 0, 0, 0,
-                           0, -1, 0, 0,
-                           0, 0, -1, 0,
-                           0, 0, 0, 1))
+        sagittal.DeepCopy((0, 0, -1, 0,
+                          1, 0, 0, 0,
+                          0, 1, 0, 0,
+                          0, 0, 0, 1))
+
+        axial = vtkCommonMath.vtkMatrix4x4()
+        axial.DeepCopy((1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, -1, 0,
+                        0, 0, 0, 1))
 
         if self._viewType == self.viewerTypes.SAGITTAL:
             self._viewMatrix = sagittal
