@@ -89,3 +89,26 @@ def computeDRRSequence(dynamic3DSequence, angleAndOriList):
         DRRSetSequence.append(computeDRRSet(image, angleAndOriList, sourceImageName=dynamic3DSequence.name + '_' + str(imageIndex)))
 
     return DRRSetSequence
+
+
+def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList):
+
+    drrSetSequence = computeDRRSequence(dynamic3DSequence, angleAndAxeList)
+    numberOfImageInSet = len(drrSetSequence[0])
+
+    for imageInSetIndex in range(numberOfImageInSet):
+
+        DRRList = []
+
+        for imageSet in drrSetSequence:
+            DRRList.append(imageSet[imageInSetIndex])
+
+        dyn2DSeq = Dynamic2DSequence(name=dynamic3DSequence.name + '_' + str(angleAndAxeList[imageInSetIndex][1]) + '_' + str(angleAndAxeList[imageInSetIndex][0]), dyn2DImageList=DRRList)
+        dyn2DSeq.breathingPeriod = dynamic3DSequence.breathingPeriod
+        dyn2DSeq.inhaleDuration = dynamic3DSequence.inhaleDuration
+        dyn2DSeq.patient = dynamic3DSequence.patient
+        dyn2DSeq.patientInfo = dynamic3DSequence.patientInfo
+        dyn2DSeq.timingsList = dynamic3DSequence.timingsList
+
+        if dynamic3DSequence.patient != None:
+            dynamic3DSequence.patient.appendDyn2DSeq(dyn2DSeq)

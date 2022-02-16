@@ -71,3 +71,9 @@ def loadDataStructure(filePath):
         print(itemIndex + 1, type(item))
     return data
 
+
+# ---------------------------------------------------------------------------------------------------
+def loadSerializedObject(filePath):
+    """
+    to do in the same way as for saving (object - structure)
+    """

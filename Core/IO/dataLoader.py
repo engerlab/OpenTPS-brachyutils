@@ -39,9 +39,7 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             # TODO: Get patient by name?
 
         if patient is None:
-            print('in patient is none', data.patientInfo)
-            print(type(data))
-            patient = Patient(patientInfo = data.patientInfo)
+            patient = Patient(patientInfo=data.patientInfo)
             patientList.append(patient)
 
         # add data to patient
@@ -67,8 +65,7 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
             continue
 
-        patient.setSelfInData()  ## this gives the patient to each of its data, it makes a data impossible to copy because it will start an infinite loop between a patient and its data
-
+        patient.setSelfInData()  ## This gives the patient to each of its data. It might be an issue for pickling, I noticed once an infinite loop between an image and its patient
 
 def loadAllData(inputPaths, maxDepth=-1):
     """
