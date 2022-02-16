@@ -246,10 +246,11 @@ class ImageViewer(QWidget):
         if not self.primaryImage is None:
             self._primaryImageLayer.resliceAxes = self._viewMatrix
             self._contourLayer.resliceAxes = self._viewMatrix
-            self._renderWindow.Render()
         if not self.secondaryImage is None:
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
-            self._renderWindow.Render()
+
+        self._renderer.ResetCamera()
+        self._renderWindow.Render()
 
         self.viewTypeChangedSignal.emit(self._viewType)
 
