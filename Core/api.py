@@ -91,7 +91,6 @@ class APILogger:
         loggerEnabled = APILogger._staticVars["enabled"]
         loggerAlreadyLogging = APILogger._staticVars["logLock"]
 
-        print(loggerEnabled)
         if not loggerEnabled:
             return method(*args, **kwargs)
 
