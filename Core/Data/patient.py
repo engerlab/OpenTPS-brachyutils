@@ -38,16 +38,17 @@ class Patient:
 
     def __init__(self, patientInfo=None):
         self.patientDataAddedSignal = Event(object)
+        self.patientDataRemovedSignal = Event(object)
         self.imageAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Image3D)
-        self.imageRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Image3D)
+        self.imageRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Image3D)
         self.rtStructAddedSignal =self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTStruct)
-        self.rtStructRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTStruct)
+        self.rtStructRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, RTStruct)
         #self.planAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal)
         #self.planRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal)
         self.dyn3DSeqAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DSequence)
-        self.dyn3DSeqRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DSequence)
+        self.dyn3DSeqRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Dynamic3DSequence)
         self.dyn3DModAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DModel)
-        self.dyn3DModRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DModel)
+        self.dyn3DModRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Dynamic3DModel)
         self.nameChangedSignal = Event(object)
 
         if(patientInfo == None):
@@ -120,6 +121,7 @@ class Patient:
     def hasPatientData(self, data):
         return (data in self._patientData)
 
+    @API.loggedViaAPI
     def appendPatienData(self, data=Union[Sequence, PatientData]):
         if isinstance(data, list):
             self.appendPatientDataList(data)
@@ -129,18 +131,25 @@ class Patient:
             data.patient = self
             self.patientDataAddedSignal.emit(data)
 
+    @API.loggedViaAPI
     def appendPatientDataList(self, dataList):
         for data in dataList:
             self.appendPatienData(data)
 
+    @API.loggedViaAPI
     def removePatientData(self, data):
         if isinstance(data, list):
-            for d in data:
-                self.removePatientData(d)
-            return
+            self.removePatientDataList(data)
 
         if data in self._patientData:
             self._patientData.remove(data)
+            self.patientDataRemovedSignal.emit(data)
+
+    @API.loggedViaAPI
+    def removePatientDataList(self, dataList):
+        for data in dataList:
+            self.removePatientData(data)
+        return
 
     def dumpableCopy(self):
         dumpablePatientCopy = Patient(patientInfo=self.patientInfo)
@@ -148,7 +157,3 @@ class Patient:
             dumpablePatientCopy._patientData.append(data.dumpableCopy())
 
         return dumpablePatientCopy
-
-    def _emitIfDataIfOftype(self, signal, type, data):
-        if isinstance(data, type):
-            signal.emit(data)

@@ -193,7 +193,7 @@ class PatientDataTree(QTreeView):
         font_b.setBold(True)
 
         self._currentPatient = patient
-        
+
         if self._currentPatient is None:
             return
 
