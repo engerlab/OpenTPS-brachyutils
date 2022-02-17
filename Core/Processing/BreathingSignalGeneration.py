@@ -36,7 +36,7 @@ def vectorSimulation(L,diff,Tend,t):
     return y
 
 #creation des donnees respiratoires
-def signal(A,dA,T,df,ds,step,Tend,L):
+def signal(A,dA,T,df,dS,step,Tend,L):
     f = 1/T  
     t = np.arange(0,Tend,step)
     
@@ -48,19 +48,20 @@ def signal(A,dA,T,df,ds,step,Tend,L):
     return t,y
 
 #parametres changeables
-A = 10 #amplitude (mm)
-dA = 5 #variation d amplitude possible (mm)
-T = 4.0 #periode respiratoire (s)
-df = 0.5 #variation de frequence possible (Hz)
-dS = 5 #shift du signal (mm)
-step = 0.2 #periode d echantillonnage
-Tend = 100 #temps de simulation
-L = 2/30 #moyenne des evenements aleatoires
-
-time,samples = signal(A,dA,T,df,dS,step,Tend,L)
-plt.figure()
-plt.plot(time,samples)
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude [mm]")
-plt.title("Breathing signal")
-plt.xlim((0,50))
+# A = 10 #amplitude (mm)
+# dA = 5 #variation d amplitude possible (mm)
+# T = 4.0 #periode respiratoire (s)
+# df = 0.5 #variation de frequence possible (Hz)
+# dS = 5 #shift du signal (mm)
+# step = 0.2 #periode d echantillonnage
+# Tend = 100 #temps de simulation
+# L = 2/30 #moyenne des evenements aleatoires
+#
+# time,samples = signal(A,dA,T,df,dS,step,Tend,L)
+# plt.figure()
+# plt.plot(time,samples)
+# plt.xlabel("Time [s]")
+# plt.ylabel("Amplitude [mm]")
+# plt.title("Breathing signal")
+# plt.xlim((0,50))
+# plt.show()
