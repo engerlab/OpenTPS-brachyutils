@@ -14,14 +14,14 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
         patientList = [[patient] for patient in patientList]
         for patient in patientList:
             patientName = '_' + patient[0].patientInfo.name
-            saveSerializedObject(patient, savingPath + patientName, compressedBool=compressedBool)
+            saveSerializedObjects(patient, savingPath + patientName, compressedBool=compressedBool)
 
     else:
-        saveSerializedObject(patientList, savingPath, compressedBool=compressedBool)
+        saveSerializedObjects(patientList, savingPath, compressedBool=compressedBool)
 
 
 # ---------------------------------------------------------------------------------------------------
-def saveSerializedObject(dataList, savingPath, compressedBool=False):
+def saveSerializedObjects(dataList, savingPath, compressedBool=False):
 
     if type(dataList) != list:
         dataList = [dataList]

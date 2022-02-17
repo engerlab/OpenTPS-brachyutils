@@ -7,14 +7,14 @@ import math
 
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, QDir, pyqtSignal
-# from Core.Processing.DRR import fluoroscopy_sim
+from PyQt5.QtCore import Qt, QDir#, pyqtSignal
+from Core.Processing.DRRToolBox import createDRRDynamic2DSequences
 
 
 
 class DRRPanel(QWidget):
 
-    fluoroSeqCreated = pyqtSignal()
+    # fluoroSeqCreated = pyqtSignal()
 
     def __init__(self, viewController):
         QWidget.__init__(self)
@@ -65,12 +65,26 @@ class DRRPanel(QWidget):
 
         if (fluoroAngleDialog.exec()):
 
-            angles = fluoroAngleDialog.anglesList
-            print('in selectProjectionAngles', angles)
+            anglesAndAxisList = fluoroAngleDialog.anglesList
+            print('in selectProjectionAngles', anglesAndAxisList)
             print('this should be change to use the currently selected patient and dyn seq if several')
 
-            fluoroSeq = self.createDRRs(angles, self._viewController.currentPatient.dynamic3DSequences[0].dyn3DImageList, self._viewController.currentPatient)
-            self.fluoroSeqCreated.emit()
+            # fluoroSeq = self.createDRRs(angles, self._viewController.currentPatient.dynamic3DSequences[0].dyn3DImageList, self._viewController.currentPatient)
+
+            print('in drrPanel selectProjectionAngles !!! source image is hard coded for now')
+            sourceImageOrSeq = self._viewController.currentPatient.dynamic3DSequences[0]
+            dyn2DDRRSeqList = createDRRDynamic2DSequences(sourceImageOrSeq, anglesAndAxisList)
+            print(len(dyn2DDRRSeqList))
+
+            # plt.figure()
+            # plt.imshow(dyn2DDRRSeqList[0].dyn2DImageList[0].imageArray)
+            # plt.show()
+
+            if sourceImageOrSeq.patient != None:
+                for dyn2DSeq in dyn2DDRRSeqList:
+                    sourceImageOrSeq.patient.appendDyn2DSeq(dyn2DSeq)
+
+            # self.fluoroSeqCreated.emit()
             #self.data_path = QFileDialog.getExistingDirectory(self, "Select 4D Data folder", self.data_path)
             #self.Patients.importDyn4DSeq(self.data_path)
 
@@ -161,12 +175,12 @@ class ChoseAngles_dialog(QDialog):
         self.imageLabel.setAlignment(Qt.AlignTop)
         self.main_layout.addWidget(self.imageLabel, 1, 0)
 
-        self.orientation = "Axial"
+        self.orientation = "Z"
         self.image3D = self.prepare_image_for_viewer(Image3D.imageArray)
         self.imageShape = self.image3D.shape
         self.resolution = Image3D.spacing
         self.imageCenter = [self.imageLabel.pos().x() + int(self.imageLabel.width()/2), self.imageLabel.pos().y() + int(self.imageLabel.height()/2)]
-        print('ici', self.imageLabel.pos().x())
+        print('in ChoseAngles_dialog constructor', self.imageLabel.pos().x())
         print(self.imageCenter)
         self.distanceFromSourceToCenter = min(self.imageCenter[0], self.imageCenter[1]) - 10
         self.pannelWidth = min(self.imageLabel.width(), self.imageLabel.height())
@@ -193,13 +207,13 @@ class ChoseAngles_dialog(QDialog):
         self.CancelButton = QPushButton('Cancel')
         self.ButtonLayout.addWidget(self.CancelButton, 1, 2)
         self.CancelButton.clicked.connect(self.reject)
-        self.XYButton = QPushButton('Axial')
+        self.XYButton = QPushButton('Z')
         self.XYButton.clicked.connect(self.changeImageView)
         self.ButtonLayout.addWidget(self.XYButton, 0, 0)
-        self.YZButton = QPushButton('Coronal')
+        self.YZButton = QPushButton('Y')
         self.YZButton.clicked.connect(self.changeImageView)
         self.ButtonLayout.addWidget(self.YZButton, 0, 1)
-        self.XZButton = QPushButton('Sagittal')
+        self.XZButton = QPushButton('X')
         self.XZButton.clicked.connect(self.changeImageView)
         self.ButtonLayout.addWidget(self.XZButton, 0, 2)
 
@@ -214,13 +228,13 @@ class ChoseAngles_dialog(QDialog):
 ##-----------------------------------------------------------------------------------------------------------
     def selectSlice(self):
 
-        if self.orientation == 'Axial':
+        if self.orientation == 'Z':
             self.current_sliceIndex = round(self.imageShape[2] / 2)
             self.sliceToShow = self.image3D[:, :, self.current_sliceIndex].transpose(1,0)
-        elif self.orientation == 'Sagittal':
+        elif self.orientation == 'X':
             self.current_sliceIndex = round(self.imageShape[0] / 2)
             self.sliceToShow = np.flip(self.image3D[self.current_sliceIndex, :, :].transpose(1,0), 0)
-        elif self.orientation == 'Coronal':
+        elif self.orientation == 'Y':
             self.current_sliceIndex = round(self.imageShape[1] / 2)
             self.sliceToShow = np.flip(self.image3D[:, self.current_sliceIndex, :].transpose(1,0), 0)
 
@@ -246,11 +260,11 @@ class ChoseAngles_dialog(QDialog):
     def update_viewer(self):
 
         # calculate scaling factor
-        if self.orientation == 'Axial':
+        if self.orientation == 'Z':
             Yscaling = self.resolution[1] / self.resolution[0]
-        elif self.orientation == 'Sagittal':
+        elif self.orientation == 'X':
             Yscaling = self.resolution[2] / self.resolution[1]
-        elif self.orientation == 'Coronal':
+        elif self.orientation == 'Y':
             Yscaling = self.resolution[2] / self.resolution[0]
 
         self.imageCenter = [self.imageLabel.pos().x() + int(self.imageLabel.width() / 2),
