@@ -69,6 +69,11 @@ print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 
 dyn2DDRRSeqList = createDRRDynamic2DSequences(dynSeq, anglesAndAxisList)
 print(len(dyn2DDRRSeqList))
+print(type(dyn2DDRRSeqList[0]))
+
+for dyn2DSeq in dyn2DDRRSeqList:
+    print(type(dyn2DSeq))
+    print(len(dyn2DSeq.dyn2DImageList))
 
 # plt.figure()
 # plt.imshow(dyn2DDRRSeqList[0].dyn2DImageList[0].imageArray)

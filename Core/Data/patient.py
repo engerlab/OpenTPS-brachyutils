@@ -49,6 +49,7 @@ class Patient:
         self._rtStructs = []
         self._dynamic3DSequences = []
         self._dynamic3DModels = []
+        self._dynamic2DSequences = []
 
 
     def __str__(self):
@@ -316,6 +317,9 @@ class Patient:
 
         if data in self._dynamic3DSequences:
             self.appendDyn3DSeq(data)
+
+        if data in self._dynamic2DSequences:
+            self.appendDyn2DSeq(data)
 
         if data in self._dynamic3DModels:
             self.appendDyn3DMod(data)
