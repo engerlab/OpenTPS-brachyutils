@@ -9,6 +9,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.vectorField3D import VectorField3D
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.patient import Patient
 from Core.Data.patientList import PatientList
 from Core.Data.rtStruct import RTStruct
@@ -55,8 +56,8 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             patient.appendRTStruct(data)
         elif (isinstance(data, Dynamic3DSequence)):
             patient.appendDyn3DSeq(data)
-        # elif (isinstance(data, Dynamic2DSequence)): ## not implemented in patient yet, maybe only one function for both 2D and 3D dynamic sequences ?
-        #     patient.appendDyn2DSeq(data)
+        elif (isinstance(data, Dynamic2DSequence)):
+            patient.appendDyn2DSeq(data)
         elif (isinstance(data, Dynamic3DModel)):
             patient.appendDyn3DMod(data)
         elif (isinstance(data, Patient)):

@@ -1,7 +1,7 @@
-from Core.Processing.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequence
+from Core.Processing.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
 from Core.IO.dataLoader import loadAllData
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
-from Core.IO.serializedObjectIO import saveSerializedObject, loadDataStructure
+from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from pydicom.uid import generate_uid
 import matplotlib.pyplot as plt
@@ -67,4 +67,21 @@ print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 # plt.imshow(DRRSequence[2][0].imageArray)
 # plt.show()
 
-testSetSeq = createDRRDynamic2DSequence(dynSeq, anglesAndAxisList)
+dyn2DDRRSeqList = createDRRDynamic2DSequences(dynSeq, anglesAndAxisList)
+print(len(dyn2DDRRSeqList))
+print(type(dyn2DDRRSeqList[0]))
+
+for dyn2DSeq in dyn2DDRRSeqList:
+    print(type(dyn2DSeq))
+    print(len(dyn2DSeq.dyn2DImageList))
+
+# plt.figure()
+# plt.imshow(dyn2DDRRSeqList[0].dyn2DImageList[0].imageArray)
+# plt.show()
+
+if dynSeq.patient != None:
+    for dyn2DSeq in dyn2DDRRSeqList:
+        dynSeq.patient.appendDyn2DSeq(dyn2DSeq)
+
+savingPath = testDataPath + 'dyn2DDRRSeqList'
+saveSerializedObjects(dyn2DDRRSeqList, savingPath)

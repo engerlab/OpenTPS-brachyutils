@@ -22,7 +22,7 @@ class Dynamic3DSequence(PatientData):
             self.inhaleDuration = 1800
             self.timingsList = self.prepareTimings()
 
-        self.isDynamic = True
+        # self.isDynamic = True
         self.repetitionMode = repetitionMode
 
         print('Dynamic 3D Sequence Created with ', len(self.dyn3DImageList), 'images')
