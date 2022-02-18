@@ -1,6 +1,7 @@
 from typing import Union, Sequence
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.patientData import PatientData
@@ -107,6 +108,10 @@ class Patient:
     @property
     def dynamic3DModels(self):
         return self.getPatientDataOfType(Dynamic3DModel)
+
+    @property
+    def dynamic2DSequences(self):
+        return self.getPatientDataOfType(Dynamic2DSequence)
 
     @property
     def patientData(self):
