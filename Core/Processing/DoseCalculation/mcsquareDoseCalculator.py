@@ -6,12 +6,14 @@ from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Processing.DoseCalculation.abstractDoseCalculator import DoseCalculatorException
+from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
 
 
-class MCSquareDoseCalculator(AbstractMCDoseCalculator):
+class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalculator):
     def __init__(self):
-        super().__init__()
+        AbstractMCDoseCalculator.__init__(self)
+        AbstractDoseInfluenceCalculator.__init__(self)
 
         self._originalCTCalibration = None
         self._mcsquareCTCalibration = None
