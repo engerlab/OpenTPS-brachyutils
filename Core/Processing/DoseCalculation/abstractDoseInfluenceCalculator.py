@@ -31,7 +31,7 @@ class AbstractDoseInfluenceCalculator:
 
     @abstractmethod
     # TODO: specify plan type when class RTPlan is defined
-    def computeDoseInfluence(self, ct: CTImage, plan, roi: Optional[ROIMask] = None) -> DoseImage:
+    def computeDoseInfluence(self, ct: CTImage, plan, roi: Optional[ROIMask] = None):
         raise NotImplementedError()
 
 class DoseInfluenceCalculatorException(Exception):
