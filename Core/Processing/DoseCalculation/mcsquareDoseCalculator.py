@@ -5,6 +5,7 @@ from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
+from Core.Data.MCsquare.bdl import BDL
 from Core.Processing.DoseCalculation.abstractDoseCalculator import DoseCalculatorException
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
@@ -15,39 +16,26 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         AbstractMCDoseCalculator.__init__(self)
         AbstractDoseInfluenceCalculator.__init__(self)
 
-        self._originalCTCalibration = None
+        self._ctCalibration = None
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
 
     @property
     def ctCalibration(self) -> Optional[AbstractCTCalibration]:
-        return self._originalCTCalibration
+        return self._ctCalibration
 
     @ctCalibration.setter
     def ctCalibration(self, ctCalibration: AbstractCTCalibration):
-        if not isinstance(ctCalibration, MCsquareCTCalibration):
-            self._mcsquareCTCalibration = self.__class__._convertCTCalibrationToMCsquare(ctCalibration)
-        else:
-            self._mcsquareCTCalibration = ctCalibration
-
-        self._originalCTCalibration = ctCalibration
-
-    @staticmethod
-    def _convertCTCalibrationToMCsquare(ctCalibration: AbstractCTCalibration) -> MCsquareCTCalibration:
-        try:
-            return MCsquareCTCalibration.fromCTCalibration(ctCalibration)
-        except Exception as e:
-            raise DoseCalculatorException('CT Calibration cannot be converted into an MCsquareCTCalibration') from e
+        self._ctCalibration = ctCalibration
 
     @property
-    def beamModel(self):
+    def beamModel(self) -> BDL:
         return self._beamModel
 
     @beamModel.setter
-    def beamModel(self, beamModel):
-        # TODO beam model is not yet implemented. Can there be different beam models like there can be different CT calibrations?
-        raise NotImplementedError()
+    def beamModel(self, beamModel: BDL):
+        self._beamModel = beamModel
 
     @property
     def nbPrimaries(self) -> int:
