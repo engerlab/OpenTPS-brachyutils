@@ -11,6 +11,7 @@ from GUI.viewController import ViewController
 import Script
 
 from logConfigParser import parseArgs
+from mainConfig import MainConfig
 
 QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid display bug for 4k resolutions with 200% GUI scale
 
@@ -18,6 +19,8 @@ QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid displ
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
+
+    mainConfig = MainConfig()
 
     options = parseArgs(sys.argv[1:])
     logger.info("Start Application")
