@@ -179,8 +179,8 @@ class ChoseAngles_dialog(QDialog):
         self.image3D = self.prepare_image_for_viewer(Image3D.imageArray)
         self.imageShape = self.image3D.shape
         self.resolution = Image3D.spacing
-        self.imageCenter = [self.imageLabel.pos().x() + int(self.imageLabel.width()/2), self.imageLabel.pos().y() + int(self.imageLabel.height()/2)]
-        print('in ChoseAngles_dialog constructor', self.imageLabel.pos().x())
+        self.imageCenter = [self.imageLabel.pos()._x() + int(self.imageLabel.width() / 2), self.imageLabel.pos()._y() + int(self.imageLabel.height() / 2)]
+        print('in ChoseAngles_dialog constructor', self.imageLabel.pos()._x())
         print(self.imageCenter)
         self.distanceFromSourceToCenter = min(self.imageCenter[0], self.imageCenter[1]) - 10
         self.pannelWidth = min(self.imageLabel.width(), self.imageLabel.height())
@@ -267,8 +267,8 @@ class ChoseAngles_dialog(QDialog):
         elif self.orientation == 'Y':
             Yscaling = self.resolution[2] / self.resolution[0]
 
-        self.imageCenter = [self.imageLabel.pos().x() + int(self.imageLabel.width() / 2),
-                            self.imageLabel.pos().y() + int(self.imageLabel.height() / 2)]
+        self.imageCenter = [self.imageLabel.pos()._x() + int(self.imageLabel.width() / 2),
+                            self.imageLabel.pos()._y() + int(self.imageLabel.height() / 2)]
         self.distanceFromSourceToCenter = min(self.imageCenter[0], self.imageCenter[1]) - 10
         self.pannelWidth = min(self.imageLabel.width(), self.imageLabel.height())
 
@@ -319,8 +319,8 @@ class ChoseAngles_dialog(QDialog):
 ##-----------------------------------------------------------------------------------------------------------
     def mouseMoveEvent(self, QMouseEvent):
         #print('Mouse coords: ( %d : %d )' % (QMouseEvent.x(), QMouseEvent.y()))
-        self.currentMousePos.setX(QMouseEvent.x())
-        self.currentMousePos.setY(QMouseEvent.y())
+        self.currentMousePos.setX(QMouseEvent._x())
+        self.currentMousePos.setY(QMouseEvent._y())
         self.getAngleFromMousePosition()
 
         self.infoLabel.setText(self.infoLabelText + "Current angle : " + str(int(np.round(self.angleBetweenMouseAndCenter*(360/6.28)))) + '°')

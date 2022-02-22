@@ -1,6 +1,9 @@
+from typing import Optional
+
 import numpy as np
 
 from Core.Data.Plan.planIonLayer import PlanIonLayer
+from Core.Data.Plan.rangeShifter import RangeShifter
 
 
 class PlanIonBeam:
@@ -9,7 +12,7 @@ class PlanIonBeam:
         self.isocenterPosition = [0, 0, 0]
         self.gantryAngle = 0.0
         self.patientSupportAngle = 0.0
-        self.rangeShifter = None
+        self._rangeShifter = None
         self._layers = []
 
         self.seriesInstanceUID = ""
@@ -28,6 +31,14 @@ class PlanIonBeam:
 
         return s
 
+    @property
+    def rangeShifter(self) -> Optional[RangeShifter]:
+        return self._rangeShifter
+
+    @rangeShifter.setter
+    def rangeShifter(self, rs:Optional[RangeShifter]):
+        self._rangeShifter = rs
+
     def appendLayer(self, layer: PlanIonLayer):
         self._layers.append(layer)
 
@@ -36,7 +47,7 @@ class PlanIonBeam:
 
     @property
     def meterset(self) -> int:
-        return np.sum(np.array(self.getMUs()))
+        return np.sum(np.array([layer.meterset for layer in self._layers]))
 
     def simplify(self, threshold:float=0.0):
         self._fusionDuplicates()

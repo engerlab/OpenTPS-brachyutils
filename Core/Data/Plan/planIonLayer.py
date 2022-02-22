@@ -32,6 +32,7 @@ class PlanIonLayer:
         return np.sum(self._spots.weights)
 
     def simplify(self, threshold=0.0):
+        # TODO
         raise(NotImplementedError('TODO'))
 
 class RangeShifterSettings:
@@ -116,6 +117,10 @@ class PlanIonSpots:
             if (x == x_xy and y == y_xy):
                 return (True, i)
         return (False, None)
+
+    def reorderSpots(self, order):
+        # TODO
+        raise NotImplementedError()
 
 
 class PlanIonSpotsTestCase(unittest.TestCase):
