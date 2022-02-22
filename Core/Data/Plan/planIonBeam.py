@@ -8,13 +8,13 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 
 class PlanIonBeam:
     def __init__(self):
+        self._rangeShifter = None
+        self._layers = []
+
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
         self.gantryAngle = 0.0
         self.patientSupportAngle = 0.0
-        self._rangeShifter = None
-        self._layers = []
-
         self.seriesInstanceUID = ""
 
     def  __getitem__(self, layerNb):

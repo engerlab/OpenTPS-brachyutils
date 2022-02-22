@@ -6,31 +6,32 @@ import numpy as np
 
 class PlanIonLayer:
     def __init__(self, nominalEnergy:float=0.0):
-        self.nominalEnergy = nominalEnergy
-        self.numberOfPaintings = 1
         self._x = np.array([])
         self._y = np.array([])
         self._weights = np.array([])
-        self.rsSettings = RangeShifterSettings
+
+        self.nominalEnergy = nominalEnergy
+        self.numberOfPaintings = 1
+        self.rangeShifterSettings = RangeShifterSettings
 
     def __len__(self):
         return len(self._weights)
 
     def __str__(self):
         s = 'NominalEnergy: ' + str(self.nominalEnergy) + '\n'
-        s += 'Spots (x, y, MU): \n'
+        s += 'Spots ((x, y), MU): \n'
 
-        xyAndWeights = zip(list(self.xy), self._weights)
+        xyAndWeights = zip(list(self.spotXY), self._weights)
         for xyAndWeight in xyAndWeights:
             s += str(xyAndWeight)
         return s
 
     @property
-    def xy(self) -> Iterable:
+    def spotXY(self) -> Iterable:
         return zip(self._x, self._y)
 
     @property
-    def weights(self) -> np.ndarray:
+    def spotWeights(self) -> np.ndarray:
         return np.array(self._weights)
 
     @property
@@ -91,7 +92,7 @@ class PlanIonLayer:
         return (exist, where)
 
     def _singleSpotCheck(self, x: float, y: float) -> tuple:
-        for i, (x_xy, y_xy) in enumerate(self.xy):
+        for i, (x_xy, y_xy) in enumerate(self.spotXY):
             if (x == x_xy and y == y_xy):
                 return (True, i)
         return (False, None)
@@ -107,7 +108,7 @@ class PlanIonLayer:
 class RangeShifterSettings:
     def __init__(self):
         self.isocenterToRangeShifterDistance = 0.0
-        self.rangeShifterWaterEquivalentThickness = 0.0
+        self.rangeShifterWaterEquivalentThickness = None # Means get thickness from BDL! This is extremely error prone!
         self.rangeShifterSetting = 'OUT'
 
 class PlanIonLayerTestCase(unittest.TestCase):
@@ -119,8 +120,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         weight = 0
         layer.appendSpot(x, y, weight)
 
-        self.assertEqual(list(layer.xy), [(x, y)])
-        self.assertEqual(layer.weights, 0)
+        self.assertEqual(list(layer.spotXY), [(x, y)])
+        self.assertEqual(layer.spotWeights, 0)
 
         self.assertRaises(Exception, lambda :layer.appendSpot(x, y, weight))
 
@@ -132,12 +133,12 @@ class PlanIonLayerTestCase(unittest.TestCase):
         weight = 0
 
         layer.setSpot(x, y, weight)
-        self.assertEqual(list(layer.xy), [(x, y)])
-        self.assertEqual(layer.weights, 0)
+        self.assertEqual(list(layer.spotXY), [(x, y)])
+        self.assertEqual(layer.spotWeights, 0)
 
         layer.setSpot(x, y, weight)
-        self.assertEqual(list(layer.xy), [(x, y)])
-        self.assertEqual(layer.weights, 0)
+        self.assertEqual(list(layer.spotXY), [(x, y)])
+        self.assertEqual(layer.spotWeights, 0)
 
     def testRemoveSpot(self):
         layer = PlanIonLayer()
@@ -147,17 +148,17 @@ class PlanIonLayerTestCase(unittest.TestCase):
         weight = 0
 
         layer.setSpot(x, y, weight)
-        self.assertEqual(list(layer.xy), [(x, y)])
-        self.assertEqual(layer.weights, 0)
+        self.assertEqual(list(layer.spotXY), [(x, y)])
+        self.assertEqual(layer.spotWeights, 0)
 
         layer.removeSpot(x, y)
 
-        self.assertEqual(list(layer.xy), [])
-        np.testing.assert_array_equal(layer.weights, np.array([]))
+        self.assertEqual(list(layer.spotXY), [])
+        np.testing.assert_array_equal(layer.spotWeights, np.array([]))
 
         layer.setSpot(x, y, weight)
-        self.assertEqual(list(layer.xy), [(x, y)])
-        self.assertEqual(layer.weights, 0)
+        self.assertEqual(list(layer.spotXY), [(x, y)])
+        self.assertEqual(layer.spotWeights, 0)
 
     def testSpotDefinedInXY(self):
         layer = PlanIonLayer()
