@@ -20,7 +20,7 @@ def events(L,Tend):
 
 #entre deux timestamps successifs, un event est créé
 #Un event correspond a une fonction echellon qui est ensuite bruitee
-def vectorSimulation(L,diff,Tend,t):
+def vectorSimulation(L,diff,mean,sigma,Tend,t):
     timestamp = events(L,Tend)        
     y = np.zeros(len(t))
     i = 0
@@ -31,22 +31,23 @@ def vectorSimulation(L,diff,Tend,t):
             t2 = timestamp[i+2]
             y[(t>=t1) & (t<=t2)] = a
         i+=2
-    noise = np.random.normal(0,diff/50,len(t))
+    #noise = np.random.normal(0,diff/50,len(t))
+    noise = np.random.normal(mean,sigma,len(t))
     y += noise
     return y
 
 #creation des donnees respiratoires
-def signal(A,dA,T,df,ds,step,Tend,L):
+def signal(A,dA,T,df,dS,mean,sigma,step,Tend,L):
     f = 1/T  
     t = np.arange(0,Tend,step)
     
-    A += vectorSimulation(L,dA,Tend,t)
-    s = vectorSimulation(L,dS,Tend,t)
-    f += vectorSimulation(L,df,Tend,t)
+    A += vectorSimulation(L,dA,mean,sigma,Tend,t)
+    s = vectorSimulation(L,dS,mean,sigma,Tend,t)
+    f += vectorSimulation(L,df,mean,sigma,Tend,t)
     
     y = A*np.sin(2*np.pi*f*(t%(1/f))) + s
     return t,y
-
+"""
 #parametres changeables
 A = 10 #amplitude (mm)
 dA = 5 #variation d amplitude possible (mm)
@@ -64,3 +65,4 @@ plt.xlabel("Time [s]")
 plt.ylabel("Amplitude [mm]")
 plt.title("Breathing signal")
 plt.xlim((0,50))
+"""
