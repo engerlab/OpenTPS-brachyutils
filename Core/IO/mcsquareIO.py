@@ -3,11 +3,20 @@ import unittest
 
 import numpy as np
 
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
+
+
+def writeCTCalibration(calibration: AbstractCTCalibration, folderPath, scannerName):
+    if not isinstance(calibration, MCsquareCTCalibration):
+        calibration = MCsquareCTCalibration.fromCTCalibration(calibration)
+
+    calibration.write(folderPath, scannerName)
 
 
 def writeConfig(config: MCsquareConfig, file_path):
