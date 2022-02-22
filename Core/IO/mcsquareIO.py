@@ -5,8 +5,15 @@ import numpy as np
 
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.MCsquare.bdl import BDL
+from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
+
+
+def writeConfig(config: MCsquareConfig, file_path):
+    fid = open(file_path, 'w')
+    fid.write(config.mcsquareFormatted())
+    fid.close()
 
 
 def readBDL(path) -> BDL:

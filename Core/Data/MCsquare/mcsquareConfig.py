@@ -2,7 +2,7 @@ import os
 
 
 class MCsquareConfig:
-  def __init__(self, WorkDir, NumberOfPrimaries, Scanner_folder, BDL_file, CT_file="CT.mhd", Plan_file="PlanPencil.txt"):
+  def __init__(self, WorkDir, Scanner_folder, BDL_file, CT_file="CT.mhd", Plan_file="PlanPencil.txt"):
     ### Initialize MCsquare config with default values
     self.config = {}
 
@@ -11,7 +11,7 @@ class MCsquareConfig:
     # Simulation parameters
     self.config["Num_Threads"] = 0
     self.config["RNG_Seed"] = 0
-    self.config["Num_Primaries"] = NumberOfPrimaries
+    self.config["Num_Primaries"] = 1e7
     self.config["E_Cut_Pro"] = 0.5
     self.config["D_Max"] = 0.2
     self.config["Epsilon_Max"] = 0.25
@@ -111,6 +111,9 @@ class MCsquareConfig:
     self.config[key] = value
 
   def __str__(self):
+    return self.mcsquareFormatted()
+
+  def mcsquareFormatted(self) -> str:
     Module_folder = os.path.dirname(os.path.realpath(__file__))
     fid = open(os.path.join(Module_folder, "ConfigTemplate.txt"), 'r')
     Template = fid.read()
