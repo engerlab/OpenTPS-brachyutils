@@ -9,18 +9,34 @@ import config as configModule
 
 class MainConfig:
     def __init__(self):
-        self._workspace = Path.home() / "openTPS_workspace"
+        self._config_dir = Path(appdirs.user_config_dir("openTPS"))
+        self._configFile = self._config_dir / "mainConfig.cfg"
 
-        config_dir = Path(appdirs.user_config_dir("openTPS"))
-        configFile = config_dir / "mainConfig.cfg"
-
-        if not configFile.exists():
-            makedirs(config_dir, exist_ok=True)
-            with open(configFile, 'w') as file:
+        if not self._configFile.exists():
+            makedirs(self._config_dir, exist_ok=True)
+            with open(self._configFile, 'w') as file:
                 self._defaultConfig.write(file)
 
         self._config = configparser.ConfigParser()
-        self._config.read(configFile)
+        self._config.read(self._configFile)
+
+    @property
+    def workspace(self):
+        return self._config["dir"]["workspace"]
+
+    @workspace.setter
+    def workspace(self, path):
+        path = Path(path)
+
+        self._checkFolder(path)
+
+        self._config["dir"]["workspace"] = str(path)
+        self._config["dir"]["startScriptFolder"] = str(path / "startScriptFolder")
+        self._config["dir"]["resultFolder"] = str(path / "resultFolder")
+        self._config["dir"]["logFolder"] = str(path / "logFolder")
+        self._config["dir"]["exampleFolder"] = str(path / "exampleFolder")
+
+        self.writeConfig()
 
     @property
     def startScriptFolder(self):
@@ -46,8 +62,14 @@ class MainConfig:
         self._checkFolder(folder)
         return folder
 
+    def writeConfig(self):
+        with open(self._configFile, 'w') as file:
+            self._config.write(file)
+
     def _checkFolder(self, folder):
-        if not self._workspace.is_dir():
+        folder = Path(folder)
+        
+        if not folder.is_dir():
             mkdir(folder)
 
     @property
@@ -55,13 +77,8 @@ class MainConfig:
         configTemplate = configparser.ConfigParser()
         configTemplate.read(Path(str(configModule.__path__[0])) / "config_template.cfg")
 
-        configTemplate["dir"]["startScriptFolder"] = str(self._workspace / configTemplate["dir"]["startScriptFolder"])
-        configTemplate["dir"]["resultFolder"] = str(self._workspace / configTemplate["dir"]["resultFolder"])
-        configTemplate["dir"]["logFolder"] = str(self._workspace / configTemplate["dir"]["logFolder"])
-        configTemplate["dir"]["exampleFolder"] = str(self._workspace / configTemplate["dir"]["exampleFolder"])
-
-        if not self._workspace.is_dir():
-            mkdir(self._workspace)
+        configTemplate["dir"]["workspace"] = str(Path.home() / "openTPS_workspace")
+        self._checkFolder(configTemplate["dir"]["workspace"])
 
         return configTemplate
 
