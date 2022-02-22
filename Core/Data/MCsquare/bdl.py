@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 from scipy import interpolate
 
@@ -35,6 +37,9 @@ class BDL:
             self._load(self._path)
 
     def __str__(self):
+        return self.mcsquareFormatted()
+
+    def mcsquareFormatted(self):
         s = '--UPenn beam model (double gaussian)--\n\n'
         s += 'Nozzle exit to Isocenter distance\n'
         s += str(self.nozzle_isocenter) + '\n\n'
@@ -190,3 +195,9 @@ class BDL:
     def write(self, fileName):
         with open(fileName, 'w') as f:
             f.write(str(self))
+
+if __name__ == '__main__':
+    import MCsquare.BDL as BDLModule
+    bdl = BDL(bdlPath = os.path.join(str(BDLModule.__path__[0]), 'BDL_default_DN_RangeShifter.txt'))
+
+    print(bdl)
