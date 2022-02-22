@@ -67,7 +67,7 @@ class PatientDataPanel(QWidget):
 
     def loadData(self):
         filesOrFoldersList = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
-        if len(filesOrFoldersList)<1:
+        if len(filesOrFoldersList) < 1:
             return
 
         splitPath = filesOrFoldersList[0].split('/')
@@ -206,14 +206,17 @@ class PatientDataTree(QTreeView):
         if self._currentPatient is None:
             return
 
-        self._currentPatient.imageAddedSignal.connect(self._appendData)
-        self._currentPatient.imageRemovedSignal.connect(self._removeData)
-        self._currentPatient.dyn3DSeqAddedSignal.connect(self._appendData)
-        self._currentPatient.dyn3DSeqRemovedSignal.connect(self._removeData)
-        # self._currentPatient.dyn2DSeqAddedSignal.connect(self._appendData)
-        # self._currentPatient.dyn2DSeqRemovedSignal.connect(self._removeData)
-        self._currentPatient.dyn3DModAddedSignal.connect(self._appendData)
-        self._currentPatient.dyn3DModRemovedSignal.connect(self._removeData)
+        # self._currentPatient.imageAddedSignal.connect(self._appendData)  ## before data list merge in patient
+        # self._currentPatient.imageRemovedSignal.connect(self._removeData)
+        # self._currentPatient.dyn3DSeqAddedSignal.connect(self._appendData)
+        # self._currentPatient.dyn3DSeqRemovedSignal.connect(self._removeData)
+        # # self._currentPatient.dyn2DSeqAddedSignal.connect(self._appendData)
+        # # self._currentPatient.dyn2DSeqRemovedSignal.connect(self._removeData)
+        # self._currentPatient.dyn3DModAddedSignal.connect(self._appendData)
+        # self._currentPatient.dyn3DModRemovedSignal.connect(self._removeData)
+        self._currentPatient.patientDataAddedSignal.connect(self._appendData)
+        self._currentPatient.patientDataRemovedSignal.connect(self._removeData)
+
         #TODO: Same with other data
 
         #images
@@ -225,6 +228,7 @@ class PatientDataTree(QTreeView):
             self._viewController.selectedImage = images[0]
 
         # dynamic sequences
+        print('in patientDataPanel, buildDataTree', len(patient.dynamic3DSequences))
         for dynSeq in patient.dynamic3DSequences:
             self._appendData(dynSeq)
 
@@ -397,7 +401,6 @@ class PatientDataTree(QTreeView):
 
         print('Export data as serialized objects')
         for data in selectedData:
-            type(data)
             print('  ', type(data), data.name)
 
         fileDialog = SaveData_dialog()

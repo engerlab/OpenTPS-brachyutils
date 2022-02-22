@@ -74,7 +74,6 @@ class DRRPanel(QWidget):
             print('in drrPanel selectProjectionAngles !!! source image is hard coded for now')
             sourceImageOrSeq = self._viewController.currentPatient.dynamic3DSequences[0]
             dyn2DDRRSeqList = createDRRDynamic2DSequences(sourceImageOrSeq, anglesAndAxisList)
-            print(len(dyn2DDRRSeqList))
 
             # plt.figure()
             # plt.imshow(dyn2DDRRSeqList[0].dyn2DImageList[0].imageArray)
@@ -82,7 +81,7 @@ class DRRPanel(QWidget):
 
             if sourceImageOrSeq.patient != None:
                 for dyn2DSeq in dyn2DDRRSeqList:
-                    sourceImageOrSeq.patient.appendDyn2DSeq(dyn2DSeq)
+                    sourceImageOrSeq.patient.appendPatienData(dyn2DSeq)
 
             # self.fluoroSeqCreated.emit()
             #self.data_path = QFileDialog.getExistingDirectory(self, "Select 4D Data folder", self.data_path)
@@ -100,49 +99,49 @@ class DRRPanel(QWidget):
 #                     self.treeView.expandAll()
 #                     self.treeView.clicked.connect(self.getTreeViewValue)
 #
-    def createDRRs(self, angleList, Dyn4DSeq, patient, orientation='Axial'):
-
-        try:
-            import tomopy
-
-            for anglesAndOri in angleList:
-
-                angle = anglesAndOri[0]
-                orientation = anglesAndOri[1]
-
-                fluoroSeq = Dynamic2DSequence()
-                fluoroSeq.type = 'Fluoroscopy simulation'
-                fluoroSeq.projectionAngle = angle
-                fluoroSeq.SequenceName = 'FluoSim_' + anglesAndOri[1] + '_' + str(
-                    int(np.round(angle * 360 / (2 * math.pi))))
-                for imageIndex, image in enumerate(Dyn4DSeq.dyn3DImageList):
-
-                    # to rotate around Z axis
-                    if orientation == 'Axial':
-                        imageToUse = image.Image.transpose(2, 1, 0)
-                    if orientation == 'Coronal':
-                        imageToUse = image.Image.transpose(1, 2, 0)
-                    if orientation == 'Sagittal':
-                        imageToUse = image.Image.transpose(0, 2, 1)
-
-                    print('! ! ! in fluoroscopy_sim --> les orientation et transpose ici sont à vérifier! ! !')
-                    fluoSimImage = tomopy.project(imageToUse, angle)[0]
-
-                    # plt.figure()
-                    # plt.imshow(fluoSimImage)
-                    # plt.show()
-
-                    image_2D = image2D()
-                    image_2D.Image = fluoSimImage
-                    image_2D.ImgName = str(imageIndex + 1)
-                    image_2D.PixelSpacing = [1, 1]
-                    fluoroSeq.dyn2DImageList.append(image_2D)
-                    fluoroSeq.isLoaded = True
-
-                patient.Dyn2DSeqList.append(fluoroSeq)
-
-        except:
-            print("No module tomopy available")
+    # def createDRRs(self, angleList, Dyn4DSeq, patient, orientation='Axial'):
+    #
+    #     try:
+    #         import tomopy
+    #
+    #         for anglesAndOri in angleList:
+    #
+    #             angle = anglesAndOri[0]
+    #             orientation = anglesAndOri[1]
+    #
+    #             fluoroSeq = Dynamic2DSequence()
+    #             fluoroSeq.type = 'Fluoroscopy simulation'
+    #             fluoroSeq.projectionAngle = angle
+    #             fluoroSeq.SequenceName = 'FluoSim_' + anglesAndOri[1] + '_' + str(
+    #                 int(np.round(angle * 360 / (2 * math.pi))))
+    #             for imageIndex, image in enumerate(Dyn4DSeq.dyn3DImageList):
+    #
+    #                 # to rotate around Z axis
+    #                 if orientation == 'Axial':
+    #                     imageToUse = image.Image.transpose(2, 1, 0)
+    #                 if orientation == 'Coronal':
+    #                     imageToUse = image.Image.transpose(1, 2, 0)
+    #                 if orientation == 'Sagittal':
+    #                     imageToUse = image.Image.transpose(0, 2, 1)
+    #
+    #                 print('! ! ! in fluoroscopy_sim --> les orientation et transpose ici sont à vérifier! ! !')
+    #                 fluoSimImage = tomopy.project(imageToUse, angle)[0]
+    #
+    #                 # plt.figure()
+    #                 # plt.imshow(fluoSimImage)
+    #                 # plt.show()
+    #
+    #                 image_2D = image2D()
+    #                 image_2D.Image = fluoSimImage
+    #                 image_2D.ImgName = str(imageIndex + 1)
+    #                 image_2D.PixelSpacing = [1, 1]
+    #                 fluoroSeq.dyn2DImageList.append(image_2D)
+    #                 fluoroSeq.isLoaded = True
+    #
+    #             patient.Dyn2DSeqList.append(fluoroSeq)
+    #
+    #     except:
+    #         print("No module tomopy available")
 # class StandardItem(QStandardItem):
 #   def __init__(self, txt="", fontSize = 12, setBold=False, color=QColor(0,0,0)):
 #     super().__init__()

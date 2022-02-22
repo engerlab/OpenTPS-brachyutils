@@ -124,7 +124,7 @@ class Patient:
         return (data in self._patientData)
 
     @API.loggedViaAPI
-    def appendPatienData(self, data=Union[Sequence, PatientData]):
+    def appendPatientData(self, data=Union[Sequence, PatientData]):
         if isinstance(data, list):
             self.appendPatientDataList(data)
 
