@@ -8,47 +8,22 @@ class PlanIonLayer:
     def __init__(self, nominalEnergy:float=0.0):
         self.nominalEnergy = nominalEnergy
         self.numberOfPaintings = 1
-        self._spots = PlanIonSpots()
+        self._x = np.array([])
+        self._y = np.array([])
+        self._weights = np.array([])
         self.rsSettings = RangeShifterSettings
 
     def __len__(self):
-        return len(self._spots)
+        return len(self._weights)
 
     def __str__(self):
         s = 'NominalEnergy: ' + str(self.nominalEnergy) + '\n'
         s += 'Spots (x, y, MU): \n'
 
-        xyAndWeights = zip(list(self._spots.xy), self._spots.weights)
+        xyAndWeights = zip(list(self.xy), self._weights)
         for xyAndWeight in xyAndWeights:
             s += str(xyAndWeight)
         return s
-
-    @property
-    def spots(self):
-        return self._spots
-
-    @property
-    def meterset(self) -> int:
-        return np.sum(self._spots.weights)
-
-    def simplify(self, threshold=0.0):
-        # TODO
-        raise(NotImplementedError('TODO'))
-
-class RangeShifterSettings:
-    def __init__(self):
-        self.isocenterToRangeShifterDistance = 0.0
-        self.rangeShifterWaterEquivalentThickness = 0.0
-        self.rangeShifterSetting = 'OUT'
-
-class PlanIonSpots:
-    def __init__(self):
-        self._x = np.array([])
-        self._y = np.array([])
-        self._weights = np.array([])
-
-    def __len__(self):
-        return len(self._weights)
 
     @property
     def xy(self) -> Iterable:
@@ -58,14 +33,18 @@ class PlanIonSpots:
     def weights(self) -> np.ndarray:
         return np.array(self._weights)
 
-    def appendSpot(self, x:Union[float, Sequence], y:Union[float, Sequence], weight:Union[float, Sequence]):
+    @property
+    def meterset(self) -> int:
+        return np.sum(self._weights)
+
+    def appendSpot(self, x: Union[float, Sequence], y: Union[float, Sequence], weight: Union[float, Sequence]):
         if isinstance(x, Sequence):
             for i, xElem in enumerate(x):
                 self._appendSingleSpot(xElem, y[i], weight[i])
         else:
             self._appendSingleSpot(x, y, weight)
 
-    def _appendSingleSpot(self, x:float, y:float, weight:float):
+    def _appendSingleSpot(self, x: float, y: float, weight: float):
         alreadyExists, _ = self.spotDefinedInXY(x, y)
         if alreadyExists:
             raise ValueError('Spot already exists in (x,y)')
@@ -74,14 +53,14 @@ class PlanIonSpots:
         self._y = np.append(self._y, y)
         self._weights = np.append(self._weights, weight)
 
-    def setSpot(self, x:Union[float, Sequence], y:Union[float, Sequence], weight:Union[float, Sequence]):
+    def setSpot(self, x: Union[float, Sequence], y: Union[float, Sequence], weight: Union[float, Sequence]):
         if isinstance(x, Sequence):
             for i, xElem in enumerate(x):
                 self._setSingleSpot(xElem, y[i], weight[i])
         else:
             self._setSingleSpot(x, y, weight)
 
-    def _setSingleSpot(self, x:float, y:float, weight:float):
+    def _setSingleSpot(self, x: float, y: float, weight: float):
         alreadyExists, spotPos = self.spotDefinedInXY(x, y)
         if alreadyExists:
             self._x[spotPos] = x
@@ -90,14 +69,14 @@ class PlanIonSpots:
         else:
             self.appendSpot(x, y, weight)
 
-    def removeSpot(self, x:Union[float, Sequence], y:Union[float, Sequence]):
+    def removeSpot(self, x: Union[float, Sequence], y: Union[float, Sequence]):
         _, spotPos = self.spotDefinedInXY(x, y)
 
         self._x = np.delete(self._x, spotPos)
         self._y = np.delete(self._y, spotPos)
         self._weights = np.delete(self._weights, spotPos)
 
-    def spotDefinedInXY(self, x:Union[float, Sequence], y:Union[float, Sequence]) -> tuple:
+    def spotDefinedInXY(self, x: Union[float, Sequence], y: Union[float, Sequence]) -> tuple:
         if x is list:
             exist = []
             where = []
@@ -111,7 +90,6 @@ class PlanIonSpots:
 
         return (exist, where)
 
-
     def _singleSpotCheck(self, x: float, y: float) -> tuple:
         for i, (x_xy, y_xy) in enumerate(self.xy):
             if (x == x_xy and y == y_xy):
@@ -122,71 +100,80 @@ class PlanIonSpots:
         # TODO
         raise NotImplementedError()
 
+    def simplify(self, threshold=0.0):
+        # TODO
+        raise(NotImplementedError('TODO'))
 
-class PlanIonSpotsTestCase(unittest.TestCase):
+class RangeShifterSettings:
+    def __init__(self):
+        self.isocenterToRangeShifterDistance = 0.0
+        self.rangeShifterWaterEquivalentThickness = 0.0
+        self.rangeShifterSetting = 'OUT'
+
+class PlanIonLayerTestCase(unittest.TestCase):
     def testAppendSpot(self):
-        spots = PlanIonSpots()
+        layer = PlanIonLayer()
 
         x = 0
         y = 0
         weight = 0
-        spots.appendSpot(x, y, weight)
+        layer.appendSpot(x, y, weight)
 
-        self.assertEqual(list(spots.xy), [(x, y)])
-        self.assertEqual(spots.weights, 0)
+        self.assertEqual(list(layer.xy), [(x, y)])
+        self.assertEqual(layer.weights, 0)
 
-        self.assertRaises(Exception, lambda :spots.appendSpot(x, y, weight))
+        self.assertRaises(Exception, lambda :layer.appendSpot(x, y, weight))
 
     def testSetSpot(self):
-        spots = PlanIonSpots()
+        layer = PlanIonLayer()
 
         x = 0
         y = 0
         weight = 0
 
-        spots.setSpot(x, y, weight)
-        self.assertEqual(list(spots.xy), [(x, y)])
-        self.assertEqual(spots.weights, 0)
+        layer.setSpot(x, y, weight)
+        self.assertEqual(list(layer.xy), [(x, y)])
+        self.assertEqual(layer.weights, 0)
 
-        spots.setSpot(x, y, weight)
-        self.assertEqual(list(spots.xy), [(x, y)])
-        self.assertEqual(spots.weights, 0)
+        layer.setSpot(x, y, weight)
+        self.assertEqual(list(layer.xy), [(x, y)])
+        self.assertEqual(layer.weights, 0)
 
     def testRemoveSpot(self):
-        spots = PlanIonSpots()
+        layer = PlanIonLayer()
 
         x = 0
         y = 0
         weight = 0
 
-        spots.setSpot(x, y, weight)
-        self.assertEqual(list(spots.xy), [(x, y)])
-        self.assertEqual(spots.weights, 0)
+        layer.setSpot(x, y, weight)
+        self.assertEqual(list(layer.xy), [(x, y)])
+        self.assertEqual(layer.weights, 0)
 
-        spots.removeSpot(x, y)
+        layer.removeSpot(x, y)
 
-        self.assertEqual(list(spots.xy), [])
-        np.testing.assert_array_equal(spots.weights, np.array([]))
+        self.assertEqual(list(layer.xy), [])
+        np.testing.assert_array_equal(layer.weights, np.array([]))
 
-        spots.setSpot(x, y, weight)
-        self.assertEqual(list(spots.xy), [(x, y)])
-        self.assertEqual(spots.weights, 0)
+        layer.setSpot(x, y, weight)
+        self.assertEqual(list(layer.xy), [(x, y)])
+        self.assertEqual(layer.weights, 0)
 
     def testSpotDefinedInXY(self):
-        spots = PlanIonSpots()
+        layer = PlanIonLayer()
 
         x = 0
         y = 0
         weight = 0
 
-        spots.setSpot(x, y, weight)
+        layer.setSpot(x, y, weight)
 
-        exists, where = spots.spotDefinedInXY(x, y)
+        exists, where = layer.spotDefinedInXY(x, y)
         self.assertTrue(exists)
         self.assertEqual(where, 0)
 
-        spots.removeSpot(x, y)
+        layer.removeSpot(x, y)
 
-        exists, where = spots.spotDefinedInXY(x, y)
+        exists, where = layer.spotDefinedInXY(x, y)
         self.assertFalse(exists)
         self.assertIsNone(where)
