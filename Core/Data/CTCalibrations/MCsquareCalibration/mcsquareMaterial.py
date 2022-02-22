@@ -1,4 +1,5 @@
 import os
+from abc import abstractmethod
 
 import Core.Processing.MCsquare as MCsquare
 
@@ -10,6 +11,10 @@ class MCsquareMaterial:
         self.number = number
         self.sp = sp
         self.radiationLength = radiationLength
+
+    @abstractmethod
+    def mcsquareFormatted(self):
+        raise NotImplementedError()
 
     def getFolderFromMaterialNumber(materialNumber, materialsPath='default'):
         if materialsPath=='default':
@@ -55,6 +60,6 @@ class MCsquareMaterial:
         os.makedirs(folderPath, exist_ok=True)
 
         with open(propertiesFile, 'w') as f:
-            f.write(str(self))
+            f.write(self.mcsquareFormatted())
 
         self.sp.write(spFile)

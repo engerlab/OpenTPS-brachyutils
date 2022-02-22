@@ -1,5 +1,6 @@
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareHU2Material import MCsquareHU2Material
+from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.CTCalibrations.piecewiseHU2Density import PiecewiseHU2Density
 
@@ -44,6 +45,13 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
 
         PiecewiseHU2Density.write(self, os.path.join(scannerPath, 'HU_Density_Conversion.txt'))
         MCsquareHU2Material.write(self, materialPath, os.path.join(scannerPath, 'HU_Material_Conversion.txt'))
+
+    @classmethod
+    def fromCTCalibration(cls, ctCalibration: AbstractCTCalibration):
+        if isinstance(ctCalibration, RayStationCTCalibration):
+            return ctCalibration.toMCSquareCTCalibration()
+        else:
+            raise NotImplementedError('Conversion from' + ctCalibration.__class__.__name__ + ' to ' + cls.__class__.__name__ + ' is not implemented.')
 
 # test
 if __name__ == '__main__':
