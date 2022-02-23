@@ -117,8 +117,13 @@ class Patient:
     def patientData(self):
         return [data for data in self._patientData]
 
-    def getPatientDataOfType(self, type):
-        return [data for data in self._patientData if isinstance(data, type)]
+    def getPatientDataOfType(self, dataType):
+        print(type(dataType))
+        if type(dataType) == 'str':
+            print('yeah')
+            return [data for data in self._patientData if data.getTypeAsString() == dataType]
+        else:
+            return [data for data in self._patientData if isinstance(data, dataType)]
 
     def hasPatientData(self, data):
         return (data in self._patientData)

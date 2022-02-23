@@ -107,7 +107,7 @@ class PatientData:
         if not(self._patient is None):
             self._patient.appendPatientData(self)
 
-    def getType(self):
+    def getTypeAsString(self):
         return self.__class__.__name__
 
 

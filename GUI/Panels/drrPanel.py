@@ -20,7 +20,7 @@ class DRRPanel(QWidget):
         QWidget.__init__(self)
 
         self._viewController = viewController
-        # self._viewController.patientAddedSignal.connect(self._addPatient)
+        self._viewController.patientAddedSignal.connect(self.refreshDataList)
 
         self.patients = self._viewController.patientList
         # self.toolbox_width = toolbox_width
@@ -31,30 +31,52 @@ class DRRPanel(QWidget):
         self.setLayout(self.layout)
 
         self.imageSelectionBox = QComboBox()
+        # self.refreshDataList(self._viewController.currentPatient)
 
-
-        self.layout.addWidget(QLabel('Hello')) ## --> this must changed to a data selection box (self.imageSelectionBox)
+        self.layout.addWidget(self.imageSelectionBox) ## --> this must changed to a data selection box (self.imageSelectionBox)
 
 
         self.fluoSimButton = QPushButton('Fluoroscopy simulation')
         self.layout.addWidget(self.fluoSimButton)
         self.fluoSimButton.clicked.connect(self.selectProjectionAngles)
 
+    def refreshDataList(self, patient):
+
+        print('in DRRPanel refresh data list ')
+        for data in patient.getPatientDataOfType('CTImage'):
+            name = data.name
+            self.imageSelectionBox.addItem(name, data)
+        for data in patient.getPatientDataOfType('Dynamic3DSequence'):
+            name = data.name
+            self.imageSelectionBox.addItem(name, data)
+
+    """
+    class PatientComboBox(QComboBox):
+    def __init__(self, viewController):
+        QComboBox.__init__(self)
+
+        self._viewController = viewController
+
+        self._viewController.patientAddedSignal.connect(self._addPatient)
+        self._viewController.patientRemovedSignal.connect(self._removePatient)
+
+        self.currentIndexChanged.connect(self._setCurrentPatient)
+
     def _addPatient(self, patient):
+        name = patient.name
+        if name is None:
+            name = 'None'
 
-        self.patients = self._viewController.patientList
+        self.addItem(name, patient)
+        if self.count() == 1:
+            self._viewController.currentPatient = patient
 
-        for patient in self.patients:
-            for data in patient.dataList:
-                if data.getType() == 'CTImage':
-                    name = data.name
-                    self.imageSelectionBox.addItem(name, patient)
-                elif data.getType() == 'Dynamic3DSequence':
-                    if data.dyn3DImageList[0].getType() == 'CTImage':
-                        name = data.name
-                        self.imageSelectionBox.addItem(name, patient)
+    def _removePatient(self, patient):
+        self.removeItem(self.findData(patient))
 
-
+    def _setCurrentPatient(self, index):
+        self._viewController.currentPatient = self.currentData()
+    """
 
     def Data_path_changed(self, data_path):
         self.data_path = data_path
@@ -81,7 +103,7 @@ class DRRPanel(QWidget):
 
             if sourceImageOrSeq.patient != None:
                 for dyn2DSeq in dyn2DDRRSeqList:
-                    sourceImageOrSeq.patient.appendPatienData(dyn2DSeq)
+                    sourceImageOrSeq.patient.appendPatientData(dyn2DSeq)
 
             # self.fluoroSeqCreated.emit()
             #self.data_path = QFileDialog.getExistingDirectory(self, "Select 4D Data folder", self.data_path)
