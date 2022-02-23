@@ -375,7 +375,7 @@ class DataViewer(QWidget):
         else:
             raise ValueError('Image type not supported')
 
-        if not image is None:
+        if not image is None and not image.patient is None:
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
     def _setSecondaryImage(self, image: Optional[Image3D]):

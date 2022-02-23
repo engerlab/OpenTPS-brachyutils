@@ -13,6 +13,9 @@ class MCsquareMolecule(MCsquareMaterial):
         self.weights = weights
 
     def __str__(self):
+        return self.mcsquareFormatted()
+
+    def mcsquareFormatted(self):
         s = 'Name ' + self.name + '\n'
         s += 'Molecular_Weight 	0.0 		 # N.C.\n'
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"

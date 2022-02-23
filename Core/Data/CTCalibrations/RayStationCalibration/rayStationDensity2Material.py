@@ -8,44 +8,58 @@ from Core.Data.CTCalibrations.RayStationCalibration.rayStationMaterial import Ra
 
 class RayStationDensity2Material:
     def __init__(self, densities=None, materials=None, fromFile=None):
-        self._densities = densities
+        self._densities = None
         self._materials = materials
+
+        if not densities is None:
+            self._densities = np.array(densities)
 
         if not (fromFile is None):
             self._load(fromFile)
 
     def __getitem__(self, density):
-        densityIsScalar = False
-        if not (density is list):
-            densityIsScalar = True
-
-        densities = np.array(self._densities)
-        density = np.array(density)
+        densityIsScalar = not(density is list)
 
         if densityIsScalar:
-            return self._materials[(np.abs(densities - density)).argmin()]
+            return self._getClosestMaterial(density)
         else:
             # TODO: in Matlab, I would use a repmat would in be faster in numpy as well?
-            densityIndex = lambda density: (np.abs(densities - density)).argmin()
-            materialsIndex = lambda index: self._materials[index]
+            return list(map(self._getClosestMaterial, density))
 
-            index = list(map(densityIndex, density))
-            return list(map(materialsIndex, index))
+    def _getClosestMaterial(self, density):
+        materialIndex = self._getIndexOfClosestDensity(density)
+        return self._materials[materialIndex]
+
+    def _getIndexOfClosestDensity(self, density):
+        return self._materials[(np.abs(self._densities - density)).argmin()]
 
     def __str__(self):
+        return self.rayStationFormatted
+
+    def rayStationFormatted(self):
         s  = ''
         for i, material in enumerate(self._materials):
-            s = s + str(i) + ' ' + str(material) + '\n'
+            s = s + str(i) + ' ' + material.rayStationFormatted() + '\n'
 
         return s
 
     def convertMassDensity2RSP(self, density, energy=100):
-        convertMassDensity2RSP = lambda density: density*self[density].getRSP(energy)/(self[density].getDensity()+1e-4) #1e-4 to avoid dividing by 0
-        return list(map(convertMassDensity2RSP, density))
+        densityIsScalar = not (density is list)
+
+        if densityIsScalar:
+            return density*self[density].getRSP(energy)/(self[density].getDensity()+1e-4) #1e-4 to avoid dividing by 0
+        else:
+            return list(map(lambda d: self.convertMassDensity2RSP(d, energy=energy), density))
 
     def convertRSP2MassDensity(self, rsp, energy=100):
-        # Ensure rsp is monotonically increasing
-        density_ref = np.arange(0.0, 5, 0.01)
+        density_ref, rsp_ref = self._getBijectiveMassDensity2RSP(energy=energy)
+
+        density = interpolate.interp1d(rsp_ref, density_ref, kind='linear', fill_value='extrapolate')
+
+        return density(rsp)
+
+    def _getBijectiveMassDensity2RSP(self, densityMin=0., densityMax=5., step=0.01, energy=100):
+        density_ref = np.arange(densityMin, densityMax, step)
         rsp_ref = self.convertMassDensity2RSP(density_ref, energy)
         rsp_ref = np.array(rsp_ref)
 
@@ -58,12 +72,11 @@ class RayStationDensity2Material:
             rsp_ref, ind = np.unique(rsp_ref, return_index=True)
             density_ref = density_ref[ind]
 
-        density = interpolate.interp1d(rsp_ref, density_ref, kind='linear', fill_value='extrapolate')
+        return (density_ref, rsp_ref)
 
-        return density(rsp)
 
     def getDensities(self):
-        return self._densities
+        return np.array(self._densities)
 
     def getMaterials(self):
         return self._materials
@@ -99,7 +112,7 @@ class RayStationDensity2Material:
         self.setMaterials(materials)
 
     def setDensities(self, densities):
-        self._densities = densities
+        self._densities = np.array(densities)
 
     def setMaterials(self, materials):
         self._materials = materials
