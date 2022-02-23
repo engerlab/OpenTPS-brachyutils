@@ -2,11 +2,11 @@ import os
 
 
 class MCsquareConfig:
-  def __init__(self, WorkDir, Scanner_folder, BDL_file, CT_file="CT.mhd", Plan_file="PlanPencil.txt"):
+  def __init__(self):
     ### Initialize MCsquare config with default values
     self.config = {}
 
-    self.config["WorkDir"] = WorkDir
+    self.config["WorkDir"] = None
   
     # Simulation parameters
     self.config["Num_Threads"] = 0
@@ -18,12 +18,12 @@ class MCsquareConfig:
     self.config["Te_Min"] = 0.05
   
     # Input files
-    self.config["CT_File"] = CT_file
-    self.config["ScannerDirectory"] = os.path.abspath(Scanner_folder)
-    self.config["HU_Density_Conversion_File"] = os.path.join(self.config["ScannerDirectory"], "HU_Density_Conversion.txt")
-    self.config["HU_Material_Conversion_File"] = os.path.join(self.config["ScannerDirectory"], "HU_Material_Conversion.txt")
-    self.config["BDL_Machine_Parameter_File"] = os.path.abspath(BDL_file)
-    self.config["BDL_Plan_File"] = Plan_file
+    self.config["CT_File"] = None
+    self.config["ScannerDirectory"] = None
+    self.config["HU_Density_Conversion_File"] = None
+    self.config["HU_Material_Conversion_File"] = None
+    self.config["BDL_Machine_Parameter_File"] = None
+    self.config["BDL_Plan_File"] = None
   
     # Physical parameters
     self.config["Simulate_Nuclear_Interactions"] = True

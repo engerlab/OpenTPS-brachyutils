@@ -19,7 +19,6 @@ QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid displ
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
-
     mainConfig = MainConfig()
 
     options = parseArgs(sys.argv[1:])
@@ -32,6 +31,7 @@ if __name__ == '__main__':
 
     API.patientList = patientList
     API.logger.appendLoggingFunction(FileLogger().print)
+    API.logger.appendLoggingFunction(logger.info)
     API.logger.enabled = True
 
     # instantiate the main GUI window
@@ -41,13 +41,12 @@ if __name__ == '__main__':
 
     # Run start script
     scriptPath = os.path.join(str(Script.__path__[0]), 'startScript.py')
-    try:
-        with open(scriptPath, 'r') as file:
-            code = file.read()
 
-        output = API.interpreter.run(code)
-        print(output)
-    except Exception as err:
-        print(format(err))
+    with open(scriptPath, 'r') as file:
+        code = file.read()
+
+    output = API.interpreter.run(code)
+    print('Start script output:')
+    print(output)
 
     app.exec_()

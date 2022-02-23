@@ -1,4 +1,6 @@
 import os
+import platform
+import shutil
 import unittest
 
 import numpy as np
@@ -6,17 +8,40 @@ import numpy as np
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images.doseImage import DoseImage
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
+from Core.IO.mhdReadWrite import exportImageMHD, importImageMHD
 
 
-def writeCTCalibration(calibration: AbstractCTCalibration, folderPath, scannerName):
+def readDose(filePath):
+    doseMHD = importImageMHD(filePath)
+
+    # Convert data for compatibility with MCsquare
+    # These transformations may be modified in a future version
+    doseMHD.imageArray = np.flip(doseMHD.imageArray, 0)
+    doseMHD.imageArray = np.flip(doseMHD.imageArray, 1)
+
+    doseImage = DoseImage.fromImage(doseMHD)
+
+    return doseImage
+
+def writeCT(ct: CTImage, filtePath):
+    # Convert data for compatibility with MCsquare
+    # These transformations may be modified in a future version
+    image = ct.copy()
+    image.imageArray = np.flip(ct.imageArray, 0)
+    image.imageArray = np.flip(ct.imageArray, 1)
+
+    exportImageMHD(filtePath, image)
+
+def writeCTCalibration(calibration: AbstractCTCalibration, scannerPath, materialPath):
     if not isinstance(calibration, MCsquareCTCalibration):
         calibration = MCsquareCTCalibration.fromCTCalibration(calibration)
 
-    calibration.write(folderPath, scannerName)
+    calibration.write(scannerPath, materialPath)
 
 
 def writeConfig(config: MCsquareConfig, file_path):
@@ -142,7 +167,6 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
     FileName, FileExtension = os.path.splitext(DestFile)
 
     # export plan
-    print("Write Plan: " + file_path + ' in ' + DestFolder)
     fid = open(file_path, 'w')
     fid.write("#TREATMENT-PLAN-DESCRIPTION\n")
     fid.write("#PlanName\n")
@@ -226,17 +250,60 @@ def _dicomIsocenterToMCsquare(isocenter, ctImagePositionPatient, ctPixelSpacing,
 
     return (MCsquareIsocenter0, MCsquareIsocenter1, MCsquareIsocenter2)
 
-def _deliveredProtons(plan:RTPlan, bdl:BDL) -> tuple:
-    deliveredProtons = 0
-    beamletRescaling = []
-    for beam in plan:
-        for layer in beam:
-            Protons_per_MU = bdl.computeMU2Protons(layer.nominalEnergy)
-            deliveredProtons += sum(layer.spotWeights) * Protons_per_MU
-            for i in range(len(layer)):
-                beamletRescaling.append(Protons_per_MU * 1.602176e-19 * 1000)
 
-    return (deliveredProtons, beamletRescaling)
+def writeBin(destFolder):
+    import MCsquare as MCsquareModule
+    mcsquarePath = str(MCsquareModule.__path__[0])
+
+    if (platform.system() == "Linux"):
+        source_path = os.path.join(mcsquarePath, "MCsquare")
+        destination_path = os.path.join(destFolder, "MCsquare")
+        shutil.copyfile(source_path, destination_path)  # copy file
+        shutil.copymode(source_path, destination_path)  # copy permissions
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_linux")
+        destination_path = os.path.join(destFolder, "MCsquare_linux")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_linux_avx")
+        destination_path = os.path.join(destFolder, "MCsquare_linux_avx")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_linux_avx2")
+        destination_path = os.path.join(destFolder, "MCsquare_linux_avx2")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_linux_avx512")
+        destination_path = os.path.join(destFolder, "MCsquare_linux_avx512")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_linux_sse4")
+        destination_path = os.path.join(destFolder, "MCsquare_linux_sse4")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+    elif (platform.system() == "Windows"):
+        source_path = os.path.join(mcsquarePath, "MCsquare_win.bat")
+        destination_path = os.path.join(destFolder, "MCsquare_win.bat")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_win.exe")
+        destination_path = os.path.join(destFolder, "MCsquare_win.exe")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "libiomp5md.dll")
+        destination_path = os.path.join(destFolder, "libiomp5md.dll")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+    else:
+        raise Exception("Error: Operating system " + platform.system() + " is not supported by MCsquare.")
 
 
 class MCsquareIOTestCase(unittest.TestCase):

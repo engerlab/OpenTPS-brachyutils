@@ -28,7 +28,10 @@ class RayStationMaterial:
 
     def __init__(self, density=None, I=None):
         self._As = []
-        self._density = density
+        if density<=0:
+            self._density = 1e-12
+        else:
+            self._density = density
         self._I = I
         self._weights = []
         self._Zs = []
