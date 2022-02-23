@@ -9,7 +9,7 @@ from Core.Processing.BreathingSignalGeneration import signal
 
 #synthetic breathing data 
 class SyntheticBreathingSignal(PatientData):
-    def __init__(self,amplitude,variationAmplitude,breathingPeriod,variationFrequency,shift,mean,variance,samplingPeriod,simulationTime,meanEvent):
+    def __init__(self,amplitude=10,variationAmplitude=5,breathingPeriod=4,variationFrequency=0.5,shift=5,mean=0,variance=0.1,samplingPeriod=0.2,simulationTime=100,meanEvent=2/30):
         super().__init__()
         
         self.amplitude = amplitude #amplitude (mm)
