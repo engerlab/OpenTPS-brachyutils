@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
     # instantiate the main GUI window
     viewController = ViewController(patientList)
+    viewController.mainConfig = mainConfig
     viewController.mainWindow.show()
 
     # Run start script
