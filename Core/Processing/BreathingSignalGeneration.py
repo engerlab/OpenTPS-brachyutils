@@ -37,7 +37,7 @@ def vectorSimulation(L,diff,mean,sigma,Tend,t):
     return y
 
 #creation des donnees respiratoires
-def signal(A,dA,T,df,dS,mean,sigma,step,Tend,L):
+def signal(A=10,dA=5,T=4,df=0.5,dS=5,mean=0,sigma=0.1,step=0.2,Tend=100,L=2/30):
     f = 1/T  
     t = np.arange(0,Tend,step)
     
