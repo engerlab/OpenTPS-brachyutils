@@ -64,7 +64,7 @@ def computeDRRSet(image, angleAndAxisList, sourceImageName=''):
     DRRSet = []
     for angleAndAxe in angleAndAxisList:
 
-        drr = DRR(name=nameToUse + '_' + str(angleAndAxe[1]) + '_' + str(angleAndAxe[0]), sourceImage=image.seriesInstanceUID)
+        drr = DRR(name='DRR_' + nameToUse + '_' + str(angleAndAxe[1]) + '_' + str(angleAndAxe[0]), sourceImage=image.seriesInstanceUID)
         drr.imageArray = forwardProjection(imgToUse, angleAndAxe[0], angleAndAxe[1])
         drr.projectionAngle = angleAndAxe[0]
         drr.rotationAxis = angleAndAxe[1]
@@ -86,6 +86,33 @@ def computeDRRSequence(dynamic3DSequence, angleAndOriList):
 
     DRRSetSequence = []
     for imageIndex, image in enumerate(imageList):
-        DRRSetSequence.append(computeDRRSet(image, angleAndOriList, sourceImageName=dynamic3DSequence.name + '_' + str(imageIndex)))
+        DRRSetSequence.append(computeDRRSet(image, angleAndOriList, sourceImageName=str(imageIndex)))
 
     return DRRSetSequence
+
+
+def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList):
+
+    drrSetSequence = computeDRRSequence(dynamic3DSequence, angleAndAxeList)
+    numberOfImageInSet = len(drrSetSequence[0])
+
+    dyn2DSeqList = []
+    for imageInSetIndex in range(numberOfImageInSet):
+        dyn2DSeqList.append(Dynamic2DSequence(name='DRR_' + dynamic3DSequence.name + '_' + str(angleAndAxeList[imageInSetIndex][1]) + '_' + str(angleAndAxeList[imageInSetIndex][0])))
+
+    for imageInSetIndex in range(numberOfImageInSet):
+
+        DRRList = []
+        dyn2DSeqList[imageInSetIndex]
+        for imageSet in drrSetSequence:
+            DRRList.append(imageSet[imageInSetIndex])
+
+        dyn2DSeqList[imageInSetIndex].breathingPeriod = dynamic3DSequence.breathingPeriod
+        dyn2DSeqList[imageInSetIndex].inhaleDuration = dynamic3DSequence.inhaleDuration
+        dyn2DSeqList[imageInSetIndex].patient = dynamic3DSequence.patient
+        dyn2DSeqList[imageInSetIndex].patientInfo = dynamic3DSequence.patientInfo
+        dyn2DSeqList[imageInSetIndex].timingsList = dynamic3DSequence.timingsList
+        dyn2DSeqList[imageInSetIndex].dyn2DImageList = DRRList
+
+
+    return dyn2DSeqList

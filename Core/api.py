@@ -91,7 +91,6 @@ class APILogger:
         loggerEnabled = APILogger._staticVars["enabled"]
         loggerAlreadyLogging = APILogger._staticVars["logLock"]
 
-        print(loggerEnabled)
         if not loggerEnabled:
             return method(*args, **kwargs)
 
@@ -186,7 +185,7 @@ class APILogger:
         elif isinstance(arg, Patient):
             argStr = APILogger._patientToString(arg)
         elif isinstance(arg, Image3D):
-            argStr = APILogger._image3DToString(arg)
+            argStr = APILogger._patientDataToString(arg)
         elif isinstance(arg, list):
             argStr = APILogger._listToString(arg)
         elif isinstance(arg, tuple):
@@ -212,19 +211,23 @@ class APILogger:
         return argStr
 
     @staticmethod
-    def _image3DToString(image):
+    def _patientDataToString(image):
         argStr = ''
 
         for patient in _API._staticVars["patientList"]:
-            if patient.hasImage(image):
+            if image in patient.images:
                 argStr = 'API.patientList[' \
                          + str(_API._staticVars["patientList"].getIndex(patient)) + ']' \
-                         + '.images[' \
-                         + str(patient.getImageIndex(image)) + ']'
+                         + '.patientData[' \
+                         + str(APILogger.getPatientDataIndex(patient, image)) + ']'
         if argStr == '':
             argStr = 'Error: Image or patient not found in patient or patient list'
 
         return argStr
+
+    @staticmethod
+    def getPatientDataIndex(patient, data):
+        return patient.patientData.index(data)
 
     @staticmethod
     def _listToString(l: list):

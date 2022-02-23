@@ -49,6 +49,7 @@ def signal(A=10,dA=5,T=4,df=0.5,dS=5,mean=0,sigma=0.1,step=0.2,Tend=100,L=2/30):
     return t,y
 """
 #parametres changeables
+<<<<<<< HEAD
 A = 10 #amplitude (mm)
 dA = 5 #variation d amplitude possible (mm)
 T = 4.0 #periode respiratoire (s)
@@ -66,3 +67,4 @@ plt.ylabel("Amplitude [mm]")
 plt.title("Breathing signal")
 plt.xlim((0,50))
 """
+

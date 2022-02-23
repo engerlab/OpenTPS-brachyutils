@@ -4,7 +4,8 @@ from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.Panels.breathingSignalPanel import BreathingSignalPanel
-# from GUI.Panels.xRayProjectionPanel.xRayProjectionsPanel import XRayProjectionPanel
+from GUI.Panels.drrPanel import DRRPanel
+
 
 
 class MainToolbar(QToolBox):
@@ -27,6 +28,8 @@ class MainToolbar(QToolBox):
         self.addItem(scriptingPanel, 'Scripting')
         self.addItem(breathingSignalPanel, 'Breathing signal generation')
        
-        # xRayProjPanel = XRayProjectionPanel(self._viewController)
-        # self.addItem(xRayProjPanel, 'Coucou')
+
+        xRayProjPanel = DRRPanel(self._viewController)
+        self.addItem(xRayProjPanel, 'DRR')
+
 

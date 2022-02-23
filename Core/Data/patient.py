@@ -1,40 +1,56 @@
+from typing import Union, Sequence
 
+from Core.Data.Images.image3D import Image3D
+from Core.Data.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.dynamic3DModel import Dynamic3DModel
+from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.patientData import PatientData
 from Core.Data.patientInfo import PatientInfo
+#from Core.Data.rtPlan import RTplan
+from Core.Data.rtStruct import RTStruct
 from Core.api import API
 from Core.event import Event
 
 
 class Patient:
     """
-    A class Patient contains patient information and lists of patient data (images, plans, etc...)
+    A class Patient contains patient information and patient data
 
     Parameters
     ----------
     patientInfo: PatientInfo object
         Object containing the patient information
-
-    images: list
-        List of images associated to patient of possibly different modalities
-
-    plans: list:
-        List of plans associated to patient
-
-    rtStructs: list:
-        List of structure sets associated to patient
-
     """
+    class TypeConditionalEvent(Event):
+        def __init__(self, *args):
+            super().__init__(*args)
+
+        @classmethod
+        def fromEvent(cls, event, newType):
+            newEvent = cls(newType)
+            event.connect(newEvent.emit)
+
+            return newEvent
+
+        def emit(self, data):
+            if isinstance(data, self.objectType):
+                print(data)
+                super().emit(data)
+
     def __init__(self, patientInfo=None):
-        self.imageAddedSignal = Event(object)
-        self.imageRemovedSignal = Event(object)
-        self.rtStructAddedSignal = Event(object)
-        self.rtStructRemovedSignal = Event(object)
-        self.planAddedSignal = Event(object)
-        self.planRemovedSignal = Event(object)
-        self.dyn3DSeqAddedSignal = Event(object)
-        self.dyn3DSeqRemovedSignal = Event(object)
-        self.dyn3DModAddedSignal = Event(object)
-        self.dyn3DModRemovedSignal = Event(object)
-        self.nameChangedSignal = Event(str)
+        self.patientDataAddedSignal = Event(object)
+        self.patientDataRemovedSignal = Event(object)
+        self.imageAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Image3D)
+        self.imageRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Image3D)
+        self.rtStructAddedSignal =self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTStruct)
+        self.rtStructRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, RTStruct)
+        #self.planAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal)
+        #self.planRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal)
+        self.dyn3DSeqAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DSequence)
+        self.dyn3DSeqRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Dynamic3DSequence)
+        self.dyn3DModAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DModel)
+        self.dyn3DModRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Dynamic3DModel)
+        self.nameChangedSignal = Event(object)
 
         if(patientInfo == None):
             self.patientInfo = PatientInfo()
@@ -42,6 +58,7 @@ class Patient:
             self.patientInfo = patientInfo
 
         self._name = self.patientInfo.name
+        self._patientData = []
         self._images = []
         self._plans = []
         self._rtStructs = []
@@ -72,285 +89,74 @@ class Patient:
         self._name = name
         self.nameChangedSignal.emit(self._name)
 
-
     @property
     def images(self):
-        # Doing this ensures that the user can't append directly to images
-        return [image for image in self._images]
-
-    @API.loggedViaAPI
-    def appendImage(self, image):
-        """
-        Append image to patient's image list
-
-        Parameters
-        ----------
-        image: object
-            image object
-
-        """
-        if image in self._images:
-            return
-
-        self._images.append(image)
-        image.patient = self
-        self.imageAddedSignal.emit(image)
-
-    def getImageIndex(self, _images):
-        return self._images.index(_images)
-
-    def hasImage(self, image):
-        """
-         Check if image is in patient's image list
-
-        Parameters
-        ----------
-        image: object
-             image object
-
-        """
-        return image in self._images
-
-    @API.loggedViaAPI
-    def removeImage(self, image):
-        """
-        Remove image from patient's image list
-
-        Parameters
-        ----------
-        image: object
-            the image object to removed
-
-        """
-
-        if not(image in self._images):
-            return
-
-        self._images.remove(image)
-        self.imageRemovedSignal.emit(image)
-
+        return self.getPatientDataOfType(Image3D)
 
     @property
     def plans(self):
-        # Doing this ensures that the user can't append directly to plans
-        return [plan for plan in self._plans]
-
-    def appendPlan(self, plan):
-        if plan in self._planss:
-            return
-
-        self._plans.append(plan)
-        self.planAddedSignal.emit(plan)
-
-    def removePlan(self, plan):
-        self._plans.remove(plan)
-        self.planRemovedSignal.emit(plan)
-
+        return self.getPatientDataOfType(RTplan)
 
     @property
     def rtStructs(self):
-        # Doing this ensures that the user can't append directly to rtStructs
-        return [rtStruct for rtStruct in self._rtStructs]
-
-    def appendRTStruct(self, struct):
-        """
-        Append RTStruct object to patient's RTStruct list
-
-        Parameters
-        ----------
-        struct: RTStruct object
-            Structure set to append
-
-        """
-
-        if struct in self._rtStructs:
-            return
-
-        self._rtStructs.append(struct)
-        self.rtStructAddedSignal.emit(struct)
-
-    def removeRTStruct(self, struct):
-        """
-        Remove RTStruct from patient's RTStruct list
-
-        Parameters
-        ----------
-        struct: RTStruct object
-            Structure set to remove
-
-        """
-        self._rtStructs.remove(struct)
-        self.rtStructRemovedSignal.emit(struct)
-
+        return self.getPatientDataOfType(RTStruct)
 
     @property
     def dynamic3DSequences(self):
-        # Doing this ensures that the user can't append directly to dynamic3DSequences
-        return [dynamic3DSequence for dynamic3DSequence in self._dynamic3DSequences]
-
-    def appendDyn3DSeq(self, dyn3DSeq):
-        """
-        Append dynamic3DSequence object to patient's dynamic3DSequences list
-
-        Parameters
-        ----------
-        dyn3DSeq: dynamic3DSequence object
-            Dynamic 3D Sequence set to append
-
-        """
-        if dyn3DSeq in self._dynamic3DSequences:
-            return
-
-        self._dynamic3DSequences.append(dyn3DSeq)
-        dyn3DSeq.patient = self
-        self.dyn3DSeqAddedSignal.emit(dyn3DSeq)
-
-    def removeDyn3DSeq(self, dyn3DSeq):
-        """
-        Remove dynamic3DSequence from patient's dynamic3DSequences list
-
-        Parameters
-        ----------
-        dyn3DSeq: dynamic3DSequence object
-            Dynamic 3D Sequence set to remove
-
-        """
-        if not(dyn3DSeq in self._dynamic3DSequences):
-            return
-
-        self._dynamic3DSequences.remove(dyn3DSeq)
-        dyn3DSeq.patient = None
-        self.dyn3DSeqRemovedSignal.emit(dyn3DSeq)
-
+        return self.getPatientDataOfType(Dynamic3DSequence)
 
     @property
     def dynamic3DModels(self):
-        # Doing this ensures that the user can't append directly to dynamic3DModels
-        return [dynamic3DModel for dynamic3DModel in self._dynamic3DModels]
+        return self.getPatientDataOfType(Dynamic3DModel)
 
-    def appendDyn3DMod(self, dyn3DMod):
-        """
-        Append dynamic3DModel object to patient's dynamic3DModels list
+    @property
+    def dynamic2DSequences(self):
+        return self.getPatientDataOfType(Dynamic2DSequence)
 
-        Parameters
-        ----------
-        dyn3DMod: dynamic3DModel object
-            Dynamic 3D Model set to append
+    @property
+    def patientData(self):
+        return [data for data in self._patientData]
 
-        """
-        self._dynamic3DModels.append(dyn3DMod)
-        self.dyn3DModAddedSignal.emit(dyn3DMod)
-
-    def removeDyn3DMod(self, dyn3DMod):
-        """
-        Remove dynamic3DModel from patient's dynamic3DModels list
-
-        Parameters
-        ----------
-        dyn3DMod: dynamic3DModel object
-            Dynamic 3D Model set to remove
-
-        """
-        self._dynamic3DModels.remove(dyn3DMod)
-        self.dyn3DModRemovedSignal.emit(dyn3DMod)
-
+    def getPatientDataOfType(self, type):
+        return [data for data in self._patientData if isinstance(data, type)]
 
     def hasPatientData(self, data):
-        return (data in self._images) or (data in self._plans) or (data in self._dynamic3DModels) or (data in self._dynamic3DSequences) or (data in self._rtStructs)
+        return (data in self._patientData)
 
-    def appendPatienData(self, data):
+    @API.loggedViaAPI
+    def appendPatienData(self, data=Union[Sequence, PatientData]):
         if isinstance(data, list):
-            for d in data:
-                self.appendPatienData(d)
-            return
+            self.appendPatientDataList(data)
 
-        if data in self._images:
-            self.appendImage(data)
+        if not (data in self._patientData):
+            self._patientData.append(data)
+            data.patient = self
+            self.patientDataAddedSignal.emit(data)
 
-        if data in self._plans:
-            self.appendPlan(data)
+    @API.loggedViaAPI
+    def appendPatientDataList(self, dataList):
+        for data in dataList:
+            self.appendPatienData(data)
 
-        if data in self._rtStructs:
-            self.appendRTStruct(data)
-
-        if data in self._dynamic3DSequences:
-            self.appendDyn3DSeq(data)
-
-        if data in self._dynamic3DModels:
-            self.appendDyn3DMod(data)
-
+    @API.loggedViaAPI
     def removePatientData(self, data):
         if isinstance(data, list):
-            for d in data:
-                self.removePatientData(d)
-            return
+            self.removePatientDataList(data)
 
-        if data in self._images:
-            self.removeImage(data)
+        if data in self._patientData:
+            self._patientData.remove(data)
 
-        if data in self._plans:
-            self.removePlan(data)
+            self.patientDataRemovedSignal.emit(data)
 
-        if data in self._rtStructs:
-            self.removeRTStruct(data)
-
-        if data in self._dynamic3DSequences:
-            self.removeDyn3DSeq(data)
-
-        if data in self._dynamic3DModels:
-            self.removeDyn3DMod(data)
-
+    @API.loggedViaAPI
+    def removePatientDataList(self, dataList):
+        for data in dataList:
+            self.removePatientData(data)
+        return
 
     def dumpableCopy(self):
-
         dumpablePatientCopy = Patient(patientInfo=self.patientInfo)
-        for image in self._images:
-            dumpablePatientCopy._images.append(image.dumpableCopy())
-
-        for plan in self._plans:
-            dumpablePatientCopy._plans.append(plan.dumpableCopy())
-
-        for struct in self._rtStructs:
-            dumpablePatientCopy._rtStructs.append(struct.dumpableCopy())
-
-        for dynamic3DSequence in self._dynamic3DSequences:
-            dumpablePatientCopy._dynamic3DSequences.append(dynamic3DSequence.dumpableCopy())
-
-        for dynamic3DModel in self._dynamic3DModels:
-            dumpablePatientCopy._dynamic3DModels.append(dynamic3DModel.dumpableCopy())
+        for data in self._patientData:
+            dumpablePatientCopy._patientData.append(data.dumpableCopy())
 
         return dumpablePatientCopy
-
-    def setSelfInData(self):
-        for image in self._images:
-            image.patient = self
-
-        for plan in self._plans:
-            plan.patient = self
-
-        for struct in self._rtStructs:
-            struct.patient = self
-
-        for dynamic3DSequence in self._dynamic3DSequences:
-            dynamic3DSequence.patient = self
-            for image in dynamic3DSequence.dyn3DImageList:
-                image.patient = self
-
-        for dynamic3DModel in self._dynamic3DModels:
-            dynamic3DModel.patient = self
-
-    def removeSelfFromData(self):
-        for image in self._images:
-            image.patient = None
-
-        for plan in self._plans:
-            plan.patient = None
-
-        for struct in self._rtStructs:
-            struct.patient = None
-
-        for dynamic3DSequence in self._dynamic3DSequences:
-            dynamic3DSequence.patient = None
-
-        for dynamic3DModel in self._dynamic3DModels:
-            dynamic3DModel.patient = None

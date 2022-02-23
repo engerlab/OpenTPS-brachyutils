@@ -12,6 +12,9 @@ class MCsquareElement(MCsquareMaterial):
         self.atomicWeight = atomicWeight
 
     def __str__(self):
+        return self.mcsquareFormatted()
+
+    def mcsquareFormatted(self):
         s = 'Name ' + self.name + '\n'
         s += 'Atomic_Weight ' + str(self.atomicWeight) + '\n'
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"

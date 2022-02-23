@@ -13,8 +13,9 @@ import Core.IO.dataLoader as dataLoader
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.dynamic3DModel import Dynamic3DModel
-from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObject
+from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObjects
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
 from GUI.Viewer.dataViewer import DroppedObject
@@ -77,12 +78,14 @@ class PatientDataPanel(QWidget):
 
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
 
+        print('in patient data panel loadData', len(self._viewController._patientList[0].dynamic2DSequences))
+
     def saveData(self):
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
 
-        # patientList = self._viewController.activePatients
-        patientList = [patient.dumpableCopy() for patient in self._viewController._patientList]
+        patientList = self._viewController.activePatients
+        # patientList = [patient.dumpableCopy() for patient in self._viewController._patientList]
         saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
 
 
@@ -153,6 +156,12 @@ class PatientDataTree(QTreeView):
                 rootItem.appendRow(item)
             self.rootNode.appendRow(rootItem)
 
+        if isinstance(data, Dynamic2DSequence):
+            for image in data.dyn2DImageList:
+                item = PatientDataItem(image)
+                rootItem.appendRow(item)
+            self.rootNode.appendRow(rootItem)
+
     def _removeData(self, data):
         items = []
 
@@ -175,7 +184,6 @@ class PatientDataTree(QTreeView):
         drag.exec_(QtCore.Qt.CopyAction)
 
     def buildDataTree(self, patient):
-
         # Disconnect signals
         if not(self._currentPatient is None):
             self._currentPatient.imageAddedSignal.disconnect(self._appendData)
@@ -202,6 +210,10 @@ class PatientDataTree(QTreeView):
         self._currentPatient.imageRemovedSignal.connect(self._removeData)
         self._currentPatient.dyn3DSeqAddedSignal.connect(self._appendData)
         self._currentPatient.dyn3DSeqRemovedSignal.connect(self._removeData)
+        # self._currentPatient.dyn2DSeqAddedSignal.connect(self._appendData)
+        # self._currentPatient.dyn2DSeqRemovedSignal.connect(self._removeData)
+        self._currentPatient.dyn3DModAddedSignal.connect(self._appendData)
+        self._currentPatient.dyn3DModRemovedSignal.connect(self._removeData)
         #TODO: Same with other data
 
         #images
@@ -214,6 +226,9 @@ class PatientDataTree(QTreeView):
 
         # dynamic sequences
         for dynSeq in patient.dynamic3DSequences:
+            self._appendData(dynSeq)
+
+        for dynSeq in patient.dynamic2DSequences:
             self._appendData(dynSeq)
 
         # dynamic models
@@ -232,7 +247,6 @@ class PatientDataTree(QTreeView):
         selectedData = self.model().itemFromIndex(selection).data
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
-            print(selectedData.patient)
             self._viewController.mainImage = selectedData
 
     def _handleRightClick(self, pos):
@@ -374,7 +388,7 @@ class PatientDataTree(QTreeView):
             newMod.name = newName
             newMod.seriesInstanceUID = generate_uid()
             newMod.computeMidPositionImage(selected3DSequence)
-            self._viewController.currentPatient.appendDyn3DMod(newMod)
+            self._viewController.currentPatient.appendPatientData(newMod)
 
             # Should not be necessary because data tree listens to imageAdded/imageRemoved, etc.
             self.buildDataTree(self._viewController.currentPatient)
@@ -389,7 +403,7 @@ class PatientDataTree(QTreeView):
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.patientDataPanel.dataPath)
 
-        saveSerializedObject(selectedData, savingPath, compressedBool=compressedBool)
+        saveSerializedObjects(selectedData, savingPath, compressedBool=compressedBool)
 
     def copyData(self, selectedData):
         print('Create a copy of the data:', selectedData.name, type(selectedData))
@@ -397,7 +411,7 @@ class PatientDataTree(QTreeView):
         print(new_img.patientInfo)
         # new_img.patient = selectedData
         new_img.name = selectedData.name + '_copy'
-        self._currentPatient.appendImage(new_img)
+        self._currentPatient.appendPatientData(new_img)
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):

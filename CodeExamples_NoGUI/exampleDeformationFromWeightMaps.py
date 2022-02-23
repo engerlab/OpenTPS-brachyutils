@@ -34,19 +34,21 @@ phase3[48:58,45:55,40:50] = 0
 CT4D.dyn3DImageList.append(CTImage(imageArray=phase3, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
 
 # CREATE TRACKER POSITIONS
-trackers = [[50, 50, 30],
-           [120, 50, 30]]
+trackers = [[30, 50, 30],
+            [70, 50, 30],
+            [100, 50, 30],
+            [140, 50, 30]]
 
 # GENERATE MIDP
 Model4D = Dynamic3DModel()
 Model4D.computeMidPositionImage(CT4D, 0, baseResolution=4, nbProcesses=1)
 
 # GENERATE ADDITIONAL PHASES
-df1, wm = generateDeformationFromTrackers(Model4D, [0, 2/4], [1, 1], trackers)
+df1, wm = generateDeformationFromTrackers(Model4D, [0, 0, 2/4, 2/4], [1, 1, 1, 1], trackers)
 im1 = df1.deformImage(Model4D.midp, fillValue='closest')
-df2, wm = generateDeformationFromTrackers(Model4D, [0.5/4, 1.5/4], [1, 1], trackers)
+df2, wm = generateDeformationFromTrackers(Model4D, [0.5/4, 0.5/4, 1.5/4, 1.5/4], [1, 1, 1, 1], trackers)
 im2 = df2.deformImage(Model4D.midp, fillValue='closest')
-df3 = generateDeformationFromTrackersAndWeightMaps(Model4D, [0, 2/4], [2, 2], wm)
+df3 = generateDeformationFromTrackersAndWeightMaps(Model4D, [0, 0, 2/4, 2/4], [2, 2, 2, 2], wm)
 im3 = df3.deformImage(Model4D.midp, fillValue='closest')
 
 # RESAMPLE WEIGHT MAPS TO IMAGE RESOLUTION
@@ -54,46 +56,46 @@ for i in range(len(trackers)):
     wm[i].resampleToImageGrid(Model4D.midp)
 
 # DISPLAY RESULTS
-fig, ax = plt.subplots(3, 3)
+fig, ax = plt.subplots(2, 5)
 ax[0,0].imshow(Model4D.midp.imageArray[:, 49, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
 s0 = wm[0].imageArray[:, 49, :].T[::-1, ::1]
 s1 = wm[1].imageArray[:, 49, :].T[::-1, ::1]
-ax[0,0].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[0,0].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[1,0].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
-ax[2,0].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1)
-ax[0,0].plot(50,100-30,'ro')
-ax[0,0].plot(120,100-30,'bo')
-ax[1,0].plot(50,100-30,'ro')
-ax[2,0].plot(120,100-30,'bo')
-ax[1,0].plot(50,100-30,'ro')
-ax[2,0].plot(120,100-30,'bo')
-ax[0,1].imshow(Model4D.midp.imageArray[49, :, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-s0 = wm[0].imageArray[49, :, :].T[::-1, ::1]
-s1 = wm[1].imageArray[49, :, :].T[::-1, ::1]
-ax[0,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[0,1].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[1,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
-ax[2,1].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1)
-ax[0,1].plot(50,100-30,'ro')
-ax[0,1].plot(50,100-30,'bo')
-ax[1,1].plot(50,100-30,'ro')
-ax[2,1].plot(50,100-30,'bo')
-ax[1,1].plot(50,100-30,'ro')
-ax[2,1].plot(50,100-30,'bo')
-ax[0,2].imshow(Model4D.midp.imageArray[:, :, 49].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+s2 = wm[2].imageArray[:, 49, :].T[::-1, ::1]
+s3 = wm[3].imageArray[:, 49, :].T[::-1, ::1]
+ax[0,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
+ax[0,2].imshow(s1, cmap='Reds', origin='upper', vmin=0, vmax=1)
+ax[0,3].imshow(s2, cmap='Blues', origin='upper', vmin=0, vmax=1)
+ax[0,4].imshow(s3, cmap='Blues', origin='upper', vmin=0, vmax=1)
+ax[0,0].plot(30,100-30,'ro')
+ax[0,0].plot(70,100-30,'ro')
+ax[0,0].plot(100,100-30,'bo')
+ax[0,0].plot(140,100-30,'bo')
+ax[0,1].plot(30,100-30,'ro')
+ax[0,2].plot(70,100-30,'ro')
+ax[0,3].plot(100,100-30,'bo')
+ax[0,4].plot(140,100-30,'bo')
+ax[1,0].imshow(Model4D.midp.imageArray[:, :, 49].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
 s0 = wm[0].imageArray[:, :, 49].T[::-1, ::1]
 s1 = wm[1].imageArray[:, :, 49].T[::-1, ::1]
-ax[0,2].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[0,2].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[1,2].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
-ax[2,2].imshow(s1, cmap='Blues', origin='upper', vmin=0, vmax=1)
-ax[0,2].plot(50,50,'ro')
-ax[0,2].plot(120,50,'bo')
-ax[1,2].plot(50,50,'ro')
-ax[2,2].plot(120,50,'bo')
-ax[1,2].plot(50,50,'ro')
-ax[2,2].plot(120,50,'bo')
+s2 = wm[2].imageArray[:, :, 49].T[::-1, ::1]
+s3 = wm[3].imageArray[:, :, 49].T[::-1, ::1]
+ax[1,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
+ax[1,2].imshow(s1, cmap='Reds', origin='upper', vmin=0, vmax=1)
+ax[1,3].imshow(s2, cmap='Blues', origin='upper', vmin=0, vmax=1)
+ax[1,4].imshow(s3, cmap='Blues', origin='upper', vmin=0, vmax=1)
+ax[1,0].plot(30,50,'ro')
+ax[1,0].plot(70,50,'ro')
+ax[1,0].plot(100,50,'bo')
+ax[1,0].plot(140,50,'bo')
+ax[1,1].plot(30,50,'ro')
+ax[1,2].plot(70,50,'ro')
+ax[1,3].plot(100,50,'bo')
+ax[1,4].plot(140,50,'bo')
+ax[0,0].title.set_text('MidP and trackers')
+ax[0,1].title.set_text('Tracker 1')
+ax[0,2].title.set_text('Tracker 2')
+ax[0,3].title.set_text('Tracker 3')
+ax[0,4].title.set_text('Tracker 4')
 
 fig, ax = plt.subplots(2, 4)
 fig.tight_layout()
@@ -107,10 +109,12 @@ ax[0,2].title.set_text('Phase 2')
 ax[0,3].imshow(CT4D.dyn3DImageList[3].imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
 ax[0,3].title.set_text('Phase 3')
 ax[1,0].imshow(Model4D.midp.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-ax[1,0].imshow(wm[0].imageArray[:, y_slice, :].T[::-1, ::1], cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[1,0].imshow(wm[1].imageArray[:, y_slice, :].T[::-1, ::1], cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-ax[1,0].plot(50,100-30,'ro')
-ax[1,0].plot(120,100-30,'bo')
+ax[1,0].imshow(wm[0].imageArray[:, y_slice, :].T[::-1, ::1] + wm[1].imageArray[:, y_slice, :].T[::-1, ::1], cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[1,0].imshow(wm[2].imageArray[:, y_slice, :].T[::-1, ::1] + wm[3].imageArray[:, y_slice, :].T[::-1, ::1], cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
+ax[1,0].plot(30,100-30,'ro')
+ax[1,0].plot(70,100-30,'ro')
+ax[1,0].plot(100,100-30,'bo')
+ax[1,0].plot(140,100-30,'bo')
 ax[1,0].title.set_text('MidP and weight maps')
 ax[1,1].imshow(im1.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
 ax[1,1].title.set_text('phases [0,2] - amplitude 1')
