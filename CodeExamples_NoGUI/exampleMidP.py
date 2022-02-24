@@ -61,3 +61,4 @@ ax[1,3].title.set_text('phase 2 - amplitude 0.5')
 plt.show()
 
 print('done')
+print(' ')

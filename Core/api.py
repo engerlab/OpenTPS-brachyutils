@@ -1,6 +1,5 @@
 import functools
 import inspect
-import logging
 import os
 import sys
 import unittest
@@ -8,6 +7,7 @@ from io import StringIO
 from typing import Callable
 
 import Script
+from mainConfig import MainConfig
 
 
 class FileLogger():
@@ -15,7 +15,7 @@ class FileLogger():
     A simple logger that appends inputs to a file
     """
     def __init__(self):
-        self.scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
+        self.scriptPath = os.path.join(MainConfig().logFolder, 'API_log.py')
 
     def print(self, cmd: str):
         """
@@ -91,7 +91,6 @@ class APILogger:
         loggerEnabled = APILogger._staticVars["enabled"]
         loggerAlreadyLogging = APILogger._staticVars["logLock"]
 
-        print(loggerEnabled)
         if not loggerEnabled:
             return method(*args, **kwargs)
 
@@ -133,8 +132,6 @@ class APILogger:
     def _log(cmd):
         for logFunction in APILogger._loggerFunctions:
             logFunction(cmd)
-
-        logging.info(cmd)
 
     @staticmethod
     def _loggedMethodToString(method, *args, **kwargs):
@@ -186,7 +183,7 @@ class APILogger:
         elif isinstance(arg, Patient):
             argStr = APILogger._patientToString(arg)
         elif isinstance(arg, Image3D):
-            argStr = APILogger._image3DToString(arg)
+            argStr = APILogger._patientDataToString(arg)
         elif isinstance(arg, list):
             argStr = APILogger._listToString(arg)
         elif isinstance(arg, tuple):
@@ -212,19 +209,23 @@ class APILogger:
         return argStr
 
     @staticmethod
-    def _image3DToString(image):
+    def _patientDataToString(image):
         argStr = ''
 
         for patient in _API._staticVars["patientList"]:
-            if patient.hasImage(image):
+            if image in patient.images:
                 argStr = 'API.patientList[' \
                          + str(_API._staticVars["patientList"].getIndex(patient)) + ']' \
-                         + '.images[' \
-                         + str(patient.getImageIndex(image)) + ']'
+                         + '.patientData[' \
+                         + str(APILogger.getPatientDataIndex(patient, image)) + ']'
         if argStr == '':
             argStr = 'Error: Image or patient not found in patient or patient list'
 
         return argStr
+
+    @staticmethod
+    def getPatientDataIndex(patient, data):
+        return patient.patientData.index(data)
 
     @staticmethod
     def _listToString(l: list):
@@ -251,11 +252,12 @@ class APIInterpreter:
     def run(code):
         old_stdout = sys.stdout
         redirected_output = sys.stdout = StringIO()
+
         try:
             exec(code)
         except Exception as err:
             sys.stdout = old_stdout
-            return format(err)
+            raise err from err
 
         sys.stdout = old_stdout
         return redirected_output.getvalue()

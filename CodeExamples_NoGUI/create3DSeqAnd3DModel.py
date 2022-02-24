@@ -7,7 +7,7 @@ This file contains an example on how to:
 """
 from Core.IO.dataLoader import loadAllData
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
-from Core.IO.serializedObjectIO import saveSerializedObject
+from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from pydicom.uid import generate_uid
 
@@ -28,7 +28,7 @@ print(type(dynseq.dyn3DImageList[0]))
 
 ## save it as a serialized object
 savingPath = '/home/damien/Desktop/' + 'PatientTest_dynSeq.p'
-saveSerializedObject(dynseq, savingPath)
+saveSerializedObjects(dynseq, savingPath)
 
 ## create Dynamic3DModel
 # newMod = Dynamic3DModel()

@@ -37,7 +37,7 @@ class RayStationCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, RaySta
         hu = np.array(hu)
 
         mcsMaterials = [material.toMCSquareMaterial() for material in self._materials]
-        mcsDensities = [material.getDensity() for material in self._materials]
+        mcsDensities = [material.density for material in self._materials]
         mcsDensities = np.array(mcsDensities)
 
         fDensity2HU = interpolate.interp1d(np.insert(densities, 0, densities[0]), np.insert(hu, 0, hu[0]), kind='linear', fill_value='extrapolate')
@@ -66,7 +66,7 @@ class RayStationCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, RaySta
                 maxElementNb = m
 
         for i, material in enumerate(mcsMaterials):
-            material.number = maxElementNb+i
+            material.number = maxElementNb+i+1
 
         return MCsquareCTCalibration(hu2densityTable=(hu, densities), hu2materialTable=hu2materials)
 

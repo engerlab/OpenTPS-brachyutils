@@ -148,7 +148,7 @@ class Image3D(PatientData):
             """
 
         if (not otherImage.hasSameGrid(self)):
-            logger.info('Resample field to CT grid.')
+            logger.info('Resample image to CT grid.')
             self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType)
 
     def getDataAtPosition(self, position: Sequence):

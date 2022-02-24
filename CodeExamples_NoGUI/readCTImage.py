@@ -1,6 +1,6 @@
 from Core.IO.dicomReader import readDicomCT
 from Core.IO.dataLoader import listAllFiles, loadAllData
-from Core.IO.serializedObjectIO import saveSerializedObject
+from Core.IO.serializedObjectIO import saveSerializedObjects
 import matplotlib.pyplot as plt
 
 ## option 1 specific to dicoms
@@ -21,4 +21,4 @@ print(type(img2)) ## print the type of the first element
 
 ## save data as serialized object
 savingPath = '/home/damien/Desktop/' + 'PatientTest_CT.p'
-saveSerializedObject(img2, savingPath)
+saveSerializedObjects(img2, savingPath)

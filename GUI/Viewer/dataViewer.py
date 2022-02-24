@@ -13,7 +13,7 @@ from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImage
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
-from GUI.Viewer.DataViewerComponents.profilePlot import ProfilePlot
+from GUI.Viewer.DataViewerComponents.profileViewer import ProfileViewer
 
 
 class DroppedObject:
@@ -84,7 +84,7 @@ class DataViewer(QWidget):
         self._dvhViewer = DVHPlot()
         self._dynImageViewer = DynamicImageViewer(viewController)
         self._noneViewer = BlackEmptyPlot()
-        self._staticProfileviewer = ProfilePlot(viewController)
+        self._staticProfileviewer = ProfileViewer(viewController)
         self._staticImageViewer = ImageViewer(viewController)
 
         self._staticProfileviewer.hide()
@@ -131,7 +131,7 @@ class DataViewer(QWidget):
         return self._staticImageViewer
 
     @property
-    def cachedStaticProfileViewer(self) -> ProfilePlot:
+    def cachedStaticProfileViewer(self) -> ProfileViewer:
         """
         The profile viewer currently in cache (read-only)
 
@@ -140,7 +140,7 @@ class DataViewer(QWidget):
         return self._staticProfileviewer
 
     @property
-    def currentViewer(self) -> Optional[Union[DVHPlot, ProfilePlot, ImageViewer]]:
+    def currentViewer(self) -> Optional[Union[DVHPlot, ProfileViewer, ImageViewer]]:
         """
         The viewer currently displayed (read-only)viewerTypes
 
@@ -244,12 +244,12 @@ class DataViewer(QWidget):
         self.dropEnabled = self._dropEnabled
 
         self._viewController.crossHairEnabledSignal.disconnect(self._staticImageViewer.setCrossHairEnabled)
-        self._viewController.lineWidgetEnabledSignal.disconnect(self._staticImageViewer.setProfileWidgetEnabled)
+        self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.disconnect(self._staticImageViewer._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.disconnect(self._staticImageViewer.setWWLEnabled)
 
         self._viewController.crossHairEnabledSignal.connect(self._dynImageViewer.setCrossHairEnabled)
-        self._viewController.lineWidgetEnabledSignal.connect(self._dynImageViewer.setProfileWidgetEnabled)
+        self._viewController.profileWidgetEnabledSignal.connect(self._dynImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.connect(self._dynImageViewer._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.connect(self._dynImageViewer.setWWLEnabled)
 
@@ -258,12 +258,12 @@ class DataViewer(QWidget):
         self.dropEnabled = self._dropEnabled
 
         self._viewController.crossHairEnabledSignal.disconnect(self._dynImageViewer.setCrossHairEnabled)
-        self._viewController.lineWidgetEnabledSignal.disconnect(self._dynImageViewer.setProfileWidgetEnabled)
+        self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.disconnect(self._dynImageViewer._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.disconnect(self._dynImageViewer.setWWLEnabled)
 
         self._viewController.crossHairEnabledSignal.connect(self._staticImageViewer.setCrossHairEnabled)
-        self._viewController.lineWidgetEnabledSignal.connect(self._staticImageViewer.setProfileWidgetEnabled)
+        self._viewController.profileWidgetEnabledSignal.connect(self._staticImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.connect(self._staticImageViewer._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.connect(self._staticImageViewer.setWWLEnabled)
 
@@ -375,7 +375,7 @@ class DataViewer(QWidget):
         else:
             raise ValueError('Image type not supported')
 
-        if not image is None:
+        if not image is None and not image.patient is None:
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
     def _setSecondaryImage(self, image: Optional[Image3D]):

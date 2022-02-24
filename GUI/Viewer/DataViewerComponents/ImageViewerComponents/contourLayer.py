@@ -55,10 +55,12 @@ class ContourLayer:
 
     @resliceAxes.setter
     def resliceAxes(self, resliceAxes):
-        for contour in self._contours:
-            contour.resliceAxes = resliceAxes
-
         self._resliceAxes = resliceAxes
+        self._updateContoursResliceAxes()
+
+    def _updateContoursResliceAxes(self):
+        for vtkContour in self._vtkContours:
+            vtkContour.resliceAxes = self._resliceAxes
 
 class vtkContour:
     def __init__(self, contour, renderWindow):
@@ -97,8 +99,6 @@ class vtkContour:
 
     @resliceAxes.setter
     def resliceAxes(self, resliceAxes):
-        if self.reslice is None:
-            return
         self.reslice.SetResliceAxes(resliceAxes)
 
     def reloadColor(self):

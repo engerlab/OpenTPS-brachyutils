@@ -12,6 +12,7 @@ from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
+from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
@@ -64,7 +65,10 @@ class ImageViewer(QWidget):
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
 
-        self.viewType = self._viewType # Updates _viewMatrix
+        self._profileWidget.primaryLayer = self._primaryImageLayer
+        self._profileWidget.secondaryLayer = self._secondaryImageLayer
+
+        self._setViewType(self._viewType)
         self._contourLayer.resliceAxes = self._viewMatrix
 
         self.setLayout(self._mainLayout)
@@ -98,7 +102,7 @@ class ImageViewer(QWidget):
         if image is None:
             self._resetPrimaryImageLayer()
         else:
-            self._setPrimaryImage(image)
+            self._setPrimaryImageForViewer(Image3DForViewer(image))
 
     def _resetPrimaryImageLayer(self):
         self._primaryImageLayer.image = None
@@ -107,9 +111,8 @@ class ImageViewer(QWidget):
         self._mainLayout.addWidget(self._blackWidget)
         self._blackWidget.show()
 
-    def _setPrimaryImage(self, image):
-        self._primaryImageLayer.image = Image3DForViewer(image)
-
+    def _setPrimaryImageForViewer(self, image:GenericImageForViewer):
+        self._primaryImageLayer.image = image
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)
 
@@ -143,8 +146,6 @@ class ImageViewer(QWidget):
 
         self._iStyle.SetCurrentImageNumber(0)
 
-        self._profileWidget.primaryReslice = self._primaryImageLayer._reslice #TODO : access of protected property is wrong
-
         self._renderer.ResetCamera()
 
         self._renderWindow.Render()
@@ -160,7 +161,7 @@ class ImageViewer(QWidget):
 
         if enabled and not self._profileWidget.enabled:
             self._profileWidgetNoInteractionYet = True
-            self._profileWidget.callback = self._viewController.lineWidgetCallback
+            self._profileWidget.callback = self._viewController.profileWidgetCallback
         else:
             self._profileWidgetNoInteractionYet = False
         self._profileWidget.enabled = enabled
@@ -192,7 +193,7 @@ class ImageViewer(QWidget):
         self._textLayer.setSecondaryTextLine(2, self.primaryImage.name)
 
         #TODO: disconnect signal
-        self._primaryImageLayer.image.nameChangedSignal.connect(
+        self._secondaryImageLayer.image.nameChangedSignal.connect(
             lambda name: self._textLayer.setSecondaryTextLine(2, name))
 
         self._renderWindow.Render()
@@ -211,24 +212,27 @@ class ImageViewer(QWidget):
         if self._viewType == viewType:
             return
 
-        self._viewType = viewType
-        axial = vtkCommonMath.vtkMatrix4x4()
-        axial.DeepCopy((1, 0, 0, 0,
-                        0, 0, 1, 0,
-                        0, 1, 0, 0,
-                        0, 0, 0, 1))
+        self._setViewType(viewType)
 
+    def _setViewType(self, viewType):
+        self._viewType = viewType
         coronal = vtkCommonMath.vtkMatrix4x4()
-        coronal.DeepCopy((0, 0, -1, 0,
-                          1, 0, 0, 0,
+        coronal.DeepCopy((1, 0, 0, 0,
+                          0, 0, 1, 0,
                           0, 1, 0, 0,
                           0, 0, 0, 1))
 
         sagittal = vtkCommonMath.vtkMatrix4x4()
-        sagittal.DeepCopy((1, 0, 0, 0,
-                           0, -1, 0, 0,
-                           0, 0, -1, 0,
-                           0, 0, 0, 1))
+        sagittal.DeepCopy((0, 0, -1, 0,
+                          1, 0, 0, 0,
+                          0, 1, 0, 0,
+                          0, 0, 0, 1))
+
+        axial = vtkCommonMath.vtkMatrix4x4()
+        axial.DeepCopy((1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, -1, 0,
+                        0, 0, 0, 1))
 
         if self._viewType == self.viewerTypes.SAGITTAL:
             self._viewMatrix = sagittal
@@ -242,10 +246,11 @@ class ImageViewer(QWidget):
         if not self.primaryImage is None:
             self._primaryImageLayer.resliceAxes = self._viewMatrix
             self._contourLayer.resliceAxes = self._viewMatrix
-            self._renderWindow.Render()
         if not self.secondaryImage is None:
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
-            self._renderWindow.Render()
+
+        self._renderer.ResetCamera()
+        self._renderWindow.Render()
 
         self.viewTypeChangedSignal.emit(self._viewType)
 

@@ -20,7 +20,7 @@ class ROIPanel(QWidget):
 
   def addRTStruct(self, rtStruct):
     for contour in rtStruct.contours:
-      checkbox = ROIItem(ROIContourForViewer(contour), self._viewController).getCheckbox()
+      checkbox = ROIItem(ROIContourForViewer(contour), self._viewController)
 
       self.layout.addWidget(checkbox)
       self.items.append(checkbox)
@@ -29,7 +29,7 @@ class ROIPanel(QWidget):
 
   def removeRTStruct(self, contour):
     for item in self.items:
-      if item.contour == contour:
+      if item._contour == contour:
         self.layout.removeWidget(item)
         item.setParent(None)
         return
@@ -46,24 +46,22 @@ class ROIPanel(QWidget):
     self._patient.rtStructRemovedSignal.connect(self.removeRTStruct)
 
 
-class ROIItem:
+class ROIItem(QCheckBox):
   def __init__(self, contour, viewController):
+    super().__init__(contour.name)
+
     self._contour = contour
     self._viewController = viewController
 
-    self.checkbox = QCheckBox(contour.name)
-    self.checkbox.setChecked(self._contour.visible)
+    self.setChecked(self._contour.visible)
 
-    self._contour.visibleChangedSignal.connect(self.checkbox.setChecked)
+    self._contour.visibleChangedSignal.connect(self.setChecked)
 
-    self.checkbox.clicked.connect(lambda c: self.handleClick(c))
+    self.clicked.connect(lambda c: self.handleClick(c))
 
     pixmap = QPixmap(100, 100)
     pixmap.fill(QColor(contour.color[0], contour.color[1], contour.color[2], 255))
-    self.checkbox.setIcon(QIcon(pixmap))
-
-  def getCheckbox(self):
-    return self.checkbox
+    self.setIcon(QIcon(pixmap))
 
   @property
   def contour(self):

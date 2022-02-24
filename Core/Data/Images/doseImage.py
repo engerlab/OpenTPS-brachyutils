@@ -1,3 +1,5 @@
+import numpy as np
+
 from Core.Data.Images.image3D import Image3D
 
 
@@ -20,46 +22,17 @@ class DoseImage(Image3D):
         pass
     
     
+    @classmethod
+    def fromImage(cls, image:Image3D):
+        doseImage = cls()
+        doseImage.imageArray = np.array(image.imageArray)
+        doseImage.origin = np.array(image.origin)
+        doseImage.spacing = np.array(image.spacing)
+        doseImage.angles = np.array(image.angles)
+        doseImage.seriesInstanceUID = image.seriesInstanceUID
     
-    def initializeFromMHD(self, imgName, mhdDose, ct, plan):
-        """
-        Initialize the DoseImage object from a MHDImage.
+        return doseImage
 
-        Parameters
-        ----------
-        imgName : str
-            Name of the dose image as it will be displayed to the user
-        mhdDose : MHDImage object
-            MHD image of the dose distribution
-        ct : ctImage object
-            CT image used for dose calculation
-        plan : RTPlan object
-            Treatment plan used for dose calculation
-        """
-
-        pass
-    
-    
-    
-    def initializeFromBeamletDose(self, imgName, beamlets, doseVector, ct):
-        """
-        Initialize the DoseImage object from a dose vector calculated using the beamlet matrix. 
-
-        Parameters
-        ----------
-        imgName : str
-            Name of the dose image as it will be displayed to the user
-        beamlets : MHDImage object
-            MHD image of the dose distribution
-        doseVector : np Array
-            1D vector resulting from the product of the beamlet matrix and the spot weight vector
-        ct : ctImage object
-            CT image used for dose calculation
-        """
-
-        pass
-    
-    
       
     def resampleToImageGrid(self, ct):
         pass

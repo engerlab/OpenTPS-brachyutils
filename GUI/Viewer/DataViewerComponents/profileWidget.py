@@ -8,19 +8,41 @@ from Core.event import Event
 
 
 class ProfileWidget:
+    class ProfileWidgetCallback:
+        def __init__(self):
+            self._setPrimaryImageData = lambda *args, **kwargs: None
+            self._setSecondaryImageData = lambda *args, **kwargs: None
+
+        @property
+        def setPrimaryImageData(self):
+            return self._setPrimaryImageData
+
+        @setPrimaryImageData.setter
+        def setPrimaryImageData(self, func):
+            self._setPrimaryImageData = func
+
+        @property
+        def setSecondaryImageData(self):
+            return self._setSecondaryImageData
+
+        @setSecondaryImageData.setter
+        def setSecondaryImageData(self, func):
+            self._setSecondaryImageData = func
+
     def __init__(self, renderer, renderWindow):
         self.lineWidgeEnabledSignal = Event(bool)
 
         self._lineWidget = vtkLineWidget2()
         self._lineWidgetCallback = None
         self._lineWidgetEnabled = False
-        self._primaryReslice = None
+        self._primaryLayer = None
+        self._secondaryLayer = None
         self._renderer = renderer
         self._renderWindow = renderWindow
 
         self._lineWidget.SetCurrentRenderer(self._renderer)
-        self._lineWidget.AddObserver("InteractionEvent", self.onprofileWidgetInteraction)
-        self._lineWidget.AddObserver("EndInteractionEvent", self.onprofileWidgetInteraction)
+        self._lineWidget.AddObserver("InteractionEvent", self.onProfileWidgetInteraction)
+        self._lineWidget.AddObserver("EndInteractionEvent", self.onProfileWidgetInteraction)
         self._lineWidget.SetInteractor(self._renderWindow.GetInteractor())
 
     @property
@@ -52,22 +74,31 @@ class ProfileWidget:
         self._lineWidgetCallback = method
 
     @property
-    def primaryReslice(self):
-        return self._primaryReslice
+    def primaryLayer(self):
+        return self._primaryLayer
 
-    @primaryReslice.setter
-    def primaryReslice(self, reslice):
-        if not self._primaryReslice is None:
-            self._primaryReslice.RemoveObserver(self._endEventObserver)
+    @primaryLayer.setter
+    def primaryLayer(self, layer):
+        self._primaryLayer = layer
 
-        self._primaryReslice = reslice
-        self._endEventObserver = self._primaryReslice.AddObserver("EndEvent", self.onprofileWidgetInteraction)
+        if not self._primaryLayer.image is None:
+            self._primaryLayer._reslice.RemoveObserver(self._endEventObserver)
+
+        self._endEventObserver = self._primaryLayer._reslice.AddObserver("EndEvent", self.onProfileWidgetInteraction)
+
+    @property
+    def secondaryLayer(self):
+        return self._secondaryLayer
+
+    @secondaryLayer.setter
+    def secondaryLayer(self, layer):
+        self._secondaryLayer = layer
 
     def setInitialPosition(self, worldPos: typing.Sequence):
         self._lineWidget.GetLineRepresentation().SetPoint1WorldPosition((worldPos[0], worldPos[1], 0.01))
         self._lineWidget.GetLineRepresentation().SetPoint2WorldPosition((worldPos[0], worldPos[1], 0.01))
 
-    def onprofileWidgetInteraction(self, obj, event):
+    def onProfileWidgetInteraction(self, obj, event):
         if not self.enabled:
             return
 
@@ -77,9 +108,19 @@ class ProfileWidget:
         if point1[1]==point1[2]==point2[1]==point2[2]:
             return
 
-        matrix = self._primaryReslice.GetResliceAxes()
+        matrix = self._primaryLayer.resliceAxes
         point1 = matrix.MultiplyPoint((point1[0], point1[1], 0, 1))
         point2 = matrix.MultiplyPoint((point2[0], point2[1], 0, 1))
+
+        x, y = self._resliceDataBewteenTwoPoints(self._primaryLayer, point1, point2)
+        self._lineWidgetCallback.setPrimaryImageData(x, y, name=self._layerImageName(self._primaryLayer))
+
+        x, y = self._resliceDataBewteenTwoPoints(self._secondaryLayer, point1, point2)
+        self._lineWidgetCallback.setSecondaryImageData(x, y, name=self._layerImageName(self._secondaryLayer))
+
+    def _resliceDataBewteenTwoPoints(self, layer, point1, point2):
+        if layer.image is None:
+            return ([0, 0], [0, 0])
 
         num = 1000
         points0 = np.linspace(point1[0], point2[0], num)
@@ -87,12 +128,16 @@ class ProfileWidget:
         points2 = np.linspace(point1[2], point2[2], num)
         data = np.array(points1)
 
-        imageData = self._primaryReslice.GetInput(0)
-        for i, p0 in enumerate(points0):
-            ind = [0, 0, 0]
-            imageData.TransformPhysicalPointToContinuousIndex((p0, points1[i], points2[i]), ind)
-            data[i] = imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)
-
         x = np.linspace(0, sqrt((point2[0] - point1[0]) * (point2[0] - point1[0]) + (point2[1] - point1[1]) * (
-                    point2[1] - point1[1]) + (point2[2] - point1[2]) * (point2[2] - point1[2])), num)
-        self._lineWidgetCallback(x, data)
+                point2[1] - point1[1]) + (point2[2] - point1[2]) * (point2[2] - point1[2])), num)
+
+        for i, p0 in enumerate(points0):
+            data[i] = layer._resliceDataFromPhysicalPoint((p0, points1[i], points2[i]))
+
+        return (x, data)
+
+    def _layerImageName(self, layer):
+        if layer.image is None:
+            return None
+
+        return layer.image.name
