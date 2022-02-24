@@ -41,7 +41,7 @@ if __name__ == '__main__':
     viewController.mainWindow.show()
 
     # Run start script
-    scriptPath = os.path.join(str(Script.__path__[0]), 'startScript.py')
+    scriptPath = os.path.join(mainConfig.startScriptFolder, 'startScript.py')
     if Path(scriptPath).is_file():
         with open(scriptPath, 'r') as file:
             code = file.read()
