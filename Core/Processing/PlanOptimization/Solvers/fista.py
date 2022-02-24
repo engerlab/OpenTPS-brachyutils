@@ -5,6 +5,23 @@ from Core.Processing.PlanOptimization.Acceleration.accelFista import FISTA
 logger = logging.getLogger(__name__)
 
 
+class FISTA():
+    def __init__(self):
+        pass
+    def _pre(self):
+        if len(functions) == 2:
+            fb0 = 'GRAD' in functions[0].cap(x0) and \
+                  'PROX' in functions[1].cap(x0)
+            fb1 = 'GRAD' in functions[1].cap(x0) and \
+                  'PROX' in functions[0].cap(x0)
+            if fb0 or fb1:
+                solver = forward_backward()  # Need one prox and 1 grad.
+            else:
+                logger.error('No suitable solver for the given functions.')
+        elif len(functions) > 2:
+            solver = generalized_forward_backward()
+
+
 class ForwardBackward(solver):
     """
     Forward-backward proximal splitting algorithm (ISTA and FISTA).

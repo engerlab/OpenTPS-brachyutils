@@ -16,7 +16,7 @@ class GradientDescent(ConvexSolver):
     def __init__(self, **kwargs):
         super(GradientDescent, self).__init__(**kwargs)
 
-    def prepareFunctions(self, functions, x0):
+    def _pre(self, functions, x0):
 
         for f in functions:
             if 'GRAD' in f.cap(x0):
@@ -28,7 +28,7 @@ class GradientDescent(ConvexSolver):
         logger.info('minimizing {} smooth '
                     'functions.'.format(self.__class__.__name__, len(self.smoothFuns)))
 
-    def optimizeWeights(self):
+    def _algo(self):
         grad = np.zeros_like(self.sol)
         for f in self.smoothFuns:
             grad += f.grad(self.sol)
