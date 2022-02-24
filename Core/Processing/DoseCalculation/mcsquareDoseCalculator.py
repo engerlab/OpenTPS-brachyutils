@@ -24,6 +24,10 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         AbstractDoseInfluenceCalculator.__init__(self)
 
         self._ctCalibration = None
+        self._ct = None
+        self._plan = None
+        self._roi = None
+        self._config = None
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
@@ -64,39 +68,52 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def computeDose(self, ct:CTImage, plan: RTPlan) -> DoseImage:
         self._ct = ct
         self._plan = plan
+        self._config = self._doseComputationConfig
 
-        self._cleanDir(self._materialFolder)
-        self._cleanDir(self._scannerFolder)
-        self._cleanDir(self._outputDir)
         self._writeFilesToSimuDir()
+        self._cleanDir(self._outputDir)
         self._startMCsquare()
 
-        doseImage = self._importResults()
+        doseImage = self._importDose()
 
         return doseImage
 
     def computeDoseInfluence(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None):
-        raise NotImplementedError()
+        self._ct = ct
+        self._plan = plan
+        self._roi = roi
+        self._config = self._bemletComputationConfig
+
+        self._writeFilesToSimuDir()
+        self._cleanDir(self._outputDir)
+        self._startMCsquare()
+
+        beamletDose = self._importBeamlets()
+
+        return beamletDose
 
     def _cleanDir(self, dirPath):
         if os.path.isdir(dirPath):
             shutil.rmtree(dirPath)
 
     def _writeFilesToSimuDir(self):
+        self._cleanDir(self._materialFolder)
+        self._cleanDir(self._scannerFolder)
+
         mcsquareIO.writeCT(self._ct, self._ctFilePath)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
         mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath)
         mcsquareIO.writeCTCalibration(self._ctCalibration, self._scannerFolder, self._materialFolder)
-        mcsquareIO.writeConfig(self._doseComputationConfig, self._configFilePath)
+        mcsquareIO.writeConfig(self._config, self._configFilePath)
         mcsquareIO.writeBin(self._mcsquareSimuDir)
 
     def _startMCsquare(self):
         if (platform.system() == "Linux"):
-            os.system("cd " + self._mcsquareSimuDir + " &&  sh MCsquare")
+            os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
         elif (platform.system() == "Windows"):
             os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
 
-    def _importResults(self) -> DoseImage:
+    def _importDose(self) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
         dose.patient = self._ct.patient
 
@@ -112,6 +129,21 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 deliveredProtons += sum(layer.spotWeights) * Protons_per_MU
 
         return deliveredProtons
+
+    def _importBeamlets(self):
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath)
+        beamletDose.beamletRescaling = self._beamletRescaling()
+        return beamletDose
+
+    def _beamletRescaling(self):
+        beamletRescaling = []
+        for beam in self._plan:
+            for layer in beam:
+                Protons_per_MU = self._beamModel.computeMU2Protons(layer.nominalEnergy)
+                for spot in layer.spotWeights:
+                    beamletRescaling.append(Protons_per_MU * 1.602176e-19 * 1000)
+
+        return beamletRescaling
 
     @property
     def _mcsquareSimuDir(self):
@@ -162,6 +194,10 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return os.path.join(self._outputDir, "Dose.mhd")
 
     @property
+    def _sparseDoseFilePath(self):
+        return os.path.join(self._outputDir, "Sparse_Dose.txt")
+
+    @property
     def _doseComputationConfig(self) -> MCsquareConfig:
         config = self._generalMCsquareConfig
 
@@ -170,9 +206,23 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return config
 
     @property
+    def _bemletComputationConfig(self) -> MCsquareConfig:
+        config = self._generalMCsquareConfig
+
+        config["Dose_to_Water_conversion"] = "OnlineSPR"
+        config["Compute_stat_uncertainty"] = False
+        config["Beamlet_Mode"] = True
+        config["Beamlet_Parallelization"] = True
+        config["Dose_MHD_Output"] = False
+        config["Dose_Sparse_Output"] = True
+
+        return config
+
+    @property
     def _generalMCsquareConfig(self) -> MCsquareConfig:
         config = MCsquareConfig()
 
+        config["Num_Primaries"] = self._nbPrimaries
         config["WorkDir"] = self._mcsquareSimuDir
         config["CT_File"] = self._ctName
         config["ScannerDirectory"] = self._scannerFolder # ??? Required???

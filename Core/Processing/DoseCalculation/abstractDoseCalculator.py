@@ -31,7 +31,7 @@ class AbstractDoseCalculator:
         raise NotImplementedError()
 
     @abstractmethod
-    def computeDose(self, ct:CTImage, pla: RTPlan) -> DoseImage:
+    def computeDose(self, ct:CTImage, plan: RTPlan) -> DoseImage:
         raise NotImplementedError()
 
 class ProgressInfo:

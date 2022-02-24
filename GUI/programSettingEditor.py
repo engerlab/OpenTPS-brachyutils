@@ -7,7 +7,7 @@ class ProgramSettingEditor(QMainWindow):
 
         self._mainConfig  = mainConfig
 
-        self.setWindowTitle('Secondary image')
+        self.setWindowTitle('Program settings')
         self.resize(400, 400)
 
         centralWidget = QWidget()

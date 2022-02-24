@@ -33,26 +33,6 @@ class DoseImage(Image3D):
     
         return doseImage
 
-    
-    def initializeFromBeamletDose(self, imgName, beamlets, doseVector, ct):
-        """
-        Initialize the DoseImage object from a dose vector calculated using the beamlet matrix. 
-
-        Parameters
-        ----------
-        imgName : str
-            Name of the dose image as it will be displayed to the user
-        beamlets : MHDImage object
-            MHD image of the dose distribution
-        doseVector : np Array
-            1D vector resulting from the product of the beamlet matrix and the spot weight vector
-        ct : ctImage object
-            CT image used for dose calculation
-        """
-
-        pass
-    
-    
       
     def resampleToImageGrid(self, ct):
         pass

@@ -1,9 +1,12 @@
 import os
 import platform
 import shutil
+import struct
+import time
 import unittest
 
 import numpy as np
+import scipy.sparse as sp
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
@@ -13,7 +16,159 @@ from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.beamletDose import BeamletDose
 from Core.IO.mhdReadWrite import exportImageMHD, importImageMHD
+
+
+def readBeamlets(file_path):
+    if (not file_path.endswith('.txt')):
+        raise NameError('File ', file_path, ' is not a valid sparse matrix header')
+
+    # Read sparse beamlets header file
+    print('Read sparse beamlets: ', file_path)
+    header = _read_sparse_header(file_path)
+
+    if (header["SimulationMode"] != 'Beamlet'):
+        raise ValueError('Not a beamlet file')
+
+    # Read sparse beamlets binary file
+    print('Read binary file: ', file_path)
+    sparseBeamlets =  _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"])
+
+    beamletDose = BeamletDose()
+    beamletDose.setUnitaryBeamlets(sparseBeamlets)
+    beamletDose.beamletWeights = np.ones(header["NbrSpots"])
+    beamletDose.doseOrigin = header["Offset"]
+    beamletDose.doseSpacing = header["VoxelSpacing"]
+    beamletDose.doseGridSize = header["ImageSize"]
+
+    return beamletDose
+
+def _read_sparse_header(file_path):
+    header = {}
+
+    # Parse file path
+    Folder, File = os.path.split(file_path)
+    FileName, FileExtension = os.path.splitext(File)
+    Header_file = file_path
+    header["ImgName"] = FileName
+
+    with open(Header_file, 'r') as fid:
+        for line in fid:
+            if not line.startswith("#"):
+                key, val = line.split('=')
+                key = key.strip()
+                if key == 'NbrSpots':
+                    header["NbrSpots"] = int(val)
+                elif key == 'ImageSize':
+                    ImageSize = [int(i) for i in val.split()]
+                    header["ImageSize"] = (ImageSize[0], ImageSize[1], ImageSize[2])
+                    header["NbrVoxels"] = ImageSize[0] * ImageSize[1] * ImageSize[2]
+                elif key == 'VoxelSpacing':
+                    header["VoxelSpacing"] = [float(i) for i in val.split()]
+                elif key == 'Offset':
+                    header["Offset"] = [float(i) for i in val.split()]
+                elif key == 'SimulationMode':
+                    header["SimulationMode"] = val.strip()
+                elif key == 'BinaryFile':
+                    header["Binary_file"] = os.path.join(Folder, val.strip())
+
+    return header
+
+def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots):
+    BeamletMatrix = []
+
+    fid = open(Binary_file, 'rb')
+
+    buffer_size = 5 * NbrVoxels
+    col_index = np.zeros((buffer_size), dtype=np.uint32)
+    row_index = np.zeros((buffer_size), dtype=np.uint32)
+    beamlet_data = np.zeros((buffer_size), dtype=np.float32)
+    data_id = 0
+    last_stacked_col = 0
+    num_unstacked_col = 1
+
+    time_start = time.time()
+
+    for i in range(NbrSpots):
+        [NonZeroVoxels] = struct.unpack('I', fid.read(4))
+        [BeamID] = struct.unpack('I', fid.read(4))
+        [LayerID] = struct.unpack('I', fid.read(4))
+        [xcoord] = struct.unpack('<f', fid.read(4))
+        [ycoord] = struct.unpack('<f', fid.read(4))
+        print("Spot " + str(i) + ": BeamID=" + str(BeamID) + " LayerID=" + str(LayerID) + " Position=(" + str(
+            xcoord) + ";" + str(ycoord) + ") NonZeroVoxels=" + str(NonZeroVoxels))
+
+        if (NonZeroVoxels == 0): continue
+
+        ReadVoxels = 0
+        while (1):
+            [NbrContinuousValues] = struct.unpack('I', fid.read(4))
+            ReadVoxels += NbrContinuousValues
+
+            [FirstIndex] = struct.unpack('I', fid.read(4))
+
+            for j in range(NbrContinuousValues):
+                [temp] = struct.unpack('<f', fid.read(4))
+                beamlet_data[data_id] = temp
+                row_index[data_id] = FirstIndex + j
+                col_index[data_id] = i - last_stacked_col
+                data_id += 1
+
+            # temp = np.ndarray((NbrContinuousValues,), '<f', fid.read(4*NbrContinuousValues))
+            # beamlet_data[data_id:data_id+NbrContinuousValues] = temp * BeamletRescaling[i]
+            # row_index[data_id:data_id+NbrContinuousValues] = list(range(FirstIndex, FirstIndex+NbrContinuousValues))
+            # col_index[data_id:data_id+NbrContinuousValues] = i-last_stacked_col
+            # data_id += NbrContinuousValues
+
+            if (ReadVoxels >= NonZeroVoxels):
+                if i == 0:
+                    BeamletMatrix = sp.csc_matrix(
+                        (beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])), shape=(NbrVoxels, 1),
+                        dtype=np.float32)
+                    data_id = 0
+                    last_stacked_col = i + 1
+                    num_unstacked_col = 1
+                elif (data_id > buffer_size - NbrVoxels):
+                    A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
+                                      shape=(NbrVoxels, num_unstacked_col), dtype=np.float32)
+                    data_id = 0
+                    BeamletMatrix = sp.hstack([BeamletMatrix, A])
+                    last_stacked_col = i + 1
+                    num_unstacked_col = 1
+                else:
+                    num_unstacked_col += 1
+
+                break
+
+    # stack last cols
+    A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
+                      shape=(NbrVoxels, num_unstacked_col - 1), dtype=np.float32)
+    BeamletMatrix = sp.hstack([BeamletMatrix, A])
+
+    print('Beamlets imported in ' + str(time.time() - time_start) + ' sec')
+
+    _print_memory_usage(BeamletMatrix)
+
+    fid.close()
+    return BeamletMatrix
+
+
+def _print_memory_usage(BeamletMatrix):
+    if (BeamletMatrix == []):
+        print(" ")
+        print("Beamlets not loaded")
+        print(" ")
+
+    else:
+        mat_size = BeamletMatrix.data.nbytes + BeamletMatrix.indptr.nbytes + BeamletMatrix.indices.nbytes
+        print(" ")
+        print("Beamlets loaded")
+        print("Matrix size: " + str(BeamletMatrix.shape))
+        print("Non-zero values: " + str(BeamletMatrix.nnz))
+        print("Data format: " + str(BeamletMatrix.dtype))
+        print("Memory usage: " + str(mat_size / 1024 ** 3) + " GB")
+        print(" ")
 
 
 def readDose(filePath):
