@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
@@ -41,12 +42,12 @@ if __name__ == '__main__':
 
     # Run start script
     scriptPath = os.path.join(str(Script.__path__[0]), 'startScript.py')
+    if Path(scriptPath).is_file():
+        with open(scriptPath, 'r') as file:
+            code = file.read()
 
-    with open(scriptPath, 'r') as file:
-        code = file.read()
-
-    output = API.interpreter.run(code)
-    print('Start script output:')
-    print(output)
+        output = API.interpreter.run(code)
+        print('Start script output:')
+        print(output)
 
     app.exec_()

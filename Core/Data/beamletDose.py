@@ -92,3 +92,6 @@ class BeamletDose(PatientData):
         doseImage.patient = self.patient
 
         return doseImage
+
+    def toSparseMatrix(self) -> csc_matrix:
+        return self._sparseBeamlets
