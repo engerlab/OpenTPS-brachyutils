@@ -29,10 +29,10 @@ class RegistrationTranslation(Registration):
                                       options={'xtol': 0.01, 'ftol': 0.0001, 'maxiter': 25, 'maxfev': 75})
 
         if (self.roiBox == []):
-            translation = opt.x
+            translation = opt._x
         else:
             start = self.roiBox[0]
             stop = self.roiBox[1]
-            translation = opt.x
+            translation = opt._x
 
         return translation
