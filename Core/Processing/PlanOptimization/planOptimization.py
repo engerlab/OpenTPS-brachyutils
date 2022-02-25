@@ -59,7 +59,7 @@ class PlanOptimizer:
         cost = result['objective']
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
-                .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
+            .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
 
         # unload scenario beamlets
         for s in range(len(self.plan.scenarios)):
@@ -77,7 +77,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
     def __init__(self, method, plan, contours, functions=None, **kwargs):
         super().__init__(plan, contours, functions)
         if functions is None:
-            functions = []
+            logger.error('You must specify the function you want to optimize')
         self.method = method
         if self.method == 'Scipy-BFGS':
             self.solver = bfgs.ScipyOpt('BFGS')

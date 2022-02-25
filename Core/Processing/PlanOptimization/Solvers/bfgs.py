@@ -6,8 +6,8 @@ import scipy.optimize
 from Core.Processing.PlanOptimization.Acceleration.linesearch import LineSearch
 from Core.Processing.PlanOptimization.Solvers.gradientDescent import GradientDescent
 
-
 logger = logging.getLogger()
+
 
 class ScipyOpt:
     def __init__(self, meth='L-BFGS'):
@@ -18,11 +18,12 @@ class ScipyOpt:
         if param is None:
             param = {'ftol': 1e-5, 'maxiter': 1000}
         if 'GRAD' not in func.cap(x0):
-            logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__)
+            logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
         res = scipy.optimize.minimize(func.eval, x0, method=self.meth, jac=func.grad,
                                       options={'ftol': param['ftol'], 'maxiter': param['maxIter']})
 
-        result ={'sol':res.x, 'crit':res.message, 'niter':res.it, 'time': time.time() - startTime, 'objective': res.fun}
+        result = {'sol': res.x, 'crit': res.message, 'niter': res.it, 'time': time.time() - startTime,
+                  'objective': res.fun}
 
         return result
 
@@ -42,17 +43,17 @@ class BFGS(GradientDescent):
     def _pre(self, functions, x0):
         super(BFGS, self)._pre(functions, x0)
         self.f = functions[0]
-        self.I = np.identity(x0.size)
-        self.Hk = self.I
-        self.pk = -self.Hk.dot(self.f.grad(x0))
+        self.indentity = np.identity(x0.size)
+        self.hessiank = self.indentity
+        self.pk = -self.hessiank.dot(self.f.grad(x0))
 
     def _algo(self):
         # current
         xk = self.sol.copy()
-        Hk = self.Hk
+        hk = self.hessiank
 
         # compute search direction
-        self.pk = -Hk.dot(self.f.grad(self.sol))
+        self.pk = -hk.dot(self.f.grad(self.sol))
 
         # update x
         self.sol[:] += self.step * self.pk
@@ -60,12 +61,13 @@ class BFGS(GradientDescent):
         # compute H_{k+1} by BFGS update
         sk = self.sol - xk
         yk = self.f.grad(self.sol) - self.f.grad(xk)
-        rho_k = float(1.0 / yk.dot(sk))
-        self.Hk = (self.I - rho_k * np.outer(sk, yk)).dot(Hk).dot(self.I - rho_k * np.outer(yk, sk)) + rho_k * np.outer(
+        rhok = float(1.0 / yk.dot(sk))
+        self.hessiank = (self.indentity - rhok * np.outer(sk, yk)).dot(hk).dot(self.indentity - rhok * np.outer(yk, sk)) + rhok * np.outer(
             sk, sk)
 
     def _post(self):
         pass
+
 
 class LBFGS(BFGS):
     """
@@ -89,9 +91,9 @@ class LBFGS(BFGS):
     def _algo(self):
         # current
         xk = self.sol.copy()
-        Hk = self.Hk
+        hk = self.hessiank
         # compute search direction
-        self.pk = - self.getHg(Hk, self.f.grad(self.sol))
+        self.pk = - self.getHg(hk, self.f.grad(self.sol))
         # update x
         self.sol[:] += self.step * self.pk
 

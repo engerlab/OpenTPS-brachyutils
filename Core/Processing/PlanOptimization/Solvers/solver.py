@@ -30,7 +30,7 @@ class ConvexSolver:
         convex functions.
         Inputs:
         - functions: list of convex functions to minimize (objects must implement the "pyopti.functions.func.eval"
-        and/or pyopti.functions.func.prox" methods, required by some solvers.
+        and/or pyopti.functions.func.prox methods, required by some solvers).
         - x0: initial weight vector
         - solver: solver class instance.If no solver object are provided, a standard one will be chosen
           given the number of convex function objects and their implemented methods.
