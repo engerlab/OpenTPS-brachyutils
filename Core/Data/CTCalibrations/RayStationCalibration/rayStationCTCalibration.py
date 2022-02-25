@@ -66,7 +66,7 @@ class RayStationCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, RaySta
                 maxElementNb = m
 
         for i, material in enumerate(mcsMaterials):
-            material.number = maxElementNb+i
+            material.number = maxElementNb+i+1
 
         return MCsquareCTCalibration(hu2densityTable=(hu, densities), hu2materialTable=hu2materials)
 

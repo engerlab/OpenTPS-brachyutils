@@ -1,6 +1,7 @@
 
+import os
+
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareHU2Material import MCsquareHU2Material
-from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.CTCalibrations.piecewiseHU2Density import PiecewiseHU2Density
 
@@ -36,18 +37,14 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
     def convertRSP2MassDensity(self, rsp, energy=100):
         raise('TODO')
 
-    def write(self, folderPath, scannerName):
-        scannerPath = os.path.join(folderPath, 'Scanners', scannerName)
-        materialPath = os.path.join(folderPath, 'Materials')
-
-        os.makedirs(scannerPath, exist_ok=True)
-        os.makedirs(materialPath, exist_ok=True)
-
+    def write(self, scannerPath, materialPath):
         PiecewiseHU2Density.write(self, os.path.join(scannerPath, 'HU_Density_Conversion.txt'))
         MCsquareHU2Material.write(self, materialPath, os.path.join(scannerPath, 'HU_Material_Conversion.txt'))
 
     @classmethod
     def fromCTCalibration(cls, ctCalibration: AbstractCTCalibration):
+        from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
+
         if isinstance(ctCalibration, RayStationCTCalibration):
             return ctCalibration.toMCSquareCTCalibration()
         else:

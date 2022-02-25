@@ -34,7 +34,6 @@ class Patient:
 
         def emit(self, data):
             if isinstance(data, self.objectType):
-                print(data)
                 super().emit(data)
 
     def __init__(self, patientInfo=None):
