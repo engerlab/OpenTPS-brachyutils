@@ -1,6 +1,6 @@
 import logging
 
-from Core.Processing.PlanOptimization.Acceleration.accelFista import FISTA
+from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FISTA
 
 logger = logging.getLogger(__name__)
 

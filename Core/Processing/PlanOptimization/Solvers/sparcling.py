@@ -1,3 +1,4 @@
-class Sparcling:
-    def __init__(self):
-        pass
+class SPArCling:
+    def __init__(self, mode='BLFree'):
+        self.mode = mode
+
