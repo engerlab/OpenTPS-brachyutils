@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -30,6 +30,11 @@ class PlanIonBeam:
             s += str(layer)
 
         return s
+
+    @property
+    def layers(self) -> Sequence[PlanIonLayer]:
+        # For backwards compatibility but we can now access each layer with indexing brackets
+        return [layer for layer in self._layers]
 
     @property
     def rangeShifter(self) -> Optional[RangeShifter]:

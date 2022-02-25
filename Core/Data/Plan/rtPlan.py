@@ -1,5 +1,6 @@
 import logging
 import unittest
+from typing import Sequence
 
 import numpy as np
 
@@ -30,6 +31,11 @@ class RTPlan(PatientData):
             s += 'Beam\n'
             s += str(beam)
         return s
+
+    @property
+    def beams(self) -> Sequence[PlanIonBeam]:
+        # For backwards compatibility but we can now access each beam with indexing brackets
+        return [beam for beam in self._beams]
 
     def appendBeam(self, beam: PlanIonBeam):
         self._beams.append(beam)
