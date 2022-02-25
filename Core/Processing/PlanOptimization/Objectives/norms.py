@@ -82,7 +82,7 @@ class NormL21(Norm):
         self.group_reg = group_reg
         self.scale_reg = scale_reg
         self.old_regularisation = old_regularisation
-        targetMask = self.plan.Objectives.list[0].Mask_vec
+        targetMask = self.plan.Objectives.list[0].maskVec
         targetIndices = targetMask.nonzero()[0]
         self.BLTarget = plan.beamlets.BeamletMatrix[targetIndices, :]
         self.iter = 0
