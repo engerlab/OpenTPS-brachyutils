@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
-    def __init__(self, plan, contours, functions=None, **kwargs):
+    def __init__(self, plan, contours, functions=None, opti_params=None, **kwargs):
         if functions is None:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
         self.plan = plan
         self.contours = contours
-        self.opti_params = kwargs
+        self.opti_params = opti_params
         self.functions = functions
 
     def intializeWeights(self):
@@ -59,7 +59,7 @@ class PlanOptimizer:
         cost = result['objective']
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
-            .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
+                .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
 
         # unload scenario beamlets
         for s in range(len(self.plan.scenarios)):

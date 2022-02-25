@@ -2,7 +2,7 @@ import logging
 import time
 
 import numpy as np
-import Core.Processing.PlanOptimization.Functions.baseFunction as baseFunction
+import Core.Processing.PlanOptimization.Objectives.baseFunction as baseFunction
 import Core.Processing.PlanOptimization.Acceleration.baseAccel as baseAccel
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class ConvexSolver:
                 if current < params['atol']:
                     crit = 'ATOL'
             if 'dtol' in params and (not (params['dtol'] is None)):
-                if np.abs(current - last) < dtol:
+                if np.abs(current - last) < params['dtol']:
                     crit = 'DTOL'
             if 'ftol' in params and (not (params['ftol'] is None)):
                 div = current  # Prevent division by 0.
@@ -119,8 +119,8 @@ class ConvexSolver:
         logger.info('Best Iteration # {} with f(x) = {}'.format(bestIter, bestCost))
 
         # Returned dictionary.
-        result = {'sol': solver.sol,
-                  'solver': solver.__class__.__name__,
+        result = {'sol': self.sol,
+                  'solver': self.__class__.__name__,
                   'crit': crit,
                   'niter': niter,
                   'time': time.time() - startTime,

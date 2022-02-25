@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 class Accel(object):
     """
     Acceleration scheme object interface
