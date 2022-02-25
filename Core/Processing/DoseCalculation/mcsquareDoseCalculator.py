@@ -18,7 +18,7 @@ from mainConfig import MainConfig
 import Core.IO.mcsquareIO as mcsquareIO
 
 
-class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalculator):
+class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalculator):
     def __init__(self):
         AbstractMCDoseCalculator.__init__(self)
         AbstractDoseInfluenceCalculator.__init__(self)
@@ -78,7 +78,7 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return doseImage
 
-    def computeDoseInfluence(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None):
+    def computeBeamlets(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None):
         self._ct = ct
         self._plan = plan
         self._roi = roi

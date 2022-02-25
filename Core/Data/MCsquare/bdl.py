@@ -31,7 +31,7 @@ class BDL:
     def __str__(self):
         return self.mcsquareFormatted()
 
-    def mcsquareFormatted(self):
+    def mcsquareFormatted(self) -> str:
         s = '--UPenn beam model (double gaussian)--\n\n'
         s += 'Nozzle exit to Isocenter distance\n'
         s += str(self.nozzle_isocenter) + '\n\n'
@@ -69,11 +69,11 @@ class BDL:
 
         return s
 
-    def computeMU2Protons(self, energy):
+    def computeMU2Protons(self, energy: float) -> float:
         f = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
         return f(energy)
 
-    def computeSpotSizes(self, energy):
+    def computeSpotSizes(self, energy: float) -> tuple[float, float]:
         sigmaX = interpolate.interp1d(self.NominalEnergy, self.SpotSize1x, kind='linear', fill_value='extrapolate')
         sigmaX = sigmaX(energy)
         sigmaY = interpolate.interp1d(self.NominalEnergy, self.SpotSize1y, kind='linear', fill_value='extrapolate')

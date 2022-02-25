@@ -89,23 +89,22 @@ class RangeEditor(QWidget):
         self._rangeEdit0 = QLineEdit(self)
         self._rangeEdit1 = QLineEdit(self)
 
-        self.onlyInt = QDoubleValidator()
-        self._rangeEdit0.setValidator(self.onlyInt)
-        self._rangeEdit1.setValidator(self.onlyInt)
-
         self._mainLayout.addWidget(self._txt)
         self._mainLayout.addWidget(self._rangeEdit0)
         self._mainLayout.addWidget(self._rangeEdit1)
 
-        self.setRangeValue(self._image.range)
+        self._rangeEdit0.setText(str(self._image.range[0]))
+        self._rangeEdit1.setText(str(self._image.range[1]))
 
         self._rangeEdit0.textEdited.connect(self._handleTextEdited)
         self._rangeEdit1.textEdited.connect(self._handleTextEdited)
         self._image.rangeChangedSignal.connect(self.setRangeValue)
 
     def setRangeValue(self, range):
-        self._rangeEdit0.setText(str(range[0]))
-        self._rangeEdit1.setText(str(range[1]))
+        if float(self._rangeEdit0.text()) != range[0]:
+            self._rangeEdit0.setText(str(range[0]))
+        if float(self._rangeEdit1.text()) != range[1]:
+            self._rangeEdit1.setText(str(range[1]))
 
     def _handleTextEdited(self, *args):
         self._image.range = (float(self._rangeEdit0.text()), float(self._rangeEdit1.text()))
