@@ -78,6 +78,7 @@ class VectorField3D(Image3D):
 
         return displacement
 
+
     def computeFieldNorm(self):
         """Compute the voxel-wise norm of the vector field.
 
@@ -88,3 +89,4 @@ class VectorField3D(Image3D):
         """
         return np.sqrt(
             self._imageArray[:, :, :, 0] ** 2 + self._imageArray[:, :, :, 1] ** 2 + self._imageArray[:, :, :, 2] ** 2)
+

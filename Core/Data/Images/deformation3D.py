@@ -1,5 +1,6 @@
 import logging
-
+import numpy as np
+from typing import Sequence
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.vectorField3D import VectorField3D
 
@@ -43,16 +44,16 @@ class Deformation3D(Image3D):
 
             Returns
             -------
-            list
+            np.array
                 Grid size of velocity field and/or displacement field.
             """
 
         if (self.velocity is None) and (self.displacement is None):
-            return (0, 0, 0)
+            return np.array([0, 0, 0])
         elif self.displacement is None:
-            return self.velocity._imageArray.shape[0:3]
+            return np.array([self.velocity._imageArray.shape[0:3]])[0]
         else:
-            return self.displacement._imageArray.shape[0:3]
+            return np.array([self.displacement._imageArray.shape[0:3]])[0]
 
     def initFromImage(self, image):
         """Initialize deformation using the voxel grid of the input image.

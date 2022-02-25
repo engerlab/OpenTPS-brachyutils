@@ -118,9 +118,8 @@ class Patient:
         return [data for data in self._patientData]
 
     def getPatientDataOfType(self, dataType):
-        print(type(dataType))
-        if type(dataType) == 'str':
-            print('yeah')
+        ## data type can be given as a str or the data type directly
+        if isinstance(dataType, str):
             return [data for data in self._patientData if data.getTypeAsString() == dataType]
         else:
             return [data for data in self._patientData if isinstance(data, dataType)]

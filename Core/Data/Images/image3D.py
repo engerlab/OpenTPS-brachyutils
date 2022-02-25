@@ -22,9 +22,9 @@ class Image3D(PatientData):
         self.dataChangedSignal = Event()
 
         self._imageArray = imageArray
-        self._origin = list(origin)
-        self._spacing = list(spacing)
-        self._angles = list(angles)
+        self._origin = np.array(origin)
+        self._spacing = np.array(spacing)
+        self._angles = np.array(angles)
         # if UID is None:
         #     UID = generate_uid()
         # self.UID = UID
@@ -54,7 +54,7 @@ class Image3D(PatientData):
 
     @origin.setter
     def origin(self, origin):
-        self._origin = list(origin)
+        self._origin = np.array(origin)
         self.dataChangedSignal.emit()
 
     @property
@@ -63,7 +63,7 @@ class Image3D(PatientData):
 
     @spacing.setter
     def spacing(self, spacing):
-        self._spacing = list(spacing)
+        self._spacing = np.array(spacing)
         self.dataChangedSignal.emit()
 
     @property
@@ -72,7 +72,7 @@ class Image3D(PatientData):
 
     @angles.setter
     def angles(self, angles):
-        self._angles = list(angles)
+        self._angles = np.array(angles)
         self.dataChangedSignal.emit()
 
     @property
@@ -81,15 +81,14 @@ class Image3D(PatientData):
 
             Returns
             -------
-            list
+            np.array
                 Image grid size.
             """
-
         if self._imageArray is None:
-            return (0, 0, 0)
+            return np.array([0, 0, 0])
         elif np.size(self._imageArray) == 0:
-            return (0, 0, 0)
-        return self._imageArray.shape[0:3]
+            return np.array([0, 0, 0])
+        return np.array(self._imageArray.shape)
 
 
     def hasSameGrid(self, otherImage):
@@ -106,7 +105,7 @@ class Image3D(PatientData):
                 True if grids are identical, False otherwise.
             """
 
-        if (self.gridSize == otherImage.gridSize and
+        if (np.array_equal(self.gridSize, otherImage.gridSize) and
                 euclidean_dist(self._origin, otherImage._origin) < 0.01 and
                 euclidean_dist(self._spacing, otherImage._spacing) < 0.01):
             return True
@@ -130,9 +129,9 @@ class Image3D(PatientData):
                 type of the output.
             """
 
-        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, list(self.gridSize), origin, spacing, gridSize, fillValue=fillValue, outputType=outputType)
-        self._origin = list(origin)
-        self._spacing = list(spacing)
+        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType)
+        self._origin = np.array(origin)
+        self._spacing = np.array(spacing)
 
     def resampleToImageGrid(self, otherImage, fillValue=0, outputType=None):
         """Resample image using the voxel grid of another image given as input, using linear interpolation.
@@ -159,10 +158,7 @@ class Image3D(PatientData):
 
     def getVoxelIndexFromPosition(self, position: Sequence):
         positionInMM = np.array(position)
-        origin = np.array(self.origin)
-        spacing = np.array(self.spacing)
-
-        shiftedPosInMM = positionInMM - origin
-        posInVoxels = np.round(np.divide(shiftedPosInMM, spacing)).astype(np.int)
+        shiftedPosInMM = positionInMM - self.origin
+        posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
 
         return posInVoxels
