@@ -53,6 +53,15 @@ class RTPlan(PatientData):
         self._beams.remove(beam)
 
     @property
+    def weights(self):
+        weights = np.array([])
+
+        for beam in self._beams:
+            weights = np.concatenate((weights, beam.weights))
+
+        return weights
+
+    @property
     def meterset(self) -> int:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
 

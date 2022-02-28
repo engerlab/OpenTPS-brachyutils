@@ -20,6 +20,7 @@ from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCa
 patientList = API.patientList
 
 patient = Patient()
+patient.name = 'Patient'
 patientList.append(patient)
 
 ct = CTImage()
@@ -48,10 +49,20 @@ beam.appendLayer(layer)
 plan.appendBeam(beam)
 
 doseCalculator = FluenceBasedMCsquareDoseCalculator()
+doseCalculatorNormal = MCsquareDoseCalculator()
+
 doseCalculator.beamModel = bdl
 doseCalculator.nbPrimaries = 1e4
 doseCalculator.ctCalibration = calibration
 
+doseCalculatorNormal.beamModel = bdl
+doseCalculatorNormal.nbPrimaries = 2e6
+doseCalculatorNormal.ctCalibration = calibration
+
 beamlets = doseCalculator.computeBeamlets(ct, plan)
 doseImage = beamlets.toDoseImage()
+doseImage.patient = patient
+
+doseImage = doseCalculatorNormal.computeDose(ct, plan)
+doseImage.name = 'Dose_normal'
 doseImage.patient = patient

@@ -18,6 +18,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.mcsquareFlashConfig import MCsquareFlashConfig
 
 
 class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
@@ -44,13 +45,14 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._ct = ct
         self._plan = self._fluencePlan(plan)
         self._roi = roi
-        self._config = self._bemletComputationConfig
+        self._config = self._noSpotSizeConfig
 
         self._writeFilesToSimuDir()
         self._cleanDir(self._outputDir)
         self._startMCsquare()
 
         beamletDose = self._importBeamlets()
+        beamletDose.beamletWeights = self._plan.weights
 
         return beamletDose
 
@@ -74,7 +76,7 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
                             pos0 = pos[0] - isocenterBEV[0]
                             pos1 = -pos[1] + isocenterBEV[1]
 
-                            layer.appendSpot(pos0, pos1, fluence[i, j])
+                            layer.appendSpot(pos0, pos1, fluence[fluenceX[i, j], fluenceY[i, j]])
         return newPlan
 
     def _layerFluence(self, beam:PlanIonBeam, layer:PlanIonLayer, ctBEV:Image3D) -> np.ndarray:
@@ -114,11 +116,28 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         return (x, y)
 
     @property
-    def _bemletComputationConfig(self) -> MCsquareConfig:
-        config = super()._bemletComputationConfig
+    def _noSpotSizeConfig(self) -> MCsquareFlashConfig:
+        config = MCsquareFlashConfig()
+
+        config["Num_Primaries"] = self._nbPrimaries
+        config["WorkDir"] = self._mcsquareSimuDir
+        config["CT_File"] = self._ctName
+        config["ScannerDirectory"] = self._scannerFolder  # ??? Required???
+        config["HU_Density_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Density_Conversion.txt")
+        config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
+        config["BDL_Machine_Parameter_File"] = self._bdlFilePath
+        config["BDL_Plan_File"] = self._planFilePath
+
+        config["Dose_to_Water_conversion"] = "OnlineSPR"
+        config["Compute_stat_uncertainty"] = False
+        config["Beamlet_Mode"] = True
+        config["Beamlet_Parallelization"] = True
+        config["Dose_MHD_Output"] = False
+        config["Dose_Sparse_Output"] = True
 
         config["NoSpotSize"] = True
 
+        print(config)
         return config
 
     def _writeFilesToSimuDir(self):
