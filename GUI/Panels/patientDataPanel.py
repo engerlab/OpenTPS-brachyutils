@@ -78,8 +78,6 @@ class PatientDataPanel(QWidget):
 
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
 
-        print('in patient data panel loadData', len(self._viewController._patientList[0].dynamic2DSequences))
-
     def saveData(self):
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
@@ -147,20 +145,21 @@ class PatientDataTree(QTreeView):
         self.setAcceptDrops(True)
 
     def _appendData(self, data):
-        rootItem = PatientDataItem(data)
-        self.rootNode.appendRow(rootItem)
-
-        if isinstance(data, Dynamic3DSequence):
-            for image in data.dyn3DImageList:
-                item = PatientDataItem(image)
-                rootItem.appendRow(item)
+        if isinstance(data, Image3D) or isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence):
+            rootItem = PatientDataItem(data)
             self.rootNode.appendRow(rootItem)
 
-        if isinstance(data, Dynamic2DSequence):
-            for image in data.dyn2DImageList:
-                item = PatientDataItem(image)
-                rootItem.appendRow(item)
-            self.rootNode.appendRow(rootItem)
+            if isinstance(data, Dynamic3DSequence):
+                for image in data.dyn3DImageList:
+                    item = PatientDataItem(image)
+                    rootItem.appendRow(item)
+                self.rootNode.appendRow(rootItem)
+
+            if isinstance(data, Dynamic2DSequence):
+                for image in data.dyn2DImageList:
+                    item = PatientDataItem(image)
+                    rootItem.appendRow(item)
+                self.rootNode.appendRow(rootItem)
 
     def _removeData(self, data):
         items = []
@@ -190,6 +189,8 @@ class PatientDataTree(QTreeView):
             self._currentPatient.dyn3DSeqAddedSignal.disconnect(self._appendData)
             self._currentPatient.dyn3DSeqRemovedSignal.disconnect(self._removeData)
             self._currentPatient.imageRemovedSignal.disconnect(self._removeData)
+            self._currentPatient.patientDataAddedSignal.disconnect(self._appendData)
+            self._currentPatient.patientDataRemovedSignal.disconnect(self._removeData)
 
         # Do this explicitely to be sure signals are disconnected
         for row in range(self.model().rowCount()):
