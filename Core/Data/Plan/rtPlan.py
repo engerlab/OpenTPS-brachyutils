@@ -1,3 +1,4 @@
+import copy
 import logging
 import unittest
 from typing import Sequence
@@ -17,9 +18,17 @@ class RTPlan(PatientData):
 
         self._beams = []
 
-        self.numberOfFractionsPlanned = 1
+        self.numberOfFractionsPlanned:int = 1
 
-    def __getitem__(self, beamNb):
+    def __deepcopy__(self, memodict={}):
+        newPlan = RTPlan()
+
+        newPlan._beams = [copy.deepcopy(beam) for beam in self._beams]
+        newPlan.numberOfFractionsPlanned = self.numberOfFractionsPlanned
+
+        return newPlan
+
+    def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]
 
     def __len__(self):

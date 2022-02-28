@@ -7,6 +7,7 @@ from typing import Optional
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
@@ -23,9 +24,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         AbstractMCDoseCalculator.__init__(self)
         AbstractDoseInfluenceCalculator.__init__(self)
 
-        self._ctCalibration = None
-        self._ct = None
-        self._plan = None
+        self._ctCalibration:Optional[AbstractCTCalibration] = None
+        self._ct:Optional[Image3D] = None
+        self._plan:Optional[RTPlan] = None
         self._roi = None
         self._config = None
         self._mcsquareCTCalibration = None
