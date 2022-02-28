@@ -111,6 +111,7 @@ class ScriptingFileView(QWidget):
             msg.setText(output)
         except Exception as err:
             msg.setText(format(err))
+            raise err from err
 
         msg.exec_()
 

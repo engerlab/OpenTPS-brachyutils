@@ -407,7 +407,7 @@ def _dicomIsocenterToMCsquare(isocenter, ctImagePositionPatient, ctPixelSpacing,
 
 
 def writeBin(destFolder):
-    import MCsquare as MCsquareModule
+    import Core.Processing.DoseCalculation.MCsquare as MCsquareModule
     mcsquarePath = str(MCsquareModule.__path__[0])
 
     if (platform.system() == "Linux"):
@@ -466,7 +466,7 @@ class MCsquareIOTestCase(unittest.TestCase):
         from Core.Data.Plan.planIonBeam import PlanIonBeam
         from Core.Data.Plan.planIonLayer import PlanIonLayer
 
-        import MCsquare.BDL as BDLModule
+        import Core.Processing.DoseCalculation.MCsquare.BDL as BDLModule
 
         bdl = readBDL(os.path.join(str(BDLModule.__path__[0]), 'BDL_default_DN_RangeShifter.txt'))
 
