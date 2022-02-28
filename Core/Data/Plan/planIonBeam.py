@@ -63,6 +63,13 @@ class PlanIonBeam:
         self._layers.remove(layer)
 
     @property
+    def weights(self):
+        weights = np.array([])
+        for layer in self._layers:
+            weights = np.concatenate((weights, layer.spotWeights))
+
+        return weights
+    @property
     def meterset(self) -> int:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 

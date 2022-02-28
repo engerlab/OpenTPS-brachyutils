@@ -83,7 +83,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = plan
         self._roi = roi
-        self._config = self._bemletComputationConfig
+        self._config = self._beamletComputationConfig
 
         self._writeFilesToSimuDir()
         self._cleanDir(self._outputDir)
@@ -207,7 +207,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return config
 
     @property
-    def _bemletComputationConfig(self) -> MCsquareConfig:
+    def _beamletComputationConfig(self) -> MCsquareConfig:
         config = self._generalMCsquareConfig
 
         config["Dose_to_Water_conversion"] = "OnlineSPR"
