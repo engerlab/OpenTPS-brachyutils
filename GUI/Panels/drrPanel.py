@@ -20,7 +20,7 @@ class DRRPanel(QWidget):
         QWidget.__init__(self)
 
         self._viewController = viewController
-        # self._viewController.patientAddedSignal.connect(self._addPatient)
+        self._viewController.patientAddedSignal.connect(self.refreshDataList)
 
         self.patients = self._viewController.patientList
         # self.toolbox_width = toolbox_width
@@ -31,30 +31,52 @@ class DRRPanel(QWidget):
         self.setLayout(self.layout)
 
         self.imageSelectionBox = QComboBox()
+        # self.refreshDataList(self._viewController.currentPatient)
 
-
-        self.layout.addWidget(QLabel('Hello')) ## --> this must changed to a data selection box (self.imageSelectionBox)
+        self.layout.addWidget(self.imageSelectionBox) ## --> this must changed to a data selection box (self.imageSelectionBox)
 
 
         self.fluoSimButton = QPushButton('Fluoroscopy simulation')
         self.layout.addWidget(self.fluoSimButton)
         self.fluoSimButton.clicked.connect(self.selectProjectionAngles)
 
+    def refreshDataList(self, patient):
+
+        print('in DRRPanel refresh data list ')
+        for data in patient.getPatientDataOfType('CTImage'):
+            name = data.name
+            self.imageSelectionBox.addItem(name, data)
+        for data in patient.getPatientDataOfType('Dynamic3DSequence'):
+            name = data.name
+            self.imageSelectionBox.addItem(name, data)
+
+    """
+    class PatientComboBox(QComboBox):
+    def __init__(self, viewController):
+        QComboBox.__init__(self)
+
+        self._viewController = viewController
+
+        self._viewController.patientAddedSignal.connect(self._addPatient)
+        self._viewController.patientRemovedSignal.connect(self._removePatient)
+
+        self.currentIndexChanged.connect(self._setCurrentPatient)
+
     def _addPatient(self, patient):
+        name = patient.name
+        if name is None:
+            name = 'None'
 
-        self.patients = self._viewController.patientList
+        self.addItem(name, patient)
+        if self.count() == 1:
+            self._viewController.currentPatient = patient
 
-        for patient in self.patients:
-            for data in patient.dataList:
-                if data.getType() == 'CTImage':
-                    name = data.name
-                    self.imageSelectionBox.addItem(name, patient)
-                elif data.getType() == 'Dynamic3DSequence':
-                    if data.dyn3DImageList[0].getType() == 'CTImage':
-                        name = data.name
-                        self.imageSelectionBox.addItem(name, patient)
+    def _removePatient(self, patient):
+        self.removeItem(self.findData(patient))
 
-
+    def _setCurrentPatient(self, index):
+        self._viewController.currentPatient = self.currentData()
+    """
 
     def Data_path_changed(self, data_path):
         self.data_path = data_path
@@ -74,7 +96,6 @@ class DRRPanel(QWidget):
             print('in drrPanel selectProjectionAngles !!! source image is hard coded for now')
             sourceImageOrSeq = self._viewController.currentPatient.dynamic3DSequences[0]
             dyn2DDRRSeqList = createDRRDynamic2DSequences(sourceImageOrSeq, anglesAndAxisList)
-            print(len(dyn2DDRRSeqList))
 
             # plt.figure()
             # plt.imshow(dyn2DDRRSeqList[0].dyn2DImageList[0].imageArray)
@@ -82,7 +103,7 @@ class DRRPanel(QWidget):
 
             if sourceImageOrSeq.patient != None:
                 for dyn2DSeq in dyn2DDRRSeqList:
-                    sourceImageOrSeq.patient.appendDyn2DSeq(dyn2DSeq)
+                    sourceImageOrSeq.patient.appendPatientData(dyn2DSeq)
 
             # self.fluoroSeqCreated.emit()
             #self.data_path = QFileDialog.getExistingDirectory(self, "Select 4D Data folder", self.data_path)
@@ -100,49 +121,49 @@ class DRRPanel(QWidget):
 #                     self.treeView.expandAll()
 #                     self.treeView.clicked.connect(self.getTreeViewValue)
 #
-    def createDRRs(self, angleList, Dyn4DSeq, patient, orientation='Axial'):
-
-        try:
-            import tomopy
-
-            for anglesAndOri in angleList:
-
-                angle = anglesAndOri[0]
-                orientation = anglesAndOri[1]
-
-                fluoroSeq = Dynamic2DSequence()
-                fluoroSeq.type = 'Fluoroscopy simulation'
-                fluoroSeq.projectionAngle = angle
-                fluoroSeq.SequenceName = 'FluoSim_' + anglesAndOri[1] + '_' + str(
-                    int(np.round(angle * 360 / (2 * math.pi))))
-                for imageIndex, image in enumerate(Dyn4DSeq.dyn3DImageList):
-
-                    # to rotate around Z axis
-                    if orientation == 'Axial':
-                        imageToUse = image.Image.transpose(2, 1, 0)
-                    if orientation == 'Coronal':
-                        imageToUse = image.Image.transpose(1, 2, 0)
-                    if orientation == 'Sagittal':
-                        imageToUse = image.Image.transpose(0, 2, 1)
-
-                    print('! ! ! in fluoroscopy_sim --> les orientation et transpose ici sont à vérifier! ! !')
-                    fluoSimImage = tomopy.project(imageToUse, angle)[0]
-
-                    # plt.figure()
-                    # plt.imshow(fluoSimImage)
-                    # plt.show()
-
-                    image_2D = image2D()
-                    image_2D.Image = fluoSimImage
-                    image_2D.ImgName = str(imageIndex + 1)
-                    image_2D.PixelSpacing = [1, 1]
-                    fluoroSeq.dyn2DImageList.append(image_2D)
-                    fluoroSeq.isLoaded = True
-
-                patient.Dyn2DSeqList.append(fluoroSeq)
-
-        except:
-            print("No module tomopy available")
+    # def createDRRs(self, angleList, Dyn4DSeq, patient, orientation='Axial'):
+    #
+    #     try:
+    #         import tomopy
+    #
+    #         for anglesAndOri in angleList:
+    #
+    #             angle = anglesAndOri[0]
+    #             orientation = anglesAndOri[1]
+    #
+    #             fluoroSeq = Dynamic2DSequence()
+    #             fluoroSeq.type = 'Fluoroscopy simulation'
+    #             fluoroSeq.projectionAngle = angle
+    #             fluoroSeq.SequenceName = 'FluoSim_' + anglesAndOri[1] + '_' + str(
+    #                 int(np.round(angle * 360 / (2 * math.pi))))
+    #             for imageIndex, image in enumerate(Dyn4DSeq.dyn3DImageList):
+    #
+    #                 # to rotate around Z axis
+    #                 if orientation == 'Axial':
+    #                     imageToUse = image.Image.transpose(2, 1, 0)
+    #                 if orientation == 'Coronal':
+    #                     imageToUse = image.Image.transpose(1, 2, 0)
+    #                 if orientation == 'Sagittal':
+    #                     imageToUse = image.Image.transpose(0, 2, 1)
+    #
+    #                 print('! ! ! in fluoroscopy_sim --> les orientation et transpose ici sont à vérifier! ! !')
+    #                 fluoSimImage = tomopy.project(imageToUse, angle)[0]
+    #
+    #                 # plt.figure()
+    #                 # plt.imshow(fluoSimImage)
+    #                 # plt.show()
+    #
+    #                 image_2D = image2D()
+    #                 image_2D.Image = fluoSimImage
+    #                 image_2D.ImgName = str(imageIndex + 1)
+    #                 image_2D.PixelSpacing = [1, 1]
+    #                 fluoroSeq.dyn2DImageList.append(image_2D)
+    #                 fluoroSeq.isLoaded = True
+    #
+    #             patient.Dyn2DSeqList.append(fluoroSeq)
+    #
+    #     except:
+    #         print("No module tomopy available")
 # class StandardItem(QStandardItem):
 #   def __init__(self, txt="", fontSize = 12, setBold=False, color=QColor(0,0,0)):
 #     super().__init__()
@@ -179,8 +200,8 @@ class ChoseAngles_dialog(QDialog):
         self.image3D = self.prepare_image_for_viewer(Image3D.imageArray)
         self.imageShape = self.image3D.shape
         self.resolution = Image3D.spacing
-        self.imageCenter = [self.imageLabel.pos().x() + int(self.imageLabel.width()/2), self.imageLabel.pos().y() + int(self.imageLabel.height()/2)]
-        print('in ChoseAngles_dialog constructor', self.imageLabel.pos().x())
+        self.imageCenter = [self.imageLabel.pos()._x() + int(self.imageLabel.width() / 2), self.imageLabel.pos()._y() + int(self.imageLabel.height() / 2)]
+        print('in ChoseAngles_dialog constructor', self.imageLabel.pos()._x())
         print(self.imageCenter)
         self.distanceFromSourceToCenter = min(self.imageCenter[0], self.imageCenter[1]) - 10
         self.pannelWidth = min(self.imageLabel.width(), self.imageLabel.height())
@@ -267,8 +288,8 @@ class ChoseAngles_dialog(QDialog):
         elif self.orientation == 'Y':
             Yscaling = self.resolution[2] / self.resolution[0]
 
-        self.imageCenter = [self.imageLabel.pos().x() + int(self.imageLabel.width() / 2),
-                            self.imageLabel.pos().y() + int(self.imageLabel.height() / 2)]
+        self.imageCenter = [self.imageLabel.pos()._x() + int(self.imageLabel.width() / 2),
+                            self.imageLabel.pos()._y() + int(self.imageLabel.height() / 2)]
         self.distanceFromSourceToCenter = min(self.imageCenter[0], self.imageCenter[1]) - 10
         self.pannelWidth = min(self.imageLabel.width(), self.imageLabel.height())
 
@@ -319,8 +340,8 @@ class ChoseAngles_dialog(QDialog):
 ##-----------------------------------------------------------------------------------------------------------
     def mouseMoveEvent(self, QMouseEvent):
         #print('Mouse coords: ( %d : %d )' % (QMouseEvent.x(), QMouseEvent.y()))
-        self.currentMousePos.setX(QMouseEvent.x())
-        self.currentMousePos.setY(QMouseEvent.y())
+        self.currentMousePos.setX(QMouseEvent._x())
+        self.currentMousePos.setY(QMouseEvent._y())
         self.getAngleFromMousePosition()
 
         self.infoLabel.setText(self.infoLabelText + "Current angle : " + str(int(np.round(self.angleBetweenMouseAndCenter*(360/6.28)))) + '°')

@@ -39,7 +39,7 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
 
         # add data to patient
         if(isinstance(data, PatientData)):
-            patient.appendPatienData(data)
+            patient.appendPatientData(data)
         # elif (isinstance(data, Dynamic2DSequence)): ## not implemented in patient yet, maybe only one function for both 2D and 3D dynamic sequences ?
         #     patient.appendDyn2DSeq(data)
         elif (isinstance(data, Patient)):
@@ -170,7 +170,7 @@ def listAllFiles(inputPaths, maxDepth=-1):
 
     # check content of the input path
     if os.path.isdir(inputPaths):
-        inputPathContent = os.listdir(inputPaths)
+        inputPathContent = sorted(os.listdir(inputPaths))
     else:
         inputPathContent = [inputPaths]
         inputPaths = ""
