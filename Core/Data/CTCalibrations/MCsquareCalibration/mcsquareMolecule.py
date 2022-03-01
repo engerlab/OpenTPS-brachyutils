@@ -21,7 +21,7 @@ class MCsquareMolecule(MCsquareMaterial):
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"
         s += 'Electron_Density ' + str(self.electronDensity) + " # in cm-3 \n"
         s += 'Radiation_Length ' + str(self.radiationLength) + " # in g/cm2 \n"
-        s += 'Nuclear_Data 		Mixture' + str(len(self.weights)) + ' # mixture with ' + str(len(self.weights)) + ' components \n'
+        s += 'Nuclear_Data 		Mixture ' + str(len(self.weights)) + ' # mixture with ' + str(len(self.weights)) + ' components \n'
         s += '# 	Label 	Name 		fraction by mass (in %)\n'
 
         for i, element in enumerate(self.MCsquareElements):

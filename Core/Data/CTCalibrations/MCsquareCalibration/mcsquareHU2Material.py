@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -53,19 +54,25 @@ class MCsquareHU2Material:
     def _writeHU2MaterialFile(self, huMaterialFile):
         with open(huMaterialFile, 'w') as f:
             for i, hu in enumerate(self.__hu):
-                s = str(hu) + ' ' + str(self.__materials[i].number)
+                s = str(hu) + ' ' + str(self.__materials[i].number) + '\n'
                 f.write(s)
 
     def _writeMaterials(self, folderPath):
-        for material in self.__materials:
+        for material in self._allMaterialsandElements():
             material.write(folderPath)
 
     def _writeMCsquareList(self, listFile):
         materials = self._allMaterialsandElements()
+        materialNbs = [material.number for material in materials]
+        materialNbs = np.array(materialNbs)
 
         with open(listFile, 'w') as f:
-            for material in materials:
-                f.write(str(material.number) + ' ' + material.name + '\n')
+            currentMaterialInd = 0
+            for i in range(materialNbs.max()):
+                # If no material defined with number i we set the closest. MCsquare does not accept jumps in list.dat
+                f.write(str(i+1) + ' ' + materials[currentMaterialInd].name + '\n')
+                if i==materials[currentMaterialInd].number-1:
+                    currentMaterialInd += 1
 
     def _allMaterialsandElements(self):
         materialNbs = []

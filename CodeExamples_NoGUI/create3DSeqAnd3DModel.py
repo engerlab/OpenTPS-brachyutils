@@ -37,7 +37,7 @@ saveSerializedObjects(dynseq, savingPath)
 # newMod.computeMidPositionImage(dynseq, baseResolution=8)
 # GENERATE MIDP
 Model4D = Dynamic3DModel()
-Model4D.computeMidPositionImage(dynseq, 0, baseResolution=4, nbProcesses=1)
+Model4D.computeMidPositionImage(dynseq)
 # ## save it as a serialized object
 # savingPath = '/home/damien/Desktop/' + 'PatientTest_dynMod.p'
 # saveSerializedObject(newMod, savingPath)

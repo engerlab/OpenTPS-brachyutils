@@ -1,7 +1,7 @@
 import os
 from abc import abstractmethod
 
-import Core.Processing.MCsquare as MCsquare
+import Core.Processing.DoseCalculation.MCsquare as MCsquare
 
 class MCsquareMaterial:
     def __init__(self, density=0.0, electronDensity=0.0, name=None, number=0, sp=None, radiationLength=0.0):

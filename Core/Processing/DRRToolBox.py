@@ -116,3 +116,5 @@ def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList):
 
 
     return dyn2DSeqList
+
+# *(360/(2*math.pi))

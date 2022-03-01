@@ -1,6 +1,5 @@
 import functools
 import inspect
-import logging
 import os
 import sys
 import unittest
@@ -8,6 +7,7 @@ from io import StringIO
 from typing import Callable
 
 import Script
+from mainConfig import MainConfig
 
 
 class FileLogger():
@@ -15,7 +15,7 @@ class FileLogger():
     A simple logger that appends inputs to a file
     """
     def __init__(self):
-        self.scriptPath = os.path.join(str(Script.__path__[0]), 'API_log.py')
+        self.scriptPath = os.path.join(MainConfig().logFolder, 'API_log.py')
 
     def print(self, cmd: str):
         """
@@ -132,8 +132,6 @@ class APILogger:
     def _log(cmd):
         for logFunction in APILogger._loggerFunctions:
             logFunction(cmd)
-
-        logging.info(cmd)
 
     @staticmethod
     def _loggedMethodToString(method, *args, **kwargs):
@@ -254,11 +252,12 @@ class APIInterpreter:
     def run(code):
         old_stdout = sys.stdout
         redirected_output = sys.stdout = StringIO()
+
         try:
             exec(code)
         except Exception as err:
             sys.stdout = old_stdout
-            return format(err)
+            raise err from err
 
         sys.stdout = old_stdout
         return redirected_output.getvalue()

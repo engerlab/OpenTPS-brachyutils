@@ -6,6 +6,7 @@ from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.event import Event
 
 
@@ -30,8 +31,7 @@ class AbstractDoseCalculator:
         raise NotImplementedError()
 
     @abstractmethod
-    # TODO: specify plan type when class RTPlan is defined
-    def computeDose(self, ct:CTImage, plan, roi:Optional[ROIMask]=None) -> DoseImage:
+    def computeDose(self, ct:CTImage, plan: RTPlan) -> DoseImage:
         raise NotImplementedError()
 
 class ProgressInfo:
