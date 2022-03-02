@@ -156,9 +156,12 @@ class Image3D(PatientData):
 
         return dataNumpy
 
-    def getVoxelIndexFromPosition(self, position: Sequence):
+    def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
         positionInMM = np.array(position)
         shiftedPosInMM = positionInMM - self.origin
         posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
 
         return posInVoxels
+
+    def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        return self.origin + np.array(index).astype(dtype=float)*self.spacing
