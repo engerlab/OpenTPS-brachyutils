@@ -77,18 +77,19 @@ class PatientData:
         return self
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name:str):
         self.setName(name)
 
     @API.loggedViaAPI
-    def setName(self, name):
+    def setName(self, name:str):
         self._name = name
         self.nameChangedSignal.emit(self._name)
 
+    #Cannot add type hint for Patient because this creates a circular import
     @property
     def patient(self):
         return self._patient
@@ -107,7 +108,7 @@ class PatientData:
         if not(self._patient is None):
             self._patient.appendPatientData(self)
 
-    def getTypeAsString(self):
+    def getTypeAsString(self) -> str:
         return self.__class__.__name__
 
 

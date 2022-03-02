@@ -170,7 +170,7 @@ def listAllFiles(inputPaths, maxDepth=-1):
 
     # check content of the input path
     if os.path.isdir(inputPaths):
-        inputPathContent = os.listdir(inputPaths)
+        inputPathContent = sorted(os.listdir(inputPaths))
     else:
         inputPathContent = [inputPaths]
         inputPaths = ""

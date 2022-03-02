@@ -1,4 +1,5 @@
-from typing import Optional
+import copy
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -8,16 +9,29 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 
 class PlanIonBeam:
     def __init__(self):
-        self._rangeShifter = None
         self._layers = []
 
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
         self.gantryAngle = 0.0
         self.patientSupportAngle = 0.0
+        self.rangeShifter: Optional[RangeShifter] = None
         self.seriesInstanceUID = ""
 
-    def  __getitem__(self, layerNb):
+    def __deepcopy__(self, memodict={}):
+        newBeam = PlanIonBeam()
+
+        newBeam.rangeShifter = self.rangeShifter # TODO should we deecopy this?
+        newBeam._layers = [copy.deepcopy(layer) for layer in self._layers]
+        newBeam.isocenterPosition = np.array(self.isocenterPosition)
+        newBeam.gantryAngle = self.gantryAngle
+        newBeam.patientSupportAngle = self.patientSupportAngle
+        newBeam.seriesInstanceUID = self.seriesInstanceUID
+        newBeam.name = self.name
+
+        return newBeam
+
+    def  __getitem__(self, layerNb) -> PlanIonLayer:
         return self._layers[layerNb]
 
     def __len__(self):
@@ -32,19 +46,29 @@ class PlanIonBeam:
         return s
 
     @property
-    def rangeShifter(self) -> Optional[RangeShifter]:
-        return self._rangeShifter
+    def layers(self) -> Sequence[PlanIonLayer]:
+        # For backwards compatibility but we can now access each layer with indexing brackets
+        return [layer for layer in self._layers]
 
-    @rangeShifter.setter
-    def rangeShifter(self, rs:Optional[RangeShifter]):
-        self._rangeShifter = rs
-
-    def appendLayer(self, layer: PlanIonLayer):
+    def appendLayer(self, layer:PlanIonLayer):
         self._layers.append(layer)
 
-    def removeLayer(self, layer: PlanIonLayer):
+    def removeLayer(self, layer:Union[PlanIonLayer, Sequence[PlanIonLayer]]):
+        if layer is list:
+            layers = layer
+            for layer in layers:
+                self.removeLayer(layer)
+            return
+
         self._layers.remove(layer)
 
+    @property
+    def weights(self):
+        weights = np.array([])
+        for layer in self._layers:
+            weights = np.concatenate((weights, layer.spotWeights))
+
+        return weights
     @property
     def meterset(self) -> int:
         return np.sum(np.array([layer.meterset for layer in self._layers]))

@@ -44,3 +44,24 @@ class RTStruct(PatientData):
         """
         self._contours.remove(contour)
         self.contourRemovedSignal.emit(contour)
+
+
+    def get_contour_by_name(self, contour_name):
+        """
+        Get a ROIContour that has name contour_name from the list of contours of the ROIStruct.
+
+        Parameters
+        ----------
+        contour_name : str
+        """
+        for contour in self._contours:
+            if contour.name == contour_name:
+                return contour
+        print(f'No contour with name {contour_name} found in the list of contours')
+
+    def print_ROINames(self):
+        print("\nRT Struct UID: " + self.seriesInstanceUID)
+        count = -1
+        for contour in self._contours:
+            count += 1
+            print('  [' + str(count) + ']  ' + contour.name)

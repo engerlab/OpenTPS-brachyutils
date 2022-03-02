@@ -1,5 +1,7 @@
+import copy
 import logging
 import unittest
+from typing import Sequence
 
 import numpy as np
 
@@ -16,9 +18,17 @@ class RTPlan(PatientData):
 
         self._beams = []
 
-        self.numberOfFractionsPlanned = 1
+        self.numberOfFractionsPlanned:int = 1
 
-    def __getitem__(self, beamNb):
+    def __deepcopy__(self, memodict={}):
+        newPlan = RTPlan()
+
+        newPlan._beams = [copy.deepcopy(beam) for beam in self._beams]
+        newPlan.numberOfFractionsPlanned = self.numberOfFractionsPlanned
+
+        return newPlan
+
+    def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]
 
     def __len__(self):
@@ -31,11 +41,25 @@ class RTPlan(PatientData):
             s += str(beam)
         return s
 
+    @property
+    def beams(self) -> Sequence[PlanIonBeam]:
+        # For backwards compatibility but we can now access each beam with indexing brackets
+        return [beam for beam in self._beams]
+
     def appendBeam(self, beam: PlanIonBeam):
         self._beams.append(beam)
 
     def removeBeam(self, beam: PlanIonBeam):
         self._beams.remove(beam)
+
+    @property
+    def weights(self):
+        weights = np.array([])
+
+        for beam in self._beams:
+            weights = np.concatenate((weights, beam.weights))
+
+        return weights
 
     @property
     def meterset(self) -> int:
