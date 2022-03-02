@@ -45,7 +45,7 @@ def signal(A=10,dA=5,T=4,df=0.5,dS=5,mean=0,sigma=0.1,step=0.2,Tend=100,L=2/30):
     s = vectorSimulation(L,dS,mean,sigma,Tend,t)
     f += vectorSimulation(L,df,mean,sigma,Tend,t)
     
-    y = A*np.sin(2*np.pi*f*(t%(1/f))) + s
+    y = (A/2)*np.sin(2*np.pi*f*(t%(1/f))) + s ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
     return t,y
 """
 #parametres changeables
