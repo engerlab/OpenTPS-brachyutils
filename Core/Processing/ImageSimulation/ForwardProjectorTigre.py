@@ -1,39 +1,43 @@
 import logging
 import numpy as np
-import tigre
+import math
+import tigre  # https://github.com/CERN/TIGRE/blob/master/Frontispiece/python_installation.md
 from tigre.utilities import CTnoise
 
 logger = logging.getLogger(__name__)
 
-def forwardProjectionTigre(ct, angles, orientation='Z', options=None):
+def forwardProjectionTigre(ct, angles, axis='Z', ctIsocenter=None, SAD=1000, SID=1550, flatpanelGridSize=[1440,1440], flatpanelPixelSpacing=[0.296,0.296], poissonNoise=1e5, gaussianNoise=10):
 
-    if isinstance(angles, list):
-        angles = np.array(angles)
-    else:
-        angles = np.array([angles])
+    if not(isinstance(angles,(np.ndarray, np.generic))):
+        if isinstance(angles, list):
+            angles = np.array(angles)
+        else:
+            angles = np.array([angles])
 
-    # Convert CT to attenuation in correct orientation
+    angles = angles-math.pi/2 # Correction so that 0 degree corresponds to top-down direction in case of 'Z' orientation -> TO BE CHECKED
+
+    ctCenter = ct.origin + ct.gridSize * ct.spacing / 2
+    if ctIsocenter is None:
+        ctIsocenter = ctCenter.copy()
+
+    # Convert CT to attenuation in specified axis
     mu_water = 0.0215
-    if orientation == 'Z':
+    if axis == 'Z':
         im = np.transpose(np.float32(ct.imageArray) * mu_water / 1000 + mu_water, [2, 1, 0])
-        ctOrigin = ct.origin[::-1]
-        ctSpacing = ct.spacing[::-1]
-        ctGridSize = ct.gridSize[::-1]
-    if orientation == 'X':
-        im = np.float32(ct.imageArray) * mu_water / 1000 + mu_water
-        ctOrigin = ct.origin
-        ctSpacing = ct.spacing
-        ctGridSize = ct.gridSize
-    if orientation == 'Y':
+        ctSpacing = np.array([ct.spacing[2], ct.spacing[1], ct.spacing[0]])
+        ctGridSize = np.array([ct.gridSize[2], ct.gridSize[1], ct.gridSize[0]])
+        ctCenter = np.array([ctCenter[2], ctCenter[1], ctCenter[0]])
+        ctIsocenter = np.array([ctIsocenter[2], ctIsocenter[1], ctIsocenter[0]])
+    elif axis == 'Y':
         im = np.transpose(np.float32(ct.imageArray) * mu_water / 1000 + mu_water, [1, 0, 2])
-        ctOrigin = np.array([ct.origin[1],ct.origin[0],ct.origin[2]])
         ctSpacing = np.array([ct.spacing[1],ct.spacing[0],ct.spacing[2]])
         ctGridSize = np.array([ct.gridSize[1],ct.gridSize[0],ct.gridSize[2]])
-
-
-    ctCenter = ctOrigin + ctGridSize * ctSpacing / 2
-    ctIsocenter = ctCenter.copy()
-    # ctIsocenter = plan.isocenterPosition[::-1]
+        ctCenter = np.array([ctCenter[1],ctCenter[0],ctCenter[2]])
+        ctIsocenter = np.array([ctIsocenter[1],ctIsocenter[0],ctIsocenter[2]])
+    else:
+        im = np.float32(ct.imageArray) * mu_water / 1000 + mu_water
+        ctSpacing = ct.spacing
+        ctGridSize = ct.gridSize
 
     #  Geometry definition
     #           -nVoxel:        3x1 array of number of voxels in the image
@@ -50,11 +54,11 @@ def forwardProjectionTigre(ct, angles, orientation='Z', options=None):
 
     geo = tigre.geometry()
     # Distances
-    geo.DSD = 1550  # Distance Source Detector      (mm)
-    geo.DSO = 1000  # Distance Source Origin        (mm)
+    geo.DSD = SID  # Distance Source Detector      (mm)
+    geo.DSO = SAD  # Distance Source Origin        (mm)
     # Detector parameters
-    geo.nDetector = np.array([1440, 1441])  # number of pixels              (px)
-    geo.dDetector = np.array([0.296, 0.296])  # size of each pixel            (mm)
+    geo.nDetector = np.array(flatpanelGridSize)  # number of pixels              (px)
+    geo.dDetector = np.array(flatpanelPixelSpacing)  # size of each pixel            (mm)
     geo.sDetector = geo.nDetector * geo.dDetector  # total size of the detector    (mm)
     # Image parameters
     geo.nVoxel = ctGridSize  # number of voxels              (vx)
@@ -71,4 +75,7 @@ def forwardProjectionTigre(ct, angles, orientation='Z', options=None):
 
     projections = tigre.Ax(im.copy(), geo, angles, "interpolated")
 
-    return CTnoise.add(projections, Poisson=1e5, Gaussian=np.array([0, 10]))
+    if poissonNoise is None or gaussianNoise is None:
+        return projections
+    else:
+        return CTnoise.add(projections, Poisson=poissonNoise, Gaussian=np.array([0, gaussianNoise]))

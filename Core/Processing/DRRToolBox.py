@@ -20,7 +20,7 @@ def getImageInCorrectOrientation(imageArray, orientation):
     return imageToUse
 
 
-def forwardProjection(image, angle, axis='Z', options=None):
+def forwardProjection(image, angle, axis='Z'):
 
     angleInRad = angle * 2 * math.pi / 360
     library = 'tomopy'
@@ -37,7 +37,7 @@ def forwardProjection(image, angle, axis='Z', options=None):
 
     if library=='tigre':
         try:
-            drrImage = forwardProjectionTigre(image, angleInRad, axis, options)[0]
+            drrImage = forwardProjectionTigre(image, angleInRad, axis)[0]
             return drrImage
         except:
             logger.error("Could not simulate projection using tigre.")
