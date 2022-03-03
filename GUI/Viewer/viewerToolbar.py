@@ -4,6 +4,7 @@ from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QScrollBar, QVBoxLayout
 from Core.event import Event
+from GUI.programSettingEditor import ProgramSettingEditor
 
 
 class ViewerToolbar(QToolBar):
@@ -18,6 +19,9 @@ class ViewerToolbar(QToolBar):
         self.setIconSize(QSize(16, 16))
 
         self.iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+
+        self._buttonSettings = QAction(QIcon(self.iconPath + "settings-5-line.png"), "Settings", self)
+        self._buttonSettings.triggered.connect(self._openSettings)
 
         self._buttonOpen = QAction(QIcon(self.iconPath + "folder-open.png"), "Open files or folder", self)
 
@@ -37,6 +41,7 @@ class ViewerToolbar(QToolBar):
         self._buttonCrossHair.triggered.connect(self._handleCrossHair)
         self._buttonCrossHair.setCheckable(True)
 
+        self.addAction(self._buttonSettings)
         self.addAction(self._buttonOpen)
         self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
@@ -72,6 +77,10 @@ class ViewerToolbar(QToolBar):
         self._viewController.independentViewsEnabledSignal.connect(self._handleButtonIndependentViews)
         self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
         self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
+
+    def _openSettings(self, pressed):
+        self._imageFusionProp = ProgramSettingEditor(self._viewController.mainConfig)
+        self._imageFusionProp.show()
 
     def _handleButtonIndependentViews(self, pressed):
         # This is useful if controller emit a signal:

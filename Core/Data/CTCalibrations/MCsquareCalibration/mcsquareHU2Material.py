@@ -1,3 +1,4 @@
+import logging
 import os
 
 import numpy as np
@@ -14,17 +15,13 @@ class MCsquareHU2Material:
             self.__load(fromFile[0], materialsPath=fromFile[1])
 
     def __str__(self):
+        return self.mcsquareFormatted()
+
+    def mcsquareFormatted(self):
         s = ''
         for i, hu in enumerate(self.__hu):
             s += 'HU: ' + str(hu) + '\n'
-            s += str(self.__materials[i]) + '\n'
-
-        return s
-
-    def getTableString(self):
-        s = ''
-        for i, hu in enumerate(self.__hu):
-            s += str(hu) + ' ' + str(self.__materials[i].number) + '\n'
+            s += self.__materials[i].mcsquareFormatted() + '\n'
 
         return s
 
@@ -50,31 +47,58 @@ class MCsquareHU2Material:
                     self.__materials.append(material)
 
     def write(self, folderPath, huMaterialFile):
-        listPath = os.path.join(folderPath, 'list.dat')
+        self._writeHU2MaterialFile(huMaterialFile)
+        self._writeMaterials(folderPath)
+        self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
 
+    def _writeHU2MaterialFile(self, huMaterialFile):
         with open(huMaterialFile, 'w') as f:
-            f.write(self.getTableString())
+            for i, hu in enumerate(self.__hu):
+                s = str(hu) + ' ' + str(self.__materials[i].number) + '\n'
+                f.write(s)
 
-        for material in self.__materials:
+    def _writeMaterials(self, folderPath):
+        for material in self._allMaterialsandElements():
             material.write(folderPath)
 
-        # lsit.dat file
-        elementNbs = []
-        elementObjs = []
+    def _writeMCsquareList(self, listFile):
+        materials = self._allMaterialsandElements()
+        materialNbs = [material.number for material in materials]
+        materialNbs = np.array(materialNbs)
+
+        with open(listFile, 'w') as f:
+            currentMaterialInd = 0
+            for i in range(materialNbs.max()):
+                # If no material defined with number i we set the closest. MCsquare does not accept jumps in list.dat
+                f.write(str(i+1) + ' ' + materials[currentMaterialInd].name + '\n')
+                if i==materials[currentMaterialInd].number-1:
+                    currentMaterialInd += 1
+
+    def _allMaterialsandElements(self):
+        materialNbs = []
+        materials = []
         for material in self.__materials:
-            elementObjs.append(material)
-            elementNbs.append(material.number)
+            if material.number in materialNbs:
+                pass
 
-            elements = material.MCsquareElements
-            for element in elements:
-                if element.number in elementNbs:
+            materials.append(material)
+            materialNbs.append(material.number)
+
+            for element in material.MCsquareElements:
+                if element.number in materialNbs:
                     pass
-                elementObjs.append(element)
-                elementNbs.append(element.number)
+                materials.append(element)
+                materialNbs.append(element.number)
 
-        elementNbs = np.array(elementNbs)
-        _, ind = np.unique(elementNbs, return_index=True)
+        return self._sortMaterialsandElements(materialNbs, materials)
 
-        with open(listPath, 'w') as f:
-            for i in ind:
-                f.write(str(elementNbs[i]) + ' ' + elementObjs[i].name + '\n')
+    def _sortMaterialsandElements(self, materialNbs, materials):
+        uniqueMaterials = []
+
+        materialNbs = np.array(materialNbs)
+        _, ind = np.unique(materialNbs, return_index=True)
+
+        for i in ind:
+            uniqueMaterials.append(materials[i])
+
+        return uniqueMaterials

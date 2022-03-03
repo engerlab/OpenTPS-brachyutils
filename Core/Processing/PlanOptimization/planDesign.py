@@ -1,6 +1,6 @@
 import scipy.ndimage
 
-from Core.Data.rtPlan import *
+from Core.Data.Plan.rtPlan import *
 from Core.Processing.C_libraries.libRayTracing_wrapper import *
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class PlanDesign:
     def createPlanStructure(self, beamNames, gantryAngles, couchAngles):
         start = time.time()
 
-        plan = RTplan()
+        plan = RTPlan()
         plan.sopInstanceUID = pydicom.uid.generate_uid()
         plan.seriesInstanceUID = plan.sopInstanceUID + ".1"
         plan.planName = "NewPlan"
@@ -56,23 +56,23 @@ class PlanDesign:
 
         # initialize each beam
         for b in range(len(gantryAngles)):
-            plan.beams.append(PlanIonBeam())
-            plan.beams[b].beamName = beamNames[b]
-            plan.beams[b].gantryAngle = gantryAngles[b]
-            plan.beams[b].patientSupportAngle = couchAngles[b]
-            plan.beams[b].isocenterPosition = isoCenter
-            plan.beams[b].spotSpacing = self.spotSpacing
-            plan.beams[b].layerSpacing = self.layerSpacing
+            plan._beams.append(PlanIonBeam())
+            plan._beams[b].beamName = beamNames[b]
+            plan._beams[b].gantryAngle = gantryAngles[b]
+            plan._beams[b].patientSupportAngle = couchAngles[b]
+            plan._beams[b].isocenterPosition = isoCenter
+            plan._beams[b].spotSpacing = self.spotSpacing
+            plan._beams[b].layerSpacing = self.layerSpacing
             if (self.rangeShifters != [] and self.rangeShifters[b] != "None"):
-                plan.beams[b].rangeShifterID = self.rangeShifters[b].id
-                plan.beams[b].rangeShifterType = self.rangeShifters[b].type
+                plan._beams[b].rangeShifterID = self.rangeShifters[b].id
+                plan._beams[b].rangeShifterType = self.rangeShifters[b].type
 
         # spot placement
         plan = self.placeSpots(plan, targetMarginMask)
 
         # previous_energy = 999
-        for beam in plan.beams:
-            beam.layers.sort(reverse=True, key=(lambda element: element.nominalBeamEnergy))
+        for beam in plan._beams:
+            beam._layers.sort(reverse=True, key=(lambda element: element.nominalBeamEnergy))
 
             # # arc pt
             # for l in range(len(beam.layers)):
@@ -104,8 +104,8 @@ class PlanDesign:
 
         plan.numberOfSpots = 0
 
-        for b in range(len(plan.beams)):
-            beam = plan.beams[b]
+        for b in range(len(plan._beams)):
+            beam = plan._beams[b]
 
             # generate hexagonal spot grid around isocenter
             spotGrid = self.generateHexagonalspotGrid(beam.isocenterPosition, beam.spotSpacing, beam.gantryAngle, beam.patientSupportAngle)
@@ -174,7 +174,7 @@ class PlanDesign:
                 for energy in spotGrid["EnergyLayers"][s]:
                     plan.numberOfSpots += 1
                     layerFound = 0
-                    for layer in beam.layers:
+                    for layer in beam._layers:
                         if (abs(layer.nominalBeamEnergy - energy) < 0.05):
                             # add spot to existing layer
                             layer.scanSpotPositionMapX.append(spotGrid["BEVx"][s])
@@ -185,20 +185,20 @@ class PlanDesign:
 
                     if (layerFound == 0):
                         # add new layer
-                        beam.layers.append(PlanIonLayer())
-                        beam.layers[-1].nominalBeamEnergy = energy
-                        beam.layers[-1].scanSpotPositionMapX.append(spotGrid["BEVx"][s])
-                        beam.layers[-1].scanSpotPositionMapY.append(spotGrid["BEVy"][s])
-                        beam.layers[-1].scanSpotMetersetWeights.append(1.0)
-                        beam.layers[-1].spotMU.append(1.0)
+                        beam._layers.append(PlanIonLayer())
+                        beam._layers[-1].nominalBeamEnergy = energy
+                        beam._layers[-1].scanSpotPositionMapX.append(spotGrid["BEVx"][s])
+                        beam._layers[-1].scanSpotPositionMapY.append(spotGrid["BEVy"][s])
+                        beam._layers[-1].scanSpotMetersetWeights.append(1.0)
+                        beam._layers[-1].spotMU.append(1.0)
 
                         if (self.rangeShifters != [] and self.rangeShifters[b] != "None" and self.rangeShifters[
                             b].wet > 0.0):
-                            beam.layers[-1].rangeShifterSetting = 'IN'
-                            beam.layers[
+                            beam._layers[-1].rangeShifterSetting = 'IN'
+                            beam._layers[
                                 -1].isocenterToRangeShifterDistance = 300.0  # TODO: raytrace distance from iso to
                             # body contour and add safety margin
-                            beam.layers[-1].rangeShifterWaterEquivalentThickness = self.rangeShifters[b].wet
+                            beam._layers[-1].rangeShifterWaterEquivalentThickness = self.rangeShifters[b].wet
         return plan
 
     def generateHexagonalspotGrid(self, isoCenter, spotSpacing, gantryAngle, couchAngle):

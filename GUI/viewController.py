@@ -21,6 +21,8 @@ class ViewController():
         self.windowLevelEnabledSignal = Event(bool)
         #self.dynamicViewerSwitchedOnSignal = Event(object)
 
+        self.mainConfig = None
+
         self._activePatients = [patient for patient in patientList.patients]
         self._crossHairEnabled = None
         self._currentPatient = None

@@ -12,12 +12,21 @@ class MCsquareElement(MCsquareMaterial):
         self.atomicWeight = atomicWeight
 
     def __str__(self):
+        return self.mcsquareFormatted()
+
+    def mcsquareFormatted(self):
+        if self.density<=0:
+            self.density = 1e-18
+
+        if self.electronDensity<=0:
+            self.electronDensity = 1e-18
+
         s = 'Name ' + self.name + '\n'
         s += 'Atomic_Weight ' + str(self.atomicWeight) + '\n'
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"
         s += 'Electron_Density ' + str(self.electronDensity) + " # in cm-3 \n"
         s += 'Radiation_Length ' + str(self.radiationLength) + " # in g/cm2 \n"
-        s += 'Nuclear_Data		ICRU\n'
+        s += 'Nuclear_Data		proton-proton\n'
 
         return s
 
