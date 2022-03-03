@@ -2,10 +2,13 @@ import copy
 import os
 import platform
 import shutil
+from math import sqrt
 from typing import Optional, Sequence, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
-from scipy.ndimage import gaussian_filter
+import scipy
+from scipy.ndimage import gaussian_filter, zoom
 
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
@@ -23,7 +26,7 @@ from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.mcsquareFlashConf
 
 class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
     HU_AIR = -1024
-    SPOT_WEIGHT_THRESHOLD = 0.01
+    SPOT_WEIGHT_THRESHOLD = 0.02
 
     def __init__(self):
         super().__init__()
@@ -56,7 +59,7 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
 
         return beamletDose
 
-    def _fluencePlan(self, plan:RTPlan) -> RTPlan:
+    def _fluencePlan_old(self, plan:RTPlan) -> RTPlan:
         newPlan = copy.deepcopy(plan)
 
         for beam in newPlan:
@@ -64,7 +67,7 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
             isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(self._ct, beam, beam.isocenterPosition)
 
             for layer in beam:
-                fluence = self._layerFluence(beam, layer, ctBEV)
+                fluence = self._layerFluenceAtIso(beam, layer, ctBEV)
 
                 layer.removeSpot(layer.spotX, layer.spotY) # Empty layer
                 fluenceX, fluenceY = np.meshgrid(range(fluence.shape[0]), range(fluence.shape[1]))
@@ -79,27 +82,81 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
                             layer.appendSpot(pos0, pos1, fluence[fluenceX[i, j], fluenceY[i, j]])
         return newPlan
 
-    def _layerFluence(self, beam:PlanIonBeam, layer:PlanIonLayer, ctBEV:Image3D) -> np.ndarray:
-        pointSpreadFluence = self._pointSpreadFluence(beam, layer, ctBEV)
+    def _fluencePlan(self, plan:RTPlan) -> RTPlan:
+        newPlan = copy.deepcopy(plan)
 
-        sigmaX, sigmaY = self.beamModel.spotSizes(layer.nominalEnergy, z=0.)
+        for beam in newPlan:
+            ctBEV = ImageTransform3D.dicomToIECGantry(self._ct, beam, self.HU_AIR)
+            isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(self._ct, beam, beam.isocenterPosition)
+
+            for layer in beam:
+                fluence = self._layerFluenceAtNozzle(beam, layer, ctBEV)
+
+                fluence[fluence<self.SPOT_WEIGHT_THRESHOLD] = 0.
+                #fluence = fluence*layer.meterset/np.sum(fluence)
+
+                layer.removeSpot(layer.spotX, layer.spotY) # Empty layer
+                fluenceX, fluenceY = np.meshgrid(range(fluence.shape[0]), range(fluence.shape[1]))
+
+                for i in range(fluenceX.shape[0]):
+                    for j in range(fluenceX.shape[1]):
+                        if fluence[fluenceX[i, j], fluenceY[i, j]]:
+                            posNozzle = ctBEV.getPositionFromVoxelIndex((fluenceX[i, j], fluenceY[i, j], isocenterBEV[2]))
+                            pos0Nozzle = posNozzle[0] - isocenterBEV[0]
+                            pos1Nozzle = -posNozzle[1] + isocenterBEV[1]
+
+                            pos0Iso = pos0Nozzle*self.beamModel.smx/(self.beamModel.smx-self.beamModel.nozzle_isocenter)
+                            pos1Iso = pos1Nozzle*self.beamModel.smy/(self.beamModel.smy-self.beamModel.nozzle_isocenter)
+
+                            layer.appendSpot(pos0Iso, pos1Iso, fluence[fluenceX[i, j], fluenceY[i, j]])
+        return newPlan
+
+    def _layerFluenceAtNozzle(self, beam:PlanIonBeam, layer:PlanIonLayer, ctBEV:Image3D) -> np.ndarray:
+        pointSpreadFluence = self._pointSpreadFluenceAtNozzle(beam, layer, ctBEV)
+
+        sigmaX, sigmaY = self.beamModel.spotSizes(layer.nominalEnergy)
+        sigmaX /= ctBEV.spacing[0]
+        sigmaY /= ctBEV.spacing[1]
+
+        # Cannot explain this
+        sigmaX = sigmaX*(self.beamModel.smx-self.beamModel.nozzle_isocenter)/self.beamModel.smx
+        sigmaY = sigmaY*(self.beamModel.smy-self.beamModel.nozzle_isocenter)/self.beamModel.smy
+
+        fluence = gaussian_filter(pointSpreadFluence, [sigmaX, sigmaY], mode='constant', cval=0., truncate=4)
+
+        return fluence
+
+    def _layerFluenceAtIso(self, beam:PlanIonBeam, layer:PlanIonLayer, ctBEV:Image3D) -> np.ndarray:
+        pointSpreadFluence = self._pointSpreadFluenceAtIso(beam, layer, ctBEV)
+
+        sigmaX, sigmaY = self._spotSizeAtIso(layer.nominalEnergy)
         sigmaX /= ctBEV.spacing[0]
         sigmaY /= ctBEV.spacing[1]
 
         fluence = gaussian_filter(pointSpreadFluence, [sigmaX, sigmaY], mode='constant', cval=0., truncate=4)
 
-        fluence = fluence * layer.meterset / np.sum(fluence)
-
         return fluence
 
-    def _pointSpreadFluence(self, beam:PlanIonBeam, layer:PlanIonLayer, ctBEV:Image3D) -> np.ndarray:
-        xAtDist, yAtDist = self._xyAtDistFromIso(layer.spotX, layer.spotY)
-        xyAtDist = zip(xAtDist, yAtDist)
+    def _spotSizeAtIso(self, energy):
+        divergenceX, divergenceY = self.beamModel.divergences(energy)
+        corrX, corrY = self.beamModel.correlations(energy)
+        sigmaX, sigmaY = self.beamModel.spotSizes(energy)
+
+        z = self.beamModel.nozzle_isocenter
+
+        partialCorrX0 = corrX*sigmaX + divergenceX*z
+        partialCorrY0 = corrY*sigmaY + divergenceY*z
+
+        sigmaX0 = sqrt(sigmaX*sigmaX + 2*partialCorrX0*divergenceX*z - divergenceX*divergenceX*z*z)
+        sigmaY0 = sqrt(sigmaY * sigmaY + 2 * partialCorrY0 * divergenceY * z - divergenceY * divergenceY * z * z)
+
+        return sigmaX0, sigmaY0
+
+    def _pointSpreadFluenceAtIso(self, beam:PlanIonBeam, layer:PlanIonLayer, ctBEV:Image3D) -> np.ndarray:
+        XYs = zip(layer.spotX, layer.spotY)
 
         isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(self._ct, beam, beam.isocenterPosition)
-        xyInds = [self._ct.getVoxelIndexFromPosition(
-            (isocenterBEV[0] + xy[0], isocenterBEV[1] - xy[1], isocenterBEV[2] + self._distToIsocenter)) for xy in
-                  xyAtDist]
+        xyInds = [ctBEV.getVoxelIndexFromPosition(((isocenterBEV[0]+xy[0]), (isocenterBEV[1]-xy[1]), isocenterBEV[2])) for xy in XYs]
 
         fluence = np.zeros((ctBEV.imageArray.shape[0], ctBEV.imageArray.shape[1]))
 
@@ -109,11 +166,22 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
 
         return fluence / (ctBEV.spacing[0] * ctBEV.spacing[1])
 
-    def _xyAtDistFromIso(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> tuple[Sequence[float], Sequence[float]]:
-        x = (np.array(x) / self.beamModel.smx)*(self.beamModel.smx - self._distToIsocenter)
-        y = (np.array(y) / self.beamModel.smy)*(self.beamModel.smy - self._distToIsocenter)
+    def _pointSpreadFluenceAtNozzle(self, beam:PlanIonBeam, layer:PlanIonLayer, ctBEV:Image3D) -> np.ndarray:
+        isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(self._ct, beam, beam.isocenterPosition)
 
-        return (x, y)
+        fluence = np.zeros((ctBEV.imageArray.shape[0], ctBEV.imageArray.shape[1]))
+
+        for i, x in enumerate(layer.spotX):
+            y = layer.spotY[i]
+            spotWeight = layer.spotWeights[i]
+
+            xAtNozzle = x*(self.beamModel.smx-self.beamModel.nozzle_isocenter)/self.beamModel.smx
+            yAtNozzle = y*(self.beamModel.smy-self.beamModel.nozzle_isocenter)/self.beamModel.smy
+
+            ind = ctBEV.getVoxelIndexFromPosition(((isocenterBEV[0] + xAtNozzle), (isocenterBEV[1] - yAtNozzle), isocenterBEV[2]))
+            fluence[ind[0], ind[1]] = spotWeight
+
+        return fluence / (ctBEV.spacing[0] * ctBEV.spacing[1])
 
     @property
     def _noSpotSizeConfig(self) -> MCsquareFlashConfig:
@@ -134,6 +202,8 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         config["Beamlet_Parallelization"] = True
         config["Dose_MHD_Output"] = False
         config["Dose_Sparse_Output"] = True
+
+        config["Dose_Sparse_Threshold"] = 20000
 
         config["NoSpotSize"] = True
 

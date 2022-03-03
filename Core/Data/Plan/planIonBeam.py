@@ -70,7 +70,7 @@ class PlanIonBeam:
 
         return weights
     @property
-    def meterset(self) -> int:
+    def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 
     def simplify(self, threshold:float=0.0):
