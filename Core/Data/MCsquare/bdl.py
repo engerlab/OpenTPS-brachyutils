@@ -90,15 +90,10 @@ class BDL:
 
         return (divergenceX, divergenceY)
 
-    def spotSizes(self, energy:float, z:float=0.) -> tuple[float, float]:
+    def spotSizes(self, energy:float) -> tuple[float, float]:
         sigmaX = interpolate.interp1d(self.NominalEnergy, self.SpotSize1x, kind='linear', fill_value='extrapolate')
         sigmaX = sigmaX(energy)
         sigmaY = interpolate.interp1d(self.NominalEnergy, self.SpotSize1y, kind='linear', fill_value='extrapolate')
         sigmaY = sigmaY(energy)
-
-        correlationX, correlationY = self.correlations(energy)
-        divergenceX, divergenceY = self.divergences(energy)
-
-        sigmaX = sqrt(sigmaX*sigmaX - 2.*correlationX*sigmaX*divergenceX*z + divergenceX*divergenceX*z*z)
 
         return (sigmaX, sigmaY)

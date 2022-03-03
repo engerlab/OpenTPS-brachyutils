@@ -56,8 +56,22 @@ class PlanIonLayer:
         return np.array(self._weights)
 
     @property
-    def meterset(self) -> int:
+    def meterset(self) -> float:
         return np.sum(self._weights)
+
+    def addToSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]]):
+        if isinstance(x, Sequence):
+            for i, xElem in enumerate(x):
+                self._addToSinglepot(xElem, y[i], weight[i])
+        else:
+            self._addToSinglepot(x, y, weight)
+
+    def _addToSinglepot(self, x:float, y:float, weight:float):
+        alreadyExists, where = self.spotDefinedInXY(x, y)
+        if alreadyExists:
+            self._weights[where] = self._weights[where] + weight
+        else:
+            self._appendSingleSpot(x, y, weight)
 
     def appendSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]]):
         if isinstance(x, Sequence):
@@ -99,7 +113,7 @@ class PlanIonLayer:
         self._weights = np.delete(self._weights, spotPos)
 
     def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> tuple[bool, int]:
-        if x is list:
+        if isinstance(x, Sequence):
             exist = []
             where = []
             for i, xElem in enumerate(x):

@@ -62,7 +62,7 @@ class RTPlan(PatientData):
         return weights
 
     @property
-    def meterset(self) -> int:
+    def meterset(self) -> float:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
 
     def simplify(self, threshold:float=0.0):
