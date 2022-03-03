@@ -27,7 +27,7 @@ class GenericImageForViewer(DataMultiton):
         self._range = (np.min(self.data.imageArray), np.max(self.data.imageArray))
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
-        self._selectedPosition = (0, 0, 0)
+        self._selectedPosition = self.data.origin + self.data.gridSize/2.
         self._vtkOutputPort = None
 
     @property
