@@ -19,9 +19,8 @@ print(type(dynSeq))
 print(len(dynSeq.dyn3DImageList))
 print(type(dynSeq.dyn3DImageList[0]))
 
-## use the forward projection directly on a numpy array with an angle of 0
-img = dynSeq.dyn3DImageList[0].imageArray
-DRR = forwardProjection(img, 90, axis='X')
+## use the forward projection with an angle of 0
+DRR = forwardProjection(dynSeq.dyn3DImageList[0], 90, axis='X')
 
 plt.figure()
 plt.imshow(DRR)
