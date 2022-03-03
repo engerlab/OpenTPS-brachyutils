@@ -11,6 +11,7 @@ from pydicom.uid import generate_uid
 
 import Core.IO.dataLoader as dataLoader
 from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.dynamic2DSequence import Dynamic2DSequence
@@ -253,6 +254,8 @@ class PatientDataTree(QTreeView):
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
             self._viewController.mainImage = selectedData
+        elif isinstance(selectedData, DoseImage):
+            self._viewController.secondaryImage = selectedData
 
     def _handleRightClick(self, pos):
         UIDs = []
