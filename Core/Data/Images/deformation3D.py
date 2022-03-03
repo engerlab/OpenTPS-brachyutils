@@ -155,7 +155,13 @@ class Deformation3D(Image3D):
             field.resample(image.gridSize, image._origin, image._spacing)
 
         image = image.copy()
+        init_dtype = image._imageArray.dtype
         image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
+
+        if init_dtype=='bool':
+            image._imageArray[image._imageArray < 0.5] = 0
+            image._imageArray[image._imageArray >= 0.5] = 1
+            image._imageArray = image._imageArray.astype(bool)
 
         return image
 

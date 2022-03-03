@@ -1,59 +1,156 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.IO.serializedObjectIO import saveSerializedObjects
+from Core.Processing.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 
-def generateDynSeqFromBreathingSignalPointsAndModel(model, signalList, ROIList):
+def generateDynSeqFromBreathingSignalPointsAndModel(model, signalList, ROIList, dimensionUsed='Z'):
 
     if len(signalList) != len(ROIList):
         print('Numbers of signals and ROI do not match')
         return
 
-    print(type(model))
-    print(type(model.deformationList[0]))
-    print(type(model.deformationList[0].velocity))
-
-    modelDisplacementList = []
-    print('in generateDynSeqFromBreathingSignalPointsAndModel, --> manually limited to 3 fields for speed testing pusrposes')
-    pointDefValues = []
-
-    modelDefValuesByPoint = [[] for roi in ROIList]
-    print(modelDefValuesByPoint)
+    ## get displacement fields from velocity fields
     for fieldIndex, field in enumerate(model.deformationList):
         field.displacement = field.velocity.exponentiateField()
-        for pointIndex, point in enumerate(ROIList):
-            print(point, type(field))
-            modelDefValuesByPoint[pointIndex].append(getDataAtPosition(point, field.displacement))
 
-    print(len(modelDefValuesByPoint[0]))
-    print(modelDefValuesByPoint[0])
+    ## for each ROI and signal pair
+    ## - extract model values at ROI position
+    ## - for each sample in the signal
+    ## --> get phase value
+
+    ## 1. From model and ROIList --> get model values at ROI position
+    # modelDefValuesByPoint = [[] for roi in ROIList]
+
+    phaseValueByROIList = []
+    for ROIndex, ROI in enumerate(ROIList):
+
+        modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed)
+
+        # plt.figure()
+        # plt.plot(modelDefValuesArray)
+        # plt.show()
+
+        meanPos = np.mean(modelDefValuesArray)  ## in case of synthetic signal use, this should be 0 ? this is not exactly 0 by using this mean on a particular dimension
+
+        # split ascent descent and get ascent and descent indexes
+        ascentPart, ascentPartIndexes, descentPart, descentPartIndexes, amplitude = splitAscentDescentSubsets(modelDefValuesArray)
+
+        phaseValueList = []
+        for sampleIndex in range(signalList[ROIndex].shape[0]):
+
+            ascentOrDescentCase = isAscentOrDescentCase(signalList[ROIndex], sampleIndex)
+
+            if ascentOrDescentCase == "descending":
+                phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], descentPart, descentPartIndexes, ascentOrDescentCase, meanPos)
+            elif ascentOrDescentCase == "ascending":
+                phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], ascentPart, ascentPartIndexes, ascentOrDescentCase, meanPos)
+            phaseValueList.append(phaseRatio)
+            # print(phaseValueList[-1])
+
+        phaseValueByROIList.append(phaseValueList)
+
+    ## 2.
+    print('youhou')
+    print(len(phaseValueByROIList))
+    print(len(phaseValueByROIList[0]))
+
+    dynseq = Dynamic3DSequence()
+    dynseq.name = 'Inversed_Lungs'
+    print(dynseq.name)
+
+
+    for breathingSignalSampleIndex in range(len(phaseValueByROIList[0])):
+
+        phaseList = []
+        amplitudeList = []
+        for ROIndex in range(len(phaseValueByROIList)):
+
+            phase = phaseValueByROIList[ROIndex][breathingSignalSampleIndex]
+            print(phase)
+            if phase[0] == 'I':
+                phaseList.append((phase[1]+phase[2])/10)
+                amplitudeList.append(1)
+            elif phase[0] == 'E':
+                phaseList.append(phase[1]/10)
+                amplitudeList.append(phase[2])
+
+        print('Image:', breathingSignalSampleIndex)
+        print(len(ROIList), len(phaseList), len(amplitudeList))
+        print(phaseList)
+        print(amplitudeList)
+
+
+        df1, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
+        im1 = df1.deformImage(model.midp, fillValue='closest')
+        print(type(im1))
+        dynseq.dyn3DImageList.append(im1)
+
+    return dynseq
+
+    ## get phase list from model and
 
 
 
-    for pointIndex in range(len(modelDefValuesByPoint)):
-        modelDefValuesByPoint[pointIndex] = getDefDim(modelDefValuesByPoint[pointIndex], dim='X')
+## ---------------------------------------------------------------------------------------------
+def getAverageModelValuesAroundPosition(position, model, dimensionUsed='Z'):
 
-    for signal in signalList:
-        getPhaseFromSampleAndDefValues(signal, )
+    modelDefValuesList = []
+    for fieldIndex, field in enumerate(model.deformationList):
+        modelDefValuesList.append(getAverageFieldValueAroundPosition(position, field.displacement, dimensionUsed=dimensionUsed))
 
+    modelDefValuesArray = np.array(modelDefValuesList)
 
-    # for point in ROIList:
-    #     pointDefValues = []
-    #     for field in model.deformationList[:3]:
-    #         pointDefValues.append(getDeformationValueFromPointInCoordinates(point))
-    # print(len(modelDisplacementList))
-    # print(type(modelDisplacementList)[0])
-    # print(modelDisplacementList[0]._imageArray.shape)
-    # print(modelDisplacementList[0].origin)
-    # print(modelDisplacementList[0].spacing)
+    return modelDefValuesArray
 
+## ---------------------------------------------------------------------------------------------
+def getAverageFieldValueAroundPosition(position, field, dimensionUsed='Z'):
 
-def getDataAtPosition(position, field):
+    voxelIndex = getVoxelIndexFromPosition(position, field)
+    dataNumpy = field.imageArray[voxelIndex[0]-1:voxelIndex[0]+2, voxelIndex[1]-1:voxelIndex[1]+2, voxelIndex[2]-1:voxelIndex[2]+2]
 
+    if dimensionUsed == 'norm':
+        averageX = np.mean(dataNumpy[:, :, :, 0])
+        averageY = np.mean(dataNumpy[:, :, :, 1])
+        averageZ = np.mean(dataNumpy[:, :, :, 2])
+        usedValue = np.linalg.norm(np.array([averageX, averageY, averageZ]))
+
+    elif dimensionUsed == 'X':
+        usedValue = np.mean(dataNumpy[:, :, :, 0])
+
+    elif dimensionUsed == 'Y':
+        usedValue = np.mean(dataNumpy[:, :, :, 1])
+
+    elif dimensionUsed == 'Z':
+        usedValue = np.mean(dataNumpy[:, :, :, 2])
+
+    return usedValue
+
+## ---------------------------------------------------------------------------------------------
+def getFieldValueAtPosition(position, field, dimensionUsed='Z'):
+    """
+    Alternative function to getAverageFieldValueAroundPosition
+    This one does not compute an average on a 3x3x3 cube around the position but gets the exact position value
+    """
     voxelIndex = getVoxelIndexFromPosition(position, field)
     dataNumpy = field.imageArray[voxelIndex[0], voxelIndex[1], voxelIndex[2]]
 
-    return dataNumpy
+    if dimensionUsed == 'norm':
 
+        usedValue = np.linalg.norm(dataNumpy)
 
+    elif dimensionUsed == 'X':
+        usedValue = dataNumpy[0]
+
+    elif dimensionUsed == 'Y':
+        usedValue = dataNumpy[1]
+
+    elif dimensionUsed == 'Z':
+        usedValue = dataNumpy[2]
+
+    return usedValue
+
+## ---------------------------------------------------------------------------------------------
 def getVoxelIndexFromPosition(position, field):
 
     positionInMM = np.array(position)
@@ -62,88 +159,67 @@ def getVoxelIndexFromPosition(position, field):
 
     return posInVoxels
 
-def getDefDim(defValueList, dim='norm'):
+## -------------------------------------------------------------------------------
+def splitAscentDescentSubsets(CTPhasePositions):
 
-    print('in getDefDim', defValueList)
+    minIndex = np.argmin(CTPhasePositions)
+    maxIndex = np.argmax(CTPhasePositions)
+    #print('minIndex :', minIndex, 'maxIndex :', maxIndex)
 
-    defValueNormList = []
-    for fieldIndex in range(len(defValueList)):
-        defValueNormList.append(np.linalg.norm(defValueList[fieldIndex]))
-    print('defValueNormList', defValueNormList)
+    amplitude = CTPhasePositions[maxIndex] - CTPhasePositions[minIndex]
 
-    X = [defValueList[fieldIndex][0] for fieldIndex in range(len(defValueList))]
-    Y = [defValueList[fieldIndex][1] for fieldIndex in range(len(defValueList))]
-    Z = [defValueList[fieldIndex][2] for fieldIndex in range(len(defValueList))]
+    if minIndex <= maxIndex:
+        ascentPartIndexes = np.arange(minIndex, maxIndex + 1)
+        descentPartIndexes = np.concatenate([np.arange(maxIndex, CTPhasePositions.shape[0]), np.arange(0, minIndex+1)])
 
-    plt.figure()
-    plt.subplot(4, 1, 1)
-    plt.plot(defValueNormList)
-    plt.subplot(4, 1, 2)
-    plt.plot(X)
-    plt.subplot(4, 1, 3)
-    plt.plot(Y)
-    plt.subplot(4, 1, 4)
-    plt.plot(Z)
-    plt.show()
+    else:
+        descentPartIndexes = np.arange(maxIndex, minIndex + 1)
+        ascentPartIndexes = np.concatenate([np.arange(minIndex, CTPhasePositions.shape[0]), np.arange(0, maxIndex+1)])
 
-    if dim == 'norm':
-        for fieldIndex in range(len(defValueList)):
-            defValueList[fieldIndex] = np.linalg.norm(defValueList[fieldIndex])
+    # print('ascentPartIndexes :', ascentPartIndexes)
+    # print('descentPartIndexes :', descentPartIndexes)
 
+    ascentPart = []
+    for element in ascentPartIndexes:
+        ascentPart.append(CTPhasePositions[element])
+    ascentPart = np.array(ascentPart)
 
-
-    if dim == 'X':
-        index = 0
-    elif dim == 'Y':
-        index = 1
-    elif dim == 'Z':
-        index = 2
-
-## -----------------------------------------------------------------------------------------------------
-def getBreathingPhasesInCTFromMotionSignalsNEW(MRIPos, CTPhasePositions, ascendDescendCase):
-
-    meanPos = np.mean(CTPhasePositions[:-1])
-
-    CTPhaseAscendingPart, ascentPartIndexes, CTPhaseDescendingPart, descentPartIndexes, amplitude = splitAscentDescentPartNEW(CTPhasePositions[:-1])
-
-    if ascendDescendCase == "descending":
-        phaseRatio = computePhaseRatioNEW(MRIPos, CTPhaseDescendingPart, descentPartIndexes, ascendDescendCase, meanPos)
-    elif ascendDescendCase == "ascending":
-        phaseRatio = computePhaseRatioNEW(MRIPos, CTPhaseAscendingPart, ascentPartIndexes, ascendDescendCase, meanPos)
-
-    return phaseRatio
-
-## -----------------------------------------------------------------------------------------------------
-def separateDescentAscentParts(CTPhasePositions):
-
-    if CTPhasePositions[1] > CTPhasePositions[0]:
-        signValue = 1
-        firstPart = "ascendingPart"
-    elif CTPhasePositions[1] < CTPhasePositions[0]:
-        signValue = -1
-        firstPart = "descendingPart"
-
-    changingPoint = 0
-    while CTPhasePositions[changingPoint+1]*signValue > CTPhasePositions[changingPoint]*signValue:
-        changingPoint += 1
-
-    if firstPart == "ascendingPart":
-        CTPhaseAscendingPart = CTPhasePositions[:changingPoint+1]
-        CTPhaseDescendingPart = np.append(CTPhasePositions[changingPoint:], CTPhasePositions[0])
-    elif firstPart == "descendingPart":
-        CTPhaseDescendingPart = CTPhasePositions[:changingPoint+1]
-        CTPhaseAscendingPart = np.append(CTPhasePositions[changingPoint:], CTPhasePositions[0])
+    descentPart = []
+    for element in descentPartIndexes:
+        descentPart.append(CTPhasePositions[element])
+    descentPart = np.array(descentPart)
 
     # plt.figure()
-    # plt.plot(CTPhaseAscendingPart, color='r', label='Ascending part')
-    # plt.plot(CTPhaseDescendingPart, label='Descending part')
+    # plt.plot(descentPart, color='r', label='Descending part')
+    # plt.plot(ascentPart, color='b', label='Ascending part')
+    # plt.plot(CTPhasePositions, color='g', label='Phases from 0 to 9')
     # plt.legend()
     # plt.show()
 
-    return CTPhaseDescendingPart, CTPhaseAscendingPart, firstPart
+    return ascentPart, ascentPartIndexes, descentPart, descentPartIndexes, amplitude
+
+## ---------------------------------------------------------------------------------------------
+def isAscentOrDescentCase(signal, currentIndex):
+
+    currentPosition = signal[currentIndex]
+
+    if currentIndex == 0:
+        nextPosition = signal[currentIndex + 1]
+        if currentPosition > nextPosition:
+            ascendDescendCase = "descending"
+        elif currentPosition <= nextPosition:
+            ascendDescendCase = "ascending"
+    else:
+        lastPosition = signal[currentIndex - 1]
+        if currentPosition < lastPosition:
+            ascendDescendCase = "descending"
+        elif currentPosition >= lastPosition:
+            ascendDescendCase = "ascending"
+
+    return ascendDescendCase
 
 ## -----------------------------------------------------------------------------------------------------
-def computePhaseRatioNEW(MRIPos, CTPhasesSubPart, CTPhasesPartsIndexes, ascendDescendCase, meanPos):
+def computePhaseRatio(sampleValuePos, CTPhasesSubPart, CTPhasesPartsIndexes, ascendDescendCase, meanPos):
 
     correctedPhaseIndex = 0
     showingCondition = False
@@ -154,48 +230,48 @@ def computePhaseRatioNEW(MRIPos, CTPhasesSubPart, CTPhasesPartsIndexes, ascendDe
 
         phaseIndex = 0
 
-        if MRIPos > CTPhasesSubPart[0]:
+        if sampleValuePos > CTPhasesSubPart[0]:
             showingCondition = True
             interExtraCase = 'E'
             phaseIndex = CTPhasesPartsIndexes[0]
-            correctedPhaseIndex = round(abs((MRIPos - meanPos) / (CTPhasesSubPart[0] - meanPos)), 2)
+            correctedPhaseIndex = round(abs((sampleValuePos - meanPos) / (CTPhasesSubPart[0] - meanPos)), 2)
 
-        elif MRIPos < CTPhasesSubPart[-1]:
+        elif sampleValuePos < CTPhasesSubPart[-1]:
             showingCondition = True
             interExtraCase = 'E'
             phaseIndex = CTPhasesPartsIndexes[-1]
-            correctedPhaseIndex = round(abs((MRIPos - meanPos) / (CTPhasesSubPart[-1] - meanPos)), 2)
+            correctedPhaseIndex = round(abs((sampleValuePos - meanPos) / (CTPhasesSubPart[-1] - meanPos)), 2)
 
         else:
             showingCondition = True
             interExtraCase = 'I'
-            while CTPhasesSubPart[phaseIndex] > MRIPos:
+            while CTPhasesSubPart[phaseIndex] > sampleValuePos:
                 phaseIndex += 1
-            correctedPhaseIndex = (MRIPos - CTPhasesSubPart[phaseIndex - 1]) / (CTPhasesSubPart[phaseIndex] - CTPhasesSubPart[phaseIndex - 1])
+            correctedPhaseIndex = (sampleValuePos - CTPhasesSubPart[phaseIndex - 1]) / (CTPhasesSubPart[phaseIndex] - CTPhasesSubPart[phaseIndex - 1])
             phaseIndex = CTPhasesPartsIndexes[phaseIndex - 1]
 
     elif ascendDescendCase == "ascending":
 
         phaseIndex = 0
 
-        if MRIPos < CTPhasesSubPart[0]:
+        if sampleValuePos < CTPhasesSubPart[0]:
             showingCondition = True
             interExtraCase = 'E'
             phaseIndex = CTPhasesPartsIndexes[0]
-            correctedPhaseIndex = round(abs((MRIPos - meanPos) / (CTPhasesSubPart[0] - meanPos)), 2)
+            correctedPhaseIndex = round(abs((sampleValuePos - meanPos) / (CTPhasesSubPart[0] - meanPos)), 2)
 
-        elif MRIPos > CTPhasesSubPart[-1]:
+        elif sampleValuePos > CTPhasesSubPart[-1]:
             showingCondition = True
             interExtraCase = 'E'
             phaseIndex = CTPhasesPartsIndexes[-1]
-            correctedPhaseIndex = round(abs((MRIPos - meanPos) / (CTPhasesSubPart[-1] - meanPos)), 2)
+            correctedPhaseIndex = round(abs((sampleValuePos - meanPos) / (CTPhasesSubPart[-1] - meanPos)), 2)
 
         else:
             showingCondition = True
             interExtraCase = 'I'
-            while CTPhasesSubPart[phaseIndex] < MRIPos:
+            while CTPhasesSubPart[phaseIndex] < sampleValuePos:
                 phaseIndex += 1
-            correctedPhaseIndex = (MRIPos - CTPhasesSubPart[phaseIndex - 1]) / (CTPhasesSubPart[phaseIndex] - CTPhasesSubPart[phaseIndex - 1])
+            correctedPhaseIndex = (sampleValuePos - CTPhasesSubPart[phaseIndex - 1]) / (CTPhasesSubPart[phaseIndex] - CTPhasesSubPart[phaseIndex - 1])
             phaseIndex = CTPhasesPartsIndexes[phaseIndex - 1]
 
     ## ----------------------
@@ -204,7 +280,7 @@ def computePhaseRatioNEW(MRIPos, CTPhasesSubPart, CTPhasesPartsIndexes, ascendDe
     #     plt.plot(CTPhasesSubPart, 'ro')
     #     plt.xticks(np.arange(len(CTPhasesSubPart)), CTPhasesPartsIndexes)
     #     #plt.xticks(x, my_xticks)
-    #     plt.hlines(MRIPos, xmin=0, xmax=CTPhasesSubPart.shape[0], label='MRI tracked pos', color='b')
+    #     plt.hlines(sampleValuePos, xmin=0, xmax=CTPhasesSubPart.shape[0], label='MRI tracked pos', color='b')
     #     plt.hlines(meanPos, xmin=0, xmax=CTPhasesSubPart.shape[0], label='MidP')
     #     plt.title(str(correctedPhaseIndex)+' - offset:'+str(phaseIndex) + ' - ' + interExtraCase + ' - ' + ascendDescendCase)
     #     plt.legend()
@@ -212,3 +288,4 @@ def computePhaseRatioNEW(MRIPos, CTPhasesSubPart, CTPhasesPartsIndexes, ascendDe
     ## ----------------------
 
     return [interExtraCase, phaseIndex, correctedPhaseIndex]
+

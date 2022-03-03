@@ -20,7 +20,9 @@ patient = loadDataStructure(dataPath)[0]
 dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
 dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
-newSignal = SyntheticBreathingSignal(amplitude=10,
+simulationTime = 5
+
+newSignal = SyntheticBreathingSignal(amplitude=15,
                                      variationAmplitude=0,
                                      breathingPeriod=4,
                                      variationFrequency=0,
@@ -28,11 +30,11 @@ newSignal = SyntheticBreathingSignal(amplitude=10,
                                      mean=0,
                                      variance=0,
                                      samplingPeriod=0.2,
-                                     simulationTime=15,
+                                     simulationTime=simulationTime,
                                      meanEvent=0/30)
 newSignal.generateBreathingSignal()
 
-newSignal2 = SyntheticBreathingSignal(amplitude=10,
+newSignal2 = SyntheticBreathingSignal(amplitude=15,
                                      variationAmplitude=0,
                                      breathingPeriod=4,
                                      variationFrequency=0,
@@ -40,7 +42,7 @@ newSignal2 = SyntheticBreathingSignal(amplitude=10,
                                      mean=0,
                                      variance=0,
                                      samplingPeriod=0.2,
-                                     simulationTime=15,
+                                     simulationTime=simulationTime,
                                      meanEvent=0/30)
 
 newSignal2.breathingSignal = -newSignal.breathingSignal
@@ -62,4 +64,10 @@ pointRLung = np.array([108, 72, -116])
 
 pointList = [pointRLung, pointLLung]
 
-generateDynSeqFromBreathingSignalPointsAndModel(dynMod, signalList, pointList)
+dynSeq = generateDynSeqFromBreathingSignalPointsAndModel(dynMod, signalList, pointList, dimensionUsed='Z')
+dynSeq.breathingPeriod = newSignal.breathingPeriod
+dynSeq.timingsList = newSignal.timestamps
+
+## save it as a serialized object
+savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung'
+saveSerializedObjects(dynSeq, savingPath)
