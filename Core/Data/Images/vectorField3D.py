@@ -34,7 +34,7 @@ class VectorField3D(Image3D):
         self.origin = image._origin
         self.spacing = image._spacing
 
-    def warp(self, data, fillValue=0):
+    def warp(self, data, fillValue=0, outputType=np.float32):
         """Warp 3D data using linear interpolation.
 
         Parameters
@@ -50,7 +50,7 @@ class VectorField3D(Image3D):
             Warped data.
         """
 
-        return resampler3D.warp(data,self._imageArray,self.spacing,fillValue=fillValue)
+        return resampler3D.warp(data, self._imageArray, self.spacing, fillValue=fillValue, outputType=outputType)
 
     def exponentiateField(self):
         """Exponentiate the vector field (e.g. to convert velocity in to displacement).

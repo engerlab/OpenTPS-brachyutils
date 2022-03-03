@@ -11,8 +11,8 @@ from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Data.dynamic3DModel import Dynamic3DModel
 from pydicom.uid import generate_uid
 
-## read a 4DCT
-dataPath = "/media/damien/data/ImageData/Liver/Patient0/4DCT/"
+## read at least 2 images
+dataPath = "/media/damien/data/ImageData/Liver/Patient0/4DCT/" ## give the path to a folder with at least two 3D images
 dataList = loadAllData(dataPath)
 print(len(dataList))
 print(type(dataList[0]))
@@ -22,6 +22,7 @@ dynseq = Dynamic3DSequence(dyn3DImageList=dataList)
 print(type(dynseq))
 print(dynseq.name, dynseq.breathingPeriod)
 dynseq.name = 'new4DCT'
+print(dynseq.timingsList)
 print(dynseq.name)
 print(len(dynseq.dyn3DImageList))
 print(type(dynseq.dyn3DImageList[0]))
@@ -36,8 +37,8 @@ saveSerializedObjects(dynseq, savingPath)
 # newMod.seriesInstanceUID = generate_uid()
 # newMod.computeMidPositionImage(dynseq, baseResolution=8)
 # GENERATE MIDP
-Model4D = Dynamic3DModel()
-Model4D.computeMidPositionImage(dynseq)
+model3D = Dynamic3DModel()
+model3D.computeMidPositionImage(dynseq)
 # ## save it as a serialized object
 # savingPath = '/home/damien/Desktop/' + 'PatientTest_dynMod.p'
 # saveSerializedObject(newMod, savingPath)

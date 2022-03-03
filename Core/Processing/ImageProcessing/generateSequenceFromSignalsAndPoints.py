@@ -4,7 +4,28 @@ from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Processing.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 
-def generateDynSeqFromBreathingSignalPointsAndModel(model, signalList, ROIList, dimensionUsed='Z'):
+def generateDynSeqFromBreathingSignalsROIsAndModel(model, signalList, ROIList, dimensionUsed='Z', outputType=np.float32):
+
+    """
+    Generate a dynamic 3D sequence from a model, in which each given ROI follows its breathing signal
+
+    Parameters
+    ----------
+    model : Dynamic3DModel
+        The dynamic 3D model that will be used to create the images of the resulting sequence
+    signalList : list
+        list of breathing signals as 1D numpy arrays
+    ROIList : list
+        list of points as [X, Y, Z] or (X, Y, Z) --> does not work with ROI's as masks or struct
+    dimensionUsed : str
+        X, Y, Z or norm, the dimension used to compare the breathing signals with the model deformation values
+    outputType : pixel data type (np.float32, np.uint16, etc)
+
+    Returns
+    -------
+    dynseq (Dynamic3DSequence): a new sequence containing the generated images
+
+    """
 
     if len(signalList) != len(ROIList):
         print('Numbers of signals and ROI do not match')
@@ -14,60 +35,54 @@ def generateDynSeqFromBreathingSignalPointsAndModel(model, signalList, ROIList, 
     for fieldIndex, field in enumerate(model.deformationList):
         field.displacement = field.velocity.exponentiateField()
 
-    ## for each ROI and signal pair
-    ## - extract model values at ROI position
-    ## - for each sample in the signal
-    ## --> get phase value
-
-    ## 1. From model and ROIList --> get model values at ROI position
-    # modelDefValuesByPoint = [[] for roi in ROIList]
-
+    ## loop over ROIs
     phaseValueByROIList = []
     for ROIndex, ROI in enumerate(ROIList):
 
+        ## get model deformation values for the specified dimension at the ROI location
         modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed)
 
         # plt.figure()
         # plt.plot(modelDefValuesArray)
         # plt.show()
 
+        ## get the midP value for the specified dimension
         meanPos = np.mean(modelDefValuesArray)  ## in case of synthetic signal use, this should be 0 ? this is not exactly 0 by using this mean on a particular dimension
 
-        # split ascent descent and get ascent and descent indexes
+        # split into ascent and descent subset for the ROI location
         ascentPart, ascentPartIndexes, descentPart, descentPartIndexes, amplitude = splitAscentDescentSubsets(modelDefValuesArray)
 
         phaseValueList = []
+        ## loop over breathing signal samples
         for sampleIndex in range(signalList[ROIndex].shape[0]):
 
+            ## get the ascent or descent situation and compute the phase value for each sample
             ascentOrDescentCase = isAscentOrDescentCase(signalList[ROIndex], sampleIndex)
 
             if ascentOrDescentCase == "descending":
                 phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], descentPart, descentPartIndexes, ascentOrDescentCase, meanPos)
             elif ascentOrDescentCase == "ascending":
                 phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], ascentPart, ascentPartIndexes, ascentOrDescentCase, meanPos)
+            ## add the resulting phase to the list for each breathing signal sample
             phaseValueList.append(phaseRatio)
-            # print(phaseValueList[-1])
 
+        ## add the phaseValueList to the complete list for each ROI
         phaseValueByROIList.append(phaseValueList)
 
-    ## 2.
-    print('youhou')
-    print(len(phaseValueByROIList))
-    print(len(phaseValueByROIList[0]))
-
+    ## At this point the phase information are computed, now the part where the images are created starts
+    ## New empty dynamic 3D sequence is created
     dynseq = Dynamic3DSequence()
-    dynseq.name = 'Inversed_Lungs'
-    print(dynseq.name)
+    dynseq.name = 'GeneratedFromBreathingSignal'
 
-
+    ## loop over breathing signal sample
     for breathingSignalSampleIndex in range(len(phaseValueByROIList[0])):
 
+        ## translate the phase infos into phase and amplitude lists
         phaseList = []
         amplitudeList = []
         for ROIndex in range(len(phaseValueByROIList)):
 
             phase = phaseValueByROIList[ROIndex][breathingSignalSampleIndex]
-            print(phase)
             if phase[0] == 'I':
                 phaseList.append((phase[1]+phase[2])/10)
                 amplitudeList.append(1)
@@ -75,25 +90,35 @@ def generateDynSeqFromBreathingSignalPointsAndModel(model, signalList, ROIList, 
                 phaseList.append(phase[1]/10)
                 amplitudeList.append(phase[2])
 
-        print('Image:', breathingSignalSampleIndex)
-        print(len(ROIList), len(phaseList), len(amplitudeList))
-        print(phaseList)
-        print(amplitudeList)
-
-
+        ## generate the deformation field combining the fields for each points and phase info
         df1, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
-        im1 = df1.deformImage(model.midp, fillValue='closest')
-        print(type(im1))
+        ## apply it to the midp image
+        im1 = df1.deformImage(model.midp, fillValue='closest', outputType=outputType)
+        im1.name = dynseq.name + '_' + str(breathingSignalSampleIndex)
+        ## add the image to the dynamic sequence
         dynseq.dyn3DImageList.append(im1)
 
     return dynseq
 
-    ## get phase list from model and
-
-
-
 ## ---------------------------------------------------------------------------------------------
 def getAverageModelValuesAroundPosition(position, model, dimensionUsed='Z'):
+    """
+    Get the average values in the specified dimension around the given position for each field in a Dynamic3DModel.
+
+    Parameters
+    ----------
+    position : tuple or list of 3 elements
+        The 3D position at which the fields values are extracted
+    model : Dynamic3DModel
+        The dynamic 3D model containing the deformation fields
+    dimensionUsed : str
+        X, Y, Z or norm, the dimension extracted from the deformation fields
+
+    Returns
+    -------
+    modelDefValuesArray (np.ndarray): the average deformation values on the 3X3X3 cube in the specified dimension
+    around the speficied position for each field in the deformation model
+    """
 
     modelDefValuesList = []
     for fieldIndex, field in enumerate(model.deformationList):
@@ -105,7 +130,23 @@ def getAverageModelValuesAroundPosition(position, model, dimensionUsed='Z'):
 
 ## ---------------------------------------------------------------------------------------------
 def getAverageFieldValueAroundPosition(position, field, dimensionUsed='Z'):
+    """
+    Get the average values in the specified dimension around the given position in the given field.
 
+    Parameters
+    ----------
+    position : tuple or list of 3 elements
+        The 3D position around which the 3x3x3 field values are extracted
+    field : VectorField3D
+        The 3D vector field from which the data is extracted
+    dimensionUsed : str
+        X, Y, Z or norm, the dimension extracted from the 3D vector field
+
+    Returns
+    -------
+    usedValue (float): the average deformation value on the 3X3X3 cube in the specified dimension around the field
+    speficied position
+    """
     voxelIndex = getVoxelIndexFromPosition(position, field)
     dataNumpy = field.imageArray[voxelIndex[0]-1:voxelIndex[0]+2, voxelIndex[1]-1:voxelIndex[1]+2, voxelIndex[2]-1:voxelIndex[2]+2]
 
@@ -129,8 +170,22 @@ def getAverageFieldValueAroundPosition(position, field, dimensionUsed='Z'):
 ## ---------------------------------------------------------------------------------------------
 def getFieldValueAtPosition(position, field, dimensionUsed='Z'):
     """
-    Alternative function to getAverageFieldValueAroundPosition
-    This one does not compute an average on a 3x3x3 cube around the position but gets the exact position value
+    Get the field value in the specified dimension at the given position in the given field.
+    Alternative function to getAverageFieldValueAroundPosition. This one does not compute an average on a 3x3x3 cube
+    around the position but gets the exact position value.
+
+    Parameters
+    ----------
+    position : tuple or list of 3 elements
+        The 3D position at which the field value is extracted
+    field : VectorField3D
+        The 3D vector field from which the data is extracted
+    dimensionUsed : str
+        X, Y, Z or norm, the dimension extracted from the 3D vector field
+
+    Returns
+    -------
+    usedValue (float): the deformation value in the specified dimension at the field speficied position
     """
     voxelIndex = getVoxelIndexFromPosition(position, field)
     dataNumpy = field.imageArray[voxelIndex[0], voxelIndex[1], voxelIndex[2]]
@@ -152,7 +207,20 @@ def getFieldValueAtPosition(position, field, dimensionUsed='Z'):
 
 ## ---------------------------------------------------------------------------------------------
 def getVoxelIndexFromPosition(position, field):
+    """
+    Get the voxel index of the position given in scanner coordinates.
 
+    Parameters
+    ----------
+    position : tuple or list of 3 elements in scanner coordinates
+        The 3D position that will be translated into voxel indexes
+    field : VectorField3D
+        The 3D vector field that contains its position in scanner coordinates and voxel spacing
+
+    Returns
+    -------
+    posInVoxels : the 3D position as voxel indexes in the field voxel grid
+    """
     positionInMM = np.array(position)
     shiftedPosInMM = positionInMM - field.origin
     posInVoxels = np.round(np.divide(shiftedPosInMM, field.spacing)).astype(np.int)
@@ -161,7 +229,9 @@ def getVoxelIndexFromPosition(position, field):
 
 ## -------------------------------------------------------------------------------
 def splitAscentDescentSubsets(CTPhasePositions):
-
+    """
+    TODO
+    """
     minIndex = np.argmin(CTPhasePositions)
     maxIndex = np.argmax(CTPhasePositions)
     #print('minIndex :', minIndex, 'maxIndex :', maxIndex)
@@ -200,7 +270,9 @@ def splitAscentDescentSubsets(CTPhasePositions):
 
 ## ---------------------------------------------------------------------------------------------
 def isAscentOrDescentCase(signal, currentIndex):
-
+    """
+        TODO
+        """
     currentPosition = signal[currentIndex]
 
     if currentIndex == 0:
@@ -220,7 +292,9 @@ def isAscentOrDescentCase(signal, currentIndex):
 
 ## -----------------------------------------------------------------------------------------------------
 def computePhaseRatio(sampleValuePos, CTPhasesSubPart, CTPhasesPartsIndexes, ascendDescendCase, meanPos):
-
+    """
+    TODO
+    """
     correctedPhaseIndex = 0
     showingCondition = False
 
