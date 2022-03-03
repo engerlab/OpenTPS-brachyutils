@@ -128,7 +128,7 @@ class Deformation3D(Image3D):
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def deformImage(self, image, fillValue=-1000):
+    def deformImage(self, image, fillValue=-1000, outputType=np.float32):
         """Deform 3D image using linear interpolation.
 
             Parameters
@@ -155,7 +155,7 @@ class Deformation3D(Image3D):
             field.resample(image.gridSize, image._origin, image._spacing)
 
         image = image.copy()
-        image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
+        image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType)
 
         return image
 
