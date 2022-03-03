@@ -27,7 +27,7 @@ class ROIContour(PatientData):
         self._displayColor = color
         self.colorChangedSignal.emit(self._displayColor)
 
-    def getBinaryMask(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
+    def getBinaryMask(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)) -> ROIMask:
         """
         Convert the polygon mesh to a binary mask image.
 
