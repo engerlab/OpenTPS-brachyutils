@@ -1,6 +1,8 @@
 
 import typing
 
+import numpy as np
+
 from Core.event import Event
 
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
@@ -22,7 +24,7 @@ class GenericImageForViewer(DataMultiton):
 
         self._wwlValue = (400, 0)
         self._lookupTableName = 'fusion'
-        self._range = (-1024, 1500)
+        self._range = (np.min(self.data.imageArray), np.max(self.data.imageArray))
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         self._selectedPosition = (0, 0, 0)
