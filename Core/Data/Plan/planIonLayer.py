@@ -1,5 +1,5 @@
 import unittest
-from typing import Iterable, Union, Sequence, Optional
+from typing import Iterable, Union, Sequence, Optional, Tuple
 
 import numpy as np
 
@@ -48,7 +48,7 @@ class PlanIonLayer:
         return [y for y in self._y]
 
     @property
-    def spotXY(self) -> Iterable[tuple[float, float]]:
+    def spotXY(self) -> Iterable[Tuple[float, float]]:
         return zip(self._x, self._y)
 
     @property
@@ -98,7 +98,7 @@ class PlanIonLayer:
         self._y = np.delete(self._y, spotPos)
         self._weights = np.delete(self._weights, spotPos)
 
-    def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> tuple[bool, int]:
+    def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> Tuple[bool, int]:
         if x is list:
             exist = []
             where = []
@@ -112,7 +112,7 @@ class PlanIonLayer:
 
         return (exist, where)
 
-    def _singleSpotCheck(self, x:float, y:float) -> tuple[bool, Optional[int]]:
+    def _singleSpotCheck(self, x:float, y:float) -> Tuple[bool, Optional[int]]:
         for i, (x_xy, y_xy) in enumerate(self.spotXY):
             if (x == x_xy and y == y_xy):
                 return (True, i)
