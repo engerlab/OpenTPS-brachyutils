@@ -4,6 +4,8 @@ from typing import Sequence
 import numpy as np
 import logging
 
+from imageio.plugins.bsdf import Image3D
+
 from Core.Data.patientData import PatientData
 import Core.Processing.ImageProcessing.resampler3D as resampler3D
 from Core.event import Event
@@ -33,6 +35,11 @@ class Image3D(PatientData):
         gs = self.gridSize
         s = 'Image3D ' + str(gs[0]) + ' x ' +  str(gs[1]) +  ' x ' +  str(gs[2]) + '\n'
         return s
+
+    # This is different from deepcopy because image can be a subclass of image3D but the method always returns an Image3D
+    @classmethod
+    def fromImage3D(cls, image):
+        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
 
     def copy(self):
         img = copy.deepcopy(self)

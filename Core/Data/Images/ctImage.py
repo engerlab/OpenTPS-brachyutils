@@ -15,6 +15,11 @@ class CTImage(Image3D):
     def __str__(self):
         return "CT image: " + self.seriesInstanceUID
 
+    @classmethod
+    def fromImage3D(cls, image:Image3D):
+        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles,
+                   seriesInstanceUID=image.seriesInstanceUID)
+
     def copy(self):
         img = super().copy()
         img.seriesInstanceUID = pydicom.uid.generate_uid()
