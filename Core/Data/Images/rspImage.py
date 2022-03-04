@@ -1,0 +1,42 @@
+import copy
+
+import numpy as np
+
+from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
+from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images.image3D import Image3D
+from Core.Data.Plan.planIonBeam import PlanIonBeam
+from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+
+
+class RSPImage(Image3D):
+    def __init__(self, imageArray=None, name="RSP image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1),
+                 angles=(0, 0, 0), seriesInstanceUID="", frameOfReferenceUID="", sliceLocation=[], sopInstanceUIDs=[]):
+        super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing,
+                         angles=angles, seriesInstanceUID=seriesInstanceUID)
+        self.frameOfReferenceUID = frameOfReferenceUID
+        self.seriesInstanceUID = seriesInstanceUID
+        self.sliceLocation = sliceLocation
+        self.sopInstanceUIDs = sopInstanceUIDs
+
+    def __str__(self):
+        return "RSP image: " + self.seriesInstanceUID
+
+    @classmethod
+    def fromImage3D(cls, image: Image3D):
+        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles,
+                   seriesInstanceUID=image.seriesInstanceUID)
+
+    @classmethod
+    def fromCT(cls, ct:CTImage, calibration:AbstractCTCalibration, energy:float=100.):
+        newRSPImage = cls.fromImage3D(ct)
+        newRSPImage.imageArray = calibration.convertHU2RSP(ct.imageArray, energy)
+
+        return newRSPImage
+
+    def computeCumulativeWEPL(self, beam:PlanIonBeam, sad=np.Inf):
+        rspIEC = ImageTransform3D.dicomToIECGantry(self, beam, 0.)
+
+        rspIEC.imageArray = np.cumsum(rspIEC.imageArray, axis=2)*rspIEC.spacing[2]
+
+        return ImageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
