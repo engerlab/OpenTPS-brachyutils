@@ -2,7 +2,6 @@ import copy
 from math import pi, cos, exp, log
 from typing import Union, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
@@ -76,8 +75,6 @@ class PlanOptimizer:
 
             coordX = coordGridX[layerMask]
             coordY = coordGridY[layerMask]
-
-            print(spotGridX)
 
             coordX = coordX.flatten()
             coordY = coordY.flatten()
