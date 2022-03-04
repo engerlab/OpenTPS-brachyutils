@@ -8,3 +8,4 @@ config.txt
 *py.sw*
 *.swp
 docs/build
+tests/*

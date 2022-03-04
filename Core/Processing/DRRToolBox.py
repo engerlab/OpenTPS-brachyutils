@@ -1,8 +1,19 @@
+<<<<<<< HEAD
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.Images.projections import DRR
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 import math
+=======
+import math
+import logging
 
+from Core.Data.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.Images.projections import DRR
+from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
+>>>>>>> refactor_4D
+
+logger = logging.getLogger(__name__)
 
 def getImageInCorrectOrientation(imageArray, orientation):
 
@@ -16,23 +27,28 @@ def getImageInCorrectOrientation(imageArray, orientation):
     return imageToUse
 
 
-def forwardProjection(image3DArray, angle, axis='Z'):
+def forwardProjection(image, angle, axis='Z'):
 
-    img3DArrayOriented = getImageInCorrectOrientation(image3DArray, axis)
-    angleInRad = angle*2*math.pi/360
+    angleInRad = angle * 2 * math.pi / 360
+    library = 'tomopy'
 
-    try:
-        import tomopy       ## this way the import is done multiple times in the case of a DRRSet or DRRSequence creation, not sure it's the best idea
-        drrImage = tomopy.project(img3DArrayOriented, angleInRad)[0]
+    if library=='tomopy':
+        img3DArrayOriented = getImageInCorrectOrientation(image.imageArray, axis)
+        try:
+            import tomopy       ## this way the import is done multiple times in the case of a DRRSet or DRRSequence creation, not sure it's the best idea
+            drrImage = tomopy.project(img3DArrayOriented, angleInRad)[0]
+            return drrImage
+        except:
+            library = 'tigre'
+            logger.warning("No module tomopy available. Try tigre instead.")
 
-        # plt.figure()
-        # plt.imshow(drrImage)
-        # plt.show()
+    if library=='tigre':
+        try:
+            drrImage = forwardProjectionTigre(image, angleInRad, axis)[0]
+            return drrImage
+        except:
+            logger.error("Could not simulate projection using tigre.")
 
-        return drrImage
-
-    except:
-        print("No module tomopy available")
 
 def computeDRRSet(image, angleAndAxisList, sourceImageName=''):
 
@@ -53,13 +69,12 @@ def computeDRRSet(image, angleAndAxisList, sourceImageName=''):
         nameToUse = sourceImageName
     else:
         nameToUse = image.name
-    imgToUse = image.imageArray
 
     DRRSet = []
     for angleAndAxe in angleAndAxisList:
 
         drr = DRR(name='DRR_' + nameToUse + '_' + str(angleAndAxe[1]) + '_' + str(angleAndAxe[0]), sourceImage=image.seriesInstanceUID)
-        drr.imageArray = forwardProjection(imgToUse, angleAndAxe[0], angleAndAxe[1])
+        drr.imageArray = forwardProjection(image, angleAndAxe[0], angleAndAxe[1])
         drr.projectionAngle = angleAndAxe[0]
         drr.rotationAxis = angleAndAxe[1]
 
