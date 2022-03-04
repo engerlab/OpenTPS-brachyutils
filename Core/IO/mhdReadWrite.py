@@ -63,13 +63,21 @@ def exportImageMHD(outputPath, image):
     metaData["ElementSpacing"] = tuple(image._spacing)
     metaData["Offset"] = tuple(image._origin)
     metaData["ElementDataFile"] = rawFile
+
+    binaryData = image._imageArray
     if isinstance(image, ROIMask):
         metaData["ElementType"] = "MET_BOOL"
-    if image._imageArray.ndim == 4:
+    if image._imageArray is not None and image._imageArray.ndim == 4: # save vectorField3D
         metaData["ElementNumberOfChannels"] = image._imageArray.shape[3]
+    if hasattr(image, 'velocity'): # save deformation3D
+        if image.velocity._imageArray is not None and image.velocity._imageArray.ndim == 4:
+            metaData["ElementNumberOfChannels"] = image.velocity._imageArray.shape[3]
+        else:
+            print("Deformation field does not contain image array or dimension not equal to 4")
+        binaryData = image.velocity._imageArray
 
     writeHeaderMHD(mhdPath, metaData=metaData)
-    writeBinaryMHD(rawPath, image._imageArray, metaData=metaData)
+    writeBinaryMHD(rawPath, binaryData, metaData=metaData)
 
 
 
