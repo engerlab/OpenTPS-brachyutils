@@ -1,14 +1,22 @@
+import numpy as np
+import scipy
+from scipy.ndimage import morphology
+
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
 
 
 class ROIMask(Image3D):
-    def __init__(self, imageArray=None, name="ROI contour", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), displayColor=(0, 0, 0)):
-        super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing)
+    def __init__(self, imageArray=None, name="ROI contour", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), displayColor=(0, 0, 0)):
+        super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles)
 
         self.colorChangedSignal = Event(object)
 
         self._displayColor = displayColor
+
+    @classmethod
+    def fromImage3D(cls, image: Image3D):
+        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles)
 
     @property
     def color(self):
@@ -26,6 +34,21 @@ class ROIMask(Image3D):
         """
         self._displayColor = color
         self.colorChangedSignal.emit(self._displayColor)
+
+    @property
+    def centerOfMass(self) -> np.ndarray:
+        return scipy.ndimage.measurements.center_of_mass(self._imageArray)*self.spacing + self.origin
+
+    def dilate(self, radius:float):
+        radius = 1/self.spacing
+        diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
+        diameter = diameter + (diameter+1)%2
+
+        filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
+        filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
+        filt = filt.astype(bool)
+
+        self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
 
     def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
         Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32')

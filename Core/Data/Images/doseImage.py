@@ -12,7 +12,9 @@ class DoseImage(Image3D):
         self.sopInstanceUID = sopInstanceUID
         self.planSOPInstanceUID = planSOPInstanceUID
 
-
+    @classmethod
+    def fromImage3D(cls, image: Image3D):
+        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles)
 
     def __str__(self):
         """
