@@ -1,12 +1,17 @@
 import logging
 import numpy as np
 import math
-import tigre  # https://github.com/CERN/TIGRE/blob/master/Frontispiece/python_installation.md
-from tigre.utilities import CTnoise
+
 
 logger = logging.getLogger(__name__)
 
 def forwardProjectionTigre(ct, angles, axis='Z', ctIsocenter=None, SAD=1000, SID=1550, flatpanelGridSize=[1440,1440], flatpanelPixelSpacing=[0.296,0.296], poissonNoise=1e5, gaussianNoise=10):
+
+    try:
+        import tigre  # https://github.com/CERN/TIGRE/blob/master/Frontispiece/python_installation.md
+        import tigre.utilities.CTnoise
+    except:
+        print('No module named tigre')
 
     if not(isinstance(angles,(np.ndarray, np.generic))):
         if isinstance(angles, list):
