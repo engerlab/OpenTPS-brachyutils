@@ -26,7 +26,6 @@ class RayStationDensity2Material:
         if densityIsScalar:
             return self._getClosestMaterial(density)
         else:
-            # TODO: in Matlab, I would use a repmat would it be faster in numpy as well?
             return np.vectorize(self._getClosestMaterial)(density)
 
     def _getClosestMaterial(self, density:float) -> RayStationMaterial:
