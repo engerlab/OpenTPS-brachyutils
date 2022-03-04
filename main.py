@@ -42,6 +42,12 @@ if __name__ == '__main__':
 
     # Run start script
     scriptPath = os.path.join(mainConfig.startScriptFolder, 'startScript.py')
+    if Path(scriptPath).is_file():
+        with open(scriptPath, 'r') as file:
+            code = file.read()
 
+        output = API.interpreter.run(code)
+        print('Start script output:')
+        print(output)
 
     app.exec_()
