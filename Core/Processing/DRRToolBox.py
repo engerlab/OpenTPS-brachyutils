@@ -1,17 +1,10 @@
-<<<<<<< HEAD
-from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.Images.projections import DRR
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-import math
-=======
 import math
 import logging
 
-from Core.Data.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.Images.projections import DRR
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
->>>>>>> refactor_4D
 
 logger = logging.getLogger(__name__)
 
