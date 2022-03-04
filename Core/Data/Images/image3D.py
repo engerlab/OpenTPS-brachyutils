@@ -4,8 +4,6 @@ from typing import Sequence
 import numpy as np
 import logging
 
-from imageio.plugins.bsdf import Image3D
-
 from Core.Data.patientData import PatientData
 import Core.Processing.ImageProcessing.resampler3D as resampler3D
 from Core.event import Event
