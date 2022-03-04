@@ -1,6 +1,7 @@
 from typing import Union, Sequence
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
@@ -41,6 +42,8 @@ class Patient:
         self.patientDataRemovedSignal = Event(object)
         self.imageAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Image3D)
         self.imageRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Image3D)
+        self.roiMaskAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, ROIMask)
+        self.roiMaskRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, ROIMask)
         self.rtStructAddedSignal =self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTStruct)
         self.rtStructRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, RTStruct)
         self.planAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTPlan)
@@ -95,6 +98,10 @@ class Patient:
     @property
     def plans(self) -> Sequence[RTPlan]:
         return self.getPatientDataOfType(RTPlan)
+
+    @property
+    def roiMasks(self) -> Sequence[ROIMask]:
+        return self.getPatientDataOfType(ROIMask)
 
     @property
     def rtStructs(self) -> Sequence[RTStruct]:

@@ -7,8 +7,10 @@ from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.roiMask import ROIMask
 from Core.Data.roiContour import ROIContour
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
+from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 
 
 class ContourLayer:
@@ -20,8 +22,11 @@ class ContourLayer:
         self._resliceAxes = None
         self._vtkContours = []
 
-    def setNewContour(self, contour: ROIContour):
-        contour = ROIContourForViewer(contour)
+    def setNewContour(self, contour: typing.Union[ROIContour, ROIMask]):
+        if isinstance(contour, ROIContour):
+            contour = ROIContourForViewer(contour)
+        else:
+            contour = ROIMaskForViewer(contour)
 
         if contour in self._contours:
             return
