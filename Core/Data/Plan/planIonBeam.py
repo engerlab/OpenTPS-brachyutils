@@ -54,7 +54,7 @@ class PlanIonBeam:
         self._layers.append(layer)
 
     def removeLayer(self, layer:Union[PlanIonLayer, Sequence[PlanIonLayer]]):
-        if layer is list:
+        if isinstance(layer, Sequence):
             layers = layer
             for layer in layers:
                 self.removeLayer(layer)

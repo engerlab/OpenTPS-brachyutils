@@ -40,9 +40,10 @@ class ROIMask(Image3D):
         return scipy.ndimage.measurements.center_of_mass(self._imageArray)*self.spacing + self.origin
 
     def dilate(self, radius:float):
-        radius = 1/self.spacing
+        radius = 1/np.array(self.spacing)
         diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
         diameter = diameter + (diameter+1)%2
+        diameter = np.round(diameter).astype(int)
 
         filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
         filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
