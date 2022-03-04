@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from Core.Data.dynamic3DModel import Dynamic3DModel
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.Images.ctImage import CTImage
 
 # GENERATE SYNTHETIC 4D INPUT SEQUENCE

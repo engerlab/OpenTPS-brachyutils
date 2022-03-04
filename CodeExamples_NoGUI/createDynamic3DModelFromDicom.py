@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 from Core.IO.dataLoader import loadAllData
 from Core.Data.Images.deformation3D import Deformation3D
-from Core.Data.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 
 # Load DICOM CT
 patient_name = 'Patient_1'
