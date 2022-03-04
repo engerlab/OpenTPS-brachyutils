@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget,QVBoxLayout,QPushButton, QGridLayout,QLabel,QDoubleSpinBox, QSpinBox, QComboBox
 import pyqtgraph as pg
 
-from Core.Processing.BreathingSignalGeneration import signal
+from Core.Processing.DeformableDataAugmentationToolBox.BreathingSignalGeneration import signal
 from PyQt5.QtCore import Qt
 class BreathingSignalPanel(QWidget):
     

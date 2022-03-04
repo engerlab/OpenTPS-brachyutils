@@ -1,12 +1,6 @@
-import matplotlib.pyplot as plt
-import numpy
-import numpy as np
-from Core.Data.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.Images.image2D import Image2D
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.Images.projections import DRR
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.ctImage import CTImage
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 import math
 
 

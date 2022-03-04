@@ -2,9 +2,9 @@ from typing import Union, Sequence
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.dynamic3DModel import Dynamic3DModel
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.patientData import PatientData
 from Core.Data.patientInfo import PatientInfo
 from Core.Data.rtStruct import RTStruct

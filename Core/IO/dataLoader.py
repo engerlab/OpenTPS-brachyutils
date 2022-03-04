@@ -4,7 +4,6 @@ import logging
 
 from Core.Data.patientData import PatientData
 from Core.api import API
-from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.Data.patient import Patient
 from Core.Data.patientList import PatientList
 from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct

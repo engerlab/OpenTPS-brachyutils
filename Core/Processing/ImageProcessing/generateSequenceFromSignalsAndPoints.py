@@ -1,8 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
-from Core.IO.serializedObjectIO import saveSerializedObjects
-from Core.Processing.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
+from Core.Processing.DeformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers
+
 
 def generateDynSeqFromBreathingSignalsROIsAndModel(model, signalList, ROIList, dimensionUsed='Z', outputType=np.float32):
 
@@ -230,7 +229,19 @@ def getVoxelIndexFromPosition(position, field):
 ## -------------------------------------------------------------------------------
 def splitAscentDescentSubsets(CTPhasePositions):
     """
-    TODO
+    Split ...
+
+    Parameters
+    ----------
+    CTPhasePositions :
+
+    Returns
+    -------
+    ascentPart : the ...
+    ascentPartIndexes
+    descentPart
+    descentPartIndexes
+    amplitude
     """
     minIndex = np.argmin(CTPhasePositions)
     maxIndex = np.argmax(CTPhasePositions)
@@ -271,8 +282,8 @@ def splitAscentDescentSubsets(CTPhasePositions):
 ## ---------------------------------------------------------------------------------------------
 def isAscentOrDescentCase(signal, currentIndex):
     """
-        TODO
-        """
+    TODO
+    """
     currentPosition = signal[currentIndex]
 
     if currentIndex == 0:
