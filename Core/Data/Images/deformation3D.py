@@ -128,7 +128,7 @@ class Deformation3D(Image3D):
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def deformImage(self, image, fillValue=-1000):
+    def deformImage(self, image, fillValue=-1000, outputType=np.float32):
         """Deform 3D image using linear interpolation.
 
             Parameters
@@ -150,13 +150,13 @@ class Deformation3D(Image3D):
             field = self.displacement
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
-            logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
+            logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
             field = field.deepCopyWithoutEvent()
             field.resample(image.gridSize, image._origin, image._spacing)
 
         image = image.copy()
         init_dtype = image._imageArray.dtype
-        image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
+        image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType)
 
         if init_dtype=='bool':
             image._imageArray[image._imageArray < 0.5] = 0

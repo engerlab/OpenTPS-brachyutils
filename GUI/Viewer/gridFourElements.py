@@ -80,14 +80,17 @@ class GridFourElements(Grid):
         # Fill grid elements with data viewers
         gridElement = DataViewer(self._viewController)
         gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.AXIAL
+        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.viewerTypes.AXIAL
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
         gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.CORONAL
+        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.viewerTypes.CORONAL
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
         gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.SAGITTAL
+        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.viewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)

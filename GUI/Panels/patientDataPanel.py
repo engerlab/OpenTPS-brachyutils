@@ -13,9 +13,9 @@ import Core.IO.dataLoader as dataLoader
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObjects
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor

@@ -4,7 +4,7 @@ from typing import Union, Optional
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from Core.Data.Images.image3D import Image3D
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
