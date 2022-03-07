@@ -1,7 +1,7 @@
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 import matplotlib.pyplot as plt
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
-from Core.Processing.ImageProcessing.generateSequenceFromSignalsAndPoints import generateDynSeqFromBreathingSignalsROIsAndModel
+from Core.Processing.DeformableDataAugmentationToolBox.generateSequenceFromSignalsAndPoints import generateDynSeqFromBreathingSignalsROIsAndModel
 import numpy as np
 import os
 from pathlib import Path
