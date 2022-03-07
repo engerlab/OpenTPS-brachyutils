@@ -39,7 +39,9 @@ class PlanInitializer:
         beam.isocenterPosition = targetROI.centerOfMass
 
         cumRSP = rspImage.computeCumulativeWEPL(beam)
-        cumRSP.imageArray[np.logical_not(targetROI.imageArray.astype(bool))] = 0
+        imageArray = cumRSP.imageArray
+        imageArray[np.logical_not(targetROI.imageArray.astype(bool))]= 0
+        cumRSP.imageArray = imageArray
 
         maxWEPL = cumRSP.imageArray.max()
         minWEPL = cumRSP.imageArray[cumRSP.imageArray > 0.].min()
@@ -59,7 +61,7 @@ class PlanInitializer:
         spotGridY = spotGridY.flatten()
 
         for l, energy in enumerate(energyLayers):
-            if energy<=0:
+            if energy<=0.:
                 continue
             elif energy==energyLayers[0]:
                 layerMask = weplMeV <= energy
@@ -104,7 +106,7 @@ class PlanInitializer:
         if r80 <= 1.:
             return 0
         else:
-            return exp(3.464048 + 0.561372013 * log(r80) - 0.004900892 * log(r80)*log(r80) + 0.001684756748 * log(r80)*log(r80)*log(r80))
+            return exp(3.464048 + 0.561372013*log(r80) - 0.004900892*log(r80)*log(r80) + 0.001684756748*log(r80)*log(r80)*log(r80))
 
     def _defineHexagSpotGridAroundIsocenter(self, spotSpacing:float, imageBEV:Image3D, isocenterBEV:Sequence[float]):
         origin = imageBEV.origin

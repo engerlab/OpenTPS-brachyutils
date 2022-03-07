@@ -76,7 +76,8 @@ class PlanIonBeam:
 
         ind = 0
         for layer in self._layers:
-            layer.spotWeights = w[ind:ind + len(layer)]
+            layer.spotWeights = w[ind:ind+len(layer.spotWeights)]
+            ind += len(layer.spotWeights)
 
     @property
     def meterset(self) -> float:

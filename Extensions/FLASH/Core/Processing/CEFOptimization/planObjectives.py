@@ -85,7 +85,8 @@ class DoseMaxObjective(AbstractDoseFidelityTerm):
         doseImage = self.doseCalculator.computeDose(weights)
 
         dose = doseImage.imageArray
-        dose = dose[self.roi.imageArray.astype(bool)]
+        # dose = dose[self.roi.imageArray.astype(bool)]
+        dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
         dose = dose.flatten()
 
         val = np.maximum(0., dose-self.maxDose)
@@ -97,12 +98,16 @@ class DoseMaxObjective(AbstractDoseFidelityTerm):
         doseImage = self.doseCalculator.computeDose(weights)
 
         dose = doseImage.imageArray
-        dose = dose[self.roi.imageArray.astype(bool)]
+        # dose = dose[self.roi.imageArray.astype(bool)]
+        dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
         dose = dose.flatten()
 
         diff = np.maximum(0., dose - self.maxDose)
         diff = csr_matrix(diff) @ self.doseCalculator.computeBeamlets().toSparseMatrix()  # Would csc-ssc matrix multiplication be more efficient?
         diff *= 2 / self._roiVoxels
+
+        diff = diff.toarray()
+
         return diff
 
 
@@ -120,7 +125,8 @@ class DoseMinObjective(AbstractDoseFidelityTerm):
         doseImage = self.doseCalculator.computeDose(weights)
 
         dose = doseImage.imageArray
-        dose = dose[self.roi.imageArray.astype(bool)]
+        # dose = dose[self.roi.imageArray.astype(bool)]
+        dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
         dose = dose.flatten()
 
         val = np.maximum(0., self.minDose-dose)
@@ -132,11 +138,15 @@ class DoseMinObjective(AbstractDoseFidelityTerm):
         doseImage = self.doseCalculator.computeDose(weights)
 
         dose = doseImage.imageArray
-        dose = dose[self.roi.imageArray.astype(bool)]
+        #dose = dose[self.roi.imageArray.astype(bool)]
+        dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
         dose = dose.flatten()
 
         diff = np.maximum(0., self.minDose-dose)
+        diff = np.transpose(diff)
         diff = csr_matrix(diff) @ self.doseCalculator.computeBeamlets().toSparseMatrix() # Would csc-ssc matrix multiplication be more efficient?
         diff *= -2 / self._roiVoxels
+
+        diff = diff.toarray()
 
         return diff

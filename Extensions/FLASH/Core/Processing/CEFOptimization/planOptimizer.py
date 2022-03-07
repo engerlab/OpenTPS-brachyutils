@@ -59,7 +59,7 @@ class PlanOptimizer:
                        method='L-BFGS-B',
                        jac=self._objectives.getDerivative,
                        bounds=None, tol=None, callback=None,
-                       options={'disp': None, 'maxcor': 10, 'ftol': 1e-5, 'gtol': 1e-5, 'eps': 1e-08,
-                          'maxfun': 15000, 'maxiter': 200, 'iprint': - 1, 'maxls': 20, 'finite_diff_rel_step': None})
+                       options={'disp': None, 'maxcor': 10, 'ftol': 1e-6, 'gtol': 1e-6, 'eps': 1e-08,
+                          'maxfun': 15000, 'maxiter': 200, 'iprint': 101, 'maxls': 20, 'finite_diff_rel_step': None})
 
         self.plan.spotWeights = res.x

@@ -67,7 +67,8 @@ class RTPlan(PatientData):
 
         ind = 0
         for beam in self._beams:
-            beam.spotWeights = w[ind:ind + len(beam)]
+            beam.spotWeights = w[ind:ind+len(beam.spotWeights)]
+            ind += len(beam.spotWeights)
 
     @property
     def meterset(self) -> float:
