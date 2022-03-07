@@ -55,7 +55,7 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._startMCsquare()
 
         beamletDose = self._importBeamlets()
-        beamletDose.beamletWeights = self._plan.weights
+        beamletDose.beamletWeights = self._plan.spotWeights
 
         return beamletDose
 
