@@ -53,13 +53,21 @@ class RTPlan(PatientData):
         self._beams.remove(beam)
 
     @property
-    def weights(self):
+    def spotWeights(self) -> np.ndarray:
         weights = np.array([])
 
         for beam in self._beams:
-            weights = np.concatenate((weights, beam.weights))
+            weights = np.concatenate((weights, beam.spotWeights))
 
         return weights
+
+    @spotWeights.setter
+    def spotWeights(self, w:Sequence[float]):
+        w = np.array(w)
+
+        ind = 0
+        for beam in self._beams:
+            beam.spotWeights = w[ind:ind + len(beam)]
 
     @property
     def meterset(self) -> float:

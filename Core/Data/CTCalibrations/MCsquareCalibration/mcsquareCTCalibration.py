@@ -48,7 +48,7 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         if isinstance(ctCalibration, RayStationCTCalibration):
             return ctCalibration.toMCSquareCTCalibration()
         else:
-            raise NotImplementedError('Conversion from' + ctCalibration.__class__.__name__ + ' to ' + cls.__class__.__name__ + ' is not implemented.')
+            raise NotImplementedError('Conversion from ' + ctCalibration.__class__.__name__ + ' to ' + cls.__class__.__name__ + ' is not implemented.')
 
 # test
 if __name__ == '__main__':

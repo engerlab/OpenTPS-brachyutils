@@ -55,6 +55,15 @@ class PlanIonLayer:
     def spotWeights(self) -> np.ndarray:
         return np.array(self._weights)
 
+    @spotWeights.setter
+    def spotWeights(self, w:Sequence[float]):
+        w = np.array(w)
+
+        if len(self._weights) != len(w):
+            raise ValueError("Length of provided weights is not correct. Provided: " + str(len(w)) + " - Expected: " + str(len(self._weights)))
+
+        self._weights = w
+
     @property
     def meterset(self) -> float:
         return np.sum(self._weights)
