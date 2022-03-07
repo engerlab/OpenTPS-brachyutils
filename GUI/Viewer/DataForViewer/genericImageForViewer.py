@@ -1,5 +1,6 @@
 
 import typing
+from math import isclose
 
 import numpy as np
 
@@ -24,10 +25,10 @@ class GenericImageForViewer(DataMultiton):
 
         self._wwlValue = (400, 0)
         self._lookupTableName = 'fusion'
-        self._range = (np.min(self.data.imageArray), np.max(self.data.imageArray))
+        self._range = (0, 100)
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
-        self._selectedPosition = self.data.origin + self.data.gridSize/2.
+        self._selectedPosition = (0, 0, 0)
         self._vtkOutputPort = None
 
     @property
@@ -45,10 +46,11 @@ class GenericImageForViewer(DataMultiton):
 
     @wwlValue.setter
     def wwlValue(self, wwl: typing.Sequence):
-        if (wwl[0]==self._wwlValue[0]) and (wwl[1]==self._wwlValue[1]):
+        if isclose(wwl[0], self._wwlValue[0], abs_tol=0.1) and isclose(wwl[1], self._wwlValue[1], abs_tol=0.1):
             return
 
         self._wwlValue = (wwl[0], wwl[1])
+        self.range = (wwl[1]-wwl[0]/2., wwl[1]+wwl[0]/2.)
         self.wwlChangedSignal.emit(self._wwlValue)
 
     @property
@@ -57,7 +59,7 @@ class GenericImageForViewer(DataMultiton):
 
     @lookupTable.setter
     def lookupTable(self, lookupTableName):
-        self._lookupTable = LookupTables()[lookupTableName](self.range,self.opacity)
+        self._lookupTable = LookupTables()[lookupTableName](self.range, self.opacity)
         self.lookupTableChangedSignal.emit(self._lookupTable)
 
     @property
@@ -66,10 +68,12 @@ class GenericImageForViewer(DataMultiton):
 
     @range.setter
     def range(self, range: typing.Sequence):
-        if range[0]==self._range[0] and range[1]==self._range[1]:
+        if isclose(range[0], self._range[0], abs_tol=0.1) and isclose(range[1], self._range[1], abs_tol=0.1):
             return
 
         self._range = (range[0], range[1])
+        self.wwlValue = (range[1]-range[0], (range[1]+range[0])/2.)
+
         self.lookupTable = self._lookupTableName
 
         self.rangeChangedSignal.emit(self._range)
