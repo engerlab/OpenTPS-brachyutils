@@ -21,7 +21,7 @@ class ImageTransform3D:
         imageArray = affine_transform(imageArray, tform, cval=fillValue)
         imageArray = zoom(imageArray, np.array([1., 1., 1.])/spacing, cval=fillValue)
 
-        outImage = image.copy()
+        outImage = image.copy
         outImage.imageArray = imageArray
 
         return outImage

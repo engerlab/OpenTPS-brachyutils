@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import copy
 import logging
 
 from Core.Data.Images.image3D import Image3D
@@ -15,6 +16,16 @@ class VectorField3D(Image3D):
 
         super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles,
                          seriesInstanceUID=seriesInstanceUID)
+
+    def __str__(self):
+        return "Vector field: " + self.seriesInstanceUID
+
+    @classmethod
+    def fromImage3D(cls, image: Image3D):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+
+    def copy(self):
+        return VectorField3D(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     def initFromImage(self, image):
         """Initialize vector field using the voxel grid of the input image.
@@ -65,7 +76,7 @@ class VectorField3D(Image3D):
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
 
-        displacement = self.deepCopyWithoutEvent()
+        displacement = self.copy()
         displacement._imageArray = displacement._imageArray * 2 ** (-N)
 
         for r in range(N):
