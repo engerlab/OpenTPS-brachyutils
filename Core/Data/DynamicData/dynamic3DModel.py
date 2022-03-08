@@ -36,8 +36,8 @@ class Dynamic3DModel(PatientData):
         self.midp, self.deformationList = midPosition.compute(CT4D, refIndex=refIndex, baseResolution=baseResolution, nbProcesses=nbProcesses)
 
 
-    def generate3DImage(self, phase, amplitude=1.0):
-        """Generate a 3D image by deforming the mid-position according to a specified phase of the breathing cycle, optionally using a magnification factor for this deformation.
+    def generate3DDeformation(self, phase, amplitude=1.0):
+        """Generate a deformation from the mid-position to a specified phase of the breathing cycle, optionally using a magnification factor for this deformation.
 
             Parameters
             ----------
@@ -48,8 +48,8 @@ class Dynamic3DModel(PatientData):
 
             Returns
             -------
-            image3D
-                generated 3D image.
+            Deformation3D
+                generated deformation.
             """
 
         if self.midp is None or self.deformationList is None:
@@ -72,7 +72,28 @@ class Dynamic3DModel(PatientData):
                 return
             field.velocity._imageArray = amplitude * (w1 * self.deformationList[int(phase1)].velocity.imageArray + w2 * self.deformationList[int(phase2)].velocity.imageArray)
 
+        return field
+
+
+    def generate3DImage(self, phase, amplitude=1.0):
+        """Generate a 3D image by deforming the mid-position according to a specified phase of the breathing cycle, optionally using a magnification factor for this deformation.
+
+            Parameters
+            ----------
+            phase : float
+                respiratory phase indicating which (combination of) deformation fields to be used in image generation
+            amplitude : float
+                magnification factor applied on the deformation to the selected phase
+
+            Returns
+            -------
+            image3D
+                generated 3D image.
+            """
+
+        field = self.generate3DDeformation(phase, amplitude)
         return field.deformImage(self.midp, fillValue='closest')
+
 
     def dumpableCopy(self):
 
