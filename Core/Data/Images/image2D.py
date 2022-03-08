@@ -16,12 +16,12 @@ class Image2D(PatientData):
         self._angles = np.array(angles)
 
     def __str__(self):
-        gs = self.getGridSize()
+        gs = self.gridSize
         s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
         return s
 
     @property
-    def origin(self):
+    def origin(self) -> np.ndarray:
         return self._origin
 
     @origin.setter
@@ -30,7 +30,7 @@ class Image2D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def spacing(self):
+    def spacing(self) -> np.ndarray:
         return self._spacing
 
     @spacing.setter
@@ -39,7 +39,7 @@ class Image2D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def angles(self):
+    def angles(self) -> np.ndarray:
         return self._angles
 
     @angles.setter
@@ -47,8 +47,13 @@ class Image2D(PatientData):
         self._angles = np.array(angles)
         self.dataChangedSignal.emit()
 
-    def getGridSize(self):
+    @property
+    def gridSize(self)  -> np.ndarray:
         if self.imageArray is None:
-            return (0, 0)
+            return np.array((0, 0))
 
-        return self.imageArray.shape
+        return np.array(self.imageArray.shape)
+
+    @property
+    def gridSizeInWorldUnit(self) -> np.ndarray:
+        return self.gridSize * self.spacing
