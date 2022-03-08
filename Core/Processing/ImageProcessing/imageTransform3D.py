@@ -1,28 +1,33 @@
+import copy
 from math import pi, cos, sin
-from typing import Sequence
+from typing import Sequence, Optional
 
 import numpy as np
 from numpy import linalg
-from scipy.ndimage import zoom, affine_transform
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
-
+from Core.Processing.ImageProcessing import sitkImageProcessing
 
 class ImageTransform3D:
     @staticmethod
-    def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
-        spacing = np.array(image.spacing)
+    def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+        if not inPlace:
+            image = copy.deepcopy(image)
 
+        sitkImageProcessing.resize(image, fixedImage.spacing, newOirigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
+                                   fillValue=fillValue)
+
+        return image
+
+    @staticmethod
+    def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
         tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
+
         tform = linalg.inv(tform)
 
-        imageArray = zoom(image.imageArray, spacing, cval=fillValue)
-        imageArray = affine_transform(imageArray, tform, cval=fillValue)
-        imageArray = zoom(imageArray, np.array([1., 1., 1.])/spacing, cval=fillValue)
-
-        outImage = image.copy
-        outImage.imageArray = imageArray
+        outImage = image.copy()
+        sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
 
         return outImage
 
@@ -33,31 +38,18 @@ class ImageTransform3D:
         w = point[2]
 
         tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
+        tform = linalg.inv(tform)
 
-        u = u - image.origin[0]
-        v = v - image.origin[1]
-        w = w - image.origin[2]
-
-        [x, y, z] = ImageTransform3D._transformPointsForward(tform, u, v, w);
-
-        x = x + image.origin[0]
-        y = y + image.origin[1]
-        z = z + image.origin[2]
-
-        return (x, y, z)
+        return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
     @staticmethod
     def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
-        spacing = np.array(image.spacing)
-
         tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
 
-        imageArray = zoom(image.imageArray, spacing, cval=fillValue)
-        imageArray = affine_transform(imageArray, tform, cval=fillValue)
-        imageArray = zoom(imageArray, np.array([1., 1., 1.]) / spacing, cval=fillValue)
+        #tform = linalg.inv(tform)
 
         outImage = image.copy()
-        outImage.imageArray = imageArray
+        sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
 
         return outImage
 
@@ -68,25 +60,10 @@ class ImageTransform3D:
         w = point[2]
 
         tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
-        tform = linalg.inv(tform)
+        #tform = linalg.inv(tform)
 
-        u = u - image.origin[0]
-        v = v - image.origin[1]
-        w = w - image.origin[2]
-
-        [x, y, z] = ImageTransform3D._transformPointsForward(tform, u, v, w);
-
-        x = x + image.origin[0]
-        y = y + image.origin[1]
-        z = z + image.origin[2]
-
-        return (x, y, z)
-
-    @staticmethod
-    def _transformPointsForward(tform: np.ndarray, u:float, v:float, w:float):
-        res = tform @ np.array([u, v, w, 1])
-
-        return res[:-1]
+        return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
+    
 
     @staticmethod
     def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
@@ -114,6 +91,8 @@ class ImageTransform3D:
         Flip = np.array(Flip)
 
         T = linalg.inv(Flip @ Trs) @ M @ Flip @ Trs
+
+        #T = np.transpose(T)
 
         return T
 
