@@ -14,7 +14,7 @@ class Image3DForViewer(GenericImageForViewer):
             return
 
         self._dataImporter = vtkImageImport()
-        self._selectedPosition = self.data.origin + self.data.gridSize/2.
+        self._selectedPosition = self.data.origin + self.data.gridSizeInWorldUnit/2.
         self._range = (np.min(self.data.imageArray), np.max(self.data.imageArray))
 
         self._updateVTKOutputPort()

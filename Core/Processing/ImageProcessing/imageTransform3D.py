@@ -1,5 +1,6 @@
+import copy
 from math import pi, cos, sin
-from typing import Sequence
+from typing import Sequence, Optional
 
 import numpy as np
 from numpy import linalg
@@ -7,22 +8,46 @@ from scipy.ndimage import zoom, affine_transform
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
+from Core.Processing.ImageProcessing import sitkImageProcessing
+from Core.Processing.ImageProcessing.resampler3D import resample
 
 
 class ImageTransform3D:
     @staticmethod
+    def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+        dataOut = resample(image.imageArray, image.origin, image.spacing, image.gridSize,
+                           fixedImage.origin, fixedImage.spacing, fixedImage.gridSize,
+                           fillValue=fillValue, outputType=None)
+
+        if not inPlace:
+            image = copy.deepcopy(image)
+
+        image.imageArray = dataOut
+        image.origin = fixedImage.origin
+        image.spacing = fixedImage.spacing
+
+        return image
+
+    @staticmethod
     def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
         spacing = np.array(image.spacing)
+
+        image = copy.deepcopy(image)
+        #ImageTransform3D._padImageForDicomToIECGantry(image, beam, fillValue)
 
         tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
         tform = linalg.inv(tform)
 
-        imageArray = zoom(image.imageArray, spacing, cval=fillValue)
-        imageArray = affine_transform(imageArray, tform, cval=fillValue)
-        imageArray = zoom(imageArray, np.array([1., 1., 1.])/spacing, cval=fillValue)
-
         outImage = image.copy()
-        outImage.imageArray = imageArray
+        sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
+
+        if False:
+            imageArray = zoom(image.imageArray, spacing, cval=fillValue)
+            imageArray = affine_transform(imageArray, tform, cval=fillValue)
+            imageArray = zoom(imageArray, np.array([1., 1., 1.])/spacing, cval=fillValue)
+
+            outImage = image.copy()
+            outImage.imageArray = imageArray
 
         return outImage
 
@@ -50,14 +75,21 @@ class ImageTransform3D:
     def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
         spacing = np.array(image.spacing)
 
+        image = copy.deepcopy(image)
+        #ImageTransform3D._padImageForIECGantryToDicom(image, beam, fillValue)
+
         tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
 
-        imageArray = zoom(image.imageArray, spacing, cval=fillValue)
-        imageArray = affine_transform(imageArray, tform, cval=fillValue)
-        imageArray = zoom(imageArray, np.array([1., 1., 1.]) / spacing, cval=fillValue)
-
         outImage = image.copy()
-        outImage.imageArray = imageArray
+        sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
+
+        if False:
+            imageArray = zoom(image.imageArray, spacing, cval=fillValue)
+            imageArray = affine_transform(imageArray, tform, cval=fillValue)
+            imageArray = zoom(imageArray, np.array([1., 1., 1.]) / spacing, cval=fillValue)
+
+            outImage = image.copy()
+            outImage.imageArray = imageArray
 
         return outImage
 
@@ -81,6 +113,38 @@ class ImageTransform3D:
         z = z + image.origin[2]
 
         return (x, y, z)
+
+    @staticmethod
+    def _padImageForDicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0):
+        origin = ImageTransform3D.dicomCoordinate2iecGantry(image, beam, image.origin)
+        origin = np.array(origin)
+        newOrigin = np.minimum(origin, image.origin)
+
+        newShape = image.gridSize.astype(int) + 2*np.ceil(np.abs(newOrigin-origin)/image.spacing) # x 2 because we padd in both directions
+
+        sitkImageProcessing.resize(image, image.spacing, newOirigin=newOrigin, newShape=newShape.astype(int), fillValue=fillValue)
+        #newData = resample(image.imageArray, image.origin, image.spacing, image.gridSize.astype(int),
+        #                   newOrigin, image.spacing, newShape.astype(int),
+        #                   fillValue=fillValue, outputType=None)
+
+        #image.imageArray = newData
+        image.origin = newOrigin
+
+    @staticmethod
+    def _padImageForIECGantryToDicom(image: Image3D, beam: PlanIonBeam, fillValue: float = 0):
+        origin = ImageTransform3D.iecGantryCoordinatetoDicom(image, beam, image.origin)
+        origin = np.array(origin)
+        newOrigin = np.minimum(origin, image.origin)
+
+        newShape = image.gridSize.astype(int) + 2*np.ceil(np.abs(newOrigin - origin) / image.spacing) # x 2 because we padd in both directions
+
+        sitkImageProcessing.resize(image, image.spacing, newOirigin=newOrigin, newShape=newShape.astype(int), fillValue=fillValue)
+        #newData = resample(image.imageArray, image.origin, image.spacing, image.gridSize.astype(int),
+        #                   newOrigin, image.spacing, newShape.astype(int),
+        #                   fillValue=fillValue, outputType=None)
+
+        #image.imageArray = newData
+        image.origin = newOrigin
 
     @staticmethod
     def _transformPointsForward(tform: np.ndarray, u:float, v:float, w:float):

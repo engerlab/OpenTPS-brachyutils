@@ -95,6 +95,10 @@ class Image3D(PatientData):
             return np.array([0, 0, 0])
         return np.array(self._imageArray.shape)
 
+    @property
+    def gridSizeInWorldUnit(self):
+        return self.gridSize*self.spacing
+
 
     def hasSameGrid(self, otherImage):
         """Check whether the voxel grid is the same as the voxel grid of another image given as input.
