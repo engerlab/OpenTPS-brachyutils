@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 from scipy.ndimage import morphology
+import copy
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
@@ -16,7 +17,7 @@ class ROIMask(Image3D):
 
     @classmethod
     def fromImage3D(cls, image: Image3D):
-        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles)
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
 
     @property
     def color(self):
@@ -38,6 +39,9 @@ class ROIMask(Image3D):
     @property
     def centerOfMass(self) -> np.ndarray:
         return scipy.ndimage.measurements.center_of_mass(self._imageArray)*self.spacing + self.origin
+
+    def copy(self):
+        return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     def dilate(self, radius:float):
         radius = 1/np.array(self.spacing)

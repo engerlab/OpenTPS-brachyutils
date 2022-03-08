@@ -37,12 +37,10 @@ class Image3D(PatientData):
     # This is different from deepcopy because image can be a subclass of image3D but the method always returns an Image3D
     @classmethod
     def fromImage3D(cls, image):
-        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
 
     def copy(self):
-        img = copy.deepcopy(self)
-        img.name = img.name + '_copy'
-        return img
+        return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     @property
     def imageArray(self):
