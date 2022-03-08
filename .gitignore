@@ -9,3 +9,7 @@ config.txt
 *.swp
 docs/build
 tests/*
+scripts/
+tests/
+notebooks/
+*.txt
