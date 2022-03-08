@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 
+from Core.Data.Images.image3D import Image3D
 from Core.Processing.Registration.registration import Registration
 
 logger = logging.getLogger(__name__)
@@ -54,8 +55,7 @@ class RegistrationQuick(Registration):
 
         # resample moving to same resolution as fixed
         self.deformed = self.moving.copy()
-        gridSize = np.array(self.moving.gridSize()) * np.array(self.moving._spacing) / np.array(
-            self.fixed._spacing)
+        gridSize = np.array(self.moving.gridSize()) * np.array(self.moving._spacing) / np.array(self.fixed._spacing)
         gridSize = gridSize.astype(np.int)
         self.deformed.resample(gridSize, self.moving._origin, self.fixed._spacing)
 
@@ -63,21 +63,18 @@ class RegistrationQuick(Registration):
         fixedProfile = np.sum(self.fixed._imageArray, (0, 2))
         movingProfile = np.sum(self.deformed._imageArray, (0, 2))
         shift = matchProfiles(fixedProfile, movingProfile)
-        translation[0] = self.fixed._origin[0] - self.moving._origin[0] + shift * \
-                         self.deformed._spacing[0]
+        translation[0] = self.fixed._origin[0] - self.moving._origin[0] + shift * self.deformed._spacing[0]
         # search shift in y
         fixedProfile = np.sum(self.fixed._imageArray, (1, 2))
         movingProfile = np.sum(self.deformed._imageArray, (1, 2))
         shift = matchProfiles(fixedProfile, movingProfile)
-        translation[1] = self.fixed._origin[1] - self.moving._origin[1] + shift * \
-                         self.deformed._spacing[1]
+        translation[1] = self.fixed._origin[1] - self.moving._origin[1] + shift * self.deformed._spacing[1]
 
         # search shift in z
         fixedProfile = np.sum(self.fixed._imageArray, (0, 1))
         movingProfile = np.sum(self.deformed._imageArray, (0, 1))
         shift = matchProfiles(fixedProfile, movingProfile)
-        translation[2] = self.fixed._origin[2] - self.moving._origin[2] + shift * \
-                         self.deformed._spacing[2]
+        translation[2] = self.fixed._origin[2] - self.moving._origin[2] + shift * self.deformed._spacing[2]
 
         self.translateOrigin(self.deformed, translation)
 
