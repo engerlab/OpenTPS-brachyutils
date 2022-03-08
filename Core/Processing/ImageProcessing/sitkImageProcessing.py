@@ -6,7 +6,8 @@ from Core.Data.Images.image3D import Image3D
 import SimpleITK as sitk
 
 def image3DToSITK(image:Image3D):
-    imageData = image.imageArray.astype(float) #np.swapaxes(image.imageArray, 0, 2)
+    imageData = image.imageArray.astype(float)
+    imageData = np.swapaxes(imageData, 0, 2)
     img = sitk.GetImageFromArray(imageData)
 
     img.SetOrigin(image.origin.tolist())
@@ -39,7 +40,7 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOirigin:Optional[np.ndarray]
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
     outData = np.array(sitk.GetArrayFromImage(outImg)).astype(imgType)
 
-    #outData = np.swapaxes(outData, 0, 2)
+    outData = np.swapaxes(outData, 0, 2)
 
     image.imageArray = outData
     image.origin = newOirigin
@@ -85,7 +86,17 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0.):
 
     outData = np.array(sitk.GetArrayFromImage(outImg))
 
-    # outData = np.swapaxes(outData, 0, 2)
+    outData = np.swapaxes(outData, 0, 2)
 
     image.imageArray = outData
     image.origin = output_origin
+
+def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray):
+    tform = tform[0:-1, 0:-1]
+
+    transform = sitk.AffineTransform(3)
+    transform.SetMatrix(tform.flatten())
+
+    inv_transform = transform.GetInverse()
+
+    return inv_transform.TransformPoint(pnt.tolist())
