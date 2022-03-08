@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
@@ -350,7 +351,7 @@ class DataViewer(QWidget):
         """
             Switch display mode according to image type and then display image
         """
-        if isinstance(image, Image3D):
+        if isinstance(image, Image3D) or isinstance(image, Dynamic3DModel):
             self.displayMode = self.DisplayModes.STATIC
         elif isinstance(image, Dynamic3DSequence):
             self.displayMode = self.DisplayModes.DYNAMIC
@@ -370,6 +371,8 @@ class DataViewer(QWidget):
             self.cachedStaticImageViewer.primaryImage = image
         elif isinstance(image, Dynamic3DSequence):
             self.cachedDynamicImageViewer.primaryImage = image
+        elif isinstance(image, Dynamic3DModel):
+            self.cachedStaticImageViewer.primaryImage = image.midp
         elif image is None:
             pass
         else:
