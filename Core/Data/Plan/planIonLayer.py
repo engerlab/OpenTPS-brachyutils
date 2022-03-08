@@ -121,7 +121,7 @@ class PlanIonLayer:
         self._y = np.delete(self._y, spotPos)
         self._weights = np.delete(self._weights, spotPos)
 
-    def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> tuple[bool, int]:
+    def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> Tuple[bool, int]:
         if isinstance(x, Sequence):
             exist = []
             where = []
