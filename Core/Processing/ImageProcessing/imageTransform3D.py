@@ -63,7 +63,7 @@ class ImageTransform3D:
         #tform = linalg.inv(tform)
 
         return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
-    
+
 
     @staticmethod
     def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
