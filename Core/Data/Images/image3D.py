@@ -43,7 +43,7 @@ class Image3D(PatientData):
         return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     @property
-    def imageArray(self):
+    def imageArray(self) -> np.ndarray:
         return self._imageArray
 
     @imageArray.setter
@@ -52,7 +52,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def origin(self):
+    def origin(self) -> np.ndarray:
         return self._origin
 
     @origin.setter
@@ -61,7 +61,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def spacing(self):
+    def spacing(self) -> np.ndarray:
         return self._spacing
 
     @spacing.setter
@@ -70,7 +70,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def angles(self):
+    def angles(self) -> np.ndarray:
         return self._angles
 
     @angles.setter
@@ -79,7 +79,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def gridSize(self):
+    def gridSize(self) -> np.ndarray:
         """Compute the voxel grid size of the image.
 
             Returns
@@ -94,11 +94,11 @@ class Image3D(PatientData):
         return np.array(self._imageArray.shape)
 
     @property
-    def gridSizeInWorldUnit(self):
+    def gridSizeInWorldUnit(self)  -> np.ndarray:
         return self.gridSize*self.spacing
 
 
-    def hasSameGrid(self, otherImage):
+    def hasSameGrid(self, otherImage) -> bool:
         """Check whether the voxel grid is the same as the voxel grid of another image given as input.
 
             Parameters
