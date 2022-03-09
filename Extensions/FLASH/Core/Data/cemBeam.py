@@ -8,3 +8,7 @@ class CEMBeam(PlanIonBeam):
 
         self.cem:CEM = None
         self.cemToIsocenter:float = 0.
+
+    @classmethod
+    def fromBeam(cls, beam, flashEnergy):
+        raise NotImplementedError
