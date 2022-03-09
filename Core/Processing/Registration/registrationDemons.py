@@ -1,6 +1,7 @@
 import numpy as np
 import logging
 
+from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 

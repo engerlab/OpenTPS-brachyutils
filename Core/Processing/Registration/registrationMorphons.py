@@ -5,6 +5,7 @@ import logging
 import multiprocessing as mp
 from functools import partial
 
+from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
@@ -104,7 +105,7 @@ class RegistrationMorphons(Registration):
                                    fixedResampled._spacing, fillValue=0)
             else:
                 deformation.initFromImage(fixedResampled)
-                certainty = fixedResampled.deepCopyWithoutEvent()
+                certainty = fixedResampled.copy()
                 certainty._imageArray = np.zeros_like(certainty._imageArray)
 
             # Compute phase on fixed image
