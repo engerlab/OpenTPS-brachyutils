@@ -9,8 +9,8 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.beamletDose import BeamletDose
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Extensions.FLASH.Core.Processing.CEFOptimization.planInitializer import PlanInitializer
-from Extensions.FLASH.Core.Processing.CEFOptimization.planObjectives import AbstractDoseFidelityTerm
+from Extensions.FLASH.Core.Processing.CEMOptimization.planInitializer import PlanInitializer
+from Extensions.FLASH.Core.Processing.CEMOptimization.planObjectives import AbstractDoseFidelityTerm
 
 
 class PlanOptimizer:
