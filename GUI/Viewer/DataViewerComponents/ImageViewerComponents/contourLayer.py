@@ -22,11 +22,13 @@ class ContourLayer:
         self._resliceAxes = None
         self._vtkContours = []
 
-    def setNewContour(self, contour: typing.Union[ROIContour, ROIMask]):
+    def setNewContour(self, contour:typing.Union[ROIContour, ROIMask]):
         if isinstance(contour, ROIContour):
             contour = ROIContourForViewer(contour)
-        else:
+        elif isinstance(contour, ROIMask):
             contour = ROIMaskForViewer(contour)
+        else:
+            raise ValueError(str(type(contour)) + ' is not a valid type for a contour.')
 
         if contour in self._contours:
             return
