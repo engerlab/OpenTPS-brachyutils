@@ -1,5 +1,6 @@
 import logging
 import pydicom
+import copy
 
 from Core.Data.Images.image3D import Image3D
 
@@ -17,14 +18,11 @@ class CTImage(Image3D):
 
     @classmethod
     def fromImage3D(cls, image:Image3D):
-        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles,
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles,
                    seriesInstanceUID=image.seriesInstanceUID)
 
     def copy(self):
-        img = super().copy()
-        img.seriesInstanceUID = pydicom.uid.generate_uid()
-
-        return img
+        return CTImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
 
     def resample(self, gridSize, origin, spacing, fillValue=-1000, outputType=None):
         Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)

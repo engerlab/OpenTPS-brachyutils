@@ -1,4 +1,3 @@
-import copy
 
 import numpy as np
 
@@ -39,4 +38,7 @@ class RSPImage(Image3D):
 
         rspIEC.imageArray = np.cumsum(rspIEC.imageArray, axis=2)*rspIEC.spacing[2]
 
-        return ImageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
+        outImage = ImageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
+        outImage = ImageTransform3D.intersect(outImage, self, inPlace=True, fillValue=0.)
+
+        return outImage

@@ -1,5 +1,6 @@
 import logging
 import numpy as np
+import copy
 from typing import Sequence
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.vectorField3D import VectorField3D
@@ -54,6 +55,9 @@ class Deformation3D(Image3D):
             return np.array([self.velocity._imageArray.shape[0:3]])[0]
         else:
             return np.array([self.displacement._imageArray.shape[0:3]])[0]
+
+    def copy(self):
+        return Deformation3D(velocity=copy.deepcopy(self.velocity), displacement=copy.deepcopy(self.displacement), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     def initFromImage(self, image):
         """Initialize deformation using the voxel grid of the input image.
@@ -151,7 +155,7 @@ class Deformation3D(Image3D):
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
-            field = field.deepCopyWithoutEvent()
+            field = field.copy()
             field.resample(image.gridSize, image._origin, image._spacing)
 
         image = image.copy()

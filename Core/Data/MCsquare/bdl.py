@@ -1,5 +1,6 @@
 import os.path
 from math import sqrt
+from typing import Tuple
 
 from scipy import interpolate
 
@@ -74,7 +75,7 @@ class BDL:
         f = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
         return f(energy)
 
-    def correlations(self, energy:float) -> tuple[float, float]:
+    def correlations(self, energy:float) -> Tuple[float, float]:
         correlationX = interpolate.interp1d(self.NominalEnergy, self.Correlation1x, kind='linear', fill_value='extrapolate')
         correlationX = correlationX(energy)
         correlationY = interpolate.interp1d(self.NominalEnergy, self.Correlation1y, kind='linear', fill_value='extrapolate')
@@ -82,7 +83,7 @@ class BDL:
 
         return (correlationX, correlationY)
 
-    def divergences(self, energy:float) -> tuple[float, float]:
+    def divergences(self, energy:float) -> Tuple[float, float]:
         divergenceX = interpolate.interp1d(self.NominalEnergy, self.Divergence1x, kind='linear',fill_value='extrapolate')
         divergenceX = divergenceX(energy)
         divergenceY = interpolate.interp1d(self.NominalEnergy, self.Divergence1y, kind='linear',fill_value='extrapolate')
@@ -90,7 +91,7 @@ class BDL:
 
         return (divergenceX, divergenceY)
 
-    def spotSizes(self, energy:float) -> tuple[float, float]:
+    def spotSizes(self, energy:float) -> Tuple[float, float]:
         sigmaX = interpolate.interp1d(self.NominalEnergy, self.SpotSize1x, kind='linear', fill_value='extrapolate')
         sigmaX = sigmaX(energy)
         sigmaY = interpolate.interp1d(self.NominalEnergy, self.SpotSize1y, kind='linear', fill_value='extrapolate')

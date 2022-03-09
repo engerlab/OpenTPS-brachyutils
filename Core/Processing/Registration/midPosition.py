@@ -3,6 +3,7 @@ from pydicom.uid import generate_uid
 import logging
 
 from Core.Data.Images.deformation3D import Deformation3D
+from Core.Data.Images.image3D import Image3D
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
             emptyField = Deformation3D()
             motionFieldList.append(emptyField)
         else:
-            logger.info('\nRegistering phase' + str(refIndex) + 'to phase' + str(i) + '...')
+            logger.info('\nRegistering phase' + str(refIndex) + ' to phase' + str(i) + '...')
             reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=baseResolution, nbProcesses=nbProcesses)
             motionFieldList.append(reg.compute())
             if (max(averageField.gridSize) == 0):

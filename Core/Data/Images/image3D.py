@@ -37,15 +37,13 @@ class Image3D(PatientData):
     # This is different from deepcopy because image can be a subclass of image3D but the method always returns an Image3D
     @classmethod
     def fromImage3D(cls, image):
-        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
 
     def copy(self):
-        img = copy.deepcopy(self)
-        img.name = img.name + '_copy'
-        return img
+        return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     @property
-    def imageArray(self):
+    def imageArray(self) -> np.ndarray:
         return self._imageArray
 
     @imageArray.setter
@@ -54,7 +52,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def origin(self):
+    def origin(self) -> np.ndarray:
         return self._origin
 
     @origin.setter
@@ -63,7 +61,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def spacing(self):
+    def spacing(self) -> np.ndarray:
         return self._spacing
 
     @spacing.setter
@@ -72,7 +70,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def angles(self):
+    def angles(self) -> np.ndarray:
         return self._angles
 
     @angles.setter
@@ -81,7 +79,7 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def gridSize(self):
+    def gridSize(self) -> np.ndarray:
         """Compute the voxel grid size of the image.
 
             Returns
@@ -95,8 +93,12 @@ class Image3D(PatientData):
             return np.array([0, 0, 0])
         return np.array(self._imageArray.shape)
 
+    @property
+    def gridSizeInWorldUnit(self)  -> np.ndarray:
+        return self.gridSize*self.spacing
 
-    def hasSameGrid(self, otherImage):
+
+    def hasSameGrid(self, otherImage) -> bool:
         """Check whether the voxel grid is the same as the voxel grid of another image given as input.
 
             Parameters
