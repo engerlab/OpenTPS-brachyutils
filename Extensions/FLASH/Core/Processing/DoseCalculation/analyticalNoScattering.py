@@ -1,3 +1,4 @@
+import copy
 from math import exp, log
 from typing import Union, Tuple
 
@@ -23,14 +24,30 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
     def __init__(self):
         super().__init__()
 
-        self.beamModel:BDL = None
-        self.ctCalibration:AbstractCTCalibration = None
+        self._beamModel = None
+        self._ctCalibration = None
         self.referenceEnergy = 226 # MeV
 
         self._referenceIDDEnergy = None
         self._referenceIDDX = None
         self._shiftReferenceIDD = None
         self._shiftDerivIDD = None
+
+    @property
+    def beamModel(self) -> BDL:
+        return self._beamModel
+
+    @beamModel.setter
+    def beamModel(self, bdl:BDL):
+        self._beamModel = bdl
+
+    @property
+    def ctCalibration(self) -> AbstractCTCalibration:
+        return self._ctCalibration
+
+    @ctCalibration.setter
+    def ctCalibration(self, calibration:AbstractCTCalibration):
+        self._ctCalibration = calibration
 
     def computeDose(self, ct:CTImage, plan:RTPlan) -> DoseImage:
         fluenceCalculator = FluenceCalculator()
@@ -59,11 +76,12 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
 
                 for i in range(wetBeforeCT.shape[0]):
                     for j in range(wetBeforeCT.shape[1]):
-                        f = interpolate.interp1d(self._referenceIDDX, np.squeeze(layerDose[i, j, :]), kind='linear', fill_value=0., assume_sorted=True)
+                        f = interpolate.interp1d(self._referenceIDDX, np.squeeze(layerDose[i, j, :]), kind='linear', fill_value='extrapolate', assume_sorted=True)
                         doseImageArray[i, j, :] += fluence[i, j] * f(np.squeeze(cumRSP.imageArray[i, j, :]))
 
             doseImageBEV.imageArray = doseImageArray
             doseImageDicom = ImageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0.)
+            ImageTransform3D.intersect(doseImageDicom, doseImage, inPlace=True, fillValue=0.)
 
             doseImage.imageArray = doseImage.imageArray+doseImageDicom.imageArray
 
@@ -96,34 +114,6 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         layerDeriv = layerDeriv * self.beamModel.computeMU2Protons(energy) / self.beamModel.computeMU2Protons(self.referenceEnergy)
 
         return layerDose, layerDeriv
-
-    def _findIndexOfFluenceBoundingBox(self, fluence:np.ndarray) -> Tuple[int, int, int, int]:
-        xFirst = 0
-        xLast = 0
-        yFirst = 0
-        yLast = 0
-
-        for xFirst in range(fluence.shape[0]):
-            if np.any(fluence[xFirst, :]):
-                xFirst -= 1
-                break
-
-        for xLast in np.arange(fluence.shape[0]-1, 0-1, -1):
-            if np.any(fluence[xLast, :]):
-                xLast += 1
-                break
-
-        for yFirst in range(fluence.shape[0]):
-            if np.any(fluence[:, yFirst]):
-                yFirst -= 1
-                break
-
-        for yLast in np.arange(fluence.shape[0]-1, 0-1, -1):
-            if np.any(fluence[:, yLast]):
-                yLast += 1
-                break
-
-        return xFirst, xLast, yFirst, yLast
 
     def _computeReferenceIDD(self):
         if self._referenceIDDEnergy == self.referenceEnergy:
@@ -160,21 +150,22 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
 
         refIDD = np.squeeze(np.sum(np.sum(doseImage.imageArray, 2), 0)) / mu
 
-        refIDD[0] = refIDD[1] # Useful for when we have to extrapolate.
+        # Useful for when we have to extrapolate:
+        refIDD[0] = refIDD[1]
         refIDD[-1] = 0
         refIDD[-2] = 0
 
         self._referenceIDDX = np.array(range(refIDD.shape[0])) + 1.
 
         depth10 = np.arange(0, np.max(self._referenceIDDX), 0.1) + 1.
-        f = interpolate.interp1d(self._referenceIDDX, refIDD, kind='linear', fill_value=0., assume_sorted=True)
+        f = interpolate.interp1d(self._referenceIDDX, refIDD, kind='linear', fill_value='extrapolate', assume_sorted=True)
         ref10 = f(depth10)
-        f = interpolate.interp1d(depth10[:-1], (ref10[1:]-ref10[:-1])/(depth10[1]-depth10[0]), kind='linear', fill_value=0., assume_sorted=True)
+        f = interpolate.interp1d(depth10[:-1], (ref10[1:]-ref10[:-1])/(depth10[1]-depth10[0]), kind='linear', fill_value='extrapolate', assume_sorted=True)
         derivIDD = f(self._referenceIDDX)
 
         self._referenceIDDEnergy = self.referenceEnergy
-        referenceIDDFunction = interpolate.interp1d(self._referenceIDDX, refIDD, kind='linear', fill_value=0., assume_sorted=True)
-        derivIDDFunction = interpolate.interp1d(self._referenceIDDX, derivIDD, kind='linear', fill_value=0., assume_sorted=True)
+        referenceIDDFunction = interpolate.interp1d(self._referenceIDDX, refIDD, kind='linear', fill_value='extrapolate', assume_sorted=True)
+        derivIDDFunction = interpolate.interp1d(self._referenceIDDX, derivIDD, kind='linear', fill_value='extrapolate', assume_sorted=True)
 
         self._shiftReferenceIDD = lambda wet: referenceIDDFunction(self._referenceIDDX+wet)
         self._shiftDerivIDD = lambda wet: derivIDDFunction(self._referenceIDDX+wet)
@@ -195,10 +186,9 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         if isinstance(energy, np.ndarray):
             energy[energy < 1.] = 1.
             r80 = np.exp(-5.5064 + 1.2193*np.log(energy) + 0.15248*np.log(energy)*np.log(energy) - 0.013296*np.log(energy)*np.log(energy)*np.log(energy))
-
-        if energy <= 1:
+        elif energy <= 1:
             r80 = 0
         else:
             r80 = exp(-5.5064 + 1.2193*log(energy) + 0.15248*log(energy)*log(energy) - 0.013296*log(energy)*log(energy)*log(energy))
 
-        return r80
+        return r80*10
