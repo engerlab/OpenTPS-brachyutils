@@ -1,6 +1,7 @@
 import copy
 import logging
 import math
+from typing import Optional
 
 import numpy as np
 from scipy.interpolate import interpolate
@@ -21,7 +22,7 @@ class CEM(AbstractCTObject, Image2D):
     def __init__(self):
         Image2D.__init__(self)
 
-        self.rsp:float = 0.
+        self.rsp:float = 1.
 
         self._referenceImage = None
         self._referenceImageBEV = None # _referenceImage in BEV. Nice to have it cached since computing BEV is not neglectible
@@ -41,10 +42,13 @@ class CEM(AbstractCTObject, Image2D):
 
         return newCEM
 
-    def computeROI(self, referenceImage:Image3D, beam:CEMBeam) -> ROIMask:
+    def computeROI(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> ROIMask:
+        if beam is None:
+            beam = self._referenceBeam
+
         referenceImageBEV = ImageTransform3D.dicomToIECGantry(referenceImage, beam)
 
-        data = np.array(referenceImageBEV.imageArray.shape)
+        data = np.zeros(referenceImageBEV.imageArray.shape)
 
         cemPixelsInDim2 = self._cemPixelsInDim2(referenceImage, referenceImageBEV, beam)
         availableSpaceInPixels = self._availableSpaceInPixels(referenceImage, referenceImageBEV, beam)
@@ -56,7 +60,7 @@ class CEM(AbstractCTObject, Image2D):
 
         roiBEV = ROIMask.fromImage3D(referenceImageBEV)
         roiBEV.imageArray = data
-        roi = ImageTransform3D.iecGantryToDicom(roiBEV)
+        roi = ImageTransform3D.iecGantryToDicom(roiBEV, beam)
         ImageTransform3D.intersect(roi, referenceImage, inPlace=True, fillValue=0)
         roi.imageArray = roi.imageArray.astype(bool)
 
@@ -73,7 +77,7 @@ class CEM(AbstractCTObject, Image2D):
             logger.info("CEM is larger by " + str(maxDiff) + ' pixels than available space (' + str(availableSpaceInPixels) + ' pixels) - Cropping.')
             cemPixelsInDim2[cemPixelsInDim2 > availableSpaceInPixels] = availableSpaceInPixels
 
-        return cemPixelsInDim2
+        return cemPixelsInDim2.astype(int)
 
     def _availableSpaceInPixels(self, referenceImage, referenceImageBEV, beam):
         isocenterInImage = ImageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
@@ -81,7 +85,7 @@ class CEM(AbstractCTObject, Image2D):
 
         distInPixels = np.ceil(beam.cemToIsocenter / self.rsp * referenceImageBEV.spacing[2])
 
-        return isocenterCoord[2] - distInPixels
+        return int(isocenterCoord[2] - distInPixels)
     
     def _resampleCEMArray(self, referenceImageBEV:Image3D) -> np.ndarray:
         if self._hasSameSpatialReferencing(referenceImageBEV):

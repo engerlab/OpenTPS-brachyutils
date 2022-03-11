@@ -10,6 +10,7 @@ from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.beamletDose import BeamletDose
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
@@ -35,9 +36,11 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._distToIsocenter = dist
 
     def computeDose(self, ct:CTImage, plan: RTPlan) -> DoseImage:
+        self._ct = ct
+        self._plan = plan
         return super().computeDose(ct, self._fluencePlan(plan))
 
-    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask] = None):
+    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask] = None) -> BeamletDose:
         self._ct = ct
         self._plan = self._fluencePlan(plan)
         self._roi = roi
