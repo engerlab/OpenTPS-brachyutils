@@ -10,6 +10,7 @@ import math
 testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
 ## read a serialized dynamic sequence
+# dataPath = '/home/damien/Desktop/Patient0/Patient0BaseAndMod.p'
 dataPath = testDataPath + "superLightDynSeqWithMod.p"
 patient = loadDataStructure(dataPath)[0]
 
