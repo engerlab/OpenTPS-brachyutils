@@ -23,11 +23,11 @@ class Deformation3D(Image3D):
             if patientInfo is None:
                 patientInfo = displacement.patientInfo
         elif not(velocity is None) and not(displacement is None):
-            if velocity._origin == displacement._origin:
+            if np.array_equal(velocity._origin, displacement._origin):
                 origin = velocity._origin
             else:
                 logger.error("Velocity and displacement fields have different origin. Cannot create deformation object.")
-            if velocity._spacing == displacement._spacing:
+            if np.array_equal(velocity._spacing, displacement._spacing):
                 spacing = velocity._spacing
             else:
                 logger.error("Velocity and displacement fields have different spacing. Cannot create deformation object.")
@@ -162,7 +162,7 @@ class Deformation3D(Image3D):
         init_dtype = image._imageArray.dtype
         image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType)
 
-        if init_dtype=='bool':
+        if init_dtype == 'bool':
             image._imageArray[image._imageArray < 0.5] = 0
             image._imageArray[image._imageArray >= 0.5] = 1
             image._imageArray = image._imageArray.astype(bool)
