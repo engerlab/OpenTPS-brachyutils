@@ -37,29 +37,30 @@ def vectorSimulation(L,diff,mean,sigma,Tend,t):
     return y
 
 #creation des donnees respiratoires
-def signal(A=10,dA=5,T=4,df=0.5,dS=5,mean=0,sigma=0.1,step=0.2,Tend=100,L=2/30):
-    f = 1/T  
-    t = np.arange(0,Tend,step)
+def signalGeneration(amplitude=10, dA=5, period=4, df=0.5, dS=5, mean=0, sigma=0.1, step=0.2, signalDuration=100, L=2 / 30):
+    freq = 1 / period
+    timestamps = np.arange(0, signalDuration, step)
     
-    A += vectorSimulation(L,dA,mean,sigma,Tend,t)
-    s = vectorSimulation(L,dS,mean,sigma,Tend,t)
-    f += vectorSimulation(L,df,mean,sigma,Tend,t)
+    amplitude += vectorSimulation(L, dA, mean, sigma, signalDuration, timestamps)
+    s = vectorSimulation(L, dS, mean, sigma, signalDuration, timestamps)
+    freq += vectorSimulation(L, df, mean, sigma, signalDuration, timestamps)
     
-    y = (A/2)*np.sin(2*np.pi*f*(t%(1/f))) + s ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
-    return t,y
+    signal = (amplitude / 2) * np.sin(2 * np.pi * freq * (timestamps % (1 / freq))) + s ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
+    return timestamps * 1000, signal
+
 """
 #parametres changeables
 <<<<<<< HEAD
-A = 10 #amplitude (mm)
+amplitude = 10 #amplitude (mm)
 dA = 5 #variation d amplitude possible (mm)
-T = 4.0 #periode respiratoire (s)
+period = 4.0 #periode respiratoire (s)
 df = 0.5 #variation de frequence possible (Hz)
 dS = 5 #shift du signal (mm)
 step = 0.2 #periode d echantillonnage
-Tend = 100 #temps de simulation
+signalDuration = 100 #temps de simulation
 L = 2/30 #moyenne des evenements aleatoires
 
-time,samples = signal(A,dA,T,df,dS,step,Tend,L)
+time,samples = signal(amplitude,dA,period,df,dS,step,signalDuration,L)
 plt.figure()
 plt.plot(time,samples)
 plt.xlabel("Time [s]")
