@@ -5,7 +5,7 @@ Created on Wed Feb 23 09:09:09 2022
 @author: grotsartdehe
 """
 from Core.Data.patientData import PatientData
-from Core.Processing.DeformableDataAugmentationToolBox.BreathingSignalGeneration import signal
+from Core.Processing.DeformableDataAugmentationToolBox.BreathingSignalGeneration import signalGeneration
 
 
 #real breathing data 
@@ -35,10 +35,8 @@ class SyntheticBreathingSignal(BreathingSignal):
         self.meanEvent = meanEvent  # moyenne des evenements aleatoires
 
 
-        # return timestamps and the corresponding breathing data
-
     def generateBreathingSignal(self):
-        self.timestamps, self.breathingSignal = signal(self.amplitude, self.variationAmplitude, self.breathingPeriod,
-                                                       self.variationFrequency, self.shift, self.mean, self.variance,
-                                                       self.samplingPeriod, self.simulationTime, self.meanEvent)
+        self.timestamps, self.breathingSignal = signalGeneration(self.amplitude, self.variationAmplitude, self.breathingPeriod,
+                                                                 self.variationFrequency, self.shift, self.mean, self.variance,
+                                                                 self.samplingPeriod, self.simulationTime, self.meanEvent)
         return self.breathingSignal
