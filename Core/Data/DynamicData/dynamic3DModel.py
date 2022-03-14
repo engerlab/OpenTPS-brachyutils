@@ -3,6 +3,7 @@ import logging
 
 from Core.Data.patientData import PatientData
 import Core.Processing.Registration.midPosition as midPosition
+from concurrent.futures import ProcessPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +94,18 @@ class Dynamic3DModel(PatientData):
 
         field = self.generate3DDeformation(phase, amplitude)
         return field.deformImage(self.midp, fillValue='closest')
+
+
+    def computeAllVelocityFields(self): ## not working for now, the field.displacement is None after the function
+
+        print('Compute all model displacement fields using multiprocessing')
+
+        with ProcessPoolExecutor() as executor:
+            executor.map(self.computeVelocityField, self.deformationList)
+
+
+    def computeVelocityField(self, field):
+        field.displacement = field.velocity.exponentiateField()
 
 
     def dumpableCopy(self):

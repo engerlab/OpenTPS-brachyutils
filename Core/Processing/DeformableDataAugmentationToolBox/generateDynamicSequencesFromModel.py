@@ -2,6 +2,7 @@ import numpy as np
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Processing.DeformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
+import time
 
 
 ## -------------------------------------------------------------------------------
@@ -101,9 +102,16 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
                 amplitudeList.append(phase[2])
 
         ## generate the deformation field combining the fields for each points and phase info
+        startDeformCreation = time.time()
         df1, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
+        stopDeformCreation = time.time()
         ## apply it to the midp image
+        startDeformApplication = time.time()
         im1 = df1.deformImage(model.midp, fillValue='closest', outputType=outputType)
+        stopDeformApplication = time.time()
+
+        print('deform creation time:', stopDeformCreation-startDeformCreation)
+        print('deform application time:', stopDeformApplication - startDeformApplication)
         im1.name = dynseq.name + '_' + str(breathingSignalSampleIndex)
         ## add the image to the dynamic sequence
         dynseq.dyn3DImageList.append(im1)
@@ -138,6 +146,7 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
         print('Numbers of signals and ROI do not match')
         return
 
+    startTime = time.time()
     ## get displacement fields from velocity fields
     if model.deformationList[0].displacement == None:
         print('Compute displacement fields')
@@ -145,10 +154,12 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
             print(fieldIndex)
             field.displacement = field.velocity.exponentiateField(outputType=outputType)
 
+    print('displacement Fields computed in ', time.time()-startTime)
+
     if signalIdxUsed == [0, 0]:
         signalIdxUsed = [0, signalList[0].shape[0]]
 
-    print('Signal indexes used', signalIdxUsed)
+    # print('Signal indexes used', signalIdxUsed)
 
     ## loop over ROIs
     phaseValueByROIList = []
