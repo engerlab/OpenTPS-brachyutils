@@ -28,7 +28,7 @@ class PlanOptimizer:
             for i, objectiveTerm in enumerate(self.objectiveTerms):
                 val += self.objectiveWeights[i]*objectiveTerm.getValue(weights)
 
-            print(np.mean(weights))
+            print('Mean w: ' + str(np.mean(weights)))
             print('Objective value: ' + str(val))
 
             return val
@@ -38,10 +38,10 @@ class PlanOptimizer:
             for i, objectiveTerm in enumerate(self.objectiveTerms):
                 val += self.objectiveWeights[i]*objectiveTerm.getDerivative(weights)
 
-            return val*10
+            return val
 
     def __init__(self):
-        self.calibration:AbstractCTCalibration=None
+        self.ctCalibration:AbstractCTCalibration=None
         self.ct:CTImage=None
         self.plan:RTPlan=None
         self.targetMask:ROIMask=None
@@ -53,7 +53,7 @@ class PlanOptimizer:
 
     def intializePlan(self, spotSpacing:float, layerSpacing:float, targetMargin:float=0.):
         planInitializer = PlanInitializer()
-        planInitializer.calibration = self.calibration
+        planInitializer.calibration = self.ctCalibration
         planInitializer.ct = self.ct
         planInitializer.plan = self.plan
         planInitializer.targetMask = self.targetMask
@@ -62,11 +62,11 @@ class PlanOptimizer:
 
     def run(self):
         res = minimize(self._objectives.getValue, np.ones(self.plan.spotWeights.shape),
-                       method='Newton-CG',
-                       jac=self._objectives.getDerivative,
-                       bounds=None, tol=None, callback=None,
-                       options={'disp': None, 'maxcor': 10, 'ftol': 1e-6, 'gtol': 1e-12,
-                          'maxfun': 15000, 'maxiter': 200, 'iprint': -1, 'maxls': 20, 'finite_diff_rel_step': None})
+                        method='L-BFGS-B',
+                        jac=self._objectives.getDerivative,
+                        bounds=None, tol=None, callback=None,
+                        options={'disp': True, 'maxcor': 10, 'ftol': 1e-4, 'gtol': 1e-4, 'norm': 1,
+                           'maxfun': 15000, 'maxiter': 200, 'iprint': -1, 'maxls': 5, 'finite_diff_rel_step': None})
 
         self.plan.spotWeights = res.x
 

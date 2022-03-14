@@ -1,7 +1,9 @@
+import copy
 from abc import abstractmethod
 
 import numpy as np
-from scipy.sparse import csr_matrix
+import scipy
+from scipy.sparse import csr_matrix, csc_matrix
 
 from Core.Data.Images.roiMask import ROIMask
 
@@ -33,10 +35,6 @@ class DoseMaxObjective(AbstractDoseFidelityTerm):
         # dose = dose[self.roi.imageArray.astype(bool)]
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
 
-        meanDose = dose[self.roi.imageArray.astype(bool)]
-        meanDose = np.mean(meanDose)
-        print('Mean dose: ' + str(meanDose))
-
         dose = dose.flatten()
 
         val = np.maximum(0., dose-self.maxDose)
@@ -48,15 +46,19 @@ class DoseMaxObjective(AbstractDoseFidelityTerm):
         doseImage = self.doseCalculator.computeDose(weights)
 
         dose = doseImage.imageArray
-        # dose = dose[self.roi.imageArray.astype(bool)]
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
-        dose = dose.flatten()
+
+        dose = np.flip(dose, 0)
+        dose = np.flip(dose, 1)
+        dose = dose.flatten(order='F')
 
         diff = np.maximum(0., dose - self.maxDose)
         diff = np.transpose(diff)
-        diff = diff @ self.doseCalculator.computeBeamlets().toSparseMatrix()  # Would csc-ssc matrix multiplication be more efficient?
-#        diff = diff.toarray()
+
+        diff = diff @ self.doseCalculator.computeBeamlets().toSparseMatrix()
         diff *= 2. / self._roiVoxels
+
+        diff *= self.doseCalculator.computeBeamlets().beamletRescaling
 
         return diff
 
@@ -88,14 +90,18 @@ class DoseMinObjective(AbstractDoseFidelityTerm):
         doseImage = self.doseCalculator.computeDose(weights)
 
         dose = doseImage.imageArray
-        #dose = dose[self.roi.imageArray.astype(bool)]
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
-        dose = dose.flatten()
+
+        dose = np.flip(dose, 0)
+        dose = np.flip(dose, 1)
+        dose = dose.flatten(order='F')
 
         diff = np.maximum(0., self.minDose-dose)
         diff = np.transpose(diff)
-        diff = diff @ self.doseCalculator.computeBeamlets().toSparseMatrix() # Would csc-ssc matrix multiplication be more efficient?
-#        diff = diff.toarray()
+
+        diff = diff @ self.doseCalculator.computeBeamlets().toSparseMatrix()
         diff *= -2. / self._roiVoxels
+
+        diff *= self.doseCalculator.computeBeamlets().beamletRescaling
 
         return diff

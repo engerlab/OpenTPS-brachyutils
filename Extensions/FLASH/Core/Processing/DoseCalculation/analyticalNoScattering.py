@@ -100,7 +100,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         return wet
 
     def _doseOnReferenceIDDGrid(self, wetBeforeCT:np.ndarray, energy:float) -> Tuple[np.ndarray, np.ndarray]:
-        wetBeforeCT = wetBeforeCT + self._energy_to_range(self.referenceEnergy) - self._energy_to_range(energy)
+        wetBeforeCT = wetBeforeCT + self._energyToRange(self.referenceEnergy) - self._energyToRange(energy)
 
         layerDose = np.zeros((wetBeforeCT.shape[0], wetBeforeCT.shape[1], self._shiftReferenceIDD(0).shape[0]))
         layerDeriv = np.zeros(layerDose.shape)
@@ -119,7 +119,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         if self._referenceIDDEnergy == self.referenceEnergy:
             return
 
-        ctLength = round(self._energy_to_range(self.referenceEnergy)) + 10 # 10 is just amargin
+        ctLength = round(self._energyToRange(self.referenceEnergy)) + 10 # 10 is just amargin
         if not ctLength%2:
             ctLength += 1
 
@@ -182,7 +182,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         else:
             return exp(3.464048 + 0.561372013*log(r80) - 0.004900892*log(r80)*log(r80) + 0.001684756748*log(r80)*log(r80)*log(r80))
 
-    def _energy_to_range(self, energy:Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    def _energyToRange(self, energy:Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         if isinstance(energy, np.ndarray):
             energy[energy < 1.] = 1.
             r80 = np.exp(-5.5064 + 1.2193*np.log(energy) + 0.15248*np.log(energy)*np.log(energy) - 0.013296*np.log(energy)*np.log(energy)*np.log(energy))
