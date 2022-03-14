@@ -74,4 +74,12 @@ class ROIContour(PatientData):
             mask3D[:,:,sliceZ] = np.logical_or(mask3D[:,:,sliceZ], mask2D)
 
         mask = ROIMask(imageArray=mask3D, name=self.name, patientInfo=self.patientInfo, origin=origin, spacing=spacing, displayColor=self._displayColor)
+
         return mask
+
+    def getCenterOfMass(self, origin, gridSize, spacing):
+
+        tempMask = self.getBinaryMask(origin=origin, gridSize=gridSize, spacing=spacing)
+        centerOfMass = tempMask.centerOfMass
+
+        return centerOfMass
