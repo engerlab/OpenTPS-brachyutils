@@ -63,7 +63,8 @@ class VectorField3D(Image3D):
 
         return resampler3D.warp(data, self._imageArray, self.spacing, fillValue=fillValue, outputType=outputType)
 
-    def exponentiateField(self):
+    def exponentiateField(self, outputType=np.float32):
+
         """Exponentiate the vector field (e.g. to convert velocity in to displacement).
 
         Returns
@@ -87,8 +88,9 @@ class VectorField3D(Image3D):
             displacement._imageArray[:, :, :, 1] += new_1
             displacement._imageArray[:, :, :, 2] += new_2
 
-        return displacement
+        displacement._imageArray = displacement._imageArray.astype(outputType)
 
+        return displacement
 
     def computeFieldNorm(self):
         """Compute the voxel-wise norm of the vector field.
@@ -101,7 +103,6 @@ class VectorField3D(Image3D):
         return np.sqrt(
             self._imageArray[:, :, :, 0] ** 2 + self._imageArray[:, :, :, 1] ** 2 + self._imageArray[:, :, :, 2] ** 2)
 
-    
     @property
     def gridSize(self):
         """Compute the voxel grid size of the deformation.

@@ -41,7 +41,7 @@ class ROIMask(Image3D):
         return scipy.ndimage.measurements.center_of_mass(self._imageArray)*self.spacing + self.origin
 
     def copy(self):
-        return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
+        return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
     def dilate(self, radius:float):
         radius = 1/np.array(self.spacing)
