@@ -5,6 +5,12 @@ import logging
 import multiprocessing as mp
 from functools import partial
 
+try:
+    import cupy
+    import cupyx.scipy.signal
+except:
+    print('cupy not found.')
+
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
@@ -18,13 +24,34 @@ def morphonsConv(im, k):
 
 
 def morphonsComplexConvS(im, k):
-    return scipy.signal.fftconvolve(im, np.real(k), mode='same') + scipy.signal.fftconvolve(im, np.imag(k),
-                                                                                            mode='same') * 1j
+    return scipy.signal.fftconvolve(im, np.real(k), mode='same') + scipy.signal.fftconvolve(im, np.imag(k), mode='same') * 1j
 
 
 def morphonsComplexConvD(im, k):
-    return scipy.signal.fftconvolve(im, np.real(k), mode='same') - scipy.signal.fftconvolve(im, np.imag(k),
-                                                                                            mode='same') * 1j
+    return scipy.signal.fftconvolve(im, np.real(k), mode='same') - scipy.signal.fftconvolve(im, np.imag(k), mode='same') * 1j
+
+
+def applyMorphonsKernels(image,k,is_fixed=1):
+    output = []
+    if image._imageArray.size>1e5:
+        try:
+            data = cupy.asarray(image._imageArray)
+            for n in range(6):
+                if(is_fixed):
+                    output.append(cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.real(k[n])), mode='same')) + cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.imag(k[n])), mode='same')) * 1j)
+                else:
+                    output.append(cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.real(k[n])), mode='same')) - cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.imag(k[n])), mode='same')) * 1j)
+        except:
+            logger.warning('cupy not used for morphons kernel convolution.')
+
+    if(len(output)==0):
+        for n in range(6):
+            if (is_fixed):
+                output.append(scipy.signal.fftconvolve(image._imageArray, np.real(k[n]), mode='same') + scipy.signal.fftconvolve(image._imageArray, np.imag(k[n]), mode='same') * 1j)
+            else:
+                output.append(scipy.signal.fftconvolve(image._imageArray, np.real(k[n]), mode='same') - scipy.signal.fftconvolve(image._imageArray, np.imag(k[n]), mode='same') * 1j)
+
+    return output
 
 
 class RegistrationMorphons(Registration):
@@ -113,16 +140,13 @@ class RegistrationMorphons(Registration):
                 pconv = partial(morphonsComplexConvS, fixedResampled._imageArray)
                 qFixed = pool.map(pconv, k)
             else:
-                qFixed = []
-                for n in range(6):
-                    qFixed.append(scipy.signal.fftconvolve(fixedResampled._imageArray, np.real(k[n]),
-                                                           mode='same') + scipy.signal.fftconvolve(
-                        fixedResampled._imageArray, np.imag(k[n]), mode='same') * 1j)
+                qFixed = applyMorphonsKernels(fixedResampled,k,is_fixed=1)
 
             for i in range(iterations[s]):
 
-                # Deform moving image
+                # Deform moving image then reset displacement field
                 deformed = deformation.deformImage(movingResampled, fillValue='closest')
+                deformation.displacement = None
 
                 # Compute phase difference
                 a11 = np.zeros_like(qFixed[0], dtype="float64")
@@ -139,13 +163,7 @@ class RegistrationMorphons(Registration):
                     pconv = partial(morphonsComplexConvD, deformed._imageArray)
                     qDeformed = pool.map(pconv, k)
                 else:
-                    qDeformed = []
-                    for n in range(6):
-                        qDeformed.append(
-                            scipy.signal.fftconvolve(deformed._imageArray, np.real(k[n]),
-                                                     mode='same') - scipy.signal.fftconvolve(deformed._imageArray,
-                                                                                             np.imag(k[n]),
-                                                                                             mode='same') * 1j)
+                    qDeformed = applyMorphonsKernels(deformed, k, is_fixed=0)
 
                 for n in range(6):
                     qq = np.multiply(qFixed[n], qDeformed[n])
