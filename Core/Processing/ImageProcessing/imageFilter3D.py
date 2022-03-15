@@ -43,8 +43,8 @@ def normGaussConv(data, cert, sigma):
         Convolved data.
     """
 
-    data = scipy.ndimage.gaussian_filter(np.multiply(data, cert), sigma=sigma)
-    cert = scipy.ndimage.gaussian_filter(cert, sigma=sigma)
+    data = scipy.ndimage.gaussian_filter(np.multiply(data, cert), sigma=sigma, truncate=2.5, mode='constant')
+    cert = scipy.ndimage.gaussian_filter(cert, sigma=sigma, truncate=2.5, mode='constant')
     z = (cert == 0)
     data[z] = 0.0
     cert[z] = 1.0
