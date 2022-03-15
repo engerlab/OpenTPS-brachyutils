@@ -149,13 +149,12 @@ class Deformation3D(Image3D):
             """
 
         if (self.displacement is None):
-            field = self.velocity.exponentiateField()
-        else:
-            field = self.displacement
+            self.displacement = self.velocity.exponentiateField()
+
+        field = self.displacement.copy()
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
-            field = field.copy()
             field.resample(image.gridSize, image._origin, image._spacing)
 
         image = image.copy()

@@ -2,11 +2,16 @@ import numpy as np
 import scipy.ndimage
 import logging
 
+try:
+    import cupy
+    import cupyx.scipy.ndimage
+except:
+    print('cupy not found.')
 
 logger = logging.getLogger(__name__)
 
 
-def gaussConv(data, sigma):
+def gaussConv(data, sigma, truncate=2.5, mode="reflect"):
     """Apply Gaussian convolution on input data.
 
     Parameters
@@ -22,7 +27,13 @@ def gaussConv(data, sigma):
         Convolved data.
     """
 
-    return scipy.ndimage.gaussian_filter(data, sigma=sigma)
+    if data.size>1e6:
+        try:
+            return cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupy.asarray(data), sigma=sigma, truncate=truncate, mode=mode))
+        except:
+            logger.warning('cupy not used for gaussian smoothing.')
+
+    return scipy.ndimage.gaussian_filter(data, sigma=sigma, truncate=truncate, mode=mode)
 
 
 def normGaussConv(data, cert, sigma):
@@ -43,8 +54,8 @@ def normGaussConv(data, cert, sigma):
         Convolved data.
     """
 
-    data = scipy.ndimage.gaussian_filter(np.multiply(data, cert), sigma=sigma, truncate=2.5, mode='constant')
-    cert = scipy.ndimage.gaussian_filter(cert, sigma=sigma, truncate=2.5, mode='constant')
+    data = gaussConv(np.multiply(data, cert), sigma=sigma, mode='constant')
+    cert = gaussConv(cert, sigma=sigma, mode='constant')
     z = (cert == 0)
     data[z] = 0.0
     cert[z] = 1.0
