@@ -56,8 +56,9 @@ class RegistrationDemons(Registration):
 
             for i in range(iterations[s]):
 
-                # Deform moving image
+                # Deform moving image then reset displacement field
                 deformed = deformation.deformImage(movingResampled, fillValue='closest')
+                deformation.displacement = None
 
                 ssd = self.computeSSD(fixedResampled._imageArray, deformed._imageArray)
                 logger.info('Iteration ' + str(i + 1) + ': SSD=' + str(ssd))
