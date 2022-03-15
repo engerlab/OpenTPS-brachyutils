@@ -20,7 +20,7 @@ class DataViewerToolbar(QToolBar):
         self._buttonDVH.triggered.connect(self._handleButtonDVH)
         self._buttonDVH.setCheckable(True)
 
-        self._buttonProfile = QAction(QIcon(iconPath + "chart.png"), "Graph", self)
+        self._buttonProfile = QAction(QIcon(iconPath + "graph.png"), "Graph", self)
         self._buttonProfile.setStatusTip("Graph")
         self._buttonProfile.triggered.connect(self._handleButtonGraph)
         self._buttonProfile.setCheckable(True)

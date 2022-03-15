@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget,QVBoxLayout,QPushButton, QGridLayout,QLabel,QDoubleSpinBox, QSpinBox, QComboBox
 import pyqtgraph as pg
 
-from Core.Processing.DeformableDataAugmentationToolBox.BreathingSignalGeneration import signal
+from Core.Processing.DeformableDataAugmentationToolBox.BreathingSignalGeneration import signalGeneration
 from PyQt5.QtCore import Qt
 class BreathingSignalPanel(QWidget):
     
@@ -136,7 +136,7 @@ class BreathingSignalPanel(QWidget):
         Tend = self.Duration.value() #temps de simulation
         L = 2/30 #moyenne des evenements aleatoires
         
-        self.t,self.y = signal(A,dA,T,df,dS,mean,sigma,step,Tend,L)
+        self.t,self.y = signalGeneration(A, dA, T, df, dS, mean, sigma, step, Tend, L)
         
         self.widget = QWidget()
         self.layout = QGridLayout()
