@@ -48,15 +48,15 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
             motionFieldList.append(reg.compute())
             if (max(averageField.gridSize) == 0):
                 averageField.initFromImage(motionFieldList[i])
-            averageField.velocity._imageArray += motionFieldList[i].velocity._imageArray
+            averageField.setVelocityArray(averageField.velocity.imageArray + motionFieldList[i].velocity.imageArray)
 
     motionFieldList[refIndex].initFromImage(averageField)
-    averageField.velocity._imageArray /= len(motionFieldList)
+    averageField.setVelocityArray(averageField.velocity.imageArray / len(motionFieldList))
 
     # compute fields to midp
     for i in range(len(CT4D.dyn3DImageList)):
         motionFieldList[i].name = 'def ' + CT4D.dyn3DImageList[i].name
-        motionFieldList[i].velocity._imageArray = averageField.velocity._imageArray - motionFieldList[i].velocity._imageArray
+        motionFieldList[i].setVelocityArray(averageField.velocity.imageArray - motionFieldList[i].velocity.imageArray)
 
     # deform images
     def3DImageList = []
@@ -66,7 +66,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
     # invert fields (to have them from midp to phases)
     for i in range(len(CT4D.dyn3DImageList)):
         motionFieldList[i].displacement = None
-        motionFieldList[i].velocity._imageArray = -motionFieldList[i].velocity._imageArray
+        motionFieldList[i].setVelocityArray(-motionFieldList[i].velocity.imageArray)
 
     # compute MidP
     midp = CT4D.dyn3DImageList[0].copy()

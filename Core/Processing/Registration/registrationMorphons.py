@@ -160,7 +160,7 @@ class RegistrationMorphons(Registration):
                 b3 = np.zeros_like(qFixed[0], dtype="float64")
 
                 if (self.nbProcesses > 1):
-                    pconv = partial(morphonsComplexConvD, deformed._imageArray)
+                    pconv = partial(morphonsComplexConvD, deformed.imageArray)
                     qDeformed = pool.map(pconv, k)
                 else:
                     qDeformed = applyMorphonsKernels(deformed, k, is_fixed=0)
@@ -183,7 +183,7 @@ class RegistrationMorphons(Registration):
                     b3 += qDirections[n][2] * vk
                     a33 += qDirections[n][2] * qDirections[n][2] * ck2
 
-                fieldUpdate = np.zeros_like(deformation.velocity._imageArray)
+                fieldUpdate = np.zeros_like(deformation.velocity.imageArray)
                 fieldUpdate[:, :, :, 0] = (a22 * a33 - np.power(a23, 2)) * b1 + (a13 * a23 - a12 * a33) * b2 + (
                         a12 * a23 - a13 * a22) * b3
                 fieldUpdate[:, :, :, 1] = (a13 * a23 - a12 * a33) * b1 + (a11 * a33 - np.power(a13, 2)) * b2 + (
@@ -203,23 +203,20 @@ class RegistrationMorphons(Registration):
                 fieldUpdate[z, 1] = 0
                 fieldUpdate[z, 2] = 0
                 certaintyUpdate[z] = 0
-                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)*deformation.velocity._spacing[0]
-                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)*deformation.velocity._spacing[1]
-                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)*deformation.velocity._spacing[2]
+                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)*deformation.velocity.spacing[0]
+                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)*deformation.velocity.spacing[1]
+                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)*deformation.velocity.spacing[2]
 
                 # Accumulate deformation and certainty
-                deformation.velocity._imageArray[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,
-                                                                                                               certainty._imageArray + certaintyUpdate + eps))
-                deformation.velocity._imageArray[:, :, :, 1] += np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate,
-                                                                                                               certainty._imageArray + certaintyUpdate + eps))
-                deformation.velocity._imageArray[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
-                                                                                                               certainty._imageArray + certaintyUpdate + eps))
-                certainty._imageArray = np.divide(np.power(certainty._imageArray, 2) + np.power(certaintyUpdate, 2),
-                                                  certainty._imageArray + certaintyUpdate + eps)
+                fieldUpdate[:, :, :, 0] = deformation.velocity.imageArray[:, :, :, 0] + np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
+                fieldUpdate[:, :, :, 1] = deformation.velocity.imageArray[:, :, :, 1] + np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
+                fieldUpdate[:, :, :, 2] = deformation.velocity.imageArray[:, :, :, 2] + np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
+                deformation.setVelocityArray(fieldUpdate)
+                certainty.imageArray = np.divide(np.power(certainty.imageArray, 2) + np.power(certaintyUpdate, 2), certainty.imageArray + certaintyUpdate + eps)
 
                 # Regularize velocity deformation and certainty
-                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty._imageArray)
-                certainty._imageArray = imageFilter3D.normGaussConv(certainty._imageArray, certainty._imageArray, 1.25)
+                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.imageArray)
+                certainty.imageArray = imageFilter3D.normGaussConv(certainty.imageArray, certainty.imageArray, 1.25)
 
         self.deformed = deformation.deformImage(self.moving, fillValue='closest')
 

@@ -32,17 +32,17 @@ class Registration:
         """
 
         if filterType == "Gaussian":
-            field.velocity._imageArray[:, :, :, 0] = imageFilter3D.gaussConv(field.velocity._imageArray[:, :, :, 0], sigma=sigma)
-            field.velocity._imageArray[:, :, :, 1] = imageFilter3D.gaussConv(field.velocity._imageArray[:, :, :, 1], sigma=sigma)
-            field.velocity._imageArray[:, :, :, 2] = imageFilter3D.gaussConv(field.velocity._imageArray[:, :, :, 2], sigma=sigma)
+            field.setVelocityArrayXYZ(imageFilter3D.gaussConv(field.velocity.imageArray[:, :, :, 0], sigma=sigma),
+                imageFilter3D.gaussConv(field.velocity.imageArray[:, :, :, 1], sigma=sigma),
+                imageFilter3D.gaussConv(field.velocity.imageArray[:, :, :, 2], sigma=sigma))
             return
 
         if filterType == "NormalizedGaussian":
             if cert is None:
-                cert = np.ones_like(field.velocity._imageArray[:, :, :, 0])
-            field.velocity._imageArray[:, :, :, 0] = imageFilter3D.normGaussConv(field.velocity._imageArray[:, :, :, 0], cert, sigma)
-            field.velocity._imageArray[:, :, :, 1] = imageFilter3D.normGaussConv(field.velocity._imageArray[:, :, :, 1], cert, sigma)
-            field.velocity._imageArray[:, :, :, 2] = imageFilter3D.normGaussConv(field.velocity._imageArray[:, :, :, 2], cert, sigma)
+                cert = np.ones_like(field.velocity.imageArray[:, :, :, 0])
+            field.setVelocityArrayXYZ(imageFilter3D.normGaussConv(field.velocity.imageArray[:, :, :, 0], cert, sigma),
+                imageFilter3D.normGaussConv(field.velocity.imageArray[:, :, :, 1], cert, sigma),
+                imageFilter3D.normGaussConv(field.velocity.imageArray[:, :, :, 2], cert, sigma))
             return
 
         else:
