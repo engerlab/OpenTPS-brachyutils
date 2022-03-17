@@ -10,12 +10,18 @@ from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.beamletDose import BeamletDose
+from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.fluenceCalculator import FluenceCalculator
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.mcsquareFlashConfig import MCsquareFlashConfig
+
+
+class Beamlets():
+    def __init__(self):
+        self.sparseBeamlets:SparseBeamlets = None
+        self.referencePlan:RTPlan = None
 
 
 class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
@@ -40,7 +46,7 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._plan = plan
         return super().computeDose(ct, self._fluencePlan(plan))
 
-    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask] = None) -> BeamletDose:
+    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask] = None) -> Beamlets:
         self._ct = ct
         self._plan = self._fluencePlan(plan)
         self._roi = roi
@@ -50,10 +56,12 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._cleanDir(self._outputDir)
         self._startMCsquare()
 
-        beamletDose = self._importBeamlets()
-        beamletDose.beamletWeights = self._plan.spotWeights
+        beamlets = Beamlets()
+        beamlets.sparseBeamlets = self._importBeamlets()
+        beamlets.sparseBeamlets.beamletWeights = self._plan.spotWeights
+        beamlets.referencePlan = copy.deepcopy(self._plan)
 
-        return beamletDose
+        return beamlets
 
     def _fluencePlan(self, plan:RTPlan) -> RTPlan:
         newPlan = copy.deepcopy(plan)

@@ -8,7 +8,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.patientData import PatientData
 
 
-class BeamletDose(PatientData):
+class SparseBeamlets(PatientData):
     def __init__(self):
         super().__init__()
 

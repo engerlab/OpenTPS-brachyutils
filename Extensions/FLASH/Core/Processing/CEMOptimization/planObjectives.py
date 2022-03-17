@@ -1,9 +1,7 @@
-import copy
+
 from abc import abstractmethod
 
 import numpy as np
-import scipy
-from scipy.sparse import csr_matrix, csc_matrix
 
 from Core.Data.Images.roiMask import ROIMask
 
