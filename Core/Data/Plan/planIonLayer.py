@@ -14,19 +14,6 @@ class PlanIonLayer:
         self.numberOfPaintings:int = 1
         self.rangeShifterSettings:RangeShifterSettings = RangeShifterSettings()
 
-    def __deepcopy__(self, memodict={}):
-        newLayer = PlanIonLayer()
-
-        newLayer._x = np.array(self._x)
-        newLayer._y = np.array(self._y)
-        newLayer._weights = np.array(self._weights)
-
-        newLayer.nominalEnergy = self.nominalEnergy
-        newLayer.numberOfPaintings = self.numberOfPaintings
-        newLayer.rangeShifterSettings = self.rangeShifterSettings
-
-        return newLayer
-
     def __len__(self):
         return len(self._weights)
 

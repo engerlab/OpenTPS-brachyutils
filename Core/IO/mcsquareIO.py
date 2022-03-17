@@ -16,7 +16,7 @@ from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.beamletDose import BeamletDose
+from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO.mhdReadWrite import exportImageMHD, importImageMHD
 
 
@@ -35,7 +35,7 @@ def readBeamlets(file_path):
     print('Read binary file: ', file_path)
     sparseBeamlets =  _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"])
 
-    beamletDose = BeamletDose()
+    beamletDose = SparseBeamlets()
     beamletDose.setUnitaryBeamlets(sparseBeamlets)
     beamletDose.beamletWeights = np.ones(header["NbrSpots"])
     beamletDose.doseOrigin = header["Offset"]
