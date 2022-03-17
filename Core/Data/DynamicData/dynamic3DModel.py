@@ -16,7 +16,7 @@ class Dynamic3DModel(PatientData):
         self.midp = midp
         self.deformationList = deformationList
 
-    def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=1):
+    def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=1, tryGPU=True):
         """Compute the mid-position image from the 4DCT by means of deformable registration between breathing phases.
 
             Parameters
@@ -34,7 +34,7 @@ class Dynamic3DModel(PatientData):
         if refIndex >= len(CT4D.dyn3DImageList):
             logger.error("Reference index is out of bound")
 
-        self.midp, self.deformationList = midPosition.compute(CT4D, refIndex=refIndex, baseResolution=baseResolution, nbProcesses=nbProcesses)
+        self.midp, self.deformationList = midPosition.compute(CT4D, refIndex=refIndex, baseResolution=baseResolution, nbProcesses=nbProcesses, tryGPU=tryGPU)
 
 
     def generate3DDeformation(self, phase, amplitude=1.0):
@@ -76,7 +76,7 @@ class Dynamic3DModel(PatientData):
         return field
 
 
-    def generate3DImage(self, phase, amplitude=1.0):
+    def generate3DImage(self, phase, amplitude=1.0, tryGPU=True):
         """Generate a 3D image by deforming the mid-position according to a specified phase of the breathing cycle, optionally using a magnification factor for this deformation.
 
             Parameters
@@ -93,7 +93,7 @@ class Dynamic3DModel(PatientData):
             """
 
         field = self.generate3DDeformation(phase, amplitude)
-        return field.deformImage(self.midp, fillValue='closest')
+        return field.deformImage(self.midp, fillValue='closest', tryGPU=tryGPU)
 
 
     def computeAllVelocityFields(self): ## not working for now, the field.displacement is None after the function

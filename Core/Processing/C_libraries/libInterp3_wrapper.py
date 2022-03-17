@@ -13,14 +13,15 @@ except:
 
 logger = logging.getLogger(__name__)
 
-def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0):
+def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0, tryGPU=True):
 
   interpolatedImage = None
 
-  if image.size > 1e5:
+  if image.size > 1e5 and tryGPU:
     if interpolatedImage is None:
       try:
         interpolatedImage = cupy.asnumpy(cupyx.scipy.ndimage.map_coordinates(cupy.asarray(image), cupy.asarray(interpolatedPoints.T), order=1, mode='constant', cval=fillValue))
+        # print('in libInter3_wrapper interpolateTrilinear cupy used')
       except:
         logger.info('cupy 3D interpolation not enabled. The C implementation is tried instead')
 
@@ -54,6 +55,6 @@ def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0):
     y = np.arange(gridSize[1])
     z = np.arange(gridSize[2])
 
-    interpolatedImage = scipy.interpolate.interpn((x,y,z), image, interpolatedPoints, method='linear', fill_value=fillValue, bounds_error=False)
+    interpolatedImage = scipy.interpolate.interpn((x, y, z), image, interpolatedPoints, method='linear', fill_value=fillValue, bounds_error=False)
 
   return interpolatedImage
