@@ -11,7 +11,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def gaussConv(data, sigma, truncate=2.5, mode="reflect"):
+def gaussConv(data, sigma, truncate=2.5, mode="reflect", tryGPU=True):
     """Apply Gaussian convolution on input data.
 
     Parameters
@@ -27,8 +27,9 @@ def gaussConv(data, sigma, truncate=2.5, mode="reflect"):
         Convolved data.
     """
 
-    if data.size>1e6:
+    if data.size > 1e6 and tryGPU:
         try:
+            # print('in imageFilter3D gaussConv cupy used')
             return cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupy.asarray(data), sigma=sigma, truncate=truncate, mode=mode))
         except:
             logger.warning('cupy not used for gaussian smoothing.')
@@ -36,7 +37,7 @@ def gaussConv(data, sigma, truncate=2.5, mode="reflect"):
     return scipy.ndimage.gaussian_filter(data, sigma=sigma, truncate=truncate, mode=mode)
 
 
-def normGaussConv(data, cert, sigma):
+def normGaussConv(data, cert, sigma, tryGPU=True):
     """Apply normalized Gaussian convolution on input data.
 
     Parameters
@@ -54,8 +55,8 @@ def normGaussConv(data, cert, sigma):
         Convolved data.
     """
 
-    data = gaussConv(np.multiply(data, cert), sigma=sigma, mode='constant')
-    cert = gaussConv(cert, sigma=sigma, mode='constant')
+    data = gaussConv(np.multiply(data, cert), sigma=sigma, mode='constant', tryGPU=tryGPU)
+    cert = gaussConv(cert, sigma=sigma, mode='constant', tryGPU=tryGPU)
     z = (cert == 0)
     data[z] = 0.0
     cert[z] = 1.0

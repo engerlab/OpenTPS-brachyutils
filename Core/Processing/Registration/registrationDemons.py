@@ -1,7 +1,6 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 
@@ -15,7 +14,7 @@ class RegistrationDemons(Registration):
         Registration.__init__(self, fixed, moving)
         self.baseResolution = baseResolution
 
-    def compute(self):
+    def compute(self, tryGPU=True):
 
         """Perform registration between fixed and moving images.
 
@@ -44,9 +43,9 @@ class RegistrationDemons(Registration):
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing)
+            fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing, tryGPU=tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize(), fixedResampled.origin, fixedResampled.spacing)
+            movingResampled.resample(fixedResampled.gridSize(), fixedResampled.origin, fixedResampled.spacing, tryGPU=tryGPU)
             gradFixed = np.gradient(fixedResampled.imageArray)
 
             if s != 0:
@@ -74,7 +73,7 @@ class RegistrationDemons(Registration):
                     deformation.velocity.imageArray[:, :, :, 2] + 2 * (fixedResampled.imageArray - deformed.imageArray) * (gradFixed[2] + gradMoving[2]) / ( squaredDiff + squaredNormGrad + 1e-5) * deformation.velocity.spacing[0])
 
                 # Regularize velocity deformation and certainty
-                self.regularizeField(deformation, filterType="Gaussian", sigma=1.25)
+                self.regularizeField(deformation, filterType="Gaussian", sigma=1.25, tryGPU=tryGPU)
 
         self.deformed = deformation.deformImage(self.moving, fillValue='closest')
 

@@ -11,7 +11,6 @@ try:
 except:
     print('cupy not found.')
 
-from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
@@ -31,10 +30,11 @@ def morphonsComplexConvD(im, k):
     return scipy.signal.fftconvolve(im, np.real(k), mode='same') - scipy.signal.fftconvolve(im, np.imag(k), mode='same') * 1j
 
 
-def applyMorphonsKernels(image,k,is_fixed=1):
+def applyMorphonsKernels(image, k, is_fixed=1, tryGPU=True):
     output = []
-    if image._imageArray.size>1e5:
+    if image._imageArray.size > 1e5 and tryGPU:
         try:
+            # print('in registration morphons applyMorphonsKernels cupy used')
             data = cupy.asarray(image._imageArray)
             for n in range(6):
                 if(is_fixed):
@@ -56,11 +56,12 @@ def applyMorphonsKernels(image,k,is_fixed=1):
 
 class RegistrationMorphons(Registration):
 
-    def __init__(self, fixed, moving, baseResolution=2.5, nbProcesses=-1):
+    def __init__(self, fixed, moving, baseResolution=2.5, nbProcesses=-1, tryGPU=True):
 
         Registration.__init__(self, fixed, moving)
         self.baseResolution = baseResolution
         self.nbProcesses = nbProcesses
+        self.tryGPU = tryGPU
 
     def compute(self):
 
@@ -122,14 +123,14 @@ class RegistrationMorphons(Registration):
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing)
+            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing, tryGPU=self.tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing)
+            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing, tryGPU=self.tryGPU)
 
             if s != 0:
-                deformation.resampleToImageGrid(fixedResampled)
+                deformation.resampleToImageGrid(fixedResampled, tryGPU=self.tryGPU)
                 certainty.resample(fixedResampled.gridSize, fixedResampled._origin,
-                                   fixedResampled._spacing, fillValue=0)
+                                   fixedResampled._spacing, fillValue=0, tryGPU=self.tryGPU)
             else:
                 deformation.initFromImage(fixedResampled)
                 certainty = fixedResampled.copy()
@@ -140,12 +141,12 @@ class RegistrationMorphons(Registration):
                 pconv = partial(morphonsComplexConvS, fixedResampled._imageArray)
                 qFixed = pool.map(pconv, k)
             else:
-                qFixed = applyMorphonsKernels(fixedResampled,k,is_fixed=1)
+                qFixed = applyMorphonsKernels(fixedResampled, k, is_fixed=1, tryGPU=self.tryGPU)
 
             for i in range(iterations[s]):
 
                 # Deform moving image then reset displacement field
-                deformed = deformation.deformImage(movingResampled, fillValue='closest')
+                deformed = deformation.deformImage(movingResampled, fillValue='closest', tryGPU=self.tryGPU)
                 deformation.displacement = None
 
                 # Compute phase difference
@@ -163,7 +164,7 @@ class RegistrationMorphons(Registration):
                     pconv = partial(morphonsComplexConvD, deformed.imageArray)
                     qDeformed = pool.map(pconv, k)
                 else:
-                    qDeformed = applyMorphonsKernels(deformed, k, is_fixed=0)
+                    qDeformed = applyMorphonsKernels(deformed, k, is_fixed=0, tryGPU=self.tryGPU)
 
                 for n in range(6):
                     qq = np.multiply(qFixed[n], qDeformed[n])
@@ -215,9 +216,9 @@ class RegistrationMorphons(Registration):
                 certainty.imageArray = np.divide(np.power(certainty.imageArray, 2) + np.power(certaintyUpdate, 2), certainty.imageArray + certaintyUpdate + eps)
 
                 # Regularize velocity deformation and certainty
-                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.imageArray)
-                certainty.imageArray = imageFilter3D.normGaussConv(certainty.imageArray, certainty.imageArray, 1.25)
+                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.imageArray, tryGPU=self.tryGPU)
+                certainty._imageArray = imageFilter3D.normGaussConv(certainty.imageArray, certainty.imageArray, 1.25, tryGPU=self.tryGPU)
 
-        self.deformed = deformation.deformImage(self.moving, fillValue='closest')
+        self.deformed = deformation.deformImage(self.moving, fillValue='closest', tryGPU=self.tryGPU)
 
         return deformation

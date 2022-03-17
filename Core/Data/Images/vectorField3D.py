@@ -45,7 +45,7 @@ class VectorField3D(Image3D):
         self.origin = image._origin
         self.spacing = image._spacing
 
-    def warp(self, data, fillValue=0, outputType=np.float32):
+    def warp(self, data, fillValue=0, outputType=np.float32, tryGPU=True):
         """Warp 3D data using linear interpolation.
 
         Parameters
@@ -61,9 +61,9 @@ class VectorField3D(Image3D):
             Warped data.
         """
 
-        return resampler3D.warp(data, self._imageArray, self.spacing, fillValue=fillValue, outputType=outputType)
+        return resampler3D.warp(data, self._imageArray, self.spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
-    def exponentiateField(self, outputType=np.float32):
+    def exponentiateField(self, outputType=np.float32, tryGPU=True):
 
         """Exponentiate the vector field (e.g. to convert velocity in to displacement).
 
@@ -81,9 +81,9 @@ class VectorField3D(Image3D):
         displacement._imageArray = displacement._imageArray * 2 ** (-N)
 
         for r in range(N):
-            new_0 = displacement.warp(displacement._imageArray[:, :, :, 0], fillValue='closest')
-            new_1 = displacement.warp(displacement._imageArray[:, :, :, 1], fillValue='closest')
-            new_2 = displacement.warp(displacement._imageArray[:, :, :, 2], fillValue='closest')
+            new_0 = displacement.warp(displacement._imageArray[:, :, :, 0], fillValue='closest', tryGPU=tryGPU)
+            new_1 = displacement.warp(displacement._imageArray[:, :, :, 1], fillValue='closest', tryGPU=tryGPU)
+            new_2 = displacement.warp(displacement._imageArray[:, :, :, 2], fillValue='closest', tryGPU=tryGPU)
             displacement._imageArray[:, :, :, 0] += new_0
             displacement._imageArray[:, :, :, 1] += new_1
             displacement._imageArray[:, :, :, 2] += new_2

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
@@ -32,12 +33,15 @@ if __name__ == '__main__':
 
     # GENERATE MIDP
     Model4D = Dynamic3DModel()
-    Model4D.computeMidPositionImage(CT4D, 0, baseResolution=4, nbProcesses=1)
+    startTime = time.time()
+    Model4D.computeMidPositionImage(CT4D, 0, tryGPU=True)
+    stopTime = time.time()
+    print('midP computed in ', np.round(stopTime - startTime, 2), 'seconds')
 
     # GENERATE ADDITIONAL PHASES
-    im1 = Model4D.generate3DImage(0.5/4, amplitude=1)
-    im2 = Model4D.generate3DImage(2/4, amplitude=2.0)
-    im3 = Model4D.generate3DImage(2/4, amplitude=0.5)
+    im1 = Model4D.generate3DImage(0.5/4, amplitude=1, tryGPU=False)
+    im2 = Model4D.generate3DImage(2/4, amplitude=2.0, tryGPU=False)
+    im3 = Model4D.generate3DImage(2/4, amplitude=0.5, tryGPU=False)
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 4)
