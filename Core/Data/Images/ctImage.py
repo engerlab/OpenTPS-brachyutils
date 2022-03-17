@@ -24,8 +24,8 @@ class CTImage(Image3D):
     def copy(self):
         return CTImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
 
-    def resample(self, gridSize, origin, spacing, fillValue=-1000, outputType=None):
-        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
+    def resample(self, gridSize, origin, spacing, fillValue=-1000, outputType=None, tryGPU=True):
+        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
     def dumpableCopy(self):
 
