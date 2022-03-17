@@ -35,7 +35,7 @@ class RegistrationQuick(Registration):
     def __init__(self, fixed, moving):
         Registration.__init__(self, fixed, moving)
 
-    def compute(self):
+    def compute(self, tryGPU=True):
 
         """Perform registration between fixed and moving images.
 
@@ -57,7 +57,7 @@ class RegistrationQuick(Registration):
         self.deformed = self.moving.copy()
         gridSize = np.array(self.moving.gridSize()) * np.array(self.moving._spacing) / np.array(self.fixed._spacing)
         gridSize = gridSize.astype(np.int)
-        self.deformed.resample(gridSize, self.moving._origin, self.fixed._spacing)
+        self.deformed.resample(gridSize, self.moving._origin, self.fixed._spacing, tryGPU=tryGPU)
 
         # search shift in x
         fixedProfile = np.sum(self.fixed._imageArray, (0, 2))

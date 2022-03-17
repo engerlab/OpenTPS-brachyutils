@@ -200,8 +200,8 @@ class ChoseAngles_dialog(QDialog):
         self.image3D = self.prepare_image_for_viewer(Image3D.imageArray)
         self.imageShape = self.image3D.shape
         self.resolution = Image3D.spacing
-        self.imageCenter = [self.imageLabel.pos()._x() + int(self.imageLabel.width() / 2), self.imageLabel.pos()._y() + int(self.imageLabel.height() / 2)]
-        print('in ChoseAngles_dialog constructor', self.imageLabel.pos()._x())
+        self.imageCenter = [self.imageLabel.pos().x() + int(self.imageLabel.width() / 2), self.imageLabel.pos().y() + int(self.imageLabel.height() / 2)]
+        print('in ChoseAngles_dialog constructor', self.imageLabel.pos().x())
         print(self.imageCenter)
         self.distanceFromSourceToCenter = min(self.imageCenter[0], self.imageCenter[1]) - 10
         self.pannelWidth = min(self.imageLabel.width(), self.imageLabel.height())

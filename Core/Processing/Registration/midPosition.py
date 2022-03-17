@@ -9,7 +9,7 @@ from Core.Processing.Registration.registrationMorphons import RegistrationMorpho
 logger = logging.getLogger(__name__)
 
 
-def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
+def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1, tryGPU=True):
 
     """Compute mid-position image and corresponding deformations from a 4D image.
 
@@ -44,7 +44,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
             motionFieldList.append(emptyField)
         else:
             logger.info('\nRegistering phase' + str(refIndex) + ' to phase' + str(i) + '...')
-            reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=baseResolution, nbProcesses=nbProcesses)
+            reg = RegistrationMorphons(CT4D.dyn3DImageList[i], CT4D.dyn3DImageList[refIndex], baseResolution=baseResolution, nbProcesses=nbProcesses, tryGPU=tryGPU)
             motionFieldList.append(reg.compute())
             if (max(averageField.gridSize) == 0):
                 averageField.initFromImage(motionFieldList[i])
@@ -61,7 +61,7 @@ def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1):
     # deform images
     def3DImageList = []
     for i in range(len(CT4D.dyn3DImageList)):
-        def3DImageList.append(motionFieldList[i].deformImage(CT4D.dyn3DImageList[i], fillValue='closest')._imageArray)
+        def3DImageList.append(motionFieldList[i].deformImage(CT4D.dyn3DImageList[i], fillValue='closest', tryGPU=tryGPU)._imageArray)
 
     # invert fields (to have them from midp to phases)
     for i in range(len(CT4D.dyn3DImageList)):
