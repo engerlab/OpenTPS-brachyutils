@@ -3,6 +3,9 @@ from Core.Processing.DeformableDataAugmentationToolBox.generateRandomSamplesFrom
 import os
 from pathlib import Path
 import cProfile
+import time
+import numpy as np
+import concurrent
 
 testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
@@ -14,7 +17,22 @@ dynMod = loadDataStructure(dataPath)[0]
 pr = cProfile.Profile()
 pr.enable()
 
-imageList = generateRandomSamplesFromModel(dynMod, numberOfSamples=5, ampDistribution='gaussian', tryGPU=False)
+startTime = time.time()
+imageList = generateRandomSamplesFromModel(dynMod, numberOfSamples=5, ampDistribution='gaussian', tryGPU=True)
+print('first test done in ', np.round(time.time()- startTime, 2))
 
 pr.disable()
 pr.print_stats(sort="cumulative")
+#
+# imageList = []
+#
+# test = [0, 0, 0, 0, 0]
+# # processes = []
+# # for deformationIndex, deformation in enumerate(deformationList):
+# print('start multi process deformation')
+# startTime = time.time()
+# with concurrent.futures.ProcessPoolExecutor() as executor:
+#
+#     results = [executor.submit(generateRandomSamplesFromModel, dynMod, tryGPU=False) for _ in range(5)]
+#     # imageList += results
+# print('second test done in ', np.round(time.time()- startTime, 2))
