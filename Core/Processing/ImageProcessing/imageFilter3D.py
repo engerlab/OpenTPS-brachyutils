@@ -6,7 +6,7 @@ try:
     import cupy
     import cupyx.scipy.ndimage
 except:
-    print('cupy not found.')
+    pass
 
 logger = logging.getLogger(__name__)
 
