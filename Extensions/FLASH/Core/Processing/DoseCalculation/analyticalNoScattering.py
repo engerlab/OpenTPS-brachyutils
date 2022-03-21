@@ -78,8 +78,6 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         cumRSP = rsp.computeCumulativeWEPL(beam)
         cumRSP = ImageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0.)
 
-        isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(ct, beam, beam.isocenterPosition)
-
         doseImageBEV = DoseImage.fromImage3D(cumRSP)
         doseImageArray = np.zeros(doseImageBEV.imageArray.shape)
 

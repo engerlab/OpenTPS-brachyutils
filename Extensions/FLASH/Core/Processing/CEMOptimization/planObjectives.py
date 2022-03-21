@@ -29,8 +29,7 @@ class DoseMaxObjective(AbstractDoseFidelityTerm):
     def getValue(self, weights:np.ndarray) -> float:
         doseImage = self.doseCalculator.computeDose(weights)
 
-        dose = doseImage.imageArray
-        # dose = dose[self.roi.imageArray.astype(bool)]
+        dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
 
         dose = dose.flatten()
@@ -43,7 +42,7 @@ class DoseMaxObjective(AbstractDoseFidelityTerm):
     def getDerivative(self, weights:np.ndarray) -> np.ndarray:
         doseImage = self.doseCalculator.computeDose(weights)
 
-        dose = doseImage.imageArray
+        dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
 
         dose = np.flip(dose, 0)
@@ -74,8 +73,7 @@ class DoseMinObjective(AbstractDoseFidelityTerm):
     def getValue(self, weights:np.ndarray) -> float:
         doseImage = self.doseCalculator.computeDose(weights)
 
-        dose = doseImage.imageArray
-        # dose = dose[self.roi.imageArray.astype(bool)]
+        dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
         dose = dose.flatten()
 
@@ -87,7 +85,7 @@ class DoseMinObjective(AbstractDoseFidelityTerm):
     def getDerivative(self, weights:np.ndarray) -> np.ndarray:
         doseImage = self.doseCalculator.computeDose(weights)
 
-        dose = doseImage.imageArray
+        dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
 
         dose = np.flip(dose, 0)

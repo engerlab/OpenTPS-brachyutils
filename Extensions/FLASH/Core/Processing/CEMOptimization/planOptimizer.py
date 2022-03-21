@@ -1,6 +1,6 @@
 
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import minimize, Bounds
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Plan.rtPlan import RTPlan
@@ -38,9 +38,10 @@ class PlanOptimizer:
         res = minimize(objectives.getValue, np.ones(plan.spotWeights.shape),
                         method='L-BFGS-B',
                         jac=objectives.getDerivative,
-                        bounds=None, tol=None, callback=None,
+                        tol=None, callback=None,
                         options={'disp': True, 'maxcor': 10, 'ftol': 1e-4, 'gtol': 1e-4, 'norm': 1,
-                           'maxfun': 15000, 'maxiter': 200, 'iprint': -1, 'maxls': 5, 'finite_diff_rel_step': None})
+                           'maxfun': 15000, 'maxiter': 200, 'iprint': -1, 'maxls': 10, 'finite_diff_rel_step': None},
+                        bounds=Bounds(0., 9999.))
 
         plan.spotWeights = res.x
 
@@ -50,6 +51,7 @@ class PlanDoseCalculator:
         self.ctCalibration = None
         self.ct = None
         self.plan = None
+        self.roi = None
         self.nbPrimaries = 1e4
         self._doseCalculator = MCsquareDoseCalculator()
 
@@ -75,7 +77,7 @@ class PlanDoseCalculator:
         self._doseCalculator.ctCalibration = self.ctCalibration
         self._doseCalculator.nbPrimaries = self.nbPrimaries
 
-        self._beamlets = self._doseCalculator.computeBeamlets(self.ct, self.plan)
+        self._beamlets = self._doseCalculator.computeBeamlets(self.ct, self.plan, self.roi)
 
     def _recomputeDose(self):
         if self._beamlets is None:

@@ -40,7 +40,7 @@ class PlanInitializer:
         beam.isocenterPosition = targetROI.centerOfMass
 
         cumRSP = rspImage.computeCumulativeWEPL(beam)
-        imageArray = cumRSP.imageArray
+        imageArray = np.array(cumRSP.imageArray)
         imageArray[np.logical_not(targetROI.imageArray.astype(bool))]= 0
         cumRSP.imageArray = imageArray
 

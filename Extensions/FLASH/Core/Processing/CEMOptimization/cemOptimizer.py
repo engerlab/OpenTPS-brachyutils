@@ -10,6 +10,7 @@ from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Images.rspImage import RSPImage
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
@@ -40,7 +41,7 @@ class CEMOptimizer:
 
         @cemArray.setter
         def cemArray(self, cemVals):
-            self._cemArray = cemVals
+            self._cemArray = np.array(cemVals)
 
         def append(self, objective:CEMAbstractDoseFidelityTerm, weight:float=1.):
             self.objectiveWeights.append(weight)
@@ -68,10 +69,11 @@ class CEMOptimizer:
             return val
 
     def __init__(self):
-        self.maxIterations = 25
+        self.maxIterations = 3
         self.spotSpacing = 5
         self.targetMask = None
         self.absTol = 1
+        self.ctCalibration:AbstractCTCalibration = None
 
         self._ct = None
         self._iteration = 0
@@ -79,7 +81,7 @@ class CEMOptimizer:
         self._planInitializer = CEMPlanInitializer()
         self._planOptimizer = PlanOptimizer()
         self._objectives = self._Objectives()
-        self._step = 1.
+        self._maxStep = 5. # TODO User should be able to set this
 
     def appendObjective(self, objective: CEMAbstractDoseFidelityTerm, weight: float = 1.):
         self._objectives.append(objective, weight)
@@ -89,6 +91,7 @@ class CEMOptimizer:
         self._ct = ct
 
         x = self._getCEMFromPlan()
+        self._initializePlan()
         spotWeights, cemVal = self._gd(x)
 
         self._plan.spotWeights = spotWeights
@@ -102,6 +105,7 @@ class CEMOptimizer:
                 beam.cem = CEM.fromBeam(self._ct, beam)
 
             cemArray = beam.cem.imageArray
+            cemArray = np.ones(cemArray.shape) * energyToRange(beam.layers[0].nominalEnergy)- self._meanWETOfTarget(beam)
 
             if len(cemVal)==0:
                 cemVal = cemArray.flatten()
@@ -110,32 +114,42 @@ class CEMOptimizer:
 
         return cemVal
 
+    def _meanWETOfTarget(self, beam):
+        rsp = RSPImage.fromCT(self._ct, self.ctCalibration)
+        wepl = rsp.computeCumulativeWEPL(beam)
+
+        weplBEV = ImageTransform3D.dicomToIECGantry(wepl, beam, fillValue=0.)
+        roiBEV = ImageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0.)
+
+        weplTarget = weplBEV.imageArray[roiBEV.imageArray.astype(bool)]
+
+        return np.mean(weplTarget)
+
+
     def _gd(self, x:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         fVal = np.Inf
 
         self._objectives.cemArray = x
-        self._initializePlan()
-        self._optimizePlan()
-        # TODO : simplify plan and reoptimize plan
+        PlanOptimizer.run(self._objectives, self._plan)
 
         for i in range(self.maxIterations):
             fValPrev = fVal
             xPrev = x
-            planPrev = copy.deepcopy(self._plan)
+            spotWeightsPrev = np.array(self._plan.spotWeights)
 
             self._iteration = i
 
-            x = x - self._step * self._objectives.getCEMDerivative(self._plan.spotWeights)
+            direction = self._objectives.getCEMDerivative(self._plan.spotWeights)
+
+            x = x + self._maxStep * direction / np.max(np.abs(direction))
 
             self._objectives.cemArray = x
-            self._initializePlan()
-            self._optimizePlan()
-            # TODO : simplify plan and reoptimize plan
+            PlanOptimizer.run(self._objectives, self._plan)
 
             fVal = self._objectives.getValue(self._plan.spotWeights)
 
-            if (fValPrev - fVal)<self.absTol:
-                return planPrev.spotWeights, xPrev
+            if self._iteration>2 and (fValPrev - fVal)<self.absTol:
+                return spotWeightsPrev, xPrev
 
         return self._plan.spotWeights, x
 
@@ -144,10 +158,7 @@ class CEMOptimizer:
         self._planInitializer.plan = self._plan
         self._planInitializer.targetMask = self.targetMask
 
-        self._planInitializer.intializePlan(self.spotSpacing, self.spotSpacing)
-
-    def _optimizePlan(self):
-        PlanOptimizer.run(self._objectives, self._plan)
+        self._planInitializer.intializePlan(self.spotSpacing, 0.)
 
     def _setCEMInPlan(self, cemThickness:np.ndarray):
         ind = 0
@@ -205,6 +216,8 @@ class CEMPlanInitializer:
             for i in range(spotPosCandidates.shape[0]):
                 spotPos = spotPosCandidates[i, :]
                 layer.addToSpot(spotPos[0], spotPos[1], 0.) # We do not append spot but rather add it because append throws an exception if already exists
+
+            beam.spotWeights = np.ones(beam.spotWeights.shape)
 
     def _defineHexagSpotGridAroundIsocenter(self, spotSpacing:float, imageBEV:Image3D, isocenterBEV:Sequence[float]):
         origin = imageBEV.origin
@@ -266,6 +279,7 @@ class CEMDoseCalculator:
         self.ctCalibration:AbstractCTCalibration = None
         self.ct:CTImage = None
         self.plan = None
+        self.roi = None
         self.nbPrimaries = 1e4
         self.derivativeMode = self.DerivativeModes.DEFAULT
 
@@ -274,69 +288,78 @@ class CEMDoseCalculator:
         self._analyticalCalculator = AnalyticalNoScattering()
 
         self._ctCEFForBeamlets = None
-        self._weightsForBeamlets: np.ndarray = None
-        self._cemThicknessForBeamlets = None
+        self._weightsForBeamlets = np.array([])
+        self._cemThicknessForBeamlets = np.array([])
 
-        self._cemThicknessForDerivative = None
-        self._weightsForDerivative: np.ndarray = None
+        self._cemThicknessForDerivative = np.array([])
+        self._weightsForDerivative = np.array([])
 
         self._sparseDerivativeCEM = None
         self._analyticalDerivative = None
         self._dose:DoseImage = None
         self._beamlets:SparseBeamlets = None
 
+        self.iteration = 0 # debug
+
     def computeDose(self, weights:np.ndarray, cemThickness:np.ndarray) -> DoseImage:
         if self._doseMustBeRecomputed(weights, cemThickness):
             self.computeBeamlets(cemThickness)
-            self._weightsForBeamlets = weights
-            self._updateDose()
+            self._updateDose(weights)
 
         return self._dose
 
     def _doseMustBeRecomputed(self, weights:np.ndarray, cemThickness:np.ndarray):
-        return not(np.array_equal(weights, self._weightsForBeamlets)) or self._beamletsMustBeRecomputed(cemThickness)
+        if len(self._weightsForBeamlets)==0:
+            return True
+
+        return not(np.allclose(weights, self._weightsForBeamlets, atol=0.1)) or self._beamletsMustBeRecomputed(cemThickness)
 
     def _beamletsMustBeRecomputed(self, cemThickness:np.ndarray) -> bool:
-        return not np.array_equal(cemThickness, self._cemThicknessForBeamlets)
+        if len(self._cemThicknessForBeamlets)==0:
+            return True
 
-    def _updateDose(self):
+        return not np.allclose(cemThickness, self._cemThicknessForBeamlets, atol=0.1)
+
+    def _updateDose(self, weights:np.ndarray):
+        self._weightsForBeamlets = np.array(weights)
         self._beamlets.beamletWeights = self._weightsForBeamlets
         self._dose = self._beamlets.toDoseImage()
 
     def computeBeamlets(self, cemThickness: np.ndarray) -> SparseBeamlets:
         if self._beamletsMustBeRecomputed(cemThickness):
-            self._cemThicknessForBeamlets = cemThickness
-            self._updateCTForBeamletsWithCEM()
+            self._updateCTForBeamletsWithCEM(cemThickness)
             self._updateBeamlets()
 
         return self._beamlets
 
-    def _updateCTForBeamletsWithCEM(self):
+    def _updateCTForBeamletsWithCEM(self, cemThickness:np.ndarray):
+        self._ctCEFForBeamlets = copy.deepcopy(self.ct)
+        self._ctCEFForBeamlets.imageArray = np.array(self.ct.imageArray)
+
         ind = 0
         for beam in self.plan:
             cem = copy.deepcopy(beam.cem)
 
             cemArray = beam.cem.imageArray
-            cemBeamVal = self._cemThicknessForBeamlets[ind:ind+cemArray.shape[0]*cemArray.shape[1]]
+            cemBeamVal = cemThickness[ind:ind+cemArray.shape[0]*cemArray.shape[1]]
             beam.cem.imageArray = np.reshape(cemBeamVal, (cemArray.shape[0], cemArray.shape[1]))
 
-            cemROI = cem.computeROI(self.ct, beam)
+            cemROI = beam.cem.computeROI(self.ct, beam)
 
-            self._ctCEFForBeamlets = copy.deepcopy(self.ct)
-
-            ctArray = self.ct.imageArray
+            ctArray = self._ctCEFForBeamlets.imageArray
             ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
-
             self._ctCEFForBeamlets.imageArray = ctArray
 
             ind += cemArray.shape[0]*cemArray.shape[1]
+
+        self._cemThicknessForBeamlets = np.array(cemThickness)
 
     def _updateBeamlets(self):
         self._doseCalculator.beamModel = self.beamModel
         self._doseCalculator.ctCalibration = self.ctCalibration
         self._doseCalculator.nbPrimaries = self.nbPrimaries
 
-        self._beamlets = self._doseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan)
+        self._beamlets = self._doseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan, self.roi)
 
     def computeDerivative(self, weights:np.ndarray, cemThickness:np.ndarray) -> Union[Beamlets, Sequence[DoseImage]]:
         if self.derivativeMode==self.DerivativeModes.ANALYTICAL:
@@ -347,14 +370,25 @@ class CEMDoseCalculator:
             raise ValueError('derivativeMode is incorrect')
 
     def computeAnalyticalDerivative(self, weights:np.ndarray, cemThickness:np.ndarray) -> Sequence[DoseImage]:
-        if not (np.array_equal(cemThickness, self._cemThicknessForDerivative) and np.array_equal(weights, self._weightsForDerivative)):
-            self._cemThicknessForDerivative = cemThickness
-            self._weightsForDerivative = weights
+        if self._derivativeMustBeRecomputed(weights, cemThickness):
+            self._cemThicknessForDerivative = np.array(cemThickness)
+            self._weightsForDerivative = np.array(weights)
             self._updateAnalyticalDerivative()
 
         return self._analyticalDerivative
 
+    def _derivativeMustBeRecomputed(self, weights:np.ndarray, cemThickness:np.ndarray) -> bool:
+        if len(self._cemThicknessForDerivative)==0:
+            return True
+
+        if len(self._weightsForDerivative)==0:
+            return True
+
+        return not(np.allclose(cemThickness, self._cemThicknessForDerivative, atol=0.1) and np.allclose(weights, self._weightsForDerivative, atol=0.1))
+
     def _updateAnalyticalDerivative(self):
+        deltaR = 0.1
+
         self._analyticalCalculator.beamModel = self.beamModel
         self._analyticalCalculator.ctCalibration = self.ctCalibration
 
@@ -371,13 +405,15 @@ class CEMDoseCalculator:
 
         doseSequence = self._analyticalCalculator.computeDosePerBeam(self.ct, plan)
 
-        plan2 = self._lowerPlanEnergy(self.plan, deltaR=1.)
+        plan2 = self._lowerPlanEnergy(plan, deltaR=deltaR)
         doseSequence2 = self._analyticalCalculator.computeDosePerBeam(self.ct, plan2)
 
         derivSequence = []
         for i, dose in enumerate(doseSequence):
-            dose.imageArray = dose.imageArray - doseSequence2[i].imageArray
-            derivSequence.append(dose)
+            dose.imageArray = (dose.imageArray - doseSequence2[i].imageArray)/deltaR
+            outDose = copy.deepcopy(dose)
+            outDose = ImageTransform3D.dicomToIECGantry(outDose, plan.beams[i], fillValue=0.)
+            derivSequence.append(outDose)
 
         self._analyticalDerivative = derivSequence
 
@@ -408,7 +444,7 @@ class CEMDoseCalculator:
     def _lowerPlanEnergy(self, plan:RTPlan, deltaR:float=1.) -> RTPlan:
         plan2 = copy.deepcopy(plan)
 
-        for beam in plan:
+        for beam in plan2:
             for layer in beam:
                 layer.nominalEnergy = rangeToEnergy(energyToRange(layer.nominalEnergy)-deltaR)
 
