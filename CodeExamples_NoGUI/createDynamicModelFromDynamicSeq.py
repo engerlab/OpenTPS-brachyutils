@@ -19,16 +19,11 @@ import numpy as np
 testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
 ## read a serialized dynamic sequence
-# dataPath = testDataPath + "lightDynSeq.p"
-# dynSeq = loadDataStructure(dataPath)[0]
-
-dataPath = '/home/damien/Desktop/Patient0/Patient0DynSeq.p'
-patient = loadDataStructure(dataPath)[0]
-dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
+dataPath = testDataPath + "lightDynSeq.p"
+dynSeq = loadDataStructure(dataPath)[0]
 
 print(type(dynSeq))
-print(len(dynSeq.dyn3DImageList))
-
+print(len(dynSeq.dyn3DImageList), 'images in the dynamic sequence')
 
 ## create Dynamic3DModel
 model3D = Dynamic3DModel()
