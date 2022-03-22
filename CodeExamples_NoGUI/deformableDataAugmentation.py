@@ -18,7 +18,7 @@ patient = loadDataStructure(dataPath)[0]
 dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
 dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
-simulationTime = 10
+simulationTime = 30
 amplitude = 15
 
 newSignal = SyntheticBreathingSignal(amplitude=amplitude,
@@ -94,7 +94,7 @@ print('/'*80, '\n', '/'*80)
 
 ## by signal sub part version
 sequenceSize = newSignal.breathingSignal.shape[0]
-subSequenceSize = 15
+subSequenceSize = 25
 print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize)
 
 subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize/subSequenceSize))]
