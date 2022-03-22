@@ -5,7 +5,12 @@ import logging
 import multiprocessing as mp
 from functools import partial
 
-from Core.Data.Images.image3D import Image3D
+try:
+    import cupy
+    import cupyx.scipy.signal
+except:
+    print('cupy not found.')
+
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
@@ -18,22 +23,45 @@ def morphonsConv(im, k):
 
 
 def morphonsComplexConvS(im, k):
-    return scipy.signal.fftconvolve(im, np.real(k), mode='same') + scipy.signal.fftconvolve(im, np.imag(k),
-                                                                                            mode='same') * 1j
+    return scipy.signal.fftconvolve(im, np.real(k), mode='same') + scipy.signal.fftconvolve(im, np.imag(k), mode='same') * 1j
 
 
 def morphonsComplexConvD(im, k):
-    return scipy.signal.fftconvolve(im, np.real(k), mode='same') - scipy.signal.fftconvolve(im, np.imag(k),
-                                                                                            mode='same') * 1j
+    return scipy.signal.fftconvolve(im, np.real(k), mode='same') - scipy.signal.fftconvolve(im, np.imag(k), mode='same') * 1j
+
+
+def applyMorphonsKernels(image, k, is_fixed=1, tryGPU=True):
+    output = []
+    if image._imageArray.size > 1e5 and tryGPU:
+        try:
+            # print('in registration morphons applyMorphonsKernels cupy used')
+            data = cupy.asarray(image._imageArray)
+            for n in range(6):
+                if(is_fixed):
+                    output.append(cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.real(k[n])), mode='same')) + cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.imag(k[n])), mode='same')) * 1j)
+                else:
+                    output.append(cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.real(k[n])), mode='same')) - cupy.asnumpy(cupyx.scipy.signal.fftconvolve(data, cupy.asarray(np.imag(k[n])), mode='same')) * 1j)
+        except:
+            logger.warning('cupy not used for morphons kernel convolution.')
+
+    if(len(output)==0):
+        for n in range(6):
+            if (is_fixed):
+                output.append(scipy.signal.fftconvolve(image._imageArray, np.real(k[n]), mode='same') + scipy.signal.fftconvolve(image._imageArray, np.imag(k[n]), mode='same') * 1j)
+            else:
+                output.append(scipy.signal.fftconvolve(image._imageArray, np.real(k[n]), mode='same') - scipy.signal.fftconvolve(image._imageArray, np.imag(k[n]), mode='same') * 1j)
+
+    return output
 
 
 class RegistrationMorphons(Registration):
 
-    def __init__(self, fixed, moving, baseResolution=2.5, nbProcesses=-1):
+    def __init__(self, fixed, moving, baseResolution=2.5, nbProcesses=-1, tryGPU=True):
 
         Registration.__init__(self, fixed, moving)
         self.baseResolution = baseResolution
         self.nbProcesses = nbProcesses
+        self.tryGPU = tryGPU
 
     def compute(self):
 
@@ -95,14 +123,14 @@ class RegistrationMorphons(Registration):
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing)
+            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing, tryGPU=self.tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing)
+            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing, tryGPU=self.tryGPU)
 
             if s != 0:
-                deformation.resampleToImageGrid(fixedResampled)
+                deformation.resampleToImageGrid(fixedResampled, tryGPU=self.tryGPU)
                 certainty.resample(fixedResampled.gridSize, fixedResampled._origin,
-                                   fixedResampled._spacing, fillValue=0)
+                                   fixedResampled._spacing, fillValue=0, tryGPU=self.tryGPU)
             else:
                 deformation.initFromImage(fixedResampled)
                 certainty = fixedResampled.copy()
@@ -113,16 +141,13 @@ class RegistrationMorphons(Registration):
                 pconv = partial(morphonsComplexConvS, fixedResampled._imageArray)
                 qFixed = pool.map(pconv, k)
             else:
-                qFixed = []
-                for n in range(6):
-                    qFixed.append(scipy.signal.fftconvolve(fixedResampled._imageArray, np.real(k[n]),
-                                                           mode='same') + scipy.signal.fftconvolve(
-                        fixedResampled._imageArray, np.imag(k[n]), mode='same') * 1j)
+                qFixed = applyMorphonsKernels(fixedResampled, k, is_fixed=1, tryGPU=self.tryGPU)
 
             for i in range(iterations[s]):
 
-                # Deform moving image
-                deformed = deformation.deformImage(movingResampled, fillValue='closest')
+                # Deform moving image then reset displacement field
+                deformed = deformation.deformImage(movingResampled, fillValue='closest', tryGPU=self.tryGPU)
+                deformation.displacement = None
 
                 # Compute phase difference
                 a11 = np.zeros_like(qFixed[0], dtype="float64")
@@ -136,16 +161,10 @@ class RegistrationMorphons(Registration):
                 b3 = np.zeros_like(qFixed[0], dtype="float64")
 
                 if (self.nbProcesses > 1):
-                    pconv = partial(morphonsComplexConvD, deformed._imageArray)
+                    pconv = partial(morphonsComplexConvD, deformed.imageArray)
                     qDeformed = pool.map(pconv, k)
                 else:
-                    qDeformed = []
-                    for n in range(6):
-                        qDeformed.append(
-                            scipy.signal.fftconvolve(deformed._imageArray, np.real(k[n]),
-                                                     mode='same') - scipy.signal.fftconvolve(deformed._imageArray,
-                                                                                             np.imag(k[n]),
-                                                                                             mode='same') * 1j)
+                    qDeformed = applyMorphonsKernels(deformed, k, is_fixed=0, tryGPU=self.tryGPU)
 
                 for n in range(6):
                     qq = np.multiply(qFixed[n], qDeformed[n])
@@ -165,7 +184,7 @@ class RegistrationMorphons(Registration):
                     b3 += qDirections[n][2] * vk
                     a33 += qDirections[n][2] * qDirections[n][2] * ck2
 
-                fieldUpdate = np.zeros_like(deformation.velocity._imageArray)
+                fieldUpdate = np.zeros_like(deformation.velocity.imageArray)
                 fieldUpdate[:, :, :, 0] = (a22 * a33 - np.power(a23, 2)) * b1 + (a13 * a23 - a12 * a33) * b2 + (
                         a12 * a23 - a13 * a22) * b3
                 fieldUpdate[:, :, :, 1] = (a13 * a23 - a12 * a33) * b1 + (a11 * a33 - np.power(a13, 2)) * b2 + (
@@ -185,24 +204,21 @@ class RegistrationMorphons(Registration):
                 fieldUpdate[z, 1] = 0
                 fieldUpdate[z, 2] = 0
                 certaintyUpdate[z] = 0
-                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)*deformation.velocity._spacing[0]
-                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)*deformation.velocity._spacing[1]
-                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)*deformation.velocity._spacing[2]
+                fieldUpdate[:, :, :, 0] = -np.divide(fieldUpdate[:, :, :, 0], det)*deformation.velocity.spacing[0]
+                fieldUpdate[:, :, :, 1] = -np.divide(fieldUpdate[:, :, :, 1], det)*deformation.velocity.spacing[1]
+                fieldUpdate[:, :, :, 2] = -np.divide(fieldUpdate[:, :, :, 2], det)*deformation.velocity.spacing[2]
 
                 # Accumulate deformation and certainty
-                deformation.velocity._imageArray[:, :, :, 0] += np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate,
-                                                                                                               certainty._imageArray + certaintyUpdate + eps))
-                deformation.velocity._imageArray[:, :, :, 1] += np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate,
-                                                                                                               certainty._imageArray + certaintyUpdate + eps))
-                deformation.velocity._imageArray[:, :, :, 2] += np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate,
-                                                                                                               certainty._imageArray + certaintyUpdate + eps))
-                certainty._imageArray = np.divide(np.power(certainty._imageArray, 2) + np.power(certaintyUpdate, 2),
-                                                  certainty._imageArray + certaintyUpdate + eps)
+                fieldUpdate[:, :, :, 0] = deformation.velocity.imageArray[:, :, :, 0] + np.multiply(fieldUpdate[:, :, :, 0], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
+                fieldUpdate[:, :, :, 1] = deformation.velocity.imageArray[:, :, :, 1] + np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
+                fieldUpdate[:, :, :, 2] = deformation.velocity.imageArray[:, :, :, 2] + np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
+                deformation.setVelocityArray(fieldUpdate)
+                certainty.imageArray = np.divide(np.power(certainty.imageArray, 2) + np.power(certaintyUpdate, 2), certainty.imageArray + certaintyUpdate + eps)
 
                 # Regularize velocity deformation and certainty
-                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty._imageArray)
-                certainty._imageArray = imageFilter3D.normGaussConv(certainty._imageArray, certainty._imageArray, 1.25)
+                self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.imageArray, tryGPU=self.tryGPU)
+                certainty._imageArray = imageFilter3D.normGaussConv(certainty.imageArray, certainty.imageArray, 1.25, tryGPU=self.tryGPU)
 
-        self.deformed = deformation.deformImage(self.moving, fillValue='closest')
+        self.deformed = deformation.deformImage(self.moving, fillValue='closest', tryGPU=self.tryGPU)
 
         return deformation

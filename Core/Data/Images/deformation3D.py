@@ -59,6 +59,26 @@ class Deformation3D(Image3D):
     def copy(self):
         return Deformation3D(velocity=copy.deepcopy(self.velocity), displacement=copy.deepcopy(self.displacement), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
+    def setVelocityArray(self, velocityArray):
+        self.velocity._imageArray = velocityArray
+        self.displacement = None
+
+    def setDisplacementArray(self, displacementArray):
+        self.displacement._imageArray = displacementArray
+        self.velocity = None
+
+    def setVelocityArrayXYZ(self, velocityArrayX, velocityArrayY, velocityArrayZ):
+        self.velocity._imageArray[:, :, :, 0] = velocityArrayX
+        self.velocity._imageArray[:, :, :, 1] = velocityArrayY
+        self.velocity._imageArray[:, :, :, 2] = velocityArrayZ
+        self.displacement = None
+
+    def setDisplacementArrayXYZ(self, displacementArrayX, displacementArrayY, displacementArrayZ):
+        self.displacement._imageArray[:, :, :, 0] = displacementArrayX
+        self.displacement._imageArray[:, :, :, 1] = displacementArrayY
+        self.displacement._imageArray[:, :, :, 2] = displacementArrayZ
+        self.velocity = None
+
     def initFromImage(self, image):
         """Initialize deformation using the voxel grid of the input image.
 
@@ -108,7 +128,7 @@ class Deformation3D(Image3D):
         self.angles = field._angles
         self.patientInfo = field.patientInfo
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
         """Resample deformation (velocity and/or displacement field) according to new voxel grid using linear interpolation.
 
             Parameters
@@ -126,13 +146,13 @@ class Deformation3D(Image3D):
             """
 
         if not(self.velocity is None):
-            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
+            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         if not(self.displacement is None):
-            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
+            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def deformImage(self, image, fillValue=-1000, outputType=np.float32):
+    def deformImage(self, image, fillValue=-1000, outputType=np.float32, tryGPU=True):
         """Deform 3D image using linear interpolation.
 
             Parameters
@@ -149,18 +169,17 @@ class Deformation3D(Image3D):
             """
 
         if (self.displacement is None):
-            field = self.velocity.exponentiateField()
-        else:
-            field = self.displacement
+            self.displacement = self.velocity.exponentiateField(tryGPU=tryGPU)
+
+        field = self.displacement.copy()
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
-            field = field.copy()
-            field.resample(image.gridSize, image._origin, image._spacing)
+            field.resample(image.gridSize, image._origin, image._spacing, tryGPU=tryGPU)
 
         image = image.copy()
         init_dtype = image._imageArray.dtype
-        image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType)
+        image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
         if init_dtype == 'bool':
             image._imageArray[image._imageArray < 0.5] = 0

@@ -119,7 +119,7 @@ class Image3D(PatientData):
         else:
             return False
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
         """Resample image according to new voxel grid using linear interpolation.
 
             Parameters
@@ -136,11 +136,11 @@ class Image3D(PatientData):
                 type of the output.
             """
 
-        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType)
+        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         self._origin = np.array(origin)
         self._spacing = np.array(spacing)
 
-    def resampleToImageGrid(self, otherImage, fillValue=0, outputType=None):
+    def resampleToImageGrid(self, otherImage, fillValue=0, outputType=None, tryGPU=True):
         """Resample image using the voxel grid of another image given as input, using linear interpolation.
 
             Parameters
@@ -155,7 +155,7 @@ class Image3D(PatientData):
 
         if (not otherImage.hasSameGrid(self)):
             logger.info('Resample image to CT grid.')
-            self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType)
+            self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
     def getDataAtPosition(self, position: Sequence):
         voxelIndex = self.getVoxelIndexFromPosition(position)

@@ -55,8 +55,8 @@ class ROIMask(Image3D):
 
         self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
-        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32')
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
+        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32', tryGPU=tryGPU)
         self.data = self._imageArray >= 0.5
         if not(outputType is None):
             self.data = self.data.astype(outputType)
