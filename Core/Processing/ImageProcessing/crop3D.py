@@ -49,21 +49,21 @@ def crop3DDataAroundBox(data, box, marginInMM=10):
 
     elif isinstance(data, Dynamic3DModel):
         print('Crop dynamic 3D model')
-        crop3DDataAroundBox(data.midp, box)
+        crop3DDataAroundBox(data.midp, box, marginInMM=marginInMM)
         for field in data.deformationList:
             if field.velocity != None:
                 print('Crop velocity field')
-                crop3DDataAroundBox(field.velocity, box)
+                crop3DDataAroundBox(field.velocity, box, marginInMM=marginInMM)
             if field.displacement != None:
                 print('Crop displacement field')
-                crop3DDataAroundBox(field.displacement, box)
+                crop3DDataAroundBox(field.displacement, box, marginInMM=marginInMM)
 
 
     elif isinstance(data, Dynamic3DSequence):
         print('Crop dynamic 3D sequence')
 
         for image3D in data.dyn3DImageList:
-            crop3DDataAroundBox(image3D, box)
+            crop3DDataAroundBox(image3D, box, marginInMM=marginInMM)
 
 
 

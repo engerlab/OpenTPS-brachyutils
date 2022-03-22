@@ -33,55 +33,19 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
         print('Numbers of signals and ROI do not match')
         return
 
-    # ## get displacement fields from velocity fields
-    # if model.deformationList[0].displacement == None:
-    #     print('Compute displacement fields')
-    #     for fieldIndex, field in enumerate(model.deformationList):
-    #         print('Field', fieldIndex+1, '/', len(model.deformationList))
-    #         field.displacement = field.velocity.exponentiateField()
-
     if signalIdxUsed == [0, 0]:
         signalIdxUsed = [0, signalList[0].shape[0]]
 
-    # print('Signal indexes used', signalIdxUsed)
+    print('Signal indexes used', signalIdxUsed)
 
     ## loop over ROIs
     phaseValueByROIList = []
     for ROIndex, ROI in enumerate(ROIList):
-
-        ## get model deformation values for the specified dimension at the ROI location
-        modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed, tryGPU=tryGPU)
-
-        # plt.figure()
-        # plt.plot(modelDefValuesArray)
-        # plt.show()
-
-        ## get the midP value for the specified dimension
-        meanPos = np.mean(modelDefValuesArray)  ## in case of synthetic signal use, this should be 0 ? this is not exactly 0 by using this mean on a particular dimension
-
-        # split into ascent and descent subset for the ROI location
-        ascentPart, ascentPartIndexes, descentPart, descentPartIndexes, amplitude = splitAscentDescentSubsets(modelDefValuesArray)
-
-        phaseValueList = []
-        ## loop over breathing signal samples
-        for sampleIndex in range(signalIdxUsed[0], signalIdxUsed[1]):
-
-            ## get the ascent or descent situation and compute the phase value for each sample
-            ascentOrDescentCase = isAscentOrDescentCase(signalList[ROIndex], sampleIndex)
-
-            if ascentOrDescentCase == "descending":
-                phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], descentPart, descentPartIndexes, ascentOrDescentCase, meanPos)
-            elif ascentOrDescentCase == "ascending":
-                phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], ascentPart, ascentPartIndexes, ascentOrDescentCase, meanPos)
-            ## add the resulting phase to the list for each breathing signal sample
-            phaseValueList.append(phaseRatio)
-
-        ## add the phaseValueList to the complete list for each ROI
-        phaseValueByROIList.append(phaseValueList)
+        phaseValueByROIList.append(getPhaseValueList(ROI, model, signalList[ROIndex], signalIdxUsed, dimensionUsed=dimensionUsed, tryGPU=tryGPU))
 
     ## At this point the phase information are computed, now the part where the images are created starts
     dynseq = Dynamic3DSequence()
-    dynseq.name = 'GeneratedFromBreathingSignal'
+    dynseq.name = 'BreathingSigGenerated'
 
     ## loop over breathing signal sample
     for breathingSignalSampleIndex in range(len(phaseValueByROIList[0])):
@@ -100,12 +64,16 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
                 phaseList.append(phase[1]/10)
                 amplitudeList.append(phase[2])
 
-        ## generate the deformation field combining the fields for each points and phase info
-        df1, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
-        ## apply it to the midp image
-        im1 = df1.deformImage(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
+        if len(ROIList) > 1:
+            ## generate the deformation field combining the fields for each points and phase info
+            deformation, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
+        else:
+            deformation = model.generate3DDeformation(phaseList[0], amplitude=amplitudeList[0])
 
+        ## apply the field to the midp image and give it a name
+        im1 = deformation.deformImage(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
         im1.name = dynseq.name + '_' + str(breathingSignalSampleIndex)
+
         ## add the image to the dynamic sequence
         dynseq.dyn3DImageList.append(im1)
 
@@ -119,8 +87,6 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
 
     """
 
-    print('in generateDeformationListFromBreathingSignalsAndModel --> if there is only one ROI, this function does too much stuff')
-
     if len(signalList) != len(ROIList):
         print('Numbers of signals and ROI do not match')
         return
@@ -133,41 +99,10 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
     ## loop over ROIs
     phaseValueByROIList = []
     for ROIndex, ROI in enumerate(ROIList):
-
-        ## get model deformation values for the specified dimension at the ROI location
-        modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed, tryGPU=tryGPU)
-
-        # plt.figure()
-        # plt.plot(modelDefValuesArray)
-        # plt.show()
-
-        ## get the midP value for the specified dimension
-        meanPos = np.mean(modelDefValuesArray)  ## in case of synthetic signal use, this should be 0 ? this is not exactly 0 by using this mean on a particular dimension
-
-        # split into ascent and descent subset for the ROI location
-        ascentPart, ascentPartIndexes, descentPart, descentPartIndexes, amplitude = splitAscentDescentSubsets(modelDefValuesArray)
-
-        phaseValueList = []
-        ## loop over breathing signal samples
-        for sampleIndex in range(signalIdxUsed[0], signalIdxUsed[1]):
-
-            ## get the ascent or descent situation and compute the phase value for each sample
-            ascentOrDescentCase = isAscentOrDescentCase(signalList[ROIndex], sampleIndex)
-
-            if ascentOrDescentCase == "descending":
-                phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], descentPart, descentPartIndexes, ascentOrDescentCase, meanPos)
-            elif ascentOrDescentCase == "ascending":
-                phaseRatio = computePhaseRatio(signalList[ROIndex][sampleIndex], ascentPart, ascentPartIndexes, ascentOrDescentCase, meanPos)
-            ## add the resulting phase to the list for each breathing signal sample
-            phaseValueList.append(phaseRatio)
-
-        ## add the phaseValueList to the complete list for each ROI
-        phaseValueByROIList.append(phaseValueList)
+        phaseValueByROIList.append(getPhaseValueList(ROI, model, signalList[ROIndex], signalIdxUsed, dimensionUsed=dimensionUsed, tryGPU=tryGPU))
 
     ## At this point the phase information are computed, now the part where the images are created starts
-    ## New empty dynamic 3D sequence is created
-    # dynseq = Dynamic3DSequence()
-    # dynseq.name = 'GeneratedFromBreathingSignal'
+    ## New empty list to gather the deformations is created
     deformationList = []
 
     ## loop over breathing signal sample
@@ -186,12 +121,49 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
                 phaseList.append(phase[1]/10)
                 amplitudeList.append(phase[2])
 
-        ## generate the deformation field combining the fields for each points and phase info
-        print('iciiii', phaseList, amplitudeList)
-        df1, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
-        deformationList.append(df1)
+        if len(ROIList) > 1:
+            ## generate the deformation field combining the fields for each points and phase info
+            deformation, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
+        else:
+            deformation = model.generate3DDeformation(phaseList[0], amplitude=amplitudeList[0])
+
+        deformation.name = str(signalIdxUsed[0] + breathingSignalSampleIndex)
+        deformationList.append(deformation)
 
     return deformationList
+
+def getPhaseValueList(ROI, model, signal, signalIdxUsed, dimensionUsed='Z', tryGPU=True):
+
+    ## get model deformation values for the specified dimension at the ROI location
+    modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed, tryGPU=tryGPU)
+
+    # plt.figure()
+    # plt.plot(modelDefValuesArray)
+    # plt.show()
+
+    ## get the midP value for the specified dimension
+    meanPos = np.mean(
+        modelDefValuesArray)  ## in case of synthetic signal use, this should be 0 ? this is not exactly 0 by using this mean on a particular dimension
+
+    # split into ascent and descent subset for the ROI location
+    ascentPart, ascentPartIndexes, descentPart, descentPartIndexes, amplitude = splitAscentDescentSubsets(
+        modelDefValuesArray)
+
+    phaseValueList = []
+    ## loop over breathing signal samples
+    for sampleIndex in range(signalIdxUsed[0], signalIdxUsed[1]):
+
+        ## get the ascent or descent situation and compute the phase value for each sample
+        ascentOrDescentCase = isAscentOrDescentCase(signal, sampleIndex)
+
+        if ascentOrDescentCase == "descending":
+            phaseRatio = computePhaseRatio(signal[sampleIndex], descentPart, descentPartIndexes, ascentOrDescentCase, meanPos)
+        elif ascentOrDescentCase == "ascending":
+            phaseRatio = computePhaseRatio(signal[sampleIndex], ascentPart, ascentPartIndexes, ascentOrDescentCase, meanPos)
+        ## add the resulting phase to the list for each breathing signal sample
+        phaseValueList.append(phaseRatio)
+
+    return phaseValueList
 
 ## -------------------------------------------------------------------------------
 def splitAscentDescentSubsets(CTPhasePositions):
