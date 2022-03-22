@@ -2,7 +2,7 @@ import numpy as np
 
 
 ## ---------------------------------------------------------------------------------------------
-def getAverageModelValuesAroundPosition(position, model, dimensionUsed='Z'):
+def getAverageModelValuesAroundPosition(position, model, dimensionUsed='Z', tryGPU=True):
     """
     Get the average values in the specified dimension around the given position for each field in a Dynamic3DModel.
 
@@ -25,7 +25,7 @@ def getAverageModelValuesAroundPosition(position, model, dimensionUsed='Z'):
     for fieldIndex, field in enumerate(model.deformationList):
         if field.displacement == None:
             print('Compute displacement field from velocity field for field', fieldIndex)
-            field.displacement = field.velocity.exponentiateField()
+            field.displacement = field.velocity.exponentiateField(tryGPU=tryGPU)
         modelDefValuesList.append(getAverageFieldValueAroundPosition(position, field.displacement, dimensionUsed=dimensionUsed))
 
     modelDefValuesArray = np.array(modelDefValuesList)
