@@ -2,6 +2,7 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 import matplotlib.pyplot as plt
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDynSeqFromBreathingSignalsAndModel
+from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import getVoxelIndexFromPosition
 import numpy as np
 import os
 from pathlib import Path
@@ -10,13 +11,14 @@ import math
 testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
 ## read a serialized dynamic sequence
+# dataPath = '/home/damien/Desktop/Patient0/Patient0BaseAndMod.p'
 dataPath = testDataPath + "superLightDynSeqWithMod.p"
 patient = loadDataStructure(dataPath)[0]
 
 dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
 dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
-simulationTime = 10
+simulationTime = 30
 amplitude = 15
 
 newSignal = SyntheticBreathingSignal(amplitude=amplitude,
@@ -50,25 +52,38 @@ newSignal2.breathingSignal = -newSignal.breathingSignal
 
 signalList = [newSignal.breathingSignal, newSignal2.breathingSignal]
 
-#time, samples = signal(amplitude, dA, period, df, dS, step, signalDuration, L)
-plt.figure()
-plt.plot(newSignal.timestamps, newSignal.breathingSignal)
-plt.plot(newSignal.timestamps, newSignal2.breathingSignal)
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude [mm]")
-plt.title("Breathing signal")
-# plt.xlim((0, 50))
-plt.show()
-
-pointLLung = np.array([-94, 45, -117])
 pointRLung = np.array([108, 72, -116])
+pointLLung = np.array([-94, 45, -117])
+
+## get points in voxels --> for the plot, not necessary for the process example
+pointRLungInVoxel = getVoxelIndexFromPosition(pointRLung, dynMod.midp)
+pointLLungInVoxel = getVoxelIndexFromPosition(pointLLung, dynMod.midp)
 
 pointList = [pointRLung, pointLLung]
+pointVoxelList = [pointRLungInVoxel, pointLLungInVoxel]
+
+## to show signals and ROIs
+prop_cycle = plt.rcParams['axes.prop_cycle']
+colors = prop_cycle.by_key()['color']
+plt.figure(figsize=(12, 6))
+signalAx = plt.subplot(2, 1, 2)
+for pointIndex, point in enumerate(pointList):
+    ax = plt.subplot(2, len(pointList), pointIndex+1)
+    ax.set_title('Slice Y:' + str(pointList[pointIndex][1]))
+    ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
+    ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
+    signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex], c=colors[pointIndex])
+
+signalAx.set_xlabel('Time (s)')
+signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
+plt.show()
+
 
 ## all in one seq version
 dynSeq = generateDynSeqFromBreathingSignalsAndModel(dynMod, signalList, pointList, dimensionUsed='Z', outputType=np.int16)
 dynSeq.breathingPeriod = newSignal.breathingPeriod
-dynSeq.timingsList = newSignal.timestamps*1000
+dynSeq.timingsList = newSignal.timestamps
+
 
 ## save it as a serialized object
 savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung'
@@ -76,9 +91,10 @@ saveSerializedObjects(dynSeq, savingPath)
 
 print('/'*80, '\n', '/'*80)
 
+
 ## by signal sub part version
 sequenceSize = newSignal.breathingSignal.shape[0]
-subSequenceSize = 6
+subSequenceSize = 25
 print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize)
 
 subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize/subSequenceSize))]
@@ -96,7 +112,7 @@ for i in range(len(subSequencesIndexes)-1):
                                                         outputType=np.int16)
 
     dynSeq.breathingPeriod = newSignal.breathingPeriod
-    dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]] * 1000
+    dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
 
     ## save it as a serialized object
     savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung_part' + str(i)

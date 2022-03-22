@@ -29,5 +29,5 @@ print('Sequence name = ', dynseq.name)
 print('Sequence lenght =', len(dynseq.dyn3DImageList))
 
 ## save it as a serialized object
-savingPath = testDataPath + 'TestSmall_dynSeq'
-saveSerializedObjects(dynseq, savingPath)
+# savingPath = testDataPath + 'TestSmall_dynSeq'
+# saveSerializedObjects(dynseq, savingPath)

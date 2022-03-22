@@ -1,7 +1,6 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.image3D import Image3D
 import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ class Registration:
         self.deformed = []
         self.roiBox = []
 
-    def regularizeField(self, field, filterType="Gaussian", sigma=1.0, cert=None):
+    def regularizeField(self, field, filterType="Gaussian", sigma=1.0, cert=None, tryGPU=True):
 
         """Regularize vector field using Gaussian convolution or normalized convolution.
 
@@ -32,17 +31,17 @@ class Registration:
         """
 
         if filterType == "Gaussian":
-            field.velocity._imageArray[:, :, :, 0] = imageFilter3D.gaussConv(field.velocity._imageArray[:, :, :, 0], sigma=sigma)
-            field.velocity._imageArray[:, :, :, 1] = imageFilter3D.gaussConv(field.velocity._imageArray[:, :, :, 1], sigma=sigma)
-            field.velocity._imageArray[:, :, :, 2] = imageFilter3D.gaussConv(field.velocity._imageArray[:, :, :, 2], sigma=sigma)
+            field.setVelocityArrayXYZ(imageFilter3D.gaussConv(field.velocity.imageArray[:, :, :, 0], sigma=sigma, tryGPU=tryGPU),
+                imageFilter3D.gaussConv(field.velocity.imageArray[:, :, :, 1], sigma=sigma, tryGPU=tryGPU),
+                imageFilter3D.gaussConv(field.velocity.imageArray[:, :, :, 2], sigma=sigma, tryGPU=tryGPU))
             return
 
         if filterType == "NormalizedGaussian":
             if cert is None:
-                cert = np.ones_like(field.velocity._imageArray[:, :, :, 0])
-            field.velocity._imageArray[:, :, :, 0] = imageFilter3D.normGaussConv(field.velocity._imageArray[:, :, :, 0], cert, sigma)
-            field.velocity._imageArray[:, :, :, 1] = imageFilter3D.normGaussConv(field.velocity._imageArray[:, :, :, 1], cert, sigma)
-            field.velocity._imageArray[:, :, :, 2] = imageFilter3D.normGaussConv(field.velocity._imageArray[:, :, :, 2], cert, sigma)
+                cert = np.ones_like(field.velocity.imageArray[:, :, :, 0])
+            field.setVelocityArrayXYZ(imageFilter3D.normGaussConv(field.velocity.imageArray[:, :, :, 0], cert, sigma, tryGPU=tryGPU),
+                imageFilter3D.normGaussConv(field.velocity.imageArray[:, :, :, 1], cert, sigma, tryGPU=tryGPU),
+                imageFilter3D.normGaussConv(field.velocity.imageArray[:, :, :, 2], cert, sigma, tryGPU=tryGPU))
             return
 
         else:
@@ -77,7 +76,7 @@ class Registration:
         Image.VoxelY = Image._origin[1] + np.arange(Image.gridSize()[1]) * Image._spacing[1]
         Image.VoxelZ = Image._origin[2] + np.arange(Image.gridSize()[2]) * Image._spacing[2]
 
-    def translateAndComputeSSD(self, translation=None):
+    def translateAndComputeSSD(self, translation=None, tryGPU=True):
 
         if translation is None:
             translation = [0.0, 0.0, 0.0]
@@ -101,7 +100,7 @@ class Registration:
         # deform moving image
         self.deformed = self.moving.copy()
         self.translateOrigin(self.deformed, translation)
-        self.deformed.resample(gridSize, origin, self.fixed._spacing)
+        self.deformed.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         # compute metric
         ssd = self.computeSSD(fixed, self.deformed._imageArray)
@@ -112,14 +111,15 @@ class Registration:
         ssd = np.sum(np.power(fixed - deformed, 2))
         return ssd
 
-    def resampleMovingImage(self, keepFixedShape=True):
+    def resampleMovingImage(self, keepFixedShape=True, tryGPU=True):
         if self.fixed == [] or self.moving == []:
             logger.error("Image not defined in registration object")
             return
 
         if keepFixedShape == True:
             resampled = self.moving.copy()
-            resampled.resample_image(self.fixed.gridSize(), self.fixed._origin, self.fixed._spacing)
+            print('in registration resampleMovingImage')
+            resampled.resample(self.fixed.gridSize(), self.fixed._origin, self.fixed._spacing)
 
         else:
             X_min = min(self.fixed._origin[0], self.moving._origin[0])
@@ -137,11 +137,11 @@ class Registration:
             gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
             resampled = self.moving.copy()
-            resampled.resample(gridSize, origin, self.fixed._spacing)
+            resampled.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         return resampled
 
-    def resampleFixedImage(self):
+    def resampleFixedImage(self, tryGPU=True):
 
         if (self.fixed == [] or self.moving == []):
             logger.error("Image not defined in registration object")
@@ -162,23 +162,23 @@ class Registration:
         gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
         resampled = self.fixed.copy()
-        resampled.resample(gridSize, origin, self.fixed._spacing)
+        resampled.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         return resampled
 
-    def computeImageDifference(self, keepFixedShape=True):
+    def computeImageDifference(self, keepFixedShape=True, tryGPU=True):
 
         if (self.fixed == [] or self.moving == []):
             logger.error("Image not defined in registration object")
             return
 
         if (keepFixedShape == True):
-            diff = self.resampleMovingImage(keepFixedShape=True)
+            diff = self.resampleMovingImage(keepFixedShape=True, tryGPU=tryGPU)
             diff.data = self.fixed._imageArray - diff.data
 
         else:
-            diff = self.resampleMovingImage(keepFixedShape=False)
-            tmp = self.resampleFixedImage()
+            diff = self.resampleMovingImage(keepFixedShape=False, tryGPU=tryGPU)
+            tmp = self.resampleFixedImage(tryGPU=tryGPU)
             diff.data = tmp.data - diff.data
 
         return diff
