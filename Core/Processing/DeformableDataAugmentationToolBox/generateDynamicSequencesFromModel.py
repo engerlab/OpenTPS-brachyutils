@@ -6,7 +6,7 @@ import time
 
 
 ## -------------------------------------------------------------------------------
-def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signalIdxUsed=[0, 0], dimensionUsed='Z', outputType=np.float32):
+def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signalIdxUsed=[0, 0], dimensionUsed='Z', outputType=np.float32, tryGPU=True):
 
     """
     Generate a dynamic 3D sequence from a model, in which each given ROI follows its breathing signal
@@ -33,12 +33,12 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
         print('Numbers of signals and ROI do not match')
         return
 
-    ## get displacement fields from velocity fields
-    if model.deformationList[0].displacement == None:
-        print('Compute displacement fields')
-        for fieldIndex, field in enumerate(model.deformationList):
-            print('Field', fieldIndex+1, '/', len(model.deformationList))
-            field.displacement = field.velocity.exponentiateField()
+    # ## get displacement fields from velocity fields
+    # if model.deformationList[0].displacement == None:
+    #     print('Compute displacement fields')
+    #     for fieldIndex, field in enumerate(model.deformationList):
+    #         print('Field', fieldIndex+1, '/', len(model.deformationList))
+    #         field.displacement = field.velocity.exponentiateField()
 
     if signalIdxUsed == [0, 0]:
         signalIdxUsed = [0, signalList[0].shape[0]]
@@ -50,7 +50,7 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
     for ROIndex, ROI in enumerate(ROIList):
 
         ## get model deformation values for the specified dimension at the ROI location
-        modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed)
+        modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed, tryGPU=tryGPU)
 
         # plt.figure()
         # plt.plot(modelDefValuesArray)
@@ -80,7 +80,6 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
         phaseValueByROIList.append(phaseValueList)
 
     ## At this point the phase information are computed, now the part where the images are created starts
-    ## New empty dynamic 3D sequence is created
     dynseq = Dynamic3DSequence()
     dynseq.name = 'GeneratedFromBreathingSignal'
 
@@ -102,16 +101,10 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
                 amplitudeList.append(phase[2])
 
         ## generate the deformation field combining the fields for each points and phase info
-        startDeformCreation = time.time()
         df1, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
-        stopDeformCreation = time.time()
         ## apply it to the midp image
-        startDeformApplication = time.time()
-        im1 = df1.deformImage(model.midp, fillValue='closest', outputType=outputType)
-        stopDeformApplication = time.time()
+        im1 = df1.deformImage(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
 
-        print('deform creation time:', stopDeformCreation-startDeformCreation)
-        print('deform application time:', stopDeformApplication - startDeformApplication)
         im1.name = dynseq.name + '_' + str(breathingSignalSampleIndex)
         ## add the image to the dynamic sequence
         dynseq.dyn3DImageList.append(im1)
@@ -119,42 +112,18 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
     return dynseq
 
 ## -------------------------------------------------------------------------------
-def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROIList, signalIdxUsed=[0, 0], dimensionUsed='Z', outputType=np.float32):
+def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROIList, signalIdxUsed=[0, 0], dimensionUsed='Z', outputType=np.float32, tryGPU=True):
 
     """
-    Generate a dynamic 3D sequence from a model, in which each given ROI follows its breathing signal
 
-    Parameters
-    ----------
-    model : Dynamic3DModel
-        The dynamic 3D model that will be used to create the images of the resulting sequence
-    signalList : list
-        list of breathing signals as 1D numpy arrays
-    ROIList : list
-        list of points as [X, Y, Z] or (X, Y, Z) --> does not work with ROI's as masks or struct
-    dimensionUsed : str
-        X, Y, Z or norm, the dimension used to compare the breathing signals with the model deformation values
-    outputType : pixel data type (np.float32, np.uint16, etc)
-
-    Returns
-    -------
-    dynseq (Dynamic3DSequence): a new sequence containing the generated images
 
     """
+
+    print('in generateDeformationListFromBreathingSignalsAndModel --> if there is only one ROI, this function does too much stuff')
 
     if len(signalList) != len(ROIList):
         print('Numbers of signals and ROI do not match')
         return
-
-    startTime = time.time()
-    ## get displacement fields from velocity fields
-    if model.deformationList[0].displacement == None:
-        print('Compute displacement fields')
-        for fieldIndex, field in enumerate(model.deformationList):
-            print(fieldIndex)
-            field.displacement = field.velocity.exponentiateField(outputType=outputType)
-
-    print('displacement Fields computed in ', time.time()-startTime)
 
     if signalIdxUsed == [0, 0]:
         signalIdxUsed = [0, signalList[0].shape[0]]
@@ -166,7 +135,7 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
     for ROIndex, ROI in enumerate(ROIList):
 
         ## get model deformation values for the specified dimension at the ROI location
-        modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed)
+        modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed, tryGPU=tryGPU)
 
         # plt.figure()
         # plt.plot(modelDefValuesArray)
@@ -218,6 +187,7 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
                 amplitudeList.append(phase[2])
 
         ## generate the deformation field combining the fields for each points and phase info
+        print('iciiii', phaseList, amplitudeList)
         df1, wm = generateDeformationFromTrackers(model, phaseList, amplitudeList, ROIList)
         deformationList.append(df1)
 

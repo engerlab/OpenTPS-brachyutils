@@ -11,11 +11,8 @@ def generateRandomImagesFromModel(model, numberOfSamples = 1, amplitudeRange = [
 
     deformationSampleList = generateRandomDeformationsFromModel(model, numberOfSamples=numberOfSamples, amplitudeRange=amplitudeRange, ampDistribution=ampDistribution)
     for deform in deformationSampleList:
-        startTime = time.time()
         im1 = deform.deformImage(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
-
         sampleImageList.append(im1)
-        print('Image deformed in', np.round((time.time() - startTime), 2), 'sec. GPU used =', tryGPU)
 
     return sampleImageList
 
