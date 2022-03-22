@@ -12,6 +12,8 @@ from Core.IO.serializedObjectIO import loadDataStructure
 import os
 from pathlib import Path
 from pydicom.uid import generate_uid
+import time
+import numpy as np
 
 # Get the current working directory, its parent, then add the testData folder at the end of it
 testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
@@ -19,9 +21,9 @@ testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 ## read a serialized dynamic sequence
 dataPath = testDataPath + "lightDynSeq.p"
 dynSeq = loadDataStructure(dataPath)[0]
-print(type(dynSeq))
-print(len(dynSeq.dyn3DImageList))
 
+print(type(dynSeq))
+print(len(dynSeq.dyn3DImageList), 'images in the dynamic sequence')
 
 ## create Dynamic3DModel
 model3D = Dynamic3DModel()
@@ -33,7 +35,11 @@ model3D.name = 'MidP'
 model3D.seriesInstanceUID = generate_uid()
 
 ## generate the midP image and deformation fields from a dynamic 3D sequence
-model3D.computeMidPositionImage(dynSeq, baseResolution=8)
+startTime = time.time()
+model3D.computeMidPositionImage(dynSeq, tryGPU=True)
+stopTime = time.time()
+
+print('midP computed in ', np.round(stopTime-startTime))
 
 # ## save it as a serialized object
 savingPath = testDataPath + 'Test_dynMod'

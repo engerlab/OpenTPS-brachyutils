@@ -10,4 +10,4 @@ def get2DMaskCenterOfMass(maskArray):
 
     ones = np.where(maskArray == True)
 
-    print(ones)
+    return [np.mean(ones[0]), np.mean(ones[1])]
