@@ -51,6 +51,7 @@ newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
 newSignal2.breathingSignal = -newSignal.breathingSignal
 
 signalList = [newSignal.breathingSignal, newSignal2.breathingSignal]
+# signalList = [newSignal.breathingSignal] ## for single ROI testing
 
 pointRLung = np.array([108, 72, -116])
 pointLLung = np.array([-94, 45, -117])
@@ -60,7 +61,9 @@ pointRLungInVoxel = getVoxelIndexFromPosition(pointRLung, dynMod.midp)
 pointLLungInVoxel = getVoxelIndexFromPosition(pointLLung, dynMod.midp)
 
 pointList = [pointRLung, pointLLung]
+# pointList = [pointRLung] ## for single ROI testing
 pointVoxelList = [pointRLungInVoxel, pointLLungInVoxel]
+# pointVoxelList = [pointRLungInVoxel] ## for single ROI testing
 
 ## to show signals and ROIs
 prop_cycle = plt.rcParams['axes.prop_cycle']
