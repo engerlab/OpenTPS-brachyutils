@@ -8,7 +8,7 @@ from Core.Data.roiContour import ROIContour
 
 
 
-def crop3DDataAroundBox(data, box, marginInMM=10):
+def crop3DDataAroundBox(data, box, marginInMM=[10, 10, 10]):
 
     """
     Crop a 3D data around a box given in scanner coordinates
@@ -23,20 +23,21 @@ def crop3DDataAroundBox(data, box, marginInMM=10):
         The margins in mm that is added around the box before cropping
     """
 
-    if marginInMM < 0:
-        print('In crop3DDataAroundBox, negative margins not allowed')
-        marginInMM = 0
+    for i in range(3):
+        if marginInMM[i] < 0:
+            print('In crop3DDataAroundBox, negative margins not allowed')
+            marginInMM[i] = 0
 
     if isinstance(data, Image3D):
         print('Before crop image 3D origin and grid size:', data.origin, data.gridSize)
 
         ## get the box in voxels with a min/max check to limit the box to the image border (that could be reached with the margin)
-        XIndexInVoxels = [max(0, int(np.round((box[0][0] - marginInMM - data.origin[0]) / data.spacing[0]))),
-                          min(data.gridSize[0], int(np.round((box[0][1] + marginInMM - data.origin[0]) / data.spacing[0])))]
-        YIndexInVoxels = [max(0, int(np.round((box[1][0] - marginInMM - data.origin[1]) / data.spacing[1]))),
-                          min(data.gridSize[1], int(np.round((box[1][1] + marginInMM - data.origin[1]) / data.spacing[1])))]
-        ZIndexInVoxels = [max(0, int(np.round((box[2][0] - marginInMM - data.origin[2]) / data.spacing[2]))),
-                          min(data.gridSize[2], int(np.round((box[2][1] + marginInMM - data.origin[2]) / data.spacing[2])))]
+        XIndexInVoxels = [max(0, int(np.round((box[0][0] - marginInMM[0] - data.origin[0]) / data.spacing[0]))),
+                          min(data.gridSize[0], int(np.round((box[0][1] + marginInMM[0] - data.origin[0]) / data.spacing[0])))]
+        YIndexInVoxels = [max(0, int(np.round((box[1][0] - marginInMM[1] - data.origin[1]) / data.spacing[1]))),
+                          min(data.gridSize[1], int(np.round((box[1][1] + marginInMM[1] - data.origin[1]) / data.spacing[1])))]
+        ZIndexInVoxels = [max(0, int(np.round((box[2][0] - marginInMM[2] - data.origin[2]) / data.spacing[2]))),
+                          min(data.gridSize[2], int(np.round((box[2][1] + marginInMM[2] - data.origin[2]) / data.spacing[2])))]
 
         data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1], YIndexInVoxels[0]:YIndexInVoxels[1], ZIndexInVoxels[0]:ZIndexInVoxels[1]]
         # data.imageArray = croppedArray

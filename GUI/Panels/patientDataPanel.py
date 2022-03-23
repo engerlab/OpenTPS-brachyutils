@@ -254,6 +254,8 @@ class PatientDataTree(QTreeView):
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
             self._viewController.mainImage = selectedData
+        elif isinstance(selectedData, Dynamic3DModel):
+            self._viewController.mainImage = selectedData.midp
         elif isinstance(selectedData, DoseImage):
             self._viewController.secondaryImage = selectedData
 
