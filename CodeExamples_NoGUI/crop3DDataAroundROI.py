@@ -21,7 +21,7 @@ rtStruct = patient.getPatientDataOfType("RTStruct")[0]
 ## get the ROI and mask on which we want to apply the motion signal
 print('Available ROIs')
 rtStruct.print_ROINames()
-bodyContour = rtStruct.get_contour_by_name('body')
+bodyContour = rtStruct.getContourByName('body')
 ROIMask = bodyContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
 
 box = getBoxAroundROI(ROIMask)
