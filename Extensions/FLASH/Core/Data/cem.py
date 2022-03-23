@@ -83,7 +83,7 @@ class CEM(AbstractCTObject, Image2D):
         isocenterInImage = ImageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
         isocenterCoord = referenceImageBEV.getVoxelIndexFromPosition(isocenterInImage)
 
-        distInPixels = np.ceil(beam.cemToIsocenter / self.rsp * referenceImageBEV.spacing[2])
+        distInPixels = np.ceil(beam.cemToIsocenter / referenceImageBEV.spacing[2])
 
         return int(isocenterCoord[2] - distInPixels)
     

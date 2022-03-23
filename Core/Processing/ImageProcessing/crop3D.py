@@ -41,9 +41,12 @@ def crop3DDataAroundBox(data, box, marginInMM=10):
         data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1], YIndexInVoxels[0]:YIndexInVoxels[1], ZIndexInVoxels[0]:ZIndexInVoxels[1]]
         # data.imageArray = croppedArray
 
-        data.origin[0] += XIndexInVoxels[0] * data.spacing[0]
-        data.origin[1] += YIndexInVoxels[0] * data.spacing[1]
-        data.origin[2] += ZIndexInVoxels[0] * data.spacing[2]
+        origin = data.origin
+        origin[0] += XIndexInVoxels[0] * data.spacing[0]
+        origin[1] += YIndexInVoxels[0] * data.spacing[1]
+        origin[2] += ZIndexInVoxels[0] * data.spacing[2]
+
+        data.origin = origin
 
         print('After crop origin and grid size:', data.origin, data.gridSize)
 

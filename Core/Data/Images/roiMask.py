@@ -44,7 +44,7 @@ class ROIMask(Image3D):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
     def dilate(self, radius:float):
-        radius = 1/np.array(self.spacing)
+        radius = radius/np.array(self.spacing)
         diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
         diameter = diameter + (diameter+1)%2
         diameter = np.round(diameter).astype(int)

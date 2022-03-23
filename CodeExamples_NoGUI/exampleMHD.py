@@ -19,7 +19,7 @@ exportImageMHD(outputPath_CT, CT)
 
 # Save contour as MHD
 outputPath_contour = "/mnt/c/Users/vhamaide/OneDrive - UCL/Bureau/UCL/ARIES/data/liver/patient_0/MHD_test/p0_GTV"
-contour_GTV = rt_struct.get_contour_by_name('MidP CT GTV')
+contour_GTV = rt_struct.getContourByName('MidP CT GTV')
 contour_GTV_mask = contour_GTV.getBinaryMask(origin=CT.origin, gridSize=CT.gridSize, spacing=CT.spacing)
 exportImageMHD(outputPath_contour, contour_GTV_mask)
 
