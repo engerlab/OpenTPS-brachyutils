@@ -5,9 +5,10 @@ from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.roiContour import ROIContour
+from Core.api import API
 
 
-
+@API.loggedViaAPI
 def crop3DDataAroundBox(data, box, marginInMM=[10, 10, 10]):
 
     """
