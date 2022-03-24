@@ -49,7 +49,7 @@ class CropWidget(QMainWindow):
 
         for data in selectedData:
             print(data)
-            crop3DDataAroundBox(data, box, marginInMM=0)
+            crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0])
 
 class DataSelection(QWidget):
     def __init__(self, viewController):
