@@ -35,6 +35,7 @@ class Dynamic3DModel(PatientData):
             logger.error("Reference index is out of bound")
 
         self.midp, self.deformationList = midPosition.compute(CT4D, refIndex=refIndex, baseResolution=baseResolution, nbProcesses=nbProcesses, tryGPU=tryGPU)
+        self.midp.name = 'MidP Image'
 
 
     def generate3DDeformation(self, phase, amplitude=1.0):
