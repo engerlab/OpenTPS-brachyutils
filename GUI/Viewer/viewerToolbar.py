@@ -7,7 +7,10 @@ from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, 
 
 from Core.IO import dataLoader
 from Core.event import Event
+from GUI.Tools.cropTool import CropWidget
 from GUI.programSettingEditor import ProgramSettingEditor
+
+import GUI.res.icons as IconModule
 
 
 class ViewerToolbar(QToolBar):
@@ -21,7 +24,7 @@ class ViewerToolbar(QToolBar):
         self._viewController = viewController
         self.setIconSize(QSize(16, 16))
 
-        self.iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+        self.iconPath = str(IconModule.__path__[0]) + os.path.sep
 
         self._buttonSettings = QAction(QIcon(self.iconPath + "settings-5-line.png"), "Settings", self)
         self._buttonSettings.triggered.connect(self._openSettings)
@@ -47,11 +50,17 @@ class ViewerToolbar(QToolBar):
         self._buttonCrossHair.triggered.connect(self._handleCrossHair)
         self._buttonCrossHair.setCheckable(True)
 
+        self._buttonCrop = QAction(QIcon(self.iconPath + "crop.png"), "Crop", self)
+        self._buttonCrop.setStatusTip("Crop")
+        self._buttonCrop.triggered.connect(self._handleCrop)
+        self._buttonCrop.setCheckable(False)
+
         self.addAction(self._buttonSettings)
         self.addAction(self._buttonOpen)
         self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonWindowLevel)
+        self.addAction(self._buttonCrop)
 
         self.addSeparator()
 
@@ -103,6 +112,10 @@ class ViewerToolbar(QToolBar):
             return
 
         self._viewController.crossHairEnabled = pressed
+
+    def _handleCrop(self):
+        self._cropWidget = CropWidget(self._viewController)
+        self._cropWidget.show()
 
     def _handleLoadData(self):
         filesOrFoldersList = self._getOpenFilesAndDirs(caption="Open patient data files or folders",
