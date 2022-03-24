@@ -80,8 +80,8 @@ ct.patient = patient
 targetROI = ImageTransform3D.iecGantryToDicom(targetROIBEV, beam, fillValue=0)
 targetROI.patient = patient
 
-crop3DDataAroundBox(ct, [[-30, 250], [-250, 35], [-670, -570]])
-crop3DDataAroundBox(targetROI, [[-30, 250], [-250, 35], [-670, -570]])
+crop3DDataAroundBox(ct,[[-30, 250], [-250, 35], [-670, -570]], [0,0,0])
+crop3DDataAroundBox(targetROI,[[-30, 250], [-250, 35], [-670, -570]], [0,0,0])
 
 # OARs are defined around the TV
 oarAndTVROI = copy.deepcopy(targetROI)
