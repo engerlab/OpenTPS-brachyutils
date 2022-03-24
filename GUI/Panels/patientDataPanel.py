@@ -98,6 +98,9 @@ class PatientComboBox(QComboBox):
         self._viewController.patientAddedSignal.connect(self._addPatient)
         self._viewController.patientRemovedSignal.connect(self._removePatient)
 
+        if not (self._viewController.currentPatient is None):
+            self._addPatient(self._viewController.currentPatient)
+
         self.currentIndexChanged.connect(self._setCurrentPatient)
 
     def _addPatient(self, patient):
