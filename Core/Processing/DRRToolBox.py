@@ -29,7 +29,7 @@ def forwardProjection(image, angle, axis='Z'):
         img3DArrayOriented = getImageInCorrectOrientation(image.imageArray, axis)
         try:
             import tomopy       ## this way the import is done multiple times in the case of a DRRSet or DRRSequence creation, not sure it's the best idea
-            drrImage = tomopy.project(img3DArrayOriented, angleInRad, pad=False)[0]
+            drrImage = tomopy.project(img3DArrayOriented, angleInRad)[0]
             return drrImage
         except:
             library = 'tigre'

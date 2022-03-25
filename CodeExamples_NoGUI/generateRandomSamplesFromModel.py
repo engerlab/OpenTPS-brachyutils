@@ -21,9 +21,9 @@ imageList = []
 
 startTime = time.time()
 
-defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=100, ampDistribution='gaussian')
+defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian')
 for deformation in defList:
-    imageList.append(defList[0].deformImage(dynMod.midp, fillValue='closest', tryGPU=True))
+    imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=True))
 
 print(len(imageList))
 print('first test done in ', np.round(time.time() - startTime, 2))
@@ -33,7 +33,7 @@ plt.imshow(imageList[0].imageArray[:, 50, :])
 plt.show()
 
 startTime = time.time()
-imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=100, ampDistribution='gaussian', tryGPU=True)
+imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian', tryGPU=True)
 print('second test done in ', np.round(time.time() - startTime, 2))
 
 plt.figure()
