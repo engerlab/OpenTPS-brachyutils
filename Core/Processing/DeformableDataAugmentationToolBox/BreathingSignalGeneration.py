@@ -60,6 +60,8 @@ def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma
     
     signal = (amplitude / 2) * np.sin(2 * np.pi * freq * (timestamps % (1 / freq))) + s ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
     return timestamps * 1000, signal
+
+
 """
 #parametres changeables
 amplitude = 10 #amplitude (mm)
