@@ -18,8 +18,8 @@ patient = loadDataStructure(dataPath)[0]
 dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
 dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
-simulationTime = 30
-amplitude = 15
+simulationTime = 32
+amplitude = 10
 
 newSignal = SyntheticBreathingSignal(amplitude=amplitude,
                                      variationAmplitude=0,
@@ -29,8 +29,9 @@ newSignal = SyntheticBreathingSignal(amplitude=amplitude,
                                      mean=0,
                                      variance=0,
                                      samplingPeriod=0.2,
+                                     meanEvent=0/30,
                                      simulationTime=simulationTime,
-                                     meanEvent=0/30)
+                                     )
 
 newSignal.generateBreathingSignal()
 linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
