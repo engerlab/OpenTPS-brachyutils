@@ -29,26 +29,49 @@ import cProfile
 # pr.enable()
 
 patientFolder = 'Patient_0'
+dataSetFolder = '/test/'
+dataSetDataFolder = 'data/'
 dataPath = '/home/damien/Desktop/' + patientFolder + '/dynModAndROIs.p'
-savingPath = f'/home/damien/Desktop/' + patientFolder + '/'
+savingPath = f'/home/damien/Desktop/' + patientFolder + dataSetFolder
 
-sequenceDurationInSecs = 10
-samplingFrequency = 2
-subSequenceSize = 10
+if not os.path.exists(savingPath):
+    os.makedirs(savingPath)   # Create a new directory because it does not exist
+    os.makedirs(savingPath + dataSetDataFolder)  # Create a new directory because it does not exist
+    print("New directory created to save the data: ", savingPath)
+
+sequenceDurationInSecs = 50
+samplingFrequency = 4
+subSequenceSize = 12
+
 multiprocessing = True
+maxMultiProcUse = 8
 tryGPU = True
 
+projAngle = 0
+projAxis = 'Z'
 
 ## ------------------------------------------------------------------------------------
-def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, tryGPU=True):
+def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=0, projectionAxis='Z', tryGPU=True):
+    """
+    This function is specific to this example and used to :
+    - deform a CTImage and an ROIMask,
+    - create DRR's for both,
+    - binarize the DRR of the ROIMask
+    - compute its center of mass
+    """
 
     print('Start deformations and projections for deformation', deformation.name)
     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
     mask = deformation.deformImage(ROIMask, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
 
-    DRR = forwardProjection(image, 0)
-    DRRMask = forwardProjection(mask, 0)
-    binaryDRRMask = getBinaryMaskFromROIDRR(DRRMask)
+    DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
+    DRRMask = forwardProjection(mask, projectionAngle, axis=projectionAxis)
+
+    halfDiff = int((DRR.shape[1] - image.gridSize[2])/2)           ## not sure this will work if orientation is changed
+    croppedDRR = DRR[:, halfDiff + 1:DRR.shape[1] - halfDiff - 1]         ## not sure this will work if orientation is changed
+    croppedDRRMask = DRRMask[:, halfDiff + 1:DRRMask.shape[1] - halfDiff - 1] ## not sure this will work if orientation is changed
+
+    binaryDRRMask = getBinaryMaskFromROIDRR(croppedDRRMask)
     centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
     # print('CenterOfMass:', centerOfMass)
 
@@ -58,15 +81,19 @@ def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, tryGPU=True):
     print('Deformations and projections finished for deformation', deformation.name)
 
     # plt.figure()
-    # plt.subplot(1, 3, 1)
-    # plt.imshow(np.rot90(DRR))
-    # plt.subplot(1, 3, 2)
-    # plt.imshow(np.rot90(DRRMask))
-    # plt.subplot(1, 3, 3)
-    # plt.imshow(np.rot90(binaryDRRMask))
+    # plt.subplot(1, 5, 1)
+    # plt.imshow(DRR)
+    # plt.subplot(1, 5, 2)
+    # plt.imshow(croppedDRR)
+    # plt.subplot(1, 5, 3)
+    # plt.imshow(DRRMask)
+    # plt.subplot(1, 5, 4)
+    # plt.imshow(croppedDRRMask)
+    # plt.subplot(1, 5, 5)
+    # plt.imshow(binaryDRRMask)
     # plt.show()
 
-    return [DRR, binaryDRRMask, centerOfMass]
+    return [croppedDRR, binaryDRRMask, centerOfMass]
 ## ------------------------------------------------------------------------------------
 
 
@@ -78,26 +105,28 @@ rtStruct = patient.getPatientDataOfType("RTStruct")[0]
 print('Available ROIs')
 rtStruct.print_ROINames()
 
-gtvContour = rtStruct.get_contour_by_name('MidP CT GTV')
+gtvContour = rtStruct.getContourByName('MidP CT GTV')
 GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
 gtvBox = getBoxAroundROI(GTVMask)
 
-bodyContour = rtStruct.get_contour_by_name('body')
+## get the body contour to adjust the crop in the direction of the DRR projection
+bodyContour = rtStruct.getContourByName('body')
 bodyMask = bodyContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
 bodyBox = getBoxAroundROI(bodyMask)
 
-marginInMM = 50
+croppingBox = [gtvBox[0], bodyBox[1], gtvBox[2]] ## create the used box combining the two boxes
 
-gtvBox[1] = bodyBox[1]
-crop3DDataAroundBox(dynMod, gtvBox, marginInMM=[marginInMM, 0, marginInMM])
+## crop the model data using the box
+marginInMM = 40 ## seems well suited for liver Patient_0
+crop3DDataAroundBox(dynMod, croppingBox, marginInMM=[marginInMM, 0, marginInMM*2.5])
+
+## get the mask in cropped version (the dynMod.midp is now cropped so its origin and gridSize has changed)
 GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
 
-## to see the crop in the GUI
+## if you want to see the crop in the GUI you can save the data in cropped version
 saveSerializedObjects(patient, savingPath + 'Test_Cropped')
-# savingPath = '/home/damien/Desktop/' + 'Test_dynMod_Cropped'
-# saveSerializedObjects(dynMod, savingPath)
 
-## get the center of mass of this ROI
+## get the 3D center of mass of this ROI
 gtvCenterOfMass = gtvContour.getCenterOfMass(dynMod.midp.origin, dynMod.midp.gridSize, dynMod.midp.spacing)
 gtvCenterOfMassInVoxels = getVoxelIndexFromPosition(gtvCenterOfMass, dynMod.midp)
 print('Used ROI name', gtvContour.name)
@@ -111,7 +140,7 @@ print('Amplitude of deformation at ROI center of mass', amplitude)
 
 ## Signal creation
 newSignal = SyntheticBreathingSignal(amplitude=amplitude,
-                                     variationAmplitude=0.5,
+                                     variationAmplitude=2,
                                      breathingPeriod=4,
                                      variationFrequency=0,
                                      shift=0,
@@ -127,8 +156,10 @@ pointList = [gtvCenterOfMass]
 pointVoxelList = [gtvCenterOfMassInVoxels]
 signalList = [newSignal.breathingSignal]
 
+saveSerializedObjects([signalList, pointList], savingPath + 'ROIsAndSignalObjects')
 
-## to show signals and ROIs --> maybe save this figure with the resulting data to show which signal is applied where (for presentations or papers for example)
+
+## to show signals and ROIs
 ## -------------------------------------------------------------
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
@@ -144,7 +175,9 @@ for pointIndex, point in enumerate(pointList):
 
 signalAx.set_xlabel('Time (s)')
 signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
-plt.show()
+plt.savefig(savingPath + 'ROI_And_Signals_fig.pdf', dpi=300)
+# plt.show()
+
 ## -------------------------------------------------------------
 
 sequenceSize = newSignal.breathingSignal.shape[0]
@@ -154,7 +187,6 @@ subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize
 subSequencesIndexes.append(sequenceSize)
 print('Sub sequences indexes', subSequencesIndexes)
 
-
 startTime = time.time()
 
 if multiprocessing == False:
@@ -162,7 +194,7 @@ if multiprocessing == False:
     resultList = []
 
     for i in range(len(subSequencesIndexes)-1):
-        print('Creating deformations for images from', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1])
+        print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
 
         deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
                                                                               signalList,
@@ -172,43 +204,31 @@ if multiprocessing == False:
                                                                               outputType=np.float32)
 
         for deformationIndex, deformation in enumerate(deformationList):
-            # print('Deforming image ', deformationIndex)
-            # image = deformation.deformImage(dynMod.midp, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
-            # print('Deforming mask ', deformationIndex)
-            # mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
-            #
-            # print('Projection image ', deformationIndex)
-            # DRR = forwardProjection(image, 0, axis='X')
-            # print('Projection mask ', deformationIndex)
-            # DRRMask = forwardProjection(mask, 0, axis='X')
-            # binaryDRRMask = getBinaryMaskFromROIDRR(DRRMask)
-            # centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
-            # # print('centerOfMass', centerOfMass)
-            #
-            # del image #to release the RAM
-            # del mask #to release the RAM
-
-            resultList.append(deformImageAndMaskAndComputeDRRs(dynMod.midp, GTVMask, deformation, tryGPU=True))
+            resultList.append(deformImageAndMaskAndComputeDRRs(dynMod.midp,
+                                                               GTVMask,
+                                                               deformation,
+                                                               projectionAngle=projAngle,
+                                                               projectionAxis=projAxis,
+                                                               tryGPU=True))
 
 
-    savingPath = f'/home/damien/Desktop/Patient0_{sequenceSize}_DRRMasksAndCOM'
+    savingPath += dataSetDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM'
     saveSerializedObjects(resultList, savingPath + str(sequenceSize))
 
-    print('Test with multiprocessing =', multiprocessing, 'finished in', np.round(time.time()-startTime, 2))
 
 elif multiprocessing == True:
 
     resultList = []
 
-    if subSequenceSize > 6:  ## re-adjust the subSequenceSize since this will be done in multi processing
-        subSequenceSize = 6
-        print('SubSequenceSize put to 4 for multiprocessing.')
+    if subSequenceSize > maxMultiProcUse:  ## re-adjust the subSequenceSize since this will be done in multi processing
+        subSequenceSize = maxMultiProcUse
+        print('SubSequenceSize put to', maxMultiProcUse, 'for multiprocessing.')
         print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', multiprocessing)
         subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
         subSequencesIndexes.append(sequenceSize)
 
     for i in range(len(subSequencesIndexes)-1):
-        print('Creating deformations for images from', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1])
+        print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
 
         deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
                                                                               signalList,
@@ -220,12 +240,14 @@ elif multiprocessing == True:
         print('Start multi process deformation with', len(deformationList), 'deformations')
         with concurrent.futures.ProcessPoolExecutor() as executor:
 
-            results = executor.map(deformImageAndMaskAndComputeDRRs, repeat(dynMod.midp), repeat(GTVMask), deformationList, repeat(tryGPU))
+            results = executor.map(deformImageAndMaskAndComputeDRRs, repeat(dynMod.midp), repeat(GTVMask), deformationList, repeat(projAngle), repeat(projAxis), repeat(tryGPU))
             resultList += results
 
-        print('resultList lenght', len(resultList))
+        print('ResultList lenght', len(resultList))
 
-    savingPath = f'/home/damien/Desktop/Patient0_{sequenceSize}_DRRMasksAndCOM_multiProcTest'
+    savingPath += dataSetDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_multiProcTest'
     saveSerializedObjects(resultList, savingPath)
 
-    print('Test with multiprocessing =', multiprocessing, 'and sub-sequence size:', str(subSequenceSize), 'finished in', np.round(time.time() - startTime, 2))
+stopTime = time.time()
+print('Test with multiprocessing =', multiprocessing, '. Sub-sequence size:', str(subSequenceSize), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
+print(np.round((stopTime - startTime)/len(resultList), 2), 'sec per sample')
