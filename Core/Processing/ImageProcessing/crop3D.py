@@ -112,3 +112,13 @@ def getBoxAroundROI(ROI):
     print('ROI box in scanner coordinates:', boxInUniversalCoords)
 
     return boxInUniversalCoords
+
+
+def getBoxAboveThreshold(data, threshold=0.):
+    dataROI = ROIMask.fromImage3D(data)
+    roiArray = np.zeros(dataROI.imageArray.shape)
+    roiArray[data.imageArray > threshold] = 1
+    dataROI.imageArray = roiArray.astype(bool)
+    boundingBox = getBoxAroundROI(dataROI)
+
+    return boundingBox
