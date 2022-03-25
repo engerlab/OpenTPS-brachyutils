@@ -128,7 +128,7 @@ cemOptimizer.run(plan, ct)
 cem = plan.beams[0].cem
 cemROI = cem.computeROI(ct, beam)
 ctArray = ct.imageArray
-ctArray[cemROI.imageArray.astype(bool)] = ctCalibration.convertHU2RSP(cem.rsp, energy=70.)
+ctArray[cemROI.imageArray.astype(bool)] = ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
 ct.imageArray = ctArray
 
 # Final dose computation
