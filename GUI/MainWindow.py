@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import QMainWindow, QHBoxLayout, QWidget
 from PyQt5.QtGui import QIcon
 
+from Extensions.FLASH.GUI.flashWindow import FlashWindow
 from GUI.Panels.mainToolbar import MainToolbar
 from GUI.Viewer.viewerPanel import ViewerPanel
 from GUI.statusBar import StatusBar
@@ -11,6 +12,9 @@ from GUI.statusBar import StatusBar
 class MainWindow(QMainWindow):
     def __init__(self, viewControler):
         QMainWindow.__init__(self)
+
+        self.fWindow = FlashWindow(viewControler, self)
+        self.fWindow = self.fWindow.show()
 
         self.setWindowTitle('OpenTPS')
         self.setWindowIcon(QIcon('GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep + 'OpenTPS_icon.png'))

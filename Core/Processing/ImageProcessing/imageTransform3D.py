@@ -13,7 +13,7 @@ class ImageTransform3D:
     @staticmethod
     def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
         if not inPlace:
-            image = copy.deepcopy(image)
+            image = image.__class__.fromImage3D(image)
 
         sitkImageProcessing.resize(image, fixedImage.spacing, newOirigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
                                    fillValue=fillValue)
@@ -26,7 +26,7 @@ class ImageTransform3D:
 
         tform = linalg.inv(tform)
 
-        outImage = image.copy()
+        outImage = image.__class__.fromImage3D(image)
         sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
 
         return outImage
@@ -48,7 +48,7 @@ class ImageTransform3D:
 
         #tform = linalg.inv(tform)
 
-        outImage = image.copy()
+        outImage = image.__class__.fromImage3D(image)
         sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
 
         return outImage

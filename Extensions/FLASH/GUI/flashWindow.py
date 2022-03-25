@@ -1,15 +1,20 @@
+import copy
+import os
 from typing import Sequence, Tuple
 
 from PyQt5.QtGui import QPixmap, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QVBoxLayout, QLabel, QLineEdit, QMainWindow, QCheckBox, \
     QFrame, QScrollArea
 
+from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patient import Patient
 from Core.Data.rtStruct import RTStruct
+from Core.IO import mcsquareIO
 from Core.event import Event
 from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import SingleBeamCEMOptimizationWorkflow
 from Extensions.FLASH.GUI.convergencePlot import ConvergencePlot
@@ -54,10 +59,7 @@ class FlashWindow(QMainWindow):
         self._leftPanel.ctSelectedEvent.connect(self._viewers.setCT)
         self._leftPanel.doseUpdateEvent.connect(self._viewers.setDose)
         self._leftPanel.contourSelectedEvent.connect(self._viewers.setROI)
-        self._leftPanel.fValEvent.connect(self._updateFVal)
-
-    def _updateFVal(self, arg:Tuple):
-        self._convergencePlot.appendFVal(arg[0], arg[1])
+        self._leftPanel.fValEvent.connect(self._convergencePlot.appendFVal)
 
 class ThreeViewsGrid(QWidget):
     def __init__(self, viewController, parent=None):
@@ -84,10 +86,17 @@ class ThreeViewsGrid(QWidget):
         self._mainLayout.addWidget(self._viewer1)
         self._mainLayout.addWidget(self._viewer2)
 
+        self._ct = None
+
     def setCT(self, ct:CTImage):
         self._viewer0.primaryImage = ct
         self._viewer1.primaryImage = ct
         self._viewer2.primaryImage = ct
+
+        if not (self._ct is None):
+            Image3DForViewer(ct).selectedPosition = Image3DForViewer(self._ct).selectedPosition
+
+        self._ct = ct
 
     def setDose(self, dose:DoseImage):
         self._viewer0.secondaryImage = dose
@@ -149,6 +158,7 @@ class LeftPanel(QWidget):
 
         self.cemOptimizer = SingleBeamCEMOptimizationWorkflow()
         self.cemOptimizer.doseUpdateEvent.connect(self._updateDose)
+        self.cemOptimizer.planUpdateEvent.connect(self._updateCT)
         self.cemOptimizer.fValEvent.connect(self.fValEvent.emit)
 
     def _emitCT(self):
@@ -166,10 +176,11 @@ class LeftPanel(QWidget):
 
         if len(selectedCT)>1:
             raise Exception('Only 1 CT can be selected')
-
-        self.cemOptimizer.ctCalibration = None
-        self.cemOptimizer.beamModel = None
-        self.cemOptimizer.targetROI = self.roiPanel.selected[0]
+        self.cemOptimizer.ctCalibration = RayStationCTCalibration(
+            fromFiles=('/home/sylvain/Documents/Reggui/flashTPS/parameters/calibration_trento_cef.txt',
+                       '/home/sylvain/Documents/Reggui/flashTPS/parameters/materials_cef.txt'))
+        self.cemOptimizer.beamModel = mcsquareIO.readBDL(os.path.join(str('/home/sylvain/Documents/Reggui/flashTPS/parameters/BDL_default_RS_Leuven_4_5_5.txt')))
+        self.cemOptimizer.targetROI = self.roiPanel.selected[0].contour
         self.cemOptimizer.gantryAngle = self._beamEditor.beamAngle
         self.cemOptimizer.cemToIsocenter = self._beamEditor.cemIsoDist
         self.cemOptimizer.beamEnergy = self._beamEditor.beamEnergy
@@ -182,6 +193,22 @@ class LeftPanel(QWidget):
         Image3DForViewer(dose).range = [0, self.cemOptimizer.targetDose+1]
 
         self.doseUpdateEvent.emit(dose)
+
+    def _updateCT(self, plan:RTPlan):
+        ct = CTImage.fromImage3D(self.cemOptimizer.ct)
+
+        # Update CT with CEM
+        for beam in plan:
+            cem = beam.cem
+
+            if not cem.imageArray is None:
+                cemROI = cem.computeROI(ct, beam)
+
+                ctArray = ct.imageArray
+                ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
+                ct.imageArray = ctArray
+
+        self.ctSelectedEvent.emit(ct)
 
 class BeamEditor(QWidget):
     def __init__(self, parent=None):
@@ -325,7 +352,7 @@ class ROIItem(QCheckBox):
 
   @property
   def contour(self):
-    return self._contour
+    return self._contour.data
 
   def handleClick(self, isChecked):
     self._contour.visible = isChecked
