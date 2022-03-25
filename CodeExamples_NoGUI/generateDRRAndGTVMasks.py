@@ -29,15 +29,22 @@ import cProfile
 # pr.enable()
 
 patientFolder = 'Patient_0'
+dataSetFolder = '/test/'
+dataSetDataFolder = 'data/'
 dataPath = '/home/damien/Desktop/' + patientFolder + '/dynModAndROIs.p'
-savingPath = f'/home/damien/Desktop/' + patientFolder + '/'
+savingPath = f'/home/damien/Desktop/' + patientFolder + dataSetFolder
 
-sequenceDurationInSecs = 10
-samplingFrequency = 2
-subSequenceSize = 10
+if not os.path.exists(savingPath):
+    os.makedirs(savingPath)   # Create a new directory because it does not exist
+    os.makedirs(savingPath + dataSetDataFolder)  # Create a new directory because it does not exist
+    print("New directory created to save the data: ", savingPath)
+
+sequenceDurationInSecs = 50
+samplingFrequency = 4
+subSequenceSize = 12
 
 multiprocessing = True
-maxMultiProcUse = 4
+maxMultiProcUse = 8
 tryGPU = True
 
 projAngle = 0
@@ -45,6 +52,13 @@ projAxis = 'Z'
 
 ## ------------------------------------------------------------------------------------
 def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=0, projectionAxis='Z', tryGPU=True):
+    """
+    This function is specific to this example and used to :
+    - deform a CTImage and an ROIMask,
+    - create DRR's for both,
+    - binarize the DRR of the ROIMask
+    - compute its center of mass
+    """
 
     print('Start deformations and projections for deformation', deformation.name)
     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
@@ -112,7 +126,7 @@ GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.mi
 ## if you want to see the crop in the GUI you can save the data in cropped version
 saveSerializedObjects(patient, savingPath + 'Test_Cropped')
 
-## get the center of mass of this ROI
+## get the 3D center of mass of this ROI
 gtvCenterOfMass = gtvContour.getCenterOfMass(dynMod.midp.origin, dynMod.midp.gridSize, dynMod.midp.spacing)
 gtvCenterOfMassInVoxels = getVoxelIndexFromPosition(gtvCenterOfMass, dynMod.midp)
 print('Used ROI name', gtvContour.name)
@@ -126,7 +140,7 @@ print('Amplitude of deformation at ROI center of mass', amplitude)
 
 ## Signal creation
 newSignal = SyntheticBreathingSignal(amplitude=amplitude,
-                                     variationAmplitude=0.5,
+                                     variationAmplitude=2,
                                      breathingPeriod=4,
                                      variationFrequency=0,
                                      shift=0,
@@ -142,8 +156,10 @@ pointList = [gtvCenterOfMass]
 pointVoxelList = [gtvCenterOfMassInVoxels]
 signalList = [newSignal.breathingSignal]
 
+saveSerializedObjects([signalList, pointList], savingPath + 'ROIsAndSignalObjects')
 
-## to show signals and ROIs --> maybe save this figure with the resulting data to show which signal is applied where (for presentations or papers for example)
+
+## to show signals and ROIs
 ## -------------------------------------------------------------
 prop_cycle = plt.rcParams['axes.prop_cycle']
 colors = prop_cycle.by_key()['color']
@@ -159,7 +175,9 @@ for pointIndex, point in enumerate(pointList):
 
 signalAx.set_xlabel('Time (s)')
 signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
-plt.show()
+plt.savefig(savingPath + 'ROI_And_Signals_fig.pdf', dpi=300)
+# plt.show()
+
 ## -------------------------------------------------------------
 
 sequenceSize = newSignal.breathingSignal.shape[0]
@@ -169,7 +187,6 @@ subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize
 subSequencesIndexes.append(sequenceSize)
 print('Sub sequences indexes', subSequencesIndexes)
 
-
 startTime = time.time()
 
 if multiprocessing == False:
@@ -177,7 +194,7 @@ if multiprocessing == False:
     resultList = []
 
     for i in range(len(subSequencesIndexes)-1):
-        print('Creating deformations for images from', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1])
+        print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
 
         deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
                                                                               signalList,
@@ -195,10 +212,9 @@ if multiprocessing == False:
                                                                tryGPU=True))
 
 
-    savingPath = f'/home/damien/Desktop/Patient0_{sequenceSize}_DRRMasksAndCOM'
+    savingPath += dataSetDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM'
     saveSerializedObjects(resultList, savingPath + str(sequenceSize))
 
-    print('Test with multiprocessing =', multiprocessing, 'finished in', np.round(time.time()-startTime, 2))
 
 elif multiprocessing == True:
 
@@ -206,13 +222,13 @@ elif multiprocessing == True:
 
     if subSequenceSize > maxMultiProcUse:  ## re-adjust the subSequenceSize since this will be done in multi processing
         subSequenceSize = maxMultiProcUse
-        print('SubSequenceSize put to 4 for multiprocessing.')
+        print('SubSequenceSize put to', maxMultiProcUse, 'for multiprocessing.')
         print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', multiprocessing)
         subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
         subSequencesIndexes.append(sequenceSize)
 
     for i in range(len(subSequencesIndexes)-1):
-        print('Creating deformations for images from', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1])
+        print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
 
         deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
                                                                               signalList,
@@ -227,9 +243,11 @@ elif multiprocessing == True:
             results = executor.map(deformImageAndMaskAndComputeDRRs, repeat(dynMod.midp), repeat(GTVMask), deformationList, repeat(projAngle), repeat(projAxis), repeat(tryGPU))
             resultList += results
 
-        print('resultList lenght', len(resultList))
+        print('ResultList lenght', len(resultList))
 
-    savingPath = f'/home/damien/Desktop/Patient0_{sequenceSize}_DRRMasksAndCOM_multiProcTest'
+    savingPath += dataSetDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_multiProcTest'
     saveSerializedObjects(resultList, savingPath)
 
-    print('Test with multiprocessing =', multiprocessing, 'and sub-sequence size:', str(subSequenceSize), 'finished in', np.round(time.time() - startTime, 2))
+stopTime = time.time()
+print('Test with multiprocessing =', multiprocessing, '. Sub-sequence size:', str(subSequenceSize), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
+print(np.round((stopTime - startTime)/len(resultList), 2), 'sec per sample')
