@@ -20,7 +20,7 @@ class BreathingSignal(PatientData):
 # synthetic breathing data
 class SyntheticBreathingSignal(BreathingSignal):
     def __init__(self, amplitude=10, variationAmplitude=5, breathingPeriod=4, variationFrequency=0.5, shift=5, meanNoise=0,
-                 varianceNoise=0.1, samplingPeriod=0.2, simulationTime=100, meanEvent=2 / 30, patientInfo=None, name="Breathing Signal"):
+                 varianceNoise=0.01, samplingPeriod=0.2, simulationTime=100, meanEvent=2 / 30, patientInfo=None, name="Breathing Signal"):
         super().__init__(patientInfo=patientInfo, name=name)
 
         self.amplitude = amplitude  # amplitude (mm)
