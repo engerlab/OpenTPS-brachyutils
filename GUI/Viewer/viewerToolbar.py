@@ -94,7 +94,7 @@ class ViewerToolbar(QToolBar):
         self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
 
     def _openSettings(self, pressed):
-        self._imageFusionProp = ProgramSettingEditor(self._viewController.mainConfig)
+        self._imageFusionProp = ProgramSettingEditor()
         self._imageFusionProp.show()
 
     def _handleButtonIndependentViews(self, pressed):
