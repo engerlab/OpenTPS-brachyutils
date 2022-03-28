@@ -23,7 +23,6 @@ def events(L,Tend):
 def vectorSimulation(L,diff,mean,sigma,Tend,t,timestamp):
     #timestamp = events(L,Tend)        
     y = np.zeros(len(t))
-    noise = np.zeros(len(t))
     i = 0
     while i < len(timestamp):
         if i+2 < len(timestamp):
@@ -38,25 +37,14 @@ def vectorSimulation(L,diff,mean,sigma,Tend,t,timestamp):
     #y += noise
     return y
 
-def apnea(L,Tend,t):
-    timestamp = events(L,Tend)        
-    y = np.ones(len(t))
-    i = 0
-    while i < len(timestamp):
-        if i+2 < len(timestamp):
-            t1 = timestamp[i+1]
-            t2 = timestamp[i+2]
-            y[(t>=t1) & (t<=t2)] = 0
-        i+=2
-    return y
 
 #creation des donnees respiratoires
 def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma=1, step=0.2, signalDuration=100, L=2 / 30):
     freq = 1 / period
     timestamps = np.arange(0, signalDuration, step)
     listOfEvents = events(L,signalDuration)
+    listOfEventsApnea = events(L,signalDuration)
     
-    apneaData = apnea(L, signalDuration, timestamps)
     amplitude += vectorSimulation(L, dA, mean, sigma, signalDuration, timestamps,listOfEvents)
     s = vectorSimulation(L, dS, mean, sigma, signalDuration, timestamps,listOfEvents)
     freq += vectorSimulation(L, df, mean, sigma, signalDuration, timestamps,listOfEvents)
@@ -64,11 +52,23 @@ def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma
     noise = np.random.normal(loc=mean,scale=sigma,size=len(timestamps))
     
     #signal = (amplitude / 2) * np.sin(2 * np.pi * freq * (timestamps % (1 / freq))) + s ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
-    signal = (amplitude / 2) * np.sin(2 * np.pi * freq * timestamps) + s + noise
+    signal = (amplitude / 2) * np.sin(2 * np.pi * freq * timestamps) + s 
+    
+    i = 0
+    while i < len(listOfEventsApnea):
+        if i+2 < len(listOfEventsApnea):
+            index = np.abs(timestamps - listOfEventsApnea[i+1])
+            indexApnea = np.argmin(index)
+            a = signal[indexApnea]
+            t1 = listOfEventsApnea[i+1]
+            t2 = listOfEventsApnea[i+2]
+            signal[(timestamps>=t1) & (timestamps<=t2)] = a
+        i+=2
+    signal += noise
     return timestamps * 1000, signal
 
 
-"""
+
 #parametres changeables
 amplitude = 10 #amplitude (mm)
 dA = 5 #variation d amplitude possible (mm)
@@ -88,11 +88,5 @@ plt.ylabel("Amplitude [mm]")
 plt.title("Breathing signal part 1")
 plt.xlim((0,100))
 
-plt.figure(figsize=(15,10))
-plt.plot(time,samples)
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude [mm]")
-plt.title("Breathing signal part 2")
-plt.xlim((100,200))
-"""
+
 
