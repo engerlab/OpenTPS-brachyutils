@@ -15,7 +15,7 @@ class ImageTransform3D:
         if not inPlace:
             image = image.__class__.fromImage3D(image)
 
-        sitkImageProcessing.resize(image, fixedImage.spacing, newOirigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
+        sitkImageProcessing.resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
                                    fillValue=fillValue)
 
         return image
