@@ -16,22 +16,22 @@ def anonymiseDicom(dataPath, patientName):
         dcm = pydicom.dcmread(file)
 
         dcm.PatientName = patientName
-        dcm.InstanceCreationDate = '31012020'
-        dcm.InstanceCreationTime = '31012020'
-        dcm.StudyDate = '31012020'
-        dcm.SeriesDate = '31012020'
-        dcm.AcquisitionDate = '31012020'
-        dcm.StudyTime = '31012020'
-        dcm.SeriesTime = '31012020'
+        dcm.InstanceCreationDate = '01022010'
+        dcm.InstanceCreationTime = '01022010'
+        dcm.StudyDate = '01022010'
+        dcm.SeriesDate = '01022010'
+        dcm.AcquisitionDate = '01022010'
+        dcm.StudyTime = '01022010'
+        dcm.SeriesTime = '01022010'
         dcm.ReferringPhysicianName = 'Doctor Who ?'
         dcm.PatientID = patientName
-        dcm.PatientBirthDate = '31012020'
+        dcm.PatientBirthDate = '01022010'
         dcm.PatientSex = 'Helicopter'
         dcm.OtherPatientNames = ''
         dcm.OperatorsName = ''
         dcm.StructureSetLabel = 'RTSTRUCT'
-        dcm.StructureSetDate = '31012020'
-        dcm.StructureSetTime = '31012020'
+        dcm.StructureSetDate = '01022010'
+        dcm.StructureSetTime = '01022010'
 
         pydicom.dcmwrite(file, dcm)
 
