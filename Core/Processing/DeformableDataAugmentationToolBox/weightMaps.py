@@ -110,7 +110,7 @@ def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSp
         internalValues[pointIndex] = 1
         values = np.concatenate((externalValues, internalValues))
 
-        interp = LinearNDInterpolator(pointList, values)
+        interp = LinearNDInterpolator(pointList, values) # this could be replaced by cupy if GPU acceleration is necessary
         weightMap = interp(X, Y, Z)
 
         # stopTime = time.time()

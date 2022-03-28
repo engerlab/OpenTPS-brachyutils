@@ -1,8 +1,11 @@
+import copy
 import os
 import platform
 import shutil
 from pathlib import Path
 from typing import Optional
+
+import numpy as np
 
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
@@ -81,7 +84,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def computeBeamlets(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None):
         self._ct = ct
-        self._plan = plan
+        self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
         self._config = self._beamletComputationConfig
 
@@ -90,8 +93,15 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare()
 
         beamletDose = self._importBeamlets()
+        beamletDose.beamletWeights = np.array(plan.spotWeights)
 
         return beamletDose
+
+    def _setPlanWeightsTo1(self, plan):
+        plan = copy.deepcopy(plan)
+        plan.spotWeights = np.ones(plan.spotWeights.shape)
+
+        return plan
 
     def _cleanDir(self, dirPath):
         if os.path.isdir(dirPath):
@@ -132,7 +142,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._roi)
         beamletDose.beamletRescaling = self._beamletRescaling()
         return beamletDose
 

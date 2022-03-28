@@ -5,6 +5,8 @@ from scipy.interpolate import interpolate
 
 
 class PiecewiseHU2Density:
+    _DENSITY_EPS = 0.0001
+
     def __init__(self, piecewiseTable=(None, None), fromFile=None):
         self.__hu = piecewiseTable[0]
         self.__densities = piecewiseTable[1]
@@ -18,15 +20,23 @@ class PiecewiseHU2Density:
         return self.__str()
 
     def __str(self):
+        return self.writeableTable()
+
+    def writeableTable(self):
         s = ''
         for i, hu in enumerate(self.__hu):
-            s += str(hu) + ' ' + str(self.__densities[i]) + '\n'
+            density = self.__densities[i]
+
+            if density<self._DENSITY_EPS:
+                density = self._DENSITY_EPS
+
+            s += str(hu) + ' ' + str(density) + '\n'
 
         return s
 
     def write(self, scannerFile):
         with open(scannerFile, 'w') as f:
-            f.write(self.__str())
+            f.write(self.writeableTable())
 
     def convertMassDensity2HU(self, densities):
         #Ensure density is monotonically increasing

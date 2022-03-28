@@ -98,6 +98,9 @@ class PatientComboBox(QComboBox):
         self._viewController.patientAddedSignal.connect(self._addPatient)
         self._viewController.patientRemovedSignal.connect(self._removePatient)
 
+        if not (self._viewController.currentPatient is None):
+            self._addPatient(self._viewController.currentPatient)
+
         self.currentIndexChanged.connect(self._setCurrentPatient)
 
     def _addPatient(self, patient):
@@ -254,6 +257,8 @@ class PatientDataTree(QTreeView):
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
             self._viewController.mainImage = selectedData
+        elif isinstance(selectedData, Dynamic3DModel):
+            self._viewController.mainImage = selectedData.midp
         elif isinstance(selectedData, DoseImage):
             self._viewController.secondaryImage = selectedData
 

@@ -55,7 +55,7 @@ class ROIMask(Image3D):
     def dilate(self, radius=1.0, filt=None, tryGPU=True):
 
         if filt is None:
-            radius = 1/np.array(self.spacing)
+            radius = radius/np.array(self.spacing)
             diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
             diameter = diameter + (diameter+1)%2
             diameter = np.round(diameter).astype(int)
@@ -74,7 +74,7 @@ class ROIMask(Image3D):
     def erode(self, radius=1.0, filt=None, tryGPU=True):
 
         if filt is None:
-            radius = 1/np.array(self.spacing)
+            radius = radius/np.array(self.spacing)
             diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
             diameter = diameter + (diameter+1)%2
             diameter = np.round(diameter).astype(int)
@@ -93,7 +93,7 @@ class ROIMask(Image3D):
     def open(self, radius=1.0, filt=None, tryGPU=True):
 
         if filt is None:
-            radius = 1/np.array(self.spacing)
+            radius = radius/np.array(self.spacing)
             diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
             diameter = diameter + (diameter+1)%2
             diameter = np.round(diameter).astype(int)
@@ -112,7 +112,7 @@ class ROIMask(Image3D):
     def close(self, radius=1.0, filt=None, tryGPU=True):
 
         if filt is None:
-            radius = 1/np.array(self.spacing)
+            radius = radius/np.array(self.spacing)
             diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
             diameter = diameter + (diameter+1)%2
             diameter = np.round(diameter).astype(int)
