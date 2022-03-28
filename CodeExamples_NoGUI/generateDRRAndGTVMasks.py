@@ -24,6 +24,7 @@ from itertools import repeat
 import time
 from Core.Processing.ImageProcessing.crop3D import *
 import cProfile
+from scipy.ndimage import zoom
 
 # pr = cProfile.Profile()
 # pr.enable()
@@ -39,19 +40,20 @@ if not os.path.exists(savingPath):
     os.makedirs(savingPath + dataSetDataFolder)  # Create a new directory because it does not exist
     print("New directory created to save the data: ", savingPath)
 
-sequenceDurationInSecs = 150
+sequenceDurationInSecs = 1200
 samplingFrequency = 4
 subSequenceSize = 12
+outputSize = [64, 64]
 
 multiprocessing = True
-maxMultiProcUse = 8
+maxMultiProcUse = 12
 tryGPU = True
 
 projAngle = 0
 projAxis = 'Z'
 
 ## ------------------------------------------------------------------------------------
-def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=0, projectionAxis='Z', tryGPU=True):
+def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=0, projectionAxis='Z', tryGPU=True, outputSize=[]):
     """
     This function is specific to this example and used to :
     - deform a CTImage and an ROIMask,
@@ -62,6 +64,7 @@ def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=
 
     print('Start deformations and projections for deformation', deformation.name)
     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
+    # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
     mask = deformation.deformImage(ROIMask, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
 
     DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
@@ -70,6 +73,15 @@ def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=
     halfDiff = int((DRR.shape[1] - image.gridSize[2])/2)           ## not sure this will work if orientation is changed
     croppedDRR = DRR[:, halfDiff + 1:DRR.shape[1] - halfDiff - 1]         ## not sure this will work if orientation is changed
     croppedDRRMask = DRRMask[:, halfDiff + 1:DRRMask.shape[1] - halfDiff - 1] ## not sure this will work if orientation is changed
+
+    if outputSize:
+        # print('Before resampling')
+        # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
+        ratio = [outputSize[0]/croppedDRR.shape[0], outputSize[1]/croppedDRR.shape[1]]
+        croppedDRR = zoom(croppedDRR, ratio)
+        croppedDRRMask = zoom(croppedDRRMask, ratio)
+        # print('After resampling')
+        # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
 
     binaryDRRMask = getBinaryMaskFromROIDRR(croppedDRRMask)
     centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
@@ -117,7 +129,7 @@ bodyBox = getBoxAroundROI(bodyMask)
 croppingBox = [gtvBox[0], bodyBox[1], gtvBox[2]] ## create the used box combining the two boxes
 
 ## crop the model data using the box
-marginInMM = 40 ## seems well suited for liver Patient_0
+marginInMM = 50 ## seems well suited for liver Patient_0
 crop3DDataAroundBox(dynMod, croppingBox, marginInMM=[marginInMM, 0, marginInMM*2.5])
 
 ## get the mask in cropped version (the dynMod.midp is now cropped so its origin and gridSize has changed)
@@ -168,7 +180,7 @@ signalAx = plt.subplot(2, 1, 2)
 
 for pointIndex, point in enumerate(pointList):
     ax = plt.subplot(2, len(pointList), pointIndex+1)
-    ax.set_title('Slice Y:' + str(pointList[pointIndex][1]))
+    ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
     ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
     ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
     signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex], c=colors[pointIndex])
@@ -209,6 +221,7 @@ if multiprocessing == False:
                                                                deformation,
                                                                projectionAngle=projAngle,
                                                                projectionAxis=projAxis,
+                                                               outputSize=outputSize,
                                                                tryGPU=True))
 
 
@@ -240,7 +253,7 @@ elif multiprocessing == True:
         print('Start multi process deformation with', len(deformationList), 'deformations')
         with concurrent.futures.ProcessPoolExecutor() as executor:
 
-            results = executor.map(deformImageAndMaskAndComputeDRRs, repeat(dynMod.midp), repeat(GTVMask), deformationList, repeat(projAngle), repeat(projAxis), repeat(tryGPU))
+            results = executor.map(deformImageAndMaskAndComputeDRRs, repeat(dynMod.midp), repeat(GTVMask), deformationList, repeat(projAngle), repeat(projAxis), repeat(tryGPU), repeat(outputSize))
             resultList += results
 
         print('ResultList lenght', len(resultList))
