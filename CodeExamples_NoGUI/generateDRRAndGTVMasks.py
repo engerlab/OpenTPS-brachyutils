@@ -145,7 +145,7 @@ newSignal = SyntheticBreathingSignal(amplitude=amplitude,
                                      variationFrequency=0.1,
                                      shift=2,
                                      meanNoise=0,
-                                     varianceNoise=0.01,
+                                     varianceNoise=0.5,
                                      samplingPeriod=1/samplingFrequency,
                                      simulationTime=sequenceDurationInSecs,
                                      meanEvent=2/30)
