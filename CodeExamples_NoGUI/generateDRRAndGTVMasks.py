@@ -39,7 +39,7 @@ if not os.path.exists(savingPath):
     os.makedirs(savingPath + dataSetDataFolder)  # Create a new directory because it does not exist
     print("New directory created to save the data: ", savingPath)
 
-sequenceDurationInSecs = 50
+sequenceDurationInSecs = 150
 samplingFrequency = 4
 subSequenceSize = 12
 
@@ -142,13 +142,13 @@ print('Amplitude of deformation at ROI center of mass', amplitude)
 newSignal = SyntheticBreathingSignal(amplitude=amplitude,
                                      variationAmplitude=2,
                                      breathingPeriod=4,
-                                     variationFrequency=0,
-                                     shift=0,
-                                     mean=0,
-                                     variance=0.5,
+                                     variationFrequency=0.1,
+                                     shift=2,
+                                     meanNoise=0,
+                                     varianceNoise=0.01,
                                      samplingPeriod=1/samplingFrequency,
                                      simulationTime=sequenceDurationInSecs,
-                                     meanEvent=1/30)
+                                     meanEvent=2/30)
 
 newSignal.generateBreathingSignal()
 
@@ -176,7 +176,7 @@ for pointIndex, point in enumerate(pointList):
 signalAx.set_xlabel('Time (s)')
 signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
 plt.savefig(savingPath + 'ROI_And_Signals_fig.pdf', dpi=300)
-# plt.show()
+plt.show()
 
 ## -------------------------------------------------------------
 

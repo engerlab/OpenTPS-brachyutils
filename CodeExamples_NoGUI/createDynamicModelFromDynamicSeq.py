@@ -42,5 +42,5 @@ stopTime = time.time()
 print('midP computed in ', np.round(stopTime-startTime))
 
 # ## save it as a serialized object
-savingPath = testDataPath + 'Test_dynMod'
-saveSerializedObjects(model3D, savingPath)
+# savingPath = testDataPath + 'Test_dynMod'
+# saveSerializedObjects(model3D, savingPath)
