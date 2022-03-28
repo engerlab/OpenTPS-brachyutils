@@ -1,7 +1,7 @@
 import copy
 import logging
 import math
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 from scipy.interpolate import interpolate
@@ -118,3 +118,98 @@ class CEM(AbstractCTObject, Image2D):
             return False
 
         return True
+
+
+class BiComponentCEM(AbstractCTObject):
+    def __init__(self):
+        super().__init__()
+
+        self.rangeShifterRSP = 1.2
+        self.cemRSP = 1.
+        self.minCEMThickness = 5. # in physical mm not in water equivalent mm
+        self.rangeShifterToCEM = 5. # Free space between CEM and RS
+
+        self._simpleCEM = CEM()
+        self._simpleCEM.rsp = 1.
+
+    @property
+    def imageArray(self) -> np.ndarray:
+        return self._simpleCEM.imageArray
+
+    @imageArray.setter
+    def imageArray(self, imageArray:np.ndarray):
+        self._simpleCEM.imageArray = imageArray
+
+    @property
+    def origin(self) -> np.ndarray:
+        return self._simpleCEM.origin
+
+    @origin.setter
+    def origin(self, origin: np.ndarray):
+        self._simpleCEM.origin = origin
+
+    @property
+    def spacing(self) -> np.ndarray:
+        return self._simpleCEM.spacing
+
+    @spacing.setter
+    def spacing(self, spacing: np.ndarray):
+        self._simpleCEM.spacing = spacing
+
+    @classmethod
+    def fromBeam(cls, ct:Image3D, beam:PlanIonBeam):
+        newCEM = cls()
+        newCEM._simpleCEM = CEM.fromBeam(ct, beam)
+
+        return newCEM
+
+    def computeROI(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> ROIMask:
+        rsROI, cemROI = self.computeROIs(referenceImage, beam)
+
+        outROI = ROIMask.fromImage3D(rsROI)
+        outROI.imageArray = np.logical_or(rsROI.imageArray, cemROI.imageArray)
+
+        return outROI
+
+
+    def computeROIs(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> Tuple[ROIMask, ROIMask]:
+        simpleRS, simpleCEM = self.split()
+
+        rsROI = simpleRS.computeROI(referenceImage, beam)
+
+        beamCEM = copy.deepcopy(beam)
+        beamCEM.cemToIsocenter += self._rangeShifterWaterEquivThick()/self.rangeShifterRSP + self.rangeShifterToCEM
+
+        cemROI = simpleCEM.computeROI(referenceImage, beamCEM)
+
+        return rsROI, cemROI
+
+
+    def split(self) -> Tuple[CEM, CEM]:
+        rangeShifterWaterEquivThick = self._rangeShifterWaterEquivThick()
+
+        simpleRS = copy.deepcopy(self._simpleCEM)
+        simpleRS.imageArray = rangeShifterWaterEquivThick*np.ones(simpleRS.imageArray.shape)*np.array(self._simpleCEM.imageArray.astype(bool).astype(float))
+        simpleRS.rsp = self.rangeShifterRSP
+
+        simpleCEM = copy.deepcopy(self._simpleCEM)
+        simpleCEM.imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick
+        simpleCEM.rsp = self.cemRSP
+
+        return simpleRS, simpleCEM
+
+    def _rangeShifterWaterEquivThick(self):
+        cemData = self._simpleCEM.imageArray
+        cemData = cemData[cemData > 0.]
+
+        if len(cemData)==0:
+            raise ValueError("CEM cannot contains only 0s")
+
+        cemDataMin = np.min(cemData)
+
+        rangeShifterWaterEquivThick = cemDataMin - self.minCEMThickness * self.cemRSP
+
+        if rangeShifterWaterEquivThick<0.:
+            rangeShifterWaterEquivThick = 0.
+
+        return rangeShifterWaterEquivThick
