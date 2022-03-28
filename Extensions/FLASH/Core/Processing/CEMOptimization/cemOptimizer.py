@@ -1,6 +1,5 @@
 import copy
 from enum import Enum
-from math import cos, pi
 from typing import Sequence, Union, Tuple
 
 import numpy as np
@@ -8,21 +7,15 @@ import numpy as np
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Images.rspImage import RSPImage
-from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.roiContour import ROIContour
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Processing.ImageProcessing import crop3D
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
 from Core.event import Event
 from Extensions.FLASH.Core.Data.cem import CEM
-from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
-from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
 from Extensions.FLASH.Core.Processing.CEMOptimization.cemObjectives import CEMAbstractDoseFidelityTerm
+from Extensions.FLASH.Core.Processing.CEMOptimization.cemPlanInitializer import CEMPlanInitializer
 from Extensions.FLASH.Core.Processing.CEMOptimization.planOptimizer import PlanOptimizer, PlanOptimizerObjectives
 from Extensions.FLASH.Core.Processing.DoseCalculation.analyticalNoScattering import AnalyticalNoScattering
 from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCalculator import \
@@ -185,104 +178,6 @@ class CEMOptimizer:
             beam.cem.imageArray = np.reshape(cemBeamVal, (cemArray.shape[0], cemArray.shape[1]))
 
             ind += cemArray.shape[0]*cemArray.shape[1]
-
-
-class CEMPlanInitializer:
-    def __init__(self):
-        self.plan:RTPlan=None
-        self.targetMask:ROIMask=None
-
-    def intializePlan(self, spotSpacing:float, targetMargin:float=0.):
-        roiDilated = ROIMask.fromImage3D(self.targetMask)
-        roiDilated.dilate(targetMargin)
-
-        for beam in self.plan:
-            self._intializeBeam(beam, roiDilated, spotSpacing)
-
-
-    def _intializeBeam(self, beam:CEMBeam, targetROI:ROIMask, spotSpacing:float):
-        beam.isocenterPosition = targetROI.centerOfMass
-
-        targetROIBEV = ImageTransform3D.dicomToIECGantry(targetROI, beam, 0.)
-        isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(targetROI, beam, beam.isocenterPosition)
-
-        spotGridX, spotGridY = self._defineHexagSpotGridAroundIsocenter(spotSpacing, targetROIBEV, isocenterBEV)
-        coordGridX, coordGridY = self._pixelCoordinatedWrtIsocenter(targetROIBEV, isocenterBEV)
-
-        spotGridX = spotGridX.flatten()
-        spotGridY = spotGridY.flatten()
-
-        for layer in beam:
-            layerMask = np.sum(targetROIBEV.imageArray, axis=2).astype(bool)
-
-            coordX = coordGridX[layerMask]
-            coordY = coordGridY[layerMask]
-
-            coordX = coordX.flatten()
-            coordY = coordY.flatten()
-
-            x2 = np.matlib.repmat(np.reshape(spotGridX, (spotGridX.shape[0], 1)), 1, coordX.shape[0]) \
-                 - np.matlib.repmat(np.transpose(coordX), spotGridX.shape[0], 1)
-            y2 = np.matlib.repmat(np.reshape(spotGridY, (spotGridY.shape[0], 1)), 1, coordY.shape[0]) \
-                 - np.matlib.repmat(np.transpose(coordY), spotGridY.shape[0], 1)
-
-            ind = (x2*x2+y2*y2).argmin(axis=0)
-
-            spotPosCandidates = np.unique(np.array(list(zip(spotGridX[ind], -spotGridY[ind]))), axis=0)
-
-            for i in range(spotPosCandidates.shape[0]):
-                spotPos = spotPosCandidates[i, :]
-                layer.addToSpot(spotPos[0], spotPos[1], 0.) # We do not append spot but rather add it because append throws an exception if already exists
-
-            beam.spotWeights = np.ones(beam.spotWeights.shape)
-
-    def _defineHexagSpotGridAroundIsocenter(self, spotSpacing:float, imageBEV:Image3D, isocenterBEV:Sequence[float]):
-        origin = imageBEV.origin
-        end = imageBEV.origin + imageBEV.spacing * imageBEV.imageArray.shape
-
-        spotGridSpacing = [spotSpacing/2., spotSpacing*cos(pi/6.)]
-
-        xFromIsoToOrigin = np.arange(isocenterBEV[0], origin[0], -spotGridSpacing[0])
-        xFromOriginToIso = np.flipud(xFromIsoToOrigin)
-        xFromIsoToEnd = np.arange(isocenterBEV[0]+spotGridSpacing[0], end[0], spotGridSpacing[0])
-        yFromIsoToOrigin = np.arange(isocenterBEV[1], origin[1], -spotGridSpacing[1])
-        yFromOriginToIso = np.flipud(yFromIsoToOrigin)
-        yFromIsoToEnd = np.arange(isocenterBEV[1]+spotGridSpacing[1], end[1], spotGridSpacing[1])
-
-        x = np.concatenate((xFromOriginToIso, xFromIsoToEnd))
-        y = np.concatenate((yFromOriginToIso, yFromIsoToEnd))
-
-        spotGridX, spotGridY = np.meshgrid(x, y)
-
-        spotGridX = spotGridX-isocenterBEV[0]
-        spotGridY = spotGridY-isocenterBEV[1]
-
-        isoInd0 = xFromOriginToIso.shape[0] # index of isocenter
-        isoInd1 = yFromOriginToIso.shape[0] # index of isocenter
-
-        heaxagonalMask = np.zeros(spotGridX.shape)
-        heaxagonalMask[(isoInd0+1)%2::2, (isoInd1+1)%2:2] = 1
-        heaxagonalMask[1-(isoInd0+1)%2::2, 1-(isoInd1+1)%2::2] = 1
-
-        spotGridX = spotGridX[heaxagonalMask.astype(bool)]
-        spotGridY = spotGridY[heaxagonalMask.astype(bool)]
-
-        return spotGridX, spotGridY
-
-    def _pixelCoordinatedWrtIsocenter(self, imageBEV:Image3D, isocenterBEV:Sequence[float]):
-        origin = imageBEV.origin
-        end = imageBEV.origin + imageBEV.spacing*imageBEV.imageArray.shape
-
-        x = np.arange(origin[0], end[0], imageBEV.spacing[0])
-        y = np.arange(origin[1], end[1], imageBEV.spacing[1])
-        [coordGridX, coordGridY] = np.meshgrid(x, y)
-        coordGridX = np.transpose(coordGridX)
-        coordGridY = np.transpose(coordGridY)
-
-        coordGridX = coordGridX - isocenterBEV[0]
-        coordGridY = coordGridY - isocenterBEV[1]
-
-        return coordGridX, coordGridY
 
 
 class CEMDoseCalculator:
@@ -466,130 +361,3 @@ class CEMDoseCalculator:
                 layer.nominalEnergy = rangeToEnergy(energyToRange(layer.nominalEnergy)-deltaR)
 
         return plan2
-
-class SingleBeamCEMOptimizationWorkflow():
-    def __init__(self):
-        self.ctCalibration = None
-        self.beamModel = None
-        self.targetROI = None
-        self.gantryAngle = 0
-        self.cemToIsocenter = 100
-        self.beamEnergy = 226
-        self.ct = None
-        self.targetDose = None
-
-        self.doseUpdateEvent = Event(object)
-        self.planUpdateEvent = Event(RTPlan)
-        self.fValEvent = Event(Tuple)
-
-        self.cemOptimizer = CEMOptimizer()
-        self.cemOptimizer.doseUpdateEvent.connect(self.doseUpdateEvent.emit)
-        self.cemOptimizer.planUpdateEvent.connect(self.planUpdateEvent.emit)
-        self.cemOptimizer.fValEvent.connect(self.fValEvent.emit)
-
-    def run(self) -> RTPlan:
-        if isinstance(self.targetROI, ROIContour):
-            self.targetROI = self.targetROI.getBinaryMask(self.ct.origin, self.ct.gridSize, self.ct.spacing)
-
-        patient = self.ct.patient
-
-        plan = RTPlan()
-        beam = CEMBeam()
-        beam.isocenterPosition = self.targetROI.centerOfMass
-        beam.gantryAngle = self.gantryAngle
-        beam.cemToIsocenter = self.cemToIsocenter  # Distance between CEM and isocenter
-        layer = PlanIonLayer(nominalEnergy=self.beamEnergy)
-        beam.appendLayer(layer)
-        plan.appendBeam(beam)
-
-        # Pad CT and targetROI so that both can fully contain the CEM
-        ctBEV = ImageTransform3D.dicomToIECGantry(self.ct, beam, fillValue=-1024.)
-        targetROIBEV = ImageTransform3D.dicomToIECGantry(self.targetROI, beam, fillValue=-0.)
-
-        padLength = int(150. / ctBEV.spacing[2])
-        newOrigin = np.array(ctBEV.origin)
-        newOrigin[2] = newOrigin[2] - padLength * ctBEV.spacing[2]
-        newArray = -1000 * np.ones((ctBEV.gridSize[0], ctBEV.gridSize[1], ctBEV.gridSize[2] + padLength)) # We choose -1000 and not -1024 because we will crop evrthng > -1000
-        newArray[:, :, padLength:] = ctBEV.imageArray
-        ctBEV.imageArray = newArray
-        ctBEV.origin = newOrigin
-
-        newArray = np.zeros((targetROIBEV.gridSize[0], targetROIBEV.gridSize[1], targetROIBEV.gridSize[2] + padLength))
-        newArray[:, :, padLength:] = targetROIBEV.imageArray
-        targetROIBEV.imageArray = newArray
-        targetROIBEV.origin = newOrigin
-
-        ct = ImageTransform3D.iecGantryToDicom(ctBEV, beam, fillValue=-1024.)
-        ct.name = 'CT with CEM'
-        ct.patient = patient
-        targetROI = ImageTransform3D.iecGantryToDicom(targetROIBEV, beam, fillValue=0)
-        targetROI.patient = patient
-
-        boundingBox = crop3D.getBoxAboveThreshold(ct, -1023)
-
-        crop3D.crop3DDataAroundBox(ct, boundingBox, [2, 2, 2])
-        crop3D.crop3DDataAroundBox(targetROI, boundingBox, [2, 2, 2])
-
-        self.ct = ct
-        self.targetROI = targetROI
-
-        # OARs are defined around the TV
-        oarAndTVROI = ROIMask.fromImage3D(targetROI)
-        oarAndTVROI.dilate(10)
-
-        oarROI = ROIMask.fromImage3D(targetROI)
-        oarROI.imageArray = np.logical_xor(oarAndTVROI.imageArray.astype(bool), targetROI.imageArray.astype(bool))
-
-        # A single optimizer for both plan an CEM
-        print('Initializing optimizer...')
-        self.cemOptimizer.maxIterations = 25
-        self.cemOptimizer.spotSpacing = 5
-        self.cemOptimizer.targetMask = targetROI
-        self.cemOptimizer.absTol = 1
-        self.cemOptimizer.ctCalibration = self.ctCalibration
-
-        # This is a dose calculator that will cache results and only recompute them if CEM or plan has changed
-        print('Initializing dose calculator...')
-        doseCalculator = CEMDoseCalculator()
-        doseCalculator.beamModel = self.beamModel
-        doseCalculator.nbPrimaries = 5e4
-        doseCalculator.ctCalibration = self.ctCalibration
-        doseCalculator.plan = plan
-        doseCalculator.roi = oarAndTVROI
-        doseCalculator.ct = ct
-
-        # These are our objectives
-        print('Initializing objectives...')
-        objectifMin = cemObjectives.DoseMinObjective(targetROI, self.targetDose, doseCalculator)
-        objectifMax = cemObjectives.DoseMaxObjective(targetROI, self.targetDose+0.2, doseCalculator)
-        objectifMax2 = cemObjectives.DoseMaxObjective(oarROI, self.targetDose/2., doseCalculator)
-
-        self.cemOptimizer.appendObjective(objectifMin, weight=1.)
-        self.cemOptimizer.appendObjective(objectifMax, weight=1.)
-        self.cemOptimizer.appendObjective(objectifMax2, weight=0.5)
-
-        # Let's optimize the plan and the CEM!
-        print('Starting optimization...')
-        self.cemOptimizer.run(plan, ct)
-
-        # Update CT with CEM
-        cem = plan.beams[0].cem
-        cemROI = cem.computeROI(ct, beam)
-        ctArray = ct.imageArray
-        ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
-        ct.imageArray = ctArray
-
-        # Final dose computation
-        doseCalculator = MCsquareDoseCalculator()
-        doseCalculator.beamModel = self.beamModel
-        doseCalculator.nbPrimaries = 2e7
-        doseCalculator.ctCalibration = self.ctCalibration
-
-        doseImage = doseCalculator.computeDose(ct, plan)
-        doseImage.patient = patient
-        doseImage.name = 'Final dose'
-
-        self.planUpdateEvent.emit(plan)
-        self.doseUpdateEvent.emit(doseImage)
-
-        return plan

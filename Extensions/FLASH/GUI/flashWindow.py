@@ -1,4 +1,3 @@
-import copy
 import os
 from typing import Sequence, Tuple
 
@@ -16,7 +15,7 @@ from Core.Data.patient import Patient
 from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.event import Event
-from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import SingleBeamCEMOptimizationWorkflow
+from Extensions.FLASH.Core.Processing.CEMOptimization.workflows import SingleBeamCEMOptimizationWorkflow
 from Extensions.FLASH.GUI.convergencePlot import ConvergencePlot
 from GUI.Panels.patientDataPanel import PatientDataTree, PatientComboBox
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
