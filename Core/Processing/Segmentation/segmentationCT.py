@@ -26,31 +26,54 @@ class SegmentationCT():
 
     def segmentBody(self):
 
+        # Air detection
         body = segmentation.applyThreshold(self.ct,-750)
         temp = body.copy()
 
-        compute3DStructuralElement([0,1,0],spacing=body.spacing)
-
+        # Table detection
         temp.open(filt = compute3DStructuralElement([1,30,1],spacing=body.spacing))
         temp._imageArray = np.logical_and(body.imageArray, np.logical_not(temp.imageArray))
         temp.open(filt = compute3DStructuralElement([3,1,3],spacing=body.spacing))
         tablePosition = np.max([0, np.argmax(temp._imageArray.sum(axis=2).sum(axis=0))-1])
         body._imageArray[:, tablePosition:, :] = False
-        components = stikImageProcessing.connectComponents(body)
-        body._imageArray = components.imageArray == 1
+
+        # Body definition
+        temp = body.copy()
+        temp.erode(filt=compute3DStructuralElement([5, 5, 5], spacing=body.spacing))
+        temp.close(filt=compute3DStructuralElement([10, 10, 10], spacing=body.spacing))
+        body._imageArray = np.logical_and(np.logical_not(body.imageArray), np.logical_not(temp.imageArray))
+        labels = stikImageProcessing.connectComponents(body)
+        body._imageArray = labels.imageArray != 1
+        body.open(filt=compute3DStructuralElement([3, 3, 0], spacing=body.spacing))
+        labels = stikImageProcessing.connectComponents(body)
+        body._imageArray = labels.imageArray == 1
 
         return body
 
 
     def segmentBones(self, body=None):
 
-        bones = ROIMask()
+        bones = segmentation.applyThreshold(self.ct,200)
+        bones.close(filt=compute3DStructuralElement([2, 2, 2], spacing=bones.spacing))
+        bones.open(filt=compute3DStructuralElement([3, 3, 3], spacing=bones.spacing))
         return bones
 
 
     def segmentLungs(self, body=None):
 
-        lungs = ROIMask()
-        return lungs
+        if body is None:
+            body = self.segmentBody()
+        else:
+            body = body.copy()
+        body.dilate(filt=compute3DStructuralElement([4, 4, 4], spacing=body.spacing))
 
+        lungs = segmentation.applyThreshold(self.ct,-950,thresholdMax=-350)
+        lungs._imageArray = np.logical_and(lungs._imageArray,body.imageArray)
+        lungs.open(filt=compute3DStructuralElement([3, 3, 4], spacing=lungs.spacing))
+        lungs.close(filt=compute3DStructuralElement([3, 3, 4], spacing=lungs.spacing))
+
+        labels = stikImageProcessing.connectComponents(lungs)
+        lungs._imageArray = np.logical_and(labels.imageArray >0, labels.imageArray <3)
+
+        return lungs
 

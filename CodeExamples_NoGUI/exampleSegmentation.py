@@ -8,13 +8,13 @@ from Core.Processing.Segmentation.segmentationCT import SegmentationCT
 if __name__ == '__main__':
 
     # GENERATE SYNTHETIC CT IMAGE
-    im = np.full((170, 100, 100), -1000)
-    im[20:150, 20:80, :] = 0
-    im[30:70, 30:70, 20:] = -800
-    im[100:140, 30:70, 20:] = -800
-    im[45:55, 45:55, 30:40] = 0
-    im[80:90, 45:55, :] = 800
-    im[:, 80:85, :] = 100 #couch
+    im = np.full((170, 170, 100), -1000)
+    im[20:150, 70:130, :] = 0
+    im[30:70, 80:120, 20:] = -800
+    im[100:140, 80:120, 20:] = -800
+    im[45:55, 95:105, 30:40] = 0
+    im[80:90, 95:105, :] = 800
+    im[:, 130:135, :] = 100 #couch
     ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=[1, 1, 1])
 
     # APPLY THRESHOLD SEGMENTATION
@@ -23,11 +23,13 @@ if __name__ == '__main__':
     # APPLY CT BODY SEGMENTATION
     seg = SegmentationCT(ct)
     body = seg.segmentBody()
+    bones = seg.segmentBones()
+    lungs = seg.segmentLungs()
 
     # DISPLAY RESULTS
-    fig, ax = plt.subplots(2, 3)
+    fig, ax = plt.subplots(2, 5)
     fig.tight_layout()
-    y_slice = round(ct.imageArray.shape[1] / 2) - 1
+    y_slice = 100
     z_slice = 35 #round(ct.imageArray.shape[2] / 2) - 1
     ax[0,0].imshow(ct.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[0,0].title.set_text('CT')
@@ -35,12 +37,21 @@ if __name__ == '__main__':
     ax[0,1].title.set_text('Threshold')
     ax[0,2].imshow(body.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=0, vmax=1)
     ax[0,2].title.set_text('Body')
+    ax[0,3].imshow(bones.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=0, vmax=1)
+    ax[0,3].title.set_text('Bones')
+    ax[0,4].imshow(lungs.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=0, vmax=1)
+    ax[0,4].title.set_text('Lungs')
+
     ax[1,0].imshow(ct.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[1,0].title.set_text('CT')
     ax[1,1].imshow(mask.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=0, vmax=1)
     ax[1,1].title.set_text('Threshold')
     ax[1,2].imshow(body.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=0, vmax=1)
     ax[1,2].title.set_text('Body')
+    ax[1,3].imshow(bones.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=0, vmax=1)
+    ax[1,3].title.set_text('Bones')
+    ax[1,4].imshow(lungs.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=0, vmax=1)
+    ax[1,4].title.set_text('Lungs')
 
     plt.show()
 
