@@ -30,7 +30,7 @@ from scipy.ndimage import zoom
 # pr.enable()
 
 patientFolder = 'Patient_0'
-dataSetFolder = '/test/'
+dataSetFolder = '/test2/'
 dataSetDataFolder = 'data/'
 dataPath = '/home/damien/Desktop/' + patientFolder + '/dynModAndROIs.p'
 savingPath = f'/home/damien/Desktop/' + patientFolder + dataSetFolder
@@ -40,7 +40,7 @@ if not os.path.exists(savingPath):
     os.makedirs(savingPath + dataSetDataFolder)  # Create a new directory because it does not exist
     print("New directory created to save the data: ", savingPath)
 
-sequenceDurationInSecs = 1200
+sequenceDurationInSecs = 3000
 samplingFrequency = 4
 subSequenceSize = 12
 outputSize = [64, 64]
@@ -136,7 +136,7 @@ crop3DDataAroundBox(dynMod, croppingBox, marginInMM=[marginInMM, 0, marginInMM*2
 GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
 
 ## if you want to see the crop in the GUI you can save the data in cropped version
-saveSerializedObjects(patient, savingPath + 'Test_Cropped')
+saveSerializedObjects(patient, savingPath + 'croppedModelAndROIs')
 
 ## get the 3D center of mass of this ROI
 gtvCenterOfMass = gtvContour.getCenterOfMass(dynMod.midp.origin, dynMod.midp.gridSize, dynMod.midp.spacing)
