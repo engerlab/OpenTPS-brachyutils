@@ -1,6 +1,5 @@
-import copy
-from math import exp, log
-from typing import Union, Tuple
+
+from typing import Union, Tuple, Sequence
 
 import numpy as np
 from scipy.interpolate import interpolate
@@ -18,6 +17,7 @@ from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseC
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.fluenceCalculator import FluenceCalculator
+from Extensions.FLASH.Core.Processing.RangeEnergy import energyToRange
 
 
 class AnalyticalNoScattering(AbstractDoseCalculator):
@@ -50,43 +50,55 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         self._ctCalibration = calibration
 
     def computeDose(self, ct:CTImage, plan:RTPlan) -> DoseImage:
+        outImage = DoseImage.fromImage3D(ct)
+        outImage.imageArray = np.zeros(outImage.imageArray.shape)
+
+        for doseImage in self.computeDosePerBeam(ct, plan):
+            outImage.imageArray = outImage.imageArray + doseImage.imageArray
+
+        return outImage
+
+    def computeDosePerBeam(self, ct:CTImage, plan:RTPlan) -> Sequence[DoseImage]:
+        self._computeReferenceIDD()
+
+        doseImages = []
+        for beam in plan:
+            doseImageDicom = self._computeDoseForBeam(ct, beam)
+            ImageTransform3D.intersect(doseImageDicom, ct, inPlace=True, fillValue=0.)
+            doseImages.append(doseImageDicom)
+
+        return doseImages
+
+    def _computeDoseForBeam(self, ct:CTImage, beam:PlanIonBeam) -> DoseImage:
         fluenceCalculator = FluenceCalculator()
         fluenceCalculator.beamModel = self.beamModel
 
-        self._computeReferenceIDD()
-
         rsp = RSPImage.fromCT(ct, self.ctCalibration)
-        doseImage = DoseImage.fromImage3D(ct)
-        doseImage.imageArray = np.zeros(doseImage.imageArray.shape)
 
-        for beam in plan:
-            cumRSP = rsp.computeCumulativeWEPL(beam)
-            cumRSP = ImageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0.)
+        cumRSP = rsp.computeCumulativeWEPL(beam)
+        cumRSP = ImageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0.)
 
-            doseImageBEV = DoseImage.fromImage3D(cumRSP)
-            doseImageArray = np.zeros(doseImageBEV.imageArray.shape)
+        doseImageBEV = DoseImage.fromImage3D(cumRSP)
+        doseImageArray = np.zeros(doseImageBEV.imageArray.shape)
 
-            wetBeforeCT = self._wetBeforeCT(beam)
+        wetBeforeCT = self._wetBeforeCT(beam)
 
-            for layer in beam:
-                fluence = fluenceCalculator.layerFluenceAtNozzle(layer, ct, beam)
-                fluence = fluence.imageArray
+        for layer in beam:
+            fluence = fluenceCalculator.layerFluenceAtNozzle(layer, ct, beam)
+            fluence = fluence.imageArray
 
-                layerDose, layerDeriv = self._doseOnReferenceIDDGrid(wetBeforeCT, layer.nominalEnergy)
+            layerDose, layerDeriv = self._doseOnReferenceIDDGrid(wetBeforeCT, layer.nominalEnergy)
 
-                for i in range(wetBeforeCT.shape[0]):
-                    for j in range(wetBeforeCT.shape[1]):
-                        f = interpolate.interp1d(self._referenceIDDX, np.squeeze(layerDose[i, j, :]), kind='linear', fill_value='extrapolate', assume_sorted=True)
-                        doseImageArray[i, j, :] += fluence[i, j] * f(np.squeeze(cumRSP.imageArray[i, j, :]))
+            for i in range(wetBeforeCT.shape[0]):
+                for j in range(wetBeforeCT.shape[1]):
+                    f = interpolate.interp1d(self._referenceIDDX, np.squeeze(layerDose[i, j, :]), kind='linear',
+                                             fill_value='extrapolate', assume_sorted=True)
+                    doseImageArray[i, j, :] += fluence[i, j] * f(np.squeeze(cumRSP.imageArray[i, j, :]))
 
-            doseImageBEV.imageArray = doseImageArray
-            doseImageDicom = ImageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0.)
-            ImageTransform3D.intersect(doseImageDicom, doseImage, inPlace=True, fillValue=0.)
+        doseImageBEV.imageArray = doseImageArray
+        doseImageDicom = ImageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0.)
 
-            doseImage.imageArray = doseImage.imageArray+doseImageDicom.imageArray
-
-            return doseImage
-
+        return doseImageDicom
 
     def _wetBeforeCT(self, beam:PlanIonBeam) -> Union[float, np.ndarray]:
         wet = 0.
@@ -100,7 +112,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         return wet
 
     def _doseOnReferenceIDDGrid(self, wetBeforeCT:np.ndarray, energy:float) -> Tuple[np.ndarray, np.ndarray]:
-        wetBeforeCT = wetBeforeCT + self._energyToRange(self.referenceEnergy) - self._energyToRange(energy)
+        wetBeforeCT = wetBeforeCT + energyToRange(self.referenceEnergy) - energyToRange(energy)
 
         layerDose = np.zeros((wetBeforeCT.shape[0], wetBeforeCT.shape[1], self._shiftReferenceIDD(0).shape[0]))
         layerDeriv = np.zeros(layerDose.shape)
@@ -119,7 +131,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         if self._referenceIDDEnergy == self.referenceEnergy:
             return
 
-        ctLength = round(self._energyToRange(self.referenceEnergy)) + 10 # 10 is just amargin
+        ctLength = round(energyToRange(self.referenceEnergy)) + 10 # 10 is just amargin
         if not ctLength%2:
             ctLength += 1
 
@@ -169,26 +181,3 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
 
         self._shiftReferenceIDD = lambda wet: referenceIDDFunction(self._referenceIDDX+wet)
         self._shiftDerivIDD = lambda wet: derivIDDFunction(self._referenceIDDX+wet)
-
-    def _rangeToEnergy(self, r80:Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        r80 /= 10 # mm -> cm
-
-        if isinstance(r80, np.ndarray):
-            r80[r80<1.]  = 1.
-            return np.exp(3.464048 + 0.561372013*np.log(r80) - 0.004900892*np.log(r80)*np.log(r80) + 0.001684756748*np.log(r80)*np.log(r80)*np.log(r80))
-
-        if r80 <= 1.:
-            return 0
-        else:
-            return exp(3.464048 + 0.561372013*log(r80) - 0.004900892*log(r80)*log(r80) + 0.001684756748*log(r80)*log(r80)*log(r80))
-
-    def _energyToRange(self, energy:Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        if isinstance(energy, np.ndarray):
-            energy[energy < 1.] = 1.
-            r80 = np.exp(-5.5064 + 1.2193*np.log(energy) + 0.15248*np.log(energy)*np.log(energy) - 0.013296*np.log(energy)*np.log(energy)*np.log(energy))
-        elif energy <= 1:
-            r80 = 0
-        else:
-            r80 = exp(-5.5064 + 1.2193*log(energy) + 0.15248*log(energy)*log(energy) - 0.013296*log(energy)*log(energy)*log(energy))
-
-        return r80*10

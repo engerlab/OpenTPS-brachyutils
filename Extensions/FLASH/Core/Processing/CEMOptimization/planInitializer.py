@@ -1,6 +1,6 @@
 import copy
-from math import log, exp, cos, pi
-from typing import Union, Sequence
+from math import cos, pi
+from typing import Sequence
 
 import numpy as np
 
@@ -13,6 +13,7 @@ from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+from Extensions.FLASH.Core.Processing.RangeEnergy import rangeToEnergy
 
 
 class PlanInitializer:
@@ -39,7 +40,7 @@ class PlanInitializer:
         beam.isocenterPosition = targetROI.centerOfMass
 
         cumRSP = rspImage.computeCumulativeWEPL(beam)
-        imageArray = cumRSP.imageArray
+        imageArray = np.array(cumRSP.imageArray)
         imageArray[np.logical_not(targetROI.imageArray.astype(bool))]= 0
         cumRSP.imageArray = imageArray
 
@@ -47,12 +48,12 @@ class PlanInitializer:
         minWEPL = cumRSP.imageArray[cumRSP.imageArray > 0.].min()
 
         rangeLayers = np.arange(minWEPL-layerSpacing, maxWEPL+layerSpacing, layerSpacing)
-        energyLayers = self._rangeToEnergy(rangeLayers)
+        energyLayers = rangeToEnergy(rangeLayers)
 
         targetROIBEV = ImageTransform3D.dicomToIECGantry(targetROI, beam, 0.)
         isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(rspImage, beam, beam.isocenterPosition)
         cumRSPBEV = ImageTransform3D.dicomToIECGantry(cumRSP, beam, 0.)
-        weplMeV = self._rangeToEnergy(cumRSPBEV.imageArray)
+        weplMeV = rangeToEnergy(cumRSPBEV.imageArray)
 
         spotGridX, spotGridY = self._defineHexagSpotGridAroundIsocenter(spotSpacing, cumRSPBEV, isocenterBEV)
         coordGridX, coordGridY = self._pixelCoordinatedWrtIsocenter(cumRSPBEV, isocenterBEV)
@@ -94,19 +95,6 @@ class PlanInitializer:
                 spotPos = spotPosCandidates[i, :]
                 layer.appendSpot(spotPos[0], spotPos[1], 1.)
             beam.appendLayer(layer)
-
-
-    def _rangeToEnergy(self, r80:Union[float, np.ndarray])->Union[float, np.ndarray]:
-        r80 /= 10 # mm -> cm
-
-        if isinstance(r80, np.ndarray):
-            r80[r80<1.]  = 1.
-            return np.exp(3.464048 + 0.561372013*np.log(r80) - 0.004900892*np.log(r80)*np.log(r80) + 0.001684756748*np.log(r80)*np.log(r80)*np.log(r80))
-
-        if r80 <= 1.:
-            return 0
-        else:
-            return exp(3.464048 + 0.561372013*log(r80) - 0.004900892*log(r80)*log(r80) + 0.001684756748*log(r80)*log(r80)*log(r80))
 
     def _defineHexagSpotGridAroundIsocenter(self, spotSpacing:float, imageBEV:Image3D, isocenterBEV:Sequence[float]):
         origin = imageBEV.origin

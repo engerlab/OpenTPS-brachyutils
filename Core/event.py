@@ -62,7 +62,7 @@ class Event:
             if len(args) != 1:
                 raise ValueError('Incorrect argument')
             if not isinstance(args[0], self.objectType):
-                raise ValueError('Incorrect argument')
+                raise ValueError('Incorrect argument. Argument is of type ' + str(type(args[0])) + 'but should be of type ' + str(self.objectType))
 
         for slot in self._slots:
             try:

@@ -1,4 +1,4 @@
 graph.png https://iconarchive.com/show/oxygen-icons-by-oxygen-icons.org/Actions-office-chart-line-stacked-icon.html
 slider.png https://icons.iconarchive.com/icons/google/noto-emoji-objects/128/62802-level-slider-icon.png
-
+crop.png https://icons.iconarchive.com/icons/iconsmind/outline/512/Crop-2-icon.png
 

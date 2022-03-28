@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from Core.Data.patientData import PatientData
 from Core.Data.roiContour import ROIContour
 from Core.event import Event
@@ -18,11 +20,11 @@ class RTStruct(PatientData):
         return "RTstruct " + self.seriesInstanceUID
 
     @property
-    def contours(self):
+    def contours(self) -> Sequence[ROIContour]:
         # Doing this ensures that the user can't append directly to contours
         return [contour for contour in self._contours]
     
-    def appendContour(self, contour):
+    def appendContour(self, contour:ROIContour):
         """
         Add a ROIContour to the list of contours of the ROIStruct.
 
@@ -34,7 +36,7 @@ class RTStruct(PatientData):
         self.contourAddedSignal.emit(contour)
 
 
-    def removeContour(self, contour):
+    def removeContour(self, contour:ROIContour):
         """
         Remove a ROIContour to the list of contours of the ROIStruct.
 
@@ -46,7 +48,7 @@ class RTStruct(PatientData):
         self.contourRemovedSignal.emit(contour)
 
 
-    def get_contour_by_name(self, contour_name):
+    def getContourByName(self, contour_name:str) -> ROIContour:
         """
         Get a ROIContour that has name contour_name from the list of contours of the ROIStruct.
 

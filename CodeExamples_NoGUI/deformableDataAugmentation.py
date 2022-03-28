@@ -18,19 +18,20 @@ patient = loadDataStructure(dataPath)[0]
 dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
 dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
-simulationTime = 10
-amplitude = 15
+simulationTime = 32
+amplitude = 10
 
 newSignal = SyntheticBreathingSignal(amplitude=amplitude,
                                      variationAmplitude=0,
                                      breathingPeriod=4,
                                      variationFrequency=0,
                                      shift=0,
-                                     mean=0,
-                                     variance=0,
+                                     meanNoise=0,
+                                     varianceNoise=0,
                                      samplingPeriod=0.2,
+                                     meanEvent=0/30,
                                      simulationTime=simulationTime,
-                                     meanEvent=0/30)
+                                     )
 
 newSignal.generateBreathingSignal()
 linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
@@ -42,8 +43,8 @@ newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
                                      breathingPeriod=4,
                                      variationFrequency=0,
                                      shift=0,
-                                     mean=0,
-                                     variance=0,
+                                     meanNoise=0,
+                                     varianceNoise=0,
                                      samplingPeriod=0.2,
                                      simulationTime=simulationTime,
                                      meanEvent=0/30)
@@ -51,6 +52,7 @@ newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
 newSignal2.breathingSignal = -newSignal.breathingSignal
 
 signalList = [newSignal.breathingSignal, newSignal2.breathingSignal]
+# signalList = [newSignal.breathingSignal] ## for single ROI testing
 
 pointRLung = np.array([108, 72, -116])
 pointLLung = np.array([-94, 45, -117])
@@ -60,7 +62,9 @@ pointRLungInVoxel = getVoxelIndexFromPosition(pointRLung, dynMod.midp)
 pointLLungInVoxel = getVoxelIndexFromPosition(pointLLung, dynMod.midp)
 
 pointList = [pointRLung, pointLLung]
+# pointList = [pointRLung] ## for single ROI testing
 pointVoxelList = [pointRLungInVoxel, pointLLungInVoxel]
+# pointVoxelList = [pointRLungInVoxel] ## for single ROI testing
 
 ## to show signals and ROIs
 prop_cycle = plt.rcParams['axes.prop_cycle']
@@ -94,7 +98,7 @@ print('/'*80, '\n', '/'*80)
 
 ## by signal sub part version
 sequenceSize = newSignal.breathingSignal.shape[0]
-subSequenceSize = 15
+subSequenceSize = 25
 print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize)
 
 subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize/subSequenceSize))]
