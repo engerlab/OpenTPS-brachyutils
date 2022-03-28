@@ -3,6 +3,7 @@ import functools
 from PyQt5.QtWidgets import QToolBox, QWidget
 
 from Core.event import Event
+from Extensions.FLASH.flashPanel import FlashPanel
 from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
@@ -59,6 +60,12 @@ class MainToolbar(QToolBox):
         self.showItem(item)
         item = self.ToolbarItem(xRayProjPanel, 'DRR')
         self.showItem(item)
+
+        # Extensions
+        flashPanel = FlashPanel(self._viewController)
+        item = self.ToolbarItem(flashPanel, 'FLASH')
+        self.showItem(item)
+
 
         self._addVisibilityListenerToAllItems()
 
