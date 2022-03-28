@@ -8,6 +8,7 @@ from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.rspImage import RSPImage
+from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
@@ -72,6 +73,7 @@ class CEMOptimizer:
         self.targetMask = None
         self.absTol = 1
         self.ctCalibration:AbstractCTCalibration = None
+        self.cemLateralMargin = 5.  # in world unit not pixel
 
         self.planUpdateEvent = Event(RTPlan)
         self.doseUpdateEvent = Event(object)
@@ -83,7 +85,7 @@ class CEMOptimizer:
         self._planInitializer = CEMPlanInitializer()
         self._planOptimizer = PlanOptimizer()
         self._objectives = self._Objectives()
-        self._maxStep = 8. # TODO User should be able to set this
+        self._maxStep = 5. # TODO User should be able to set this
 
     def appendObjective(self, objective: CEMAbstractDoseFidelityTerm, weight: float = 1.):
         self._objectives.append(objective, weight)
@@ -106,15 +108,26 @@ class CEMOptimizer:
             if beam.cem is None:
                 beam.cem = BiComponentCEM.fromBeam(self._ct, beam)
 
-            cemArray = beam.cem.imageArray
-            cemArray = np.ones(cemArray.shape) * energyToRange(beam.layers[0].nominalEnergy)- self._meanWETOfTarget(beam)
+                self._initializeCEM(beam)
 
+            cemArray = beam.cem.imageArray
             if len(cemVal)==0:
                 cemVal = cemArray.flatten()
             else:
                 cemVal = np.concatenate((cemVal, cemArray.flatten()))
 
         return cemVal
+
+    def _initializeCEM(self, beam:PlanIonBeam):
+        cemArray = beam.cem.imageArray
+        cemArray = np.ones(cemArray.shape) * energyToRange(beam.layers[0].nominalEnergy) - self._meanWETOfTarget(beam)
+
+        targetMaskBEV = ImageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0)
+        targetMaskBEV.dilate(self.cemLateralMargin)
+        targetMask = np.sum(targetMaskBEV.imageArray, 2)
+        cemArray[np.logical_not(targetMask.astype(bool))] = 0
+
+        beam.cem.imageArray = cemArray
 
     def _meanWETOfTarget(self, beam):
         rsp = RSPImage.fromCT(self._ct, self.ctCalibration)

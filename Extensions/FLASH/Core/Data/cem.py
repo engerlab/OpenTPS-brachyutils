@@ -189,7 +189,7 @@ class BiComponentCEM(AbstractCTObject):
         rangeShifterWaterEquivThick = self._rangeShifterWaterEquivThick()
 
         simpleRS = copy.deepcopy(self._simpleCEM)
-        simpleRS.imageArray = rangeShifterWaterEquivThick * np.ones(simpleRS.imageArray.shape)
+        simpleRS.imageArray = rangeShifterWaterEquivThick*np.ones(simpleRS.imageArray.shape)*np.array(self._simpleCEM.imageArray.astype(bool).astype(float))
         simpleRS.rsp = self.rangeShifterRSP
 
         simpleCEM = copy.deepcopy(self._simpleCEM)
@@ -201,6 +201,10 @@ class BiComponentCEM(AbstractCTObject):
     def _rangeShifterWaterEquivThick(self):
         cemData = self._simpleCEM.imageArray
         cemData = cemData[cemData > 0.]
+
+        if len(cemData)==0:
+            raise ValueError("CEM cannot contains only 0s")
+
         cemDataMin = np.min(cemData)
 
         rangeShifterWaterEquivThick = cemDataMin - self.minCEMThickness * self.cemRSP
