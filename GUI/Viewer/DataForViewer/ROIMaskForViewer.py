@@ -16,7 +16,6 @@ class ROIMaskForViewer(DataMultiton):
         self.visibleChangedSignal = Event(bool)
 
         self._dataImporter = vtkImageImport()
-        self._referenceImage = None
         self._visible = False
         self._vtkOutputPort = None
 
@@ -24,15 +23,6 @@ class ROIMaskForViewer(DataMultiton):
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
-
-    @property
-    def referenceImage(self) -> Image3D:
-        return self._referenceImage
-
-    @referenceImage.setter
-    def referenceImage(self, image: Image3D):
-        self._referenceImage = image
-        self._updateVtkOutputPort()
 
     @property
     def visible(self) -> bool:
@@ -44,12 +34,9 @@ class ROIMaskForViewer(DataMultiton):
         self.visibleChangedSignal.emit(self._visible)
 
     def _updateVtkOutputPort(self):
-        if self._referenceImage is None:
-            return
-
-        referenceShape = self.referenceImage.gridSize
-        referenceOrigin = self.referenceImage.origin
-        referenceSpacing = self.referenceImage.spacing
+        referenceShape = self.gridSize
+        referenceOrigin = self.origin
+        referenceSpacing = self.spacing
 
         maskData = self._imageArray
         maskData = np.swapaxes(maskData, 0, 2)

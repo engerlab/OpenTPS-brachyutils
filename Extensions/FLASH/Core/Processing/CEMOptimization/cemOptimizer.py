@@ -16,6 +16,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.roiContour import ROIContour
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from Core.Processing.ImageProcessing import crop3D
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
 from Core.event import Event
 from Extensions.FLASH.Core.Data.cem import CEM
@@ -30,9 +31,6 @@ from Extensions.FLASH.Core.Processing.RangeEnergy import rangeToEnergy, energyTo
 
 
 class CEMOptimizer:
-    Iteration = int
-    functionValue = float
-
     class _Objectives(PlanOptimizerObjectives):
         def __init__(self):
             super().__init__()
@@ -82,8 +80,9 @@ class CEMOptimizer:
         self.absTol = 1
         self.ctCalibration:AbstractCTCalibration = None
 
+        self.planUpdateEvent = Event(RTPlan)
         self.doseUpdateEvent = Event(object)
-        self.fValEvent = Event(Tuple[self.Iteration, self.functionValue])
+        self.fValEvent = Event(Tuple)
 
         self._ct = None
         self._iteration = 0
@@ -142,6 +141,7 @@ class CEMOptimizer:
 
         fVal = self._objectives.getValue(self._plan.spotWeights)
         self.fValEvent.emit((0, fVal))
+        self.planUpdateEvent.emit(self._plan)
         doseImage = self._objectives.objectiveTerms[0].doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
         self.doseUpdateEvent.emit(doseImage)
 
@@ -161,6 +161,7 @@ class CEMOptimizer:
 
             fVal = self._objectives.getValue(self._plan.spotWeights)
             self.fValEvent.emit((self._iteration, fVal))
+            self.planUpdateEvent.emit(self._plan)
             doseImage = self._objectives.objectiveTerms[0].doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
             self.doseUpdateEvent.emit(doseImage)
 
@@ -192,7 +193,7 @@ class CEMPlanInitializer:
         self.targetMask:ROIMask=None
 
     def intializePlan(self, spotSpacing:float, targetMargin:float=0.):
-        roiDilated = copy.deepcopy(self.targetMask)
+        roiDilated = ROIMask.fromImage3D(self.targetMask)
         roiDilated.dilate(targetMargin)
 
         for beam in self.plan:
@@ -349,11 +350,11 @@ class CEMDoseCalculator:
         return self._beamlets
 
     def _updateCTForBeamletsWithCEM(self, cemThickness:np.ndarray):
-        self._ctCEFForBeamlets = copy.deepcopy(self.ct)
-        self._ctCEFForBeamlets.imageArray = np.array(self.ct.imageArray)
+        self._ctCEFForBeamlets = CTImage.fromImage3D(self.ct)
 
         ind = 0
         for beam in self.plan:
+            beam.cem.patient = None # We do not want to deepcopy patient field!
             cem = copy.deepcopy(beam.cem)
 
             cemArray = beam.cem.imageArray
@@ -427,7 +428,7 @@ class CEMDoseCalculator:
         derivSequence = []
         for i, dose in enumerate(doseSequence):
             dose.imageArray = (dose.imageArray - doseSequence2[i].imageArray)/deltaR
-            outDose = copy.deepcopy(dose)
+            outDose = DoseImage.fromImage3D(dose)
             outDose = ImageTransform3D.dicomToIECGantry(outDose, plan.beams[i], fillValue=0.)
             derivSequence.append(outDose)
 
@@ -478,10 +479,12 @@ class SingleBeamCEMOptimizationWorkflow():
         self.targetDose = None
 
         self.doseUpdateEvent = Event(object)
-        self.fValEvent = Event(Tuple[CEMOptimizer.Iteration, CEMOptimizer.functionValue])
+        self.planUpdateEvent = Event(RTPlan)
+        self.fValEvent = Event(Tuple)
 
         self.cemOptimizer = CEMOptimizer()
         self.cemOptimizer.doseUpdateEvent.connect(self.doseUpdateEvent.emit)
+        self.cemOptimizer.planUpdateEvent.connect(self.planUpdateEvent.emit)
         self.cemOptimizer.fValEvent.connect(self.fValEvent.emit)
 
     def run(self) -> RTPlan:
@@ -506,7 +509,7 @@ class SingleBeamCEMOptimizationWorkflow():
         padLength = int(150. / ctBEV.spacing[2])
         newOrigin = np.array(ctBEV.origin)
         newOrigin[2] = newOrigin[2] - padLength * ctBEV.spacing[2]
-        newArray = -1024 * np.ones((ctBEV.gridSize[0], ctBEV.gridSize[1], ctBEV.gridSize[2] + padLength))
+        newArray = -1000 * np.ones((ctBEV.gridSize[0], ctBEV.gridSize[1], ctBEV.gridSize[2] + padLength)) # We choose -1000 and not -1024 because we will crop evrthng > -1000
         newArray[:, :, padLength:] = ctBEV.imageArray
         ctBEV.imageArray = newArray
         ctBEV.origin = newOrigin
@@ -522,14 +525,23 @@ class SingleBeamCEMOptimizationWorkflow():
         targetROI = ImageTransform3D.iecGantryToDicom(targetROIBEV, beam, fillValue=0)
         targetROI.patient = patient
 
+        boundingBox = crop3D.getBoxAboveThreshold(ct, -1023)
+
+        crop3D.crop3DDataAroundBox(ct, boundingBox, [2, 2, 2])
+        crop3D.crop3DDataAroundBox(targetROI, boundingBox, [2, 2, 2])
+
+        self.ct = ct
+        self.targetROI = targetROI
+
         # OARs are defined around the TV
-        oarAndTVROI = copy.deepcopy(targetROI)
+        oarAndTVROI = ROIMask.fromImage3D(targetROI)
         oarAndTVROI.dilate(10)
 
-        oarROI = copy.deepcopy(targetROI)
+        oarROI = ROIMask.fromImage3D(targetROI)
         oarROI.imageArray = np.logical_xor(oarAndTVROI.imageArray.astype(bool), targetROI.imageArray.astype(bool))
 
         # A single optimizer for both plan an CEM
+        print('Initializing optimizer...')
         self.cemOptimizer.maxIterations = 25
         self.cemOptimizer.spotSpacing = 5
         self.cemOptimizer.targetMask = targetROI
@@ -537,15 +549,17 @@ class SingleBeamCEMOptimizationWorkflow():
         self.cemOptimizer.ctCalibration = self.ctCalibration
 
         # This is a dose calculator that will cache results and only recompute them if CEM or plan has changed
+        print('Initializing dose calculator...')
         doseCalculator = CEMDoseCalculator()
         doseCalculator.beamModel = self.beamModel
-        doseCalculator.nbPrimaries = 1e4
+        doseCalculator.nbPrimaries = 5e4
         doseCalculator.ctCalibration = self.ctCalibration
         doseCalculator.plan = plan
         doseCalculator.roi = oarAndTVROI
         doseCalculator.ct = ct
 
         # These are our objectives
+        print('Initializing objectives...')
         objectifMin = cemObjectives.DoseMinObjective(targetROI, self.targetDose, doseCalculator)
         objectifMax = cemObjectives.DoseMaxObjective(targetROI, self.targetDose+0.2, doseCalculator)
         objectifMax2 = cemObjectives.DoseMaxObjective(oarROI, self.targetDose/2., doseCalculator)
@@ -555,6 +569,7 @@ class SingleBeamCEMOptimizationWorkflow():
         self.cemOptimizer.appendObjective(objectifMax2, weight=0.5)
 
         # Let's optimize the plan and the CEM!
+        print('Starting optimization...')
         self.cemOptimizer.run(plan, ct)
 
         # Update CT with CEM
@@ -567,11 +582,14 @@ class SingleBeamCEMOptimizationWorkflow():
         # Final dose computation
         doseCalculator = MCsquareDoseCalculator()
         doseCalculator.beamModel = self.beamModel
-        doseCalculator.nbPrimaries = 1e7
+        doseCalculator.nbPrimaries = 2e7
         doseCalculator.ctCalibration = self.ctCalibration
 
         doseImage = doseCalculator.computeDose(ct, plan)
         doseImage.patient = patient
         doseImage.name = 'Final dose'
+
+        self.planUpdateEvent.emit(plan)
+        self.doseUpdateEvent.emit(doseImage)
 
         return plan

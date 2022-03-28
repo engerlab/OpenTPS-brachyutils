@@ -6,6 +6,7 @@ from typing import Optional
 import numpy as np
 from scipy.interpolate import interpolate
 
+from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image2D import Image2D
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
@@ -33,7 +34,7 @@ class CEM(AbstractCTObject, Image2D):
         imageBEV = ImageTransform3D.dicomToIECGantry(ct, beam)
 
         newCEM = cls()
-        newCEM._referenceImage = copy.deepcopy(ct)
+        newCEM._referenceImage = CTImage.fromImage3D(ct)
         newCEM._referenceImageBEV = imageBEV
         newCEM._referenceBeam = beam
         newCEM.origin = imageBEV.origin[0:-1]

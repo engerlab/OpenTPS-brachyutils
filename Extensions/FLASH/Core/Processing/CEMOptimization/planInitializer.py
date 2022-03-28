@@ -26,8 +26,8 @@ class PlanInitializer:
     def intializePlan(self, spotSpacing:float, layerSpacing:float, targetMargin:float=0.):
         #TODO Range shifter
 
-        roiDilated = copy.deepcopy(self.targetMask)
-        roiDilated.dilate(targetMargin)
+        roiDilated = ROIMask.fromImage3D(self.targetMask)
+        roiDilated.dilate(radius=targetMargin)
 
         rspImage = RSPImage.fromCT(self.ct, self.calibration, energy=100.)
 
