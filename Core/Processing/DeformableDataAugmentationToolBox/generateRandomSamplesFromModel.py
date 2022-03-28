@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-def generateRandomImagesFromModel(model, numberOfSamples = 1, amplitudeRange = [0.8, 1.2], phaseRange = [0, 100], ampDistribution="uniform", tryGPU=True, outputType=np.int16):
+def generateRandomImagesFromModel(model, numberOfSamples = 1, amplitudeRange = [0.8, 1.2], ampDistribution="uniform", tryGPU=True, outputType=np.int16):
     """
     should we call this a "uniform" sample ? to differentiate with the weight maps combination ?
     """
@@ -19,7 +19,7 @@ def generateRandomImagesFromModel(model, numberOfSamples = 1, amplitudeRange = [
 
     return sampleImageList
 
-def generateRandomDeformationsFromModel(model, numberOfSamples = 1, amplitudeRange = [0.8, 1.2], phaseRange = [0, 100], ampDistribution="uniform"):
+def generateRandomDeformationsFromModel(model, numberOfSamples = 1, amplitudeRange = [0.8, 1.2], ampDistribution="uniform"):
     """
         should we call this a "uniform" sample ? to differentiate with the weight maps combination ?
         """
