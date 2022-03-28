@@ -13,7 +13,7 @@ from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
 from Core.event import Event
-from Extensions.FLASH.Core.Data.cem import CEM
+from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Processing.CEMOptimization.cemObjectives import CEMAbstractDoseFidelityTerm
 from Extensions.FLASH.Core.Processing.CEMOptimization.cemPlanInitializer import CEMPlanInitializer
 from Extensions.FLASH.Core.Processing.CEMOptimization.planOptimizer import PlanOptimizer, PlanOptimizerObjectives
@@ -83,7 +83,7 @@ class CEMOptimizer:
         self._planInitializer = CEMPlanInitializer()
         self._planOptimizer = PlanOptimizer()
         self._objectives = self._Objectives()
-        self._maxStep = 5. # TODO User should be able to set this
+        self._maxStep = 8. # TODO User should be able to set this
 
     def appendObjective(self, objective: CEMAbstractDoseFidelityTerm, weight: float = 1.):
         self._objectives.append(objective, weight)
@@ -104,7 +104,7 @@ class CEMOptimizer:
 
         for beam in self._plan:
             if beam.cem is None:
-                beam.cem = CEM.fromBeam(self._ct, beam)
+                beam.cem = BiComponentCEM.fromBeam(self._ct, beam)
 
             cemArray = beam.cem.imageArray
             cemArray = np.ones(cemArray.shape) * energyToRange(beam.layers[0].nominalEnergy)- self._meanWETOfTarget(beam)
@@ -256,10 +256,11 @@ class CEMDoseCalculator:
             cemBeamVal = cemThickness[ind:ind+cemArray.shape[0]*cemArray.shape[1]]
             beam.cem.imageArray = np.reshape(cemBeamVal, (cemArray.shape[0], cemArray.shape[1]))
 
-            cemROI = beam.cem.computeROI(self.ct, beam)
+            [rsROI, cemROI] = beam.cem.computeROIs(self.ct, beam)
 
             ctArray = self._ctCEFForBeamlets.imageArray
-            ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
+            ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
+            ctArray[rsROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.rangeShifterRSP, energy=100.)
             self._ctCEFForBeamlets.imageArray = ctArray
 
             ind += cemArray.shape[0]*cemArray.shape[1]

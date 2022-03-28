@@ -122,9 +122,13 @@ class SingleBeamCEMOptimizationWorkflow():
 
         # Update CT with CEM
         cem = plan.beams[0].cem
-        cemROI = cem.computeROI(ct, beam)
+
+        [rsROI, cemROI] = beam.cem.computeROIs(self.ct, beam)
+
         ctArray = ct.imageArray
-        ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
+        ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
+        ctArray[rsROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.rangeShifterRSP, energy=100.)
+
         ct.imageArray = ctArray
 
         # Final dose computation

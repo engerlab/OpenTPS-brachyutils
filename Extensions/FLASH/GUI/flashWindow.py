@@ -201,10 +201,12 @@ class LeftPanel(QWidget):
             cem = beam.cem
 
             if not cem.imageArray is None:
-                cemROI = cem.computeROI(ct, beam)
+                [rsROI, cemROI] = cem.computeROIs(ct, beam)
 
                 ctArray = ct.imageArray
-                ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
+                ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
+                ctArray[rsROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.rangeShifterRSP, energy=100.)
+
                 ct.imageArray = ctArray
 
         self.ctSelectedEvent.emit(ct)

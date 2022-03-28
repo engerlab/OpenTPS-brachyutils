@@ -124,13 +124,37 @@ class BiComponentCEM(AbstractCTObject):
     def __init__(self):
         super().__init__()
 
-        self.rangeShifterRSP = 1.
+        self.rangeShifterRSP = 1.2
         self.cemRSP = 1.
         self.minCEMThickness = 5. # in physical mm not in water equivalent mm
-        self.rangeShifterToCEM = 1. # Free space between CEM and RS
+        self.rangeShifterToCEM = 5. # Free space between CEM and RS
 
         self._simpleCEM = CEM()
         self._simpleCEM.rsp = 1.
+
+    @property
+    def imageArray(self) -> np.ndarray:
+        return self._simpleCEM.imageArray
+
+    @imageArray.setter
+    def imageArray(self, imageArray:np.ndarray):
+        self._simpleCEM.imageArray = imageArray
+
+    @property
+    def origin(self) -> np.ndarray:
+        return self._simpleCEM.origin
+
+    @origin.setter
+    def origin(self, origin: np.ndarray):
+        self._simpleCEM.origin = origin
+
+    @property
+    def spacing(self) -> np.ndarray:
+        return self._simpleCEM.spacing
+
+    @spacing.setter
+    def spacing(self, spacing: np.ndarray):
+        self._simpleCEM.spacing = spacing
 
     @classmethod
     def fromBeam(cls, ct:Image3D, beam:PlanIonBeam):
@@ -164,11 +188,13 @@ class BiComponentCEM(AbstractCTObject):
     def split(self) -> Tuple[CEM, CEM]:
         rangeShifterWaterEquivThick = self._rangeShifterWaterEquivThick()
 
-        simpleCEM = copy.deepcopy(self._simpleCEM)
-        simpleCEM.imageArray = simpleCEM.imageArray - rangeShifterWaterEquivThick
-
         simpleRS = copy.deepcopy(self._simpleCEM)
-        simpleRS.imageArray = rangeShifterWaterEquivThick*np.ones(simpleRS.imageArray.shape)
+        simpleRS.imageArray = rangeShifterWaterEquivThick * np.ones(simpleRS.imageArray.shape)
+        simpleRS.rsp = self.rangeShifterRSP
+
+        simpleCEM = copy.deepcopy(self._simpleCEM)
+        simpleCEM.imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick
+        simpleCEM.rsp = self.cemRSP
 
         return simpleRS, simpleCEM
 
@@ -178,9 +204,8 @@ class BiComponentCEM(AbstractCTObject):
         cemDataMin = np.min(cemData)
 
         rangeShifterWaterEquivThick = cemDataMin - self.minCEMThickness * self.cemRSP
-        rangeShifterNonEmpty = rangeShifterWaterEquivThick > 0.
 
-        if not rangeShifterNonEmpty:
+        if rangeShifterWaterEquivThick<0.:
             rangeShifterWaterEquivThick = 0.
 
         return rangeShifterWaterEquivThick
