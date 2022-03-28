@@ -2,9 +2,18 @@ import numpy as np
 import scipy
 from scipy.ndimage import morphology
 import copy
+import logging
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
+
+try:
+    import cupy
+    import cupyx.scipy.ndimage
+except:
+    pass
+
+logger = logging.getLogger(__name__)
 
 
 class ROIMask(Image3D):
@@ -43,17 +52,81 @@ class ROIMask(Image3D):
     def copy(self):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
-    def dilate(self, radius:float):
-        radius = radius/np.array(self.spacing)
-        diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
-        diameter = diameter + (diameter+1)%2
-        diameter = np.round(diameter).astype(int)
+    def dilate(self, radius=1.0, filt=None, tryGPU=True):
 
-        filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
-        filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
-        filt = filt.astype(bool)
+        if filt is None:
+            radius = radius/np.array(self.spacing)
+            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
+            diameter = diameter + (diameter+1)%2
+            diameter = np.round(diameter).astype(int)
 
-        self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
+            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
+            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
+            filt = filt.astype(bool)
+
+        if self._imageArray.size > 1e5 and tryGPU:
+            try:
+                self._imageArray = cupyx.scipy.ndimage.binary_dilation(self._imageArray, structure=filt)
+            except:
+                logger.warning('cupy not used to dilate mask.')
+                self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
+
+    def erode(self, radius=1.0, filt=None, tryGPU=True):
+
+        if filt is None:
+            radius = radius/np.array(self.spacing)
+            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
+            diameter = diameter + (diameter+1)%2
+            diameter = np.round(diameter).astype(int)
+
+            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
+            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
+            filt = filt.astype(bool)
+
+        if self._imageArray.size > 1e5 and tryGPU:
+            try:
+                self._imageArray = cupyx.scipy.ndimage.binary_erosion(self._imageArray, structure=filt)
+            except:
+                logger.warning('cupy not used to dilate mask.')
+                self._imageArray = morphology.binary_erosion(self._imageArray, structure=filt)
+
+    def open(self, radius=1.0, filt=None, tryGPU=True):
+
+        if filt is None:
+            radius = radius/np.array(self.spacing)
+            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
+            diameter = diameter + (diameter+1)%2
+            diameter = np.round(diameter).astype(int)
+
+            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
+            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
+            filt = filt.astype(bool)
+
+        if self._imageArray.size > 1e5 and tryGPU:
+            try:
+                self._imageArray = cupyx.scipy.ndimage.binary_opening(self._imageArray, structure=filt)
+            except:
+                logger.warning('cupy not used to dilate mask.')
+                self._imageArray = morphology.binary_opening(self._imageArray, structure=filt)
+
+    def close(self, radius=1.0, filt=None, tryGPU=True):
+
+        if filt is None:
+            radius = radius/np.array(self.spacing)
+            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
+            diameter = diameter + (diameter+1)%2
+            diameter = np.round(diameter).astype(int)
+
+            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
+            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
+            filt = filt.astype(bool)
+
+        if self._imageArray.size > 1e5 and tryGPU:
+            try:
+                self._imageArray = cupyx.scipy.ndimage.binary_closing(self._imageArray, structure=filt)
+            except:
+                logger.warning('cupy not used to dilate mask.')
+                self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
 
     def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
         Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32', tryGPU=tryGPU)

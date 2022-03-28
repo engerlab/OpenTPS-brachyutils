@@ -29,7 +29,6 @@ def gaussConv(data, sigma, truncate=2.5, mode="reflect", tryGPU=True):
 
     if data.size > 1e6 and tryGPU:
         try:
-            # print('in imageFilter3D gaussConv cupy used')
             return cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupy.asarray(data), sigma=sigma, truncate=truncate, mode=mode))
         except:
             logger.warning('cupy not used for gaussian smoothing.')

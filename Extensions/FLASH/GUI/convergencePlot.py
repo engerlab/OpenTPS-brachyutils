@@ -1,4 +1,4 @@
-
+import numpy as np
 from pyqtgraph import PlotWidget, PlotCurveItem
 
 
@@ -18,12 +18,12 @@ class ConvergencePlot(PlotWidget):
         self.x = []
         self.y = []
 
-    def appendFVal(self, x, y):
+    def appendFVal(self, xy):
         if not (self.pl is None):
             self.removeItem(self.pl)
 
-        self.x.append(x)
-        self.y.append(y)
+        self.x.append(xy[0])
+        self.y.append(xy[1])
 
-        self.pl = PlotCurveItem(self.x, self.y)
+        self.pl = PlotCurveItem(np.array(self.x), np.array(self.y))
         self.addItem(self.pl)
