@@ -5,8 +5,8 @@ import numpy as np
 from Core.Data.Images.image3D import Image3D
 import SimpleITK as sitk
 
-def image3DToSITK(image:Image3D):
-    imageData = image.imageArray.astype(float)
+def image3DToSITK(image:Image3D, type=float):
+    imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 2)
     img = sitk.GetImageFromArray(imageData)
 
@@ -16,12 +16,20 @@ def image3DToSITK(image:Image3D):
 
     return img
 
-def resize(image:Image3D, newSpacing:np.ndarray, newOirigin:Optional[np.ndarray]=None, newShape:Optional[np.ndarray]=None, fillValue:float=0.):
-    if newOirigin is None:
-        newOirigin = image.origin
+def sitkImageToImage3D(sitkImage:sitk.Image, type=float):
+    imageArray = np.array(sitk.GetArrayFromImage(sitkImage)).astype(type)
+    imageArray = np.swapaxes(imageArray, 0, 2)
+    image = Image3D(imageArray=imageArray,origin=sitkImage.GetOrigin(), spacing=sitkImage.GetSpacing())
+    # TODO SetDirection from angles but it is not clear how angles is defined
+
+    return image
+
+def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=None, newShape:Optional[np.ndarray]=None, fillValue:float=0.):
+    if newOrigin is None:
+        newOrigin = image.origin
 
     if newShape is None:
-        newShape = (image.origin - newOirigin + image.gridSize*image.spacing)/newSpacing
+        newShape = (image.origin - newOrigin + image.gridSize*image.spacing)/newSpacing
     newShape = np.ceil(newShape).astype(int)
 
     imgType = image.imageArray.dtype
@@ -30,7 +38,7 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOirigin:Optional[np.ndarray]
     dimension = img.GetDimension()
 
     reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
-    reference_image.SetOrigin(newOirigin.tolist())
+    reference_image.SetOrigin(newOrigin.tolist())
     reference_image.SetSpacing(newSpacing.tolist())
     reference_image.SetDirection(img.GetDirection())
 
@@ -43,7 +51,7 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOirigin:Optional[np.ndarray]
     outData = np.swapaxes(outData, 0, 2)
 
     image.imageArray = outData
-    image.origin = newOirigin
+    image.origin = newOrigin
     image.spacing = newSpacing
 
 def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0.):
@@ -100,3 +108,7 @@ def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray):
     inv_transform = transform.GetInverse()
 
     return inv_transform.TransformPoint(pnt.tolist())
+
+def connectComponents(image:Image3D):
+    img = image3DToSITK(image, type='uint8')
+    return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))

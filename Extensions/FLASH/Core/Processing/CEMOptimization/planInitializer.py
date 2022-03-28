@@ -26,7 +26,7 @@ class PlanInitializer:
         #TODO Range shifter
 
         roiDilated = ROIMask.fromImage3D(self.targetMask)
-        roiDilated.dilate(targetMargin)
+        roiDilated.dilate(radius=targetMargin)
 
         rspImage = RSPImage.fromCT(self.ct, self.calibration, energy=100.)
 
