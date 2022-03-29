@@ -111,4 +111,4 @@ def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray):
 
 def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
-    return sitkImageToImage3D(sitk.ConnectedComponent(img))
+    return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))

@@ -1,4 +1,3 @@
-import copy
 import os
 from typing import Sequence, Tuple
 
@@ -16,7 +15,7 @@ from Core.Data.patient import Patient
 from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.event import Event
-from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import SingleBeamCEMOptimizationWorkflow
+from Extensions.FLASH.Core.Processing.CEMOptimization.workflows import SingleBeamCEMOptimizationWorkflow
 from Extensions.FLASH.GUI.convergencePlot import ConvergencePlot
 from GUI.Panels.patientDataPanel import PatientDataTree, PatientComboBox
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
@@ -202,10 +201,12 @@ class LeftPanel(QWidget):
             cem = beam.cem
 
             if not cem.imageArray is None:
-                cemROI = cem.computeROI(ct, beam)
+                [rsROI, cemROI] = cem.computeROIs(ct, beam)
 
                 ctArray = ct.imageArray
-                ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertHU2RSP(cem.rsp, energy=100.)
+                ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
+                ctArray[rsROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.rangeShifterRSP, energy=100.)
+
                 ct.imageArray = ctArray
 
         self.ctSelectedEvent.emit(ct)
