@@ -84,8 +84,7 @@ class SingleBeamCEMOptimizationWorkflow():
         padLength = int(self._padLength() / ctBEV.spacing[2])
         newOrigin = np.array(ctBEV.origin)
         newOrigin[2] = newOrigin[2] - padLength * ctBEV.spacing[2]
-        newArray = -1000 * np.ones((ctBEV.gridSize[0], ctBEV.gridSize[1], ctBEV.gridSize[
-            2] + padLength))  # We choose -1000 and not -1024 because we will crop evrthng > -1000
+        newArray = -1000 * np.ones((ctBEV.gridSize[0], ctBEV.gridSize[1], ctBEV.gridSize[2] + padLength))  # We choose -1000 and not -1024 because we will crop evrthng > -1000
         newArray[:, :, padLength:] = ctBEV.imageArray
         ctBEV.imageArray = newArray
         ctBEV.origin = newOrigin

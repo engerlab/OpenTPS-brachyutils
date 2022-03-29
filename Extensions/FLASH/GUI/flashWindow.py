@@ -12,6 +12,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patient import Patient
+from Core.Data.roiContour import ROIContour
 from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.event import Event
@@ -98,6 +99,7 @@ class ThreeViewsGrid(QWidget):
         if not (self._ct is None):
             if not (self._roi is None):
                 self._ct = ct
+                self._convertROIToMask()
                 self._setCTPositionToROICenter()
             else:
                 Image3DForViewer(ct).selectedPosition = Image3DForViewer(self._ct).selectedPosition
@@ -116,7 +118,13 @@ class ThreeViewsGrid(QWidget):
 
         self._roi = roi
 
+        self._convertROIToMask()
         self._setCTPositionToROICenter()
+
+    def _convertROIToMask(self):
+        if isinstance(self._roi, ROIContour):
+            if not self._ct is None:
+                self._roi = self._roi.getBinaryMask(self._ct.origin, self._ct.gridSize, self._ct.spacing)
 
     def _setCTPositionToROICenter(self):
         if not self._ct is None:

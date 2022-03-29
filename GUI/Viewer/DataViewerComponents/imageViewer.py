@@ -91,6 +91,20 @@ class ImageViewer(QWidget):
         self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
         self._renderWindow.AddRenderer(self._renderer)
 
+    def close(self):
+        if not (self._primaryImageLayer.image is None):
+            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
+            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
+
+        if not (self._secondaryImageLayer.image is None):
+            self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
+
+        self._primaryImageLayer.close()
+        self._secondaryImageLayer.close()
+        self._textLayer.close()
+        self._contourLayer.close()
+        self._crossHairLayer.close()
+
     @property
     def primaryImage(self) -> Image3D:
         if self._primaryImageLayer.image is None:
@@ -118,9 +132,12 @@ class ImageViewer(QWidget):
 
         self._handlePosition(self._primaryImageLayer.image.selectedPosition)
 
-        #TODO: disconnect signals
+        if not (self._primaryImageLayer.image is None):
+            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
+            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
+
         self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
-        self._primaryImageLayer.image.nameChangedSignal.connect(lambda name: self._textLayer.setPrimaryTextLine(2, name))
+        self._primaryImageLayer.image.nameChangedSignal.connect(self._setPrimaryName)
 
         self._primaryImageLayer.resliceAxes = self._viewMatrix
         self._contourLayer.resliceAxes = self._viewMatrix
@@ -152,6 +169,9 @@ class ImageViewer(QWidget):
 
         self._renderWindow.Render()
 
+    def _setPrimaryName(self, name):
+        self._textLayer.setPrimaryTextLine(2, name)
+
     @property
     def profileWidgetEnabled(self) -> bool:
         return self._profileWidget.enabled
@@ -174,7 +194,7 @@ class ImageViewer(QWidget):
         self.profileWidgetEnabled = enabled
 
     @property
-    def secondaryImage(self) -> Image3D:
+    def secondaryImage(self) -> typing.Optional[Image3D]:
         if self._secondaryImageLayer.image is None:
             return None
         return self._secondaryImageLayer.image.data
@@ -194,11 +214,15 @@ class ImageViewer(QWidget):
 
         self._textLayer.setSecondaryTextLine(2, self.primaryImage.name)
 
-        #TODO: disconnect signal
-        self._secondaryImageLayer.image.nameChangedSignal.connect(
-            lambda name: self._textLayer.setSecondaryTextLine(2, name))
+        if not (self._secondaryImageLayer.image is None):
+            self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
+
+        self._secondaryImageLayer.image.nameChangedSignal.connect(self._setSecondaryName)
 
         self._renderWindow.Render()
+
+    def _setSecondaryName(self, name):
+        self._textLayer.setSecondaryTextLine(2, name)
 
     @property
     def secondaryImageLayer(self):

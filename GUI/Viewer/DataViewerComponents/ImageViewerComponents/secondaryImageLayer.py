@@ -29,6 +29,9 @@ class SecondaryImageLayer(PrimaryImageLayer):
         self._colorbarWidget.SetInteractor(self._renderWindow.GetInteractor())
         self._colorbarWidget.SetScalarBarActor(self._colorbarActor)
 
+    def close(self):
+        self._disconnectAll()
+
     def _setImage(self, image: Optional[Image3DForViewer]):
         if image == self._image:
             return
