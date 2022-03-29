@@ -2,7 +2,6 @@ from typing import Tuple
 
 import numpy as np
 
-from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonLayer import PlanIonLayer
@@ -47,11 +46,11 @@ class SingleBeamCEMOptimizationWorkflow():
 
         patient = self.ct.patient
 
-        plan = self._initializePlan()
-        beam = plan.beam
+        self._plan = self._initializePlan()
+        beam = self._plan.beams[0]
 
         # Pad CT
-        self._prepareCTAndROI(plan)
+        self._prepareCTAndROI()
         self.ct.name = 'CT with CEM'
         self.ct.patient = patient
         self.targetROI.patient = patient
@@ -63,19 +62,19 @@ class SingleBeamCEMOptimizationWorkflow():
         beam.cem = cem
 
         # Optimize CEM and plan
-        plan = self._configureAndRunCEMOpti(self.ct, plan, targetROI)
-        self.planUpdateEvent.emit(plan)
+        self._configureAndRunCEMOpti()
+        self.planUpdateEvent.emit(self._plan)
 
         # Final dose
-        doseImage = self._computeFinalDose(self.ct, plan)
+        doseImage = self._computeFinalDose()
         doseImage.patient = patient
         doseImage.name = 'Final dose'
         self.doseUpdateEvent.emit(doseImage)
 
-        return plan
+        return self._plan
 
-    def _prepareCTAndROI(self, plan):
-        beam = plan.beams[0]
+    def _prepareCTAndROI(self):
+        beam = self._plan.beams[0]
 
         # Pad CT and targetROI so that both can fully contain the CEM
         ctBEV = ImageTransform3D.dicomToIECGantry(self.ct, beam, fillValue=-1024.)
@@ -118,7 +117,11 @@ class SingleBeamCEMOptimizationWorkflow():
 
         return plan
 
-    def _configureAndRunCEMOpti(self, ct:CTImage, plan:RTPlan, targetROI:ROIMask) -> RTPlan:
+    def _configureAndRunCEMOpti(self):
+        plan = self._plan
+        targetROI = self.targetROI
+        ct = self.ct
+
         # OARs are defined around the TV
         oarAndTVROI = ROIMask.fromImage3D(targetROI)
         oarAndTVROI.dilate(10)
@@ -161,9 +164,10 @@ class SingleBeamCEMOptimizationWorkflow():
         print('Starting optimization...')
         self.cemOptimizer.run(plan, ct)
 
-        return plan
+    def _computeFinalDose(self) -> DoseImage:
+        ct = self.ct
+        plan = self._plan
 
-    def _computeFinalDose(self, ct:CTImage, plan:RTPlan) -> DoseImage:
         # Update CT with CEM
         beam = plan.beams[0]
         cem = beam.cem
@@ -185,4 +189,3 @@ class SingleBeamCEMOptimizationWorkflow():
         doseImage = doseCalculator.computeDose(ct, plan)
 
         return doseImage
-    
