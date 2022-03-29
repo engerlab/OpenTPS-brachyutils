@@ -10,6 +10,7 @@ from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseC
 from Core.Processing.ImageProcessing import crop3D
 from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
 from Core.event import Event
+from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
 from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import CEMOptimizer, CEMDoseCalculator
@@ -25,6 +26,9 @@ class SingleBeamCEMOptimizationWorkflow():
         self.beamEnergy = 226
         self.ct = None
         self.targetDose = None
+        self.spotSpacing = 5.
+        self.rangeShifterRSP = 1.
+        self.cemRSP = 1.
 
         self.doseUpdateEvent = Event(object)
         self.planUpdateEvent = Event(RTPlan)
@@ -91,10 +95,17 @@ class SingleBeamCEMOptimizationWorkflow():
         # A single optimizer for both plan an CEM
         print('Initializing optimizer...')
         self.cemOptimizer.maxIterations = 25
-        self.cemOptimizer.spotSpacing = 5
+        self.cemOptimizer.spotSpacing = self.spotSpacing
         self.cemOptimizer.targetMask = targetROI
-        self.cemOptimizer.absTol = 1
+        self.cemOptimizer.absTol = self.targetDose/50.
         self.cemOptimizer.ctCalibration = self.ctCalibration
+
+        # Initialize CEM
+        cem = BiComponentCEM.fromBeam(self.ct, beam)
+        cem.cemRSP = self.cemRSP
+        cem.rangeShifterRSP = self.rangeShifterRSP
+
+        beam.cem = cem
 
         # This is a dose calculator that will cache results and only recompute them if CEM or plan has changed
         print('Initializing dose calculator...')
@@ -109,8 +120,11 @@ class SingleBeamCEMOptimizationWorkflow():
         # These are our objectives
         print('Initializing objectives...')
         objectifMin = cemObjectives.DoseMinObjective(targetROI, self.targetDose, doseCalculator)
+        objectifMin.beamModel = self.beamModel
         objectifMax = cemObjectives.DoseMaxObjective(targetROI, self.targetDose+0.2, doseCalculator)
+        objectifMax.beamModel = self.beamModel
         objectifMax2 = cemObjectives.DoseMaxObjective(oarROI, self.targetDose/2., doseCalculator)
+        objectifMax2.beamModel = self.beamModel
 
         self.cemOptimizer.appendObjective(objectifMin, weight=1.)
         self.cemOptimizer.appendObjective(objectifMax, weight=1.)

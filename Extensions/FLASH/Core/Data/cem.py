@@ -130,8 +130,8 @@ class BiComponentCEM(AbstractCTObject):
     def __init__(self):
         super().__init__()
 
-        self.rangeShifterRSP = 1.2
-        self.cemRSP = 1.2
+        self.rangeShifterRSP = 1.
+        self.cemRSP = 1.
         self.minCEMThickness = 5. # in physical mm not in water equivalent mm
         self.rangeShifterToCEM = 10. # Free space between CEM and RS
 
@@ -199,14 +199,16 @@ class BiComponentCEM(AbstractCTObject):
         simpleRS.rsp = self.rangeShifterRSP
 
         simpleCEM = copy.deepcopy(self._simpleCEM)
-        simpleCEM.imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick
+        imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick
+        imageArray[imageArray<0] = 0
+        simpleCEM.imageArray = imageArray
         simpleCEM.rsp = self.cemRSP
 
         return simpleRS, simpleCEM
 
     def _rangeShifterWET(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> float:
         cemData = self._simpleCEM.imageArray
-        cemData = cemData[cemData > self.cemRSP] # Not > 0 but > some threshold=CEM RSP (linear interpolation may result in something a bit larger than 0
+        cemData = cemData[cemData > self.cemRSP*self.minCEMThickness]
 
         if len(cemData)==0:
             raise ValueError("CEM cannot contains only 0s")
