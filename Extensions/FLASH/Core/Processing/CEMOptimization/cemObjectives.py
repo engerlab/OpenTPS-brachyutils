@@ -64,7 +64,7 @@ class CEMAbstractDoseFidelityTerm:
 
         derivativeMat = derivative.sparseBeamlets.toSparseMatrix()
         derivativePlan = derivative.referencePlan
-        originalPlan = self.doseCalculator._plan
+        originalPlan = self.doseCalculator.plan
 
         productRes = diffVal @ derivativeMat
         res = np.array([])
@@ -100,7 +100,7 @@ class CEMAbstractDoseFidelityTerm:
     def _multiplyWithDerivative_Sequence(self, diff:DoseImage, derivativeSequence:Sequence[DoseImage]) -> np.ndarray:
         res = np.array([])
 
-        plan = self.doseCalculator._plan
+        plan = self.doseCalculator.plan
 
         for b, derivative in enumerate(derivativeSequence):
             beam = plan.beams[b]

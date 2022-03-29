@@ -15,6 +15,7 @@ from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
 from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import CEMOptimizer, CEMDoseCalculator
+from Extensions.FLASH.Core.Processing.RangeEnergy import energyToRange
 
 
 class SingleBeamCEMOptimizationWorkflow():
@@ -80,7 +81,7 @@ class SingleBeamCEMOptimizationWorkflow():
         ctBEV = ImageTransform3D.dicomToIECGantry(self.ct, beam, fillValue=-1024.)
         targetROIBEV = ImageTransform3D.dicomToIECGantry(self.targetROI, beam, fillValue=-0.)
 
-        padLength = int(150. / ctBEV.spacing[2])
+        padLength = int(self._padLength() / ctBEV.spacing[2])
         newOrigin = np.array(ctBEV.origin)
         newOrigin[2] = newOrigin[2] - padLength * ctBEV.spacing[2]
         newArray = -1000 * np.ones((ctBEV.gridSize[0], ctBEV.gridSize[1], ctBEV.gridSize[
@@ -104,6 +105,14 @@ class SingleBeamCEMOptimizationWorkflow():
 
         self.ct = ct
         self.targetROI = targetROI
+
+    def _padLength(self) -> float:
+        cemThicknessGuess = 50 # Arbitrarily set right now.
+
+        padLength = cemThicknessGuess/self.cemRSP + energyToRange(self.beamEnergy)/self.rangeShifterRSP
+
+        return padLength
+
 
     def _initializePlan(self) -> RTPlan:
         plan = RTPlan()
