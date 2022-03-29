@@ -8,34 +8,36 @@ import numpy as np
 import concurrent
 import matplotlib.pyplot as plt
 
-testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+if __name__ == '__main__':
 
-## read a serialized dynamic sequence
-dataPath = testDataPath + "superLightDynSeqWithMod.p"
-# dataPath = '/home/damien/Desktop/Patient0/Patient0_Model_bodyCropped.p'
-patient = loadDataStructure(dataPath)[0]
-dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
+    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+
+    ## read a serialized dynamic sequence
+    dataPath = testDataPath + "superLightDynSeqWithMod.p"
+    # dataPath = '/home/damien/Desktop/Patient0/Patient0_Model_bodyCropped.p'
+    patient = loadDataStructure(dataPath)[0]
+    dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
 
-imageList = []
+    imageList = []
 
-startTime = time.time()
+    startTime = time.time()
 
-defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian')
-for deformation in defList:
-    imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=True))
+    defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian')
+    for deformation in defList:
+        imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=True))
 
-print(len(imageList))
-print('first test done in ', np.round(time.time() - startTime, 2))
+    print(len(imageList))
+    print('first test done in ', np.round(time.time() - startTime, 2))
 
-plt.figure()
-plt.imshow(imageList[0].imageArray[:, 50, :])
-plt.show()
+    plt.figure()
+    plt.imshow(imageList[0].imageArray[:, 50, :])
+    plt.show()
 
-startTime = time.time()
-imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian', tryGPU=True)
-print('second test done in ', np.round(time.time() - startTime, 2))
+    startTime = time.time()
+    imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian', tryGPU=True)
+    print('second test done in ', np.round(time.time() - startTime, 2))
 
-plt.figure()
-plt.imshow(imageList[0].imageArray[:, 50, :])
-plt.show()
+    plt.figure()
+    plt.imshow(imageList[0].imageArray[:, 50, :])
+    plt.show()
