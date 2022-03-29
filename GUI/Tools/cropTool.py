@@ -38,6 +38,10 @@ class CropWidget(QMainWindow):
 
         self._dataSelection.dataToCropEvent.connect(self.cropData)
 
+    def closeEvent(self, event):
+        self._viewers.close()
+        super().closeEvent(event)
+
     def cropData(self, selectedData:Sequence[Image3D]):
         box = self._viewers.getBoundingBox()
 
@@ -108,6 +112,11 @@ class ThreeViewsGrid(QWidget):
         self.setAcceptDrops(True)
         self.dragEnterEvent = lambda event: event.accept()
         self.dropEvent = lambda event: self._dropEvent(event)
+
+    def close(self):
+        self._viewer0.close()
+        self._viewer1.close()
+        self._viewer2.close()
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():

@@ -50,6 +50,9 @@ class PrimaryImageLayer:
         self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
         self._mainMapper.SetInputConnection(self._colorMapper.GetOutputPort())
 
+    def close(self):
+        self._disconnectAll()
+
     @property
     def image(self) -> Optional[Image3DForViewer]:
         """
