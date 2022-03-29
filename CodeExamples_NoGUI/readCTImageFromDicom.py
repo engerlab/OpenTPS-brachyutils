@@ -12,26 +12,28 @@ import matplotlib.pyplot as plt
 import os
 from pathlib import Path
 
-# Get the current working directory, its parent, then add the testData folder at the end of it
-testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
-ctImagePath = testDataPath + "4DCTDicomLight/00"
+if __name__ == '__main__':
 
-## option 1 specific to dicoms
-filesList = listAllFiles(ctImagePath)
-print(filesList)
-image1 = readDicomCT(filesList['Dicom'])
-print(type(image1))
+    # Get the current working directory, its parent, then add the testData folder at the end of it
+    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+    ctImagePath = testDataPath + "4DCTDicomLight/00"
 
-## option 2 general
-dataList = loadAllData(ctImagePath)
-img2 = dataList[0]
-print(type(img2))
+    ## option 1 specific to dicoms
+    filesList = listAllFiles(ctImagePath)
+    print(filesList)
+    image1 = readDicomCT(filesList['Dicom'])
+    print(type(image1))
 
-print(img2.name)
-img2.name = 'newImage'
-print(img2.name)
-print(img2.gridSize, img2.spacing)
+    ## option 2 general
+    dataList = loadAllData(ctImagePath)
+    img2 = dataList[0]
+    print(type(img2))
 
-plt.figure()
-plt.imshow(img2.imageArray[:,:,int(img2.gridSize[2]/2)])
-plt.show()
+    print(img2.name)
+    img2.name = 'newImage'
+    print(img2.name)
+    print(img2.gridSize, img2.spacing)
+
+    plt.figure()
+    plt.imshow(img2.imageArray[:,:,int(img2.gridSize[2]/2)])
+    plt.show()

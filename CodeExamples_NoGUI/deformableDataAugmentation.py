@@ -8,116 +8,118 @@ import os
 from pathlib import Path
 import math
 
-testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+if __name__ == '__main__':
 
-## read a serialized dynamic sequence
-# dataPath = '/home/damien/Desktop/Patient0/Patient0BaseAndMod.p'
-dataPath = testDataPath + "superLightDynSeqWithMod.p"
-patient = loadDataStructure(dataPath)[0]
+    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
-dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
-dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
+    ## read a serialized dynamic sequence
+    # dataPath = '/home/damien/Desktop/Patient0/Patient0BaseAndMod.p'
+    dataPath = testDataPath + "superLightDynSeqWithMod.p"
+    patient = loadDataStructure(dataPath)[0]
 
-simulationTime = 32
-amplitude = 10
+    dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
+    dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
-newSignal = SyntheticBreathingSignal(amplitude=amplitude,
-                                     variationAmplitude=0,
-                                     breathingPeriod=4,
-                                     variationFrequency=0,
-                                     shift=0,
-                                     meanNoise=0,
-                                     varianceNoise=0,
-                                     samplingPeriod=0.2,
-                                     meanEvent=0/30,
-                                     simulationTime=simulationTime,
-                                     )
+    simulationTime = 32
+    amplitude = 10
 
-newSignal.generateBreathingSignal()
-linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
+    newSignal = SyntheticBreathingSignal(amplitude=amplitude,
+                                         variationAmplitude=0,
+                                         breathingPeriod=4,
+                                         variationFrequency=0,
+                                         shift=0,
+                                         meanNoise=0,
+                                         varianceNoise=0,
+                                         samplingPeriod=0.2,
+                                         meanEvent=0/30,
+                                         simulationTime=simulationTime,
+                                         )
 
-newSignal.breathingSignal = newSignal.breathingSignal * linearIncrease
+    newSignal.generateBreathingSignal()
+    linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
 
-newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
-                                     variationAmplitude=0,
-                                     breathingPeriod=4,
-                                     variationFrequency=0,
-                                     shift=0,
-                                     meanNoise=0,
-                                     varianceNoise=0,
-                                     samplingPeriod=0.2,
-                                     simulationTime=simulationTime,
-                                     meanEvent=0/30)
+    newSignal.breathingSignal = newSignal.breathingSignal * linearIncrease
 
-newSignal2.breathingSignal = -newSignal.breathingSignal
+    newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
+                                         variationAmplitude=0,
+                                         breathingPeriod=4,
+                                         variationFrequency=0,
+                                         shift=0,
+                                         meanNoise=0,
+                                         varianceNoise=0,
+                                         samplingPeriod=0.2,
+                                         simulationTime=simulationTime,
+                                         meanEvent=0/30)
 
-signalList = [newSignal.breathingSignal, newSignal2.breathingSignal]
-# signalList = [newSignal.breathingSignal] ## for single ROI testing
+    newSignal2.breathingSignal = -newSignal.breathingSignal
 
-pointRLung = np.array([108, 72, -116])
-pointLLung = np.array([-94, 45, -117])
+    signalList = [newSignal.breathingSignal, newSignal2.breathingSignal]
+    # signalList = [newSignal.breathingSignal] ## for single ROI testing
 
-## get points in voxels --> for the plot, not necessary for the process example
-pointRLungInVoxel = getVoxelIndexFromPosition(pointRLung, dynMod.midp)
-pointLLungInVoxel = getVoxelIndexFromPosition(pointLLung, dynMod.midp)
+    pointRLung = np.array([108, 72, -116])
+    pointLLung = np.array([-94, 45, -117])
 
-pointList = [pointRLung, pointLLung]
-# pointList = [pointRLung] ## for single ROI testing
-pointVoxelList = [pointRLungInVoxel, pointLLungInVoxel]
-# pointVoxelList = [pointRLungInVoxel] ## for single ROI testing
+    ## get points in voxels --> for the plot, not necessary for the process example
+    pointRLungInVoxel = getVoxelIndexFromPosition(pointRLung, dynMod.midp)
+    pointLLungInVoxel = getVoxelIndexFromPosition(pointLLung, dynMod.midp)
 
-## to show signals and ROIs
-prop_cycle = plt.rcParams['axes.prop_cycle']
-colors = prop_cycle.by_key()['color']
-plt.figure(figsize=(12, 6))
-signalAx = plt.subplot(2, 1, 2)
-for pointIndex, point in enumerate(pointList):
-    ax = plt.subplot(2, len(pointList), pointIndex+1)
-    ax.set_title('Slice Y:' + str(pointList[pointIndex][1]))
-    ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
-    ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
-    signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex], c=colors[pointIndex])
+    pointList = [pointRLung, pointLLung]
+    # pointList = [pointRLung] ## for single ROI testing
+    pointVoxelList = [pointRLungInVoxel, pointLLungInVoxel]
+    # pointVoxelList = [pointRLungInVoxel] ## for single ROI testing
 
-signalAx.set_xlabel('Time (s)')
-signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
-plt.show()
+    ## to show signals and ROIs
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
+    plt.figure(figsize=(12, 6))
+    signalAx = plt.subplot(2, 1, 2)
+    for pointIndex, point in enumerate(pointList):
+        ax = plt.subplot(2, len(pointList), pointIndex+1)
+        ax.set_title('Slice Y:' + str(pointList[pointIndex][1]))
+        ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
+        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
+        signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex], c=colors[pointIndex])
 
-
-## all in one seq version
-dynSeq = generateDynSeqFromBreathingSignalsAndModel(dynMod, signalList, pointList, dimensionUsed='Z', outputType=np.int16)
-dynSeq.breathingPeriod = newSignal.breathingPeriod
-dynSeq.timingsList = newSignal.timestamps
+    signalAx.set_xlabel('Time (s)')
+    signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
+    plt.show()
 
 
-## save it as a serialized object
-savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung'
-saveSerializedObjects(dynSeq, savingPath)
-
-print('/'*80, '\n', '/'*80)
-
-
-## by signal sub part version
-sequenceSize = newSignal.breathingSignal.shape[0]
-subSequenceSize = 25
-print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize)
-
-subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize/subSequenceSize))]
-subSequencesIndexes.append(sequenceSize)
-print('Sub sequences indexes', subSequencesIndexes)
-
-for i in range(len(subSequencesIndexes)-1):
-    print('*'*80)
-    print('Creating images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
-    dynSeq = generateDynSeqFromBreathingSignalsAndModel(dynMod,
-                                                        signalList,
-                                                        pointList,
-                                                        signalIdxUsed=[subSequencesIndexes[i], subSequencesIndexes[i+1]],
-                                                        dimensionUsed='Z',
-                                                        outputType=np.int16)
-
+    ## all in one seq version
+    dynSeq = generateDynSeqFromBreathingSignalsAndModel(dynMod, signalList, pointList, dimensionUsed='Z', outputType=np.int16)
     dynSeq.breathingPeriod = newSignal.breathingPeriod
-    dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
+    dynSeq.timingsList = newSignal.timestamps
+
 
     ## save it as a serialized object
-    savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung_part' + str(i)
+    savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung'
     saveSerializedObjects(dynSeq, savingPath)
+
+    print('/'*80, '\n', '/'*80)
+
+
+    ## by signal sub part version
+    sequenceSize = newSignal.breathingSignal.shape[0]
+    subSequenceSize = 25
+    print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize)
+
+    subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize/subSequenceSize))]
+    subSequencesIndexes.append(sequenceSize)
+    print('Sub sequences indexes', subSequencesIndexes)
+
+    for i in range(len(subSequencesIndexes)-1):
+        print('*'*80)
+        print('Creating images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
+        dynSeq = generateDynSeqFromBreathingSignalsAndModel(dynMod,
+                                                            signalList,
+                                                            pointList,
+                                                            signalIdxUsed=[subSequencesIndexes[i], subSequencesIndexes[i+1]],
+                                                            dimensionUsed='Z',
+                                                            outputType=np.int16)
+
+        dynSeq.breathingPeriod = newSignal.breathingPeriod
+        dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
+
+        ## save it as a serialized object
+        savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung_part' + str(i)
+        saveSerializedObjects(dynSeq, savingPath)
