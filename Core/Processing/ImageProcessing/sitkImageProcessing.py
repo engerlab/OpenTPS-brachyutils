@@ -3,7 +3,10 @@ from typing import Sequence, Optional
 import numpy as np
 
 from Core.Data.Images.image3D import Image3D
-import SimpleITK as sitk
+try:
+    import SimpleITK as sitk
+except:
+    print('No module SimpleITK found')
 
 def image3DToSITK(image:Image3D, type=float):
     imageData = image.imageArray.astype(type)
