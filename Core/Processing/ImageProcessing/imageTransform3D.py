@@ -7,7 +7,10 @@ from numpy import linalg
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Processing.ImageProcessing import sitkImageProcessing
+try:
+    from Core.Processing.ImageProcessing import sitkImageProcessing
+except:
+    print('No module SimpleITK found')
 
 class ImageTransform3D:
     @staticmethod
