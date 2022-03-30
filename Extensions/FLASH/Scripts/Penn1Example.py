@@ -12,7 +12,7 @@ from Core.IO import mcsquareIO
 from Core.IO.dataLoader import loadData
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing.crop3D import crop3DDataAroundBox
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Core.api import API
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives, planObjectives
@@ -59,8 +59,8 @@ beam.appendLayer(layer)
 plan.appendBeam(beam)
 
 # Pad CT and targetROI so that both can fully contain the CEM
-ctBEV = ImageTransform3D.dicomToIECGantry(ct, beam, fillValue=-1024.)
-targetROIBEV = ImageTransform3D.dicomToIECGantry(targetROI, beam, fillValue=-0.)
+ctBEV = imageTransform3D.dicomToIECGantry(ct, beam, fillValue=-1024.)
+targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, fillValue=-0.)
 
 padLength = int(150./ctBEV.spacing[2])
 newOrigin = np.array(ctBEV.origin)
@@ -75,9 +75,9 @@ newArray[:, :, padLength:] = targetROIBEV.imageArray
 targetROIBEV.imageArray = newArray
 targetROIBEV.origin = newOrigin
 
-ct = ImageTransform3D.iecGantryToDicom(ctBEV, beam, fillValue=-1024.)
+ct = imageTransform3D.iecGantryToDicom(ctBEV, beam, fillValue=-1024.)
 ct.patient = patient
-targetROI = ImageTransform3D.iecGantryToDicom(targetROIBEV, beam, fillValue=0)
+targetROI = imageTransform3D.iecGantryToDicom(targetROIBEV, beam, fillValue=0)
 targetROI.patient = patient
 
 crop3DDataAroundBox(ct,[[-30, 250], [-250, 35], [-670, -570]], [0,0,0])

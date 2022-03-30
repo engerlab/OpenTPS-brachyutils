@@ -1,8 +1,5 @@
-import copy
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 
 from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
 from Core.Data.Images.ctImage import CTImage
@@ -13,7 +10,6 @@ import Core.IO.mcsquareIO as mcsquareIO
 from Core.Data.patient import Patient
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.api import API
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
 from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCalculator import \
     FluenceBasedMCsquareDoseCalculator
 
