@@ -43,6 +43,10 @@ class CEM(AbstractCTObject, Image2D):
 
         return newCEM
 
+    @property
+    def referenceBeam(self):
+        return self._referenceBeam
+
     def computeROI(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> ROIMask:
         if beam is None:
             beam = self._referenceBeam
@@ -63,7 +67,9 @@ class CEM(AbstractCTObject, Image2D):
         roiBEV.imageArray = data
         roi = ImageTransform3D.iecGantryToDicom(roiBEV, beam)
         ImageTransform3D.intersect(roi, referenceImage, inPlace=True, fillValue=0)
-        roi.imageArray = roi.imageArray.astype(bool)
+        imageArray = roi.imageArray
+        imageArray[imageArray<=0.5] = 0
+        roi.imageArray = imageArray.astype(bool)
 
         return roi
 
@@ -124,10 +130,10 @@ class BiComponentCEM(AbstractCTObject):
     def __init__(self):
         super().__init__()
 
-        self.rangeShifterRSP = 1.2
+        self.rangeShifterRSP = 1.
         self.cemRSP = 1.
         self.minCEMThickness = 5. # in physical mm not in water equivalent mm
-        self.rangeShifterToCEM = 5. # Free space between CEM and RS
+        self.rangeShifterToCEM = 10. # Free space between CEM and RS
 
         self._simpleCEM = CEM()
         self._simpleCEM.rsp = 1.
@@ -173,43 +179,54 @@ class BiComponentCEM(AbstractCTObject):
 
 
     def computeROIs(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> Tuple[ROIMask, ROIMask]:
-        simpleRS, simpleCEM = self.split()
+        simpleRS, simpleCEM = self.split(referenceImage, beam)
 
         rsROI = simpleRS.computeROI(referenceImage, beam)
 
         beamCEM = copy.deepcopy(beam)
-        beamCEM.cemToIsocenter += self._rangeShifterWaterEquivThick()/self.rangeShifterRSP + self.rangeShifterToCEM
+        beamCEM.cemToIsocenter += self._rangeShifterWET(referenceImage, beam) / self.rangeShifterRSP + self.rangeShifterToCEM
 
         cemROI = simpleCEM.computeROI(referenceImage, beamCEM)
 
         return rsROI, cemROI
 
 
-    def split(self) -> Tuple[CEM, CEM]:
-        rangeShifterWaterEquivThick = self._rangeShifterWaterEquivThick()
+    def split(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> Tuple[CEM, CEM]:
+        rangeShifterWaterEquivThick = self._rangeShifterWET(referenceImage, beam)
 
         simpleRS = copy.deepcopy(self._simpleCEM)
         simpleRS.imageArray = rangeShifterWaterEquivThick*np.ones(simpleRS.imageArray.shape)*np.array(self._simpleCEM.imageArray.astype(bool).astype(float))
         simpleRS.rsp = self.rangeShifterRSP
 
         simpleCEM = copy.deepcopy(self._simpleCEM)
-        simpleCEM.imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick
+        imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick
+        imageArray[imageArray<0] = 0
+        simpleCEM.imageArray = imageArray
         simpleCEM.rsp = self.cemRSP
 
         return simpleRS, simpleCEM
 
-    def _rangeShifterWaterEquivThick(self):
+    def _rangeShifterWET(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> float:
         cemData = self._simpleCEM.imageArray
-        cemData = cemData[cemData > 0.]
+        cemData = cemData[cemData > self.cemRSP*self.minCEMThickness]
 
         if len(cemData)==0:
             raise ValueError("CEM cannot contains only 0s")
 
         cemDataMin = np.min(cemData)
 
-        rangeShifterWaterEquivThick = cemDataMin - self.minCEMThickness * self.cemRSP
+        rangeShifterWET = cemDataMin - self.minCEMThickness * self.cemRSP
 
-        if rangeShifterWaterEquivThick<0.:
-            rangeShifterWaterEquivThick = 0.
+        if rangeShifterWET<0.:
+            rangeShifterWET = 0.
 
-        return rangeShifterWaterEquivThick
+        return self._roundRangeShifterWETToPixels(rangeShifterWET, referenceImage, beam)
+
+    def _roundRangeShifterWETToPixels(self, rangeShifterWET:float, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> float:
+        referenceImageBEV = ImageTransform3D.dicomToIECGantry(referenceImage, beam)
+
+        pixelWET = self.rangeShifterRSP*referenceImageBEV.spacing[2]
+
+        rangeShifterWET = math.floor(rangeShifterWET/pixelWET)*pixelWET
+
+        return rangeShifterWET

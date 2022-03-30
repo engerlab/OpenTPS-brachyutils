@@ -46,7 +46,7 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._plan = plan
         return super().computeDose(ct, self._fluencePlan(plan))
 
-    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask] = None) -> Beamlets:
+    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask]=None) -> Beamlets:
         self._ct = ct
         self._plan = self._fluencePlan(plan)
         self._roi = roi

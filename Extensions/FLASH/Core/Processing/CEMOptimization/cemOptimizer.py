@@ -108,7 +108,7 @@ class CEMOptimizer:
             if beam.cem is None:
                 beam.cem = BiComponentCEM.fromBeam(self._ct, beam)
 
-                self._initializeCEM(beam)
+            self._initializeCEM(beam)
 
             cemArray = beam.cem.imageArray
             if len(cemVal)==0:
@@ -355,11 +355,12 @@ class CEMDoseCalculator:
     def _updateBeamletDerivative(self):
         self._fluenceDoseCalculator.beamModel = self.beamModel
         self._fluenceDoseCalculator.ctCalibration = self.ctCalibration
+        self._fluenceDoseCalculator.nbPrimaries = 1e4
 
-        beamlets = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan)
+        beamlets = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan, self.roi)
 
         plan2 = self._lowerPlanEnergy(self.plan, deltaR=1.)
-        beamletsE2 = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, plan2)
+        beamletsE2 = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, plan2, self.roi)
 
         sparseBeamlets = beamlets.sparseBeamlets
         sparseBeamlets.setUnitaryBeamlets(sparseBeamlets.toSparseMatrix() - beamletsE2.sparseBeamlets.toSparseMatrix())

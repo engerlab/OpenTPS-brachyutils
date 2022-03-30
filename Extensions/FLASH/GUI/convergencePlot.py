@@ -13,17 +13,14 @@ class ConvergencePlot(PlotWidget):
         self.setLabel('left', 'Function value')
         self.setLabel('bottom', 'Iteration')
 
-        self.pl = None
+        self.pl = PlotCurveItem(np.array([]), np.array([]))
+        self.addItem(self.pl)
 
         self.x = []
         self.y = []
 
     def appendFVal(self, xy):
-        if not (self.pl is None):
-            self.removeItem(self.pl)
-
         self.x.append(xy[0])
         self.y.append(xy[1])
 
-        self.pl = PlotCurveItem(np.array(self.x), np.array(self.y))
-        self.addItem(self.pl)
+        self.pl.setData(self.x, self.y)

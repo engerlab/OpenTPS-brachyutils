@@ -7,7 +7,10 @@ from numpy import linalg
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Processing.ImageProcessing import sitkImageProcessing
+try:
+    from Core.Processing.ImageProcessing import sitkImageProcessing
+except:
+    print('No module SimpleITK found')
 
 class ImageTransform3D:
     @staticmethod
@@ -15,7 +18,7 @@ class ImageTransform3D:
         if not inPlace:
             image = image.__class__.fromImage3D(image)
 
-        sitkImageProcessing.resize(image, fixedImage.spacing, newOirigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
+        sitkImageProcessing.resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
                                    fillValue=fillValue)
 
         return image
