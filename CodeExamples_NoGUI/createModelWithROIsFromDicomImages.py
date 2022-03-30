@@ -23,13 +23,14 @@ if __name__ == '__main__':
 
     # chose the patient folder, which will be used as the patient name
     patientName = 'Patient_0'
+    basePath = '/home/damien/Desktop/'
 
     # chose the 4DCT data folder
-    data4DPath = '/home/damien/Desktop/' + patientName + '/4DCT'
+    data4DPath = basePath + patientName + '/4DCT'
     # chose the dicom rtStruct file
-    dataStructPath = '/home/damien/Desktop/' + patientName + '/MidP_ct_rtstruct.dcm'
+    dataStructPath = basePath + patientName + '/MidP_ct_rtstruct.dcm'
     # chose a path to save the results
-    savingPath = '/home/damien/Desktop/' + patientName + '/dynModAndROIs'
+    savingPath = basePath + patientName + '/dynModAndROIs'
 
     # load the 4DCT data
     data4DList = loadAllData(data4DPath)
