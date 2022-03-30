@@ -5,7 +5,10 @@ from typing import Optional
 import numpy as np
 
 from Core.Data.Images.image3D import Image3D
-import SimpleITK as sitk
+try:
+    import SimpleITK as sitk
+except:
+    print('No module SimpleITK found')
 
 from Core.Processing.ImageProcessing import resampler3D
 
