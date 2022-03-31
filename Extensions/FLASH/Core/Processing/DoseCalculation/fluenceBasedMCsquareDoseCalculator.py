@@ -13,7 +13,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.fluenceCalculator import FluenceCalculator
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.mcsquareFlashConfig import MCsquareFlashConfig
 
@@ -46,7 +46,7 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._plan = plan
         return super().computeDose(ct, self._fluencePlan(plan))
 
-    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask] = None) -> Beamlets:
+    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask]=None) -> Beamlets:
         self._ct = ct
         self._plan = self._fluencePlan(plan)
         self._roi = roi
@@ -67,8 +67,8 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         newPlan = copy.deepcopy(plan)
 
         for beam in newPlan:
-            ctBEV = ImageTransform3D.dicomToIECGantry(self._ct, beam, self.HU_AIR)
-            isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(self._ct, beam, beam.isocenterPosition)
+            ctBEV = imageTransform3D.dicomToIECGantry(self._ct, beam, self.HU_AIR)
+            isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(self._ct, beam, beam.isocenterPosition)
 
             for layer in beam:
                 fluenceCalculator = FluenceCalculator()

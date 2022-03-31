@@ -6,14 +6,14 @@ import numpy as np
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCalculator import Beamlets
 
 
 class CEMAbstractDoseFidelityTerm:
     def __init__(self):
         self._weightObjective = None
-        self.beamModel = None
+        self.beamModel = None # TODO: Should we take the beam model from the dose calculator to reduce the amount of parameters that must be set by the user
 
         self._roi = None
         self._doseCalculator = None
@@ -46,7 +46,7 @@ class CEMAbstractDoseFidelityTerm:
     def getWeightDerivative(self, weights:np.ndarray, cemVals:np.ndarray) -> np.ndarray:
         raise NotImplementedError()
 
-    def _multiplyWithDerivative(self, diff:np.ndarray, derivative:Union[Beamlets, Sequence[DoseImage]]) -> np.ndarray:
+    def _multiplyWithDerivative(self, diff:DoseImage, derivative:Union[Beamlets, Sequence[DoseImage]]) -> np.ndarray:
         if isinstance(derivative, Beamlets):
             return self._multiplyWithDerivative_Beamlets(diff, derivative)
         elif isinstance(derivative, Sequence):
@@ -54,25 +54,27 @@ class CEMAbstractDoseFidelityTerm:
         else:
             raise ValueError('Derivative cannot be of type ' + str(type(derivative)))
 
-    def _multiplyWithDerivative_Beamlets(self, diff:np.ndarray, derivative:Beamlets) -> np.ndarray:
-        diff = np.flip(diff, 0)
-        diff = np.flip(diff, 1)
-        diff = diff.flatten(order='F')
-        diff = np.transpose(diff)
+    def _multiplyWithDerivative_Beamlets(self, diff:DoseImage, derivative:Beamlets) -> np.ndarray:
+        diffVal = diff.imageArray
+
+        diffVal = np.flip(diffVal, 0)
+        diffVal = np.flip(diffVal, 1)
+        diffVal = diffVal.flatten(order='F')
+        diffVal = np.transpose(diffVal)
 
         derivativeMat = derivative.sparseBeamlets.toSparseMatrix()
         derivativePlan = derivative.referencePlan
         originalPlan = self.doseCalculator.plan
 
-        productRes = diff @ derivativeMat
+        productRes = diffVal @ derivativeMat
         res = np.array([])
 
         productInd = 0
         for b, beam in enumerate(derivativePlan):
             beamSubproduct = np.zeros(originalPlan[b].cem.imageArray.shape)
 
-            ctBEV = ImageTransform3D.dicomToIECGantry(self.doseCalculator._ct, beam)
-            isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(self.doseCalculator._ct, beam, beam.isocenterPosition)
+            ctBEV = imageTransform3D.dicomToIECGantry(diff, beam)
+            isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(diff, beam, beam.isocenterPosition)
 
             for layer in beam:
                 pos0Nozzle = np.array(layer.spotX) * (self.beamModel.smx - self.beamModel.nozzle_isocenter) / self.beamModel.smx
@@ -88,7 +90,10 @@ class CEMAbstractDoseFidelityTerm:
                     beamSubproduct[vIndex[0], vIndex[1]] = productRes[productInd]
                     productInd += 1
 
-            res = np.concatenate((res, beamSubproduct.flatten()))
+            if len(res)==0:
+                res = beamSubproduct.flatten()
+            else:
+                res = np.concatenate((res, beamSubproduct.flatten()))
 
         return res
 
@@ -99,7 +104,7 @@ class CEMAbstractDoseFidelityTerm:
 
         for b, derivative in enumerate(derivativeSequence):
             beam = plan.beams[b]
-            diffBEV = ImageTransform3D.dicomToIECGantry(diff, beam, fillValue=0.)
+            diffBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0.)
 
             derivativeProd = np.sum(derivative.imageArray * diffBEV.imageArray, axis=2)
             derivativeProd = derivativeProd.flatten()

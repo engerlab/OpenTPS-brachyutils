@@ -15,32 +15,34 @@ from pydicom.uid import generate_uid
 import time
 import numpy as np
 
-# Get the current working directory, its parent, then add the testData folder at the end of it
-testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+if __name__ == '__main__':
 
-## read a serialized dynamic sequence
-dataPath = testDataPath + "lightDynSeq.p"
-dynSeq = loadDataStructure(dataPath)[0]
+    # Get the current working directory, its parent, then add the testData folder at the end of it
+    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
-print(type(dynSeq))
-print(len(dynSeq.dyn3DImageList), 'images in the dynamic sequence')
+    ## read a serialized dynamic sequence
+    dataPath = testDataPath + "lightDynSeq.p"
+    dynSeq = loadDataStructure(dataPath)[0]
 
-## create Dynamic3DModel
-model3D = Dynamic3DModel()
+    print(type(dynSeq))
+    print(len(dynSeq.dyn3DImageList), 'images in the dynamic sequence')
 
-## change its name
-model3D.name = 'MidP'
+    ## create Dynamic3DModel
+    model3D = Dynamic3DModel()
 
-## give it an seriesInstanceUID
-model3D.seriesInstanceUID = generate_uid()
+    ## change its name
+    model3D.name = 'MidP'
 
-## generate the midP image and deformation fields from a dynamic 3D sequence
-startTime = time.time()
-model3D.computeMidPositionImage(dynSeq, tryGPU=True)
-stopTime = time.time()
+    ## give it an seriesInstanceUID
+    model3D.seriesInstanceUID = generate_uid()
 
-print('midP computed in ', np.round(stopTime-startTime))
+    ## generate the midP image and deformation fields from a dynamic 3D sequence
+    startTime = time.time()
+    model3D.computeMidPositionImage(dynSeq, tryGPU=True)
+    stopTime = time.time()
 
-# ## save it as a serialized object
-# savingPath = testDataPath + 'Test_dynMod'
-# saveSerializedObjects(model3D, savingPath)
+    print('midP computed in ', np.round(stopTime-startTime))
+
+    # ## save it as a serialized object
+    # savingPath = testDataPath + 'Test_dynMod'
+    # saveSerializedObjects(model3D, savingPath)
