@@ -6,7 +6,7 @@ import numpy as np
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCalculator import Beamlets
 
 
@@ -73,8 +73,8 @@ class CEMAbstractDoseFidelityTerm:
         for b, beam in enumerate(derivativePlan):
             beamSubproduct = np.zeros(originalPlan[b].cem.imageArray.shape)
 
-            ctBEV = ImageTransform3D.dicomToIECGantry(diff, beam)
-            isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(diff, beam, beam.isocenterPosition)
+            ctBEV = imageTransform3D.dicomToIECGantry(diff, beam)
+            isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(diff, beam, beam.isocenterPosition)
 
             for layer in beam:
                 pos0Nozzle = np.array(layer.spotX) * (self.beamModel.smx - self.beamModel.nozzle_isocenter) / self.beamModel.smx
@@ -104,7 +104,7 @@ class CEMAbstractDoseFidelityTerm:
 
         for b, derivative in enumerate(derivativeSequence):
             beam = plan.beams[b]
-            diffBEV = ImageTransform3D.dicomToIECGantry(diff, beam, fillValue=0.)
+            diffBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0.)
 
             derivativeProd = np.sum(derivative.imageArray * diffBEV.imageArray, axis=2)
             derivativeProd = derivativeProd.flatten()
