@@ -32,7 +32,7 @@ class Event:
 
         for slot in self._slots:
             try:
-                newSlot = copy.deepcopy(slot)
+                newSlot = copy.deepcopy(slot, memodict)
                 newEvent.slots.append(newSlot)
             except:
                 pass

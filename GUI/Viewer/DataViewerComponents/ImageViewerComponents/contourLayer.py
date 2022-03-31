@@ -22,6 +22,10 @@ class ContourLayer:
         self._resliceAxes = None
         self._vtkContours = []
 
+    def close(self):
+        for vtkContour in self._vtkContours:
+            vtkContour.close()
+
     def setNewContour(self, contour:typing.Union[ROIContour, ROIMask]):
         if isinstance(contour, ROIContour):
             contour = ROIContourForViewer(contour)
@@ -96,9 +100,12 @@ class vtkContour:
 
         self.setVisible(self._contour.visible)
 
-        # TODO: disconnect contours
         self._contour.visibleChangedSignal.connect(self.setVisible)
         self._contour.colorChangedSignal.connect(self.reloadColor)
+
+    def close(self):
+        self._contour.visibleChangedSignal.disconnect(self.setVisible)
+        self._contour.colorChangedSignal.disconnect(self.reloadColor)
 
     @property
     def resliceAxes(self):
