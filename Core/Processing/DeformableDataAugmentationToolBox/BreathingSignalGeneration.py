@@ -50,6 +50,7 @@ def apnea(L,Tend,t):
         i+=2
     return y
 
+
 #creation des donnees respiratoires
 def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma=1, step=0.2, signalDuration=100, L=2 / 30):
     freq = 1 / period
@@ -67,6 +68,24 @@ def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma
     signal = (amplitude / 2) * np.sin(2 * np.pi * freq * timestamps) + s + noise
     return timestamps * 1000, signal
 
+
+def signal3DGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma=1, step=0.2, signalDuration=100, L=2 / 30, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
+
+    timestamps, mainMotionSignal = signalGeneration(amplitude=amplitude, dA=dA, period=period, df=df, dS=dS, mean=mean, sigma=sigma, step=step, signalDuration=100, L=2 / 30)
+
+    secondMotionSignal = mainMotionSignal * otherDimensionsRatio[0] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[0], size=mainMotionSignal.shape[0])
+    thirdMotionSignal = mainMotionSignal * otherDimensionsRatio[1] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[1], size=mainMotionSignal.shape[0])
+
+    signal3D = np.vstack((mainMotionSignal, secondMotionSignal, thirdMotionSignal))
+    signal3D = signal3D.transpose(1, 0)
+
+    plt.figure()
+    plt.plot(signal3D[:, 0])
+    plt.plot(signal3D[:, 1])
+    plt.plot(signal3D[:, 2])
+    plt.show()
+
+    return timestamps, signal3D
 
 """
 #parametres changeables
