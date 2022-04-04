@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # parameters selection ------------------------------------
 
 
-    sequenceDurationInSecs = 30
+    sequenceDurationInSecs = 100
     samplingFrequency = 4
     subSequenceSize = 50
     outputSize = [64, 64]
@@ -192,11 +192,11 @@ if __name__ == '__main__':
                                          simulationTime=sequenceDurationInSecs,
                                          meanEvent=meanEvent)
 
-    newSignal.generateBreathingSignal()
+    newSignal.generate1DBreathingSignal()
 
     pointList = [gtvCenterOfMass]
     pointVoxelList = [gtvCenterOfMassInVoxels]
-    signalList = [newSignal.breathingSignal]
+    signalList = [newSignal]
 
     saveSerializedObjects([signalList, pointList], savingPath + 'ROIsAndSignalObjects')
 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
         ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
         ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
         ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
-        signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex], c=colors[pointIndex])
+        signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex].breathingSignal, c=colors[pointIndex])
 
     signalAx.set_xlabel('Time (s)')
     signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
