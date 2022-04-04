@@ -35,6 +35,7 @@ if __name__ == '__main__':
     savingPath = f'/home/damien/Desktop/' + patientFolder + dataSetFolder
 
     if not os.path.exists(savingPath):
+        os.umask(0)
         os.makedirs(savingPath)   # Create a new directory because it does not exist
         os.makedirs(savingPath + dataSetDataFolder)  # Create a new directory because it does not exist
         print("New directory created to save the data: ", savingPath)
