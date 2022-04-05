@@ -7,7 +7,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 
 
 class FluenceCalculator:
@@ -30,8 +30,8 @@ class FluenceCalculator:
         return fluenceImage
 
     def _pointSpreadFluenceAtNozzle(self, layer:PlanIonLayer, ct:Image3D, beam:PlanIonBeam) -> Image2D:
-        ctBEV = ImageTransform3D.dicomToIECGantry(ct, beam, fillValue=-1024.)
-        isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(ct, beam, beam.isocenterPosition)
+        ctBEV = imageTransform3D.dicomToIECGantry(ct, beam, fillValue=-1024.)
+        isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(ct, beam, beam.isocenterPosition)
 
         fluence = np.zeros((ctBEV.imageArray.shape[0], ctBEV.imageArray.shape[1]))
 

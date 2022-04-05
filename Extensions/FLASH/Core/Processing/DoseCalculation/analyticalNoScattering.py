@@ -14,7 +14,7 @@ from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Processing.DoseCalculation.abstractDoseCalculator import AbstractDoseCalculator
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.fluenceCalculator import FluenceCalculator
 from Extensions.FLASH.Core.Processing.RangeEnergy import energyToRange
@@ -64,7 +64,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         doseImages = []
         for beam in plan:
             doseImageDicom = self._computeDoseForBeam(ct, beam)
-            ImageTransform3D.intersect(doseImageDicom, ct, inPlace=True, fillValue=0.)
+            imageTransform3D.intersect(doseImageDicom, ct, inPlace=True, fillValue=0.)
             doseImages.append(doseImageDicom)
 
         return doseImages
@@ -76,7 +76,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         rsp = RSPImage.fromCT(ct, self.ctCalibration)
 
         cumRSP = rsp.computeCumulativeWEPL(beam)
-        cumRSP = ImageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0.)
+        cumRSP = imageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0.)
 
         doseImageBEV = DoseImage.fromImage3D(cumRSP)
         doseImageArray = np.zeros(doseImageBEV.imageArray.shape)
@@ -96,7 +96,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
                     doseImageArray[i, j, :] += fluence[i, j] * f(np.squeeze(cumRSP.imageArray[i, j, :]))
 
         doseImageBEV.imageArray = doseImageArray
-        doseImageDicom = ImageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0.)
+        doseImageDicom = imageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0.)
 
         return doseImageDicom
 
