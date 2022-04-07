@@ -72,6 +72,9 @@ class PrimaryImageLayer:
         if image == self._image:
             return
 
+        if not (isinstance(image, Image3DForViewer) or (Image3DForViewer is None)):
+            return
+
         self._image = image
 
         self._disconnectAll()
