@@ -32,8 +32,10 @@ class Event:
 
         for slot in self._slots:
             try:
-                newSlot = copy.deepcopy(slot, memodict)
-                newEvent.slots.append(newSlot)
+                # To me it does not make sense to deep copy the functions (and their underlying data model)
+                newEvent.slots.append(slot)
+                #newSlot = copy.deepcopy(slot, memodict)
+                #newEvent.slots.append(newSlot)
             except:
                 pass
 

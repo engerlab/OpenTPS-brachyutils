@@ -82,7 +82,7 @@ class DataViewer(QWidget):
         self._toolbar = DataViewerToolbar(self)
 
         # For responsiveness, we instantiate all possible viewers and hide them == cached viewers:
-        self._dvhViewer = DVHPlot()
+        self._dvhViewer = DVHPlot(self)
         self._dynImageViewer = DynamicImageViewer(viewController)
         self._noneViewer = BlackEmptyPlot()
         self._staticProfileviewer = ProfileViewer(viewController)

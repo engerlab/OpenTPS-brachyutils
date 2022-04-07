@@ -11,6 +11,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.dvh import DVH
 from Core.Data.patient import Patient
 from Core.Data.roiContour import ROIContour
 from Core.Data.rtStruct import RTStruct
@@ -22,6 +23,7 @@ from GUI.Panels.patientDataPanel import PatientDataTree, PatientComboBox
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
+from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 
 import Extensions.FLASH.DefaultData as defaultDataModule
@@ -32,6 +34,8 @@ class FlashWindow(QMainWindow):
         super().__init__(parent)
 
         self._viewController = viewController
+
+        self._dvh = None
 
         self.setWindowTitle('FLASH TPS')
         self.resize(800, 600)
@@ -54,14 +58,39 @@ class FlashWindow(QMainWindow):
         self._viewers = ThreeViewsGrid(self._viewController, self)
         self._rightLayout.addWidget(self._viewers)
 
+        self._bottomFrame = QFrame()
+        self._bottomFrame.setFixedHeight(400)
+        self._rightLayout.addWidget(self._bottomFrame)
+        self._bottomLayout = QHBoxLayout()
+        self._bottomFrame.setLayout(self._bottomLayout)
+
         self._convergencePlot = ConvergencePlot()
-        self._convergencePlot.setFixedHeight(400)
-        self._rightLayout.addWidget(self._convergencePlot)
+        self._bottomLayout.addWidget(self._convergencePlot)
+
+        self._dvhPlot = DVHPlot(self)
+        self._bottomLayout.addWidget(self._dvhPlot)
 
         self._leftPanel.ctSelectedEvent.connect(self._viewers.setCT)
         self._leftPanel.doseUpdateEvent.connect(self._viewers.setDose)
+        self._leftPanel.doseUpdateEvent.connect(self._updateDVHWithDose)
         self._leftPanel.contourSelectedEvent.connect(self._viewers.setROI)
+        self._leftPanel.contourSelectedEvent.connect(self._updateDVHWithContour)
         self._leftPanel.fValEvent.connect(self._convergencePlot.appendFVal)
+
+    def _updateDVHWithDose(self, dose:DoseImage):
+        self._dvh.dose = dose
+        self._dvh.computeDVH()
+
+    def _updateDVHWithContour(self, roi):
+        if not (self._dvh is None):
+            self._dvhPlot.removeDVH(self._dvh)
+
+        self._dvh = DVH(roi)
+        self._dvhPlot.appendDVH(self._dvh, roi)
+
+    def closeEvent(self, event):
+        self._viewers.close()
+        event.accept()
 
 class ThreeViewsGrid(QWidget):
     def __init__(self, viewController, parent=None):
@@ -90,6 +119,13 @@ class ThreeViewsGrid(QWidget):
 
         self._ct = None
         self._roi = None
+
+    def closeEvent(self, event):
+        self._viewer0.close()
+        self._viewer1.close()
+        self._viewer2.close()
+
+        event.accept()
 
     def setCT(self, ct:CTImage):
         self._viewer0.primaryImage = ct
