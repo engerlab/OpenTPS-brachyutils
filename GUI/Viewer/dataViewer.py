@@ -386,9 +386,6 @@ class DataViewer(QWidget):
             Display the image (in static mode)
             Does not affect viewer visibility nor viewer type.
         """
-        if self.cachedStaticImageViewer.secondaryImage == image:
-            self.cachedStaticImageViewer.secondaryImage = None # Currently default behavior but is it a good idea?
-            return
 
         if image is None:
             oldImage = self.cachedStaticImageViewer.secondaryImage

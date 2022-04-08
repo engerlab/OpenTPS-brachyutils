@@ -139,7 +139,7 @@ class ViewController():
     @property
     def secondaryImage(self):
         if self.independentViewsEnabled:
-            # mainImage is only available when only one image can be shown
+            # secondaryImage is only available when only one image can be shown
             raise()
 
     @secondaryImage.setter

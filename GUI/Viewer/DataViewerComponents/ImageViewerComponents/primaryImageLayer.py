@@ -65,14 +65,14 @@ class PrimaryImageLayer:
         return self._image
 
     @image.setter
-    def image(self, image: Optional[Image3DForViewer]):
+    def image(self, image:Optional[Image3DForViewer]):
         self._setImage(image)
 
-    def _setImage(self, image: Optional[Image3DForViewer]):
+    def _setImage(self, image:Optional[Image3DForViewer]):
         if image == self._image:
             return
 
-        if not (isinstance(image, Image3DForViewer) or (Image3DForViewer is None)):
+        if not (isinstance(image, Image3DForViewer) or (image is None)):
             return
 
         self._image = image
