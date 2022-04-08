@@ -6,7 +6,7 @@ import numpy as np
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 
 
@@ -26,8 +26,8 @@ class CEMPlanInitializer:
     def _intializeBeam(self, beam:CEMBeam, targetROI:ROIMask, spotSpacing:float):
         beam.isocenterPosition = targetROI.centerOfMass
 
-        targetROIBEV = ImageTransform3D.dicomToIECGantry(targetROI, beam, 0.)
-        isocenterBEV = ImageTransform3D.dicomCoordinate2iecGantry(targetROI, beam, beam.isocenterPosition)
+        targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, 0.)
+        isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(targetROI, beam, beam.isocenterPosition)
 
         spotGridX, spotGridY = self._defineHexagSpotGridAroundIsocenter(spotSpacing, targetROIBEV, isocenterBEV)
         coordGridX, coordGridY = self._pixelCoordinatedWrtIsocenter(targetROIBEV, isocenterBEV)

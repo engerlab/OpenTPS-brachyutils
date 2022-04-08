@@ -12,7 +12,7 @@ from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Core.event import Event
 from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Processing.CEMOptimization.cemObjectives import CEMAbstractDoseFidelityTerm
@@ -85,7 +85,7 @@ class CEMOptimizer:
         self._planInitializer = CEMPlanInitializer()
         self._planOptimizer = PlanOptimizer()
         self._objectives = self._Objectives()
-        self._maxStep = 5. # TODO User should be able to set this
+        self._maxStep = 8. # TODO User should be able to set this
 
     def appendObjective(self, objective: CEMAbstractDoseFidelityTerm, weight: float = 1.):
         self._objectives.append(objective, weight)
@@ -122,7 +122,7 @@ class CEMOptimizer:
         cemArray = beam.cem.imageArray
         cemArray = np.ones(cemArray.shape) * energyToRange(beam.layers[0].nominalEnergy) - self._meanWETOfTarget(beam)
 
-        targetMaskBEV = ImageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0)
+        targetMaskBEV = imageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0)
         targetMaskBEV.dilate(self.cemLateralMargin)
         targetMask = np.sum(targetMaskBEV.imageArray, 2)
         cemArray[np.logical_not(targetMask.astype(bool))] = 0
@@ -133,8 +133,8 @@ class CEMOptimizer:
         rsp = RSPImage.fromCT(self._ct, self.ctCalibration)
         wepl = rsp.computeCumulativeWEPL(beam)
 
-        weplBEV = ImageTransform3D.dicomToIECGantry(wepl, beam, fillValue=0.)
-        roiBEV = ImageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0.)
+        weplBEV = imageTransform3D.dicomToIECGantry(wepl, beam, fillValue=0.)
+        roiBEV = imageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0.)
 
         weplTarget = weplBEV.imageArray[roiBEV.imageArray.astype(bool)]
 
@@ -142,13 +142,15 @@ class CEMOptimizer:
 
 
     def _gd(self, x:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        doseCalculator:CEMDoseCalculator = self._objectives.objectiveTerms[0].doseCalculator
+
         self._objectives.cemArray = x
         PlanOptimizer.run(self._objectives, self._plan)
 
         fVal = self._objectives.getValue(self._plan.spotWeights)
         self.fValEvent.emit((0, fVal))
         self.planUpdateEvent.emit(self._plan)
-        doseImage = self._objectives.objectiveTerms[0].doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
+        doseImage = doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
         self.doseUpdateEvent.emit(doseImage)
 
         for i in range(self.maxIterations):
@@ -168,11 +170,22 @@ class CEMOptimizer:
             fVal = self._objectives.getValue(self._plan.spotWeights)
             self.fValEvent.emit((self._iteration, fVal))
             self.planUpdateEvent.emit(self._plan)
-            doseImage = self._objectives.objectiveTerms[0].doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
+            doseImage = doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
             self.doseUpdateEvent.emit(doseImage)
 
             if self._iteration>2 and (fValPrev - fVal)<self.absTol:
-                return spotWeightsPrev, xPrev
+                # TODO We assume that this will change doseCalculator of all objectives but is it true/OK?
+                if doseCalculator.derivativeMode==doseCalculator.DerivativeModes.ANALYTICAL:
+                    doseCalculator.derivativeMode = doseCalculator.DerivativeModes.MC
+                    self._plan.spotWeights = spotWeightsPrev
+                    self._objectives.cemArray = xPrev
+
+                    fVal = fValPrev
+                    x = xPrev
+
+                    self._maxStep = self._maxStep/2.
+                else:
+                    return spotWeightsPrev, xPrev
 
         return self._plan.spotWeights, x
 
@@ -223,6 +236,7 @@ class CEMDoseCalculator:
         self._analyticalDerivative = None
         self._dose:DoseImage = None
         self._beamlets:SparseBeamlets = None
+        self._firstTimeBeamletDerivative = True
 
         self.iteration = 0 # debug
 
@@ -338,16 +352,18 @@ class CEMDoseCalculator:
         for i, dose in enumerate(doseSequence):
             dose.imageArray = (dose.imageArray - doseSequence2[i].imageArray)/deltaR
             outDose = DoseImage.fromImage3D(dose)
-            outDose = ImageTransform3D.dicomToIECGantry(outDose, plan.beams[i], fillValue=0.)
+            outDose = imageTransform3D.dicomToIECGantry(outDose, plan.beams[i], fillValue=0.)
             derivSequence.append(outDose)
 
         self._analyticalDerivative = derivSequence
 
     def computeBeamletDerivative(self, weights:np.ndarray, cemThickness: np.ndarray) -> Beamlets:
-        if not (np.array_equal(cemThickness, self._cemThicknessForDerivative) and np.array_equal(weights, self._weightsForDerivative)):
+        if self._firstTimeBeamletDerivative or not (np.array_equal(cemThickness, self._cemThicknessForDerivative) and np.array_equal(weights, self._weightsForDerivative)):
             self._cemThicknessForDerivative = cemThickness
             self._weightsForDerivative = weights
             self._updateBeamletDerivative()
+
+            self._firstTimeBeamletDerivative = False
 
         return self._sparseDerivativeCEM
 

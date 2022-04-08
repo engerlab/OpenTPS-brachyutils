@@ -38,6 +38,7 @@ def vectorSimulation(L,diff,mean,sigma,Tend,t,timestamp):
     return y
 
 
+
 #creation des donnees respiratoires
 def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma=1, step=0.2, signalDuration=100, L=2 / 30):
     freq = 1 / period
@@ -68,25 +69,43 @@ def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma
     return timestamps * 1000, signal
 
 
+def signal3DGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma=1, step=0.2, signalDuration=100, L=2 / 30, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
 
-#parametres changeables
-amplitude = 10 #amplitude (mm)
-dA = 5 #variation d amplitude possible (mm)
-period = 4.0 #periode respiratoire (s)
-df = 0.5 #variation de frequence possible (Hz)
-dS = 5 #shift du signal (mm)
-step = 0.2 #periode d echantillonnage
-signalDuration = 100 #temps de simulation
-L = 2/30 #moyenne des evenements aleatoires
+    timestamps, mainMotionSignal = signalGeneration(amplitude=amplitude, dA=dA, period=period, df=df, dS=dS, mean=mean, sigma=sigma, step=step, signalDuration=100, L=2 / 30)
 
-time,samples = signalGeneration()
-time = np.arange(0, signalDuration, step)
-plt.figure(figsize=(15,10))
-plt.plot(time,samples)
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude [mm]")
-plt.title("Breathing signal part 1")
-plt.xlim((0,100))
+    secondMotionSignal = mainMotionSignal * otherDimensionsRatio[0] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[0], size=mainMotionSignal.shape[0])
+    thirdMotionSignal = mainMotionSignal * otherDimensionsRatio[1] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[1], size=mainMotionSignal.shape[0])
+
+    signal3D = np.vstack((mainMotionSignal, secondMotionSignal, thirdMotionSignal))
+    signal3D = signal3D.transpose(1, 0)
+
+    plt.figure()
+    plt.plot(signal3D[:, 0])
+    plt.plot(signal3D[:, 1])
+    plt.plot(signal3D[:, 2])
+    plt.show()
+
+    return timestamps, signal3D
+
+
+# #parametres changeables
+# amplitude = 10 #amplitude (mm)
+# dA = 5 #variation d amplitude possible (mm)
+# period = 4.0 #periode respiratoire (s)
+# df = 0.5 #variation de frequence possible (Hz)
+# dS = 5 #shift du signal (mm)
+# step = 0.2 #periode d echantillonnage
+# signalDuration = 100 #temps de simulation
+# L = 2/30 #moyenne des evenements aleatoires
+
+# time,samples = signalGeneration()
+# time = np.arange(0, signalDuration, step)
+# plt.figure(figsize=(15,10))
+# plt.plot(time,samples)
+# plt.xlabel("Time [s]")
+# plt.ylabel("Amplitude [mm]")
+# plt.title("Breathing signal part 1")
+# plt.xlim((0,100))
 
 
 

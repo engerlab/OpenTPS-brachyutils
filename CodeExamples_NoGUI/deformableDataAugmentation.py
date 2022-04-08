@@ -35,7 +35,7 @@ if __name__ == '__main__':
                                          simulationTime=simulationTime,
                                          )
 
-    newSignal.generateBreathingSignal()
+    newSignal.generate1DBreathingSignal()
     linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
 
     newSignal.breathingSignal = newSignal.breathingSignal * linearIncrease

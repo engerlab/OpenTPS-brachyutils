@@ -9,7 +9,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.roiContour import ROIContour
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import crop3D
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Core.event import Event
 from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
@@ -78,8 +78,8 @@ class SingleBeamCEMOptimizationWorkflow():
         beam = self._plan.beams[0]
 
         # Pad CT and targetROI so that both can fully contain the CEM
-        ctBEV = ImageTransform3D.dicomToIECGantry(self.ct, beam, fillValue=-1024.)
-        targetROIBEV = ImageTransform3D.dicomToIECGantry(self.targetROI, beam, fillValue=-0.)
+        ctBEV = imageTransform3D.dicomToIECGantry(self.ct, beam, fillValue=-1024.)
+        targetROIBEV = imageTransform3D.dicomToIECGantry(self.targetROI, beam, fillValue=-0.)
 
         padLength = int(self._padLength() / ctBEV.spacing[2])
         newOrigin = np.array(ctBEV.origin)
@@ -94,8 +94,8 @@ class SingleBeamCEMOptimizationWorkflow():
         targetROIBEV.imageArray = newArray
         targetROIBEV.origin = newOrigin
 
-        ct = ImageTransform3D.iecGantryToDicom(ctBEV, beam, fillValue=-1024.)
-        targetROI = ImageTransform3D.iecGantryToDicom(targetROIBEV, beam, fillValue=0)
+        ct = imageTransform3D.iecGantryToDicom(ctBEV, beam, fillValue=-1024.)
+        targetROI = imageTransform3D.iecGantryToDicom(targetROIBEV, beam, fillValue=0)
 
         boundingBox = crop3D.getBoxAboveThreshold(ct, -1023)
 

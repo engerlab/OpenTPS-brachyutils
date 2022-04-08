@@ -11,7 +11,7 @@ from Core.Data.Images.image2D import Image2D
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Data.abstractCTObject import AbstractCTObject
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 
@@ -31,7 +31,7 @@ class CEM(AbstractCTObject, Image2D):
 
     @classmethod
     def fromBeam(cls, ct:Image3D, beam:PlanIonBeam):
-        imageBEV = ImageTransform3D.dicomToIECGantry(ct, beam)
+        imageBEV = imageTransform3D.dicomToIECGantry(ct, beam)
 
         newCEM = cls()
         newCEM._referenceImage = CTImage.fromImage3D(ct)
@@ -51,7 +51,7 @@ class CEM(AbstractCTObject, Image2D):
         if beam is None:
             beam = self._referenceBeam
 
-        referenceImageBEV = ImageTransform3D.dicomToIECGantry(referenceImage, beam)
+        referenceImageBEV = imageTransform3D.dicomToIECGantry(referenceImage, beam)
 
         data = np.zeros(referenceImageBEV.imageArray.shape)
 
@@ -65,8 +65,8 @@ class CEM(AbstractCTObject, Image2D):
 
         roiBEV = ROIMask.fromImage3D(referenceImageBEV)
         roiBEV.imageArray = data
-        roi = ImageTransform3D.iecGantryToDicom(roiBEV, beam)
-        ImageTransform3D.intersect(roi, referenceImage, inPlace=True, fillValue=0)
+        roi = imageTransform3D.iecGantryToDicom(roiBEV, beam)
+        imageTransform3D.intersect(roi, referenceImage, inPlace=True, fillValue=0)
         imageArray = roi.imageArray
         imageArray[imageArray<=0.5] = 0
         roi.imageArray = imageArray.astype(bool)
@@ -87,7 +87,7 @@ class CEM(AbstractCTObject, Image2D):
         return cemPixelsInDim2.astype(int)
 
     def _availableSpaceInPixels(self, referenceImage, referenceImageBEV, beam):
-        isocenterInImage = ImageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
+        isocenterInImage = imageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
         isocenterCoord = referenceImageBEV.getVoxelIndexFromPosition(isocenterInImage)
 
         distInPixels = np.ceil(beam.cemToIsocenter / referenceImageBEV.spacing[2])
@@ -223,7 +223,7 @@ class BiComponentCEM(AbstractCTObject):
         return self._roundRangeShifterWETToPixels(rangeShifterWET, referenceImage, beam)
 
     def _roundRangeShifterWETToPixels(self, rangeShifterWET:float, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> float:
-        referenceImageBEV = ImageTransform3D.dicomToIECGantry(referenceImage, beam)
+        referenceImageBEV = imageTransform3D.dicomToIECGantry(referenceImage, beam)
 
         pixelWET = self.rangeShifterRSP*referenceImageBEV.spacing[2]
 
