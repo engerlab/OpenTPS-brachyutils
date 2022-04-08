@@ -212,7 +212,7 @@ class ImageViewer(QWidget):
 
         self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
-        self._textLayer.setSecondaryTextLine(2, self.primaryImage.name)
+        self._textLayer.setSecondaryTextLine(2, self.secondaryImage.name)
 
         if not (self._secondaryImageLayer.image is None):
             self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
