@@ -4,6 +4,7 @@ import logging
 from Core.event import Event
 from GUI.MainWindow import MainWindow
 from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget
+from GUI.Viewer.dataViewer import DataViewer
 from GUI.Viewer.dynamicDisplayController import DynamicDisplayController
 
 class ViewController():
@@ -19,6 +20,8 @@ class ViewController():
         self.secondaryImageChangedSignal = Event(object)
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
+        self.dropModeSignal = Event(object)
+        self.droppedImageSignal = Event(object)
         #self.dynamicViewerSwitchedOnSignal = Event(object)
 
         self.mainConfig = None
@@ -26,6 +29,8 @@ class ViewController():
         self._activePatients = [patient for patient in patientList.patients]
         self._crossHairEnabled = None
         self._currentPatient = None
+        self._dropMode = DataViewer.DropModes.DEFAULT
+        self._droppedImage = None
         self._independentViewsEnabled = False
         self.profileWidgetCallback = ProfileWidget.ProfileWidgetCallback()
         self._profileWidgetEnabled = False
@@ -102,6 +107,18 @@ class ViewController():
         self.currentPatientChangedSignal.emit(self._currentPatient)
 
     @property
+    def dropMode(self):
+        return self._dropMode
+
+    @dropMode.setter
+    def dropMode(self, mode):
+        if mode == self._dropMode:
+            return
+
+        self._dropMode = mode
+        self.dropModeSignal.emit(self._dropMode)
+
+    @property
     def independentViewsEnabled(self):
         return self._independentViewsEnabled
 
@@ -127,10 +144,15 @@ class ViewController():
     def mainImage(self):
         if self.independentViewsEnabled:
             # mainImage is only available when only one image can be shown
-            raise()
+            raise Exception("mainImage is only available when only one image can be shown")
+        return self._mainImage
 
     @mainImage.setter
     def mainImage(self, image):
+        if self.independentViewsEnabled:
+            # mainImage is only available when only one image can be shown
+            raise Exception("mainImage is only available when only one image can be shown")
+
         self._mainImage = image
         self.mainImageChangedSignal.emit(self._mainImage)
         # self.dynamicOrStaticModeChangedSignal.emit(self._mainImage)
@@ -140,12 +162,34 @@ class ViewController():
     def secondaryImage(self):
         if self.independentViewsEnabled:
             # secondaryImage is only available when only one image can be shown
-            raise()
+            raise("secondaryImage is only available when only one image can be shown")
+        return self._secondaryImage
 
     @secondaryImage.setter
     def secondaryImage(self, image):
+        if self.independentViewsEnabled:
+            # secondaryImage is only available when only one image can be shown
+            raise("secondaryImage is only available when only one image can be shown")
+
         self._secondaryImage = image
         self.secondaryImageChangedSignal.emit(self._secondaryImage)
+
+    @property
+    def droppedImage(self):
+        if self.independentViewsEnabled:
+            # droppedImage is only available when only one image can be shown
+            raise()
+
+        return self._droppedImage
+
+    @droppedImage.setter
+    def droppedImage(self, image):
+        if self.independentViewsEnabled:
+            # droppedImage is only available when only one image can be shown
+            raise()
+
+        self._droppedImage = image
+        self.droppedImageSignal.emit(self._droppedImage)
 
     @property
     def selectedImage(self):

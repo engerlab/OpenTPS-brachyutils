@@ -24,13 +24,13 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.textLayer import Text
 
 
 class ImageViewer(QWidget):
-    class viewerTypes(Enum):
+    class ViewerTypes(Enum):
         AXIAL = 'axial'
         CORONAL = 'coronal'
         SAGITTAL = 'sagittal'
         DEFAULT = 'sagittal'
 
-    _viewerTypesList = iter(list(viewerTypes))
+    _viewerTypesList = iter(list(ViewerTypes))
 
 
     def __init__(self, viewController):
@@ -52,7 +52,7 @@ class ImageViewer(QWidget):
         self.__sendingWWL = False
         self._viewController = viewController
         self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
-        self._viewType = self.viewerTypes.DEFAULT
+        self._viewType = self.ViewerTypes.DEFAULT
         self._vtkWidget = QVTKRenderWindowInteractor(self)
         self._wwlEnabled = False
 
@@ -260,11 +260,11 @@ class ImageViewer(QWidget):
                         0, 0, -1, 0,
                         0, 0, 0, 1))
 
-        if self._viewType == self.viewerTypes.SAGITTAL:
+        if self._viewType == self.ViewerTypes.SAGITTAL:
             self._viewMatrix = sagittal
-        if self._viewType == self.viewerTypes.AXIAL:
+        if self._viewType == self.ViewerTypes.AXIAL:
             self._viewMatrix = axial
-        if self._viewType == self.viewerTypes.CORONAL:
+        if self._viewType == self.ViewerTypes.CORONAL:
             self._viewMatrix = coronal
         else:
             ValueError('Invalid viewType')

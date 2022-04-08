@@ -1,5 +1,5 @@
-from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QAction, QComboBox, QLabel, QWidgetAction, QPushButton
+
+from PyQt5.QtWidgets import QComboBox, QWidgetAction, QPushButton
 
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
@@ -9,9 +9,9 @@ class ImageViewerActions:
     def __init__(self, imageViewer:ImageViewer):
         self._imageViewer = imageViewer
 
-        self._viewTypeToStr = {self._imageViewer.viewerTypes.AXIAL: 'Axial',
-                               self._imageViewer.viewerTypes.CORONAL: 'Coronal',
-                               self._imageViewer.viewerTypes.SAGITTAL: 'Sagittal'}
+        self._viewTypeToStr = {self._imageViewer.ViewerTypes.AXIAL: 'Axial',
+                               self._imageViewer.ViewerTypes.CORONAL: 'Coronal',
+                               self._imageViewer.ViewerTypes.SAGITTAL: 'Sagittal'}
         self._strToViewType = {v: k for k, v in self._viewTypeToStr.items()}
 
         self._separator = None
@@ -22,7 +22,6 @@ class ImageViewerActions:
 
         self._viewTypeAction = QWidgetAction(None)
         self._viewTypeAction.setDefaultWidget(self._viewTypeCombo)
-
 
         self._resetSecondaryImgButton = QPushButton('Reset secondary img')
         self._resetSecondaryImgButton.setFixedHeight(16)
