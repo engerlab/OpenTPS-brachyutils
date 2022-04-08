@@ -105,9 +105,9 @@ class ThreeViewsGrid(QWidget):
         self._viewer1 = ImageViewer(viewController)
         self._viewer2 = ImageViewer(viewController)
 
-        self._viewer0.viewType = ImageViewer.viewerTypes.CORONAL
-        self._viewer1.viewType = ImageViewer.viewerTypes.AXIAL
-        self._viewer2.viewType = ImageViewer.viewerTypes.SAGITTAL
+        self._viewer0.viewType = ImageViewer.ViewerTypes.CORONAL
+        self._viewer1.viewType = ImageViewer.ViewerTypes.AXIAL
+        self._viewer2.viewType = ImageViewer.ViewerTypes.SAGITTAL
 
         self._viewer0.crossHairEnabled = True
         self._viewer1.crossHairEnabled = True

@@ -3,6 +3,7 @@ from typing import Union, Optional
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
+from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
@@ -61,6 +62,12 @@ class DataViewer(QWidget):
         STATIC = 'STATIC'
         DYNAMIC = 'DYNAMIC'
 
+    class DropModes(Enum):
+        AUTO = 'auto'
+        PRIMARY = 'primary'
+        SECONDARY = 'secondary'
+        DEFAULT = 'auto'
+
     def __init__(self, viewController):
         QWidget.__init__(self)
 
@@ -68,12 +75,14 @@ class DataViewer(QWidget):
         self.droppedImageSignal = Event(object)
         self.displayTypeChangedSignal = Event(object)
 
+        self._viewController = viewController
+
         self._currentViewer = None
         self._displayMode = self.DisplayModes.DEFAULT
         self._displayType = None
 
+        self._dropMode = self._viewController.dropMode
         self._dropEnabled = False
-        self._viewController = viewController
 
         self._mainLayout = QVBoxLayout(self)
         self.setLayout(self._mainLayout)
@@ -204,6 +213,16 @@ class DataViewer(QWidget):
         else:
             self._setDisplayInStaticMode(self._displayType)
 
+    @property
+    def dropMode(self):
+        return self._dropMode
+
+    @dropMode.setter
+    def dropMode(self, mode):
+        if mode==self._dropMode:
+            return
+        self._dropMode = mode
+
     def _setDisplayInDynamicMode(self, displayType):
         if not (self._currentViewer is None):
             self._currentViewer.hide()
@@ -315,11 +334,13 @@ class DataViewer(QWidget):
 
         self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
 
-        self._viewController.independentViewsEnabledSignal.connect(self.enableDropForMainImage)
+        self._viewController.independentViewsEnabledSignal.connect(self.enableDrop)
         self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplaydMode)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
+        self._viewController.dropModeSignal.connect(self._setDropMode)
+        self._viewController.droppedImageSignal.connect(self._setDroppedImage)
 
-        self.enableDropForMainImage(self._viewController.independentViewsEnabled)
+        self.enableDrop(self._viewController.independentViewsEnabled)
 
         self._handleDisplayTypeChange(self.displayType) # Initialize with current display type
 
@@ -333,19 +354,29 @@ class DataViewer(QWidget):
             self._secondaryImageActions.show()
 
 
-    def enableDropForMainImage(self, enabled):
-        """
-            Set main image to the appropriate cached image viewer.
-            Does not affect viewer visibility.
-        """
+    def enableDrop(self, enabled):
         self.dropEnabled = enabled
 
         if enabled:
             # It might seems weird to have a signal connected within the class but it is if someday we want to move the logical part out of this class.
             # See also comment on dropEnabled : Should we implement drop directly in ImageViewer?
-            self.droppedImageSignal.connect(self._setMainImageAnSwitchDisplaydMode)
+            self.droppedImageSignal.connect(self._setDroppedImage)
         else:
-            self.droppedImageSignal.disconnect(self._setMainImageAnSwitchDisplaydMode)
+            self.droppedImageSignal.disconnect(self._setDroppedImage)
+
+    def _setDropMode(self, dropMode):
+        self.dropMode = dropMode
+
+    def _setDroppedImage(self, image):
+        if self._dropMode==self.DropModes.PRIMARY:
+            self._setMainImageAnSwitchDisplaydMode(image)
+        if self._dropMode==self.DropModes.SECONDARY:
+            self._setSecondaryImage(image)
+        if self._dropMode==self.DropModes.AUTO:
+            if isinstance(image, DoseImage):
+                self._setSecondaryImage(image)
+            else:
+                self._setMainImageAnSwitchDisplaydMode(image)
 
     def _setMainImageAnSwitchDisplaydMode(self, image):
         """
