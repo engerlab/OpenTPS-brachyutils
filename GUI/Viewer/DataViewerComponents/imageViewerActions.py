@@ -29,11 +29,14 @@ class ImageViewerActions:
         self._resetSecondaryImgAction = QWidgetAction(None)
         self._resetSecondaryImgAction.setDefaultWidget(self._resetSecondaryImgButton)
 
+        self._handleSecondaryImage()
+
         self.hide()
 
         self._viewTypeCombo.setCurrentIndex(self._viewTypeToIndex(self._imageViewer.viewType))
         self._viewTypeCombo.currentIndexChanged.connect(self._handleViewTypeSelection)
         self._imageViewer.viewTypeChangedSignal.connect(self._handleExternalViewTypeChange)
+        self._imageViewer.secondaryImageSignal.connect(self._handleSecondaryImage)
 
 
     def _viewTypeToIndex(self, viewType):
@@ -56,7 +59,7 @@ class ImageViewerActions:
     def show(self):
         self._separator.setVisible(True)
         self._viewTypeAction.setVisible(True)
-        self._resetSecondaryImgAction.setVisible(True)
+        self._handleSecondaryImage()
 
     def _handleViewTypeSelection(self, selectionIndex):
         selectionText = self._viewTypeCombo.itemText(selectionIndex)
@@ -67,3 +70,9 @@ class ImageViewerActions:
 
     def _resetSecondaryImg(self):
         self._imageViewer.secondaryImage = None
+
+    def _handleSecondaryImage(self, *args):
+        if self._imageViewer.secondaryImage is None:
+            self._resetSecondaryImgAction.setVisible(False)
+        else:
+            self._resetSecondaryImgAction.setVisible(True)
