@@ -1,12 +1,102 @@
-from typing import Union
+from functools import partialmethod, partial
+from typing import Union, Sequence, Optional
 
 import numpy as np
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
 from pyqtgraph import PlotWidget, mkPen, PlotCurveItem
 
+from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.dvh import DVH
 from Core.Data.roiContour import ROIContour
+from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
+from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
+
+
+class DVHViewer(QWidget):
+    def __init__(self, parent):
+        super().__init__(parent=parent)
+
+        self._dose = None
+        self._rois = []
+        self._dvhs = []
+        self._partialVisibilityhandlers = []
+
+        self._mainLayout = QVBoxLayout()
+        self.setLayout(self._mainLayout)
+
+        self._dvhPlot = DVHPlot(self)
+        self._mainLayout.addWidget(self._dvhPlot)
+
+    @property
+    def dose(self) -> Optional[DoseImage]:
+        return self._dose
+
+    @dose.setter
+    def dose(self, dose:DoseImage):
+        self._dose = dose
+
+        for dvh in self._dvhs:
+            dvh.dose = dose
+            dvh.computeDVH()
+
+    @property
+    def rois(self) -> Sequence[Union[ROIMask, ROIContour]]:
+        return [roi for roi in self._rois]
+
+    def appendROI(self, roi:Union[ROIMask, ROIContour]):
+        # TODO a factory in DataForViewer would be nice because this small piece of code is often duplicated
+        if isinstance(roi, ROIMask):
+            roiForViewer = ROIMaskForViewer(roi)
+        elif isinstance(roi, ROIContour):
+            roiForViewer = ROIContourForViewer(roi)
+        else:
+            raise ValueError("ROI must be an instance of ROIMask or a ROIContour")
+
+        if not roiForViewer.visible:
+            return
+
+        partialHandler = partial(self._handleROIVisibility, roi)
+        self._partialVisibilityhandlers.append(partialHandler)
+        roiForViewer.visibleChangedSignal.connect(partialHandler)
+
+        self._rois.append(roi)
+
+        dvh = DVH(roi)
+        self._dvhs.append(dvh)
+        self._dvhPlot.appendDVH(dvh, roi)
+
+        if not (self._dose is None):
+            dvh.dose = self.dose
+            dvh.computeDVH()
+
+    def _handleROIVisibility(self, roi, visibility):
+        if not visibility:
+            self.removeROI(roi)
+
+    def removeROI(self, roi:Union[ROIMask, ROIContour]):
+        partialHandler = self._partialVisibilityhandlers[self._rois.index(roi)]
+        self._partialVisibilityhandlers.remove(partialHandler)
+
+        # TODO a factory in DataForViewer would be nice because this small piece of code is often duplicated
+        if isinstance(roi, ROIMask):
+            roiForViewer = ROIMaskForViewer(roi)
+        elif isinstance(roi, ROIContour):
+            roiForViewer = ROIContourForViewer(roi)
+        else:
+            raise ValueError("ROI must be an instance of ROIMask or a ROIContour")
+        roiForViewer.visibleChangedSignal.disconnect(partialHandler)
+
+        dvh = self._dvhs[self._rois.index(roi)]
+        self._dvhPlot.removeDVH(dvh)
+        self._dvhs.remove(dvh)
+
+        self._rois.remove(roi)
+
+    def clear(self):
+        for roi in self._rois:
+            self.removeROI(roi)
+        self._dose = None
 
 
 class DVHPlot(PlotWidget):
@@ -28,6 +118,10 @@ class DVHPlot(PlotWidget):
         self._referenceROIs = []
         self._curves = []
 
+    @property
+    def DVHs(self) -> Sequence[DVH]:
+        return [dvh for dvh in self._dvhs]
+
     def appendDVH(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask]):
         self._dvhs.append(dvh)
         self._referenceROIs.append(referenceROI)
@@ -37,10 +131,11 @@ class DVHPlot(PlotWidget):
 
         self.addItem(curve.curve)
 
-
     def removeDVH(self, dvh:DVH):
         self._referenceROIs.remove(self._referenceROIs[self._dvhs.index(dvh)])
-        self._curves.remove(self._curves[self._dvhs.index(dvh)])
+        curve = self._curves[self._dvhs.index(dvh)]
+        curve.clear()
+        self._curves.remove(curve)
         self._dvhs.remove(dvh)
 
 class DVHCurve:
@@ -66,3 +161,10 @@ class DVHCurve:
 
         # To force update the plot
         QApplication.processEvents()
+
+    def clear(self):
+        self.curve.setData(None, None)
+        self._dvh.dataUpdatedEvent.disconnect(self._setCurveData)
+        self._referenceROI.nameChangedSignal.disconnect(self._setCurveData)
+        self._referenceROI.colorChangedSignal.disconnect(self._setCurveData)
+        self.curve.clear() # TODO does nothing, apparently...

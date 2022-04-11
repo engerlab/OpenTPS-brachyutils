@@ -14,7 +14,7 @@ from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerAction
 from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
-from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
+from GUI.Viewer.DataViewerComponents.dvhPlot import DVHViewer
 from GUI.Viewer.DataViewerComponents.profileViewer import ProfileViewer
 
 
@@ -91,7 +91,7 @@ class DataViewer(QWidget):
         self._toolbar = DataViewerToolbar(self)
 
         # For responsiveness, we instantiate all possible viewers and hide them == cached viewers:
-        self._dvhViewer = DVHPlot(self)
+        self._dvhViewer = DVHViewer(self)
         self._dynImageViewer = DynamicImageViewer(viewController)
         self._noneViewer = BlackEmptyPlot()
         self._staticProfileviewer = ProfileViewer(viewController)
@@ -125,7 +125,7 @@ class DataViewer(QWidget):
         return self._dynImageViewer
 
     @property
-    def cachedStaticDVHViewer(self) -> DVHPlot:
+    def cachedStaticDVHViewer(self) -> DVHViewer:
         """
             The DVH viewer currently in cache
         """
@@ -150,11 +150,11 @@ class DataViewer(QWidget):
         return self._staticProfileviewer
 
     @property
-    def currentViewer(self) -> Optional[Union[DVHPlot, ProfileViewer, ImageViewer]]:
+    def currentViewer(self) -> Optional[Union[DVHViewer, ProfileViewer, ImageViewer]]:
         """
         The viewer currently displayed (read-only)viewerTypes
 
-        :type: Optional[Union[DVHPlot, ProfilePlot, ImageViewer]]
+        :type: Optional[Union[DVHViewer, ProfilePlot, ImageViewer]]
         """
         return self._currentViewer
 
@@ -266,6 +266,7 @@ class DataViewer(QWidget):
         self._viewController.crossHairEnabledSignal.disconnect(self._staticImageViewer.setCrossHairEnabled)
         self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.disconnect(self._staticImageViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.disconnect(self._dvhViewer.appendROI)
         self._viewController.windowLevelEnabledSignal.disconnect(self._staticImageViewer.setWWLEnabled)
 
         self._viewController.crossHairEnabledSignal.connect(self._dynImageViewer.setCrossHairEnabled)
@@ -285,6 +286,7 @@ class DataViewer(QWidget):
         self._viewController.crossHairEnabledSignal.connect(self._staticImageViewer.setCrossHairEnabled)
         self._viewController.profileWidgetEnabledSignal.connect(self._staticImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.connect(self._staticImageViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.connect(self._dvhViewer.appendROI)
         self._viewController.windowLevelEnabledSignal.connect(self._staticImageViewer.setWWLEnabled)
 
     @property
@@ -426,7 +428,13 @@ class DataViewer(QWidget):
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
         self.cachedStaticImageViewer.secondaryImage = image
+        self._setDVHDose(image)
 
+    def _setDVHDose(self, image:Optional[DoseImage]):
+        if image is None:
+            self.cachedStaticDVHViewer.clear()
+        else:
+            self.cachedStaticDVHViewer.dose = image
 
     def _removeImageFromViewers(self, image: Image3D):
         """
@@ -438,3 +446,6 @@ class DataViewer(QWidget):
 
         if self.cachedDynamicImageViewer.secondaryImage == image:
             self._setSecondaryImage(None)
+
+        if self.cachedStaticDVHViewer.dose == image:
+            self._setDVHDose(None)
