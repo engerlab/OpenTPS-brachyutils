@@ -1,4 +1,4 @@
-from functools import partialmethod, partial
+from functools import partial
 from typing import Union, Sequence, Optional
 
 import numpy as np
@@ -9,6 +9,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.dvh import DVH
 from Core.Data.roiContour import ROIContour
+from Core.event import Event
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 
@@ -16,6 +17,8 @@ from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 class DVHViewer(QWidget):
     def __init__(self, parent):
         super().__init__(parent=parent)
+
+        self.doseChangeEvent = Event(object)
 
         self._dose = None
         self._rois = []
@@ -34,11 +37,16 @@ class DVHViewer(QWidget):
 
     @dose.setter
     def dose(self, dose:DoseImage):
+        if dose==self._dose:
+            return
+
         self._dose = dose
 
         for dvh in self._dvhs:
             dvh.dose = dose
             dvh.computeDVH()
+
+        self.doseChangeEvent.emit(self._dose)
 
     @property
     def rois(self) -> Sequence[Union[ROIMask, ROIContour]]:

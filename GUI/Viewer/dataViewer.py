@@ -8,6 +8,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.event import Event
+from GUI.Viewer.DataViewerComponents.dvhViewerActions import DVHViewerActions
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
 from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerActions
@@ -330,9 +331,11 @@ class DataViewer(QWidget):
     def _initializeControl(self):
         self._secondaryImageActions = SecondaryImageActions(self._staticImageViewer.secondaryImageLayer)
         self._imageViewerActions = ImageViewerActions(self._staticImageViewer)
+        self._dvhViewerActions = DVHViewerActions(self._dvhViewer)
 
         self._secondaryImageActions.addToToolbar(self._toolbar)
         self._imageViewerActions.addToToolbar(self._toolbar)
+        self._dvhViewerActions.addToToolbar(self._toolbar)
 
         self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
 
