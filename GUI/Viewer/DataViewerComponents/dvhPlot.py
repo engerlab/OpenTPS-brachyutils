@@ -53,6 +53,9 @@ class DVHViewer(QWidget):
         return [roi for roi in self._rois]
 
     def appendROI(self, roi:Union[ROIMask, ROIContour]):
+        if roi in self._rois:
+            return
+
         # TODO a factory in DataForViewer would be nice because this small piece of code is often duplicated
         if isinstance(roi, ROIMask):
             roiForViewer = ROIMaskForViewer(roi)
@@ -65,12 +68,12 @@ class DVHViewer(QWidget):
             return
 
         partialHandler = partial(self._handleROIVisibility, roi)
-        self._partialVisibilityhandlers.append(partialHandler)
         roiForViewer.visibleChangedSignal.connect(partialHandler)
 
-        self._rois.append(roi)
-
         dvh = DVH(roi)
+
+        self._rois.append(roi)
+        self._partialVisibilityhandlers.append(partialHandler)
         self._dvhs.append(dvh)
         self._dvhPlot.appendDVH(dvh, roi)
 
@@ -84,7 +87,7 @@ class DVHViewer(QWidget):
 
     def removeROI(self, roi:Union[ROIMask, ROIContour]):
         partialHandler = self._partialVisibilityhandlers[self._rois.index(roi)]
-        self._partialVisibilityhandlers.remove(partialHandler)
+        dvh = self._dvhs[self._rois.index(roi)]
 
         # TODO a factory in DataForViewer would be nice because this small piece of code is often duplicated
         if isinstance(roi, ROIMask):
@@ -93,13 +96,13 @@ class DVHViewer(QWidget):
             roiForViewer = ROIContourForViewer(roi)
         else:
             raise ValueError("ROI must be an instance of ROIMask or a ROIContour")
+
         roiForViewer.visibleChangedSignal.disconnect(partialHandler)
 
-        dvh = self._dvhs[self._rois.index(roi)]
         self._dvhPlot.removeDVH(dvh)
         self._dvhs.remove(dvh)
-
         self._rois.remove(roi)
+        self._partialVisibilityhandlers.remove(partialHandler)
 
     def clear(self):
         for roi in self._rois:
@@ -131,18 +134,18 @@ class DVHPlot(PlotWidget):
         return [dvh for dvh in self._dvhs]
 
     def appendDVH(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask]):
-        self._dvhs.append(dvh)
-        self._referenceROIs.append(referenceROI)
-
         curve = DVHCurve(dvh, referenceROI, self)
-        self._curves.append(curve)
-
         self.addItem(curve.curve)
 
+        self._referenceROIs.append(referenceROI)
+        self._dvhs.append(dvh)
+        self._curves.append(curve)
+
     def removeDVH(self, dvh:DVH):
-        self._referenceROIs.remove(self._referenceROIs[self._dvhs.index(dvh)])
         curve = self._curves[self._dvhs.index(dvh)]
         curve.clear()
+
+        self._referenceROIs.remove(self._referenceROIs[self._dvhs.index(dvh)])
         self._curves.remove(curve)
         self._dvhs.remove(dvh)
 
@@ -161,7 +164,7 @@ class DVHCurve:
         self._setCurveData()
 
     def _setCurveData(self, *args):
-        mycolor = (self._referenceROI.color[2], self._referenceROI.color[1], self._referenceROI.color[0])
+        mycolor = (self._referenceROI.color[0], self._referenceROI.color[1], self._referenceROI.color[2])
         pen = mkPen(color=mycolor, width=1)
 
         dose, volume = self._dvh.histogram
