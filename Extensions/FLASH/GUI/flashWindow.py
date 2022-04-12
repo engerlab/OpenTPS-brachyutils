@@ -1,9 +1,10 @@
 import os
 from typing import Sequence, Tuple
 
+import numpy as np
 from PyQt5.QtGui import QPixmap, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QVBoxLayout, QLabel, QLineEdit, QMainWindow, QCheckBox, \
-    QFrame, QScrollArea
+    QFrame, QScrollArea, QTableWidget, QTableWidgetItem
 
 from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
 from Core.Data.Images.ctImage import CTImage
@@ -17,6 +18,7 @@ from Core.Data.roiContour import ROIContour
 from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.event import Event
+from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
 from Extensions.FLASH.Core.Processing.CEMOptimization.workflows import SingleBeamCEMOptimizationWorkflow
 from Extensions.FLASH.GUI.convergencePlot import ConvergencePlot
 from GUI.Panels.patientDataPanel import PatientDataTree, PatientComboBox
@@ -35,7 +37,7 @@ class FlashWindow(QMainWindow):
 
         self._viewController = viewController
 
-        self._dvh = None
+        self._dvhs = []
 
         self.setWindowTitle('FLASH TPS')
         self.resize(800, 600)
@@ -46,7 +48,7 @@ class FlashWindow(QMainWindow):
         self.centralWidget.setLayout(self._mainLayout)
 
         self._leftPanel = LeftPanel((self._viewController), self)
-        self._leftPanel.setFixedWidth(200)
+        self._leftPanel.setFixedWidth(320)
 
         self._mainLayout.addWidget(self._leftPanel)
 
@@ -73,20 +75,23 @@ class FlashWindow(QMainWindow):
         self._leftPanel.ctSelectedEvent.connect(self._viewers.setCT)
         self._leftPanel.doseUpdateEvent.connect(self._viewers.setDose)
         self._leftPanel.doseUpdateEvent.connect(self._updateDVHWithDose)
-        self._leftPanel.contourSelectedEvent.connect(self._viewers.setROI)
-        self._leftPanel.contourSelectedEvent.connect(self._updateDVHWithContour)
         self._leftPanel.fValEvent.connect(self._convergencePlot.appendFVal)
+        self._leftPanel.contourSelectedEvent.connect(self._createDVHs)
 
     def _updateDVHWithDose(self, dose:DoseImage):
-        self._dvh.dose = dose
-        self._dvh.computeDVH()
+        for dvh in self._dvhs:
+            dvh.dose = dose
+            dvh.computeDVH()
 
-    def _updateDVHWithContour(self, roi):
-        if not (self._dvh is None):
-            self._dvhPlot.removeDVH(self._dvh)
+    def _createDVHs(self, rois):
+        for dvh in self._dvhs:
+            self._dvhPlot.removeDVH(dvh)
 
-        self._dvh = DVH(roi)
-        self._dvhPlot.appendDVH(self._dvh, roi)
+        self._dvhs = []
+        for roi in rois:
+            dvh = DVH(roi)
+            self._dvhPlot.appendDVH(dvh, roi)
+            self._dvhs.append(dvh)
 
     def closeEvent(self, event):
         self._viewers.close()
@@ -195,17 +200,11 @@ class LeftPanel(QWidget):
         self.patientDataTree.clicked.connect(self._emitCT)
 
         self._roiLabel = QLabel(self)
-        self._roiLabel.setText('Select ROI: ')
+        self._roiLabel.setText('Objectives:')
         self._mainLayout.addWidget(self._roiLabel)
 
-        self.roiPanel = ROIPanel(self._viewController, self)
-        scrollArea = QScrollArea(self)
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setMaximumHeight(400)
-        self._mainLayout.addWidget(scrollArea)
-        scrollArea.setWidget(self.roiPanel)
-
-        self.roiPanel.selectionEvent.connect(self.contourSelectedEvent.emit)
+        self._roiTable = ROITable(self._viewController, parent=self)
+        self._mainLayout.addWidget(self._roiTable)
 
         self._beamEditor = BeamEditor(self)
         self._mainLayout.addWidget(self._beamEditor)
@@ -229,9 +228,6 @@ class LeftPanel(QWidget):
         selected = self.patientDataTree.selectedIndexes()
         selectedCT = [self.patientDataTree.model().itemFromIndex(selectedData).data for selectedData in selected]
 
-        if len(self.roiPanel.selected)>1:
-            raise Exception('Only 1 contour/ROI can be selected as the target ROI')
-
         if len(selectedCT)>1:
             raise Exception('Only 1 CT can be selected')
 
@@ -240,20 +236,21 @@ class LeftPanel(QWidget):
         self.cemOptimizer.ctCalibration = RayStationCTCalibration(
             fromFiles=(defaultDataPath + os.path.sep + 'calibration_cef.txt', defaultDataPath + os.path.sep + 'materials_cef.txt'))
         self.cemOptimizer.beamModel = mcsquareIO.readBDL(defaultDataPath + os.path.sep + 'BDL_default_RS_Leuven_4_5_5.txt')
-        self.cemOptimizer.targetROI = self.roiPanel.selected[0].contour
         self.cemOptimizer.gantryAngle = self._beamEditor.beamAngle
         self.cemOptimizer.cemToIsocenter = self._beamEditor.cemIsoDist
         self.cemOptimizer.beamEnergy = self._beamEditor.beamEnergy
         self.cemOptimizer.ct = selectedCT[0]
-        self.cemOptimizer.targetDose = self._beamEditor.targetDose
         self.cemOptimizer.spotSpacing = self._beamEditor.spotSpacing
         self.cemOptimizer.cemRSP = self.cemOptimizer.ctCalibration.convertMassDensity2RSP(self._beamEditor.cemDensity)
         self.cemOptimizer.rangeShifterRSP = self.cemOptimizer.ctCalibration.convertMassDensity2RSP(self._beamEditor.rangeShifterDensity)
+        self.cemOptimizer.objectives = self._roiTable.getObjectiveTerms()
+
+        self.contourSelectedEvent.emit(self._roiTable.getROIs())
 
         self.cemOptimizer.run()
 
     def _updateDose(self, dose):
-        Image3DForViewer(dose).range = [0, self.cemOptimizer.targetDose+1]
+        Image3DForViewer(dose).range = [0, 41]
 
         self.doseUpdateEvent.emit(dose)
 
@@ -288,8 +285,6 @@ class BeamEditor(QWidget):
         self._angleLabel.setText('Angle: ')
         self._distanceLabel = QLabel(self)
         self._distanceLabel.setText('CEM-isocenter distance: ')
-        self._doseLabel = QLabel(self)
-        self._doseLabel.setText('Dose in target: ')
         self._rsDensityLabel = QLabel(self)
         self._rsDensityLabel.setText('Range shifter density: ')
         self._cemDensityLabel = QLabel(self)
@@ -303,8 +298,6 @@ class BeamEditor(QWidget):
         self._angleEdit.setText(str(0))
         self._distanceEdit = QLineEdit(self)
         self._distanceEdit.setText(str(100))
-        self._doseEdit = QLineEdit(self)
-        self._doseEdit.setText(str(40))
         self._rsDensityEdit = QLineEdit(self)
         self._rsDensityEdit.setText(str(2.7))
         self._cemDensityEdit = QLineEdit(self)
@@ -318,8 +311,6 @@ class BeamEditor(QWidget):
         self._mainLayout.addWidget(self._angleEdit)
         self._mainLayout.addWidget(self._distanceLabel)
         self._mainLayout.addWidget(self._distanceEdit)
-        self._mainLayout.addWidget(self._doseLabel)
-        self._mainLayout.addWidget(self._doseEdit)
         self._mainLayout.addWidget(self._spotSpacingLabel)
         self._mainLayout.addWidget(self._spotSpacingEdit)
         self._mainLayout.addWidget(self._rsDensityLabel)
@@ -340,10 +331,6 @@ class BeamEditor(QWidget):
         return float(self._distanceEdit.text())
 
     @property
-    def targetDose(self) -> float:
-        return float(self._doseEdit.text())
-
-    @property
     def rangeShifterDensity(self):
         return float(self._rsDensityEdit.text())
 
@@ -355,6 +342,81 @@ class BeamEditor(QWidget):
     def spotSpacing(self):
         return float(self._spotSpacingEdit.text())
 
+
+class ROITable(QTableWidget):
+    DMIN_THRESH = 0.
+    DMAX_THRESH = 999.
+
+    def __init__(self, viewController, parent=None):
+        super().__init__(100, 3, parent)
+
+        self._rois = []
+
+        self._viewController = viewController
+        self._fillRoiTable()
+        self.resizeColumnsToContents()
+        self.resizeRowsToContents()
+
+
+    def _fillRoiTable(self):
+        patient = self._viewController.currentPatient
+
+        self._rois = []
+        i = 0
+        for rtStruct in patient.rtStructs:
+            for contour in rtStruct.contours:
+                newitem = QTableWidgetItem(contour.name)
+                self.setItem(i, 0, newitem)
+                self.setItem(i, 1, QTableWidgetItem(str(self.DMIN_THRESH)))
+                self.setItem(i, 2, QTableWidgetItem(str(self.DMAX_THRESH)))
+
+                self._rois.append(contour)
+
+                i += 1
+
+        for roiMask in patient.roiMasks:
+            newitem = QTableWidgetItem(roiMask.name)
+            self.setItem(i, 0, newitem)
+            self.setItem(i, 1, QTableWidgetItem(str(self.DMIN_THRESH)))
+            self.setItem(i, 2, QTableWidgetItem(str(self.DMAX_THRESH)))
+
+            self._rois.append(roiMask)
+
+            i += 1
+
+        self.setHorizontalHeaderLabels(['ROI', 'Dmin', 'Dmax'])
+
+    def getObjectiveTerms(self) -> Sequence[cemObjectives.CEMAbstractDoseFidelityTerm]:
+        terms = []
+
+        for i in range(len(self._rois)):
+            # Dmin
+            dmin = float(self.item(i, 1).text())
+            if dmin > self.DMIN_THRESH:
+                obj = cemObjectives.DoseMinObjective(self._rois[i], dmin)
+                terms.append(obj)
+            # Dmax
+            dmax = float(self.item(i, 2).text())
+            if dmax < self.DMAX_THRESH:
+                obj = cemObjectives.DoseMaxObjective(self._rois[i], dmax)
+                terms.append(obj)
+
+        return terms
+
+    def getROIs(self):
+        rois = []
+
+        for i in range(len(self._rois)):
+            # Dmin
+            dmin = float(self.item(i, 1).text())
+            if dmin > self.DMIN_THRESH:
+                rois.append(self._rois[i])
+            # Dmax
+            dmax = float(self.item(i, 2).text())
+            if dmax < self.DMAX_THRESH:
+                rois.append(self._rois[i])
+
+        return rois
 
 class ROIPanel(QWidget):
   def __init__(self, viewController, parent=None):
