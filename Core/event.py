@@ -66,7 +66,7 @@ class Event:
             if not isinstance(args[0], self.objectType):
                 raise ValueError('Incorrect argument. Argument is of type ' + str(type(args[0])) + 'but should be of type ' + str(self.objectType))
 
-        for slot in self._slots:
+        for slot in self.slots: # I use slots and not _slots because if a slot is disconnected in this loop it is not removed from slots
             try:
                 slot(*args)
             except Exception as e:
