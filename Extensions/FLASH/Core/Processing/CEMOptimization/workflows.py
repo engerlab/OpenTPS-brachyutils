@@ -18,6 +18,11 @@ from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import CEMOpt
 from Extensions.FLASH.Core.Processing.RangeEnergy import energyToRange
 
 
+class Objective:
+    def __init__(self, objectiveTerm=None, weight=1.):
+        self.weight = weight
+        self.objectiveTerm:cemObjectives.CEMAbstractDoseFidelityTerm = objectiveTerm
+
 class SingleBeamCEMOptimizationWorkflow():
     def __init__(self):
         self.ctCalibration = None
@@ -26,7 +31,7 @@ class SingleBeamCEMOptimizationWorkflow():
         self.cemToIsocenter = 100
         self.beamEnergy = 226
         self.ct = None
-        self.objectives:Sequence[cemObjectives.CEMAbstractDoseFidelityTerm] = []
+        self.objectives:Sequence[Objective] = []
         self.spotSpacing = 5.
         self.rangeShifterRSP = 1.
         self.cemRSP = 1.
@@ -77,7 +82,8 @@ class SingleBeamCEMOptimizationWorkflow():
     def _setTargetROI(self):
         targetROIVal = []
 
-        for obj in self.objectives:
+        for objective in self.objectives:
+            obj = objective.objectiveTerm
             roi = obj.roi
 
             if isinstance(roi, ROIContour):
@@ -117,7 +123,8 @@ class SingleBeamCEMOptimizationWorkflow():
 
         globalROIVal = []
         targetROIVal = []
-        for obj in self.objectives:
+        for objective in self.objectives:
+            obj = objective.objectiveTerm
             roi = obj.roi
 
             if isinstance(roi, ROIContour):
@@ -194,13 +201,14 @@ class SingleBeamCEMOptimizationWorkflow():
         self.cemOptimizer.maxIterations = 25
         self.cemOptimizer.spotSpacing = self.spotSpacing
         self.cemOptimizer.targetMask = self._targetROI
-        self.cemOptimizer.absTol = 0.1
+        self.cemOptimizer.absTol = 1.
         self.cemOptimizer.ctCalibration = self.ctCalibration
 
-        for obj in self.objectives:
+        for objective in self.objectives:
+            obj = objective.objectiveTerm
             obj.doseCalculator = doseCalculator
             obj.beamModel = self.beamModel
-            self.cemOptimizer.appendObjective(obj, weight=1.)
+            self.cemOptimizer.appendObjective(obj, weight=objective.weight)
 
         # Let's optimize the plan and the CEM!
         print('Starting optimization...')

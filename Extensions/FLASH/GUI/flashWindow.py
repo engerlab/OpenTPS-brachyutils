@@ -18,7 +18,7 @@ from Core.Data.roiContour import ROIContour
 from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.event import Event
-from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
+from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives, workflows
 from Extensions.FLASH.Core.Processing.CEMOptimization.workflows import SingleBeamCEMOptimizationWorkflow
 from Extensions.FLASH.GUI.convergencePlot import ConvergencePlot
 from GUI.Panels.patientDataPanel import PatientDataTree, PatientComboBox
@@ -48,7 +48,7 @@ class FlashWindow(QMainWindow):
         self.centralWidget.setLayout(self._mainLayout)
 
         self._leftPanel = LeftPanel((self._viewController), self)
-        self._leftPanel.setFixedWidth(320)
+        self._leftPanel.setFixedWidth(400)
 
         self._mainLayout.addWidget(self._leftPanel)
 
@@ -346,9 +346,10 @@ class BeamEditor(QWidget):
 class ROITable(QTableWidget):
     DMIN_THRESH = 0.
     DMAX_THRESH = 999.
+    DEFAULT_WEIGHT = 1.
 
     def __init__(self, viewController, parent=None):
-        super().__init__(100, 3, parent)
+        super().__init__(100, 4, parent)
 
         self._rois = []
 
@@ -367,8 +368,9 @@ class ROITable(QTableWidget):
             for contour in rtStruct.contours:
                 newitem = QTableWidgetItem(contour.name)
                 self.setItem(i, 0, newitem)
-                self.setItem(i, 1, QTableWidgetItem(str(self.DMIN_THRESH)))
-                self.setItem(i, 2, QTableWidgetItem(str(self.DMAX_THRESH)))
+                self.setItem(i, 1, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(i, 2, QTableWidgetItem(str(self.DMIN_THRESH)))
+                self.setItem(i, 3, QTableWidgetItem(str(self.DMAX_THRESH)))
 
                 self._rois.append(contour)
 
@@ -377,29 +379,33 @@ class ROITable(QTableWidget):
         for roiMask in patient.roiMasks:
             newitem = QTableWidgetItem(roiMask.name)
             self.setItem(i, 0, newitem)
-            self.setItem(i, 1, QTableWidgetItem(str(self.DMIN_THRESH)))
-            self.setItem(i, 2, QTableWidgetItem(str(self.DMAX_THRESH)))
+            self.setItem(i, 1, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+            self.setItem(i, 2, QTableWidgetItem(str(self.DMIN_THRESH)))
+            self.setItem(i, 3, QTableWidgetItem(str(self.DMAX_THRESH)))
 
             self._rois.append(roiMask)
 
             i += 1
 
-        self.setHorizontalHeaderLabels(['ROI', 'Dmin', 'Dmax'])
+        self.setHorizontalHeaderLabels(['ROI', 'Weight', 'Dmin', 'Dmax'])
 
     def getObjectiveTerms(self) -> Sequence[cemObjectives.CEMAbstractDoseFidelityTerm]:
         terms = []
 
         for i in range(len(self._rois)):
+            weight = float(self.item(i, 1).text())
             # Dmin
-            dmin = float(self.item(i, 1).text())
+            dmin = float(self.item(i, 2).text())
             if dmin > self.DMIN_THRESH:
                 obj = cemObjectives.DoseMinObjective(self._rois[i], dmin)
-                terms.append(obj)
+                objective = workflows.Objective(objectiveTerm=obj, weight=weight)
+                terms.append(objective)
             # Dmax
-            dmax = float(self.item(i, 2).text())
+            dmax = float(self.item(i, 3).text())
             if dmax < self.DMAX_THRESH:
                 obj = cemObjectives.DoseMaxObjective(self._rois[i], dmax)
-                terms.append(obj)
+                objective = workflows.Objective(objectiveTerm=obj, weight=weight)
+                terms.append(objective)
 
         return terms
 
@@ -408,11 +414,11 @@ class ROITable(QTableWidget):
 
         for i in range(len(self._rois)):
             # Dmin
-            dmin = float(self.item(i, 1).text())
+            dmin = float(self.item(i, 2).text())
             if dmin > self.DMIN_THRESH:
                 rois.append(self._rois[i])
             # Dmax
-            dmax = float(self.item(i, 2).text())
+            dmax = float(self.item(i, 3).text())
             if dmax < self.DMAX_THRESH:
                 rois.append(self._rois[i])
 
