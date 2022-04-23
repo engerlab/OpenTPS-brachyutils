@@ -28,7 +28,7 @@ if __name__ == '__main__':
     # chose the 4DCT data folder
     data4DPath = basePath + patientName + '/4DCT'
     # chose the dicom rtStruct file
-    dataStructPath = basePath + patientName + '/MidP_ct_rtstruct.dcm'
+    dataStructPath = basePath + patientName + '/MidP_CT_rtstruct.dcm'
     # chose a path to save the results
     savingPath = basePath + patientName + '/dynModAndROIs'
 
