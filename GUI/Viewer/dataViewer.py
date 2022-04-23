@@ -3,17 +3,19 @@ from typing import Union, Optional
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
+from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.event import Event
+from GUI.Viewer.DataViewerComponents.dvhViewerActions import DVHViewerActions
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
 from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
 from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerActions
 from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
-from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
+from GUI.Viewer.DataViewerComponents.dvhPlot import DVHViewer
 from GUI.Viewer.DataViewerComponents.profileViewer import ProfileViewer
 
 
@@ -61,6 +63,12 @@ class DataViewer(QWidget):
         STATIC = 'STATIC'
         DYNAMIC = 'DYNAMIC'
 
+    class DropModes(Enum):
+        AUTO = 'auto'
+        PRIMARY = 'primary'
+        SECONDARY = 'secondary'
+        DEFAULT = 'auto'
+
     def __init__(self, viewController):
         QWidget.__init__(self)
 
@@ -68,12 +76,14 @@ class DataViewer(QWidget):
         self.droppedImageSignal = Event(object)
         self.displayTypeChangedSignal = Event(object)
 
+        self._viewController = viewController
+
         self._currentViewer = None
         self._displayMode = self.DisplayModes.DEFAULT
         self._displayType = None
 
+        self._dropMode = self._viewController.dropMode
         self._dropEnabled = False
-        self._viewController = viewController
 
         self._mainLayout = QVBoxLayout(self)
         self.setLayout(self._mainLayout)
@@ -82,7 +92,7 @@ class DataViewer(QWidget):
         self._toolbar = DataViewerToolbar(self)
 
         # For responsiveness, we instantiate all possible viewers and hide them == cached viewers:
-        self._dvhViewer = DVHPlot()
+        self._dvhViewer = DVHViewer(self)
         self._dynImageViewer = DynamicImageViewer(viewController)
         self._noneViewer = BlackEmptyPlot()
         self._staticProfileviewer = ProfileViewer(viewController)
@@ -116,7 +126,7 @@ class DataViewer(QWidget):
         return self._dynImageViewer
 
     @property
-    def cachedStaticDVHViewer(self) -> DVHPlot:
+    def cachedStaticDVHViewer(self) -> DVHViewer:
         """
             The DVH viewer currently in cache
         """
@@ -141,11 +151,11 @@ class DataViewer(QWidget):
         return self._staticProfileviewer
 
     @property
-    def currentViewer(self) -> Optional[Union[DVHPlot, ProfileViewer, ImageViewer]]:
+    def currentViewer(self) -> Optional[Union[DVHViewer, ProfileViewer, ImageViewer]]:
         """
         The viewer currently displayed (read-only)viewerTypes
 
-        :type: Optional[Union[DVHPlot, ProfilePlot, ImageViewer]]
+        :type: Optional[Union[DVHViewer, ProfilePlot, ImageViewer]]
         """
         return self._currentViewer
 
@@ -204,6 +214,16 @@ class DataViewer(QWidget):
         else:
             self._setDisplayInStaticMode(self._displayType)
 
+    @property
+    def dropMode(self):
+        return self._dropMode
+
+    @dropMode.setter
+    def dropMode(self, mode):
+        if mode==self._dropMode:
+            return
+        self._dropMode = mode
+
     def _setDisplayInDynamicMode(self, displayType):
         if not (self._currentViewer is None):
             self._currentViewer.hide()
@@ -247,6 +267,7 @@ class DataViewer(QWidget):
         self._viewController.crossHairEnabledSignal.disconnect(self._staticImageViewer.setCrossHairEnabled)
         self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.disconnect(self._staticImageViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.disconnect(self._dvhViewer.appendROI)
         self._viewController.windowLevelEnabledSignal.disconnect(self._staticImageViewer.setWWLEnabled)
 
         self._viewController.crossHairEnabledSignal.connect(self._dynImageViewer.setCrossHairEnabled)
@@ -266,6 +287,7 @@ class DataViewer(QWidget):
         self._viewController.crossHairEnabledSignal.connect(self._staticImageViewer.setCrossHairEnabled)
         self._viewController.profileWidgetEnabledSignal.connect(self._staticImageViewer.setProfileWidgetEnabled)
         self._viewController.showContourSignal.connect(self._staticImageViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.connect(self._dvhViewer.appendROI)
         self._viewController.windowLevelEnabledSignal.connect(self._staticImageViewer.setWWLEnabled)
 
     @property
@@ -309,17 +331,21 @@ class DataViewer(QWidget):
     def _initializeControl(self):
         self._secondaryImageActions = SecondaryImageActions(self._staticImageViewer.secondaryImageLayer)
         self._imageViewerActions = ImageViewerActions(self._staticImageViewer)
+        self._dvhViewerActions = DVHViewerActions(self._dvhViewer)
 
         self._secondaryImageActions.addToToolbar(self._toolbar)
         self._imageViewerActions.addToToolbar(self._toolbar)
+        self._dvhViewerActions.addToToolbar(self._toolbar)
 
         self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
 
-        self._viewController.independentViewsEnabledSignal.connect(self.enableDropForMainImage)
+        self._viewController.independentViewsEnabledSignal.connect(self.enableDrop)
         self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplaydMode)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
+        self._viewController.dropModeSignal.connect(self._setDropMode)
+        self._viewController.droppedImageSignal.connect(self._setDroppedImage)
 
-        self.enableDropForMainImage(self._viewController.independentViewsEnabled)
+        self.enableDrop(self._viewController.independentViewsEnabled)
 
         self._handleDisplayTypeChange(self.displayType) # Initialize with current display type
 
@@ -333,19 +359,29 @@ class DataViewer(QWidget):
             self._secondaryImageActions.show()
 
 
-    def enableDropForMainImage(self, enabled):
-        """
-            Set main image to the appropriate cached image viewer.
-            Does not affect viewer visibility.
-        """
+    def enableDrop(self, enabled):
         self.dropEnabled = enabled
 
         if enabled:
             # It might seems weird to have a signal connected within the class but it is if someday we want to move the logical part out of this class.
             # See also comment on dropEnabled : Should we implement drop directly in ImageViewer?
-            self.droppedImageSignal.connect(self._setMainImageAnSwitchDisplaydMode)
+            self.droppedImageSignal.connect(self._setDroppedImage)
         else:
-            self.droppedImageSignal.disconnect(self._setMainImageAnSwitchDisplaydMode)
+            self.droppedImageSignal.disconnect(self._setDroppedImage)
+
+    def _setDropMode(self, dropMode):
+        self.dropMode = dropMode
+
+    def _setDroppedImage(self, image):
+        if self._dropMode==self.DropModes.PRIMARY:
+            self._setMainImageAnSwitchDisplaydMode(image)
+        if self._dropMode==self.DropModes.SECONDARY:
+            self._setSecondaryImage(image)
+        if self._dropMode==self.DropModes.AUTO:
+            if isinstance(image, DoseImage):
+                self._setSecondaryImage(image)
+            else:
+                self._setMainImageAnSwitchDisplaydMode(image)
 
     def _setMainImageAnSwitchDisplaydMode(self, image):
         """
@@ -386,9 +422,6 @@ class DataViewer(QWidget):
             Display the image (in static mode)
             Does not affect viewer visibility nor viewer type.
         """
-        if self.cachedStaticImageViewer.secondaryImage == image:
-            self.cachedStaticImageViewer.secondaryImage = None # Currently default behavior but is it a good idea?
-            return
 
         if image is None:
             oldImage = self.cachedStaticImageViewer.secondaryImage
@@ -398,7 +431,13 @@ class DataViewer(QWidget):
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
         self.cachedStaticImageViewer.secondaryImage = image
+        self._setDVHDose(image)
 
+    def _setDVHDose(self, image:Optional[DoseImage]):
+        if image is None:
+            self.cachedStaticDVHViewer.clear()
+        else:
+            self.cachedStaticDVHViewer.dose = image
 
     def _removeImageFromViewers(self, image: Image3D):
         """
@@ -410,3 +449,6 @@ class DataViewer(QWidget):
 
         if self.cachedDynamicImageViewer.secondaryImage == image:
             self._setSecondaryImage(None)
+
+        if self.cachedStaticDVHViewer.dose == image:
+            self._setDVHDose(None)
