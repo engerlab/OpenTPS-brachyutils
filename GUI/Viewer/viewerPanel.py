@@ -110,4 +110,4 @@ class ViewerPanel(QWidget):
         self._setDropEnabled(not self._viewController.independentViewsEnabled)
 
     def _setViewControllerMainImage(self, image):
-        self._viewController.mainImage = image
+        self._viewController.droppedImage = image

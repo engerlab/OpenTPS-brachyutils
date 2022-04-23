@@ -1,4 +1,4 @@
-from typing import Sequence, Optional
+from typing import Optional
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -71,9 +71,13 @@ class SecondaryImageLayer(PrimaryImageLayer):
         self._renderWindow.Render()
 
     def _connectAll(self):
+        super()._connectAll()
+
         self._image.lookupTableChangedSignal.connect(self._setLookupTable)
 
     def _disconnectAll(self):
+        super()._disconnectAll()
+
         if self._image is None:
             return
 
