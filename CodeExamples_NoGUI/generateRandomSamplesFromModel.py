@@ -1,12 +1,17 @@
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
-from Core.Processing.DeformableDataAugmentationToolBox.generateRandomSamplesFromModel import generateRandomImagesFromModel, generateRandomDeformationsFromModel
 import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
 from pathlib import Path
 import cProfile
 import time
 import numpy as np
 import concurrent
 import matplotlib.pyplot as plt
+
+from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
+from Core.Processing.DeformableDataAugmentationToolBox.generateRandomSamplesFromModel import generateRandomImagesFromModel, generateRandomDeformationsFromModel
 
 if __name__ == '__main__':
 

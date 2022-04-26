@@ -8,6 +8,12 @@ This file contains an example on how to:
 - Crop the dynamic sequence and the dynamic model around the box
 """
 
+import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+
 from Core.Processing.ImageProcessing.crop3D import *
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 
