@@ -5,12 +5,17 @@ This file contains an example on how to:
 - show a slice
 """
 
+import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+import matplotlib.pyplot as plt
+from pathlib import Path
+
 from Core.IO.dicomReader import readDicomCT
 from Core.IO.dataLoader import listAllFiles, loadAllData
 from Core.IO.serializedObjectIO import saveSerializedObjects
-import matplotlib.pyplot as plt
-import os
-from pathlib import Path
 
 if __name__ == '__main__':
 

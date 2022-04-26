@@ -1,12 +1,17 @@
+import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+import numpy as np
+from pathlib import Path
+import math
+
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 import matplotlib.pyplot as plt
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDynSeqFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import getVoxelIndexFromPosition
-import numpy as np
-import os
-from pathlib import Path
-import math
 
 if __name__ == '__main__':
 
