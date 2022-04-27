@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
 
     ## save it as a serialized object
-    savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung'
+    savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung'
     saveSerializedObjects(dynSeq, savingPath)
 
     print('/'*80, '\n', '/'*80)
@@ -132,5 +132,5 @@ if __name__ == '__main__':
         dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
 
         ## save it as a serialized object
-        savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung_part' + str(i)
+        savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung_part' + str(i)
         saveSerializedObjects(dynSeq, savingPath)
