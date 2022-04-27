@@ -33,10 +33,15 @@ if __name__ == '__main__':
     ## paths selection ------------------------------------
 
     patientFolder = 'Patient_0'
-    dataSetFolder = '/test2/'
+    patientFolderComplement = ''
+    organ = 'liver'
+    basePath = 'D:/ImageData/'
+
+    dataSetFolder = '/test/'
     dataSetDataFolder = 'data/'
-    dataPath = '/home/damien/Desktop/' + patientFolder + '/dynModAndROIs.p'
-    savingPath = f'/home/damien/Desktop/' + patientFolder + dataSetFolder
+
+    dataPath = basePath + organ + '/' + patientFolder + patientFolderComplement + '/dynModAndROIs.p'
+    savingPath = basePath + organ + '/' + patientFolder + patientFolderComplement + dataSetFolder
 
     if not os.path.exists(savingPath):
         os.umask(0)
@@ -46,8 +51,7 @@ if __name__ == '__main__':
 
     # parameters selection ------------------------------------
 
-
-    sequenceDurationInSecs = 100
+    sequenceDurationInSecs = 10
     samplingFrequency = 4
     subSequenceSize = 50
     outputSize = [64, 64]
@@ -90,6 +94,7 @@ if __name__ == '__main__':
         image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
         # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
         mask = deformation.deformImage(ROIMask, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
+        centerOfMass3D = mask.centerOfMass
 
         DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
         DRRMask = forwardProjection(mask, projectionAngle, axis=projectionAxis)
@@ -129,7 +134,7 @@ if __name__ == '__main__':
         # plt.imshow(binaryDRRMask)
         # plt.show()
 
-        return [croppedDRR, binaryDRRMask, centerOfMass]
+        return [croppedDRR, binaryDRRMask, centerOfMass, centerOfMass3D]
     ## ------------------------------------------------------------------------------------
 
 
@@ -203,7 +208,8 @@ if __name__ == '__main__':
     signalList = [newSignal]
 
     saveSerializedObjects([signalList, pointList], savingPath + 'ROIsAndSignalObjects')
-
+    for signalIndex in range(len(signalList)):
+        signalList[signalIndex] = signalList[signalIndex].breathingSignal
 
     ## to show signals and ROIs
     ## -------------------------------------------------------------
@@ -213,11 +219,17 @@ if __name__ == '__main__':
     signalAx = plt.subplot(2, 1, 2)
 
     for pointIndex, point in enumerate(pointList):
-        ax = plt.subplot(2, len(pointList), pointIndex+1)
+        ax = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 1)
         ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
         ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
-        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
-        signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex].breathingSignal, c=colors[pointIndex])
+        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
+                   c=colors[pointIndex], marker="x", s=100)
+        ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
+        ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
+        ax2.imshow(np.rot90(dynMod.midp.imageArray[:, :, pointVoxelList[pointIndex][2]]))
+        ax2.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
+                   c=colors[pointIndex], marker="x", s=100)
+        signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
 
     signalAx.set_xlabel('Time (s)')
     signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
