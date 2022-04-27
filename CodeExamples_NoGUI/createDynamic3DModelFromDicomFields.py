@@ -1,5 +1,8 @@
+import os
 import sys
-sys.path.append('..')
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
 from Core.IO.dataLoader import loadAllData
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel

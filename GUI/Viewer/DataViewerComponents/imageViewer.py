@@ -24,13 +24,13 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.textLayer import Text
 
 
 class ImageViewer(QWidget):
-    class viewerTypes(Enum):
+    class ViewerTypes(Enum):
         AXIAL = 'axial'
         CORONAL = 'coronal'
         SAGITTAL = 'sagittal'
         DEFAULT = 'sagittal'
 
-    _viewerTypesList = iter(list(viewerTypes))
+    _viewerTypesList = iter(list(ViewerTypes))
 
 
     def __init__(self, viewController):
@@ -41,6 +41,8 @@ class ImageViewer(QWidget):
         self.wwlEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
         self.viewTypeChangedSignal = Event(object)
+        self.primaryImageSignal = Event(object)
+        self.secondaryImageSignal = Event(object)
 
         self._blackWidget = BlackEmptyPlot()
         self._crossHairEnabled = False
@@ -52,7 +54,7 @@ class ImageViewer(QWidget):
         self.__sendingWWL = False
         self._viewController = viewController
         self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
-        self._viewType = self.viewerTypes.DEFAULT
+        self._viewType = self.ViewerTypes.DEFAULT
         self._vtkWidget = QVTKRenderWindowInteractor(self)
         self._wwlEnabled = False
 
@@ -113,10 +115,16 @@ class ImageViewer(QWidget):
 
     @primaryImage.setter
     def primaryImage(self, image: Image3D):
+        imageAlreadyDisplayed = image==self._primaryImageLayer.image or (not (self._primaryImageLayer.image is None) and image==self._primaryImageLayer.image.data)
+        if imageAlreadyDisplayed:
+            return
+
         if image is None:
             self._resetPrimaryImageLayer()
         else:
             self._setPrimaryImageForViewer(Image3DForViewer(image))
+
+        self.primaryImageSignal.emit(self.primaryImage)
 
     def _resetPrimaryImageLayer(self):
         self._primaryImageLayer.image = None
@@ -204,15 +212,20 @@ class ImageViewer(QWidget):
         if self.primaryImage is None:
             return
 
+        imageAlreadyDisplayed = image == self._secondaryImageLayer.image or (not (self._secondaryImageLayer.image is None) and image == self._secondaryImageLayer.image.data)
+        if imageAlreadyDisplayed:
+            return
+
         self._secondaryImageLayer.image = Image3DForViewer(image)
 
         if image is None:
             self._secondaryImageLayer.image = None
+            self.secondaryImageSignal.emit(self.secondaryImage)
             return
 
         self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
-        self._textLayer.setSecondaryTextLine(2, self.primaryImage.name)
+        self._textLayer.setSecondaryTextLine(2, self.secondaryImage.name)
 
         if not (self._secondaryImageLayer.image is None):
             self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
@@ -220,6 +233,8 @@ class ImageViewer(QWidget):
         self._secondaryImageLayer.image.nameChangedSignal.connect(self._setSecondaryName)
 
         self._renderWindow.Render()
+
+        self.secondaryImageSignal.emit(self.secondaryImage)
 
     def _setSecondaryName(self, name):
         self._textLayer.setSecondaryTextLine(2, name)
@@ -260,11 +275,11 @@ class ImageViewer(QWidget):
                         0, 0, -1, 0,
                         0, 0, 0, 1))
 
-        if self._viewType == self.viewerTypes.SAGITTAL:
+        if self._viewType == self.ViewerTypes.SAGITTAL:
             self._viewMatrix = sagittal
-        if self._viewType == self.viewerTypes.AXIAL:
+        if self._viewType == self.ViewerTypes.AXIAL:
             self._viewMatrix = axial
-        if self._viewType == self.viewerTypes.CORONAL:
+        if self._viewType == self.ViewerTypes.CORONAL:
             self._viewMatrix = coronal
         else:
             ValueError('Invalid viewType')

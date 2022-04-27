@@ -9,12 +9,16 @@ This file contains an example on how to:
 """
 
 import matplotlib.pyplot as plt
-import os
 from scipy.ndimage import zoom
 import math
 import time
 import concurrent
 from itertools import repeat
+import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
 
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal

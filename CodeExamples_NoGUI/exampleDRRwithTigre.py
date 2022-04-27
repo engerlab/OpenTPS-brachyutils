@@ -1,8 +1,13 @@
 import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
 from pathlib import Path
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+
 from Core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 
