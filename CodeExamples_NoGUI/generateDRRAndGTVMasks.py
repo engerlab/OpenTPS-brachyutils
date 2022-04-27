@@ -33,10 +33,15 @@ if __name__ == '__main__':
     ## paths selection ------------------------------------
 
     patientFolder = 'Patient_0'
-    dataSetFolder = '/test2/'
+    patientFolderComplement = ''
+    organ = 'liver'
+    basePath = 'D:/ImageData/'
+
+    dataSetFolder = '/test/'
     dataSetDataFolder = 'data/'
-    dataPath = '/home/damien/Desktop/' + patientFolder + '/dynModAndROIs.p'
-    savingPath = f'/home/damien/Desktop/' + patientFolder + dataSetFolder
+
+    dataPath = basePath + organ + '/' + patientFolder + patientFolderComplement + '/dynModAndROIs.p'
+    savingPath = basePath + organ + '/' + patientFolder + patientFolderComplement + dataSetFolder
 
     if not os.path.exists(savingPath):
         os.umask(0)
@@ -46,8 +51,7 @@ if __name__ == '__main__':
 
     # parameters selection ------------------------------------
 
-
-    sequenceDurationInSecs = 100
+    sequenceDurationInSecs = 10
     samplingFrequency = 4
     subSequenceSize = 50
     outputSize = [64, 64]
@@ -204,7 +208,8 @@ if __name__ == '__main__':
     signalList = [newSignal]
 
     saveSerializedObjects([signalList, pointList], savingPath + 'ROIsAndSignalObjects')
-
+    for signalIndex in range(len(signalList)):
+        signalList[signalIndex] = signalList[signalIndex].breathingSignal
 
     ## to show signals and ROIs
     ## -------------------------------------------------------------
