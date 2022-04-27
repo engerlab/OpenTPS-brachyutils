@@ -47,7 +47,8 @@ class ROIMask(Image3D):
 
     @property
     def centerOfMass(self) -> np.ndarray:
-        return scipy.ndimage.measurements.center_of_mass(self._imageArray)*self.spacing + self.origin
+        COM = np.array(scipy.ndimage.measurements.center_of_mass(self._imageArray))
+        return (COM * self.spacing) + self.origin
 
     def copy(self):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
