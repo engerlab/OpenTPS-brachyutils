@@ -79,12 +79,18 @@ if __name__ == '__main__':
     plt.figure(figsize=(12, 6))
     signalAx = plt.subplot(2, 1, 2)
     for pointIndex, point in enumerate(pointList):
-        ax = plt.subplot(2, len(pointList), pointIndex+1)
-        ax.set_title('Slice Y:' + str(pointList[pointIndex][1]))
+        ax = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 1)
+        ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
         ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
-        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
-        signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex], c=colors[pointIndex])
-
+        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
+                   c=colors[pointIndex], marker="x", s=100)
+        ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
+        ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
+        ax2.imshow(np.rot90(dynMod.midp.imageArray[:, :, pointVoxelList[pointIndex][2]], 3))
+        ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]],
+                   c=colors[pointIndex], marker="x", s=100)
+        signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
+ 
     signalAx.set_xlabel('Time (s)')
     signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
     plt.show()
