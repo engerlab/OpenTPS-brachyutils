@@ -255,7 +255,7 @@ class PatientDataTree(QTreeView):
     def _handleDoubleClick(self, selection):
         selectedData = self.model().itemFromIndex(selection).data
 
-        if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
+        if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence) or isinstance(selectedData, Dynamic2DSequence):
             self._viewController.mainImage = selectedData
         elif isinstance(selectedData, Dynamic3DModel):
             self._viewController.mainImage = selectedData.midp
