@@ -23,14 +23,16 @@ if __name__ == '__main__':
     patient = loadDataStructure(dataPath)[0]
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
+    tryGPU = True
+    numberOfSamples = 50
 
     imageList = []
 
     startTime = time.time()
 
-    defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian')
+    defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=numberOfSamples, ampDistribution='gaussian')
     for deformation in defList:
-        imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=True))
+        imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=tryGPU))
 
     print(len(imageList))
     print('first test done in ', np.round(time.time() - startTime, 2))
@@ -40,7 +42,7 @@ if __name__ == '__main__':
     plt.show()
 
     startTime = time.time()
-    imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian', tryGPU=True)
+    imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=numberOfSamples, ampDistribution='gaussian', tryGPU=tryGPU)
     print('second test done in ', np.round(time.time() - startTime, 2))
 
     plt.figure()
