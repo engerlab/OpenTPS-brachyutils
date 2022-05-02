@@ -2,6 +2,7 @@ import copy
 import os
 import platform
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Optional
 
@@ -36,6 +37,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._beamModel = None
         self._nbPrimaries = 0
         self._simulationDirectory = MainConfig().simulationFolder
+        self._subprocess = None
+        self._subprocessKilled = True
 
     @property
     def ctCalibration(self) -> Optional[AbstractCTCalibration]:
@@ -68,6 +71,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     @simulationDirectory.setter
     def simulationDirectory(self, path):
         self._simulationDirectory = path
+
+    def kill(self):
+        if not (self._subprocess is None):
+            self._subprocessKilled = True
+            self._subprocess.kill()
+            self._subprocess = None
 
     def computeDose(self, ct:CTImage, plan: RTPlan) -> DoseImage:
         self._ct = ct
@@ -119,8 +128,19 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         mcsquareIO.writeBin(self._mcsquareSimuDir)
 
     def _startMCsquare(self):
+        if not (self._subprocess is None):
+            raise Exception("MCsquare already running")
+
+        self._subprocessKilled = False
+
         if (platform.system() == "Linux"):
-            os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
+            self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
+            self._subprocess.wait()
+            if self._subprocessKilled:
+                self._subprocessKilled = False
+                raise Exception('MCsquare subprocess killed by caller.')
+            self._subprocess = None
+            #os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
         elif (platform.system() == "Windows"):
             os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
 
