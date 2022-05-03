@@ -4,23 +4,26 @@ import shutil
 import struct
 import time
 import unittest
+from typing import Optional
 
 import numpy as np
 import scipy.sparse as sp
+from scipy.sparse import csc_matrix
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.beamletDose import BeamletDose
+from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO.mhdReadWrite import exportImageMHD, importImageMHD
 
 
-def readBeamlets(file_path):
+def readBeamlets(file_path, roi:Optional[ROIMask]=None):
     if (not file_path.endswith('.txt')):
         raise NameError('File ', file_path, ' is not a valid sparse matrix header')
 
@@ -33,9 +36,9 @@ def readBeamlets(file_path):
 
     # Read sparse beamlets binary file
     print('Read binary file: ', file_path)
-    sparseBeamlets =  _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"])
+    sparseBeamlets =  _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"], roi)
 
-    beamletDose = BeamletDose()
+    beamletDose = SparseBeamlets()
     beamletDose.setUnitaryBeamlets(sparseBeamlets)
     beamletDose.beamletWeights = np.ones(header["NbrSpots"])
     beamletDose.doseOrigin = header["Offset"]
@@ -75,7 +78,7 @@ def _read_sparse_header(file_path):
 
     return header
 
-def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots):
+def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=None) -> csc_matrix:
     BeamletMatrix = []
 
     fid = open(Binary_file, 'rb')
@@ -88,16 +91,24 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots):
     last_stacked_col = 0
     num_unstacked_col = 1
 
+    if not (roi is None):
+        roiData = roi.imageArray
+        roiData = np.flip(roiData, 0)
+        roiData = np.flip(roiData, 1)
+        roiData = roiData.flatten(order='F')
+        roiData = roiData.astype(bool)
+        roiData = roiData.flatten()
+    else:
+        roiData = np.zeros((NbrVoxels, 1)).astype(bool)
+
     time_start = time.time()
 
-    for i in range(NbrSpots):
+    for spot in range(NbrSpots):
         [NonZeroVoxels] = struct.unpack('I', fid.read(4))
         [BeamID] = struct.unpack('I', fid.read(4))
         [LayerID] = struct.unpack('I', fid.read(4))
         [xcoord] = struct.unpack('<f', fid.read(4))
         [ycoord] = struct.unpack('<f', fid.read(4))
-        print("Spot " + str(i) + ": BeamID=" + str(BeamID) + " LayerID=" + str(LayerID) + " Position=(" + str(
-            xcoord) + ";" + str(ycoord) + ") NonZeroVoxels=" + str(NonZeroVoxels))
 
         if (NonZeroVoxels == 0): continue
 
@@ -110,36 +121,35 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots):
 
             for j in range(NbrContinuousValues):
                 [temp] = struct.unpack('<f', fid.read(4))
-                beamlet_data[data_id] = temp
-                row_index[data_id] = FirstIndex + j
-                col_index[data_id] = i - last_stacked_col
-                data_id += 1
 
-            # temp = np.ndarray((NbrContinuousValues,), '<f', fid.read(4*NbrContinuousValues))
-            # beamlet_data[data_id:data_id+NbrContinuousValues] = temp * BeamletRescaling[i]
-            # row_index[data_id:data_id+NbrContinuousValues] = list(range(FirstIndex, FirstIndex+NbrContinuousValues))
-            # col_index[data_id:data_id+NbrContinuousValues] = i-last_stacked_col
-            # data_id += NbrContinuousValues
+                rowIndexVal = FirstIndex + j
+                if roiData[rowIndexVal]:
+                    beamlet_data[data_id] = temp
+                    row_index[data_id] = rowIndexVal
+                    col_index[data_id] = spot - last_stacked_col
+                    data_id += 1
 
             if (ReadVoxels >= NonZeroVoxels):
-                if i == 0:
+                if spot == 0:
                     BeamletMatrix = sp.csc_matrix(
                         (beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])), shape=(NbrVoxels, 1),
                         dtype=np.float32)
                     data_id = 0
-                    last_stacked_col = i + 1
+                    last_stacked_col = spot + 1
                     num_unstacked_col = 1
                 elif (data_id > buffer_size - NbrVoxels):
                     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
                                       shape=(NbrVoxels, num_unstacked_col), dtype=np.float32)
                     data_id = 0
                     BeamletMatrix = sp.hstack([BeamletMatrix, A])
-                    last_stacked_col = i + 1
+                    last_stacked_col = spot + 1
                     num_unstacked_col = 1
                 else:
                     num_unstacked_col += 1
 
                 break
+
+
 
     # stack last cols
     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
@@ -187,8 +197,8 @@ def writeCT(ct: CTImage, filtePath):
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
     image = ct.copy()
-    image.imageArray = np.flip(ct.imageArray, 0)
-    image.imageArray = np.flip(ct.imageArray, 1)
+    image.imageArray = np.flip(image.imageArray, 0)
+    image.imageArray = np.flip(image.imageArray, 1)
 
     exportImageMHD(filtePath, image)
 

@@ -31,6 +31,9 @@ class TextLayer:
         self._renderer.AddActor(self._primaryTextActor)
         self._renderer.AddActor(self._secondaryTextActor)
 
+    def close(self):
+        pass
+
     @property
     def primaryText(self):
         return self._primaryText

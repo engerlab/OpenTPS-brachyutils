@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import copy
 import logging
 
 from Core.Data.Images.image3D import Image3D
@@ -15,6 +16,16 @@ class VectorField3D(Image3D):
 
         super().__init__(imageArray=imageArray, name=name, patientInfo=patientInfo, origin=origin, spacing=spacing, angles=angles,
                          seriesInstanceUID=seriesInstanceUID)
+
+    def __str__(self):
+        return "Vector field: " + self.seriesInstanceUID
+
+    @classmethod
+    def fromImage3D(cls, image: Image3D):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+
+    def copy(self):
+        return VectorField3D(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     def initFromImage(self, image):
         """Initialize vector field using the voxel grid of the input image.
@@ -34,7 +45,7 @@ class VectorField3D(Image3D):
         self.origin = image._origin
         self.spacing = image._spacing
 
-    def warp(self, data, fillValue=0, outputType=np.float32):
+    def warp(self, data, fillValue=0, outputType=np.float32, tryGPU=True):
         """Warp 3D data using linear interpolation.
 
         Parameters
@@ -50,9 +61,10 @@ class VectorField3D(Image3D):
             Warped data.
         """
 
-        return resampler3D.warp(data, self._imageArray, self.spacing, fillValue=fillValue, outputType=outputType)
+        return resampler3D.warp(data, self._imageArray, self.spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
-    def exponentiateField(self):
+    def exponentiateField(self, outputType=np.float32, tryGPU=True):
+
         """Exponentiate the vector field (e.g. to convert velocity in to displacement).
 
         Returns
@@ -65,19 +77,20 @@ class VectorField3D(Image3D):
         N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
         if N < 1: N = 1
 
-        displacement = self.deepCopyWithoutEvent()
+        displacement = self.copy()
         displacement._imageArray = displacement._imageArray * 2 ** (-N)
 
         for r in range(N):
-            new_0 = displacement.warp(displacement._imageArray[:, :, :, 0], fillValue=0)
-            new_1 = displacement.warp(displacement._imageArray[:, :, :, 1], fillValue=0)
-            new_2 = displacement.warp(displacement._imageArray[:, :, :, 2], fillValue=0)
+            new_0 = displacement.warp(displacement._imageArray[:, :, :, 0], fillValue='closest', tryGPU=tryGPU)
+            new_1 = displacement.warp(displacement._imageArray[:, :, :, 1], fillValue='closest', tryGPU=tryGPU)
+            new_2 = displacement.warp(displacement._imageArray[:, :, :, 2], fillValue='closest', tryGPU=tryGPU)
             displacement._imageArray[:, :, :, 0] += new_0
             displacement._imageArray[:, :, :, 1] += new_1
             displacement._imageArray[:, :, :, 2] += new_2
 
-        return displacement
+        displacement._imageArray = displacement._imageArray.astype(outputType)
 
+        return displacement
 
     def computeFieldNorm(self):
         """Compute the voxel-wise norm of the vector field.
@@ -90,7 +103,6 @@ class VectorField3D(Image3D):
         return np.sqrt(
             self._imageArray[:, :, :, 0] ** 2 + self._imageArray[:, :, :, 1] ** 2 + self._imageArray[:, :, :, 2] ** 2)
 
-    
     @property
     def gridSize(self):
         """Compute the voxel grid size of the deformation.

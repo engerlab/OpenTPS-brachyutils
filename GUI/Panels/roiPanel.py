@@ -87,4 +87,4 @@ class ROIItem(QCheckBox):
 
   def handleClick(self, isChecked):
     self._contour.visible = isChecked
-    self._viewController.showContour(self._contour)
+    self._viewController.showContour(self._contour.data)

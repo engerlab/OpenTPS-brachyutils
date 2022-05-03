@@ -110,7 +110,7 @@ def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSp
         internalValues[pointIndex] = 1
         values = np.concatenate((externalValues, internalValues))
 
-        interp = LinearNDInterpolator(pointList, values)
+        interp = LinearNDInterpolator(pointList, values) # this could be replaced by cupy if GPU acceleration is necessary
         weightMap = interp(X, Y, Z)
 
         # stopTime = time.time()
@@ -190,7 +190,7 @@ def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, 
 
     field = midpModel.deformationList[0].copy()
     field.displacement = None
-    field.velocity._imageArray = field.velocity._imageArray * 0
+    field.setVelocityArray(field.velocity.imageArray * 0)
 
     for i in range(len(weightMapList)):
 
@@ -199,22 +199,18 @@ def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, 
         phase2 = np.ceil(phase) % len(midpModel.deformationList)
 
         if phase1 == phase2:
-            for j in range(3):
-                field.velocity._imageArray[:, :, :, j] += amplitudes[i] * np.multiply(weightMapList[i].imageArray,
-                                                                                      midpModel.deformationList[
-                                                                                          int(phase1)].velocity.imageArray[
-                                                                                      :, :, :, j])
+            field.setVelocityArrayXYZ(field.velocity.imageArray[:, :, :, 0] + amplitudes[i] * np.multiply(weightMapList[i].imageArray, midpModel.deformationList[int(phase1)].velocity.imageArray[:, :, :, 0]),
+                                      field.velocity.imageArray[:, :, :, 1] + amplitudes[i] * np.multiply(weightMapList[i].imageArray, midpModel.deformationList[int(phase1)].velocity.imageArray[:, :, :, 1]),
+                                      field.velocity.imageArray[:, :, :, 2] + amplitudes[i] * np.multiply(weightMapList[i].imageArray, midpModel.deformationList[int(phase1)].velocity.imageArray[:, :, :, 2]))
         else:
             w1 = abs(phase - np.ceil(phase))
             w2 = abs(phase - np.floor(phase))
             if abs(w1 + w2 - 1.0) > 1e-6:
                 logger.error('Error in phase interpolation.')
                 return
-            for j in range(3):
-                field.velocity._imageArray[:, :, :, j] += amplitudes[i] * np.multiply(weightMapList[i].imageArray, (
-                        w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:, :, :, j] + w2 *
-                        midpModel.deformationList[
-                            int(phase2)].velocity.imageArray[:, :, :, j]))
+            field.setVelocityArrayXYZ(field.velocity.imageArray[:, :, :, 0] + amplitudes[i] * np.multiply(weightMapList[i].imageArray, (w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:,:,:,0] + w2 * midpModel.deformationList[int(phase2)].velocity.imageArray[:,:,:,0])),
+                                      field.velocity.imageArray[:, :, :, 1] + amplitudes[i] * np.multiply(weightMapList[i].imageArray, (w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:,:,:,1] + w2 * midpModel.deformationList[int(phase2)].velocity.imageArray[:,:,:,1])),
+                                      field.velocity.imageArray[:, :, :, 2] + amplitudes[i] * np.multiply(weightMapList[i].imageArray, (w1 * midpModel.deformationList[int(phase1)].velocity.imageArray[:,:,:,2] + w2 * midpModel.deformationList[int(phase2)].velocity.imageArray[:,:,:,2])))
 
     return field
 

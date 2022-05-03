@@ -20,9 +20,10 @@ def events(L,Tend):
 
 #entre deux timestamps successifs, un event est créé
 #Un event correspond a une fonction echellon qui est ensuite bruitee
-def vectorSimulation(L,diff,mean,sigma,Tend,t):
-    timestamp = events(L,Tend)        
+def vectorSimulation(L,diff,mean,sigma,Tend,t,timestamp):
+    #timestamp = events(L,Tend)        
     y = np.zeros(len(t))
+    noise = np.zeros(len(t))
     i = 0
     while i < len(timestamp):
         if i+2 < len(timestamp):
@@ -31,40 +32,86 @@ def vectorSimulation(L,diff,mean,sigma,Tend,t):
             t2 = timestamp[i+2]
             y[(t>=t1) & (t<=t2)] = a
         i+=2
-    #noise = np.random.normal(0,diff/50,len(t))
-    noise = np.random.normal(mean,sigma,len(t))
-    y += noise
+    #noise = np.random.normal(mean,diff/100,len(t))
+    #noise = np.random.normal(loc=mean,scale=sigma,size=len(t))  
+    #noise = np.ones(len(t))
+    #y += noise
     return y
 
+def apnea(L,Tend,t):
+    timestamp = events(L,Tend)        
+    y = np.ones(len(t))
+    i = 0
+    while i < len(timestamp):
+        if i+2 < len(timestamp):
+            t1 = timestamp[i+1]
+            t2 = timestamp[i+2]
+            y[(t>=t1) & (t<=t2)] = 0
+        i+=2
+    return y
+
+
 #creation des donnees respiratoires
-def signal(A=10,dA=5,T=4,df=0.5,dS=5,mean=0,sigma=0.1,step=0.2,Tend=100,L=2/30):
-    f = 1/T  
-    t = np.arange(0,Tend,step)
+def signalGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma=1, step=0.2, signalDuration=100, L=2 / 30):
+    freq = 1 / period
+    timestamps = np.arange(0, signalDuration, step)
+    listOfEvents = events(L,signalDuration)
     
-    A += vectorSimulation(L,dA,mean,sigma,Tend,t)
-    s = vectorSimulation(L,dS,mean,sigma,Tend,t)
-    f += vectorSimulation(L,df,mean,sigma,Tend,t)
+    apneaData = apnea(L, signalDuration, timestamps)
+    amplitude += vectorSimulation(L, dA, mean, sigma, signalDuration, timestamps,listOfEvents)
+    s = vectorSimulation(L, dS, mean, sigma, signalDuration, timestamps,listOfEvents)
+    freq += vectorSimulation(L, df, mean, sigma, signalDuration, timestamps,listOfEvents)
     
-    y = (A/2)*np.sin(2*np.pi*f*(t%(1/f))) + s ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
-    return t,y
+    noise = np.random.normal(loc=mean,scale=sigma,size=len(timestamps))
+    
+    #signal = (amplitude / 2) * np.sin(2 * np.pi * freq * (timestamps % (1 / freq))) + s ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
+    signal = (amplitude / 2) * np.sin(2 * np.pi * freq * timestamps) + s + noise
+    return timestamps * 1000, signal
+
+
+def signal3DGeneration(amplitude=10, dA=5, period=4.0, df=0.5, dS=5, mean=0, sigma=1, step=0.2, signalDuration=100, L=2 / 30, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
+
+    timestamps, mainMotionSignal = signalGeneration(amplitude=amplitude, dA=dA, period=period, df=df, dS=dS, mean=mean, sigma=sigma, step=step, signalDuration=100, L=2 / 30)
+
+    secondMotionSignal = mainMotionSignal * otherDimensionsRatio[0] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[0], size=mainMotionSignal.shape[0])
+    thirdMotionSignal = mainMotionSignal * otherDimensionsRatio[1] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[1], size=mainMotionSignal.shape[0])
+
+    signal3D = np.vstack((mainMotionSignal, secondMotionSignal, thirdMotionSignal))
+    signal3D = signal3D.transpose(1, 0)
+
+    plt.figure()
+    plt.plot(signal3D[:, 0])
+    plt.plot(signal3D[:, 1])
+    plt.plot(signal3D[:, 2])
+    plt.show()
+
+    return timestamps, signal3D
+
 """
 #parametres changeables
-<<<<<<< HEAD
-A = 10 #amplitude (mm)
+amplitude = 10 #amplitude (mm)
 dA = 5 #variation d amplitude possible (mm)
-T = 4.0 #periode respiratoire (s)
+period = 4.0 #periode respiratoire (s)
 df = 0.5 #variation de frequence possible (Hz)
 dS = 5 #shift du signal (mm)
 step = 0.2 #periode d echantillonnage
-Tend = 100 #temps de simulation
+signalDuration = 100 #temps de simulation
 L = 2/30 #moyenne des evenements aleatoires
 
-time,samples = signal(A,dA,T,df,dS,step,Tend,L)
-plt.figure()
+time,samples = signalGeneration()
+time = np.arange(0, signalDuration, step)
+plt.figure(figsize=(15,10))
 plt.plot(time,samples)
 plt.xlabel("Time [s]")
 plt.ylabel("Amplitude [mm]")
-plt.title("Breathing signal")
-plt.xlim((0,50))
+plt.title("Breathing signal part 1")
+plt.xlim((0,100))
+
+plt.figure(figsize=(15,10))
+plt.plot(time,samples)
+plt.xlabel("Time [s]")
+plt.ylabel("Amplitude [mm]")
+plt.title("Breathing signal part 2")
+plt.xlim((100,200))
 """
 

@@ -20,14 +20,6 @@ class RTPlan(PatientData):
 
         self.numberOfFractionsPlanned:int = 1
 
-    def __deepcopy__(self, memodict={}):
-        newPlan = RTPlan()
-
-        newPlan._beams = [copy.deepcopy(beam) for beam in self._beams]
-        newPlan.numberOfFractionsPlanned = self.numberOfFractionsPlanned
-
-        return newPlan
-
     def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]
 

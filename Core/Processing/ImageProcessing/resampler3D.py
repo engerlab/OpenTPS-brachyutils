@@ -7,7 +7,7 @@ from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 logger = logging.getLogger(__name__)
 
 
-def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpacing,outputGridSize,fillValue=0,outputType=None):
+def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpacing,outputGridSize,fillValue=0,outputType=None, tryGPU=True):
 
     """Resample 3D data according to new voxel grid using linear interpolation.
 
@@ -54,9 +54,9 @@ def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpac
         logger.info("Data is filtered before downsampling")
         if vectorDimension > 1:
             for i in range(vectorDimension):
-                data[:, :, :, i] = imageFilter3D.gaussConv(data[:, :, :, i], sigma)
+                data[:, :, :, i] = imageFilter3D.gaussConv(data[:, :, :, i], sigma, tryGPU=tryGPU)
         else:
-            data[:, :, :] = imageFilter3D.gaussConv(data[:, :, :], sigma)
+            data[:, :, :] = imageFilter3D.gaussConv(data[:, :, :], sigma, tryGPU=tryGPU)
 
     interpX = (outputOrigin[0] - inputOrigin[0] + np.arange(outputGridSize[0]) * outputSpacing[0]) / inputSpacing[0]
     interpY = (outputOrigin[1] - inputOrigin[1] + np.arange(outputGridSize[1]) * outputSpacing[1]) / inputSpacing[1]
@@ -74,16 +74,16 @@ def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpac
     if vectorDimension > 1:
         field = np.zeros((*outputGridSize, vectorDimension))
         for i in range(vectorDimension):
-            fieldTemp = interpolateTrilinear(data[:, :, :, i], inputGridSize, xi, fillValue=fillValue)
+            fieldTemp = interpolateTrilinear(data[:, :, :, i], inputGridSize, xi, fillValue=fillValue, tryGPU=tryGPU)
             field[:, :, :, i] = fieldTemp.reshape((outputGridSize[1], outputGridSize[0], outputGridSize[2])).transpose(1, 0, 2)
         data = field
     else:
-        data = interpolateTrilinear(data, inputGridSize, xi, fillValue=fillValue)
+        data = interpolateTrilinear(data, inputGridSize, xi, fillValue=fillValue, tryGPU=tryGPU)
         data = data.reshape((outputGridSize[1], outputGridSize[0], outputGridSize[2])).transpose(1, 0, 2)
 
     return data.astype(outputType)
 
-def warp(data,field,spacing,fillValue=0,outputType=None):
+def warp(data,field,spacing,fillValue=0,outputType=None, tryGPU=True):
 
     """Warp 3D data based on 3D vector field using linear interpolation.
 
@@ -129,7 +129,7 @@ def warp(data,field,spacing,fillValue=0,outputType=None):
         xi[:, 1] = np.maximum(np.minimum(xi[:, 1], size[1] - 1), 0)
         xi[:, 2] = np.maximum(np.minimum(xi[:, 2], size[2] - 1), 0)
         fillValue = -1000
-    output = interpolateTrilinear(data, size, xi, fillValue=fillValue)
+    output = interpolateTrilinear(data, size, xi, fillValue=fillValue, tryGPU=tryGPU)
     output = output.reshape((size[1], size[0], size[2])).transpose(1, 0, 2)
 
     return output.astype(outputType)
