@@ -6,6 +6,10 @@ This file contains an example on how to:
 """
 import os
 from pathlib import Path
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
 
 from Core.IO.dataLoader import loadAllData
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence

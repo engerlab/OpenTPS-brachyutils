@@ -23,9 +23,9 @@ class GenericImageForViewer(DataMultiton):
         self.selectedPositionChangedSignal = Event(tuple)
         self.rangeChangedSignal = Event(tuple)
 
-        self._wwlValue = (400, 0)
-        self._lookupTableName = 'fusion'
         self._range = (0, 100)
+        self._wwlValue = (self._range[1]-self._range[0], (self._range[1]+self._range[0])/2.)
+        self._lookupTableName = 'fusion'
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         self._selectedPosition = (0, 0, 0)

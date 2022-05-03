@@ -9,11 +9,11 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 try:
     from Core.Processing.ImageProcessing import sitkImageProcessing
+
+    resize = sitkImageProcessing.resize
 except:
     print('No module SimpleITK found')
 
-
-resize = sitkImageProcessing.resize
 
 def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
     if not inPlace:

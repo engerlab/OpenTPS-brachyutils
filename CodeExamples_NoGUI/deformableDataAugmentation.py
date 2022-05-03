@@ -1,12 +1,17 @@
+import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+import numpy as np
+from pathlib import Path
+import math
+
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 import matplotlib.pyplot as plt
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDynSeqFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import getVoxelIndexFromPosition
-import numpy as np
-import os
-from pathlib import Path
-import math
 
 if __name__ == '__main__':
 
@@ -74,12 +79,18 @@ if __name__ == '__main__':
     plt.figure(figsize=(12, 6))
     signalAx = plt.subplot(2, 1, 2)
     for pointIndex, point in enumerate(pointList):
-        ax = plt.subplot(2, len(pointList), pointIndex+1)
-        ax.set_title('Slice Y:' + str(pointList[pointIndex][1]))
+        ax = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 1)
+        ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
         ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
-        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
-        signalAx.plot(newSignal.timestamps/1000, signalList[pointIndex], c=colors[pointIndex])
-
+        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
+                   c=colors[pointIndex], marker="x", s=100)
+        ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
+        ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
+        ax2.imshow(np.rot90(dynMod.midp.imageArray[:, :, pointVoxelList[pointIndex][2]], 3))
+        ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]],
+                   c=colors[pointIndex], marker="x", s=100)
+        signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
+ 
     signalAx.set_xlabel('Time (s)')
     signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
     plt.show()
@@ -92,7 +103,7 @@ if __name__ == '__main__':
 
 
     ## save it as a serialized object
-    savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung'
+    savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung'
     saveSerializedObjects(dynSeq, savingPath)
 
     print('/'*80, '\n', '/'*80)
@@ -121,5 +132,5 @@ if __name__ == '__main__':
         dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
 
         ## save it as a serialized object
-        savingPath = '/home/damien/Desktop/' + 'PatientTest_InvLung_part' + str(i)
+        savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung_part' + str(i)
         saveSerializedObjects(dynSeq, savingPath)

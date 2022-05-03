@@ -54,7 +54,11 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     transform.SetMatrix(img.GetDirection())
 
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
-    outData = np.array(sitk.GetArrayFromImage(outImg)).astype(imgType)
+    outData = np.array(sitk.GetArrayFromImage(outImg))
+
+    if imgType==bool:
+        outData[outData<0] = 0
+    outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)
 
@@ -63,6 +67,8 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     image.spacing = newSpacing
 
 def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0.):
+    imgType = image.imageArray.dtype
+
     img = image3DToSITK(image)
     tform = tform[0:-1, 0:-1]
 
@@ -101,6 +107,9 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0.):
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
 
     outData = np.array(sitk.GetArrayFromImage(outImg))
+    if imgType==bool:
+        outData[outData<0] = 0
+    outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)
 

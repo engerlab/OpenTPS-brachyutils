@@ -11,6 +11,7 @@ from vtkmodules.vtkInteractionWidgets import vtkOrientationMarkerWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
 
 from Core.event import Event
+from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 
 
@@ -65,11 +66,14 @@ class PrimaryImageLayer:
         return self._image
 
     @image.setter
-    def image(self, image: Optional[Image3DForViewer]):
+    def image(self, image:Optional[GenericImageForViewer]):
         self._setImage(image)
 
-    def _setImage(self, image: Optional[Image3DForViewer]):
+    def _setImage(self, image:Optional[GenericImageForViewer]):
         if image == self._image:
+            return
+
+        if not (isinstance(image, GenericImageForViewer) or (image is None)):
             return
 
         self._image = image
