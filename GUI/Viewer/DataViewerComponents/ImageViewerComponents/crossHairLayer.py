@@ -25,6 +25,9 @@ class CrossHairLayer:
         self._renderer.AddActor(self._crossHairActor)
         self._crossHairActor.VisibilityOff()
 
+    def close(self):
+        pass
+
     @property
     def position(self) -> typing.Sequence:
         return self._position

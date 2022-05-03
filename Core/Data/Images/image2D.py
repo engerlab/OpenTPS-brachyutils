@@ -1,21 +1,59 @@
+import numpy as np
+
 from Core.Data.patientData import PatientData
+from Core.event import Event
 
 
 class Image2D(PatientData):
     def __init__(self, imageArray=None, name="2D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
         super().__init__(patientInfo=patientInfo, name=name, seriesInstanceUID=seriesInstanceUID)
+
+        self.dataChangedSignal = Event()
+
         self.imageArray = imageArray
-        self.origin = origin
-        self.spacing = spacing
-        self.angles = angles
+        self._origin = np.array(origin)
+        self._spacing = np.array(spacing)
+        self._angles = np.array(angles)
 
     def __str__(self):
-        gs = self.getGridSize()
+        gs = self.gridSize
         s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
         return s
 
-    def getGridSize(self):
-        if self.imageArray is None:
-            return (0, 0)
+    @property
+    def origin(self) -> np.ndarray:
+        return self._origin
 
-        return self.imageArray.shape
+    @origin.setter
+    def origin(self, origin):
+        self._origin = np.array(origin)
+        self.dataChangedSignal.emit()
+
+    @property
+    def spacing(self) -> np.ndarray:
+        return self._spacing
+
+    @spacing.setter
+    def spacing(self, spacing):
+        self._spacing = np.array(spacing)
+        self.dataChangedSignal.emit()
+
+    @property
+    def angles(self) -> np.ndarray:
+        return self._angles
+
+    @angles.setter
+    def angles(self, angles):
+        self._angles = np.array(angles)
+        self.dataChangedSignal.emit()
+
+    @property
+    def gridSize(self)  -> np.ndarray:
+        if self.imageArray is None:
+            return np.array((0, 0))
+
+        return np.array(self.imageArray.shape)
+
+    @property
+    def gridSizeInWorldUnit(self) -> np.ndarray:
+        return self.gridSize * self.spacing

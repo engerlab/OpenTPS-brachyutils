@@ -18,19 +18,6 @@ class PlanIonBeam:
         self.rangeShifter: Optional[RangeShifter] = None
         self.seriesInstanceUID = ""
 
-    def __deepcopy__(self, memodict={}):
-        newBeam = PlanIonBeam()
-
-        newBeam.rangeShifter = self.rangeShifter # TODO should we deecopy this?
-        newBeam._layers = [copy.deepcopy(layer) for layer in self._layers]
-        newBeam.isocenterPosition = np.array(self.isocenterPosition)
-        newBeam.gantryAngle = self.gantryAngle
-        newBeam.patientSupportAngle = self.patientSupportAngle
-        newBeam.seriesInstanceUID = self.seriesInstanceUID
-        newBeam.name = self.name
-
-        return newBeam
-
     def  __getitem__(self, layerNb) -> PlanIonLayer:
         return self._layers[layerNb]
 

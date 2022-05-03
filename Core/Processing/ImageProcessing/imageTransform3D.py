@@ -1,158 +1,131 @@
+import copy
 from math import pi, cos, sin
-from typing import Sequence
+from typing import Sequence, Optional
 
 import numpy as np
 from numpy import linalg
-from scipy.ndimage import zoom, affine_transform
 
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
+try:
+    from Core.Processing.ImageProcessing import sitkImageProcessing
+
+    resize = sitkImageProcessing.resize
+except:
+    print('No module SimpleITK found')
 
 
-class ImageTransform3D:
-    @staticmethod
-    def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
-        spacing = np.array(image.spacing)
+def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+    if not inPlace:
+        image = image.__class__.fromImage3D(image)
 
-        tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
-        tform = linalg.inv(tform)
+    resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
+                               fillValue=fillValue)
 
-        imageArray = zoom(image.imageArray, spacing, cval=fillValue)
-        imageArray = affine_transform(imageArray, tform, cval=fillValue)
-        imageArray = zoom(imageArray, np.array([1., 1., 1.])/spacing, cval=fillValue)
+    return image
 
-        outImage = image.copy()
-        outImage.imageArray = imageArray
+def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
+    tform = _forwardDicomToIECGantry(image, beam)
 
-        return outImage
+    tform = linalg.inv(tform)
 
-    @staticmethod
-    def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
-        u = point[0]
-        v = point[1]
-        w = point[2]
+    outImage = image.__class__.fromImage3D(image)
+    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
 
-        tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
+    return outImage
 
-        u = u - image.origin[0]
-        v = v - image.origin[1]
-        w = w - image.origin[2]
+def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
+    u = point[0]
+    v = point[1]
+    w = point[2]
 
-        [x, y, z] = ImageTransform3D._transformPointsForward(tform, u, v, w);
+    tform = _forwardDicomToIECGantry(image, beam)
+    tform = linalg.inv(tform)
 
-        x = x + image.origin[0]
-        y = y + image.origin[1]
-        z = z + image.origin[2]
+    return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
-        return (x, y, z)
+def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
+    tform = _forwardDicomToIECGantry(image, beam)
 
-    @staticmethod
-    def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
-        spacing = np.array(image.spacing)
+    #tform = linalg.inv(tform)
 
-        tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
+    outImage = image.__class__.fromImage3D(image)
+    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
 
-        imageArray = zoom(image.imageArray, spacing, cval=fillValue)
-        imageArray = affine_transform(imageArray, tform, cval=fillValue)
-        imageArray = zoom(imageArray, np.array([1., 1., 1.]) / spacing, cval=fillValue)
+    return outImage
 
-        outImage = image.copy()
-        outImage.imageArray = imageArray
+def iecGantryCoordinatetoDicom(image: Image3D, beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
+    u = point[0]
+    v = point[1]
+    w = point[2]
 
-        return outImage
+    tform = _forwardDicomToIECGantry(image, beam)
+    #tform = linalg.inv(tform)
 
-    @staticmethod
-    def iecGantryCoordinatetoDicom(image: Image3D, beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
-        u = point[0]
-        v = point[1]
-        w = point[2]
+    return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
-        tform = ImageTransform3D._forwardDicomToIECGantry(image, beam)
-        tform = linalg.inv(tform)
+def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
+    isocenter = beam.isocenterPosition
+    gantryAngle = beam.gantryAngle
+    patientSupportAngle = beam.patientSupportAngle
 
-        u = u - image.origin[0]
-        v = v - image.origin[1]
-        w = w - image.origin[2]
+    orig = np.array(isocenter) - np.array(image.origin)
 
-        [x, y, z] = ImageTransform3D._transformPointsForward(tform, u, v, w);
+    M = _roll(-gantryAngle, [0, 0, 0]) @ \
+        _rot(patientSupportAngle, [0, 0, 0]) @ \
+        _pitch(-90, [0, 0, 0])
 
-        x = x + image.origin[0]
-        y = y + image.origin[1]
-        z = z + image.origin[2]
+    Trs = [[1., 0., 0., -orig[0]],
+           [0., 1., 0., -orig[1]],
+           [0., 0., 1., -orig[2]],
+           [0., 0., 0., 1.]]
 
-        return (x, y, z)
+    Flip = [[1., 0., 0., 0.],
+            [0., 1., 0., 0.],
+            [0., 0., -1., 0.],
+            [0., 0., 0., 1.]]
 
-    @staticmethod
-    def _transformPointsForward(tform: np.ndarray, u:float, v:float, w:float):
-        res = tform @ np.array([u, v, w, 1])
+    Trs = np.array(Trs)
+    Flip = np.array(Flip)
 
-        return res[:-1]
+    T = linalg.inv(Flip @ Trs) @ M @ Flip @ Trs
 
-    @staticmethod
-    def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
-        isocenter = beam.isocenterPosition
-        gantryAngle = beam.gantryAngle
-        patientSupportAngle = beam.patientSupportAngle
+    #T = np.transpose(T)
 
-        orig = np.array(isocenter) - np.array(image.origin)
+    return T
 
-        M = ImageTransform3D._roll(-gantryAngle, [0, 0, 0]) @ \
-            ImageTransform3D._rot(patientSupportAngle, [0, 0, 0]) @ \
-            ImageTransform3D._pitch(-90, [0, 0, 0])
+def _roll(angle:float, offset:Sequence[float]) -> np.ndarray:
+    a = pi * angle / 180.
+    ca = cos(a)
+    sa = sin(a)
 
-        Trs = [[1., 0., 0., -orig[0]],
-               [0., 1., 0., -orig[1]],
-               [0., 0., 1., -orig[2]],
-               [0., 0., 0., 1.]]
+    R = [[ca, 0., sa, offset[0]],
+         [0., 1., 0., offset[1]],
+         [-sa, 0., ca, offset[2]],
+         [0., 0., 0., 1.]]
 
-        Flip = [[1., 0., 0., 0.],
-                [0., 1., 0., 0.],
-                [0., 0., -1., 0.],
-                [0., 0., 0., 1.]]
+    return np.array(R)
 
-        Trs = np.array(Trs)
-        Flip = np.array(Flip)
+def _rot(angle:float, offset:Sequence[float]) -> np.ndarray:
+    a = pi * angle / 180.
+    ca = cos(a)
+    sa = sin(a)
 
-        T = linalg.inv(Flip @ Trs) @ M @ Flip @ Trs
+    R = [[ca, -sa, 0., offset[0]],
+         [sa, ca, 0., offset[1]],
+         [0., 0., 1., offset[2]],
+         [0., 0., 0., 1.]]
 
-        return T
+    return np.array(R)
 
+def _pitch(angle:float, offset:Sequence[float]) -> np.ndarray:
+    a = pi * angle / 180.
+    ca = cos(a)
+    sa = sin(a)
 
-    @staticmethod
-    def _roll(angle:float, offset:Sequence[float]) -> np.ndarray:
-        a = pi * angle / 180.
-        ca = cos(a)
-        sa = sin(a)
+    R = [[1., 0., 0., offset[0]],
+         [0., ca, -sa, offset[1]],
+         [0., sa, ca, offset[2]],
+         [0., 0., 0., 1.]]
 
-        R = [[ca, 0., sa, offset[0]],
-             [0., 1., 0., offset[1]],
-             [-sa, 0., ca, offset[2]],
-             [0., 0., 0., 1.]]
-
-        return np.array(R)
-
-    @staticmethod
-    def _rot(angle:float, offset:Sequence[float]) -> np.ndarray:
-        a = pi * angle / 180.
-        ca = cos(a)
-        sa = sin(a)
-
-        R = [[ca, -sa, 0., offset[0]],
-             [sa, ca, 0., offset[1]],
-             [0., 0., 1., offset[2]],
-             [0., 0., 0., 1.]]
-
-        return np.array(R)
-
-    @staticmethod
-    def _pitch(angle:float, offset:Sequence[float]) -> np.ndarray:
-        a = pi * angle / 180.
-        ca = cos(a)
-        sa = sin(a)
-
-        R = [[1., 0., 0., offset[0]],
-             [0., ca, -sa, offset[1]],
-             [0., sa, ca, offset[2]],
-             [0., 0., 0., 1.]]
-
-        return np.array(R)
+    return np.array(R)
