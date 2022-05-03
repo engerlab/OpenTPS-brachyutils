@@ -1,4 +1,5 @@
 import numpy as np
+from PyQt5.QtWidgets import QApplication
 from pyqtgraph import PlotWidget, PlotCurveItem
 
 
@@ -24,3 +25,6 @@ class ConvergencePlot(PlotWidget):
         self.y.append(xy[1])
 
         self.pl.setData(self.x, self.y)
+
+        # To force update the plot
+        QApplication.processEvents()

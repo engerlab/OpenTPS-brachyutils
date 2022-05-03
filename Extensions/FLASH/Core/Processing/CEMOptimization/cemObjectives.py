@@ -118,7 +118,7 @@ class CEMAbstractDoseFidelityTerm:
 
 
 class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
-    def __init__(self, roi:ROIMask, maxDose:float, doseCalculator):
+    def __init__(self, roi:ROIMask, maxDose:float, doseCalculator=None):
         super().__init__()
 
         self._maxDose:float = maxDose
@@ -190,7 +190,7 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
 
 
 class DoseMinObjective(CEMAbstractDoseFidelityTerm):
-    def __init__(self, roi:ROIMask, minDose:float, doseCalculator):
+    def __init__(self, roi:ROIMask, minDose:float, doseCalculator=None):
         super().__init__()
 
         self._minDose: float = minDose
