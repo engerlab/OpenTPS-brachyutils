@@ -7,6 +7,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.dvhViewerActions import DVHViewerActions
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
@@ -389,7 +390,7 @@ class DataViewer(QWidget):
         """
         if isinstance(image, Image3D) or isinstance(image, Dynamic3DModel):
             self.displayMode = self.DisplayModes.STATIC
-        elif isinstance(image, Dynamic3DSequence):
+        elif isinstance(image, Dynamic3DSequence) or isinstance(image, Dynamic2DSequence):
             self.displayMode = self.DisplayModes.DYNAMIC
         elif image is None:
             pass
@@ -405,7 +406,7 @@ class DataViewer(QWidget):
         """
         if isinstance(image, Image3D):
             self.cachedStaticImageViewer.primaryImage = image
-        elif isinstance(image, Dynamic3DSequence):
+        elif isinstance(image, Dynamic3DSequence) or isinstance(image, Dynamic2DSequence):
             self.cachedDynamicImageViewer.primaryImage = image
         elif isinstance(image, Dynamic3DModel):
             self.cachedStaticImageViewer.primaryImage = image.midp
