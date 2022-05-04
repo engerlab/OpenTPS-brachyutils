@@ -1,9 +1,13 @@
+import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+import matplotlib.pyplot as plt
+from pathlib import Path
+
 from Core.Processing.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
 from Core.IO.serializedObjectIO import loadDataStructure
-import matplotlib.pyplot as plt
-# Import the os module
-import os
-from pathlib import Path
 
 if __name__ == '__main__':
 

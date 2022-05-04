@@ -5,15 +5,20 @@ This file contains an example on how to:
 - save the model in serialized format in drive
 """
 
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.IO.serializedObjectIO import saveSerializedObjects
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.IO.serializedObjectIO import loadDataStructure
 import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
 from pathlib import Path
 from pydicom.uid import generate_uid
 import time
 import numpy as np
+
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
+from Core.IO.serializedObjectIO import saveSerializedObjects
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.IO.serializedObjectIO import loadDataStructure
 
 if __name__ == '__main__':
 
