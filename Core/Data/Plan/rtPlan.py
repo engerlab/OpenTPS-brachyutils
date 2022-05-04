@@ -17,8 +17,26 @@ class RTPlan(PatientData):
         super().__init__(patientInfo=patientInfo)
 
         self._beams = []
-
         self.numberOfFractionsPlanned:int = 1
+
+        self.seriesInstanceUID = ""
+        self.SOPInstanceUID = ""
+        # self.PatientInfo = {}
+        # self.StudyInfo = {}
+        # self.DcmFile = ""
+        self.modality = ""
+        self.radiationType = ""
+        self.scanMode = ""
+        self.treatmentMachineName = ""
+        self.name = ""
+        # self.Objectives = OptimizationObjectives()
+        # self.isLoaded = 0
+        self.beamlets = []
+        # self.OriginalDicomDataset = []
+        # self.RobustOpti = {"Strategy": "Disabled", "syst_setup": [0.0, 0.0, 0.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 0.0}
+        self.scenarios = []
+        self.numScenarios = 0
+
 
     def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]
@@ -65,6 +83,10 @@ class RTPlan(PatientData):
     @property
     def meterset(self) -> float:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
+
+    @property
+    def numberOfSpots(self) -> int:
+        return np.sum(np.array([beam.numberOfSpots for beam in self._beams]))
 
     def simplify(self, threshold:float=0.0):
         self._fusionDuplicates()
