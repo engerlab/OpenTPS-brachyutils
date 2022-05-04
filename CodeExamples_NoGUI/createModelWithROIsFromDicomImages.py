@@ -9,15 +9,21 @@ This file contains an example on how to:
 !!! does not work with public data for now since there is no struct in the public data !!!
 """
 
+import os
+import sys
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+from pydicom.uid import generate_uid
+import time
+import numpy as np
+
 from Core.IO.dataLoader import loadAllData
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.patient import Patient
 
-from pydicom.uid import generate_uid
-import time
-import numpy as np
 
 if __name__ == '__main__':
 
@@ -28,7 +34,7 @@ if __name__ == '__main__':
     # chose the 4DCT data folder
     data4DPath = basePath + patientName + '/4DCT'
     # chose the dicom rtStruct file
-    dataStructPath = basePath + patientName + '/MidP_ct_rtstruct.dcm'
+    dataStructPath = basePath + patientName + '/MidP_CT_rtstruct.dcm'
     # chose a path to save the results
     savingPath = basePath + patientName + '/dynModAndROIs'
 
