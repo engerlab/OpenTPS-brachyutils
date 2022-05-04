@@ -32,6 +32,7 @@ def gaussConv(data, sigma, truncate=2.5, mode="reflect", tryGPU=True):
             return cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupy.asarray(data), sigma=sigma, truncate=truncate, mode=mode))
         except:
             logger.warning('cupy not used for gaussian smoothing.')
+            # print('cupy not used for gaussian smoothing.')
 
     return scipy.ndimage.gaussian_filter(data, sigma=sigma, truncate=truncate, mode=mode)
 
