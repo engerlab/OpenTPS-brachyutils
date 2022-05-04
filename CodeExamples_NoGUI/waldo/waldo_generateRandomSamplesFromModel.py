@@ -15,24 +15,34 @@ from Core.Processing.DeformableDataAugmentationToolBox.generateRandomSamplesFrom
 
 if __name__ == '__main__':
 
-    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+    organ = 'lung'
+    patientFolder = 'Patient_4'
+    patientComplement = '/1/FDG1'
+    basePath = '/DATA2/public/'
 
-    ## read a serialized dynamic sequence
-    dataPath = testDataPath + "superLightDynSeqWithMod.p"
-    # dataPath = '/home/damien/Desktop/Patient0/Patient0_Model_bodyCropped.p'
+    resultFolder = '/testCupy/'
+    resultDataFolder = 'data/'
+
+    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
+    savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
+
+    if not os.path.exists(savingPath):
+        os.umask(0)
+        os.makedirs(savingPath)  # Create a new directory because it does not exist
+        os.makedirs(savingPath + resultDataFolder)  # Create a new directory because it does not exist
+        print("New directory created to save the data: ", savingPath)
+
     patient = loadDataStructure(dataPath)[0]
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
 
-    tryGPU = True
-    numberOfSamples = 50
 
     imageList = []
 
     startTime = time.time()
 
-    defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=numberOfSamples, ampDistribution='gaussian')
+    defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian')
     for deformation in defList:
-        imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=tryGPU))
+        imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=True))
 
     print(len(imageList))
     print('first test done in ', np.round(time.time() - startTime, 2))
@@ -42,7 +52,7 @@ if __name__ == '__main__':
     plt.show()
 
     startTime = time.time()
-    imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=numberOfSamples, ampDistribution='gaussian', tryGPU=tryGPU)
+    imageList = generateRandomImagesFromModel(dynMod, numberOfSamples=10, ampDistribution='gaussian', tryGPU=True)
     print('second test done in ', np.round(time.time() - startTime, 2))
 
     plt.figure()
