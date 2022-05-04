@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from Core.Processing.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
-from Core.IO.serializedObjectIO import loadDataStructure
+from Core.IO.serializedObjectIO import loadDataStructure, saveSerializedObjects
 
 if __name__ == '__main__':
 
@@ -36,38 +36,38 @@ if __name__ == '__main__':
                         [30, 'X'],
                         [-10, 'Y']]
 
-    DRRSet = computeDRRSet(dynSeq.dyn3DImageList[0], anglesAndAxisList)
-
-    for DRRImage in DRRSet:
-        print(DRRImage.name)
-
-    plt.figure()
-    plt.subplot(1, 3, 1)
-    plt.imshow(DRRSet[0].imageArray)
-    plt.subplot(1, 3, 2)
-    plt.imshow(DRRSet[1].imageArray)
-    plt.subplot(1, 3, 3)
-    plt.imshow(DRRSet[2].imageArray)
-    plt.show()
-
-    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-
-    ## use it on a CTImage with 2 angles, then get back a list of DRR that can be added to a patient
-    DRRSequence = computeDRRSequence(dynSeq, anglesAndAxisList)
-
-    for DRRSet in DRRSequence:
-        print('-----------')
-        for DRRImage in DRRSet:
-            print(DRRImage.name)
-
-    plt.figure()
-    plt.subplot(1, 3, 1)
-    plt.imshow(DRRSequence[0][1].imageArray)
-    plt.subplot(1, 3, 2)
-    plt.imshow(DRRSequence[5][1].imageArray)
-    plt.subplot(1, 3, 3)
-    plt.imshow(DRRSequence[2][0].imageArray)
-    plt.show()
+    # DRRSet = computeDRRSet(dynSeq.dyn3DImageList[0], anglesAndAxisList)
+    #
+    # for DRRImage in DRRSet:
+    #     print(DRRImage.name)
+    #
+    # plt.figure()
+    # plt.subplot(1, 3, 1)
+    # plt.imshow(DRRSet[0].imageArray)
+    # plt.subplot(1, 3, 2)
+    # plt.imshow(DRRSet[1].imageArray)
+    # plt.subplot(1, 3, 3)
+    # plt.imshow(DRRSet[2].imageArray)
+    # plt.show()
+    #
+    # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    #
+    # ## use it on a CTImage with 2 angles, then get back a list of DRR that can be added to a patient
+    # DRRSequence = computeDRRSequence(dynSeq, anglesAndAxisList)
+    #
+    # for DRRSet in DRRSequence:
+    #     print('-----------')
+    #     for DRRImage in DRRSet:
+    #         print(DRRImage.name)
+    #
+    # plt.figure()
+    # plt.subplot(1, 3, 1)
+    # plt.imshow(DRRSequence[0][1].imageArray)
+    # plt.subplot(1, 3, 2)
+    # plt.imshow(DRRSequence[5][1].imageArray)
+    # plt.subplot(1, 3, 3)
+    # plt.imshow(DRRSequence[2][0].imageArray)
+    # plt.show()
 
     print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     ## create dynamic 2D sequences of DRR's
@@ -88,6 +88,6 @@ if __name__ == '__main__':
         for dyn2DSeq in dyn2DDRRSeqList:
             dynSeq.patient.appendDyn2DSeq(dyn2DSeq)
 
-    ## save resulting dynamic2DSequences in drive
-    # savingPath = testDataPath + 'dyn2DDRRSeqList'
+    # # save resulting dynamic2DSequences in drive
+    # savingPath = 'C:/Users/damie/Desktop/' + 'dyn2DDRRSeqList'
     # saveSerializedObjects(dyn2DDRRSeqList, savingPath)
