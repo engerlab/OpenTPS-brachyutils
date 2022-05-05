@@ -8,10 +8,10 @@ class RangeShifter:
 
     def __str__(self):
         s = ''
-        s = s + 'RS_ID = ' + self.ID
-        s = s + 'RS_type = ' + self.type
-        s = s + 'RS_material = ' + str(self.material)
-        s = s + 'RS_density = ' + str(self.density)
-        s = s + 'RS_WET = ' + str(self.WET)
+        s = s + 'RS_ID = ' + self.ID + '\n'
+        s = s + 'RS_type = ' + self.type + '\n'
+        s = s + 'RS_material = ' + str(self.material) + '\n'
+        s = s + 'RS_density = ' + str(self.density) + '\n'
+        s = s + 'RS_WET = ' + str(self.WET) + '\n'
 
         return s

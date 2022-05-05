@@ -334,7 +334,7 @@ def readDicomPlan(dcmFile):
         SnoutPosition = float(first_layer.SnoutPosition)
     
       IsocenterToRangeShifterDistance = SnoutPosition
-      RangeShifterWaterEquivalentThickness = ""
+      RangeShifterWaterEquivalentThickness = None
       RangeShifterSetting = "OUT"
       ReferencedRangeShifterNumber = 0
     
