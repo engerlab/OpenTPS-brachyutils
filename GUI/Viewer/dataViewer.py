@@ -7,6 +7,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.dvhViewerActions import DVHViewerActions
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
@@ -28,6 +29,7 @@ class DroppedObject:
         # DropTypes is not an Enum because Enum does not preserve string type of class attributes. But we want Drop types
         # to be string to be compatible with QMimeData
         IMAGE = 'IMAGE'
+        PLAN = 'PLAN'
 
     def __init__(self, dropType, droppedData):
         self.dropType = dropType
@@ -74,6 +76,7 @@ class DataViewer(QWidget):
 
         # It might seems weird to have a signal which is only used within the class but it is if someday we want to move the logical part out of this class.
         self.droppedImageSignal = Event(object)
+        self.droppedPlanSignal = Event(object)
         self.displayTypeChangedSignal = Event(object)
 
         self._viewController = viewController
@@ -317,10 +320,15 @@ class DataViewer(QWidget):
         """
         if e.mimeData().hasText():
             droppedIsImage = e.mimeData().text() == DroppedObject.DropTypes.IMAGE
+            droppedIsPlan = e.mimeData().text() == DroppedObject.DropTypes.PLAN
 
             if droppedIsImage:
                 e.accept()
                 self.droppedImageSignal.emit(self._viewController.selectedImage)
+                return
+            elif droppedIsImage:
+                e.accept()
+                self.droppedPlanSignal.emit(self._viewController.selectedImage)
                 return
         e.ignore()
 
@@ -342,6 +350,7 @@ class DataViewer(QWidget):
         self._viewController.independentViewsEnabledSignal.connect(self.enableDrop)
         self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplaydMode)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
+        self._viewController.planChangedSignal.connect(self._setPlan)
         self._viewController.dropModeSignal.connect(self._setDropMode)
         self._viewController.droppedImageSignal.connect(self._setDroppedImage)
 
@@ -366,8 +375,10 @@ class DataViewer(QWidget):
             # It might seems weird to have a signal connected within the class but it is if someday we want to move the logical part out of this class.
             # See also comment on dropEnabled : Should we implement drop directly in ImageViewer?
             self.droppedImageSignal.connect(self._setDroppedImage)
+            self.droppedPlanSignal.connect(self._setPlan)
         else:
             self.droppedImageSignal.disconnect(self._setDroppedImage)
+            self.droppedPlanSignal.disconnect(self._setPlan)
 
     def _setDropMode(self, dropMode):
         self.dropMode = dropMode
@@ -432,6 +443,9 @@ class DataViewer(QWidget):
 
         self.cachedStaticImageViewer.secondaryImage = image
         self._setDVHDose(image)
+
+    def _setPlan(self, plan:Optional[RTPlan]):
+        self.cachedStaticImageViewer.plan = plan
 
     def _setDVHDose(self, image:Optional[DoseImage]):
         if image is None:

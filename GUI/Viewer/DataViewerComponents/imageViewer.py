@@ -11,9 +11,11 @@ from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.event import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.rtPlanLayer import RTPlanLayer
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.crossHairLayer import CrossHairLayer
@@ -66,6 +68,7 @@ class ImageViewer(QWidget):
         self._profileWidget = ProfileWidget(self._renderer, self._renderWindow)
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
+        self._rtPlanLayer = RTPlanLayer(self._renderer, self._renderWindow)
 
         self._profileWidget.primaryLayer = self._primaryImageLayer
         self._profileWidget.secondaryLayer = self._secondaryImageLayer
@@ -106,6 +109,16 @@ class ImageViewer(QWidget):
         self._textLayer.close()
         self._contourLayer.close()
         self._crossHairLayer.close()
+        self._rtPlanLayer.close()
+
+    @property
+    def rtPlan(self) -> RTPlan:
+        raise NotImplementedError
+
+    @rtPlan.setter
+    def rtPlan(self, plan:RTPlan):
+        if not self.primaryImage is None:
+            self._rtPlanLayer.setPlan(plan, self.primaryImage)
 
     @property
     def primaryImage(self) -> Image3D:
