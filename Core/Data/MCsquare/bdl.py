@@ -42,8 +42,11 @@ class BDL:
         s += 'SMY to Isocenter distance\n'
         s += str(self.smy) + '\n\n'
 
-        #if len(self.RangeShifters)>0:
-        #    raise ValueError('RS not supported yet')
+        if len(self.RangeShifters) >0:
+            s += 'Range Shifter parameters \n'
+            for RS in self.RangeShifters:
+                s += str(RS)
+            s += '\n'
 
         s += 'Beam parameters\n'
         s += str(len(self.NominalEnergy)) + ' energies\n\n'
