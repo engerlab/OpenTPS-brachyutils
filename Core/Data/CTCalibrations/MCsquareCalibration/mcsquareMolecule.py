@@ -47,14 +47,13 @@ class MCsquareMolecule(MCsquareMaterial):
                     self.name = line[1]
                     continue
 
-                if re.search(r'Density', line):
-                    line = line.split()
-                    self.density = float(line[1])
-                    continue
-
                 if re.search(r'Electron_Density', line):
                     line = line.split()
                     self.electronDensity = float(line[1])
+                    continue
+                elif re.search(r'Density', line):
+                    line = line.split()
+                    self.density = float(line[1])
                     continue
 
                 if re.search(r'Radiation_Length', line):

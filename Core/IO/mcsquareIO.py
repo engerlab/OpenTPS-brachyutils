@@ -4,7 +4,7 @@ import shutil
 import struct
 import time
 import unittest
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 import scipy.sparse as sp
@@ -285,7 +285,7 @@ def readBDL(path) -> BDL:
             if ("RS_material" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].material = int(value)
+                bdl.RangeShifters[-1].material = None # int(value) might not be consistent with materials used in openTPS. Better rely on RS_density to find the material
 
             if ("RS_density" in line):
                 line = line.split('=')
@@ -322,9 +322,12 @@ def readBDL(path) -> BDL:
     return bdl
 
 
-def writeBDL(bdl: BDL, fileName):
+def writeBDL(bdl: BDL, fileName, calibration:AbstractCTCalibration):
+    if not isinstance(calibration, MCsquareCTCalibration):
+        calibration = MCsquareCTCalibration.fromCTCalibration(calibration)
+
     with open(fileName, 'w') as f:
-        f.write(bdl.mcsquareFormatted())
+        f.write(bdl.mcsquareFormatted(calibration.printedFormat()))
 
 
 def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
