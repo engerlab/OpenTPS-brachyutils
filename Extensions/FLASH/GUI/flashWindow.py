@@ -79,6 +79,7 @@ class FlashWindow(QMainWindow):
         self._leftPanel.doseUpdateEvent.connect(self._updateDVHWithDose)
         self._leftPanel.fValEvent.connect(self._convergencePlot.appendFVal)
         self._leftPanel.contourSelectedEvent.connect(self._createDVHs)
+        self._leftPanel.planUpdateEvent.connect(self._viewers.setPlan)
 
     def _updateDVHWithDose(self, dose:DoseImage):
         for dvh in self._dvhs:
@@ -164,6 +165,11 @@ class ThreeViewsGrid(QWidget):
         self._convertROIToMask()
         self._setCTPositionToROICenter()
 
+    def setPlan(self, plan:RTPlan):
+        self._viewer0.rtPlan = plan
+        self._viewer1.rtPlan = plan
+        self._viewer2.rtPlan = plan
+
     def _convertROIToMask(self):
         if isinstance(self._roi, ROIContour):
             if not self._ct is None:
@@ -185,6 +191,7 @@ class UserInputPanel(QWidget):
         self.ctSelectedEvent = Event(Image3D)
         self.doseUpdateEvent = Event(Image3D)
         self.contourSelectedEvent = Event(object)
+        self.planUpdateEvent = Event(RTPlan)
         self.fValEvent = Event(Tuple)
 
         self._viewController = viewController
@@ -224,6 +231,7 @@ class UserInputPanel(QWidget):
         self.cemOptimizer = SingleBeamCEMOptimizationWorkflow()
         self.cemOptimizer.doseUpdateEvent.connect(self._updateDose)
         self.cemOptimizer.planUpdateEvent.connect(self._updateCT)
+        self.cemOptimizer.planUpdateEvent.connect(self.planUpdateEvent.emit)
         self.cemOptimizer.fValEvent.connect(self.fValEvent.emit)
 
     def _emitCT(self):
@@ -288,6 +296,9 @@ class UserInputPanel(QWidget):
         # Update CT with CEM
         for beam in plan:
             cem = beam.cem
+
+            if cem is None:
+                continue
 
             if not cem.imageArray is None:
                 [rsROI, cemROI] = cem.computeROIs(ct, beam)

@@ -16,6 +16,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObjects
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
@@ -149,7 +150,7 @@ class PatientDataTree(QTreeView):
         self.setAcceptDrops(True)
 
     def _appendData(self, data):
-        if isinstance(data, Image3D) or isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence):
+        if isinstance(data, Image3D) or isinstance(data, RTPlan) or isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence):
             rootItem = PatientDataItem(data)
             self.rootNode.appendRow(rootItem)
 
@@ -257,6 +258,8 @@ class PatientDataTree(QTreeView):
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
             self._viewController.mainImage = selectedData
+        if isinstance(selectedData, RTPlan):
+            self._viewController.plan = selectedData
         elif isinstance(selectedData, Dynamic3DModel):
             self._viewController.mainImage = selectedData.midp
         elif isinstance(selectedData, DoseImage):

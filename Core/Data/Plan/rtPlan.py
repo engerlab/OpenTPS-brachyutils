@@ -19,6 +19,7 @@ class RTPlan(PatientData):
         self._beams = []
 
         self.numberOfFractionsPlanned:int = 1
+        self.name = 'RTPlan'
 
     def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]

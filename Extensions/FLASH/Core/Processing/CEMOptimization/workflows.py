@@ -66,6 +66,9 @@ class SingleBeamCEMOptimizationWorkflow():
         self._setTargetROI()
 
         self._plan = self._initializePlan()
+        self._plan.patient = patient
+        self.planUpdateEvent.emit(self._plan)
+
         beam = self._plan.beams[0]
 
         # Pad CT
