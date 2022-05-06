@@ -242,7 +242,12 @@ def readDicomPlan(dcmFile):
     patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                               sex=dcm.PatientSex)
 
-    plan = RTPlan(patientInfo=patientInfo)
+    if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
+        name = dcm.SeriesDescription
+    else:
+        name = dcm.SeriesInstanceUID
+
+    plan = RTPlan(name=name, patientInfo=patientInfo)
 
     # plan.OriginalDicomDataset = dcm
     
