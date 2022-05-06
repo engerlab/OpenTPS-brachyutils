@@ -18,10 +18,11 @@ class ViewController():
         self.patientAddedSignal = Event(object)
         self.patientRemovedSignal = Event(object)
         self.secondaryImageChangedSignal = Event(object)
+        self.planChangedSignal = Event(object)
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
         self.dropModeSignal = Event(object)
-        self.droppedImageSignal = Event(object)
+        self.droppedDataSignal = Event(object)
         #self.dynamicViewerSwitchedOnSignal = Event(object)
 
         self.mainConfig = None
@@ -37,6 +38,7 @@ class ViewController():
         self._mainImage = None
         self.multipleActivePatientsEnabled = False #TODO
         self._patientList = patientList
+        self._plan = None
         self._selectedImage = None
         self._windowLevelEnabled = None
 
@@ -175,6 +177,22 @@ class ViewController():
         self.secondaryImageChangedSignal.emit(self._secondaryImage)
 
     @property
+    def plan(self):
+        if self.independentViewsEnabled:
+            # secondaryImage is only available when only one image can be shown
+            raise ("plan is only available when only one image can be shown")
+        return self._plan
+
+    @plan.setter
+    def plan(self, plan):
+        if self.independentViewsEnabled:
+            # secondaryImage is only available when only one image can be shown
+            raise ("plan is only available when only one image can be shown")
+
+        self._plan = plan
+        self.planChangedSignal.emit(self._plan)
+
+    @property
     def droppedImage(self):
         if self.independentViewsEnabled:
             # droppedImage is only available when only one image can be shown
@@ -189,7 +207,7 @@ class ViewController():
             raise()
 
         self._droppedImage = image
-        self.droppedImageSignal.emit(self._droppedImage)
+        self.droppedDataSignal.emit(self._droppedImage)
 
     @property
     def selectedImage(self):
