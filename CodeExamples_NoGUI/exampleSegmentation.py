@@ -20,7 +20,7 @@ if __name__ == '__main__':
     im[45:55, 95:105, 30:40] = 0
     im[80:90, 95:105, :] = 800
     im[:, 130:135, :] = 100 #couch
-    ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=[1, 1, 1])
+    ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=[1, 2, 3])
 
     # APPLY THRESHOLD SEGMENTATION
     mask = segmentation.applyThreshold(ct, -750)
