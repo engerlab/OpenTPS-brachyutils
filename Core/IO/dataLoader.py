@@ -1,13 +1,14 @@
 import os
+from typing import Sequence
+
 import pydicom
 import logging
 
 from Core.Data.patientData import PatientData
 from Core.api import API
-from Core.Data.dynamic3DModel import Dynamic3DModel
 from Core.Data.patient import Patient
 from Core.Data.patientList import PatientList
-from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct
+from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
 from Core.IO import mhdReadWrite
 from Core.IO.serializedObjectIO import loadDataStructure
 
@@ -39,7 +40,7 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
 
         # add data to patient
         if(isinstance(data, PatientData)):
-            patient.appendPatienData(data)
+            patient.appendPatientData(data)
         # elif (isinstance(data, Dynamic2DSequence)): ## not implemented in patient yet, maybe only one function for both 2D and 3D dynamic sequences ?
         #     patient.appendDyn2DSeq(data)
         elif (isinstance(data, Patient)):
@@ -48,7 +49,7 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
             continue
 
-def loadAllData(inputPaths, maxDepth=-1):
+def loadAllData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
     """
     Load all data found at the given input path.
 
@@ -103,7 +104,8 @@ def loadAllData(inputPaths, maxDepth=-1):
 
         # Dicom RT Ion Plan
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
-            logging.warning("WARNING: cannot import " + filePath + " because RT ion plan import is not implemented yet")
+            plan = readDicomPlan(filePath)
+            dataList.append(plan)
 
         # Dicom struct
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.3":
@@ -170,7 +172,7 @@ def listAllFiles(inputPaths, maxDepth=-1):
 
     # check content of the input path
     if os.path.isdir(inputPaths):
-        inputPathContent = os.listdir(inputPaths)
+        inputPathContent = sorted(os.listdir(inputPaths))
     else:
         inputPathContent = [inputPaths]
         inputPaths = ""

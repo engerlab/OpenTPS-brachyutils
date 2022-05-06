@@ -7,8 +7,10 @@ from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.roiMask import ROIMask
 from Core.Data.roiContour import ROIContour
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
+from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 
 
 class ContourLayer:
@@ -20,8 +22,17 @@ class ContourLayer:
         self._resliceAxes = None
         self._vtkContours = []
 
-    def setNewContour(self, contour: ROIContour):
-        contour = ROIContourForViewer(contour)
+    def close(self):
+        for vtkContour in self._vtkContours:
+            vtkContour.close()
+
+    def setNewContour(self, contour:typing.Union[ROIContour, ROIMask]):
+        if isinstance(contour, ROIContour):
+            contour = ROIContourForViewer(contour)
+        elif isinstance(contour, ROIMask):
+            contour = ROIMaskForViewer(contour)
+        else:
+            raise ValueError(str(type(contour)) + ' is not a valid type for a contour.')
 
         if contour in self._contours:
             return
@@ -89,9 +100,12 @@ class vtkContour:
 
         self.setVisible(self._contour.visible)
 
-        # TODO: disconnect contours
         self._contour.visibleChangedSignal.connect(self.setVisible)
         self._contour.colorChangedSignal.connect(self.reloadColor)
+
+    def close(self):
+        self._contour.visibleChangedSignal.disconnect(self.setVisible)
+        self._contour.colorChangedSignal.disconnect(self.reloadColor)
 
     @property
     def resliceAxes(self):

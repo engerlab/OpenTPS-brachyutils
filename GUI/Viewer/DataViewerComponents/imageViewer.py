@@ -11,9 +11,11 @@ from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.event import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.rtPlanLayer import RTPlanLayer
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.crossHairLayer import CrossHairLayer
@@ -24,13 +26,13 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.textLayer import Text
 
 
 class ImageViewer(QWidget):
-    class viewerTypes(Enum):
+    class ViewerTypes(Enum):
         AXIAL = 'axial'
         CORONAL = 'coronal'
         SAGITTAL = 'sagittal'
         DEFAULT = 'sagittal'
 
-    _viewerTypesList = iter(list(viewerTypes))
+    _viewerTypesList = iter(list(ViewerTypes))
 
 
     def __init__(self, viewController):
@@ -41,6 +43,8 @@ class ImageViewer(QWidget):
         self.wwlEnabledSignal = Event(bool)
         self.wwlEnabledSignal = Event(bool)
         self.viewTypeChangedSignal = Event(object)
+        self.primaryImageSignal = Event(object)
+        self.secondaryImageSignal = Event(object)
 
         self._blackWidget = BlackEmptyPlot()
         self._crossHairEnabled = False
@@ -52,7 +56,7 @@ class ImageViewer(QWidget):
         self.__sendingWWL = False
         self._viewController = viewController
         self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
-        self._viewType = self.viewerTypes.DEFAULT
+        self._viewType = self.ViewerTypes.DEFAULT
         self._vtkWidget = QVTKRenderWindowInteractor(self)
         self._wwlEnabled = False
 
@@ -64,12 +68,14 @@ class ImageViewer(QWidget):
         self._profileWidget = ProfileWidget(self._renderer, self._renderWindow)
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
+        self._rtPlanLayer = RTPlanLayer(self._renderer, self._renderWindow)
 
         self._profileWidget.primaryLayer = self._primaryImageLayer
         self._profileWidget.secondaryLayer = self._secondaryImageLayer
 
         self._setViewType(self._viewType)
         self._contourLayer.resliceAxes = self._viewMatrix
+        self._rtPlanLayer.resliceAxes = self._viewMatrix
 
         self.setLayout(self._mainLayout)
         self._vtkWidget.hide()
@@ -91,6 +97,30 @@ class ImageViewer(QWidget):
         self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
         self._renderWindow.AddRenderer(self._renderer)
 
+    def close(self):
+        if not (self._primaryImageLayer.image is None):
+            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
+            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
+
+        if not (self._secondaryImageLayer.image is None):
+            self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
+
+        self._primaryImageLayer.close()
+        self._secondaryImageLayer.close()
+        self._textLayer.close()
+        self._contourLayer.close()
+        self._crossHairLayer.close()
+        self._rtPlanLayer.close()
+
+    @property
+    def rtPlan(self) -> RTPlan:
+        raise NotImplementedError
+
+    @rtPlan.setter
+    def rtPlan(self, plan:RTPlan):
+        if not self.primaryImage is None:
+            self._rtPlanLayer.setPlan(plan, self.primaryImage)
+
     @property
     def primaryImage(self) -> Image3D:
         if self._primaryImageLayer.image is None:
@@ -99,10 +129,16 @@ class ImageViewer(QWidget):
 
     @primaryImage.setter
     def primaryImage(self, image: Image3D):
+        imageAlreadyDisplayed = image==self._primaryImageLayer.image or (not (self._primaryImageLayer.image is None) and image==self._primaryImageLayer.image.data)
+        if imageAlreadyDisplayed:
+            return
+
         if image is None:
             self._resetPrimaryImageLayer()
         else:
             self._setPrimaryImageForViewer(Image3DForViewer(image))
+
+        self.primaryImageSignal.emit(self.primaryImage)
 
     def _resetPrimaryImageLayer(self):
         self._primaryImageLayer.image = None
@@ -116,12 +152,18 @@ class ImageViewer(QWidget):
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)
 
-        #TODO: disconnect signals
-        self._primaryImageLayer.image .selectedPositionChangedSignal.connect(self._handlePosition)
-        self._primaryImageLayer.image .nameChangedSignal.connect(lambda name: self._textLayer.setPrimaryTextLine(2, name))
+        self._handlePosition(self._primaryImageLayer.image.selectedPosition)
+
+        if not (self._primaryImageLayer.image is None):
+            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
+            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
+
+        self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
+        self._primaryImageLayer.image.nameChangedSignal.connect(self._setPrimaryName)
 
         self._primaryImageLayer.resliceAxes = self._viewMatrix
         self._contourLayer.resliceAxes = self._viewMatrix
+        self._rtPlanLayer.resliceAxes = self._viewMatrix
 
         self._blackWidget.hide()
         self._mainLayout.removeWidget(self._blackWidget)
@@ -150,6 +192,9 @@ class ImageViewer(QWidget):
 
         self._renderWindow.Render()
 
+    def _setPrimaryName(self, name):
+        self._textLayer.setPrimaryTextLine(2, name)
+
     @property
     def profileWidgetEnabled(self) -> bool:
         return self._profileWidget.enabled
@@ -172,7 +217,7 @@ class ImageViewer(QWidget):
         self.profileWidgetEnabled = enabled
 
     @property
-    def secondaryImage(self) -> Image3D:
+    def secondaryImage(self) -> typing.Optional[Image3D]:
         if self._secondaryImageLayer.image is None:
             return None
         return self._secondaryImageLayer.image.data
@@ -182,21 +227,32 @@ class ImageViewer(QWidget):
         if self.primaryImage is None:
             return
 
+        imageAlreadyDisplayed = image == self._secondaryImageLayer.image or (not (self._secondaryImageLayer.image is None) and image == self._secondaryImageLayer.image.data)
+        if imageAlreadyDisplayed:
+            return
+
         self._secondaryImageLayer.image = Image3DForViewer(image)
 
         if image is None:
             self._secondaryImageLayer.image = None
+            self.secondaryImageSignal.emit(self.secondaryImage)
             return
 
         self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
-        self._textLayer.setSecondaryTextLine(2, self.primaryImage.name)
+        self._textLayer.setSecondaryTextLine(2, self.secondaryImage.name)
 
-        #TODO: disconnect signal
-        self._secondaryImageLayer.image.nameChangedSignal.connect(
-            lambda name: self._textLayer.setSecondaryTextLine(2, name))
+        if not (self._secondaryImageLayer.image is None):
+            self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
+
+        self._secondaryImageLayer.image.nameChangedSignal.connect(self._setSecondaryName)
 
         self._renderWindow.Render()
+
+        self.secondaryImageSignal.emit(self.secondaryImage)
+
+    def _setSecondaryName(self, name):
+        self._textLayer.setSecondaryTextLine(2, name)
 
     @property
     def secondaryImageLayer(self):
@@ -234,11 +290,11 @@ class ImageViewer(QWidget):
                         0, 0, -1, 0,
                         0, 0, 0, 1))
 
-        if self._viewType == self.viewerTypes.SAGITTAL:
+        if self._viewType == self.ViewerTypes.SAGITTAL:
             self._viewMatrix = sagittal
-        if self._viewType == self.viewerTypes.AXIAL:
+        if self._viewType == self.ViewerTypes.AXIAL:
             self._viewMatrix = axial
-        if self._viewType == self.viewerTypes.CORONAL:
+        if self._viewType == self.ViewerTypes.CORONAL:
             self._viewMatrix = coronal
         else:
             ValueError('Invalid viewType')
@@ -246,6 +302,7 @@ class ImageViewer(QWidget):
         if not self.primaryImage is None:
             self._primaryImageLayer.resliceAxes = self._viewMatrix
             self._contourLayer.resliceAxes = self._viewMatrix
+            self._rtPlanLayer.resliceAxes = self._viewMatrix
         if not self.secondaryImage is None:
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
@@ -372,28 +429,27 @@ class ImageViewer(QWidget):
         self._renderWindow.Render()
 
     def _handlePosition(self, position: typing.Sequence):
-        if self._crossHairEnabled:
-            transfo_mat = vtkCommonMath.vtkMatrix4x4()
-            transfo_mat.DeepCopy(self._viewMatrix)
-            transfo_mat.Invert()
-            posAfterInverse = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
-
-            pos = self._viewMatrix.MultiplyPoint((0, 0, posAfterInverse[2], 1))
-
-            self._viewMatrix.SetElement(0, 3, pos[0])
-            self._viewMatrix.SetElement(1, 3, pos[1])
-            self._viewMatrix.SetElement(2, 3, pos[2])
-
-            self._crossHairLayer.position = (posAfterInverse[0], posAfterInverse[1])
-        else:
+        if not self._crossHairEnabled or position is None:
             self._textLayer.setPrimaryTextLine(0, '')
             self._textLayer.setPrimaryTextLine(1, '')
 
             if not self.secondaryImage is None:
                 self._textLayer.setSecondaryTextLine(0, '')
                 self._textLayer.setSecondaryTextLine(1, '')
-
             return
+
+        transfo_mat = vtkCommonMath.vtkMatrix4x4()
+        transfo_mat.DeepCopy(self._viewMatrix)
+        transfo_mat.Invert()
+        posAfterInverse = transfo_mat.MultiplyPoint((position[0], position[1], position[2], 1))
+
+        pos = self._viewMatrix.MultiplyPoint((0, 0, posAfterInverse[2], 1))
+
+        self._viewMatrix.SetElement(0, 3, pos[0])
+        self._viewMatrix.SetElement(1, 3, pos[1])
+        self._viewMatrix.SetElement(2, 3, pos[2])
+        if self._crossHairEnabled:
+            self._crossHairLayer.position = (posAfterInverse[0], posAfterInverse[1])
 
         try:
             data = self._primaryImageLayer.image.getDataAtPosition(position)

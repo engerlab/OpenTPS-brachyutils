@@ -1,6 +1,9 @@
-import os.path
+
+from typing import Tuple, Optional, Sequence
 
 from scipy import interpolate
+
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
 
 
 class BDL:
@@ -31,7 +34,7 @@ class BDL:
     def __str__(self):
         return self.mcsquareFormatted()
 
-    def mcsquareFormatted(self):
+    def mcsquareFormatted(self, materials:Optional[Sequence[MCsquareMaterial]]=None) -> str:
         s = '--UPenn beam model (double gaussian)--\n\n'
         s += 'Nozzle exit to Isocenter distance\n'
         s += str(self.nozzle_isocenter) + '\n\n'
@@ -40,8 +43,11 @@ class BDL:
         s += 'SMY to Isocenter distance\n'
         s += str(self.smy) + '\n\n'
 
-        #if len(self.RangeShifters)>0:
-        #    raise ValueError('RS not supported yet')
+        if len(self.RangeShifters) >0:
+            s += 'Range Shifter parameters\n'
+            for RS in self.RangeShifters:
+                s += RS.mcsquareFormatted(materials)
+            s += '\n'
 
         s += 'Beam parameters\n'
         s += str(len(self.NominalEnergy)) + ' energies\n\n'
@@ -69,11 +75,27 @@ class BDL:
 
         return s
 
-    def computeMU2Protons(self, energy):
+    def computeMU2Protons(self, energy:float) -> float:
         f = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
         return f(energy)
 
-    def computeSpotSizes(self, energy):
+    def correlations(self, energy:float) -> Tuple[float, float]:
+        correlationX = interpolate.interp1d(self.NominalEnergy, self.Correlation1x, kind='linear', fill_value='extrapolate')
+        correlationX = correlationX(energy)
+        correlationY = interpolate.interp1d(self.NominalEnergy, self.Correlation1y, kind='linear', fill_value='extrapolate')
+        correlationY = correlationY(energy)
+
+        return (correlationX, correlationY)
+
+    def divergences(self, energy:float) -> Tuple[float, float]:
+        divergenceX = interpolate.interp1d(self.NominalEnergy, self.Divergence1x, kind='linear',fill_value='extrapolate')
+        divergenceX = divergenceX(energy)
+        divergenceY = interpolate.interp1d(self.NominalEnergy, self.Divergence1y, kind='linear',fill_value='extrapolate')
+        divergenceY = divergenceY(energy)
+
+        return (divergenceX, divergenceY)
+
+    def spotSizes(self, energy:float) -> Tuple[float, float]:
         sigmaX = interpolate.interp1d(self.NominalEnergy, self.SpotSize1x, kind='linear', fill_value='extrapolate')
         sigmaX = sigmaX(energy)
         sigmaY = interpolate.interp1d(self.NominalEnergy, self.SpotSize1y, kind='linear', fill_value='extrapolate')
