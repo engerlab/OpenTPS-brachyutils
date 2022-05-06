@@ -18,6 +18,9 @@ class CEMAbstractDoseFidelityTerm:
         self._roi = None
         self._doseCalculator = None
 
+    def abort(self):
+        self._doseCalculator.kill()
+
     @property
     def roi(self) -> ROIMask:
         return self._roi

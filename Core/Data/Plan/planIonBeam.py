@@ -70,6 +70,10 @@ class PlanIonBeam:
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 
+    @property
+    def numberOfSpots(self) -> int:
+        return np.sum(np.array([layer.numberOfSpots for layer in self._layers]))
+
     def simplify(self, threshold:float=0.0):
         self._fusionDuplicates()
 

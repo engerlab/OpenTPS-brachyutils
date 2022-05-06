@@ -59,6 +59,9 @@ class PlanDoseCalculator:
         self._dose:DoseImage = None
         self._beamlets:SparseBeamlets = None
 
+    def kill(self):
+        self._doseCalculator.kill()
+
     def computeDose(self, weights:np.ndarray) -> DoseImage:
         if not np.array_equal(weights, self._weights):
             self._weights = weights
