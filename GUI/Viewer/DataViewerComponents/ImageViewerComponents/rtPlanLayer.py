@@ -1,7 +1,10 @@
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
+from vtkmodules import vtkCommonMath
 from vtkmodules.vtkCommonColor import vtkNamedColors
+from vtkmodules.vtkCommonCore import vtkPoints
+from vtkmodules.vtkCommonDataModel import vtkPolyLine, vtkCellArray, vtkPolyData
 from vtkmodules.vtkFiltersSources import vtkSphereSource, vtkLineSource
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
@@ -40,11 +43,10 @@ class BeamLayer:
         self._lineSource.SetPoint1(p0)
         self._lineSource.SetPoint2(p1)
 
-        mapper = vtkPolyDataMapper()
-        mapper.SetInputConnection(self._lineSource.GetOutputPort())
+        self._lineMapper = vtkPolyDataMapper()
 
         self._lineActor = vtkActor()
-        self._lineActor.SetMapper(mapper)
+        self._lineActor.SetMapper(self._lineMapper)
         self._lineActor.GetProperty().SetColor(colors.GetColor3d("Fuchsia"))
         self._lineActor.SetVisibility(False)
 
@@ -57,16 +59,46 @@ class BeamLayer:
         self._renderer.RemoveActor(self._sphereActor)
         self._renderer.RemoveActor(self._lineActor)
 
+    @property
+    def resliceAxes(self):
+        return self._resliceAxes
+
+    @resliceAxes.setter
+    def resliceAxes(self, resliceAxes):
+        self._resliceAxes = resliceAxes
+
+        # TODO: update view
+
     def setBeam(self, beam:PlanIonBeam, referenceImage:Image3D):
-        print(beam.isocenterPosition)
+        transfo_mat = vtkCommonMath.vtkMatrix4x4()
+        transfo_mat.DeepCopy(self._resliceAxes)
+        transfo_mat.Invert()
+        posAfterInverse = transfo_mat.MultiplyPoint((beam.isocenterPosition[0], beam.isocenterPosition[1], beam.isocenterPosition[2], 1))
 
-        self._sphereSource.SetCenter(beam.isocenterPosition[0], beam.isocenterPosition[1], beam.isocenterPosition[2])
+        self._sphereSource.SetCenter(posAfterInverse[0], posAfterInverse[1], 0)
 
-        point2 = imageTransform3D.iecGantryCoordinatetoDicom(referenceImage, beam, beam.isocenterPosition)
-        referenceImage2 = imageTransform3D.iecGantryToDicom(referenceImage, beam)
-        point2 = imageTransform3D.iecGantryCoordinatetoDicom(referenceImage2, beam, [point2[0], point2[1], referenceImage.origin[2]])
-        self._lineSource.SetPoint1(point2)
-        self._lineSource.SetPoint2(beam.isocenterPosition)
+        point2 = imageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
+        point2 = imageTransform3D.iecGantryCoordinatetoDicom(referenceImage, beam, [point2[0], point2[1], point2[2]-500])
+
+        posAfterInverse2 = transfo_mat.MultiplyPoint((point2[0], point2[1], point2[2], 1))
+
+        points = vtkPoints()
+        points.InsertNextPoint((posAfterInverse[0], posAfterInverse[1], 0.01))
+        points.InsertNextPoint((posAfterInverse2[0], posAfterInverse2[1], 0.01))
+
+        polyLine = vtkPolyLine()
+        polyLine.GetPointIds().SetNumberOfIds(2)
+        for i in range(0, 2):
+            polyLine.GetPointIds().SetId(i, i)
+
+        cells = vtkCellArray()
+        cells.InsertNextCell(polyLine)
+
+        polyData = vtkPolyData()
+        polyData.SetPoints(points)
+        polyData.SetLines(cells)
+
+        self._lineMapper.SetInputData(polyData)
 
         self._sphereActor.SetVisibility(True)
         self._lineActor.SetVisibility(True)
@@ -96,6 +128,9 @@ class RTPlanLayer:
     def resliceAxes(self, resliceAxes):
         self._resliceAxes = resliceAxes
 
+        for bl in self._beamLayers:
+            bl.resliceAxes = self._resliceAxes
+
     def setPlan(self, plan:RTPlan, referenceImage:Image3D):
         if plan is None:
             self.close()
@@ -103,6 +138,7 @@ class RTPlanLayer:
 
         for beam in plan:
             bLayer = BeamLayer(self._renderer, self._renderWindow)
+            bLayer.resliceAxes = self._resliceAxes
             bLayer.setBeam(beam, referenceImage)
             self._beamLayers.append(bLayer)
 
