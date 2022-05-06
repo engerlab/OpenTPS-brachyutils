@@ -235,9 +235,14 @@ def readDicomVectorField(dcmFile):
     return field
 
 
-def readDicomPlan(dcmFile): 
-    plan = RTPlan()
+def readDicomPlan(dcmFile):
     dcm = pydicom.dcmread(dcmFile)
+
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                              sex=dcm.PatientSex)
+
+    plan = RTPlan(patientInfo=patientInfo)
 
     # plan.OriginalDicomDataset = dcm
     
