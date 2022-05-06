@@ -9,7 +9,7 @@ class BaseFunc(object):
     """
     Function object interface
     The instanced objects are meant to be passed
-    to the :func:"pyOpti.solvers.solve" solving
+    to the :func: "solver.solve" solving
     function
     """
 
