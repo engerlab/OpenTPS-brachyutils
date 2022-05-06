@@ -194,18 +194,18 @@ def readDose(filePath):
 
     return doseImage
 
-def writeCT(ct: CTImage, filtePath, cropCTContour=None):
+def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
     image = ct.copy()
 
     # Crop CT image with contour
-    if cropCTContour is not None:
-        print(f'Cropping CT around {cropCTContour.name}')
-        contour_mask = cropCTContour.getBinaryMask(image.origin, image.gridSize, image.spacing)
+    if overwriteOutsideROI is not None:
+        print(f'Cropping CT around {overwriteOutsideROI.name}')
+        contour_mask = overwriteOutsideROI.getBinaryMask(image.origin, image.gridSize, image.spacing)
         image.imageArray[contour_mask == False] = -1024
 
-        # Don't you rather want to:
+        # TODO: cropCTContour:
         #ctCropped = CTImage.fromImage3D(ct)
         #box = crop3D.getBoxAroundROI(cropCTContour)
         #crop3D.crop3DDataAroundBox(ctCropped, box)

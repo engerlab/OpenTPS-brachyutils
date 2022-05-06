@@ -41,7 +41,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._subprocess = None
         self._subprocessKilled = True
 
-        self.cropCTContour = None
+        self.overwriteOutsideROI = None # Previously cropCTContour but this name was confusing
 
     @property
     def ctCalibration(self) -> Optional[AbstractCTCalibration]:
@@ -123,7 +123,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._materialFolder)
         self._cleanDir(self._scannerFolder)
 
-        mcsquareIO.writeCT(self._ct, self._ctFilePath, self.cropCTContour)
+        mcsquareIO.writeCT(self._ct, self._ctFilePath, self.overwriteOutsideROI)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
         mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath, self._ctCalibration)
         mcsquareIO.writeCTCalibration(self._ctCalibration, self._scannerFolder, self._materialFolder)
