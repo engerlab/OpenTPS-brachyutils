@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
 
+
 try:
     import sparse_dot_mkl
 
@@ -10,21 +11,18 @@ except:
 
 from Core.Processing.PlanOptimization.Objectives.baseFunction import BaseFunc
 
-
 class DoseFidelity(BaseFunc):
-    def __init__(self, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False, formatArray=32):
+    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False, formatArray=32):
         super(DoseFidelity, self).__init__()
         if scenariosBL is None:
             scenariosBL = []
-        self.list = []
-        self.targetName = ""
-        self.targetPrescription = 0.0
+        self.list = objectiveList
         self.beamlets = beamletMatrix
         self.xSquare = xSquare
         self.scenariosBL = scenariosBL
         self.returnWorstCase = returnWorstCase
         self.formatArray = formatArray
-        self.globalWeight = 1
+
 
     def _eval(self, x):
         if self.xSquare:
@@ -188,57 +186,4 @@ class DoseFidelity(BaseFunc):
 
         return dfTot
 
-    def setTarget(self, roiName, prescription):
-        self.targetName = roiName
-        self.targetPrescription = prescription
 
-    def setGlobalWeight(self, alpha):
-        self.globalWeight = alpha
-
-    def addObjective(self, roiName, metric, condition, limitValue, weight, robust=False):
-        objective = OptimizationObjective()
-        objective.roiName = roiName
-
-        if metric == "Dmin":
-            objective.metric = "Dmin"
-        elif metric == "Dmax":
-            objective.metric = "Dmax"
-        elif metric == "Dmean":
-            objective.metric = "Dmean"
-        else:
-            print("Error: objective metric " + metric + " is not supported.")
-            return
-
-        if condition == "LessThan" or condition == "<":
-            objective.condition = "<"
-        elif condition == "GreaterThan" or condition == ">":
-            objective.condition = ">"
-        else:
-            print("Error: objective condition " + condition + " is not supported.")
-            return
-
-        objective.limitValue = limitValue
-        objective.weight = weight
-        objective.robust = robust
-
-        self.list.append(objective)
-
-    def initialize_objective_function(self, contours):
-        for objective in self.list:
-            for contour in contours:
-                if objective.roiName == contour.roiName:
-                    # vectorize contour
-                    objective.maskVec = np.flip(contour.Mask, (0, 1))
-                    objective.maskVec = np.ndarray.flatten(objective.maskVec, 'F')
-
-
-class OptimizationObjective:
-
-    def __init__(self):
-        self.roiName = ""
-        self.metric = ""
-        self.condition = ""
-        self.limitValue = ""
-        self.weight = ""
-        self.robust = False
-        self.maskVec = []
