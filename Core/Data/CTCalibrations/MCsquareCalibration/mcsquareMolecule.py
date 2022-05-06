@@ -19,7 +19,8 @@ class MCsquareMolecule(MCsquareMaterial):
         s = 'Name ' + self.name + '\n'
         s += 'Molecular_Weight 	0.0 		 # N.C.\n'
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"
-        s += 'Electron_Density ' + str(self.electronDensity) + " # in cm-3 \n"
+        electronDensity = self.electronDensity if self.electronDensity > 0. else 1e-4
+        s += 'Electron_Density ' + str(electronDensity) + " # in cm-3 \n"
         s += 'Radiation_Length ' + str(self.radiationLength) + " # in g/cm2 \n"
         s += 'Nuclear_Data 		Mixture ' + str(len(self.weights)) + ' # mixture with ' + str(len(self.weights)) + ' components \n'
         s += '# 	Label 	Name 		fraction by mass (in %)\n'
@@ -46,14 +47,13 @@ class MCsquareMolecule(MCsquareMaterial):
                     self.name = line[1]
                     continue
 
-                if re.search(r'Density', line):
-                    line = line.split()
-                    self.density = float(line[1])
-                    continue
-
                 if re.search(r'Electron_Density', line):
                     line = line.split()
                     self.electronDensity = float(line[1])
+                    continue
+                elif re.search(r'Density', line):
+                    line = line.split()
+                    self.density = float(line[1])
                     continue
 
                 if re.search(r'Radiation_Length', line):

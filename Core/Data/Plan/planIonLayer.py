@@ -13,6 +13,7 @@ class PlanIonLayer:
         self.nominalEnergy:float = nominalEnergy
         self.numberOfPaintings:int = 1
         self.rangeShifterSettings:RangeShifterSettings = RangeShifterSettings()
+        self.seriesInstanceUID = ""
 
     def __len__(self):
         return len(self._weights)
@@ -54,6 +55,10 @@ class PlanIonLayer:
     @property
     def meterset(self) -> float:
         return np.sum(self._weights)
+
+    @property
+    def numberOfSpots(self) -> int:
+        return len(self._weights)
 
     def addToSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]]):
         if isinstance(x, Sequence):
@@ -141,6 +146,7 @@ class RangeShifterSettings:
         self.isocenterToRangeShifterDistance = 0.0
         self.rangeShifterWaterEquivalentThickness = None # Means get thickness from BDL! This is extremely error prone!
         self.rangeShifterSetting = 'OUT'
+        self.referencedRangeShifterNumber = 0
 
 class PlanIonLayerTestCase(unittest.TestCase):
     def testAppendSpot(self):

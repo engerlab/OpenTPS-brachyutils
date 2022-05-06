@@ -16,6 +16,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObjects
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
@@ -149,7 +150,7 @@ class PatientDataTree(QTreeView):
         self.setAcceptDrops(True)
 
     def _appendData(self, data):
-        if isinstance(data, Image3D) or isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence):
+        if isinstance(data, Image3D) or isinstance(data, RTPlan) or isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence):
             rootItem = PatientDataItem(data)
             self.rootNode.appendRow(rootItem)
 
@@ -189,10 +190,6 @@ class PatientDataTree(QTreeView):
     def buildDataTree(self, patient):
         # Disconnect signals
         if not(self._currentPatient is None):
-            self._currentPatient.imageAddedSignal.disconnect(self._appendData)
-            self._currentPatient.dyn3DSeqAddedSignal.disconnect(self._appendData)
-            self._currentPatient.dyn3DSeqRemovedSignal.disconnect(self._removeData)
-            self._currentPatient.imageRemovedSignal.disconnect(self._removeData)
             self._currentPatient.patientDataAddedSignal.disconnect(self._appendData)
             self._currentPatient.patientDataRemovedSignal.disconnect(self._removeData)
 
@@ -211,14 +208,6 @@ class PatientDataTree(QTreeView):
         if self._currentPatient is None:
             return
 
-        # self._currentPatient.imageAddedSignal.connect(self._appendData)  ## before data list merge in patient
-        # self._currentPatient.imageRemovedSignal.connect(self._removeData)
-        # self._currentPatient.dyn3DSeqAddedSignal.connect(self._appendData)
-        # self._currentPatient.dyn3DSeqRemovedSignal.connect(self._removeData)
-        # # self._currentPatient.dyn2DSeqAddedSignal.connect(self._appendData)
-        # # self._currentPatient.dyn2DSeqRemovedSignal.connect(self._removeData)
-        # self._currentPatient.dyn3DModAddedSignal.connect(self._appendData)
-        # self._currentPatient.dyn3DModRemovedSignal.connect(self._removeData)
         self._currentPatient.patientDataAddedSignal.connect(self._appendData)
         self._currentPatient.patientDataRemovedSignal.connect(self._removeData)
 
@@ -232,8 +221,10 @@ class PatientDataTree(QTreeView):
         if len(images) > 0:
             self._viewController.selectedImage = images[0]
 
+        for plan in patient.plans:
+            self._appendData(plan)
+
         # dynamic sequences
-        print('in patientDataPanel, buildDataTree', len(patient.dynamic3DSequences))
         for dynSeq in patient.dynamic3DSequences:
             self._appendData(dynSeq)
 
@@ -257,6 +248,8 @@ class PatientDataTree(QTreeView):
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence) or isinstance(selectedData, Dynamic2DSequence):
             self._viewController.mainImage = selectedData
+        if isinstance(selectedData, RTPlan):
+            self._viewController.plan = selectedData
         elif isinstance(selectedData, Dynamic3DModel):
             self._viewController.mainImage = selectedData.midp
         elif isinstance(selectedData, DoseImage):

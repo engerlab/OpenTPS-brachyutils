@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from GUI.Viewer.dataViewer import DroppedObject
 from GUI.Viewer.gridFourElements import GridFourElements
+import GUI.Viewer.viewerToolbar
 from GUI.Viewer.viewerToolbar import ViewerToolbar
 
 class ViewerPanel(QWidget):
@@ -109,5 +110,5 @@ class ViewerPanel(QWidget):
         self.onDropEvent = self._setViewControllerMainImage # It might seems weird to pass a function within the class but it is if someday we want to move the logical part out of this class.
         self._setDropEnabled(not self._viewController.independentViewsEnabled)
 
-    def _setViewControllerMainImage(self, image):
-        self._viewController.droppedImage = image
+    def _setViewControllerMainImage(self, patientData):
+        self._viewController.droppedImage = patientData
