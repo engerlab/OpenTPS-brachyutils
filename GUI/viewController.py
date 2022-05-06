@@ -22,7 +22,7 @@ class ViewController():
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
         self.dropModeSignal = Event(object)
-        self.droppedImageSignal = Event(object)
+        self.droppedDataSignal = Event(object)
         #self.dynamicViewerSwitchedOnSignal = Event(object)
 
         self.mainConfig = None
@@ -207,7 +207,7 @@ class ViewController():
             raise()
 
         self._droppedImage = image
-        self.droppedImageSignal.emit(self._droppedImage)
+        self.droppedDataSignal.emit(self._droppedImage)
 
     @property
     def selectedImage(self):
