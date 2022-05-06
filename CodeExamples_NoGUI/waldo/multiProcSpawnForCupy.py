@@ -1,21 +1,18 @@
 import time
 import numpy as np
 import concurrent
-import multiprocessing
+
 # from timeit import repeat
 
 def multiProcDeform(deformationList, dynMod, GTVMask, tryGPU):
 
     imgList = [dynMod.midp for i in range(len(deformationList))]
-    print(len(imgList))
     maskList = [GTVMask for i in range(len(deformationList))]
-    print(len(maskList))
     tryGPUList = [tryGPU for i in range(len(deformationList))]
-    print(len(tryGPUList))
     
+    import multiprocessing
     multiprocessing.set_start_method('spawn', force=True)
-    print('Start multi process deformation with', len(deformationList), 'deformations')
-    
+
     test = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
         results = executor.map(deformImageAndMask, imgList, maskList, deformationList, tryGPUList)
@@ -34,7 +31,6 @@ def deformImageAndMask(img, ROIMask, deformation, tryGPU=True):
     - compute the 2D center of mass for the ROI DRR
     """
     
-    print('Start deformations and projections for deformation', deformation.name)
     startTime = time.time()
     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
     # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
@@ -44,7 +40,7 @@ def deformImageAndMask(img, ROIMask, deformation, tryGPU=True):
 
     startTime = time.time()
     centerOfMass3D = mask.centerOfMass
-    print('centerOfMass3D computed in', time.time() - startTime)
+    # print('centerOfMass3D computed in', time.time() - startTime)
 
     return [image, mask, centerOfMass3D]
 

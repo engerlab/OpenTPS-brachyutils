@@ -11,50 +11,40 @@ import concurrent
 
 def multiProcDRRs(dataList, projAngle, projAxis, outputSize, savingPath):
 
-    import multiprocessing
-    multiprocessing.set_start_method('fork', force=True)
-    # resultList = []
-    # for imageAndMaskPair in dataList:
-    #     resultList.append(DRRsBinarizeAndCrop(imageAndMaskPair[0], imageAndMaskPair[1], savingPath, projectionAngle=projAngle, projectionAxis=projAxis, outputSize=outputSize))
+    # import multiprocessing
+    # multiprocessing.set_start_method('fork', force=True)
 
-    print('in multiProcDRRs')
-    print(type(dataList[0]))
-    print(type(dataList[0][0]))
-    print(type(dataList[0][1]))
-    print(type(dataList[0][2]))
+    test = []
+    for imageAndMaskPair in dataList:
+        test.append(DRRsBinarizeAndCrop(imageAndMaskPair[0], imageAndMaskPair[1], savingPath, projectionAngle=projAngle, projectionAxis=projAxis, outputSize=outputSize))
 
-    savingPathList = [savingPath for i in range(len(dataList))]
-    print(len(savingPathList))
-    projAngleList = [projAngle for i in range(len(dataList))]
-    print(len(projAngleList))
-    projAxisList = [projAxis for i in range(len(dataList))]
-    print(len(projAxisList))
-    outputSizeList = [outputSize for i in range(len(dataList))]
-    print(len(outputSizeList))
+    # savingPathList = [savingPath for i in range(len(dataList))]
+    # projAngleList = [projAngle for i in range(len(dataList))]
+    # projAxisList = [projAxis for i in range(len(dataList))]
+    # outputSizeList = [outputSize for i in range(len(dataList))]
 
-    for element in dataList:
-        print(type(element[0]), type(element[1]), type(element[2]))
+    # for element in dataList:
+    #     print(type(element[0]), type(element[1]), type(element[2]))
 
     # multiprocessing.set_start_method('spawn', force=True)
-    test = []
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        test2 = executor.map(DRRsBinarizeAndCrop, dataList[:][0], dataList[:][1], savingPathList, projAngleList, projAxisList, outputSizeList)
-        test += test2
+    
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     test2 = executor.map(DRRsBinarizeAndCrop, dataList[:][0], dataList[:][1], savingPathList, projAngleList, projAxisList, outputSizeList)
+    #     test += test2
+
     return test
 
 ## ------------------------------------------------------------------------------------
 def DRRsBinarizeAndCrop(image, mask, savingPath, projectionAngle=0, projectionAxis='Z', outputSize=[]):
 
-    print('in DRRsBinarizeAndCrop')
-    print(type(image))
-    print(type(mask))
     startTime = time.time()
     DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
     print('DRRs for image created in', time.time() - startTime)
+    startTime = time.time()
     DRRMask = forwardProjection(mask, projectionAngle, axis=projectionAxis)
     print('DRRs for mask created in', time.time() - startTime)
 
-    startTime = time.time()
+    # startTime = time.time()
     halfDiff = int((DRR.shape[1] - image.gridSize[2]) / 2)  ## not sure this will work if orientation is changed
     croppedDRR = DRR[:, halfDiff + 1:DRR.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
     croppedDRRMask = DRRMask[:, halfDiff + 1:DRRMask.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
@@ -72,7 +62,7 @@ def DRRsBinarizeAndCrop(image, mask, savingPath, projectionAngle=0, projectionAx
     centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
     # print('CenterOfMass:', centerOfMass)
 
-    print('rest computed in', time.time() - startTime)
+    # print('rest computed in', time.time() - startTime)
 
     del image  # to release the RAM
     del mask  # to release the RAM
@@ -90,6 +80,8 @@ def DRRsBinarizeAndCrop(image, mask, savingPath, projectionAngle=0, projectionAx
     # plt.imshow(binaryDRRMask)
     # plt.savefig(savingPath + 'sample.pdf', dpi=300)
     # plt.show()
+
+    # return [DRR, DRRMask]
 
     return [croppedDRR, binaryDRRMask, centerOfMass]
 
