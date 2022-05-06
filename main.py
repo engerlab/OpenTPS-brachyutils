@@ -1,6 +1,8 @@
+import functools
 import logging
 import os
 import sys
+import threading
 from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
@@ -46,8 +48,10 @@ if __name__ == '__main__':
         with open(scriptPath, 'r') as file:
             code = file.read()
 
-        output = API.interpreter.run(code)
-        print('Start script output:')
-        print(output)
+        #output = API.interpreter.run(code)
+        runStartScript = functools.partial(API.interpreter.run, code)
+        threading.Thread(target=runStartScript).start()
+        #print('Start script output:')
+        #print(output)
 
     app.exec_()

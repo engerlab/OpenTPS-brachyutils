@@ -19,7 +19,7 @@ class SecondaryImageActions:
 
         self._separator = None
 
-        self._colorbarAction = QAction(QIcon(iconPath + "color.png"), "Colorbar")
+        self._colorbarAction = QAction(QIcon(iconPath + "colormap_jet.png"), "Colorbar")
         self._colorbarAction.setStatusTip("Colorbar")
         self._colorbarAction.triggered.connect(self._setColorbarOn)
         self._colorbarAction.setCheckable(True)

@@ -1,12 +1,13 @@
 from typing import Union, Sequence
 
 from Core.Data.Images.image3D import Image3D
-from Core.Data.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.dynamic3DModel import Dynamic3DModel
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.patientData import PatientData
 from Core.Data.patientInfo import PatientInfo
-#from Core.Data.rtPlan import RTplan
 from Core.Data.rtStruct import RTStruct
 from Core.api import API
 from Core.event import Event
@@ -41,10 +42,12 @@ class Patient:
         self.patientDataRemovedSignal = Event(object)
         self.imageAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Image3D)
         self.imageRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Image3D)
+        self.roiMaskAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, ROIMask)
+        self.roiMaskRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, ROIMask)
         self.rtStructAddedSignal =self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTStruct)
         self.rtStructRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, RTStruct)
-        #self.planAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal)
-        #self.planRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal)
+        self.planAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTPlan)
+        self.planRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, RTPlan)
         self.dyn3DSeqAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DSequence)
         self.dyn3DSeqRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Dynamic3DSequence)
         self.dyn3DModAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DModel)
@@ -80,50 +83,58 @@ class Patient:
 
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @name.setter
-    def name(self, name):
+    def name(self, name:str):
         self._name = name
         self.nameChangedSignal.emit(self._name)
 
     @property
-    def images(self):
+    def images(self) -> Sequence[Image3D]:
         return self.getPatientDataOfType(Image3D)
 
     @property
-    def plans(self):
-        return self.getPatientDataOfType(RTplan)
+    def plans(self) -> Sequence[RTPlan]:
+        return self.getPatientDataOfType(RTPlan)
 
     @property
-    def rtStructs(self):
+    def roiMasks(self) -> Sequence[ROIMask]:
+        return self.getPatientDataOfType(ROIMask)
+
+    @property
+    def rtStructs(self) -> Sequence[RTStruct]:
         return self.getPatientDataOfType(RTStruct)
 
     @property
-    def dynamic3DSequences(self):
+    def dynamic3DSequences(self) -> Sequence[Dynamic3DSequence]:
         return self.getPatientDataOfType(Dynamic3DSequence)
 
     @property
-    def dynamic3DModels(self):
+    def dynamic3DModels(self) -> Sequence[Dynamic3DModel]:
         return self.getPatientDataOfType(Dynamic3DModel)
 
     @property
-    def dynamic2DSequences(self):
+    def dynamic2DSequences(self) -> Sequence[Dynamic2DSequence]:
         return self.getPatientDataOfType(Dynamic2DSequence)
 
     @property
-    def patientData(self):
+    def patientData(self) -> Sequence[PatientData]:
         return [data for data in self._patientData]
 
-    def getPatientDataOfType(self, type):
-        return [data for data in self._patientData if isinstance(data, type)]
+    def getPatientDataOfType(self, dataType):
+        ## data type can be given as a str or the data type directly
+        if isinstance(dataType, str):
+            return [data for data in self._patientData if data.getTypeAsString() == dataType]
+        else:
+            return [data for data in self._patientData if isinstance(data, dataType)]
 
-    def hasPatientData(self, data):
+    def hasPatientData(self, data:PatientData):
         return (data in self._patientData)
 
     @API.loggedViaAPI
-    def appendPatienData(self, data=Union[Sequence, PatientData]):
+    def appendPatientData(self, data:Union[Sequence[PatientData], PatientData]):
         if isinstance(data, list):
             self.appendPatientDataList(data)
 
@@ -133,12 +144,12 @@ class Patient:
             self.patientDataAddedSignal.emit(data)
 
     @API.loggedViaAPI
-    def appendPatientDataList(self, dataList):
+    def appendPatientDataList(self, dataList:Sequence[PatientData]):
         for data in dataList:
-            self.appendPatienData(data)
+            self.appendPatientData(data)
 
     @API.loggedViaAPI
-    def removePatientData(self, data):
+    def removePatientData(self, data:Union[Sequence[PatientData], PatientData]):
         if isinstance(data, list):
             self.removePatientDataList(data)
 
@@ -148,7 +159,7 @@ class Patient:
             self.patientDataRemovedSignal.emit(data)
 
     @API.loggedViaAPI
-    def removePatientDataList(self, dataList):
+    def removePatientDataList(self, dataList:Sequence[PatientData]):
         for data in dataList:
             self.removePatientData(data)
         return

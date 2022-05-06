@@ -108,7 +108,6 @@ class RayStationMaterial:
         return S
 
     def toMCSquareMaterial(self, materialsPath='default'):
-        print('Converting material of density ' + str(self._density))
         materialNumbers = MCsquareMaterial.getMaterialNumbers(materialsPath)
 
         MCSquareElements = []

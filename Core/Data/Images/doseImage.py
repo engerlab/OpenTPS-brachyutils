@@ -1,4 +1,6 @@
 import numpy as np
+import copy
+import pydicom
 
 from Core.Data.Images.image3D import Image3D
 
@@ -12,7 +14,9 @@ class DoseImage(Image3D):
         self.sopInstanceUID = sopInstanceUID
         self.planSOPInstanceUID = planSOPInstanceUID
 
-
+    @classmethod
+    def fromImage3D(cls, image: Image3D):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
 
     def __str__(self):
         """
@@ -33,16 +37,15 @@ class DoseImage(Image3D):
     
         return doseImage
 
-      
+
     def resampleToImageGrid(self, ct):
         pass
 
 
-
     def copy(self):
-        return super().copy()
-        
-        
+        return DoseImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
+
+
     def exportDicom(self, outputFile, planUID=[]):
         pass
 

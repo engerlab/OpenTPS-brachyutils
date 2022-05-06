@@ -1,6 +1,9 @@
 import re
+import time
+from typing import Sequence, Union
 
 import numpy as np
+from numpy.matlib import repmat
 from scipy.interpolate import interpolate
 
 from Core.Data.CTCalibrations.RayStationCalibration.rayStationMaterial import RayStationMaterial
@@ -17,39 +20,73 @@ class RayStationDensity2Material:
         if not (fromFile is None):
             self._load(fromFile)
 
-    def __getitem__(self, density):
-        densityIsScalar = not(density is list)
+    def __getitem__(self, density:Union[float, np.ndarray]) -> Union[RayStationMaterial, Sequence[RayStationMaterial]]:
+        densityIsScalar = not isinstance(density, np.ndarray)
 
         if densityIsScalar:
             return self._getClosestMaterial(density)
         else:
-            # TODO: in Matlab, I would use a repmat would in be faster in numpy as well?
-            return list(map(self._getClosestMaterial, density))
+            return np.vectorize(self._getClosestMaterial)(density)
 
-    def _getClosestMaterial(self, density):
+    def _getClosestMaterial(self, density:float) -> RayStationMaterial:
         materialIndex = self._getIndexOfClosestDensity(density)
         return self._materials[materialIndex]
 
-    def _getIndexOfClosestDensity(self, density):
-        return self._materials[(np.abs(self._densities - density)).argmin()]
+    def _getIndexOfClosestDensity(self, density:float) -> int:
+        return (np.abs(self._densities - density)).argmin()
 
     def __str__(self):
         return self.rayStationFormatted
 
-    def rayStationFormatted(self):
+    def rayStationFormatted(self)->str:
         s  = ''
         for i, material in enumerate(self._materials):
             s = s + str(i) + ' ' + material.rayStationFormatted() + '\n'
 
         return s
 
-    def convertMassDensity2RSP(self, density, energy=100):
-        densityIsScalar = not (density is list)
+    def convertMassDensity2RSP(self, density:Union[float, np.ndarray], energy=100):
+        densityIsScalar = not isinstance(density, np.ndarray)
 
         if densityIsScalar:
-            return density*self[density].getRSP(energy)/(self[density].getDensity()+1e-4) #1e-4 to avoid dividing by 0
+            material = self[density]
+            return density*material.getRSP(energy)/(material.density+1e-4) #1e-4 to avoid dividing by 0
         else:
-            return list(map(lambda d: self.convertMassDensity2RSP(d, energy=energy), density))
+            if len(density.shape)==2:
+                return self._convert2DMassDensity2RSP(density, energy=energy)
+            elif len(density.shape)==3:
+                rsps = np.zeros(density.shape)
+                for i in range(density.shape[2]):
+                    rsps[:, :, i]  = self._convert2DMassDensity2RSP(density[:, :, i], energy=energy)
+                return rsps
+            else:
+                return np.vectorize(lambda d: self.convertMassDensity2RSP(d, energy=energy))(density)
+
+    def _convert2DMassDensity2RSP(self, density:np.ndarray, energy=100) -> np.ndarray:
+        densityShape = density.shape
+
+        density = density.flatten()
+        densityLen = max(density.shape)
+
+        densityRefLen = max(self._densities.shape)
+
+        referenceDensities = repmat(self._densities.reshape(densityRefLen, 1), 1, densityLen)
+        queryDensities = repmat(density.reshape(1, densityLen), densityRefLen, 1)
+
+        indexOfClosestDensity = (np.abs(referenceDensities - queryDensities)).argmin(axis = 0)
+
+        materialsDensity = np.vectorize(lambda m: m.density)(self._materials)
+        materialsRSP = np.vectorize(lambda m: m.getRSP(energy=energy))(self._materials)
+
+        materialsDensity = materialsDensity[indexOfClosestDensity]
+        materialsRSP = materialsRSP[indexOfClosestDensity]
+
+        density = np.reshape(density, densityShape)
+        materialsDensity = np.reshape(materialsDensity, densityShape)
+        materialsRSP = np.reshape(materialsRSP, densityShape)
+
+        return density * materialsRSP / (materialsDensity + 1e-4)  # 1e-4 to avoid dividing by 0
+
 
     def convertRSP2MassDensity(self, rsp, energy=100):
         density_ref, rsp_ref = self._getBijectiveMassDensity2RSP(energy=energy)

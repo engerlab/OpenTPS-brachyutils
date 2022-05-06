@@ -1,5 +1,7 @@
+import copy
 import logging
 import unittest
+from typing import Sequence
 
 import numpy as np
 
@@ -11,14 +13,31 @@ logger = logging.getLogger(__name__)
 
 
 class RTPlan(PatientData):
-    def __init__(self, patientInfo=None):
-        super().__init__(patientInfo=patientInfo)
+    def __init__(self, name="RTPlan", patientInfo=None):
+        super().__init__(name=name, patientInfo=patientInfo)
 
         self._beams = []
+        self.numberOfFractionsPlanned:int = 1
 
-        self.numberOfFractionsPlanned = 1
+        self.seriesInstanceUID = ""
+        self.SOPInstanceUID = ""
+        # self.PatientInfo = {}
+        # self.StudyInfo = {}
+        # self.DcmFile = ""
+        self.modality = ""
+        self.radiationType = ""
+        self.scanMode = ""
+        self.treatmentMachineName = ""
+        # self.Objectives = OptimizationObjectives()
+        # self.isLoaded = 0
+        self.beamlets = []
+        # self.OriginalDicomDataset = []
+        # self.RobustOpti = {"Strategy": "Disabled", "syst_setup": [0.0, 0.0, 0.0], "rand_setup": [0.0, 0.0, 0.0], "syst_range": 0.0}
+        self.scenarios = []
+        self.numScenarios = 0
 
-    def __getitem__(self, beamNb):
+
+    def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]
 
     def __len__(self):
@@ -31,6 +50,11 @@ class RTPlan(PatientData):
             s += str(beam)
         return s
 
+    @property
+    def beams(self) -> Sequence[PlanIonBeam]:
+        # For backwards compatibility but we can now access each beam with indexing brackets
+        return [beam for beam in self._beams]
+
     def appendBeam(self, beam: PlanIonBeam):
         self._beams.append(beam)
 
@@ -38,8 +62,30 @@ class RTPlan(PatientData):
         self._beams.remove(beam)
 
     @property
-    def meterset(self) -> int:
+    def spotWeights(self) -> np.ndarray:
+        weights = np.array([])
+
+        for beam in self._beams:
+            weights = np.concatenate((weights, beam.spotWeights))
+
+        return weights
+
+    @spotWeights.setter
+    def spotWeights(self, w:Sequence[float]):
+        w = np.array(w)
+
+        ind = 0
+        for beam in self._beams:
+            beam.spotWeights = w[ind:ind+len(beam.spotWeights)]
+            ind += len(beam.spotWeights)
+
+    @property
+    def meterset(self) -> float:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
+
+    @property
+    def numberOfSpots(self) -> int:
+        return np.sum(np.array([beam.numberOfSpots for beam in self._beams]))
 
     def simplify(self, threshold:float=0.0):
         self._fusionDuplicates()

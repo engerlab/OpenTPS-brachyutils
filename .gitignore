@@ -8,3 +8,8 @@ config.txt
 *py.sw*
 *.swp
 docs/build
+tests/*
+scripts/
+tests/
+notebooks/
+*.txt
