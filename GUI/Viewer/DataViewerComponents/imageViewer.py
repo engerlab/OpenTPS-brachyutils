@@ -75,6 +75,7 @@ class ImageViewer(QWidget):
 
         self._setViewType(self._viewType)
         self._contourLayer.resliceAxes = self._viewMatrix
+        self._rtPlanLayer.resliceAxes = self._viewMatrix
 
         self.setLayout(self._mainLayout)
         self._vtkWidget.hide()
@@ -162,6 +163,7 @@ class ImageViewer(QWidget):
 
         self._primaryImageLayer.resliceAxes = self._viewMatrix
         self._contourLayer.resliceAxes = self._viewMatrix
+        self._rtPlanLayer.resliceAxes = self._viewMatrix
 
         self._blackWidget.hide()
         self._mainLayout.removeWidget(self._blackWidget)
@@ -300,6 +302,7 @@ class ImageViewer(QWidget):
         if not self.primaryImage is None:
             self._primaryImageLayer.resliceAxes = self._viewMatrix
             self._contourLayer.resliceAxes = self._viewMatrix
+            self._rtPlanLayer.resliceAxes = self._viewMatrix
         if not self.secondaryImage is None:
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
