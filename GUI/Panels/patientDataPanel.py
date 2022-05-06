@@ -190,10 +190,6 @@ class PatientDataTree(QTreeView):
     def buildDataTree(self, patient):
         # Disconnect signals
         if not(self._currentPatient is None):
-            self._currentPatient.imageAddedSignal.disconnect(self._appendData)
-            self._currentPatient.dyn3DSeqAddedSignal.disconnect(self._appendData)
-            self._currentPatient.dyn3DSeqRemovedSignal.disconnect(self._removeData)
-            self._currentPatient.imageRemovedSignal.disconnect(self._removeData)
             self._currentPatient.patientDataAddedSignal.disconnect(self._appendData)
             self._currentPatient.patientDataRemovedSignal.disconnect(self._removeData)
 
@@ -212,14 +208,6 @@ class PatientDataTree(QTreeView):
         if self._currentPatient is None:
             return
 
-        # self._currentPatient.imageAddedSignal.connect(self._appendData)  ## before data list merge in patient
-        # self._currentPatient.imageRemovedSignal.connect(self._removeData)
-        # self._currentPatient.dyn3DSeqAddedSignal.connect(self._appendData)
-        # self._currentPatient.dyn3DSeqRemovedSignal.connect(self._removeData)
-        # # self._currentPatient.dyn2DSeqAddedSignal.connect(self._appendData)
-        # # self._currentPatient.dyn2DSeqRemovedSignal.connect(self._removeData)
-        # self._currentPatient.dyn3DModAddedSignal.connect(self._appendData)
-        # self._currentPatient.dyn3DModRemovedSignal.connect(self._removeData)
         self._currentPatient.patientDataAddedSignal.connect(self._appendData)
         self._currentPatient.patientDataRemovedSignal.connect(self._removeData)
 
@@ -233,8 +221,10 @@ class PatientDataTree(QTreeView):
         if len(images) > 0:
             self._viewController.selectedImage = images[0]
 
+        for plan in patient.plans:
+            self._appendData(plan)
+
         # dynamic sequences
-        print('in patientDataPanel, buildDataTree', len(patient.dynamic3DSequences))
         for dynSeq in patient.dynamic3DSequences:
             self._appendData(dynSeq)
 
