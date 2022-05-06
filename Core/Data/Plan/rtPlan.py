@@ -13,12 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 class RTPlan(PatientData):
-    def __init__(self, patientInfo=None):
-        super().__init__(patientInfo=patientInfo)
+    def __init__(self, name="RTPlan", patientInfo=None):
+        super().__init__(name=name, patientInfo=patientInfo)
 
         self._beams = []
         self.numberOfFractionsPlanned:int = 1
-        self.name = 'RTPlan'
 
         self.seriesInstanceUID = ""
         self.SOPInstanceUID = ""
@@ -29,7 +28,6 @@ class RTPlan(PatientData):
         self.radiationType = ""
         self.scanMode = ""
         self.treatmentMachineName = ""
-        self.name = ""
         # self.Objectives = OptimizationObjectives()
         # self.isLoaded = 0
         self.beamlets = []
