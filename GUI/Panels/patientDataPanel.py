@@ -11,10 +11,12 @@ from pydicom.uid import generate_uid
 
 import Core.IO.dataLoader as dataLoader
 from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.IO.serializedObjectIO import saveDataStructure, saveSerializedObjects
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
@@ -67,7 +69,7 @@ class PatientDataPanel(QWidget):
 
     def loadData(self):
         filesOrFoldersList = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
-        if len(filesOrFoldersList)<1:
+        if len(filesOrFoldersList) < 1:
             return
 
         splitPath = filesOrFoldersList[0].split('/')
@@ -77,8 +79,6 @@ class PatientDataPanel(QWidget):
         self.dataPath = withoutLastElementPath
 
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
-
-        print('in patient data panel loadData', len(self._viewController._patientList[0].dynamic2DSequences))
 
     def saveData(self):
         fileDialog = SaveData_dialog()
@@ -98,6 +98,9 @@ class PatientComboBox(QComboBox):
 
         self._viewController.patientAddedSignal.connect(self._addPatient)
         self._viewController.patientRemovedSignal.connect(self._removePatient)
+
+        if not (self._viewController.currentPatient is None):
+            self._addPatient(self._viewController.currentPatient)
 
         self.currentIndexChanged.connect(self._setCurrentPatient)
 
@@ -147,20 +150,21 @@ class PatientDataTree(QTreeView):
         self.setAcceptDrops(True)
 
     def _appendData(self, data):
-        rootItem = PatientDataItem(data)
-        self.rootNode.appendRow(rootItem)
-
-        if isinstance(data, Dynamic3DSequence):
-            for image in data.dyn3DImageList:
-                item = PatientDataItem(image)
-                rootItem.appendRow(item)
+        if isinstance(data, Image3D) or isinstance(data, RTPlan) or isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence):
+            rootItem = PatientDataItem(data)
             self.rootNode.appendRow(rootItem)
 
-        if isinstance(data, Dynamic2DSequence):
-            for image in data.dyn2DImageList:
-                item = PatientDataItem(image)
-                rootItem.appendRow(item)
-            self.rootNode.appendRow(rootItem)
+            if isinstance(data, Dynamic3DSequence):
+                for image in data.dyn3DImageList:
+                    item = PatientDataItem(image)
+                    rootItem.appendRow(item)
+                self.rootNode.appendRow(rootItem)
+
+            if isinstance(data, Dynamic2DSequence):
+                for image in data.dyn2DImageList:
+                    item = PatientDataItem(image)
+                    rootItem.appendRow(item)
+                self.rootNode.appendRow(rootItem)
 
     def _removeData(self, data):
         items = []
@@ -186,10 +190,8 @@ class PatientDataTree(QTreeView):
     def buildDataTree(self, patient):
         # Disconnect signals
         if not(self._currentPatient is None):
-            self._currentPatient.imageAddedSignal.disconnect(self._appendData)
-            self._currentPatient.dyn3DSeqAddedSignal.disconnect(self._appendData)
-            self._currentPatient.dyn3DSeqRemovedSignal.disconnect(self._removeData)
-            self._currentPatient.imageRemovedSignal.disconnect(self._removeData)
+            self._currentPatient.patientDataAddedSignal.disconnect(self._appendData)
+            self._currentPatient.patientDataRemovedSignal.disconnect(self._removeData)
 
         # Do this explicitely to be sure signals are disconnected
         for row in range(self.model().rowCount()):
@@ -206,14 +208,9 @@ class PatientDataTree(QTreeView):
         if self._currentPatient is None:
             return
 
-        self._currentPatient.imageAddedSignal.connect(self._appendData)
-        self._currentPatient.imageRemovedSignal.connect(self._removeData)
-        self._currentPatient.dyn3DSeqAddedSignal.connect(self._appendData)
-        self._currentPatient.dyn3DSeqRemovedSignal.connect(self._removeData)
-        # self._currentPatient.dyn2DSeqAddedSignal.connect(self._appendData)
-        # self._currentPatient.dyn2DSeqRemovedSignal.connect(self._removeData)
-        self._currentPatient.dyn3DModAddedSignal.connect(self._appendData)
-        self._currentPatient.dyn3DModRemovedSignal.connect(self._removeData)
+        self._currentPatient.patientDataAddedSignal.connect(self._appendData)
+        self._currentPatient.patientDataRemovedSignal.connect(self._removeData)
+
         #TODO: Same with other data
 
         #images
@@ -223,6 +220,9 @@ class PatientDataTree(QTreeView):
 
         if len(images) > 0:
             self._viewController.selectedImage = images[0]
+
+        for plan in patient.plans:
+            self._appendData(plan)
 
         # dynamic sequences
         for dynSeq in patient.dynamic3DSequences:
@@ -248,6 +248,12 @@ class PatientDataTree(QTreeView):
 
         if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence):
             self._viewController.mainImage = selectedData
+        if isinstance(selectedData, RTPlan):
+            self._viewController.plan = selectedData
+        elif isinstance(selectedData, Dynamic3DModel):
+            self._viewController.mainImage = selectedData.midp
+        elif isinstance(selectedData, DoseImage):
+            self._viewController.secondaryImage = selectedData
 
     def _handleRightClick(self, pos):
         UIDs = []
@@ -397,7 +403,6 @@ class PatientDataTree(QTreeView):
 
         print('Export data as serialized objects')
         for data in selectedData:
-            type(data)
             print('  ', type(data), data.name)
 
         fileDialog = SaveData_dialog()

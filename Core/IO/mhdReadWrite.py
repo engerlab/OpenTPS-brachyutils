@@ -3,6 +3,8 @@ import numpy as np
 import logging
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Images.vectorField3D import VectorField3D
 
 
 def importImageMHD(headerFile):
@@ -57,13 +59,25 @@ def exportImageMHD(outputPath, image):
 
     metaData = generateDefaultMetaData()
     metaData["NDims"] = len(image._spacing)
-    metaData["DimSize"] = image._imageArray.shape
+    metaData["DimSize"] = tuple(image.gridSize)
     metaData["ElementSpacing"] = tuple(image._spacing)
     metaData["Offset"] = tuple(image._origin)
     metaData["ElementDataFile"] = rawFile
 
+    binaryData = image._imageArray
+    if isinstance(image, ROIMask):
+        metaData["ElementType"] = "MET_BOOL"
+    if image._imageArray is not None and image._imageArray.ndim == 4: # save vectorField3D
+        metaData["ElementNumberOfChannels"] = image._imageArray.shape[3]
+    if hasattr(image, 'velocity'): # save deformation3D
+        if image.velocity._imageArray is not None and image.velocity._imageArray.ndim == 4:
+            metaData["ElementNumberOfChannels"] = image.velocity._imageArray.shape[3]
+        else:
+            print("Deformation field does not contain image array or dimension not equal to 4")
+        binaryData = image.velocity._imageArray
+
     writeHeaderMHD(mhdPath, metaData=metaData)
-    writeBinaryMHD(rawPath, image._imageArray, metaData=metaData)
+    writeBinaryMHD(rawPath, binaryData, metaData=metaData)
 
 
 
@@ -217,12 +231,19 @@ def readBinaryMHD(inputPath, metaData=None):
     # import data
     if metaData["ElementType"] == "MET_DOUBLE":
         data = np.fromfile(metaData["ElementDataFile"], dtype=np.float)
+    elif metaData["ElementType"] == "MET_BOOL":
+        data = np.fromfile(metaData["ElementDataFile"], dtype=bool)
     else:
         data = np.fromfile(metaData["ElementDataFile"], dtype=np.float32)
-    data = data.reshape(metaData["DimSize"], order='F')
 
-    # return Image3D object
-    image = Image3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+
+    if metaData["ElementNumberOfChannels"] == 1:
+        data = data.reshape(metaData["DimSize"], order='F')
+        image = Image3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+    else:
+        data = data.reshape(np.append(metaData["DimSize"], metaData["ElementNumberOfChannels"]), order='F')
+        image = VectorField3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+
     return image
 
 
@@ -304,6 +325,8 @@ def writeBinaryMHD(outputPath, data, metaData=None):
       data = np.copy(data).astype("float64")
     elif metaData["ElementType"] == "MET_FLOAT" and data.dtype != "float32":
       data = np.copy(data).astype("float32")
+    elif metaData["ElementType"] == "MET_BOOL" and data.dtype != "bool":
+      data = np.copy(data).astype("bool")
     
     if data.dtype.byteorder == '>':
       data.byteswap() 

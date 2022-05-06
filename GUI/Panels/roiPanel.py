@@ -1,7 +1,11 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QColor, QPixmap, QIcon
 
+from Core.Data.Images.roiMask import ROIMask
+from Core.Data.patient import Patient
+from Core.Data.rtStruct import RTStruct
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
+from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 
 
 class ROIPanel(QWidget):
@@ -18,7 +22,7 @@ class ROIPanel(QWidget):
     self.setCurrentPatient(self._viewController.currentPatient)
     self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
 
-  def addRTStruct(self, rtStruct):
+  def addRTStruct(self, rtStruct:RTStruct):
     for contour in rtStruct.contours:
       checkbox = ROIItem(ROIContourForViewer(contour), self._viewController)
 
@@ -27,14 +31,22 @@ class ROIPanel(QWidget):
 
     self.layout.addStretch()
 
-  def removeRTStruct(self, contour):
-    for item in self.items:
-      if item._contour == contour:
-        self.layout.removeWidget(item)
-        item.setParent(None)
-        return
+  def addROIMask(self, roiMask:ROIMask):
+    checkbox = ROIItem(ROIMaskForViewer(roiMask), self._viewController)
 
-  def setCurrentPatient(self, patient):
+    self.layout.addWidget(checkbox)
+    self.items.append(checkbox)
+    self.layout.addStretch()
+
+  def removeRTStruct(self, rtStruct:RTStruct):
+    for contour in rtStruct.contours:
+      for item in self.items:
+        if item._contour == contour:
+          self.layout.removeWidget(item)
+          item.setParent(None)
+          return
+
+  def setCurrentPatient(self, patient:Patient):
     if patient==self._patient:
       return
 
@@ -42,8 +54,14 @@ class ROIPanel(QWidget):
     for rtStruct in self._patient.rtStructs:
       self.addRTStruct(rtStruct)
 
+    for roiMask in self._patient.roiMasks:
+      self.addROIMask(roiMask)
+
     self._patient.rtStructAddedSignal.connect(self.addRTStruct)
     self._patient.rtStructRemovedSignal.connect(self.removeRTStruct)
+
+    self._patient.roiMaskAddedSignal.connect(self.addROIMask)
+    #TODO remove ROI mask
 
 
 class ROIItem(QCheckBox):
@@ -69,4 +87,4 @@ class ROIItem(QCheckBox):
 
   def handleClick(self, isChecked):
     self._contour.visible = isChecked
-    self._viewController.showContour(self._contour)
+    self._viewController.showContour(self._contour.data)

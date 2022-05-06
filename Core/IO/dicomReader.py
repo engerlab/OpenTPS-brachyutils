@@ -3,7 +3,11 @@ import pydicom
 import numpy as np
 from PIL import Image, ImageDraw
 import logging
+from Core.Data.Plan.rangeShifter import RangeShifter
 
+from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan.planIonBeam import PlanIonBeam
+from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.patientInfo import PatientInfo
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
@@ -229,3 +233,195 @@ def readDicomVectorField(dcmFile):
                           spacing=pixelSpacing)
 
     return field
+
+
+def readDicomPlan(dcmFile):
+    dcm = pydicom.dcmread(dcmFile)
+
+    # collect patient information
+    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                              sex=dcm.PatientSex)
+
+    if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
+        name = dcm.SeriesDescription
+    else:
+        name = dcm.SeriesInstanceUID
+
+    plan = RTPlan(name=name, patientInfo=patientInfo)
+
+    # plan.OriginalDicomDataset = dcm
+    
+    # Photon plan
+    if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5": 
+      print("ERROR: Conventional radiotherapy (photon) plans are not supported")
+      plan.modality = "Radiotherapy"
+      return
+  
+    # Ion plan  
+    elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
+      plan.modality = "Ion therapy"
+    
+      if dcm.IonBeamSequence[0].RadiationType == "PROTON":
+        plan.radiationType = "Proton"
+      else:
+        print("ERROR: Radiation type " + dcm.IonBeamSequence[0].RadiationType + " not supported")
+        plan.radiationType = dcm.IonBeamSequence[0].RadiationType
+        return
+       
+      if dcm.IonBeamSequence[0].ScanMode == "MODULATED":
+        plan.scanMode = "MODULATED" # PBS
+      elif dcm.IonBeamSequence[0].ScanMode == "LINE":
+        plan.scanMode = "LINE" # Line Scanning
+      else:
+        print("ERROR: Scan mode " + dcm.IonBeamSequence[0].ScanMode + " not supported")
+        plan.scanMode = dcm.IonBeamSequence[0].ScanMode
+        return 
+    
+    # Other  
+    else:
+      print("ERROR: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + plan.DcmFile)
+      plan.modality = "Unknown"
+      return
+      
+    # Start parsing PBS plan
+    plan.SOPInstanceUID = dcm.SOPInstanceUID
+    plan.numberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
+
+    if(hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName')):
+      plan.treatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName
+    else:
+      plan.treatmentMachineName = ""
+  
+    for dcm_beam in dcm.IonBeamSequence:
+      if dcm_beam.TreatmentDeliveryType != "TREATMENT":
+        continue
+      
+      first_layer = dcm_beam.IonControlPointSequence[0]
+      
+      beam = PlanIonBeam()
+      beam.seriesInstanceUID = plan.seriesInstanceUID
+      beam.name = dcm_beam.BeamName
+      beam.isocenterPosition = [float(first_layer.IsocenterPosition[0]), float(first_layer.IsocenterPosition[1]), float(first_layer.IsocenterPosition[2])]
+      beam.gantryAngle = float(first_layer.GantryAngle)
+      beam.patientSupportAngle = float(first_layer.PatientSupportAngle)
+      # beam.FinalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
+      FinalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
+    
+      # find corresponding beam in FractionGroupSequence (beam order may be different from IonBeamSequence)
+      ReferencedBeam_id = next((x for x, val in enumerate(dcm.FractionGroupSequence[0].ReferencedBeamSequence) if val.ReferencedBeamNumber == dcm_beam.BeamNumber), -1)
+      if ReferencedBeam_id == -1:
+        print("ERROR: Beam number " + dcm_beam.BeamNumber + " not found in FractionGroupSequence.")
+        print("This beam is therefore discarded.")
+        continue
+      else: 
+          # beam.BeamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
+          BeamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
+    
+      # self.TotalMeterset += beam.BeamMeterset
+    
+      if dcm_beam.NumberOfRangeShifters == 0:
+        # beam.rangeShifter.ID = ""
+        # beam.rangeShifterType = "none"
+        pass
+      elif dcm_beam.NumberOfRangeShifters == 1:
+        beam.rangeShifter = RangeShifter()
+        beam.rangeShifter.ID = dcm_beam.RangeShifterSequence[0].RangeShifterID
+        if dcm_beam.RangeShifterSequence[0].RangeShifterType == "BINARY":
+          beam.rangeShifter.type = "binary"
+        elif dcm_beam.RangeShifterSequence[0].RangeShifterType == "ANALOG":
+          beam.rangeShifter.type = "analog"
+        else:
+          print("ERROR: Unknown range shifter type for beam " + dcm_beam.BeamName)
+          # beam.rangeShifter.type = "none"
+      else: 
+        print("ERROR: More than one range shifter defined for beam " + dcm_beam.BeamName)
+        # beam.rangeShifterID = ""
+        # beam.rangeShifterType = "none"
+      
+      
+      SnoutPosition = 0
+      if hasattr(first_layer, 'SnoutPosition'):
+        SnoutPosition = float(first_layer.SnoutPosition)
+    
+      IsocenterToRangeShifterDistance = SnoutPosition
+      RangeShifterWaterEquivalentThickness = None
+      RangeShifterSetting = "OUT"
+      ReferencedRangeShifterNumber = 0
+    
+      if hasattr(first_layer, 'RangeShifterSettingsSequence'):
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'IsocenterToRangeShifterDistance'):
+          IsocenterToRangeShifterDistance = float(first_layer.RangeShifterSettingsSequence[0].IsocenterToRangeShifterDistance)
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'RangeShifterWaterEquivalentThickness'):
+          RangeShifterWaterEquivalentThickness = float(first_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness)
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'RangeShifterSetting'):
+          RangeShifterSetting = first_layer.RangeShifterSettingsSequence[0].RangeShifterSetting
+        if hasattr(first_layer.RangeShifterSettingsSequence[0], 'ReferencedRangeShifterNumber'):
+          ReferencedRangeShifterNumber = int(first_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber)
+       
+      CumulativeMeterset = 0
+
+    
+      for dcm_layer in dcm_beam.IonControlPointSequence:
+        if(plan.scanMode == "MODULATED"):
+          if dcm_layer.NumberOfScanSpotPositions == 1: sum_weights = dcm_layer.ScanSpotMetersetWeights
+          else: sum_weights = sum(dcm_layer.ScanSpotMetersetWeights)
+          
+        elif(plan.scanMode == "LINE"):
+          sum_weights = sum(np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())  
+      
+        if sum_weights == 0.0:
+          continue
+        
+        layer = PlanIonLayer()
+        layer.seriesInstanceUID = plan.seriesInstanceUID
+            
+        if hasattr(dcm_layer, 'SnoutPosition'):
+          SnoutPosition = float(dcm_layer.SnoutPosition)
+        
+        if hasattr(dcm_layer, 'NumberOfPaintings'): layer.NumberOfPaintings = int(dcm_layer.NumberOfPaintings)
+        else: layer.numberOfPaintings = 1
+       
+        layer.nominalEnergy = float(dcm_layer.NominalBeamEnergy)
+        
+        if(plan.scanMode == "MODULATED"):
+          _x = dcm_layer.ScanSpotPositionMap[0::2]
+          _y = dcm_layer.ScanSpotPositionMap[1::2]
+          w = np.array(dcm_layer.ScanSpotMetersetWeights) * BeamMeterset / FinalCumulativeMetersetWeight # spot weights are converted to MU
+          layer.appendSpot(_x, _y, w)
+        
+        elif(plan.scanMode == "LINE"):
+          raise NotImplementedError()
+          #print("SpotNumber: ", dcm_layer[0x300b1092].value)
+          #print("SpotValue: ", np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist())
+          #print("MUValue: ", np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())
+          #print("SizeValue: ", np.frombuffer(dcm_layer[0x300b1098].value, dtype=np.float32).tolist())
+          #print("PaintValue: ", dcm_layer[0x300b109a].value)
+          LineScanPoints = np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist()
+          layer.LineScanControlPoint_x = LineScanPoints[0::2]
+          layer.LineScanControlPoint_y = LineScanPoints[1::2]
+          layer.LineScanControlPoint_Weights = np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist()
+          layer.LineScanControlPoint_MU = np.array(layer.LineScanControlPoint_Weights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight # weights are converted to MU
+          if layer.LineScanControlPoint_MU.size == 1: layer.LineScanControlPoint_MU = [layer.LineScanControlPoint_MU]
+          else: layer.LineScanControlPoint_MU = layer.LineScanControlPoint_MU.tolist()  
+        
+            
+        if beam.rangeShifter is not None:
+          if hasattr(dcm_layer, 'RangeShifterSettingsSequence'):
+            RangeShifterSetting = dcm_layer.RangeShifterSettingsSequence[0].RangeShifterSetting
+            ReferencedRangeShifterNumber = dcm_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber
+            if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'IsocenterToRangeShifterDistance'):
+              IsocenterToRangeShifterDistance = dcm_layer.RangeShifterSettingsSequence[0].IsocenterToRangeShifterDistance
+            if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'RangeShifterWaterEquivalentThickness'):
+              RangeShifterWaterEquivalentThickness = float(dcm_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness)
+        
+          layer.rangeShifterSettings.rangeShifterSetting = RangeShifterSetting
+          layer.rangeShifterSettings.isocenterToRangeShifterDistance = IsocenterToRangeShifterDistance
+          layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness = RangeShifterWaterEquivalentThickness
+          layer.rangeShifterSettings.referencedRangeShifterNumber = ReferencedRangeShifterNumber
+        
+        
+        beam.appendLayer(layer)
+      
+      plan.appendBeam(beam)
+      
+    return plan

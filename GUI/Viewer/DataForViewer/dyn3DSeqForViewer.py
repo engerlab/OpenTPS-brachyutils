@@ -22,6 +22,7 @@ class Dyn3DSeqForViewer(GenericImageForViewer):
         self._currentIndexIn3DSeq = 0
         self._updateVTKOutputPort()
         self._vtkOutputPort = self._simpleFilter.GetOutputPort()
+        self._range = (np.min(self.data.dyn3DImageList[0].imageArray), np.max(self.data.dyn3DImageList[0].imageArray))
 
     def _getImg3DForViewerList(self, dyn3DSeqImgList):
         vtkImageList = []
