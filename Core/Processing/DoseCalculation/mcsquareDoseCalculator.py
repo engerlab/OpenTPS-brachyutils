@@ -36,6 +36,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._beamModel = None
         self._nbPrimaries = 0
         self._simulationDirectory = MainConfig().simulationFolder
+        self.cropCTContour = None
 
     @property
     def ctCalibration(self) -> Optional[AbstractCTCalibration]:
@@ -111,7 +112,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._materialFolder)
         self._cleanDir(self._scannerFolder)
 
-        mcsquareIO.writeCT(self._ct, self._ctFilePath)
+        mcsquareIO.writeCT(self._ct, self._ctFilePath, self.cropCTContour)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
         mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath, self._ctCalibration)
         mcsquareIO.writeCTCalibration(self._ctCalibration, self._scannerFolder, self._materialFolder)

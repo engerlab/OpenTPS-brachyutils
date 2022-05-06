@@ -193,10 +193,17 @@ def readDose(filePath):
 
     return doseImage
 
-def writeCT(ct: CTImage, filtePath):
+def writeCT(ct: CTImage, filtePath, cropCTContour=None):
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
     image = ct.copy()
+
+    # Crop CT image with contour
+    if cropCTContour is not None:
+        print(f'Cropping CT around {cropCTContour.name}')
+        contour_mask = cropCTContour.getBinaryMask(image.origin, image.gridSize, image.spacing)
+        image.imageArray[contour_mask == False] = -1024
+
     image.imageArray = np.flip(image.imageArray, 0)
     image.imageArray = np.flip(image.imageArray, 1)
 
@@ -399,7 +406,6 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
                     # fid.write("%f\n" % beam.rangeShifter.WET)
                     RS_index = [rs.ID for rs in bdl.RangeShifters]
                     ID = RS_index.index(beam.rangeShifter.ID)
-                    print("WET is ", bdl.RangeShifters[ID].WET)
                     fid.write("%f\n" % bdl.RangeShifters[ID].WET)
                 else:
                     print('layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness',layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
