@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Sequence
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -30,7 +30,7 @@ class SecondaryImageLayer(PrimaryImageLayer):
         self._colorbarWidget.SetScalarBarActor(self._colorbarActor)
 
     def close(self):
-        self._disconnectAll()
+        super().close()
 
     def _setImage(self, image: Optional[Image3DForViewer]):
         if image == self._image:
@@ -87,3 +87,7 @@ class SecondaryImageLayer(PrimaryImageLayer):
         self._colorMapper.SetLookupTable(lookupTable)
         self._colorbarActor.SetLookupTable(lookupTable)
         self._renderWindow.Render()
+
+    def _setWWL(self, wwl: Sequence):
+        # WWL is changed via iStyle. It is only working on the primary image.
+        pass

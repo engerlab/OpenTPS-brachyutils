@@ -2,8 +2,6 @@
 import typing
 from math import isclose
 
-import numpy as np
-
 from Core.event import Event
 
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
@@ -11,7 +9,6 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables import L
 
 
 class GenericImageForViewer(DataMultiton):
-
     def __init__(self, image):
         super().__init__(image)
 
