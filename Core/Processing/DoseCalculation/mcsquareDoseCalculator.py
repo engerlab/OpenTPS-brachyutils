@@ -1,12 +1,17 @@
+import copy
 import os
 import platform
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Optional
+
+import numpy as np
 
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
@@ -18,20 +23,25 @@ from mainConfig import MainConfig
 import Core.IO.mcsquareIO as mcsquareIO
 
 
-class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalculator):
+class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalculator):
     def __init__(self):
         AbstractMCDoseCalculator.__init__(self)
         AbstractDoseInfluenceCalculator.__init__(self)
 
-        self._ctCalibration = None
-        self._ct = None
-        self._plan = None
+        self._ctCalibration:Optional[AbstractCTCalibration] = None
+        self._ct:Optional[Image3D] = None
+        self._plan:Optional[RTPlan] = None
         self._roi = None
         self._config = None
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
         self._simulationDirectory = MainConfig().simulationFolder
+
+        self._subprocess = None
+        self._subprocessKilled = True
+
+        self.overwriteOutsideROI = None # Previously cropCTContour but this name was confusing
 
     @property
     def ctCalibration(self) -> Optional[AbstractCTCalibration]:
@@ -65,6 +75,12 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def simulationDirectory(self, path):
         self._simulationDirectory = path
 
+    def kill(self):
+        if not (self._subprocess is None):
+            self._subprocessKilled = True
+            self._subprocess.kill()
+            self._subprocess = None
+
     def computeDose(self, ct:CTImage, plan: RTPlan) -> DoseImage:
         self._ct = ct
         self._plan = plan
@@ -78,19 +94,26 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return doseImage
 
-    def computeDoseInfluence(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None):
+    def computeBeamlets(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None):
         self._ct = ct
-        self._plan = plan
+        self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
-        self._config = self._bemletComputationConfig
+        self._config = self._beamletComputationConfig
 
         self._writeFilesToSimuDir()
         self._cleanDir(self._outputDir)
         self._startMCsquare()
 
         beamletDose = self._importBeamlets()
+        beamletDose.beamletWeights = np.array(plan.spotWeights)
 
         return beamletDose
+
+    def _setPlanWeightsTo1(self, plan):
+        plan = copy.deepcopy(plan)
+        plan.spotWeights = np.ones(plan.spotWeights.shape)
+
+        return plan
 
     def _cleanDir(self, dirPath):
         if os.path.isdir(dirPath):
@@ -100,16 +123,27 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._materialFolder)
         self._cleanDir(self._scannerFolder)
 
-        mcsquareIO.writeCT(self._ct, self._ctFilePath)
+        mcsquareIO.writeCT(self._ct, self._ctFilePath, self.overwriteOutsideROI)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
-        mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath)
+        mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath, self._ctCalibration)
         mcsquareIO.writeCTCalibration(self._ctCalibration, self._scannerFolder, self._materialFolder)
         mcsquareIO.writeConfig(self._config, self._configFilePath)
         mcsquareIO.writeBin(self._mcsquareSimuDir)
 
     def _startMCsquare(self):
+        if not (self._subprocess is None):
+            raise Exception("MCsquare already running")
+
+        self._subprocessKilled = False
+
         if (platform.system() == "Linux"):
-            os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
+            self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
+            self._subprocess.wait()
+            if self._subprocessKilled:
+                self._subprocessKilled = False
+                raise Exception('MCsquare subprocess killed by caller.')
+            self._subprocess = None
+            #os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
         elif (platform.system() == "Windows"):
             os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
 
@@ -131,7 +165,7 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._roi)
         beamletDose.beamletRescaling = self._beamletRescaling()
         return beamletDose
 
@@ -206,7 +240,7 @@ class MCSquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return config
 
     @property
-    def _bemletComputationConfig(self) -> MCsquareConfig:
+    def _beamletComputationConfig(self) -> MCsquareConfig:
         config = self._generalMCsquareConfig
 
         config["Dose_to_Water_conversion"] = "OnlineSPR"

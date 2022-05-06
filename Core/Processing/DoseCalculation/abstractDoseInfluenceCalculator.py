@@ -31,7 +31,7 @@ class AbstractDoseInfluenceCalculator:
         raise NotImplementedError()
 
     @abstractmethod
-    def computeDoseInfluence(self, ct: CTImage, plan: RTPlan, roi: Optional[ROIMask] = None):
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[ROIMask] = None):
         raise NotImplementedError()
 
 class DoseInfluenceCalculatorException(Exception):

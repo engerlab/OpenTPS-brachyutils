@@ -5,7 +5,9 @@ from PyQt5.QtGui import QIcon
 
 from GUI.Panels.mainToolbar import MainToolbar
 from GUI.Viewer.viewerPanel import ViewerPanel
+from GUI.programSettingEditor import ProgramSettingEditor
 from GUI.statusBar import StatusBar
+from mainConfig import MainConfig
 
 
 class MainWindow(QMainWindow):
@@ -28,6 +30,9 @@ class MainWindow(QMainWindow):
         self.mainToolbar = MainToolbar(self._viewControler)
         self.mainToolbar.setFixedWidth(self.toolbox_width)
         self.mainLayout.addWidget(self.mainToolbar)
+
+        ProgramSettingEditor.setMainConfig(MainConfig())
+        ProgramSettingEditor.setMainToolbar(self.mainToolbar)
 
         # create and add the viewer panel
         self.viewerPanel = ViewerPanel(self._viewControler)
