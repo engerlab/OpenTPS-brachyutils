@@ -48,10 +48,12 @@ if __name__ == '__main__':
         with open(scriptPath, 'r') as file:
             code = file.read()
 
-        #output = API.interpreter.run(code)
-        runStartScript = functools.partial(API.interpreter.run, code)
-        threading.Thread(target=runStartScript).start()
-        #print('Start script output:')
-        #print(output)
+        # It would be nice to run this in a thread but since the application is not fully loaded yet we might get strange behavior
+        output = API.interpreter.run(code)
+        #runStartScript = functools.partial(API.interpreter.run, code)
+        #threading.Thread(target=runStartScript).start()
+
+        print('Start script output:')
+        print(output)
 
     app.exec_()
