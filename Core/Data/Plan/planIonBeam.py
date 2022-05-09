@@ -67,6 +67,23 @@ class PlanIonBeam:
             ind += len(layer.spotWeights)
 
     @property
+    def spotTimings(self):
+        timings = np.array([])
+        for layer in self._layers:
+            timings = np.concatenate((timings, layer.spotTimings))
+
+        return timings
+
+    @spotTimings.setter
+    def spotTimings(self, t: Sequence[float]):
+        t = np.array(t)
+
+        ind = 0
+        for layer in self._layers:
+            layer.spotTimings = t[ind:ind+len(layer.spotTimings)]
+            ind += len(layer.spotTimings)
+
+    @property
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 
@@ -79,6 +96,16 @@ class PlanIonBeam:
 
         for layer in self._layers:
             layer.simplify(threshold=threshold)
+
+    def reorderLayers(self, order: Optional[Union[str, Sequence[int]]] = 'decreasing'):
+        if type(order) is str:
+            if order == 'decreasing' or order=='scanAlgo':
+                order = np.argsort([layer.nominalEnergy for layer in self._layers])[::-1]
+            else:
+                raise ValueError(f"Reordering method {order} does not exist.")
+
+        self._layers = [self._layers[i] for i in order]
+
 
     def _fusionDuplicates(self):
         #TODO
