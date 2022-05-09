@@ -4,6 +4,8 @@ import unittest
 from typing import Sequence
 
 import numpy as np
+import sys
+sys.path.append('/home/vhamaide/opentps/')
 
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
@@ -17,7 +19,7 @@ class RTPlan(PatientData):
         super().__init__(name=name, patientInfo=patientInfo)
 
         self._beams = []
-        self.numberOfFractionsPlanned:int = 1
+        self._numberOfFractionsPlanned:int = 1
 
         self.seriesInstanceUID = ""
         self.SOPInstanceUID = ""
@@ -80,6 +82,24 @@ class RTPlan(PatientData):
             ind += len(beam.spotWeights)
 
     @property
+    def spotTimings(self) -> np.ndarray:
+        timings = np.array([])
+
+        for beam in self._beams:
+            timings = np.concatenate((timings, beam.spotTimings))
+
+        return timings
+
+    @spotTimings.setter
+    def spotTimings(self, t:Sequence[float]):
+        t = np.array(t)
+
+        ind = 0
+        for beam in self._beams:
+            beam.spotTimings = t[ind:ind+len(beam.spotTimings)]
+            ind += len(beam.spotTimings)
+
+    @property
     def meterset(self) -> float:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
 
@@ -87,10 +107,43 @@ class RTPlan(PatientData):
     def numberOfSpots(self) -> int:
         return np.sum(np.array([beam.numberOfSpots for beam in self._beams]))
 
+    @property
+    def numberOfFractionsPlanned(self) -> int:
+        return self._numberOfFractionsPlanned
+
+    @numberOfFractionsPlanned.setter
+    def numberOfFractionsPlanned(self, fraction: int):
+        if fraction != self._numberOfFractionsPlanned:
+            self.spotWeights = self.spotWeights * (self._numberOfFractionsPlanned / fraction)
+            self._numberOfFractionsPlanned = fraction
+
     def simplify(self, threshold:float=0.0):
         self._fusionDuplicates()
         for beam in self._beams:
             beam.simplify(threshold=threshold)
+
+    def reorderPlan(self, order_layers="decreasing", order_spots="scanAlgo"):
+        for beam in self._beams:
+            beam.reorderLayers(order_layers)
+            for layer in beam._layers:
+                layer.reorderSpots(order_spots)
+
+    def removeZeroWeightSpots(self):
+        for beam in self._beams:
+            for layer in beam._layers:
+                index_to_keep = np.flatnonzero(np.array(layer._weights)>0.)
+                layer._weights = [layer._weights[i] for i in range(len(layer._weights)) if i in index_to_keep]
+                layer._x = [layer._x[i] for i in range(len(layer._x)) if i in index_to_keep]
+                layer._y = [layer._y[i] for i in range(len(layer._y)) if i in index_to_keep]
+
+        # Remove empty layers
+        for beam in self._beams:
+            beam._layers = [layer for layer in beam._layers if len(layer._weights)>0]
+
+    
+    def copy(self):
+        return copy.deepcopy(self) # recursive copy
+
 
     def _fusionDuplicates(self):
         #TODO
@@ -111,3 +164,59 @@ class PlanIonLayerTestCase(unittest.TestCase):
 
         plan.removeBeam(beam)
         self.assertEqual(len(plan), 0)
+
+    def testLenWithTimings(self):
+        plan = RTPlan()
+        beam = PlanIonBeam()
+        layer = PlanIonLayer(nominalEnergy=100.)
+        layer.appendSpot(0, 0, 1, 0.5)
+
+        beam.appendLayer(layer)
+
+        plan.appendBeam(beam)
+        self.assertEqual(len(plan), 1)
+
+        plan.removeBeam(beam)
+        self.assertEqual(len(plan), 0)
+
+    def testReorderPlan(self):
+        plan = RTPlan()
+        beam = PlanIonBeam()
+        layer = PlanIonLayer(nominalEnergy=100.)
+        x = [0, 2, 1, 3]
+        y = [1, 2, 2, 0]
+        weight = [0.2, 0.5, 0.3, 0.1]
+        layer.appendSpot(x, y, weight)
+        beam.appendLayer(layer)
+
+        layer2 = PlanIonLayer(nominalEnergy=120.)
+        x2 = [0, 2, 1, 3]
+        y2 = [3, 3, 5, 0]
+        weight2 = [0.2, 0.5, 0.3, 0.1]
+        layer2.appendSpot(x2, y2, weight2)
+        beam.appendLayer(layer2)
+
+        plan.appendBeam(beam)
+        plan.reorderPlan()
+
+        layer0 = plan._beams[0]._layers[0]
+        layer1 = plan._beams[0]._layers[1]
+        self.assertEqual(layer0.nominalEnergy,120.)
+        self.assertEqual(layer1.nominalEnergy,100.)
+
+        np.testing.assert_array_equal(layer1.spotX, [3,0,1,2])
+        np.testing.assert_array_equal(layer1.spotY, [0,1,2,2])
+        np.testing.assert_array_equal(layer1.spotWeights, np.array([0.1,0.2,0.3,0.5]))
+
+        np.testing.assert_array_equal(layer0.spotX, [3,0,2,1])
+        np.testing.assert_array_equal(layer0.spotY, [0,3,3,5])
+        np.testing.assert_array_equal(layer0.spotWeights, np.array([0.1,0.2,0.5,0.3]))
+
+
+
+
+
+
+
+if __name__ == '__main__':
+    unittest.main()
