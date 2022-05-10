@@ -125,8 +125,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         mcsquareIO.writeCT(self._ct, self._ctFilePath, self.overwriteOutsideROI)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
-        mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath, self._ctCalibration)
-        mcsquareIO.writeCTCalibration(self._ctCalibration, self._scannerFolder, self._materialFolder)
+        mcsquareIO.writeCTCalibrationAndBDL(self._ctCalibration, self._scannerFolder, self._materialFolder, self._beamModel, self._bdlFilePath)
         mcsquareIO.writeConfig(self._config, self._configFilePath)
         mcsquareIO.writeBin(self._mcsquareSimuDir)
 
