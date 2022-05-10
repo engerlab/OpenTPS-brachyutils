@@ -11,6 +11,8 @@ import scipy.sparse as sp
 from scipy.sparse import csc_matrix
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMolecule import MCsquareMolecule
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
@@ -203,7 +205,7 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     if overwriteOutsideROI is not None:
         print(f'Cropping CT around {overwriteOutsideROI.name}')
         contour_mask = overwriteOutsideROI.getBinaryMask(image.origin, image.gridSize, image.spacing)
-        image.imageArray[contour_mask == False] = -1024
+        image.imageArray[contour_mask.imageArray.astype(bool) == False] = -1024
 
         # TODO: cropCTContour:
         #ctCropped = CTImage.fromImage3D(ct)
@@ -215,7 +217,23 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
 
     exportImageMHD(filtePath, image)
 
-def writeCTCalibration(calibration: AbstractCTCalibration, scannerPath, materialPath):
+
+def writeCTCalibrationAndBDL(calibration:AbstractCTCalibration, scannerPath, materialPath, bdl:BDL, bdlFileName):
+    _writeCTCalibration(calibration, scannerPath, materialPath)
+
+    materials = MCsquareMaterial.getMaterialList(materialPath)
+    matNames = [mat["name"] for mat in materials]
+
+    with open(os.path.join(materialPath, 'list.dat'), "a") as listFile:
+        for rangeShifter in bdl.RangeShifters:
+            rangeShifter.material.write(materialPath, matNames)
+            listFile.write(str(len(materials)+1) + ' ' + rangeShifter.material.name)
+
+    materials = MCsquareMaterial.getMaterialList(materialPath)
+
+    _writeBDL(bdl, bdlFileName, materials)
+
+def _writeCTCalibration(calibration:AbstractCTCalibration, scannerPath, materialPath):
     if not isinstance(calibration, MCsquareCTCalibration):
         calibration = MCsquareCTCalibration.fromCTCalibration(calibration)
 
@@ -228,8 +246,10 @@ def writeConfig(config: MCsquareConfig, file_path):
     fid.close()
 
 
-def readBDL(path) -> BDL:
+def readBDL(path, materialsPath='default') -> BDL:
     bdl = BDL()
+
+    materialList = MCsquareMaterial.getMaterialList()
 
     with open(path, 'r') as fid:
         # verify BDL format
@@ -298,7 +318,11 @@ def readBDL(path) -> BDL:
             if ("RS_material" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].material = None # int(value) might not be consistent with materials used in openTPS. Better rely on RS_density to find the material
+
+                material = MCsquareMolecule()
+                material.load(int(value), materialsPath)
+
+                bdl.RangeShifters[-1].material = material
 
             if ("RS_density" in line):
                 line = line.split('=')
@@ -335,12 +359,9 @@ def readBDL(path) -> BDL:
     return bdl
 
 
-def writeBDL(bdl: BDL, fileName, calibration:AbstractCTCalibration):
-    if not isinstance(calibration, MCsquareCTCalibration):
-        calibration = MCsquareCTCalibration.fromCTCalibration(calibration)
-
+def _writeBDL(bdl: BDL, fileName, materials):
     with open(fileName, 'w') as f:
-        f.write(bdl.mcsquareFormatted(calibration.printedFormat()))
+        f.write(bdl.mcsquareFormatted(materials))
 
 
 def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):

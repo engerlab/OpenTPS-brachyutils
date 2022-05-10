@@ -7,7 +7,8 @@ import logging
 
 try:
     import cupy
-    import cupyx.scipy.ndimage
+    import cupyx
+    cupy.cuda.Device(0).use()
 except:
     print('cupy not found.')
 
@@ -21,9 +22,11 @@ def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0, tryGP
     if interpolatedImage is None:
       try:
         interpolatedImage = cupy.asnumpy(cupyx.scipy.ndimage.map_coordinates(cupy.asarray(image), cupy.asarray(interpolatedPoints.T), order=1, mode='constant', cval=fillValue))
-        # print('in libInter3_wrapper interpolateTrilinear cupy used')
+        # print('in try after map_coord')
       except:
+        # print('cupy 3D interpolation not enabled. The C implementation is tried instead')
         logger.info('cupy 3D interpolation not enabled. The C implementation is tried instead')
+        # print('cupy 3D interpolation not enabled. The C implementation is tried instead')
 
   if interpolatedImage is None:
     try:
@@ -47,7 +50,10 @@ def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0, tryGP
       libInterp3.Trilinear_Interpolation(Img, Size, Points, NumPoints, fillValue, interpolatedImage)
 
     except:
+      # print('accelerated 3D interpolation not enabled. The python implementation is used instead')
       logger.info('accelerated 3D interpolation not enabled. The python implementation is used instead')
+      # print('accelerated 3D interpolation not enabled. The python implementation is used instead')
+
 
   if interpolatedImage is None:
     # voxel coordinates of the original image

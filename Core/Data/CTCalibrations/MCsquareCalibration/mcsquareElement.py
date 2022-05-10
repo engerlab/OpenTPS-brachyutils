@@ -14,7 +14,7 @@ class MCsquareElement(MCsquareMaterial):
     def __str__(self):
         return self.mcsquareFormatted()
 
-    def mcsquareFormatted(self):
+    def mcsquareFormatted(self, materialNamesOrderedForPrinting=None):
         if self.density<=0:
             self.density = 1e-18
 
