@@ -14,103 +14,26 @@ import sys
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
-from scipy.ndimage import zoom
 import math
 import time
-import concurrent
-# from multiprocessing import pool
-# import multiprocessing
-from itertools import repeat
-
 
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.DRRToolBox import forwardProjection
+from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
 from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 from Core.Processing.ImageProcessing.crop3D import *
-from CodeExamples_NoGUI.waldo.testFunctionOtherFIle import multiProcDRRs
-from CodeExamples_NoGUI.waldo.multiProcSpawnForCupy import multiProcDeform, deformImageAndMask
+from CodeExamples_NoGUI.waldo.multiProcForkMethods import multiProcDRRs
+from CodeExamples_NoGUI.waldo.multiProcSpawnMethods import multiProcDeform
 
-# ## ------------------------------------------------------------------------------------
-# def deformImageAndMask(img, ROIMask, deformation, tryGPU=True):
-#     """
-#     This function is specific to this example and used to :
-#     - deform a CTImage and an ROIMask,
-#     - compute the deformed mask 3D center of mass
-#     - create DRR's for both,
-#     - binarize the DRR of the ROIMask
-#     - compute the 2D center of mass for the ROI DRR
-#     """
-    
-#     print('Start deformations and projections for deformation', deformation.name)
-#     startTime = time.time()
-#     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
-#     # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
-#     mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
-#     # print('mask', type(mask), type(mask.imageArray[0,0,0]))
-#     print('image and mask deformed in', time.time() - startTime)
-
-#     startTime = time.time()
-#     centerOfMass3D = mask.centerOfMass
-#     print('centerOfMass3D computed in', time.time() - startTime)
-
-#     return [image, mask, centerOfMass3D]
-
-# ## ------------------------------------------------------------------------------------
-# def DRRsBinarizeAndCrop(image, mask, projectionAngle=0, projectionAxis='Z', outputSize=[]):
-
-#     startTime = time.time()
-#     DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
-#     DRRMask = forwardProjection(mask, projectionAngle, axis=projectionAxis)
-#     print('DRRs for image and mask created in', time.time() - startTime)
-
-#     startTime = time.time()
-#     halfDiff = int((DRR.shape[1] - image.gridSize[2]) / 2)  ## not sure this will work if orientation is changed
-#     croppedDRR = DRR[:, halfDiff + 1:DRR.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
-#     croppedDRRMask = DRRMask[:,
-#                         halfDiff + 1:DRRMask.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
-
-#     if outputSize:
-#         # print('Before resampling')
-#         # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
-#         ratio = [outputSize[0] / croppedDRR.shape[0], outputSize[1] / croppedDRR.shape[1]]
-#         croppedDRR = zoom(croppedDRR, ratio)
-#         croppedDRRMask = zoom(croppedDRRMask, ratio)
-#         # print('After resampling')
-#         # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
-
-#     binaryDRRMask = getBinaryMaskFromROIDRR(croppedDRRMask)
-#     centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
-#     # print('CenterOfMass:', centerOfMass)
-
-#     print('rest computed in', time.time() - startTime)
-
-#     del image  # to release the RAM
-#     del mask  # to release the RAM
-
-#     #plt.figure()
-#     #plt.subplot(1, 5, 1)
-#     #plt.imshow(DRR)
-#     #plt.subplot(1, 5, 2)
-#     #plt.imshow(croppedDRR)
-#     #plt.subplot(1, 5, 3)
-#     #plt.imshow(DRRMask)
-#     #plt.subplot(1, 5, 4)
-#     #plt.imshow(croppedDRRMask)
-#     #plt.subplot(1, 5, 5)
-#     #plt.imshow(binaryDRRMask)
-#     #plt.show()
-
-#     return [croppedDRR, binaryDRRMask, centerOfMass]
 
 ## ------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_4'
+    patientFolder = 'Patient_1'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
@@ -130,11 +53,11 @@ if __name__ == '__main__':
 
 
     sequenceDurationInSecs = 10
-    samplingFrequency = 2
+    samplingFrequency = 4
     subSequenceSize = 50
     outputSize = [64, 64]
     bodyContourToUse = 'Body'
-    otherContourToUse = 'GTV T'
+    otherContourToUse = 'GTV'
     marginInMM = [50, 10, 100]
 
     # breathing signal parameters
@@ -156,7 +79,6 @@ if __name__ == '__main__':
     multiprocessing = True
     maxMultiProcUse = 6
     tryGPU = True
-
 
     patient = loadDataStructure(dataPath)[0]
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
@@ -299,10 +221,11 @@ if __name__ == '__main__':
         # with concurrent.futures.ProcessPoolExecutor() as executor:
         #     results = executor.map(deformImageAndMask, repeat(dynMod.midp), repeat(GTVMask), deformationList, repeat(tryGPU))
         
-        # print(len(deformedImgMaskAnd3DCOMList))
-        # print(deformedImgMaskAnd3DCOMList[0][0])
-        # print(deformedImgMaskAnd3DCOMList[0][1])
-        # print(deformedImgMaskAnd3DCOMList[0][2])
+        for element in deformedImgMaskAnd3DCOMList:
+            print(len(element))
+            print(type(element[0]))
+            print(type(element[1]))
+            print(type(element[2]))
 
         # plt.figure()
         # plt.subplot(1,2,1)
@@ -321,7 +244,7 @@ if __name__ == '__main__':
         #     results = executor.map(deformImageAndMask, repeat(dynMod.midp), repeat(GTVMask),
         #                             deformationList, repeat(tryGPU))
         print('Start multi process DRRs with', len(deformationList), 'pairs of image-mask')
-        resultList += multiProcDRRs(deformedImgMaskAnd3DCOMList, projAngle, projAxis, outputSize, savingPath)
+        resultList += multiProcDRRs(deformedImgMaskAnd3DCOMList, projAngle, projAxis, outputSize)
 
         # resultList += results
 

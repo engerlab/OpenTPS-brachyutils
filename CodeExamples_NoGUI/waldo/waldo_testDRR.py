@@ -12,7 +12,7 @@ import concurrent
 
 import time
 
-from Core.Processing.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
+from Core.Processing.ImageSimulation.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
 from Core.IO.serializedObjectIO import loadDataStructure, saveSerializedObjects
 
 if __name__ == '__main__':
