@@ -13,8 +13,9 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 
 if __name__ == '__main__':
 
+    print(os.getcwd())
     # Get the current working directory, its parent, then add the testData folder at the end of it
-    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+    testDataPath = os.getcwd() + '/testData/'
 
     # read a serialized dynamic sequence
     dataPath = testDataPath + "lightDynSeq.p"

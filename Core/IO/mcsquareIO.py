@@ -4,7 +4,7 @@ import shutil
 import struct
 import time
 import unittest
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 import scipy.sparse as sp
@@ -21,6 +21,7 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO.mhdReadWrite import exportImageMHD, importImageMHD
+from Core.Processing.ImageProcessing import crop3D
 
 
 def readBeamlets(file_path, roi:Optional[ROIMask]=None):
@@ -193,10 +194,22 @@ def readDose(filePath):
 
     return doseImage
 
-def writeCT(ct: CTImage, filtePath):
+def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
     image = ct.copy()
+
+    # Crop CT image with contour
+    if overwriteOutsideROI is not None:
+        print(f'Cropping CT around {overwriteOutsideROI.name}')
+        contour_mask = overwriteOutsideROI.getBinaryMask(image.origin, image.gridSize, image.spacing)
+        image.imageArray[contour_mask == False] = -1024
+
+        # TODO: cropCTContour:
+        #ctCropped = CTImage.fromImage3D(ct)
+        #box = crop3D.getBoxAroundROI(cropCTContour)
+        #crop3D.crop3DDataAroundBox(ctCropped, box)
+
     image.imageArray = np.flip(image.imageArray, 0)
     image.imageArray = np.flip(image.imageArray, 1)
 
@@ -285,7 +298,7 @@ def readBDL(path) -> BDL:
             if ("RS_material" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].material = int(value)
+                bdl.RangeShifters[-1].material = None # int(value) might not be consistent with materials used in openTPS. Better rely on RS_density to find the material
 
             if ("RS_density" in line):
                 line = line.split('=')
@@ -322,9 +335,12 @@ def readBDL(path) -> BDL:
     return bdl
 
 
-def writeBDL(bdl: BDL, fileName):
+def writeBDL(bdl: BDL, fileName, calibration:AbstractCTCalibration):
+    if not isinstance(calibration, MCsquareCTCalibration):
+        calibration = MCsquareCTCalibration.fromCTCalibration(calibration)
+
     with open(fileName, 'w') as f:
-        f.write(bdl.mcsquareFormatted())
+        f.write(bdl.mcsquareFormatted(calibration.printedFormat()))
 
 
 def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
@@ -363,7 +379,7 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
         fid.write("%f\t %f\t %f\n" % _dicomIsocenterToMCsquare(beam.isocenterPosition, CT.origin, CT.spacing, CT.gridSize))
 
         if not(beam.rangeShifter is None):
-            if not (beam.rangeShifter in bdl.RangeShifters):
+            if beam.rangeShifter.ID not in [rs.ID for rs in bdl.RangeShifters]:
                 raise Exception('Range shifter in plan not in BDL')
             else:
                 fid.write("###RangeShifterID\n")
@@ -393,8 +409,13 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
                 fid.write("%f\n" % layer.rangeShifterSettings.isocenterToRangeShifterDistance)
                 fid.write("####RangeShifterWaterEquivalentThickness\n")
                 if (layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness is None):
-                    fid.write("%f\n" % beam.rangeShifter.WET)
+                    # fid.write("%f\n" % beam.rangeShifter.WET)
+                    RS_index = [rs.ID for rs in bdl.RangeShifters]
+                    ID = RS_index.index(beam.rangeShifter.ID)
+                    fid.write("%f\n" % bdl.RangeShifters[ID].WET)
                 else:
+                    print('layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness',layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
+                    print('type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)',type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness))
                     fid.write("%f\n" % layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
 
             fid.write("####NbOfScannedSpots\n")

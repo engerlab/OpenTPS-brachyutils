@@ -1,10 +1,10 @@
 import os
+import threading
 from typing import Sequence, Tuple
 
-import numpy as np
 from PyQt5.QtGui import QPixmap, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QVBoxLayout, QLabel, QLineEdit, QMainWindow, QCheckBox, \
-    QFrame, QScrollArea, QTableWidget, QTableWidgetItem
+    QFrame, QTableWidget, QTableWidgetItem, QGridLayout
 
 from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
 from Core.Data.Images.ctImage import CTImage
@@ -47,7 +47,7 @@ class FlashWindow(QMainWindow):
         self._mainLayout = QHBoxLayout()
         self.centralWidget.setLayout(self._mainLayout)
 
-        self._leftPanel = LeftPanel((self._viewController), self)
+        self._leftPanel = UserInputPanel((self._viewController), self)
         self._leftPanel.setFixedWidth(400)
 
         self._mainLayout.addWidget(self._leftPanel)
@@ -63,20 +63,23 @@ class FlashWindow(QMainWindow):
         self._bottomFrame = QFrame()
         self._bottomFrame.setFixedHeight(400)
         self._rightLayout.addWidget(self._bottomFrame)
-        self._bottomLayout = QHBoxLayout()
+        self._bottomLayout = QGridLayout()
         self._bottomFrame.setLayout(self._bottomLayout)
 
         self._convergencePlot = ConvergencePlot()
-        self._bottomLayout.addWidget(self._convergencePlot)
+        self._convergencePlot.setMinimumWidth(400)
+        self._bottomLayout.addWidget(self._convergencePlot, 0, 0)
 
         self._dvhPlot = DVHPlot(self)
-        self._bottomLayout.addWidget(self._dvhPlot)
+        self._dvhPlot.setMinimumWidth(400)
+        self._bottomLayout.addWidget(self._dvhPlot, 0, 1)
 
         self._leftPanel.ctSelectedEvent.connect(self._viewers.setCT)
         self._leftPanel.doseUpdateEvent.connect(self._viewers.setDose)
         self._leftPanel.doseUpdateEvent.connect(self._updateDVHWithDose)
         self._leftPanel.fValEvent.connect(self._convergencePlot.appendFVal)
         self._leftPanel.contourSelectedEvent.connect(self._createDVHs)
+        self._leftPanel.planUpdateEvent.connect(self._viewers.setPlan)
 
     def _updateDVHWithDose(self, dose:DoseImage):
         for dvh in self._dvhs:
@@ -162,6 +165,11 @@ class ThreeViewsGrid(QWidget):
         self._convertROIToMask()
         self._setCTPositionToROICenter()
 
+    def setPlan(self, plan:RTPlan):
+        self._viewer0.rtPlan = plan
+        self._viewer1.rtPlan = plan
+        self._viewer2.rtPlan = plan
+
     def _convertROIToMask(self):
         if isinstance(self._roi, ROIContour):
             if not self._ct is None:
@@ -172,16 +180,23 @@ class ThreeViewsGrid(QWidget):
             Image3DForViewer(self._ct).selectedPosition = self._roi.centerOfMass
 
 
-class LeftPanel(QWidget):
+class UserInputPanel(QWidget):
+    _RUN_TXT = 'Run!'
+    _CANCEL_TXT = 'Cancel!'
+    _CANCELLING_TXT = 'Cancelling...'
+
     def __init__(self, viewController, parent=None):
         super().__init__(parent)
 
         self.ctSelectedEvent = Event(Image3D)
         self.doseUpdateEvent = Event(Image3D)
         self.contourSelectedEvent = Event(object)
+        self.planUpdateEvent = Event(RTPlan)
         self.fValEvent = Event(Tuple)
 
         self._viewController = viewController
+
+        self._WorkflowThread = None
 
         self._mainLayout = QVBoxLayout(self)
         self.setLayout(self._mainLayout)
@@ -209,13 +224,14 @@ class LeftPanel(QWidget):
         self._beamEditor = BeamEditor(self)
         self._mainLayout.addWidget(self._beamEditor)
 
-        self.runButton = QPushButton('Run!')
+        self.runButton = QPushButton(self._RUN_TXT)
         self.runButton.clicked.connect(self._run)
         self._mainLayout.addWidget(self.runButton)
 
         self.cemOptimizer = SingleBeamCEMOptimizationWorkflow()
         self.cemOptimizer.doseUpdateEvent.connect(self._updateDose)
         self.cemOptimizer.planUpdateEvent.connect(self._updateCT)
+        self.cemOptimizer.planUpdateEvent.connect(self.planUpdateEvent.emit)
         self.cemOptimizer.fValEvent.connect(self.fValEvent.emit)
 
     def _emitCT(self):
@@ -225,6 +241,10 @@ class LeftPanel(QWidget):
         self.ctSelectedEvent.emit(selectedCT[0])
 
     def _run(self):
+        if not (self._WorkflowThread is None):
+            self._cancel()
+            return
+
         selected = self.patientDataTree.selectedIndexes()
         selectedCT = [self.patientDataTree.model().itemFromIndex(selectedData).data for selectedData in selected]
 
@@ -247,7 +267,23 @@ class LeftPanel(QWidget):
 
         self.contourSelectedEvent.emit(self._roiTable.getROIs())
 
-        self.cemOptimizer.run()
+        self._WorkflowThread = threading.Thread(target=self.cemOptimizer.run)
+        globalThread = threading.Thread(target=self._startrunThread)
+        globalThread.start()
+
+    def _startrunThread(self):
+        self.runButton.setText(self._CANCEL_TXT)
+        self._WorkflowThread.start()
+        self._WorkflowThread.join()
+        self.runButton.setText(self._RUN_TXT)
+
+    def _cancel(self):
+        self.runButton.setText(self._CANCELLING_TXT)
+        self.runButton.setEnabled(False)
+        self.cemOptimizer.abort()
+        self._WorkflowThread.join()
+        self.runButton.setText(self._RUN_TXT)
+        self.runButton.setEnabled(True)
 
     def _updateDose(self, dose):
         Image3DForViewer(dose).range = [0, 41]
@@ -260,6 +296,9 @@ class LeftPanel(QWidget):
         # Update CT with CEM
         for beam in plan:
             cem = beam.cem
+
+            if cem is None:
+                continue
 
             if not cem.imageArray is None:
                 [rsROI, cemROI] = cem.computeROIs(ct, beam)

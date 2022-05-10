@@ -23,6 +23,8 @@ from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCa
     FluenceBasedMCsquareDoseCalculator, Beamlets
 from Extensions.FLASH.Core.Processing.RangeEnergy import rangeToEnergy, energyToRange
 
+class AbortedException(Exception):
+    pass
 
 class CEMOptimizer:
     class _Objectives(PlanOptimizerObjectives):
@@ -41,6 +43,10 @@ class CEMOptimizer:
         @cemArray.setter
         def cemArray(self, cemVals):
             self._cemArray = np.array(cemVals)
+
+        def kill(self):
+            for objective in self.objectiveTerms:
+                objective.doseCalculator.kill()
 
         def append(self, objective:CEMAbstractDoseFidelityTerm, weight:float=1.):
             self.objectiveWeights.append(weight)
@@ -79,6 +85,7 @@ class CEMOptimizer:
         self.doseUpdateEvent = Event(object)
         self.fValEvent = Event(Tuple)
 
+        self._abort = False
         self._ct = None
         self._iteration = 0
         self._plan:RTPlan = None
@@ -90,13 +97,24 @@ class CEMOptimizer:
     def appendObjective(self, objective: CEMAbstractDoseFidelityTerm, weight: float = 1.):
         self._objectives.append(objective, weight)
 
+    def abort(self):
+        self._abort = True
+        self._objectives.kill()
+
     def run(self, plan:RTPlan, ct:CTImage):
+        self._abort = False
+
         self._plan = plan
         self._ct = ct
 
         x = self._getCEMFromPlan()
         self._initializePlan()
-        spotWeights, cemVal = self._gd(x)
+        try:
+            spotWeights, cemVal = self._gd(x)
+        except Exception as e:
+            raise e from e
+        finally:
+            self._abort = False
 
         self._plan.spotWeights = spotWeights
         self._setCEMInPlan(cemVal)
@@ -154,6 +172,9 @@ class CEMOptimizer:
         self.doseUpdateEvent.emit(doseImage)
 
         for i in range(self.maxIterations):
+            if self._abort:
+                raise AbortedException()
+
             fValPrev = fVal
             xPrev = x
             spotWeightsPrev = np.array(self._plan.spotWeights)
@@ -239,6 +260,9 @@ class CEMDoseCalculator:
         self._firstTimeBeamletDerivative = True
 
         self.iteration = 0 # debug
+
+    def kill(self):
+        self._doseCalculator.kill()
 
     def computeDose(self, weights:np.ndarray, cemThickness:np.ndarray) -> DoseImage:
         if self._doseMustBeRecomputed(weights, cemThickness):

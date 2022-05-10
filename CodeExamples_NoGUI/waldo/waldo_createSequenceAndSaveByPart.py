@@ -17,10 +17,9 @@ sys.path.append(currentWorkingDir)
 from scipy.ndimage import zoom
 import math
 import time
-import concurrent
-from multiprocessing import pool
-import multiprocessing
-from itertools import repeat
+# import concurrent
+# from itertools import repeat
+
 
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
@@ -29,79 +28,16 @@ from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions impor
 from Core.Processing.DRRToolBox import forwardProjection
 from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 from Core.Processing.ImageProcessing.crop3D import *
-
-## ------------------------------------------------------------------------------------
-def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=0, projectionAxis='Z', tryGPU=True,
-                                        outputSize=[]):
-    """
-    This function is specific to this example and used to :
-    - deform a CTImage and an ROIMask,
-    - compute the deformed mask 3D center of mass
-    - create DRR's for both,
-    - binarize the DRR of the ROIMask
-    - compute the 2D center of mass for the ROI DRR
-    """
-    
-    print('Start deformations and projections for deformation', deformation.name)
-    image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
-    # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
-    mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
-    # print('mask', type(mask), type(mask.imageArray[0,0,0]))
-    centerOfMass3D = mask.centerOfMass
-
-    DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
-    DRRMask = forwardProjection(mask, projectionAngle, axis=projectionAxis)
-
-    halfDiff = int((DRR.shape[1] - image.gridSize[2]) / 2)  ## not sure this will work if orientation is changed
-    croppedDRR = DRR[:, halfDiff + 1:DRR.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
-    croppedDRRMask = DRRMask[:,
-                        halfDiff + 1:DRRMask.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
-
-    if outputSize:
-        # print('Before resampling')
-        # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
-        ratio = [outputSize[0] / croppedDRR.shape[0], outputSize[1] / croppedDRR.shape[1]]
-        croppedDRR = zoom(croppedDRR, ratio)
-        croppedDRRMask = zoom(croppedDRRMask, ratio)
-        # print('After resampling')
-        # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
-
-    binaryDRRMask = getBinaryMaskFromROIDRR(croppedDRRMask)
-    centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
-    # print('CenterOfMass:', centerOfMass)
-
-    del image  # to release the RAM
-    del mask  # to release the RAM
-
-    print('Deformations and projections finished for deformation', deformation.name)
-
-    #plt.figure()
-    #plt.subplot(1, 5, 1)
-    #plt.imshow(DRR)
-    #plt.subplot(1, 5, 2)
-    #plt.imshow(croppedDRR)
-    #plt.subplot(1, 5, 3)
-    #plt.imshow(DRRMask)
-    #plt.subplot(1, 5, 4)
-    #plt.imshow(croppedDRRMask)
-    #plt.subplot(1, 5, 5)
-    #plt.imshow(binaryDRRMask)
-    #plt.show()
-
-    return [croppedDRR, binaryDRRMask, centerOfMass, centerOfMass3D]
-
-## ------------------------------------------------------------------------------------
+from CodeExamples_NoGUI.waldo.multiProcSpawnForCupy import multiProcDeform
 
 if __name__ == '__main__':
 
-    multiprocessing.set_start_method('spawn')
-
     organ = 'lung'
-    patientFolder = 'Patient_4'
+    patientFolder = 'Patient_1'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/test3/'
+    resultFolder = '/test6/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
@@ -117,13 +53,19 @@ if __name__ == '__main__':
     # parameters selection ------------------------------------
 
 
-    sequenceDurationInSecs = 20
-    samplingFrequency = 4
+    sequenceDurationInSecs = 100
+    samplingFrequency = 5
     subSequenceSize = 50
-    outputSize = [64, 64]
+    
     bodyContourToUse = 'Body'
-    otherContourToUse = 'GTV T'
-    marginInMM = [50, 10, 100]
+    otherContourToUse = 'GTV'
+
+    # isBoxHardCoded = True
+    # hardCodedBox = [[88, 451], [79, 322], [20, 157]]
+    marginInMM = [100, 0, 50]
+
+    projAngle = 0
+    projAxis = 'Z'
 
     # breathing signal parameters
     amplitude = 'model'
@@ -137,16 +79,33 @@ if __name__ == '__main__':
     simulationTime = sequenceDurationInSecs
     meanEvent = 2 / 30
 
-    # use Z - 0 for Coronal and Z - 90 for sagittal
-    projAngle = 0
-    projAxis = 'Z'
-
     multiprocessing = True
-    maxMultiProcUse = 2
+    maxMultiProcUse = 14
     tryGPU = True
 
 
+    ## ------------------------------------------------------------------------------------
+    def deformImageAndMask(img, ROIMask, deformation, tryGPU=True):
+        """
+        This function is specific to this example and used to :
+        - deform a CTImage and an ROIMask,
+        - compute the deformed mask 3D center of mass
+        """
+        
+        print('Start deformations for image', deformation.name)
+        image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
+        # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
+        mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
+        # print('mask', type(mask), type(mask.imageArray[0,0,0]))
+        centerOfMass3D = mask.centerOfMass
+        
+        print('Deformations finished for image', deformation.name)
 
+
+        return [image, mask, centerOfMass3D]
+
+
+    ## ------------------------------------------------------------------------------------
 
 
     patient = loadDataStructure(dataPath)[0]
@@ -167,6 +126,7 @@ if __name__ == '__main__':
     bodyMask = bodyContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize,
                                          spacing=dynMod.midp.spacing)
     bodyBox = getBoxAroundROI(bodyMask)
+    print('bodyBox from contour', bodyBox)
 
     if projAngle == 0 and projAxis == 'Z':  # coronal
         croppingBox = [gtvBox[0], [bodyBox[1][0], bodyBox[1][1]+0], gtvBox[2]]  ## create the used box combining the two boxes
@@ -179,6 +139,8 @@ if __name__ == '__main__':
     else:
         print('Do not know how to handle crop in this axis/angle configuration, so the body is used')
         croppingBox = [bodyBox[0], bodyBox[1], bodyBox[2]]
+
+    # croppingBox = [bodyBox[0], bodyBox[1], bodyBox[2]]
 
     ## crop the model data using the box
     crop3DDataAroundBox(dynMod, croppingBox, marginInMM=marginInMM)
@@ -253,51 +215,53 @@ if __name__ == '__main__':
     ## -------------------------------------------------------------
 
     sequenceSize = newSignal.breathingSignal.shape[0]
-    print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', multiprocessing)
+    print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', maxMultiProcUse)
 
     subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
     subSequencesIndexes.append(sequenceSize)
     print('Sub sequences indexes', subSequencesIndexes)
 
     startTime = time.time()
-
-    resultList = []
-
-    if subSequenceSize > maxMultiProcUse:  ## re-adjust the subSequenceSize since this will be done in multi processing
-        subSequenceSize = maxMultiProcUse
-        print('SubSequenceSize put to', maxMultiProcUse, 'for multiprocessing.')
-        print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =',
-                multiprocessing)
-        subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
-        subSequencesIndexes.append(sequenceSize)
-
+    
     for i in range(len(subSequencesIndexes) - 1):
-        print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
 
-        deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
-                                                                                signalList,
-                                                                                pointList,
-                                                                                signalIdxUsed=[subSequencesIndexes[i],
-                                                                                                subSequencesIndexes[
-                                                                                                    i + 1]],
-                                                                                dimensionUsed='Z',
-                                                                                outputType=np.float32)
+        resultList = []
 
-        print('Start multi process deformation with', len(deformationList), 'deformations')
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            results = executor.map(deformImageAndMaskAndComputeDRRs, repeat(dynMod.midp), repeat(GTVMask),
-                                    deformationList, repeat(projAngle), repeat(projAxis), repeat(tryGPU),
-                                    repeat(outputSize))
-            resultList += results
+        multiProcIndexes = [subSequencesIndexes[i] + maxMultiProcUse * j for j in range(math.ceil((subSequencesIndexes[i+1] - subSequencesIndexes[i]) / maxMultiProcUse))]
+        multiProcIndexes.append(subSequencesIndexes[i+1])
+        print('MultiProcIndexes', multiProcIndexes)
 
-        print('ResultList lenght', len(resultList))
-        # for deformation in deformationList:
-        #     resultList += deformImageAndMaskAndComputeDRRs(dynMod.midp, GTVMask, deformation, projectionAngle=projAngle, projectionAxis=projAxis, outputSize=outputSize)
+        for z in range(len(multiProcIndexes) -1 ):
+            print('Creating deformations for images', multiProcIndexes[z], 'to', multiProcIndexes[z + 1] - 1)
 
-    savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_multiProcTest'
-    saveSerializedObjects(resultList, savingPath)
+            deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
+                                                                                    signalList,
+                                                                                    pointList,
+                                                                                    signalIdxUsed=[multiProcIndexes[z], multiProcIndexes[z + 1]],
+                                                                                    dimensionUsed='Z',
+                                                                                    outputType=np.float32)
+
+            print('Start multi process deformation with', len(deformationList), 'deformations')
+            
+            # with concurrent.futures.ProcessPoolExecutor() as executor:
+            #     results = executor.map(deformImageAndMask, repeat(dynMod.midp), repeat(GTVMask), deformationList)
+            #     resultList += results
+
+            resultList += multiProcDeform(deformationList, dynMod, GTVMask, tryGPU)
+
+            # plt.figure()
+            # plt.imshow(resultList[-1][0].imageArray[:,:,50])
+            # plt.imshow(resultList[-1][1].imageArray[:,:,50], alpha=0.5)
+            # plt.savefig(savingPath + 'test.pdf', dpi=300)
+
+            # for deformation in deformationList:
+            #     resultList += deformImageAndMaskAndComputeDRRs(dynMod.midp, GTVMask, deformation, projectionAngle=projAngle, projectionAxis=projAxis, outputSize=outputSize)
+            
+            print('ResultList lenght', len(resultList))
+
+        savingPathTemp = savingPath + resultDataFolder + 'ImgMasksAndCOM_' + str(subSequencesIndexes[i]) + '_' + str(subSequencesIndexes[i+1])
+        saveSerializedObjects(resultList, savingPathTemp)
 
     stopTime = time.time()
-    print('Test with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'finished in',
-          np.round(stopTime - startTime, 2) / 60, 'minutes')
-    print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
+    print('Script with multiprocessing. Sequence size:', sequenceSize, 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
+    print(np.round((stopTime - startTime) / sequenceSize, 2), 'sec per sample')
