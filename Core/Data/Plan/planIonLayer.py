@@ -1,3 +1,4 @@
+import copy
 import unittest
 from typing import Iterable, Union, Sequence, Optional, Tuple
 
@@ -200,10 +201,22 @@ class PlanIonLayer:
         if len(self._timings)==n:
             self._timings = np.array([self._timings[i] for i in order])
 
-
     def simplify(self, threshold:float=0.0):
         # TODO
         raise(NotImplementedError('TODO'))
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def createEmptyLayerWithSameMetaData(self):
+        layer = self.copy()
+        layer._x = np.array([])
+        layer._y = np.array([])
+        layer._weights = np.array([])
+        layer._timings = np.array([])
+        return layer
+
+    
 
 class RangeShifterSettings:
     def __init__(self):
