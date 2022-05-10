@@ -205,7 +205,7 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     if overwriteOutsideROI is not None:
         print(f'Cropping CT around {overwriteOutsideROI.name}')
         contour_mask = overwriteOutsideROI.getBinaryMask(image.origin, image.gridSize, image.spacing)
-        image.imageArray[contour_mask == False] = -1024
+        image.imageArray[contour_mask.imageArray.astype(bool) == False] = -1024
 
         # TODO: cropCTContour:
         #ctCropped = CTImage.fromImage3D(ct)
