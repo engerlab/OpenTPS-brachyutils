@@ -1,10 +1,13 @@
 import configparser
+import os
 from os import mkdir, makedirs
 from pathlib import Path
 
 from pip._internal.utils import appdirs
 
 import config as configModule
+import Core.Processing.DoseCalculation.MCsquare.Scanners as ScannerModule
+import Core.Processing.DoseCalculation.MCsquare.BDL as bdlModule
 
 class Singleton(type):
     _instances = {}
@@ -13,7 +16,7 @@ class Singleton(type):
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
-class MainConfig(metaclass=Singleton):
+class ProgramSettings(metaclass=Singleton):
     def __init__(self):
         self._config_dir = Path(appdirs.user_config_dir("openTPS"))
         self._configFile = self._config_dir / "mainConfig.cfg"
@@ -79,6 +82,32 @@ class MainConfig(metaclass=Singleton):
         self._createFolderIfNotExists(folder)
         return folder
 
+    @property
+    def scannerFolder(self):
+        try:
+            output = self._config["machine_param"]["scannerFolder"]
+            if not (output is None):
+                return output
+        except:
+            pass
+
+        self._config["machine_param"].update({"scannerFolder": ScannerModule.__path__[0] + os.sep  + 'UCL_Toshiba'})
+        self.writeConfig()
+        return self._config["machine_param"]["scannerFolder"]
+
+    @property
+    def bdlFile(self):
+        try:
+            output = self._config["machine_param"]["bdlFile"]
+            if not (output is None):
+                return output
+        except:
+            pass
+
+        self._config["machine_param"].update({"bdlFile" : bdlModule.__path__[0] + os.sep  + 'UMCG_P1_v2_RangeShifter.txt'})
+        self.writeConfig()
+        return self._config["machine_param"]["bdlFile"]
+
     def writeConfig(self):
         with open(self._configFile, 'w') as file:
             self._config.write(file)
@@ -99,4 +128,4 @@ class MainConfig(metaclass=Singleton):
         return configTemplate
 
 if __name__ == "__main__":
-    MainConfig()
+    ProgramSettings()

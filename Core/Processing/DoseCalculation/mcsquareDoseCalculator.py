@@ -18,7 +18,7 @@ from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
-from mainConfig import MainConfig
+from programSettings import ProgramSettings
 
 import Core.IO.mcsquareIO as mcsquareIO
 
@@ -36,7 +36,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
-        self._simulationDirectory = MainConfig().simulationFolder
+        self._simulationDirectory = ProgramSettings().simulationFolder
 
         self._subprocess = None
         self._subprocessKilled = True
