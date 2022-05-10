@@ -8,7 +8,7 @@ import math
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QDir#, pyqtSignal
-#from Core.Processing.DRRToolBox import createDRRDynamic2DSequences
+from Core.Processing.ImageSimulation.DRRToolBox import createDRRDynamic2DSequences
 
 
 
