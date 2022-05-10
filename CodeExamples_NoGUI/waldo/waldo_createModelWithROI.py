@@ -29,9 +29,9 @@ from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.patient import Patient
 
 # chose the patient folder, which will be used as the patient name
-organ = 'lung'
-patientName = 'Patient_5'
-patientComplement = '/2/FDG2'
+organ = 'liver'
+patientName = 'Patient_19'
+patientComplement = ''
 basePath = '/data/public/'
 
 

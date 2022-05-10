@@ -17,21 +17,19 @@ sys.path.append(currentWorkingDir)
 from scipy.ndimage import zoom
 import math
 import time
-# import concurrent
-# from itertools import repeat
 
 
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.DRRToolBox import forwardProjection
-from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 from Core.Processing.ImageProcessing.crop3D import *
-from CodeExamples_NoGUI.waldo.multiProcSpawnForCupy import multiProcDeform
+from CodeExamples_NoGUI.waldo.multiProcSpawnMethods import multiProcDeform
 
 if __name__ == '__main__':
 
+
+    ## defining data paths -------------------- 
     organ = 'lung'
     patientFolder = 'Patient_1'
     patientComplement = '/1/FDG1'
@@ -43,25 +41,16 @@ if __name__ == '__main__':
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
-
-    if not os.path.exists(savingPath):
-        os.umask(0)
-        os.makedirs(savingPath)  # Create a new directory because it does not exist
-        os.makedirs(savingPath + resultDataFolder)  # Create a new directory because it does not exist
-        print("New directory created to save the data: ", savingPath)
-
     # parameters selection ------------------------------------
-
-
-    sequenceDurationInSecs = 100
+    sequenceDurationInSecs = 20
     samplingFrequency = 5
-    subSequenceSize = 50
+    subSequenceSize = 18
     
     bodyContourToUse = 'Body'
     otherContourToUse = 'GTV'
 
-    # isBoxHardCoded = True
-    # hardCodedBox = [[88, 451], [79, 322], [20, 157]]
+    isBoxHardCoded = False
+    hardCodedBox = [[88, 451], [79, 322], [20, 157]]
     marginInMM = [100, 0, 50]
 
     projAngle = 0
@@ -80,33 +69,16 @@ if __name__ == '__main__':
     meanEvent = 2 / 30
 
     multiprocessing = True
-    maxMultiProcUse = 14
+    maxMultiProcUse = 10
     tryGPU = True
 
-
-    ## ------------------------------------------------------------------------------------
-    def deformImageAndMask(img, ROIMask, deformation, tryGPU=True):
-        """
-        This function is specific to this example and used to :
-        - deform a CTImage and an ROIMask,
-        - compute the deformed mask 3D center of mass
-        """
-        
-        print('Start deformations for image', deformation.name)
-        image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
-        # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
-        mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
-        # print('mask', type(mask), type(mask.imageArray[0,0,0]))
-        centerOfMass3D = mask.centerOfMass
-        
-        print('Deformations finished for image', deformation.name)
-
-
-        return [image, mask, centerOfMass3D]
-
-
-    ## ------------------------------------------------------------------------------------
-
+    ## Script start -------------------------------------------------------------
+    
+    if not os.path.exists(savingPath):
+        os.umask(0)
+        os.makedirs(savingPath)  # Create a new directory because it does not exist
+        os.makedirs(savingPath + resultDataFolder)  # Create a new directory because it does not exist
+        print("New directory created to save the data: ", savingPath)
 
     patient = loadDataStructure(dataPath)[0]
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
@@ -243,20 +215,15 @@ if __name__ == '__main__':
 
             print('Start multi process deformation with', len(deformationList), 'deformations')
             
-            # with concurrent.futures.ProcessPoolExecutor() as executor:
-            #     results = executor.map(deformImageAndMask, repeat(dynMod.midp), repeat(GTVMask), deformationList)
-            #     resultList += results
+
 
             resultList += multiProcDeform(deformationList, dynMod, GTVMask, tryGPU)
-
+           
             # plt.figure()
             # plt.imshow(resultList[-1][0].imageArray[:,:,50])
             # plt.imshow(resultList[-1][1].imageArray[:,:,50], alpha=0.5)
             # plt.savefig(savingPath + 'test.pdf', dpi=300)
 
-            # for deformation in deformationList:
-            #     resultList += deformImageAndMaskAndComputeDRRs(dynMod.midp, GTVMask, deformation, projectionAngle=projAngle, projectionAxis=projAxis, outputSize=outputSize)
-            
             print('ResultList lenght', len(resultList))
 
         savingPathTemp = savingPath + resultDataFolder + 'ImgMasksAndCOM_' + str(subSequencesIndexes[i]) + '_' + str(subSequencesIndexes[i+1])
