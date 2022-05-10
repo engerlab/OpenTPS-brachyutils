@@ -52,9 +52,11 @@ class MCsquareHU2Material:
         self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
 
     def _writeHU2MaterialFile(self, huMaterialFile):
+        printedMaterials = self.printedFormat()
+
         with open(huMaterialFile, 'w') as f:
             for i, hu in enumerate(self.__hu):
-                s = str(hu) + ' ' + str(self.__materials[i].number) + '\n'
+                s = str(hu) + ' ' + str(printedMaterials.index(self.__materials[i])+1) + '\n'
                 f.write(s)
 
     def _writeMaterials(self, folderPath):
@@ -71,17 +73,10 @@ class MCsquareHU2Material:
 
     def printedFormat(self):
         materials = self._allMaterialsandElements()
-        materialNbs = [material.number for material in materials]
-        materialNbs = np.array(materialNbs)
-
-        currentMaterialInd = 0
 
         printedMaterials = []
-        for i in range(materialNbs.max()):
-            # If no material defined with number i we set the closest. MCsquare does not accept jumps in list.dat
-            printedMaterials.append(materials[currentMaterialInd])
-            if i == materials[currentMaterialInd].number - 1:
-                currentMaterialInd += 1
+        for material in materials:
+            printedMaterials.append(material)
 
         return printedMaterials
 
