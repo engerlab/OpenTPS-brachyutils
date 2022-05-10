@@ -4,8 +4,6 @@ import unittest
 from typing import Sequence
 
 import numpy as np
-import sys
-sys.path.append('/home/vhamaide/opentps/')
 
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
@@ -132,9 +130,9 @@ class RTPlan(PatientData):
         for beam in self._beams:
             for layer in beam._layers:
                 index_to_keep = np.flatnonzero(np.array(layer._weights)>0.)
-                layer._weights = [layer._weights[i] for i in range(len(layer._weights)) if i in index_to_keep]
-                layer._x = [layer._x[i] for i in range(len(layer._x)) if i in index_to_keep]
-                layer._y = [layer._y[i] for i in range(len(layer._y)) if i in index_to_keep]
+                layer._weights = np.array([layer._weights[i] for i in range(len(layer._weights)) if i in index_to_keep])
+                layer._x = np.array([layer._x[i] for i in range(len(layer._x)) if i in index_to_keep])
+                layer._y = np.array([layer._y[i] for i in range(len(layer._y)) if i in index_to_keep])
 
         # Remove empty layers
         for beam in self._beams:
@@ -148,6 +146,56 @@ class RTPlan(PatientData):
     def _fusionDuplicates(self):
         #TODO
         raise NotImplementedError()
+
+
+    def appendSpot(self, beam:PlanIonBeam, layer:PlanIonLayer, spot_index:int):
+        """
+        Assign a particular spot (beam, layer, spot_index) to plan
+        """
+        # Integrate in RTPlan
+        # List gantry angles in plan
+        gantry_angles = [] if self._beams==[] else [b.gantryAngle for b in self._beams]
+        if beam.gantryAngle not in gantry_angles:
+            new_beam = beam.createEmptyBeamWithSameMetaData()
+            self._beams.append(new_beam)
+            gantry_angles.append(beam.gantryAngle)
+        
+        index_beam = np.where(np.array(gantry_angles)==beam.gantryAngle)[0][0]
+        energies = [] if self._beams[index_beam]._layers==[] else [l.nominalEnergy for l in self._beams[index_beam]._layers]
+        current_energy_index = np.flatnonzero(abs(np.array(energies) - layer.nominalEnergy) < 0.05) # if delta energy < 0.05: same layer
+
+        if current_energy_index.size==0:#layer.nominalEnergy not in energies:
+            new_layer = layer.createEmptyLayerWithSameMetaData()
+            self._beams[index_beam].appendLayer(new_layer)
+            index_layer = -1
+        else:
+            index_layer = current_energy_index[0]
+        t = None if len(layer._timings)==0 else layer._timings[spot_index]
+        self._beams[index_beam]._layers[index_layer].appendSpot(layer._x[spot_index], layer._y[spot_index], layer._weights[spot_index], t)
+
+
+    def appendLayer(self, beam:PlanIonBeam, layer:PlanIonLayer):
+        gantry_angles = [] if self._beams==[] else [b.gantryAngle for b in self._beams]
+        if beam.gantryAngle not in gantry_angles:
+            new_beam = beam.createEmptyBeamWithSameMetaData()
+            self._beams.append(new_beam)
+            gantry_angles.append(beam.gantryAngle)
+        
+        index_beam = np.where(np.array(gantry_angles)==beam.gantryAngle)[0][0]
+        energies = [] if self._beams[index_beam]._layers==[] else [l.nominalEnergy for l in self._beams[index_beam]._layers]
+        current_energy_index = np.flatnonzero(abs(np.array(energies) - layer.nominalEnergy) < 0.05) # if delta energy < 0.05: same layer
+
+        if current_energy_index.size>0:
+            raise ValueError('Layer already exists in plan')
+
+        self._beams[index_beam].appendLayer(layer)
+
+
+    def createEmptyPlanWithSameMetaData(self):
+        plan = self.copy()
+        plan._beams = []
+        plan.beamlets = []
+        return plan
 
 
 class PlanIonLayerTestCase(unittest.TestCase):
