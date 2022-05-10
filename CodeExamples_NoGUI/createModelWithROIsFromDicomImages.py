@@ -29,14 +29,15 @@ if __name__ == '__main__':
 
     # chose the patient folder, which will be used as the patient name
     patientName = 'Patient_0'
-    basePath = '/home/damien/Desktop/'
+    organ = 'liver'
+    basePath = 'D:/ImageData/'
 
     # chose the 4DCT data folder
-    data4DPath = basePath + patientName + '/4DCT'
+    data4DPath = basePath + organ + '/' + patientName + '/4DCT'
     # chose the dicom rtStruct file
-    dataStructPath = basePath + patientName + '/MidP_CT_rtstruct.dcm'
+    dataStructPath = basePath + organ + '/' + patientName + '/MidP_CT_rtstruct.dcm'
     # chose a path to save the results
-    savingPath = basePath + patientName + '/dynModAndROIs'
+    savingPath = basePath + organ + '/' + patientName + '/dynModAndROIs'
 
     # load the 4DCT data
     data4DList = loadAllData(data4DPath)
