@@ -19,6 +19,8 @@ class DoseComputationPanel(QWidget):
         self._selectedCT = None
         self._plans = []
         self._selectedPlan = None
+        self._rois = []
+        self._selectedROI = None
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -34,6 +36,12 @@ class DoseComputationPanel(QWidget):
         self._planComboBox = QComboBox(self)
         self._planComboBox.currentIndexChanged.connect(self._handlePlanIndex)
         self.layout.addWidget(self._planComboBox)
+
+        self._roiLabel = QLabel('Overwrite outside this ROI:')
+        self.layout.addWidget(self._roiLabel)
+        self._roiComboBox = QComboBox(self)
+        self._roiComboBox.currentIndexChanged.connect(self._handleROIIndex)
+        self.layout.addWidget(self._roiComboBox)
 
         self._primariesLabel = QLabel('Primaries:')
         self.layout.addWidget(self._primariesLabel)
@@ -55,6 +63,9 @@ class DoseComputationPanel(QWidget):
 
     def _handlePlanIndex(self, *args):
         self._selectedPlan = self._plans[self._planComboBox.currentIndex()]
+
+    def _handleROIIndex(self, *args):
+        self._selectedROI = self._rois[self._roiComboBox.currentIndex()]
 
     def setCurrentPatient(self, patient:Patient):
         if not (self._patient is None):
