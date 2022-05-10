@@ -16,6 +16,27 @@ class MCsquareMaterial:
     def mcsquareFormatted(self):
         raise NotImplementedError()
 
+    @staticmethod
+    def getMaterialList(materialsPath='default'):
+        matList = []
+
+        if materialsPath=='default':
+            materialsPath = os.path.join(str(MCsquare.__path__[0]), 'Materials')
+
+        listPath = os.path.join(materialsPath, 'list.dat')
+
+        with open(listPath, "r") as file:
+            for line in file:
+                lineSplit = line.split()
+
+                if len(lineSplit)<2:
+                    continue
+
+                matList.append({"ID": int(lineSplit[0]), "name": lineSplit[1]})
+
+        return matList
+
+    @staticmethod
     def getFolderFromMaterialNumber(materialNumber, materialsPath='default'):
         if materialsPath=='default':
             materialsPath = os.path.join(str(MCsquare.__path__[0]), 'Materials')
@@ -34,6 +55,7 @@ class MCsquareMaterial:
 
         return None
 
+    @staticmethod
     def getMaterialNumbers(materialsPath='default'):
         if materialsPath=='default':
             materialsPath = os.path.join(str(MCsquare.__path__[0]), 'Materials')

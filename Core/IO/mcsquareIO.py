@@ -11,6 +11,7 @@ import scipy.sparse as sp
 from scipy.sparse import csc_matrix
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
@@ -228,8 +229,10 @@ def writeConfig(config: MCsquareConfig, file_path):
     fid.close()
 
 
-def readBDL(path) -> BDL:
+def readBDL(path, materialsPath='default') -> BDL:
     bdl = BDL()
+
+    materialList = MCsquareMaterial.getMaterialList()
 
     with open(path, 'r') as fid:
         # verify BDL format
@@ -298,7 +301,9 @@ def readBDL(path) -> BDL:
             if ("RS_material" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].material = None # int(value) might not be consistent with materials used in openTPS. Better rely on RS_density to find the material
+                bdl.RangeShifters[-1].material = None # int(value) might not be consistent with materials used in openTPS. Now rely on materialName to find the material
+
+                bdl.RangeShifters[-1].materialName = list(filter(lambda elem: elem["ID"]==int(value), materialList))[0]["name"]
 
             if ("RS_density" in line):
                 line = line.split('=')
