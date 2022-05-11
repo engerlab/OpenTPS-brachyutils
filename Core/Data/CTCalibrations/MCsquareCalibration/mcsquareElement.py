@@ -92,8 +92,8 @@ class MCsquareElement(MCsquareMaterial):
         super().write(folderPath, materialNamesOrderedForPrinting)
 
         if 'ICRU' in self._nuclear_data:
-            with open(os.path.join(folderPath, 'ICRU_Nuclear_elastic.dat')) as f:
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_elastic.dat'), 'w') as f:
                 f.write(self._nuclearElasticData)
 
-            with open(os.path.join(folderPath, 'ICRU_Nuclear_inelastic.dat')) as f:
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_inelastic.dat'), 'w') as f:
                 f.write(self._nuclearInelasticData)
