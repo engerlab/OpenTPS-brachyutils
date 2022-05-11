@@ -67,7 +67,7 @@ class MCsquareElement(MCsquareMaterial):
                     continue
 
                 if re.search(r'Nuclear_Data', line):
-                    if 'ICRU' in self._nuclear_data:
+                    if 'ICRU' in line:
                         self._nuclear_data = 'ICRU'
 
                         file = open(os.path.join(elementPath, 'ICRU_Nuclear_elastic.dat'), mode='r')
