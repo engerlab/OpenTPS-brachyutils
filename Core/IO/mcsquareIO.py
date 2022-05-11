@@ -387,13 +387,17 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
     fid.write("#TotalMetersetWeightOfAllFields\n")
     fid.write("%f\n" % plan.meterset)
 
+    FinalCumulativeMeterSetWeight = 0.
     for i, beam in enumerate(plan):
+        CumulativeMetersetWeight = 0.
+        
         fid.write("\n")
         fid.write("#FIELD-DESCRIPTION\n")
         fid.write("###FieldID\n")
         fid.write("%d\n" % (i + 1))
         fid.write("###FinalCumulativeMeterSetWeight\n")
-        fid.write("%f\n" % beam.meterset)
+        FinalCumulativeMeterSetWeight += beam.meterset
+        fid.write("%f\n" % FinalCumulativeMeterSetWeight)
         fid.write("###GantryAngle\n")
         fid.write("%f\n" % beam.gantryAngle)
         fid.write("###PatientSupportAngle\n")
@@ -421,7 +425,8 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
             fid.write("####SpotTunnedID\n")
             fid.write("1\n")
             fid.write("####CumulativeMetersetWeight\n")
-            fid.write("%f\n" % layer.meterset)
+            CumulativeMetersetWeight += layer.meterset
+            fid.write("%f\n" % CumulativeMetersetWeight)
             fid.write("####Energy (MeV)\n")
             fid.write("%f\n" % layer.nominalEnergy)
 
@@ -492,6 +497,37 @@ def writeBin(destFolder):
 
         source_path = os.path.join(mcsquarePath, "MCsquare_linux_sse4")
         destination_path = os.path.join(destFolder, "MCsquare_linux_sse4")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti")
+        destination_path = os.path.join(destFolder, "MCsquare_opti")
+        shutil.copyfile(source_path, destination_path)  # copy file
+        shutil.copymode(source_path, destination_path)  # copy permissions
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_linux")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_linux")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_linux_avx")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_linux_avx")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_linux_avx2")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_linux_avx2")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_linux_avx512")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_linux_avx512")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_linux_sse4")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_linux_sse4")
         shutil.copyfile(source_path, destination_path)
         shutil.copymode(source_path, destination_path)
 
