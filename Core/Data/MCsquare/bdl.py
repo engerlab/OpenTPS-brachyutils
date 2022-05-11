@@ -1,6 +1,7 @@
 
 from typing import Tuple, Optional, Sequence
 
+import numpy as np
 from scipy import interpolate
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
@@ -76,8 +77,9 @@ class BDL:
         return s
 
     def computeMU2Protons(self, energy:float) -> float:
-        f = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
-        return f(energy)
+        return np.interp(energy, self.NominalEnergy, self.ProtonsMU)
+        #if = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
+        #return f(energy)
 
     def correlations(self, energy:float) -> Tuple[float, float]:
         correlationX = interpolate.interp1d(self.NominalEnergy, self.Correlation1x, kind='linear', fill_value='extrapolate')

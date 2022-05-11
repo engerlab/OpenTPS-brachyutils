@@ -154,12 +154,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return dose
 
-    def _deliveredProtons(self) -> int:
-        deliveredProtons = 0
+    def _deliveredProtons(self) -> float:
+        deliveredProtons = 0.
         for beam in self._plan:
             for layer in beam:
                 Protons_per_MU = self._beamModel.computeMU2Protons(layer.nominalEnergy)
-                deliveredProtons += sum(layer.spotWeights) * Protons_per_MU
+                deliveredProtons += layer.meterset * Protons_per_MU
 
         return deliveredProtons
 
