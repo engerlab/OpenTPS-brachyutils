@@ -10,6 +10,7 @@ class MCsquareMaterial:
         self.name = name
         self.number = number
         self.sp = sp
+        self.pstarSP = None
         self.radiationLength = radiationLength
 
     @abstractmethod
@@ -78,6 +79,7 @@ class MCsquareMaterial:
         folderPath = os.path.join(folderPath, self.name)
         propertiesFile = os.path.join(folderPath, 'Material_Properties.dat')
         spFile = os.path.join(folderPath, 'G4_Stop_Pow.dat')
+        spFilePSTAR = os.path.join(folderPath, 'PSTAR_Stop_Pow.dat')
 
         os.makedirs(folderPath, exist_ok=True)
 
@@ -85,3 +87,4 @@ class MCsquareMaterial:
             f.write(self.mcsquareFormatted(materialNamesOrderedForPrinting))
 
         self.sp.write(spFile)
+        self.pstarSP.write(spFilePSTAR)
