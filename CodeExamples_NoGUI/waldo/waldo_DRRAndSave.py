@@ -14,35 +14,28 @@ import sys
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
-from scipy.ndimage import zoom
 import math
 import time
-import numpy as np
 
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure, loadSerializedObject
-from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
-from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
-from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
-from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
+from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Processing.ImageProcessing.crop3D import *
-from CodeExamples_NoGUI.waldo.multiProcForkMethods import multiProcDRRs
+from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
 
 if __name__ == '__main__':
 
 
     # data and paths selection--------------------------------- 
     organ = 'lung'
-    patientFolder = 'Patient_1'
+    patientFolder = 'Patient_5'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/test6/'
+    resultFolder = '/test7/'
     resultDataFolder = 'data/'
 
     # parameters selection ------------------------------------
     outputSize = [64, 64]
-    deleteDataSourceFiles = True
+    deleteDataSourceFiles = False
 
     # use Z - 0 for Coronal and Z - 90 for sagittal
     projAngle = 0
@@ -85,7 +78,7 @@ if __name__ == '__main__':
     totalImgCount = 0
     startTime = time.time()
 
-    for fileElement in filesList:
+    for fileIndex, fileElement in enumerate(filesList):
         
         imgAndMaskDRRsPlus2DAnd3DCOMs = []
         dataList = loadDataStructure(dataPath + fileElement)
@@ -103,11 +96,12 @@ if __name__ == '__main__':
 
             imgAndMaskDRRsPlus2DAnd3DCOMs += multiProcDRRs(dataList[multiProcIndexes[z]: multiProcIndexes[z+1]], projAngle, projAxis, outputSize)
 
-            # plt.figure()
-            # plt.imshow(imgAndMaskDRRsPlus2DAnd3DCOMs[-1][0])
-            # plt.imshow(imgAndMaskDRRsPlus2DAnd3DCOMs[-1][1], alpha=0.5)
-            # plt.savefig(savingPath + 'test.pdf', dpi=300)
-            # plt.show()
+            if fileIndex == 0 and z == 0:
+                plt.figure()
+                plt.imshow(imgAndMaskDRRsPlus2DAnd3DCOMs[-1][0])
+                plt.imshow(imgAndMaskDRRsPlus2DAnd3DCOMs[-1][1], alpha=0.5)
+                plt.savefig(savingPath + 'test.pdf', dpi=300)
+                plt.show()
 
             print('ResultList lenght', len(imgAndMaskDRRsPlus2DAnd3DCOMs))
 

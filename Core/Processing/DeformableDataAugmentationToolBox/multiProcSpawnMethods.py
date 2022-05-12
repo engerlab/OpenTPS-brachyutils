@@ -4,19 +4,19 @@ import concurrent
 
 # from timeit import repeat
 
-def multiProcDeform(deformationList, dynMod, GTVMask, tryGPU):
+def multiProcDeform(deformationList, dynMod, GTVMask):
 
     imgList = [dynMod.midp for i in range(len(deformationList))]
     maskList = [GTVMask for i in range(len(deformationList))]
-    tryGPUList = [tryGPU for i in range(len(deformationList))]
     
     import multiprocessing
     multiprocessing.set_start_method('spawn', force=True)
 
     test = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = executor.map(deformImageAndMask, imgList, maskList, deformationList, tryGPUList)
+        results = executor.map(deformImageAndMask, imgList, maskList, deformationList)
         test += results
+        executor.shutdown()
 
     return test
 
