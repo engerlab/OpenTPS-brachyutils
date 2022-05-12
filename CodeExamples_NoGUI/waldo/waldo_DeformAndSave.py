@@ -16,7 +16,6 @@ import sys
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
-from scipy.ndimage import zoom
 import math
 import time
 
@@ -25,7 +24,7 @@ from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
 from Core.Processing.ImageProcessing.crop3D import *
-from CodeExamples_NoGUI.waldo.multiProcSpawnMethods import multiProcDeform
+from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods import multiProcDeform
 
 if __name__ == '__main__':
 

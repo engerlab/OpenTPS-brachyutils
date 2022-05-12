@@ -14,19 +14,12 @@ import sys
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
-from scipy.ndimage import zoom
 import math
 import time
-import numpy as np
 
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure, loadSerializedObject
-from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
-from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
-from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
-from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
+from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Processing.ImageProcessing.crop3D import *
-from CodeExamples_NoGUI.waldo.multiProcForkMethods import multiProcDRRs
+from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
 
 if __name__ == '__main__':
 

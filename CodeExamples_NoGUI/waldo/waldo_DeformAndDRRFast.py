@@ -21,11 +21,9 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
-from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 from Core.Processing.ImageProcessing.crop3D import *
-from CodeExamples_NoGUI.waldo.multiProcForkMethods import multiProcDRRs
-from CodeExamples_NoGUI.waldo.multiProcSpawnMethods import multiProcDeform
+from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
+from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods import multiProcDeform
 
 
 ## ------------------------------------------------------------------------------------
@@ -246,5 +244,3 @@ if __name__ == '__main__':
 
     savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM'
     saveSerializedObjects(resultList, savingPath)
-
-    
