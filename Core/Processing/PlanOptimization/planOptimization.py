@@ -38,7 +38,7 @@ class PlanOptimizer:
         try:
             x0 = self.opti_params['init_weights']
         except KeyError:
-            x0 = (self.plan.Objectives.TargetPrescription / maxDose) * np.ones(self.plan.beamlets.NbrSpots,
+            x0 = (self.plan.Objectives.targetPrescription / maxDose) * np.ones(self.plan.beamlets.NbrSpots,
                                                                                dtype=np.float32)
         return x0
 
