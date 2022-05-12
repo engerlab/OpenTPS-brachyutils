@@ -74,6 +74,7 @@ def DRRsBinarizeAndCrop(image, mask, projectionAngle=0, projectionAxis='Z', outp
     del image  # to release the RAM
     del mask  # to release the RAM
 
+    # return [DRR, DRRMask]
     return [DRR, binaryDRRMask, centerOfMass]
 
 ## ------------------------------------------------------------------------------------

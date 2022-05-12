@@ -14,47 +14,57 @@ import sys
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
-from scipy.ndimage import zoom
 import math
 import time
-
 
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
+from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
+from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 from Core.Processing.ImageProcessing.crop3D import *
+from CodeExamples_NoGUI.waldo.multiProcForkMethods import multiProcDRRs
 from CodeExamples_NoGUI.waldo.multiProcSpawnMethods import multiProcDeform
+
+
+## ------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
-
-    ## defining data paths -------------------- 
     organ = 'lung'
-    patientFolder = 'Patient_1'
+    patientFolder = 'Patient_5'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/test6/'
+    resultFolder = '/test8/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
-    # parameters selection ------------------------------------
+    if not os.path.exists(savingPath):
+        os.umask(0)
+        os.makedirs(savingPath)  # Create a new directory because it does not exist
+        os.makedirs(savingPath + resultDataFolder)  # Create a new directory because it does not exist
+        print("New directory created to save the data: ", savingPath)
+
+    ## parameters selection ------------------------------------
+
+    ## sequence duration and sampling
     sequenceDurationInSecs = 20
     samplingFrequency = 5
-    subSequenceSize = 18
-    
-    bodyContourToUse = 'Body'
-    otherContourToUse = 'GTV'
+    subSequenceSize = 50
+    outputSize = [64, 64]
 
+    ## ROI choice and crop options 
+    bodyContourToUse = 'Body'
+    targetContourToUse = 'GTV T'
+
+    croppingContoursUsedXYZ = [targetContourToUse, bodyContourToUse, targetContourToUse]
     isBoxHardCoded = False
     hardCodedBox = [[88, 451], [79, 322], [20, 157]]
-    marginInMM = [100, 0, 50]
-
-    projAngle = 0
-    projAxis = 'Z'
+    marginInMM = [50, 0, 100]
 
     # breathing signal parameters
     amplitude = 'model'
@@ -68,27 +78,25 @@ if __name__ == '__main__':
     simulationTime = sequenceDurationInSecs
     meanEvent = 2 / 30
 
-    multiprocessing = True
-    maxMultiProcUse = 10
-    tryGPU = True
+    # use Z - 0 for Coronal and Z - 90 for sagittal
+    projAngle = 0
+    projAxis = 'Z'
 
-    ## Script start -------------------------------------------------------------
+    # multiProcessing 
+    maxMultiProcUse = 20
     
-    if not os.path.exists(savingPath):
-        os.umask(0)
-        os.makedirs(savingPath)  # Create a new directory because it does not exist
-        os.makedirs(savingPath + resultDataFolder)  # Create a new directory because it does not exist
-        print("New directory created to save the data: ", savingPath)
 
+
+    ## Start the script ---------------------------------
     patient = loadDataStructure(dataPath)[0]
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
     rtStruct = patient.getPatientDataOfType("RTStruct")[0]
 
-    ## get the ROI and mask on which we want to apply the motion signal
+    ## Get the ROI and mask on which we want to apply the motion signal
     print('Available ROIs')
     rtStruct.print_ROINames()
 
-    gtvContour = rtStruct.getContourByName(otherContourToUse)
+    gtvContour = rtStruct.getContourByName(targetContourToUse)
     GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize,
                                        spacing=dynMod.midp.spacing)
     gtvBox = getBoxAroundROI(GTVMask)
@@ -98,22 +106,16 @@ if __name__ == '__main__':
     bodyMask = bodyContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize,
                                          spacing=dynMod.midp.spacing)
     bodyBox = getBoxAroundROI(bodyMask)
-    print('bodyBox from contour', bodyBox)
+    print('Body Box from contour', bodyBox)
 
-    if projAngle == 0 and projAxis == 'Z':  # coronal
-        croppingBox = [gtvBox[0], [bodyBox[1][0], bodyBox[1][1]+0], gtvBox[2]]  ## create the used box combining the two boxes
-    elif projAngle == 90 and projAxis == 'Z':  # sagittal
-        croppingBox = [bodyBox[0], gtvBox[1], gtvBox[2]]
-    elif projAngle == 0 and projAxis == 'X':  # coronal
-        croppingBox = [gtvBox[0], [bodyBox[1][0], bodyBox[1][1]+0], gtvBox[2]]
-    elif projAngle == 0 and projAxis == 'Y':  # sagittal
-        croppingBox = [bodyBox[0], gtvBox[1], gtvBox[2]]
-    else:
-        print('Do not know how to handle crop in this axis/angle configuration, so the body is used')
-        croppingBox = [bodyBox[0], bodyBox[1], bodyBox[2]]
-
-    # croppingBox = [bodyBox[0], bodyBox[1], bodyBox[2]]
-
+    ##Define the cropping box
+    croppingBox = [[], [], []]
+    for i in range(3):
+        if croppingContoursUsedXYZ[i] == bodyContourToUse:
+            croppingBox[i] = bodyBox[i]
+        elif croppingContoursUsedXYZ[i] == targetContourToUse:
+            croppingBox[i] = gtvBox[i]
+    
     ## crop the model data using the box
     crop3DDataAroundBox(dynMod, croppingBox, marginInMM=marginInMM)
 
@@ -173,8 +175,8 @@ if __name__ == '__main__':
                    c=colors[pointIndex], marker="x", s=100)
         ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
         ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
-        ax2.imshow(np.rot90(dynMod.midp.imageArray[:, :, pointVoxelList[pointIndex][2]]))
-        ax2.imshow(np.rot90(GTVMask.imageArray[:, :, pointVoxelList[pointIndex][2]]), alpha=0.3)
+        ax2.imshow(np.rot90(dynMod.midp.imageArray[:, :, pointVoxelList[pointIndex][2]], 3))
+        ax2.imshow(np.rot90(GTVMask.imageArray[:, :, pointVoxelList[pointIndex][2]], 3), alpha=0.3)
         ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]],
                    c=colors[pointIndex], marker="x", s=100)
         signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
@@ -193,42 +195,56 @@ if __name__ == '__main__':
     subSequencesIndexes.append(sequenceSize)
     print('Sub sequences indexes', subSequencesIndexes)
 
+    resultList = []
+
+    if subSequenceSize > maxMultiProcUse:  ## re-adjust the subSequenceSize since this will be done in multi processing
+        subSequenceSize = maxMultiProcUse
+        print('SubSequenceSize put to', maxMultiProcUse, 'for multiprocessing.')
+        print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', maxMultiProcUse)
+        subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
+        subSequencesIndexes.append(sequenceSize)
+
     startTime = time.time()
-    
     for i in range(len(subSequencesIndexes) - 1):
+        print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
 
-        resultList = []
-
-        multiProcIndexes = [subSequencesIndexes[i] + maxMultiProcUse * j for j in range(math.ceil((subSequencesIndexes[i+1] - subSequencesIndexes[i]) / maxMultiProcUse))]
-        multiProcIndexes.append(subSequencesIndexes[i+1])
-        print('MultiProcIndexes', multiProcIndexes)
-
-        for z in range(len(multiProcIndexes) -1 ):
-            print('Creating deformations for images', multiProcIndexes[z], 'to', multiProcIndexes[z + 1] - 1)
-
-            deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
-                                                                                    signalList,
-                                                                                    pointList,
-                                                                                    signalIdxUsed=[multiProcIndexes[z], multiProcIndexes[z + 1]],
-                                                                                    dimensionUsed='Z',
-                                                                                    outputType=np.float32)
-
-            print('Start multi process deformation with', len(deformationList), 'deformations')
-            
+        deformationList = generateDeformationListFromBreathingSignalsAndModel(dynMod,
+                                                                                signalList,
+                                                                                pointList,
+                                                                                signalIdxUsed=[subSequencesIndexes[i],
+                                                                                                subSequencesIndexes[
+                                                                                                    i + 1]],
+                                                                                dimensionUsed='Z',
+                                                                                outputType=np.float32)
 
 
-            resultList += multiProcDeform(deformationList, dynMod, GTVMask, tryGPU)
-           
-            # plt.figure()
-            # plt.imshow(resultList[-1][0].imageArray[:,:,50])
-            # plt.imshow(resultList[-1][1].imageArray[:,:,50], alpha=0.5)
-            # plt.savefig(savingPath + 'test.pdf', dpi=300)
+        print('Start multi process deformation with', len(deformationList), 'deformations')
+        deformedImgMaskAnd3DCOMList = multiProcDeform(deformationList, dynMod, GTVMask)
+        
+        if i == 0:
+            plt.figure()
+            plt.imshow(deformedImgMaskAnd3DCOMList[-1][0].imageArray[:,:,50])
+            plt.imshow(deformedImgMaskAnd3DCOMList[-1][1].imageArray[:,:,50], alpha=0.5)
+            plt.savefig(savingPath + 'resultDeform.pdf', dpi=300)
 
-            print('ResultList lenght', len(resultList))
+        print('Start multi process DRRs with', len(deformationList), 'pairs of image-mask')
+        resultList += multiProcDRRs(deformedImgMaskAnd3DCOMList, projAngle, projAxis, outputSize)
 
-        savingPathTemp = savingPath + resultDataFolder + 'ImgMasksAndCOM_' + str(subSequencesIndexes[i]) + '_' + str(subSequencesIndexes[i+1])
-        saveSerializedObjects(resultList, savingPathTemp)
+        if i == 0:
+            plt.figure()
+            plt.imshow(resultList[-1][0])
+            plt.imshow(resultList[-1][1], alpha=0.5)
+            plt.savefig(savingPath + 'resultDRR.pdf', dpi=300)
+            plt.show()
+
+        print('ResultList lenght', len(resultList))
 
     stopTime = time.time()
-    print('Script with multiprocessing. Sequence size:', sequenceSize, 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
-    print(np.round((stopTime - startTime) / sequenceSize, 2), 'sec per sample')
+
+    print('Test with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
+    print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
+
+    savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM'
+    saveSerializedObjects(resultList, savingPath)
+
+    
