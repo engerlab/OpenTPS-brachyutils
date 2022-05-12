@@ -5,7 +5,7 @@ from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 
 
 class RSPImage(Image3D):
@@ -34,11 +34,11 @@ class RSPImage(Image3D):
         return newRSPImage
 
     def computeCumulativeWEPL(self, beam:PlanIonBeam, sad=np.Inf) -> Image3D:
-        rspIEC = ImageTransform3D.dicomToIECGantry(self, beam, 0.)
+        rspIEC = imageTransform3D.dicomToIECGantry(self, beam, 0.)
 
         rspIEC.imageArray = np.cumsum(rspIEC.imageArray, axis=2)*rspIEC.spacing[2]
 
-        outImage = ImageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
-        outImage = ImageTransform3D.intersect(outImage, self, inPlace=True, fillValue=0.)
+        outImage = imageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
+        outImage = imageTransform3D.intersect(outImage, self, inPlace=True, fillValue=0.)
 
         return outImage

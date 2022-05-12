@@ -2,8 +2,6 @@
 import typing
 from math import isclose
 
-import numpy as np
-
 from Core.event import Event
 
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
@@ -11,7 +9,6 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables import L
 
 
 class GenericImageForViewer(DataMultiton):
-
     def __init__(self, image):
         super().__init__(image)
 
@@ -23,9 +20,9 @@ class GenericImageForViewer(DataMultiton):
         self.selectedPositionChangedSignal = Event(tuple)
         self.rangeChangedSignal = Event(tuple)
 
-        self._wwlValue = (400, 0)
-        self._lookupTableName = 'fusion'
         self._range = (0, 100)
+        self._wwlValue = (self._range[1]-self._range[0], (self._range[1]+self._range[0])/2.)
+        self._lookupTableName = 'fusion'
         self._opacity = 0.5
         self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         self._selectedPosition = (0, 0, 0)

@@ -1,7 +1,7 @@
 import copy
 import logging
 import math
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 from scipy.interpolate import interpolate
@@ -11,7 +11,7 @@ from Core.Data.Images.image2D import Image2D
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Processing.ImageProcessing.imageTransform3D import ImageTransform3D
+import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Data.abstractCTObject import AbstractCTObject
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 
@@ -31,7 +31,7 @@ class CEM(AbstractCTObject, Image2D):
 
     @classmethod
     def fromBeam(cls, ct:Image3D, beam:PlanIonBeam):
-        imageBEV = ImageTransform3D.dicomToIECGantry(ct, beam)
+        imageBEV = imageTransform3D.dicomToIECGantry(ct, beam)
 
         newCEM = cls()
         newCEM._referenceImage = CTImage.fromImage3D(ct)
@@ -43,11 +43,15 @@ class CEM(AbstractCTObject, Image2D):
 
         return newCEM
 
+    @property
+    def referenceBeam(self):
+        return self._referenceBeam
+
     def computeROI(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> ROIMask:
         if beam is None:
             beam = self._referenceBeam
 
-        referenceImageBEV = ImageTransform3D.dicomToIECGantry(referenceImage, beam)
+        referenceImageBEV = imageTransform3D.dicomToIECGantry(referenceImage, beam)
 
         data = np.zeros(referenceImageBEV.imageArray.shape)
 
@@ -61,9 +65,11 @@ class CEM(AbstractCTObject, Image2D):
 
         roiBEV = ROIMask.fromImage3D(referenceImageBEV)
         roiBEV.imageArray = data
-        roi = ImageTransform3D.iecGantryToDicom(roiBEV, beam)
-        ImageTransform3D.intersect(roi, referenceImage, inPlace=True, fillValue=0)
-        roi.imageArray = roi.imageArray.astype(bool)
+        roi = imageTransform3D.iecGantryToDicom(roiBEV, beam)
+        imageTransform3D.intersect(roi, referenceImage, inPlace=True, fillValue=0)
+        imageArray = roi.imageArray
+        imageArray[imageArray<=0.5] = 0
+        roi.imageArray = imageArray.astype(bool)
 
         return roi
 
@@ -81,7 +87,7 @@ class CEM(AbstractCTObject, Image2D):
         return cemPixelsInDim2.astype(int)
 
     def _availableSpaceInPixels(self, referenceImage, referenceImageBEV, beam):
-        isocenterInImage = ImageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
+        isocenterInImage = imageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
         isocenterCoord = referenceImageBEV.getVoxelIndexFromPosition(isocenterInImage)
 
         distInPixels = np.ceil(beam.cemToIsocenter / referenceImageBEV.spacing[2])
@@ -118,3 +124,109 @@ class CEM(AbstractCTObject, Image2D):
             return False
 
         return True
+
+
+class BiComponentCEM(AbstractCTObject):
+    def __init__(self):
+        super().__init__()
+
+        self.rangeShifterRSP = 1.
+        self.cemRSP = 1.
+        self.minCEMThickness = 5. # in physical mm not in water equivalent mm
+        self.rangeShifterToCEM = 10. # Free space between CEM and RS
+
+        self._simpleCEM = CEM()
+        self._simpleCEM.rsp = 1.
+
+    @property
+    def imageArray(self) -> np.ndarray:
+        return self._simpleCEM.imageArray
+
+    @imageArray.setter
+    def imageArray(self, imageArray:np.ndarray):
+        self._simpleCEM.imageArray = imageArray
+
+    @property
+    def origin(self) -> np.ndarray:
+        return self._simpleCEM.origin
+
+    @origin.setter
+    def origin(self, origin: np.ndarray):
+        self._simpleCEM.origin = origin
+
+    @property
+    def spacing(self) -> np.ndarray:
+        return self._simpleCEM.spacing
+
+    @spacing.setter
+    def spacing(self, spacing: np.ndarray):
+        self._simpleCEM.spacing = spacing
+
+    @classmethod
+    def fromBeam(cls, ct:Image3D, beam:PlanIonBeam):
+        newCEM = cls()
+        newCEM._simpleCEM = CEM.fromBeam(ct, beam)
+
+        return newCEM
+
+    def computeROI(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> ROIMask:
+        rsROI, cemROI = self.computeROIs(referenceImage, beam)
+
+        outROI = ROIMask.fromImage3D(rsROI)
+        outROI.imageArray = np.logical_or(rsROI.imageArray, cemROI.imageArray)
+
+        return outROI
+
+
+    def computeROIs(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> Tuple[ROIMask, ROIMask]:
+        simpleRS, simpleCEM = self.split(referenceImage, beam)
+
+        rsROI = simpleRS.computeROI(referenceImage, beam)
+
+        beamCEM = copy.deepcopy(beam)
+        beamCEM.cemToIsocenter += self._rangeShifterWET(referenceImage, beam) / self.rangeShifterRSP + self.rangeShifterToCEM
+
+        cemROI = simpleCEM.computeROI(referenceImage, beamCEM)
+
+        return rsROI, cemROI
+
+
+    def split(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> Tuple[CEM, CEM]:
+        rangeShifterWaterEquivThick = self._rangeShifterWET(referenceImage, beam)
+
+        simpleRS = copy.deepcopy(self._simpleCEM)
+        simpleRS.imageArray = rangeShifterWaterEquivThick*np.ones(simpleRS.imageArray.shape)*np.array(self._simpleCEM.imageArray.astype(bool).astype(float))
+        simpleRS.rsp = self.rangeShifterRSP
+
+        simpleCEM = copy.deepcopy(self._simpleCEM)
+        imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick
+        imageArray[imageArray<0] = 0
+        simpleCEM.imageArray = imageArray
+        simpleCEM.rsp = self.cemRSP
+
+        return simpleRS, simpleCEM
+
+    def _rangeShifterWET(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> float:
+        cemData = self._simpleCEM.imageArray
+        cemData = cemData[cemData > self.cemRSP*self.minCEMThickness]
+
+        if len(cemData)==0:
+            raise ValueError("CEM cannot contains only 0s")
+
+        cemDataMin = np.min(cemData)
+
+        rangeShifterWET = cemDataMin - self.minCEMThickness * self.cemRSP
+
+        if rangeShifterWET<0.:
+            rangeShifterWET = 0.
+
+        return self._roundRangeShifterWETToPixels(rangeShifterWET, referenceImage, beam)
+
+    def _roundRangeShifterWETToPixels(self, rangeShifterWET:float, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> float:
+        referenceImageBEV = imageTransform3D.dicomToIECGantry(referenceImage, beam)
+
+        pixelWET = self.rangeShifterRSP*referenceImageBEV.spacing[2]
+
+        rangeShifterWET = math.floor(rangeShifterWET/pixelWET)*pixelWET
+
+        return rangeShifterWET

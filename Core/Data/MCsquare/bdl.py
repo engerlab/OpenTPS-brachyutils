@@ -1,8 +1,10 @@
-import os.path
-from math import sqrt
-from typing import Tuple
 
+from typing import Tuple, Optional, Sequence
+
+import numpy as np
 from scipy import interpolate
+
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
 
 
 class BDL:
@@ -33,7 +35,7 @@ class BDL:
     def __str__(self):
         return self.mcsquareFormatted()
 
-    def mcsquareFormatted(self) -> str:
+    def mcsquareFormatted(self, materials:Optional[Sequence[MCsquareMaterial]]=None) -> str:
         s = '--UPenn beam model (double gaussian)--\n\n'
         s += 'Nozzle exit to Isocenter distance\n'
         s += str(self.nozzle_isocenter) + '\n\n'
@@ -42,8 +44,11 @@ class BDL:
         s += 'SMY to Isocenter distance\n'
         s += str(self.smy) + '\n\n'
 
-        #if len(self.RangeShifters)>0:
-        #    raise ValueError('RS not supported yet')
+        if len(self.RangeShifters) >0:
+            s += 'Range Shifter parameters\n'
+            for RS in self.RangeShifters:
+                s += RS.mcsquareFormatted(materials)
+            s += '\n'
 
         s += 'Beam parameters\n'
         s += str(len(self.NominalEnergy)) + ' energies\n\n'
@@ -72,8 +77,9 @@ class BDL:
         return s
 
     def computeMU2Protons(self, energy:float) -> float:
-        f = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
-        return f(energy)
+        return np.interp(energy, self.NominalEnergy, self.ProtonsMU)
+        #if = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
+        #return f(energy)
 
     def correlations(self, energy:float) -> Tuple[float, float]:
         correlationX = interpolate.interp1d(self.NominalEnergy, self.Correlation1x, kind='linear', fill_value='extrapolate')

@@ -1,11 +1,40 @@
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout
+import functools
 
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout, QCheckBox
+from GUI.Panels.mainToolbar import MainToolbar
+from programSettings import ProgramSettings
+
+
+class EditableSetting(QWidget):
+    def __init__(self, property, value, action, parent=None):
+        super().__init__(parent)
+
+        self._mainLayout = QHBoxLayout(self)
+        self.setLayout(self._mainLayout)
+
+        self._txt = QLabel(self)
+        self._txt.setText(property)
+
+        self._nameLineEdit = QLineEdit(self)
+
+        self._validateButton = QPushButton(self)
+        self._validateButton.setText("Validate")
+        self._validateButton.clicked.connect(lambda *args: action(self._nameLineEdit.text()))
+
+        self._nameLineEdit.setText(str(value))
+        self._txt.setBuddy(self._nameLineEdit)
+
+        self._mainLayout.addWidget(self._txt)
+        self._mainLayout.addWidget(self._nameLineEdit)
+        self._mainLayout.addWidget(self._validateButton)
 
 class ProgramSettingEditor(QMainWindow):
-    def __init__(self, mainConfig, parent=None):
-        super().__init__(parent=parent)
+    # singleton class!
 
-        self._mainConfig  = mainConfig
+    _staticVars = {"programSettings": None, "mainToolbar": None}
+
+    def __init__(self):
+        super().__init__()
 
         self.setWindowTitle('Program settings')
         self.resize(400, 400)
@@ -15,32 +44,70 @@ class ProgramSettingEditor(QMainWindow):
         self._layout = QVBoxLayout()
         centralWidget.setLayout(self._layout)
 
-        self._workspaceField = self.EditableSetting("Workspace", str(self._mainConfig.workspace), self.setWorkspace)
-
+        self._workspaceField = EditableSetting("Workspace", str(self.programSettings.workspace), self.setWorkspace)
         self._layout.addWidget(self._workspaceField)
 
+        self._machineParam = MachineParam(self.programSettings)
+        self._layout.addWidget(self._machineParam)
+
+        self._activeExtensions = ActiveExtensions(self.mainToolbar)
+        self._layout.addWidget(self._activeExtensions)
+
+
+
+    @property
+    def programSettings(self) -> ProgramSettings:
+        return self._staticVars["programSettings"]
+
+    @staticmethod
+    def setProgramSettings(config):
+        ProgramSettingEditor._staticVars["programSettings"] = config
+
+    @property
+    def mainToolbar(self):
+        return self._staticVars["mainToolbar"]
+
+    @staticmethod
+    def setMainToolbar(mainToolbar):
+        ProgramSettingEditor._staticVars["mainToolbar"] = mainToolbar
+
     def setWorkspace(self, text):
-        self._mainConfig.workspace = text
+        self.programSettings.workspace = text
 
-    class EditableSetting(QWidget):
-        def __init__(self, property, value, action, parent=None):
-            super().__init__(parent)
 
-            self._mainLayout = QHBoxLayout(self)
-            self.setLayout(self._mainLayout)
+class ActiveExtensions(QWidget):
+    def __init__(self, toolbar:MainToolbar):
+        super().__init__()
 
-            self._txt = QLabel(self)
-            self._txt.setText(property)
+        self._mainLayout = QVBoxLayout(self)
+        self.setLayout(self._mainLayout)
 
-            self._nameLineEdit = QLineEdit(self)
+        for item in toolbar.items:
+            itemCheckBox = QCheckBox(item.panelName)
+            itemCheckBox.setChecked(item.visible)
+            itemCheckBox.setCheckable(True)
+            itemCheckBox.clicked.connect(functools.partial(self._handleItemChecked, item))
 
-            self._validateButton = QPushButton(self)
-            self._validateButton.setText("Validate")
-            self._validateButton.clicked.connect(lambda *args : action(self._nameLineEdit.text()))
+            self._mainLayout.addWidget(itemCheckBox)
 
-            self._nameLineEdit.setText(str(value))
-            self._txt.setBuddy(self._nameLineEdit)
+    def _handleItemChecked(self, item, checked):
+        item.visible = checked
 
-            self._mainLayout.addWidget(self._txt)
-            self._mainLayout.addWidget(self._nameLineEdit)
-            self._mainLayout.addWidget(self._validateButton)
+class MachineParam(QWidget):
+    def __init__(self, programSettings:ProgramSettings):
+        super().__init__()
+
+        self._layout = QVBoxLayout(self)
+        self.setLayout(self._layout)
+
+        self._scannerField = EditableSetting("Scanner", str(programSettings.scannerFolder), self._setScanner)
+        self._layout.addWidget(self._scannerField)
+
+        self._bdlField = EditableSetting("BDL", str(programSettings.bdlFile), self._setBDL)
+        self._layout.addWidget(self._bdlField)
+
+    def _setScanner(self, item, checked):
+        pass
+
+    def _setBDL(self, item, checked):
+        pass

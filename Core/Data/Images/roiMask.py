@@ -47,7 +47,8 @@ class ROIMask(Image3D):
 
     @property
     def centerOfMass(self) -> np.ndarray:
-        return scipy.ndimage.measurements.center_of_mass(self._imageArray)*self.spacing + self.origin
+        COM = np.array(scipy.ndimage.measurements.center_of_mass(self._imageArray))
+        return (COM * self.spacing) + self.origin
 
     def copy(self):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
@@ -66,10 +67,12 @@ class ROIMask(Image3D):
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
-                self._imageArray = cupyx.scipy.ndimage.binary_dilation(self._imageArray, structure=filt)
+                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
                 logger.warning('cupy not used to dilate mask.')
                 self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
+        else:
+            self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
 
     def erode(self, radius=1.0, filt=None, tryGPU=True):
 
@@ -85,10 +88,12 @@ class ROIMask(Image3D):
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
-                self._imageArray = cupyx.scipy.ndimage.binary_erosion(self._imageArray, structure=filt)
+                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
-                logger.warning('cupy not used to dilate mask.')
+                logger.warning('cupy not used to erode mask.')
                 self._imageArray = morphology.binary_erosion(self._imageArray, structure=filt)
+        else:
+            self._imageArray = morphology.binary_erosion(self._imageArray, structure=filt)
 
     def open(self, radius=1.0, filt=None, tryGPU=True):
 
@@ -104,10 +109,12 @@ class ROIMask(Image3D):
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
-                self._imageArray = cupyx.scipy.ndimage.binary_opening(self._imageArray, structure=filt)
+                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_opening(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
-                logger.warning('cupy not used to dilate mask.')
+                logger.warning('cupy not used to open mask.')
                 self._imageArray = morphology.binary_opening(self._imageArray, structure=filt)
+        else:
+            self._imageArray = morphology.binary_opening(self._imageArray, structure=filt)
 
     def close(self, radius=1.0, filt=None, tryGPU=True):
 
@@ -123,10 +130,12 @@ class ROIMask(Image3D):
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
-                self._imageArray = cupyx.scipy.ndimage.binary_closing(self._imageArray, structure=filt)
+                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_closing(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
-                logger.warning('cupy not used to dilate mask.')
+                logger.warning('cupy not used to close mask.')
                 self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
+        else:
+            self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
 
     def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
         Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32', tryGPU=tryGPU)

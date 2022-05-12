@@ -1,13 +1,16 @@
+import importlib
 import os
+import sys
 
-from PyQt5.QtCore import QSize, Qt, QDir
+from PyQt5.QtCore import QSize, QDir
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QScrollBar, QVBoxLayout, QFileDialog, \
-    QStackedWidget, QListView
+from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QVBoxLayout, QFileDialog, \
+    QStackedWidget, QListView, QComboBox, QWidgetAction
 
 from Core.IO import dataLoader
 from Core.event import Event
 from GUI.Tools.cropTool import CropWidget
+from GUI.Viewer.dataViewer import DataViewer
 from GUI.programSettingEditor import ProgramSettingEditor
 
 import GUI.res.icons as IconModule
@@ -28,6 +31,9 @@ class ViewerToolbar(QToolBar):
 
         self._buttonSettings = QAction(QIcon(self.iconPath + "settings-5-line.png"), "Settings", self)
         self._buttonSettings.triggered.connect(self._openSettings)
+
+        self._buttonReloadModules = QAction(QIcon(self.iconPath + "reload.png"), "Reload python modules", self)
+        self._buttonReloadModules.triggered.connect(self._reloadModules)
 
         self._buttonOpen = QAction(QIcon(self.iconPath + "folder-open.png"), "Open files or folder", self)
         self._buttonOpen.setStatusTip("Open files or folder")
@@ -55,12 +61,25 @@ class ViewerToolbar(QToolBar):
         self._buttonCrop.triggered.connect(self._handleCrop)
         self._buttonCrop.setCheckable(False)
 
+        self._dropModeCombo = QComboBox()
+        self._dropModeToStr = {DataViewer.DropModes.AUTO: 'Drop mode: auto',
+                               DataViewer.DropModes.PRIMARY: 'Drop as primary image',
+                               DataViewer.DropModes.SECONDARY: 'Drop as secondaryImage'}
+        self._strToDropMode = {v: k for k, v in self._dropModeToStr.items()}
+        self._dropModeCombo.addItems(list(self._dropModeToStr.values()))
+        self._dropModeCombo.setCurrentIndex(self._dropModeToIndex(self._viewController.dropMode))
+        self._dropModeCombo.currentIndexChanged.connect(self._handleDropModeSelection)
+        self._dropModeAction = QWidgetAction(None)
+        self._dropModeAction.setDefaultWidget(self._dropModeCombo)
+
         self.addAction(self._buttonSettings)
+        self.addAction(self._buttonReloadModules)
         self.addAction(self._buttonOpen)
         self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonWindowLevel)
         self.addAction(self._buttonCrop)
+        self.addAction(self._dropModeAction)
 
         self.addSeparator()
 
@@ -93,8 +112,26 @@ class ViewerToolbar(QToolBar):
         self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
         self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
 
+    def _reloadModules(self):
+        # Does not seem to reload the modules
+        modules = [module for module in sys.modules.values()]
+        for module in modules:
+            try:
+                importlib.reload(module)
+            except Exception as e:
+                pass
+
+    def _dropModeToIndex(self, dropMode):
+        return list(self._dropModeToStr.keys()).index(dropMode)
+
+    def _indexToDropMode(self, index):
+        return list(self._dropModeToStr.keys())[index]
+
+    def _handleDropModeSelection(self, selectionIndex):
+        self._viewController.dropMode = self._indexToDropMode(selectionIndex)
+
     def _openSettings(self, pressed):
-        self._imageFusionProp = ProgramSettingEditor(self._viewController.mainConfig)
+        self._imageFusionProp = ProgramSettingEditor()
         self._imageFusionProp.show()
 
     def _handleButtonIndependentViews(self, pressed):

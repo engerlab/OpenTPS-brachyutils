@@ -20,7 +20,7 @@ def crop3DDataAroundBox(data, box, marginInMM=[10, 10, 10]):
         The 3D data that will be cropped
     box : list of tuples or list
         The box around which the data is cropped, under the form [[x1, X2], [y1, y2], [z1, z2]]
-    marginInMM : float
+    marginInMM : list of float for the margin in mm for each dimension
         The margins in mm that is added around the box before cropping
     """
 

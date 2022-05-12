@@ -18,10 +18,13 @@ class MCsquareHU2Material:
         return self.mcsquareFormatted()
 
     def mcsquareFormatted(self):
+        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
+        matNames = [mat.name for mat in materialsOrderedForPrinting]
+
         s = ''
         for i, hu in enumerate(self.__hu):
             s += 'HU: ' + str(hu) + '\n'
-            s += self.__materials[i].mcsquareFormatted() + '\n'
+            s += self.__materials[i].mcsquareFormatted(matNames) + '\n'
 
         return s
 
@@ -52,27 +55,36 @@ class MCsquareHU2Material:
         self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
 
     def _writeHU2MaterialFile(self, huMaterialFile):
+        printedMaterials = self.materialsOrderedForPrinting()
+
         with open(huMaterialFile, 'w') as f:
             for i, hu in enumerate(self.__hu):
-                s = str(hu) + ' ' + str(self.__materials[i].number) + '\n'
+                s = str(hu) + ' ' + str(printedMaterials.index(self.__materials[i])+1) + '\n'
                 f.write(s)
 
     def _writeMaterials(self, folderPath):
+        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
+        matNames = [mat.name for mat in materialsOrderedForPrinting]
+
         for material in self._allMaterialsandElements():
-            material.write(folderPath)
+            material.write(folderPath, matNames)
 
     def _writeMCsquareList(self, listFile):
-        materials = self._allMaterialsandElements()
-        materialNbs = [material.number for material in materials]
-        materialNbs = np.array(materialNbs)
+        printedMaterials = self.materialsOrderedForPrinting()
 
         with open(listFile, 'w') as f:
-            currentMaterialInd = 0
-            for i in range(materialNbs.max()):
+            for i in range(len(printedMaterials)):
                 # If no material defined with number i we set the closest. MCsquare does not accept jumps in list.dat
-                f.write(str(i+1) + ' ' + materials[currentMaterialInd].name + '\n')
-                if i==materials[currentMaterialInd].number-1:
-                    currentMaterialInd += 1
+                f.write(str(i+1) + ' ' + printedMaterials[i].name + '\n')
+
+    def materialsOrderedForPrinting(self):
+        materials = self._allMaterialsandElements()
+
+        printedMaterials = []
+        for material in materials:
+            printedMaterials.append(material)
+
+        return printedMaterials
 
     def _allMaterialsandElements(self):
         materialNbs = []

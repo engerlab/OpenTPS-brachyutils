@@ -79,22 +79,22 @@ class GridFourElements(Grid):
 
         # Fill grid elements with data viewers
         gridElement = DataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.AXIAL
-        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.viewerTypes.AXIAL
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.AXIAL
+        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.AXIAL
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.CORONAL
-        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.viewerTypes.CORONAL
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.CORONAL
+        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.CORONAL
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.SAGITTAL
-        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.viewerTypes.SAGITTAL
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.SAGITTAL
+        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
         gridElement = DataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.viewerTypes.SAGITTAL
+        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botRightLayout.addWidget(gridElement)
 
