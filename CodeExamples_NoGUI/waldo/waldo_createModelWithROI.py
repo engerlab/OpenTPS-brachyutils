@@ -30,8 +30,8 @@ from Core.Data.patient import Patient
 
 # chose the patient folder, which will be used as the patient name
 organ = 'lung'
-patientName = 'Patient_5'
-patientComplement = '/2/FDG2'
+patientName = 'Patient_8'
+patientComplement = '/1/FDG1'
 basePath = '/data/public/'
 
 

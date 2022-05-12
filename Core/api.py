@@ -7,7 +7,7 @@ from io import StringIO
 from typing import Callable
 
 import Script
-from mainConfig import MainConfig
+from programSettings import ProgramSettings
 
 
 class FileLogger():
@@ -15,7 +15,7 @@ class FileLogger():
     A simple logger that appends inputs to a file
     """
     def __init__(self):
-        self.scriptPath = os.path.join(MainConfig().logFolder, 'API_log.py')
+        self.scriptPath = os.path.join(ProgramSettings().logFolder, 'API_log.py')
 
     def print(self, cmd: str):
         """

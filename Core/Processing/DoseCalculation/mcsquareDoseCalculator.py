@@ -18,7 +18,7 @@ from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
-from mainConfig import MainConfig
+from programSettings import ProgramSettings
 
 import Core.IO.mcsquareIO as mcsquareIO
 
@@ -36,7 +36,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
-        self._simulationDirectory = MainConfig().simulationFolder
+        self._simulationDirectory = ProgramSettings().simulationFolder
 
         self._subprocess = None
         self._subprocessKilled = True
@@ -125,8 +125,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         mcsquareIO.writeCT(self._ct, self._ctFilePath, self.overwriteOutsideROI)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
-        mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath, self._ctCalibration)
-        mcsquareIO.writeCTCalibration(self._ctCalibration, self._scannerFolder, self._materialFolder)
+        mcsquareIO.writeCTCalibrationAndBDL(self._ctCalibration, self._scannerFolder, self._materialFolder, self._beamModel, self._bdlFilePath)
         mcsquareIO.writeConfig(self._config, self._configFilePath)
         mcsquareIO.writeBin(self._mcsquareSimuDir)
 
@@ -137,7 +136,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._subprocessKilled = False
 
         if (platform.system() == "Linux"):
-            self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
+            self._subprocess = subprocess.Popen(["sh", "MCsquare_opti"], cwd=self._mcsquareSimuDir)
             self._subprocess.wait()
             if self._subprocessKilled:
                 self._subprocessKilled = False
@@ -155,12 +154,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return dose
 
-    def _deliveredProtons(self) -> int:
-        deliveredProtons = 0
+    def _deliveredProtons(self) -> float:
+        deliveredProtons = 0.
         for beam in self._plan:
             for layer in beam:
                 Protons_per_MU = self._beamModel.computeMU2Protons(layer.nominalEnergy)
-                deliveredProtons += sum(layer.spotWeights) * Protons_per_MU
+                deliveredProtons += layer.meterset * Protons_per_MU
 
         return deliveredProtons
 
@@ -264,6 +263,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
+
+        # config["Stat_uncertainty"] = 2.
 
         return config
 

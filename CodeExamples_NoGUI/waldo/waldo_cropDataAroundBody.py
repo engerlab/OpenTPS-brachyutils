@@ -20,7 +20,7 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_8'
+    patientFolder = 'Patient_7'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 

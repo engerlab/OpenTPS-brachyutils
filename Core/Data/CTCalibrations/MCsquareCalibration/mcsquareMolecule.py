@@ -15,7 +15,7 @@ class MCsquareMolecule(MCsquareMaterial):
     def __str__(self):
         return self.mcsquareFormatted()
 
-    def mcsquareFormatted(self):
+    def mcsquareFormatted(self, materialNamesOrderedForPrinting):
         s = 'Name ' + self.name + '\n'
         s += 'Molecular_Weight 	0.0 		 # N.C.\n'
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"
@@ -26,7 +26,8 @@ class MCsquareMolecule(MCsquareMaterial):
         s += '# 	Label 	Name 		fraction by mass (in %)\n'
 
         for i, element in enumerate(self.MCsquareElements):
-            s += 'Mixture_Component ' + str(element.number) + ' ' + element.name + ' ' + str(self.weights[i]) + '\n'
+            nb = materialNamesOrderedForPrinting.index(element.name) + 1
+            s += 'Mixture_Component ' + str(nb) + ' ' + element.name + ' ' + str(self.weights[i]) + '\n'
 
         return s
 
@@ -76,3 +77,4 @@ class MCsquareMolecule(MCsquareMaterial):
                     raise ValueError(moleculePath + ' is an element not a molecule.')
 
         self.sp = G4StopPow(fromFile=os.path.join(moleculePath, 'G4_Stop_Pow.dat'))
+        self.pstarSP = G4StopPow(fromFile=os.path.join(moleculePath, 'PSTAR_Stop_Pow.dat'))
