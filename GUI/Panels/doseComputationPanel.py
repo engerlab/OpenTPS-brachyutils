@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, 
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patient import Patient
+from Core.Data.roiContour import ROIContour
+from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
@@ -19,6 +21,8 @@ class DoseComputationPanel(QWidget):
         self._selectedCT = None
         self._plans = []
         self._selectedPlan = None
+        self._rois = []
+        self._selectedROI = None
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -34,6 +38,12 @@ class DoseComputationPanel(QWidget):
         self._planComboBox = QComboBox(self)
         self._planComboBox.currentIndexChanged.connect(self._handlePlanIndex)
         self.layout.addWidget(self._planComboBox)
+
+        self._roiLabel = QLabel('Overwrite outside this ROI:')
+        self.layout.addWidget(self._roiLabel)
+        self._roiComboBox = QComboBox(self)
+        self._roiComboBox.currentIndexChanged.connect(self._handleROIIndex)
+        self.layout.addWidget(self._roiComboBox)
 
         self._primariesLabel = QLabel('Primaries:')
         self.layout.addWidget(self._primariesLabel)
@@ -56,12 +66,19 @@ class DoseComputationPanel(QWidget):
     def _handlePlanIndex(self, *args):
         self._selectedPlan = self._plans[self._planComboBox.currentIndex()]
 
+    def _handleROIIndex(self, *args):
+        self._selectedROI = self._rois[self._roiComboBox.currentIndex()]
+
     def setCurrentPatient(self, patient:Patient):
         if not (self._patient is None):
             self._patient.imageAddedSignal.disconnect(self._handleImageAddedOrRemoved)
-            self._patient.planAddedSignal.disconnect(self._handlePlanAddedorRemoved)
             self._patient.imageRemovedSignal.disconnect(self._handleImageAddedOrRemoved)
-            self._patient.planRemovedSignal.disconnect(self._handlePlanAddedorRemoved)
+
+            self._patient.planAddedSignal.disconnect(self._handlePlanAddedOrRemoved)
+            self._patient.planRemovedSignal.disconnect(self._handlePlanAddedOrRemoved)
+
+            self._patient.rtStructAddedSignal.disconnect(self._handleROIAddedOrRemoved)
+            self._patient.rtStructRemovedSignal.disconnect(self._handleROIAddedOrRemoved)
 
         self._patient = patient
 
@@ -70,10 +87,15 @@ class DoseComputationPanel(QWidget):
         else:
             self._updateCTComboBox()
             self._updatePlanComboBox()
+
             self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
-            self._patient.planAddedSignal.connect(self._handlePlanAddedorRemoved)
             self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
-            self._patient.planRemovedSignal.connect(self._handlePlanAddedorRemoved)
+
+            self._patient.planAddedSignal.connect(self._handlePlanAddedOrRemoved)
+            self._patient.planRemovedSignal.connect(self._handlePlanAddedOrRemoved)
+
+            self._patient.rtStructAddedSignal.connect(self._handleROIAddedOrRemoved)
+            self._patient.rtStructRemovedSignal.connect(self._handleROIAddedOrRemoved)
 
     def _updateCTComboBox(self):
         self._removeAllCTs()
@@ -107,6 +129,27 @@ class DoseComputationPanel(QWidget):
             if len(self._plans):
                 self._selectedPlan = self._plans[0]
 
+    def _updateROIComboBox(self):
+        self._removeAllROIs()
+
+        rtstructs = self._patient.getPatientDataOfType(RTStruct)
+
+        self._rois = []
+        for struct in rtstructs:
+            for roi in struct:
+                self._rois.append(roi)
+
+        for roi in self._rois:
+            self._addROI(roi)
+
+        try:
+            currentIndex = self._rois.index(self._selectedROI)
+            self._roiComboBox.setCurrentIndex(currentIndex)
+        except:
+            self._roiComboBox.setCurrentIndex(0)
+            if len(self._rois):
+                self._selectedROI = self._rois[0]
+
     def _removeAllCTs(self):
         for ct in self._ctImages:
             self._removeCT(ct)
@@ -115,6 +158,10 @@ class DoseComputationPanel(QWidget):
         for plan in self._plans:
             self._removePlan(plan)
 
+    def _removeAllROIs(self):
+        for roi in self._rois:
+            self._removeROI(roi)
+
     def _addCT(self, ct:CTImage):
         self._ctComboBox.addItem(ct.name, ct)
         ct.nameChangedSignal.connect(self._handleCTChanged)
@@ -122,6 +169,10 @@ class DoseComputationPanel(QWidget):
     def _addPlan(self, plan:RTPlan):
         self._planComboBox.addItem(plan.name, plan)
         plan.nameChangedSignal.connect(self._handlePlanChanged)
+
+    def _addROI(self, roi:ROIContour):
+        self._roiComboBox.addItem(roi.name, roi)
+        roi.nameChangedSignal.connect(self._handleROIChanged)
 
     def _removeCT(self, ct:CTImage):
         if ct==self._selectedCT:
@@ -137,17 +188,30 @@ class DoseComputationPanel(QWidget):
         plan.nameChangedSignal.disconnect(self._handlePlanChanged)
         self._planComboBox.removeItem(self._planComboBox.findData(plan))
 
+    def _removeROI(self, roi:ROIContour):
+        if roi==self._selectedROI:
+            self._selectedROI = None
+
+        roi.nameChangedSignal.disconnect(self._handleROIChanged)
+        self._roiComboBox.removeItem(self._roiComboBox.findData(roi))
+
     def _handleImageAddedOrRemoved(self, image):
         self._updateCTComboBox()
 
-    def _handlePlanAddedorRemoved(self, plan):
+    def _handlePlanAddedOrRemoved(self, plan):
         self._updatePlanComboBox()
+
+    def _handleROIAddedOrRemoved(self, roi):
+        self._updateROIComboBox()
 
     def _handleCTChanged(self, ct):
         self._updateCTComboBox()
 
     def _handlePlanChanged(self, plan):
         self._updatePlanComboBox()
+
+    def _handleROIChanged(self, roi):
+        self._updateROIComboBox()
 
     def _run(self):
         settings = ProgramSettings()
@@ -160,6 +224,7 @@ class DoseComputationPanel(QWidget):
         doseCalculator.beamModel = beamModel
         doseCalculator.nbPrimaries = int(self._primariesEdit.text())
         doseCalculator.ctCalibration = calibration
+        doseCalculator.overwriteOutsideROI = self._selectedROI
 
         doseImage = doseCalculator.computeDose(self._selectedCT, self._selectedPlan)
         doseImage.patient = self._selectedCT.patient
