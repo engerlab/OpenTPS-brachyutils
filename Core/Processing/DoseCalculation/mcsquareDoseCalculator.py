@@ -136,7 +136,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._subprocessKilled = False
 
         if (platform.system() == "Linux"):
-            self._subprocess = subprocess.Popen(["sh", "MCsquare_opti"], cwd=self._mcsquareSimuDir)
+            self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
             self._subprocess.wait()
             if self._subprocessKilled:
                 self._subprocessKilled = False
@@ -264,7 +264,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
 
-        # config["Stat_uncertainty"] = 2.
+        config["Stat_uncertainty"] = 2.
 
         return config
 

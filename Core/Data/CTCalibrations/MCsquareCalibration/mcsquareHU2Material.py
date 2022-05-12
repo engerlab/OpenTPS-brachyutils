@@ -1,9 +1,15 @@
 import logging
 import os
+import shutil
+from distutils.dir_util import copy_tree
+from glob import glob
 
 import numpy as np
 
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMolecule import MCsquareMolecule
+
+import Core.Processing.DoseCalculation.MCsquare as MCsquareModule
 
 
 class MCsquareHU2Material:
@@ -18,8 +24,8 @@ class MCsquareHU2Material:
         return self.mcsquareFormatted()
 
     def mcsquareFormatted(self):
-        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
-        matNames = [mat.name for mat in materialsOrderedForPrinting]
+        mats = self._allMaterialsandElements()
+        matNames = [mat.name for mat in mats]
 
         s = ''
         for i, hu in enumerate(self.__hu):
@@ -51,6 +57,7 @@ class MCsquareHU2Material:
 
     def write(self, folderPath, huMaterialFile):
         self._writeHU2MaterialFile(huMaterialFile)
+        self._copyDefaultMaterials(folderPath)
         self._writeMaterials(folderPath)
         self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
 
@@ -63,24 +70,44 @@ class MCsquareHU2Material:
                 f.write(s)
 
     def _writeMaterials(self, folderPath):
-        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
+        materialsOrderedForPrinting = self._allMaterialsandElements()
         matNames = [mat.name for mat in materialsOrderedForPrinting]
 
         for material in self._allMaterialsandElements():
             material.write(folderPath, matNames)
 
+    def _copyDefaultMaterials(self, folderPath):
+        materialsPath = os.path.join(str(MCsquareModule.__path__[0]), 'Materials')
+
+        for folder in glob(materialsPath + os.path.sep + '*' + os.path.sep):
+            y = folder.split('/')
+            last_folder = y[-1]
+            if last_folder=='':
+                last_folder = y[-2]
+
+            copy_tree(folder, os.path.join(folderPath, os.path.basename(last_folder)))
+
     def _writeMCsquareList(self, listFile):
-        printedMaterials = self.materialsOrderedForPrinting()
+        matList = MCsquareMaterial.getMaterialList('default')
 
         with open(listFile, 'w') as f:
-            for i in range(len(printedMaterials)):
+            #We keep the default MCsquare list because some IDs (eg. that of Water) are hard coded in MCsquare.
+            for mat in matList:
+                id = mat["ID"]
+                f.write(str(id) + ' ' + mat["name"] + '\n')
+
+            for i, mat in enumerate(self._allMaterialsandElements()):
                 # If no material defined with number i we set the closest. MCsquare does not accept jumps in list.dat
-                f.write(str(i+1) + ' ' + printedMaterials[i].name + '\n')
+                f.write(str(i+id+1) + ' ' + mat.name + '\n')
 
     def materialsOrderedForPrinting(self):
         materials = self._allMaterialsandElements()
+        defaultMats = MCsquareMaterial.getMaterialList('default')
 
         printedMaterials = []
+        for i in enumerate(defaultMats):
+            printedMaterials.append('Default MCsquare material')
+
         for material in materials:
             printedMaterials.append(material)
 
