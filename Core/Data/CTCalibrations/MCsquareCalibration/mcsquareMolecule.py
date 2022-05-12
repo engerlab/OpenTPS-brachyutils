@@ -77,3 +77,4 @@ class MCsquareMolecule(MCsquareMaterial):
                     raise ValueError(moleculePath + ' is an element not a molecule.')
 
         self.sp = G4StopPow(fromFile=os.path.join(moleculePath, 'G4_Stop_Pow.dat'))
+        self.pstarSP = G4StopPow(fromFile=os.path.join(moleculePath, 'PSTAR_Stop_Pow.dat'))

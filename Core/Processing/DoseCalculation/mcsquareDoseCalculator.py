@@ -136,7 +136,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._subprocessKilled = False
 
         if (platform.system() == "Linux"):
-            self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
+            self._subprocess = subprocess.Popen(["sh", "MCsquare_opti"], cwd=self._mcsquareSimuDir)
             self._subprocess.wait()
             if self._subprocessKilled:
                 self._subprocessKilled = False
@@ -154,12 +154,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return dose
 
-    def _deliveredProtons(self) -> int:
-        deliveredProtons = 0
+    def _deliveredProtons(self) -> float:
+        deliveredProtons = 0.
         for beam in self._plan:
             for layer in beam:
                 Protons_per_MU = self._beamModel.computeMU2Protons(layer.nominalEnergy)
-                deliveredProtons += sum(layer.spotWeights) * Protons_per_MU
+                deliveredProtons += layer.meterset * Protons_per_MU
 
         return deliveredProtons
 
@@ -263,6 +263,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
+
+        # config["Stat_uncertainty"] = 2.
 
         return config
 
