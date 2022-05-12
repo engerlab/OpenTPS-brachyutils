@@ -19,6 +19,12 @@ class RTStruct(PatientData):
     def __str__(self):
         return "RTstruct " + self.seriesInstanceUID
 
+    def __getitem__(self, item):
+        return self._contours[item]
+
+    def __len__(self):
+        return len(self._contours)
+
     @property
     def contours(self) -> Sequence[ROIContour]:
         # Doing this ensures that the user can't append directly to contours

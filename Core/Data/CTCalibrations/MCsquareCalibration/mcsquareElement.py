@@ -10,6 +10,10 @@ class MCsquareElement(MCsquareMaterial):
         super().__init__(density=density, electronDensity=electronDensity, name=name, number=number, sp=sp, radiationLength=radiationLength)
 
         self.atomicWeight = atomicWeight
+        self._nuclear_data = ""
+        self._nuclearElasticData = None
+        self._nuclearInelasticData = None
+        self._promptGamma = None
 
     def __str__(self):
         return self.mcsquareFormatted()
@@ -26,7 +30,7 @@ class MCsquareElement(MCsquareMaterial):
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"
         s += 'Electron_Density ' + str(self.electronDensity) + " # in cm-3 \n"
         s += 'Radiation_Length ' + str(self.radiationLength) + " # in g/cm2 \n"
-        s += 'Nuclear_Data		proton-proton\n'
+        s += 'Nuclear_Data ' + self._nuclear_data + '\n'
 
         return s
 
@@ -63,7 +67,41 @@ class MCsquareElement(MCsquareMaterial):
                     self.radiationLength = float(line[1])
                     continue
 
+                if re.search(r'Nuclear_Data', line):
+                    if 'ICRU' in line:
+                        self._nuclear_data = 'ICRU'
+
+                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_elastic.dat'), mode='r')
+                        self._nuclearElasticData = file.read()
+                        file.close()
+
+                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_inelastic.dat'), mode='r')
+                        self._nuclearInelasticData = file.read()
+                        file.close()
+
+                        file = open(os.path.join(elementPath, 'ICRU_PromptGamma.dat'), mode='r')
+                        self._promptGamma = file.read()
+                        file.close()
+                    else:
+                        self._nuclear_data = 'proton-proton'
+
                 if re.search(r'Mixture_Component', line):
                     raise ValueError(elementPath + ' is a molecule not an element.')
 
+
+
         self.sp = G4StopPow(fromFile=os.path.join(elementPath, 'G4_Stop_Pow.dat'))
+        self.pstarSP = G4StopPow(fromFile=os.path.join(elementPath, 'PSTAR_Stop_Pow.dat'))
+
+    def write(self, folderPath, materialNamesOrderedForPrinting):
+        super().write(folderPath, materialNamesOrderedForPrinting)
+
+        if 'ICRU' in self._nuclear_data:
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_elastic.dat'), 'w') as f:
+                f.write(self._nuclearElasticData)
+
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_inelastic.dat'), 'w') as f:
+                f.write(self._nuclearInelasticData)
+
+            with open(os.path.join(folderPath, self.name, 'ICRU_PromptGamma.dat'), 'w') as f:
+                f.write(self._promptGamma)
