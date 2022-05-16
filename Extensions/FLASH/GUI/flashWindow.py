@@ -17,6 +17,7 @@ from Core.Data.patient import Patient
 from Core.Data.roiContour import ROIContour
 from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
+from Core.Processing.ImageProcessing import imageTransform3D
 from Core.event import Event
 from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives, workflows
 from Extensions.FLASH.Core.Processing.CEMOptimization.workflows import SingleBeamCEMOptimizationWorkflow
@@ -301,7 +302,10 @@ class UserInputPanel(QWidget):
                 continue
 
             if not cem.imageArray is None:
-                [rsROI, cemROI] = cem.computeROIs(ct, beam)
+                [rsROI, cemROI] = cem.computeROIs()
+
+                rsROI = imageTransform3D.intersect(rsROI, ct, fillValue=0, inPlace=True)
+                cemROI = imageTransform3D.intersect(cemROI, ct, fillValue=0, inPlace=True)
 
                 ctArray = ct.imageArray
                 ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)

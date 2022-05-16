@@ -223,7 +223,7 @@ class SingleBeamCEMOptimizationWorkflow():
         beam = self._plan.beams[0]
         cem = beam.cem
 
-        [rsROI, cemROI] = beam.cem.computeROIs(self._ctWithCEM, beam)
+        [rsROI, cemROI] = beam.cem.computeROIs()
 
         ctArray = self._ctWithCEM.imageArray
         ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)

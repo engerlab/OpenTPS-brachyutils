@@ -46,22 +46,17 @@ class CEM(AbstractCTObject, Image2D):
     def referenceBeam(self):
         return self._referenceBeam
 
-    def computeROI(self, referenceImage:Optional[Image3D]=None, beam:Optional[CEMBeam]=None) -> ROIMask:
-        if beam is None:
-            beam = self._referenceBeam
-
-        if not (referenceImage is None):
-            referenceImageBEV = imageTransform3D.dicomToIECGantry(referenceImage, beam)
-        else:
-            referenceImageBEV = Image3D.fromImage3D(self._referenceImageBEV)
-            referenceImage = self._referenceImage
+    def computeROI(self) -> ROIMask:
+        beam = self._referenceBeam
+        referenceImageBEV = Image3D.fromImage3D(self._referenceImageBEV)
+        referenceImage = self._referenceImage
 
         referenceImageBEV.origin = (self.origin[0], self.origin[1], referenceImageBEV.origin[2])
         data = np.zeros((self.imageArray.shape[0], self.imageArray.shape[1], referenceImageBEV.imageArray.shape[2]))
         referenceImageBEV.imageArray = data
 
         cemPixelsInDim2 = self._cemPixelsInDim2(referenceImage, referenceImageBEV, beam)
-        availableSpaceInPixels = self._availableSpaceInPixels(referenceImage, referenceImageBEV, beam)
+        availableSpaceInPixels = self._availableSpaceInPixels()
 
         for i in range(data.shape[0]):
             for j in range(data.shape[1]):
@@ -87,7 +82,7 @@ class CEM(AbstractCTObject, Image2D):
 
         cemPixelsInDim2 = np.round(cemArray / (self.rsp*referenceImageBEV.spacing[2]))
 
-        availableSpaceInPixels = self._availableSpaceInPixels(referenceImage, referenceImageBEV, beam)
+        availableSpaceInPixels = self._availableSpaceInPixels()
         if np.any(cemPixelsInDim2 > availableSpaceInPixels):
             maxDiff = np.max(cemPixelsInDim2 - availableSpaceInPixels)
             logger.info("CEM is larger by " + str(maxDiff) + ' pixels than available space (' + str(availableSpaceInPixels) + ' pixels) - Cropping.')
@@ -95,11 +90,11 @@ class CEM(AbstractCTObject, Image2D):
 
         return cemPixelsInDim2.astype(int)
 
-    def _availableSpaceInPixels(self, referenceImage, referenceImageBEV, beam):
-        isocenterInImage = imageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
-        isocenterCoord = referenceImageBEV.getVoxelIndexFromPosition(isocenterInImage)
+    def _availableSpaceInPixels(self):
+        isocenterInImage = imageTransform3D.dicomCoordinate2iecGantry(self._referenceImage, self._referenceBeam, self._referenceBeam.isocenterPosition)
+        isocenterCoord = self._referenceImageBEV.getVoxelIndexFromPosition(isocenterInImage)
 
-        distInPixels = np.ceil(beam.cemToIsocenter / referenceImageBEV.spacing[2])
+        distInPixels = np.ceil(self._referenceBeam.cemToIsocenter/self._referenceImageBEV.spacing[2])
 
         return int(isocenterCoord[2] - distInPixels)
 
@@ -147,8 +142,8 @@ class BiComponentCEM(CEM):
 
         return newCEM
 
-    def computeROI(self, referenceImage:Optional[Image3D]=None, beam:Optional[CEMBeam]=None) -> ROIMask:
-        rsROI, cemROI = self.computeROIs(referenceImage, beam)
+    def computeROI(self) -> ROIMask:
+        rsROI, cemROI = self.computeROIs()
 
         outROI = ROIMask.fromImage3D(rsROI)
         outROI.imageArray = np.logical_or(rsROI.imageArray, cemROI.imageArray)
@@ -156,21 +151,19 @@ class BiComponentCEM(CEM):
         return outROI
 
 
-    def computeROIs(self, referenceImage:Optional[Image3D]=None, beam:Optional[CEMBeam]=None) -> Tuple[ROIMask, ROIMask]:
-        simpleRS, simpleCEM = self.split(referenceImage, beam)
+    def computeROIs(self) -> Tuple[ROIMask, ROIMask]:
+        simpleRS, simpleCEM = self.split()
 
-        rsROI = simpleRS.computeROI(referenceImage, beam)
+        rsROI = simpleRS.computeROI()
 
-        beamCEM = copy.deepcopy(beam)
-        beamCEM.cemToIsocenter += self._rangeShifterWET(referenceImage, beam) / self.rangeShifterRSP + self.rangeShifterToCEM
-
-        cemROI = simpleCEM.computeROI(referenceImage, beamCEM)
+        simpleCEM.referenceBeam.cemToIsocenter += self._rangeShifterWET() / self.rangeShifterRSP + self.rangeShifterToCEM
+        cemROI = simpleCEM.computeROI()
 
         return rsROI, cemROI
 
 
-    def split(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> Tuple[CEM, CEM]:
-        rangeShifterWaterEquivThick = self._rangeShifterWET(referenceImage, beam)
+    def split(self) -> Tuple[CEM, CEM]:
+        rangeShifterWaterEquivThick = self._rangeShifterWET()
 
         simpleRS = copy.deepcopy(self._simpleCEM)
         simpleRS.imageArray = rangeShifterWaterEquivThick*np.ones(simpleRS.imageArray.shape)*np.array(self._simpleCEM.imageArray.astype(bool).astype(float))
@@ -184,7 +177,7 @@ class BiComponentCEM(CEM):
 
         return simpleRS, simpleCEM
 
-    def _rangeShifterWET(self, referenceImage:Image3D, beam:Optional[CEMBeam]=None) -> float:
+    def _rangeShifterWET(self) -> float:
         cemData = self._simpleCEM.imageArray
         cemData = cemData[cemData > self.cemRSP*self.minCEMThickness]
 
@@ -198,7 +191,7 @@ class BiComponentCEM(CEM):
         if rangeShifterWET<0.:
             rangeShifterWET = 0.
 
-        return self._roundRangeShifterWETToPixels(rangeShifterWET, referenceImage, beam)
+        return self._roundRangeShifterWETToPixels(rangeShifterWET, self._referenceImage, self.referenceBeam)
 
     def _roundRangeShifterWETToPixels(self, rangeShifterWET:float, referenceImage:Optional[Image3D]=None, beam:Optional[CEMBeam]=None) -> float:
         if not (referenceImage is None):

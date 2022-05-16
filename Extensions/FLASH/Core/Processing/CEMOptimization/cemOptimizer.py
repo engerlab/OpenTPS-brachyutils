@@ -307,7 +307,7 @@ class CEMDoseCalculator:
             cemBeamVal = cemThickness[ind:ind+cemArray.shape[0]*cemArray.shape[1]]
             beam.cem.imageArray = np.reshape(cemBeamVal, (cemArray.shape[0], cemArray.shape[1]))
 
-            [rsROI, cemROI] = beam.cem.computeROIs(self.ct, beam)
+            [rsROI, cemROI] = beam.cem.computeROIs()
 
             ctArray = self._ctCEFForBeamlets.imageArray
             ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
