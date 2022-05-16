@@ -35,7 +35,7 @@ if __name__ == '__main__':
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/test8/'
+    resultFolder = '/test10/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
@@ -50,9 +50,9 @@ if __name__ == '__main__':
     ## parameters selection ------------------------------------
 
     ## sequence duration and sampling
-    sequenceDurationInSecs = 20
+    sequenceDurationInSecs = 10
     samplingFrequency = 5
-    subSequenceSize = 50
+    subSequenceSize = 20
     outputSize = [64, 64]
 
     ## ROI choice and crop options 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     projAxis = 'Z'
 
     # multiProcessing 
-    maxMultiProcUse = 20
+    maxMultiProcUse = 6
     
 
 
@@ -226,20 +226,26 @@ if __name__ == '__main__':
             plt.savefig(savingPath + 'resultDeform.pdf', dpi=300)
 
         print('Start multi process DRRs with', len(deformationList), 'pairs of image-mask')
-        resultList += multiProcDRRs(deformedImgMaskAnd3DCOMList, projAngle, projAxis, outputSize)
+        projectionResults = []
+        projectionResults += multiProcDRRs(deformedImgMaskAnd3DCOMList, projAngle, projAxis, outputSize)
 
         if i == 0:
             plt.figure()
-            plt.imshow(resultList[-1][0])
-            plt.imshow(resultList[-1][1], alpha=0.5)
+            plt.imshow(projectionResults[-1][0])
+            plt.imshow(projectionResults[-1][1], alpha=0.5)
             plt.savefig(savingPath + 'resultDRR.pdf', dpi=300)
             plt.show()
 
+        ## add 3D center of mass in scanner coordinates to the result lists
+        for imgIndex in range(len(projectionResults)):
+            projectionResults[imgIndex].append(deformedImgMaskAnd3DCOMList[imgIndex][2])
+
+        resultList += projectionResults
         print('ResultList lenght', len(resultList))
 
     stopTime = time.time()
 
-    print('Test with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
+    print('Script with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
     print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
 
     savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM'
