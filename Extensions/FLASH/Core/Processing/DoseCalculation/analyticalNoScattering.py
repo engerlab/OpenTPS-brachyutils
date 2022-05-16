@@ -1,5 +1,5 @@
 
-from typing import Union, Tuple, Sequence
+from typing import Union, Tuple, Sequence, Optional
 
 import numpy as np
 from scipy.interpolate import interpolate
@@ -7,6 +7,7 @@ from scipy.interpolate import interpolate
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Images.rspImage import RSPImage
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.Plan.planIonBeam import PlanIonBeam
@@ -30,8 +31,6 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
 
         self._referenceIDDEnergy = None
         self._referenceIDDX = None
-        self._shiftReferenceIDD = None
-        self._shiftDerivIDD = None
 
     @property
     def beamModel(self) -> BDL:
@@ -49,34 +48,34 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
     def ctCalibration(self, calibration:AbstractCTCalibration):
         self._ctCalibration = calibration
 
-    def computeDose(self, ct:CTImage, plan:RTPlan) -> DoseImage:
+    def computeDose(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask]=None) -> DoseImage:
         outImage = DoseImage.fromImage3D(ct)
         outImage.imageArray = np.zeros(outImage.imageArray.shape)
 
-        for doseImage in self.computeDosePerBeam(ct, plan):
+        for doseImage in self.computeDosePerBeam(ct, plan, roi):
             outImage.imageArray = outImage.imageArray + doseImage.imageArray
 
         return outImage
 
-    def computeDosePerBeam(self, ct:CTImage, plan:RTPlan) -> Sequence[DoseImage]:
+    def computeDosePerBeam(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask]=None) -> Sequence[DoseImage]:
         self._computeReferenceIDD()
 
         doseImages = []
         for beam in plan:
-            doseImageDicom = self._computeDoseForBeam(ct, beam)
+            doseImageDicom = self._computeDoseForBeam(ct, beam, roi)
             imageTransform3D.intersect(doseImageDicom, ct, inPlace=True, fillValue=0.)
             doseImages.append(doseImageDicom)
 
         return doseImages
 
-    def _computeDoseForBeam(self, ct:CTImage, beam:PlanIonBeam) -> DoseImage:
+    def _computeDoseForBeam(self, ct:CTImage, beam:PlanIonBeam, roi:Optional[ROIMask]) -> DoseImage:
         fluenceCalculator = FluenceCalculator()
         fluenceCalculator.beamModel = self.beamModel
 
         rsp = RSPImage.fromCT(ct, self.ctCalibration)
 
-        cumRSP = rsp.computeCumulativeWEPL(beam)
-        cumRSP = imageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0.)
+        cumRSP = rsp.computeCumulativeWEPL(beam, roi=roi)
+        cumRSP = imageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0., cropROI=roi, cropDim0=True, cropDim1=True, cropDim2=False)
 
         doseImageBEV = DoseImage.fromImage3D(cumRSP)
         doseImageArray = np.zeros(doseImageBEV.imageArray.shape)
@@ -84,7 +83,7 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         wetBeforeCT = self._wetBeforeCT(beam)
 
         for layer in beam:
-            fluence = fluenceCalculator.layerFluenceAtNozzle(layer, ct, beam)
+            fluence = fluenceCalculator.layerFluenceAtNozzle(layer, ct, beam, roi)
             fluence = fluence.imageArray
 
             layerDose, layerDeriv = self._doseOnReferenceIDDGrid(wetBeforeCT, layer.nominalEnergy)
@@ -96,7 +95,9 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
                     doseImageArray[i, j, :] += fluence[i, j] * f(np.squeeze(cumRSP.imageArray[i, j, :]))
 
         doseImageBEV.imageArray = doseImageArray
-        doseImageDicom = imageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0.)
+        doseImageBEV.patient = ct.patient
+
+        doseImageDicom = imageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0)
 
         return doseImageDicom
 
@@ -176,8 +177,11 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
         derivIDD = f(self._referenceIDDX)
 
         self._referenceIDDEnergy = self.referenceEnergy
-        referenceIDDFunction = interpolate.interp1d(self._referenceIDDX, refIDD, kind='linear', fill_value='extrapolate', assume_sorted=True)
-        derivIDDFunction = interpolate.interp1d(self._referenceIDDX, derivIDD, kind='linear', fill_value='extrapolate', assume_sorted=True)
+        self._referenceIDDFunction = interpolate.interp1d(self._referenceIDDX, refIDD, kind='linear', fill_value='extrapolate', assume_sorted=True)
+        self._derivIDDFunction = interpolate.interp1d(self._referenceIDDX, derivIDD, kind='linear', fill_value='extrapolate', assume_sorted=True)
 
-        self._shiftReferenceIDD = lambda wet: referenceIDDFunction(self._referenceIDDX+wet)
-        self._shiftDerivIDD = lambda wet: derivIDDFunction(self._referenceIDDX+wet)
+    def _shiftReferenceIDD(self, wet):
+        return self._referenceIDDFunction(self._referenceIDDX+wet)
+
+    def _shiftDerivIDD(self, wet):
+        return self._derivIDDFunction(self._referenceIDDX+wet)

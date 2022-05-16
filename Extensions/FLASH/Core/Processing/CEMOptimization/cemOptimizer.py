@@ -79,7 +79,6 @@ class CEMOptimizer:
         self.targetMask = None
         self.absTol = 1
         self.ctCalibration:AbstractCTCalibration = None
-        self.cemLateralMargin = 5.  # in world unit not pixel
 
         self.planUpdateEvent = Event(RTPlan)
         self.doseUpdateEvent = Event(object)
@@ -117,7 +116,7 @@ class CEMOptimizer:
             self._abort = False
 
         self._plan.spotWeights = spotWeights
-        self._setCEMInPlan(cemVal)
+        self._setCEMValueInPlan(cemVal)
 
     def _getCEMFromPlan(self) -> np.ndarray:
         cemVal = np.array([])
@@ -140,8 +139,8 @@ class CEMOptimizer:
         cemArray = beam.cem.imageArray
         cemArray = np.ones(cemArray.shape) * energyToRange(beam.layers[0].nominalEnergy) - self._meanWETOfTarget(beam)
 
-        targetMaskBEV = imageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0)
-        targetMaskBEV.dilate(self.cemLateralMargin)
+        targetMaskBEV = imageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0, cropROI=self.targetMask, cropDim0=True, cropDim1=True, cropDim2=False)
+
         targetMask = np.sum(targetMaskBEV.imageArray, 2)
         cemArray[np.logical_not(targetMask.astype(bool))] = 0
 
@@ -149,10 +148,10 @@ class CEMOptimizer:
 
     def _meanWETOfTarget(self, beam):
         rsp = RSPImage.fromCT(self._ct, self.ctCalibration)
-        wepl = rsp.computeCumulativeWEPL(beam)
+        wepl = rsp.computeCumulativeWEPL(beam, roi=self.targetMask)
 
-        weplBEV = imageTransform3D.dicomToIECGantry(wepl, beam, fillValue=0.)
-        roiBEV = imageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0.)
+        weplBEV = imageTransform3D.dicomToIECGantry(wepl, beam, fillValue=0., cropROI=self.targetMask, cropDim0=True, cropDim1=True, cropDim2=False)
+        roiBEV = imageTransform3D.dicomToIECGantry(self.targetMask, beam, fillValue=0., cropROI=self.targetMask, cropDim0=True, cropDim1=True, cropDim2=False)
 
         weplTarget = weplBEV.imageArray[roiBEV.imageArray.astype(bool)]
 
@@ -161,6 +160,7 @@ class CEMOptimizer:
 
     def _gd(self, x:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         doseCalculator:CEMDoseCalculator = self._objectives.objectiveTerms[0].doseCalculator
+        doseCalculator.roi = self.targetMask
 
         self._objectives.cemArray = x
         PlanOptimizer.run(self._objectives, self._plan)
@@ -217,7 +217,7 @@ class CEMOptimizer:
 
         self._planInitializer.intializePlan(self.spotSpacing, 0.)
 
-    def _setCEMInPlan(self, cemThickness:np.ndarray):
+    def _setCEMValueInPlan(self, cemThickness:np.ndarray):
         ind = 0
         for beam in self._plan:
             cemArray = beam.cem.imageArray
@@ -239,7 +239,7 @@ class CEMDoseCalculator:
         self.ct:CTImage = None
         self.plan = None
         self.roi = None
-        self.nbPrimaries = 1e4
+        self.nbPrimaries = 1e5
         self.derivativeMode = self.DerivativeModes.DEFAULT
 
         self._doseCalculator = MCsquareDoseCalculator()
@@ -367,16 +367,16 @@ class CEMDoseCalculator:
 
             ind += cemArray.shape[0]*cemArray.shape[1]
 
-        doseSequence = self._analyticalCalculator.computeDosePerBeam(self.ct, plan)
+        doseSequence = self._analyticalCalculator.computeDosePerBeam(self.ct, plan, self.roi)
 
         plan2 = self._lowerPlanEnergy(plan, deltaR=deltaR)
-        doseSequence2 = self._analyticalCalculator.computeDosePerBeam(self.ct, plan2)
+        doseSequence2 = self._analyticalCalculator.computeDosePerBeam(self.ct, plan2, self.roi)
 
         derivSequence = []
         for i, dose in enumerate(doseSequence):
             dose.imageArray = (dose.imageArray - doseSequence2[i].imageArray)/deltaR
             outDose = DoseImage.fromImage3D(dose)
-            outDose = imageTransform3D.dicomToIECGantry(outDose, plan.beams[i], fillValue=0.)
+            outDose = imageTransform3D.dicomToIECGantry(outDose, plan.beams[i], fillValue=0., cropROI=self.roi, cropDim0=True, cropDim1=True, cropDim2=False)
             derivSequence.append(outDose)
 
         self._analyticalDerivative = derivSequence
@@ -395,12 +395,11 @@ class CEMDoseCalculator:
     def _updateBeamletDerivative(self):
         self._fluenceDoseCalculator.beamModel = self.beamModel
         self._fluenceDoseCalculator.ctCalibration = self.ctCalibration
-        self._fluenceDoseCalculator.nbPrimaries = 1e4
+        self._fluenceDoseCalculator.nbPrimaries = 5e3
 
-        beamlets = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan, self.roi)
-
-        plan2 = self._lowerPlanEnergy(self.plan, deltaR=1.)
-        beamletsE2 = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, plan2, self.roi)
+        # We lower the energy in computeBeamlets so that output sparseBeamle ts has exactly the same shape as that of beamlets1
+        beamlets = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan, roi=self.roi)
+        beamletsE2 = self._fluenceDoseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan, roi=self.roi, deltaR=-1.)
 
         sparseBeamlets = beamlets.sparseBeamlets
         sparseBeamlets.setUnitaryBeamlets(sparseBeamlets.toSparseMatrix() - beamletsE2.sparseBeamlets.toSparseMatrix())

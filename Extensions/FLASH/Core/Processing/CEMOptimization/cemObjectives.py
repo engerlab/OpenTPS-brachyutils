@@ -76,7 +76,7 @@ class CEMAbstractDoseFidelityTerm:
         for b, beam in enumerate(derivativePlan):
             beamSubproduct = np.zeros(originalPlan[b].cem.imageArray.shape)
 
-            ctBEV = imageTransform3D.dicomToIECGantry(diff, beam)
+            ctBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0., cropROI=self.roi, cropDim0=True, cropDim1=True, cropDim2=False)
             isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(diff, beam, beam.isocenterPosition)
 
             for layer in beam:
@@ -89,8 +89,12 @@ class CEMAbstractDoseFidelityTerm:
                 for i, pos0 in enumerate(pos0Nozzle):
                     pos1 = pos1Nozzle[i]
 
-                    vIndex = ctBEV.getVoxelIndexFromPosition([pos0, pos1, 0])
-                    beamSubproduct[vIndex[0], vIndex[1]] = productRes[productInd]
+                    vIndex = originalPlan[b].cem.getVoxelIndexFromPosition([pos0, pos1])
+                    try:
+                        beamSubproduct[vIndex[0], vIndex[1]] = productRes[productInd]
+                    except:
+                        # Index outside CEM
+                        pass
                     productInd += 1
 
             if len(res)==0:
@@ -107,7 +111,7 @@ class CEMAbstractDoseFidelityTerm:
 
         for b, derivative in enumerate(derivativeSequence):
             beam = plan.beams[b]
-            diffBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0.)
+            diffBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0., cropROI=self.roi, cropDim0=True, cropDim1=True, cropDim2=False)
 
             derivativeProd = np.sum(derivative.imageArray * diffBEV.imageArray, axis=2)
             derivativeProd = derivativeProd.flatten()

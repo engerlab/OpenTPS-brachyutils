@@ -100,6 +100,15 @@ class RTPlan(PatientData):
             ind += len(beam.spotTimings)
 
     @property
+    def spotXY(self) -> np.ndarray:
+        xy = np.array([])
+
+        for beam in self._beams:
+            xy = np.concatenate((xy, beam.spotXY))
+
+        return xy
+
+    @property
     def meterset(self) -> float:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
 
