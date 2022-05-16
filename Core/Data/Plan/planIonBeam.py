@@ -84,6 +84,14 @@ class PlanIonBeam:
             ind += len(layer.spotTimings)
 
     @property
+    def spotXY(self) -> np.ndarray:
+        xy = np.array([])
+        for layer in self._layers:
+            xy = np.concatenate((xy, layer.spotXY))
+
+        return xy
+
+    @property
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 

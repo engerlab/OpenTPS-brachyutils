@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import numpy as np
 
 from Core.Data.Images.image3D import Image3D
@@ -73,7 +75,7 @@ def crop3DDataAroundBox(data, box, marginInMM=[10, 10, 10]):
 
 
 
-def getBoxAroundROI(ROI):
+def getBoxAroundROI(ROI) -> Sequence[Sequence[float]]:
 
     """
     Get the box around an ROI in scanner coordinates (using the ROI origin and spacing)
