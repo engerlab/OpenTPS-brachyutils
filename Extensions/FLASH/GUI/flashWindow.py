@@ -304,8 +304,7 @@ class UserInputPanel(QWidget):
             if not cem.imageArray is None:
                 [rsROI, cemROI] = cem.computeROIs()
 
-                rsROI = imageTransform3D.intersect(rsROI, ct, fillValue=0, inPlace=True)
-                cemROI = imageTransform3D.intersect(cemROI, ct, fillValue=0, inPlace=True)
+                ct = imageTransform3D.intersect(ct, rsROI, fillValue=-1024, inPlace=False)
 
                 ctArray = ct.imageArray
                 ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
