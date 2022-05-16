@@ -10,12 +10,34 @@ class MCsquareMaterial:
         self.name = name
         self.number = number
         self.sp = sp
+        self.pstarSP = None
         self.radiationLength = radiationLength
 
     @abstractmethod
-    def mcsquareFormatted(self):
+    def mcsquareFormatted(self, materialsOrderedForPrinting):
         raise NotImplementedError()
 
+    @staticmethod
+    def getMaterialList(materialsPath='default'):
+        matList = []
+
+        if materialsPath=='default':
+            materialsPath = os.path.join(str(MCsquare.__path__[0]), 'Materials')
+
+        listPath = os.path.join(materialsPath, 'list.dat')
+
+        with open(listPath, "r") as file:
+            for line in file:
+                lineSplit = line.split()
+
+                if len(lineSplit)<2:
+                    continue
+
+                matList.append({"ID": int(lineSplit[0]), "name": lineSplit[1]})
+
+        return matList
+
+    @staticmethod
     def getFolderFromMaterialNumber(materialNumber, materialsPath='default'):
         if materialsPath=='default':
             materialsPath = os.path.join(str(MCsquare.__path__[0]), 'Materials')
@@ -34,6 +56,7 @@ class MCsquareMaterial:
 
         return None
 
+    @staticmethod
     def getMaterialNumbers(materialsPath='default'):
         if materialsPath=='default':
             materialsPath = os.path.join(str(MCsquare.__path__[0]), 'Materials')
@@ -52,14 +75,16 @@ class MCsquareMaterial:
 
         return materialNumbers
 
-    def write(self, folderPath):
+    def write(self, folderPath, materialNamesOrderedForPrinting):
         folderPath = os.path.join(folderPath, self.name)
         propertiesFile = os.path.join(folderPath, 'Material_Properties.dat')
         spFile = os.path.join(folderPath, 'G4_Stop_Pow.dat')
+        spFilePSTAR = os.path.join(folderPath, 'PSTAR_Stop_Pow.dat')
 
         os.makedirs(folderPath, exist_ok=True)
 
         with open(propertiesFile, 'w') as f:
-            f.write(self.mcsquareFormatted())
+            f.write(self.mcsquareFormatted(materialNamesOrderedForPrinting))
 
         self.sp.write(spFile)
+        self.pstarSP.write(spFilePSTAR)

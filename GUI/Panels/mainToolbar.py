@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QToolBox, QWidget
 
 from Core.event import Event
 from Extensions.FLASH.flashPanel import FlashPanel
+from GUI.Panels.doseComputationPanel import DoseComputationPanel
 from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
@@ -46,6 +47,7 @@ class MainToolbar(QToolBox):
         # initialize toolbox panels
         patientDataPanel = PatientDataPanel(self._viewController)
         roiPanel = ROIPanel(self._viewController)
+        dosePanel = DoseComputationPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
         breathingSignalPanel = BreathingSignalPanel(self._viewController)
         xRayProjPanel = DRRPanel(self._viewController)
@@ -53,6 +55,8 @@ class MainToolbar(QToolBox):
         item = self.ToolbarItem(patientDataPanel, 'Patient data')
         self.showItem(item)
         item = self.ToolbarItem(roiPanel, 'ROI')
+        self.showItem(item)
+        item = self.ToolbarItem(dosePanel, 'Dose computation')
         self.showItem(item)
         item = self.ToolbarItem(scriptingPanel, 'Scripting')
         self.showItem(item)
