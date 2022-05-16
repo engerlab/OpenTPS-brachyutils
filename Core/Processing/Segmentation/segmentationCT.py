@@ -1,17 +1,20 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.roiMask import ROIMask
+import matplotlib.pyplot as plt
+# import matplotlib as mpl
+# mpl.use('TkAgg')
+
 import Core.Processing.Segmentation.segmentation as segmentation
 import Core.Processing.ImageProcessing.sitkImageProcessing as stikImageProcessing
 
 logger = logging.getLogger(__name__)
 
 
-def compute3DStructuralElement(radiusXYZ, spacing = [1,1,1]):
+def compute3DStructuralElement(radiusXYZ, spacing=[1,1,1]):
     radiusXYZ = np.divide(radiusXYZ,spacing)
-    filt = np.zeros((np.ceil(2*radiusXYZ[0]).astype(int)+1, np.ceil(2*radiusXYZ[1]).astype(int)+1, np.ceil(2*radiusXYZ[2]).astype(int)+1))
-    center = (np.ceil(2*radiusXYZ[0])/2, np.ceil(2*radiusXYZ[1])/2, np.ceil(2*radiusXYZ[2])/2)
+    filt = np.zeros((2*np.ceil(radiusXYZ[0]).astype(int)+1, 2*np.ceil(radiusXYZ[1]).astype(int)+1, 2*np.ceil(radiusXYZ[2]).astype(int)+1))
+    center = (np.ceil(radiusXYZ[0]), np.ceil(radiusXYZ[1]), np.ceil(radiusXYZ[2]))
     x = np.arange(filt.shape[1])
     y = np.arange(filt.shape[0])
     z = np.arange(filt.shape[2])
@@ -28,14 +31,15 @@ class SegmentationCT():
 
         # Air detection
         body = segmentation.applyThreshold(self.ct,-750)
-        temp = body.copy()
 
         # Table detection
+        temp = body.copy()
         temp.open(filt = compute3DStructuralElement([1,30,1],spacing=body.spacing))
         temp._imageArray = np.logical_and(body.imageArray, np.logical_not(temp.imageArray))
         temp.open(filt = compute3DStructuralElement([3,1,3],spacing=body.spacing))
         tablePosition = np.max([0, np.argmax(temp._imageArray.sum(axis=2).sum(axis=0))-1])
-        body._imageArray[:, tablePosition:, :] = False
+        if tablePosition>body.gridSize[1]/2:
+            body._imageArray[:, tablePosition:, :] = False
 
         # Body definition
         temp = body.copy()
@@ -44,12 +48,11 @@ class SegmentationCT():
         body._imageArray = np.logical_and(np.logical_not(body.imageArray), np.logical_not(temp.imageArray))
         labels = stikImageProcessing.connectComponents(body)
         body._imageArray = labels.imageArray != 1
-        body.open(filt=compute3DStructuralElement([3, 3, 0], spacing=body.spacing))
+        body.open(filt=compute3DStructuralElement([3, 5, 1], spacing=body.spacing))
         labels = stikImageProcessing.connectComponents(body)
         body._imageArray = labels.imageArray == 1
 
         return body
-
 
     def segmentBones(self, body=None):
 
@@ -57,7 +60,6 @@ class SegmentationCT():
         bones.close(filt=compute3DStructuralElement([2, 2, 2], spacing=bones.spacing))
         bones.open(filt=compute3DStructuralElement([3, 3, 3], spacing=bones.spacing))
         return bones
-
 
     def segmentLungs(self, body=None):
 

@@ -1,19 +1,28 @@
 import copy
 from math import pi, cos, sin
-from typing import Sequence, Optional
+from typing import Sequence, Optional, Union
 
 import numpy as np
 from numpy import linalg
 
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
+from Core.Data.roiContour import ROIContour
+
 try:
-    from Core.Processing.ImageProcessing import sitkImageProcessing
+    from Core.Processing.ImageProcessing import sitkImageProcessing, crop3D
 
     resize = sitkImageProcessing.resize
 except:
     print('No module SimpleITK found')
 
+
+def add(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+    raise NotImplementedError
+
+def subtract(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+    raise NotImplementedError
 
 def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
     if not inPlace:
@@ -24,13 +33,23 @@ def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:f
 
     return image
 
-def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
+def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
+                     cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     tform = _forwardDicomToIECGantry(image, beam)
 
     tform = linalg.inv(tform)
 
     outImage = image.__class__.fromImage3D(image)
-    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
+
+    outputBox = None
+    if not (cropROI is None):
+        outputBox = sitkImageProcessing.extremePointsAfterTransform(image, tform)
+        box = crop3D.getBoxAroundROI(cropROI)
+        if cropDim0:
+            outputBox[0] = box[0]
+            outputBox[1] = box[1]
+
+    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage
 

@@ -1,6 +1,8 @@
 import sys
-sys.path.append('../..')
 
+sys.path.append('..')
+
+from Core.Data.dvh import DVH
 import os
 from Core.IO.dataLoader import listAllFiles, loadAllData
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
@@ -45,7 +47,7 @@ MCSquarePath = os.path.join(openTPS_path, 'Core/Processing/DoseCalculation/MCsqu
 doseCalculator = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 doseCalculator.beamModel = beamModel
-doseCalculator.nbPrimaries = 2e7
+doseCalculator.nbPrimaries = 1e7
 scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 
 calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
@@ -68,3 +70,12 @@ doseImage = doseCalculator.computeDose(ct, plan3)
 
 # Export dose
 exportImageMHD('/data/vhamaide/liver/patient_0/MidP_CT/test_dose.mhd', doseImage)
+
+# DVH
+target_name = 'MidP CT GTV'
+target_contour = struct.getContourByName(target_name)
+dvh = DVH(target_contour, doseImage)
+print("D95",dvh._D95)
+print("D5",dvh._D5)
+print("Dmax",dvh._Dmax)
+print("Dmin",dvh._Dmin)

@@ -44,7 +44,7 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False):
             for idx in range(0, len(bytes_out), max_bytes):
                 f_out.write(bytes_out[idx:idx + max_bytes])
 
-    print('Serialized data structure saved in drive')
+    print('Serialized data structure saved in drive:', savingPath + ".p")
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -70,6 +70,7 @@ def loadDataStructure(filePath):
     print('Serialized data list of', len(data), 'items loaded')
     for itemIndex, item in enumerate(data):
         print(itemIndex + 1, type(item))
+
     return data
 
 
