@@ -42,8 +42,6 @@ class CEM(AbstractCTObject, Image2D):
         newCEM.imageArray = np.zeros(imageBEV.gridSize[0:-1])
 
         newCEM._targetMask = targetMask
-        print("self._targetROI")
-        print(newCEM._targetMask)
 
         return newCEM
 
@@ -160,7 +158,7 @@ class BiComponentCEM(CEM):
     @property
     def origin(self) -> np.ndarray:
         return self._simpleCEM.origin
-    
+
     @property
     def spacing(self) -> np.ndarray:
         return self._simpleCEM.spacing

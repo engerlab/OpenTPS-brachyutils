@@ -1,5 +1,5 @@
-
-from typing import Tuple
+import copy
+from typing import Tuple, Sequence
 
 import numpy as np
 
@@ -27,15 +27,15 @@ class CEMOptimizer:
             self.objectiveWeights = []
             self.objectiveTerms:list[CEMAbstractDoseFidelityTerm] = []
 
-            self._cemArray = None
+            self._currentCEMs = None
 
         @property
-        def cemArray(self):
-            return np.array(self._cemArray)
+        def cems(self) -> Sequence[BiComponentCEM]:
+            return self._currentCEMs
 
-        @cemArray.setter
-        def cemArray(self, cemVals):
-            self._cemArray = np.array(cemVals)
+        @cems.setter
+        def cems(self, cems:Sequence[BiComponentCEM]):
+            self._currentCEMs = cems
 
         def kill(self):
             for objective in self.objectiveTerms:
@@ -48,23 +48,33 @@ class CEMOptimizer:
         def getValue(self, weights:np.ndarray) -> float:
             val = 0
             for i, objectiveTerm in enumerate(self.objectiveTerms):
-                val += self.objectiveWeights[i] * objectiveTerm.getValue(weights, self._cemArray)
+                val += self.objectiveWeights[i] * objectiveTerm.getValue(weights, self._currentCEMs)
 
             return val
 
         def getDerivative(self, weights:np.ndarray) -> np.ndarray:
             val = 0.
             for i, objectiveTerm in enumerate(self.objectiveTerms):
-                val += self.objectiveWeights[i] * objectiveTerm.getWeightDerivative(weights, self._cemArray)
+                val += self.objectiveWeights[i] * objectiveTerm.getWeightDerivative(weights, self._currentCEMs)
 
             return val
 
-        def getCEMDerivative(self, weighs:np.ndarray) -> np.ndarray:
-            val = 0.
+        def getCEMDerivative(self, weighs:np.ndarray) -> Sequence[BiComponentCEM]:
+            outCEMs = []
+
             for i, objectiveTerm in enumerate(self.objectiveTerms):
-                val += self.objectiveWeights[i] * objectiveTerm.getCEMDerivative(weighs, self._cemArray)
+                cems = objectiveTerm.getCEMDerivative(weighs, self._currentCEMs)
 
-            return val
+                for j, cem in enumerate(cems):
+                    cem = copy.deepcopy(cem)
+                    cem.imageArray = self.objectiveWeights[i]*cem.imageArray
+
+                    if len(outCEMs)<len(cems):
+                        outCEMs.append(cem)
+                    else:
+                        outCEMs[j].imageArray += cem.imageArray
+
+            return outCEMs
 
     def __init__(self):
         self.maxIterations = 3
@@ -102,17 +112,17 @@ class CEMOptimizer:
         self._initializeCEM()
         self._initializePlan()
 
-        cemVal = self._getCEMValFromPlan()
+        cems = [beam.cem for beam in self._plan]
 
         try:
-            spotWeights, cemVal = self._gd(cemVal)
+            spotWeights, cems = self._gd(cems)
         except Exception as e:
             raise e from e
         finally:
             self._abort = False
 
         self._plan.spotWeights = spotWeights
-        self._setCEMValInPlan(cemVal)
+        self._setCEMsInPlan(cems)
 
     def _initializeCEM(self):
         for beam in self._plan:
@@ -132,26 +142,10 @@ class CEMOptimizer:
 
             beam.cem.imageArray = cemArray
 
-    def _getCEMValFromPlan(self) -> np.ndarray:
-        cemVal = np.array([])
-
-        for beam in self._plan:
-            cemArray = beam.cem.imageArray
-            if len(cemVal)==0:
-                cemVal = cemArray.flatten()
-            else:
-                cemVal = np.concatenate((cemVal, cemArray.flatten()))
-
-        return cemVal
-
-    def _setCEMValInPlan(self, cemThickness:np.ndarray):
-        ind = 0
-        for beam in self._plan:
-            cemArray = beam.cem.imageArray
-            cemBeamVal = cemThickness[ind:ind + cemArray.shape[0] * cemArray.shape[1]]
-            beam.cem.imageArray = np.reshape(cemBeamVal, (cemArray.shape[0], cemArray.shape[1]))
-
-            ind += cemArray.shape[0]*cemArray.shape[1]
+    def _setCEMsInPlan(self, cems:Sequence[BiComponentCEM]):
+        for b, cem in enumerate(cems):
+            beam = self._plan[b]
+            beam.cem.imageArray = cem.imageArray
 
     def _meanWETOfTarget(self, beam):
         rsp = RSPImage.fromCT(self._ct, self.ctCalibration)
@@ -171,16 +165,16 @@ class CEMOptimizer:
 
         self._planInitializer.intializePlan(self.spotSpacing, targetMargin=0.)
 
-    def _gd(self, x:np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _gd(self, currentCEMs:Sequence[BiComponentCEM]) -> Tuple[np.ndarray, Sequence[BiComponentCEM]]:
         doseCalculator:CEMDoseCalculator = self._objectives.objectiveTerms[0].doseCalculator
 
-        self._objectives.cemArray = x
+        self._objectives.cems = currentCEMs
         PlanOptimizer.run(self._objectives, self._plan)
 
         fVal = self._objectives.getValue(self._plan.spotWeights)
         self.fValEvent.emit((0, fVal))
         self.planUpdateEvent.emit(self._plan)
-        doseImage = doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
+        doseImage = doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cems)
         self.doseUpdateEvent.emit(doseImage)
 
         for i in range(self.maxIterations):
@@ -188,22 +182,22 @@ class CEMOptimizer:
                 raise AbortedException()
 
             fValPrev = fVal
-            xPrev = x
+            prevCEMs = copy.deepcopy(currentCEMs)
             spotWeightsPrev = np.array(self._plan.spotWeights)
 
             self._iteration = i
 
             direction = self._objectives.getCEMDerivative(self._plan.spotWeights)
 
-            x = x + self._maxStep * direction / np.max(np.abs(direction))
+            currentCEMs = self._addCEMs(currentCEMs, direction, alpha1=self._maxStep/self._maxCEMVal(direction))
 
-            self._objectives.cemArray = x
+            self._objectives.cems = currentCEMs
             PlanOptimizer.run(self._objectives, self._plan)
 
             fVal = self._objectives.getValue(self._plan.spotWeights)
             self.fValEvent.emit((self._iteration, fVal))
             self.planUpdateEvent.emit(self._plan)
-            doseImage = doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cemArray)
+            doseImage = doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cems)
             self.doseUpdateEvent.emit(doseImage)
 
             if self._iteration>2 and (fValPrev - fVal)<self.absTol:
@@ -211,13 +205,31 @@ class CEMOptimizer:
                 if doseCalculator.derivativeMode==doseCalculator.DerivativeModes.ANALYTICAL:
                     doseCalculator.derivativeMode = doseCalculator.DerivativeModes.MC
                     self._plan.spotWeights = spotWeightsPrev
-                    self._objectives.cemArray = xPrev
+                    self._objectives.cems = prevCEMs
 
                     fVal = fValPrev
-                    x = xPrev
+                    currentCEMs = prevCEMs
 
                     self._maxStep = self._maxStep/2.
                 else:
-                    return spotWeightsPrev, xPrev
+                    return spotWeightsPrev, prevCEMs
 
-        return self._plan.spotWeights, x
+        return self._plan.spotWeights, currentCEMs
+
+    def _addCEMs(self, cems0:Sequence[BiComponentCEM], cems1:Sequence[BiComponentCEM], alpha1:float=1.) -> Sequence[BiComponentCEM]:
+        outCEMs = []
+
+        for i, cem in enumerate(cems0):
+            cem = copy.deepcopy(cem)
+            cem.imageArray += alpha1 * cems1[i].imageArray
+            outCEMs.append(cem)
+
+        return outCEMs
+
+    def _maxCEMVal(self, cems:Sequence[BiComponentCEM]) -> float:
+        maxVal = 0.
+
+        for cem in cems:
+            maxVal = np.max((maxVal, np.abs(cem.imageArray).max()))
+
+        return maxVal

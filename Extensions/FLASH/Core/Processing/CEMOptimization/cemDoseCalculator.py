@@ -12,6 +12,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
+from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Processing.DoseCalculation.analyticalNoScattering import AnalyticalNoScattering
 from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCalculator import \
     FluenceBasedMCsquareDoseCalculator, Beamlets
@@ -54,59 +55,66 @@ class CEMDoseCalculator:
     def kill(self):
         self._doseCalculator.kill()
 
-    def computeDose(self, weights:np.ndarray, cemThickness:np.ndarray) -> DoseImage:
-        if self._doseMustBeRecomputed(weights, cemThickness):
-            self.computeBeamlets(cemThickness)
+    def computeDose(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> DoseImage:
+        if self._doseMustBeRecomputed(weights, cems):
+            self.computeBeamlets(cems)
             self._updateDose(weights)
 
         return self._dose
 
-    def _doseMustBeRecomputed(self, weights:np.ndarray, cemThickness:np.ndarray):
+    def _doseMustBeRecomputed(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]):
         if len(self._weightsForBeamlets)==0:
             return True
 
-        return not(np.allclose(weights, self._weightsForBeamlets, atol=0.1)) or self._beamletsMustBeRecomputed(cemThickness)
+        return not(np.allclose(weights, self._weightsForBeamlets, atol=0.1)) or self._beamletsMustBeRecomputed(cems)
 
-    def _beamletsMustBeRecomputed(self, cemThickness:np.ndarray) -> bool:
+    def _beamletsMustBeRecomputed(self, cems:Sequence[BiComponentCEM]) -> bool:
         if len(self._cemThicknessForBeamlets)==0:
             return True
 
-        return not np.allclose(cemThickness, self._cemThicknessForBeamlets, atol=0.1)
+        return not np.allclose(self._flattenCEMs(cems), self._cemThicknessForBeamlets, atol=0.1)
+
+    def _flattenCEMs(self, cems:Sequence[BiComponentCEM]):
+        cemVals = None
+
+        for cem in cems:
+            if cemVals is None:
+                cemVals = cem.imageArray.flatten()
+            else:
+                cemVals = np.concatenate(cem.imageArray.flatten())
+
+        return cemVals
 
     def _updateDose(self, weights:np.ndarray):
         self._weightsForBeamlets = np.array(weights)
         self._beamlets.beamletWeights = self._weightsForBeamlets
         self._dose = self._beamlets.toDoseImage()
 
-    def computeBeamlets(self, cemThickness: np.ndarray) -> SparseBeamlets:
-        if self._beamletsMustBeRecomputed(cemThickness):
-            self._updateCTForBeamletsWithCEM(cemThickness)
+    def computeBeamlets(self, cems:Sequence[BiComponentCEM]) -> SparseBeamlets:
+        if self._beamletsMustBeRecomputed(cems):
+            self._updateCTForBeamletsWithCEM(cems)
             self._updateBeamlets()
+            self._cemThicknessForBeamlets = np.array(self._flattenCEMs(cems))
 
         return self._beamlets
 
-    def _updateCTForBeamletsWithCEM(self, cemThickness:np.ndarray):
+    def _updateCTForBeamletsWithCEM(self, cems:Sequence[BiComponentCEM]):
         self._ctCEFForBeamlets = CTImage.fromImage3D(self.ct)
 
-        ind = 0
-        for beam in self.plan:
-            beam.cem.patient = None # We do not want to deepcopy patient field!
-            cem = copy.deepcopy(beam.cem)
+        for b, cem in enumerate(cems):
+            beam = self.plan[b]
 
-            cemArray = beam.cem.imageArray
-            cemBeamVal = cemThickness[ind:ind+cemArray.shape[0]*cemArray.shape[1]]
-            beam.cem.imageArray = np.reshape(cemBeamVal, (cemArray.shape[0], cemArray.shape[1]))
+            beam.cem.imageArray = cem.imageArray
 
             [rsROI, cemROI] = beam.cem.computeROIs()
+
+            imageTransform3D.intersect(rsROI, self._ctCEFForBeamlets, fillValue=0, inPlace=True)
+            imageTransform3D.intersect(cemROI, self._ctCEFForBeamlets, fillValue=0, inPlace=True)
 
             ctArray = self._ctCEFForBeamlets.imageArray
             ctArray[cemROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
             ctArray[rsROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(cem.rangeShifterRSP, energy=100.)
             self._ctCEFForBeamlets.imageArray = ctArray
-
-            ind += cemArray.shape[0]*cemArray.shape[1]
-
-        self._cemThicknessForBeamlets = np.array(cemThickness)
 
     def _updateBeamlets(self):
         self._doseCalculator.beamModel = self.beamModel
@@ -115,32 +123,32 @@ class CEMDoseCalculator:
 
         self._beamlets = self._doseCalculator.computeBeamlets(self._ctCEFForBeamlets, self.plan, self.roi)
 
-    def computeDerivative(self, weights:np.ndarray, cemThickness:np.ndarray) -> Union[Beamlets, Sequence[DoseImage]]:
+    def computeDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> Union[Beamlets, Sequence[DoseImage]]:
         if self.derivativeMode==self.DerivativeModes.ANALYTICAL:
-            return self.computeAnalyticalDerivative(weights, cemThickness)
+            return self.computeAnalyticalDerivative(weights, cems)
         elif self.derivativeMode==self.DerivativeModes.MC:
-            return self.computeBeamletDerivative(weights, cemThickness)
+            return self.computeBeamletDerivative(weights, cems)
         else:
             raise ValueError('derivativeMode is incorrect')
 
-    def computeAnalyticalDerivative(self, weights:np.ndarray, cemThickness:np.ndarray) -> Sequence[DoseImage]:
-        if self._derivativeMustBeRecomputed(weights, cemThickness):
-            self._cemThicknessForDerivative = np.array(cemThickness)
+    def computeAnalyticalDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> Sequence[DoseImage]:
+        if self._derivativeMustBeRecomputed(weights, cems):
+            self._cemThicknessForDerivative = self._flattenCEMs(cems)
             self._weightsForDerivative = np.array(weights)
-            self._updateAnalyticalDerivative()
+            self._updateAnalyticalDerivative(cems)
 
         return self._analyticalDerivative
 
-    def _derivativeMustBeRecomputed(self, weights:np.ndarray, cemThickness:np.ndarray) -> bool:
+    def _derivativeMustBeRecomputed(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> bool:
         if len(self._cemThicknessForDerivative)==0:
             return True
 
         if len(self._weightsForDerivative)==0:
             return True
 
-        return not(np.allclose(cemThickness, self._cemThicknessForDerivative, atol=0.1) and np.allclose(weights, self._weightsForDerivative, atol=0.1))
+        return not(np.allclose(self._flattenCEMs(cems), self._cemThicknessForDerivative, atol=0.1) and np.allclose(weights, self._weightsForDerivative, atol=0.1))
 
-    def _updateAnalyticalDerivative(self):
+    def _updateAnalyticalDerivative(self, cems:Sequence[BiComponentCEM]):
         deltaR = 0.1
 
         self._analyticalCalculator.beamModel = self.beamModel
@@ -149,13 +157,9 @@ class CEMDoseCalculator:
         plan = copy.deepcopy(self.plan)
         plan.spotWeights = self._weightsForDerivative
 
-        ind = 0
-        for beam in plan:
-            cemArray = beam.cem.imageArray
-            cemBeamVal = self._cemThicknessForDerivative[ind:ind+cemArray.shape[0]*cemArray.shape[1]]
-            beam.cem.imageArray = np.reshape(cemBeamVal, (cemArray.shape[0], cemArray.shape[1]))
-
-            ind += cemArray.shape[0]*cemArray.shape[1]
+        for b, cem in enumerate(cems):
+            beam = plan[b]
+            beam.cem.imageArray = cem.imageArray
 
         doseSequence = self._analyticalCalculator.computeDosePerBeam(self.ct, plan, self.roi)
 
@@ -171,11 +175,15 @@ class CEMDoseCalculator:
 
         self._analyticalDerivative = derivSequence
 
-    def computeBeamletDerivative(self, weights:np.ndarray, cemThickness: np.ndarray) -> Beamlets:
-        if self._firstTimeBeamletDerivative or not (np.array_equal(cemThickness, self._cemThicknessForDerivative) and np.array_equal(weights, self._weightsForDerivative)):
-            self._cemThicknessForDerivative = cemThickness
+    def computeBeamletDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> Beamlets:
+        flattenedCEMs = self._flattenCEMs(cems)
+
+        if self._firstTimeBeamletDerivative or not (np.array_equal(flattenedCEMs, self._cemThicknessForDerivative)
+                                                    and np.array_equal(weights, self._weightsForDerivative)):
             self._weightsForDerivative = weights
+            self._updateCTForBeamletsWithCEM(cems)
             self._updateBeamletDerivative()
+            self._cemThicknessForDerivative = flattenedCEMs
 
             self._firstTimeBeamletDerivative = False
 

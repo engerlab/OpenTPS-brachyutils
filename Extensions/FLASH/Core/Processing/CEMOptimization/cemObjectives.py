@@ -7,6 +7,7 @@ import numpy as np
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
+from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Processing.DoseCalculation.fluenceBasedMCsquareDoseCalculator import Beamlets
 
 
@@ -38,26 +39,26 @@ class CEMAbstractDoseFidelityTerm:
         self._doseCalculator = dc
 
     @abstractmethod
-    def getValue(self, weights: np.ndarray, cemThickness: np.ndarray) -> float:
+    def getValue(self, weights: np.ndarray, cems:Sequence[BiComponentCEM]) -> float:
         raise NotImplementedError()
 
     @abstractmethod
-    def getCEMDerivative(self, weights:np.ndarray, cemVals:np.ndarray) -> np.ndarray:
+    def getCEMDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> np.ndarray:
         raise NotImplementedError()
 
     @abstractmethod
-    def getWeightDerivative(self, weights:np.ndarray, cemVals:np.ndarray) -> np.ndarray:
+    def getWeightDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> np.ndarray:
         raise NotImplementedError()
 
-    def _multiplyWithDerivative(self, diff:DoseImage, derivative:Union[Beamlets, Sequence[DoseImage]]) -> np.ndarray:
+    def _multiplyWithDerivative(self, diff:DoseImage, derivative:Union[Beamlets, Sequence[DoseImage]], alpha:float=1.) -> Sequence[BiComponentCEM]:
         if isinstance(derivative, Beamlets):
-            return self._multiplyWithDerivative_Beamlets(diff, derivative)
+            return self._multiplyWithDerivative_Beamlets(diff, derivative, alpha)
         elif isinstance(derivative, Sequence):
-            return self._multiplyWithDerivative_Sequence(diff, derivative)
+            return self._multiplyWithDerivative_Sequence(diff, derivative, alpha)
         else:
             raise ValueError('Derivative cannot be of type ' + str(type(derivative)))
 
-    def _multiplyWithDerivative_Beamlets(self, diff:DoseImage, derivative:Beamlets) -> np.ndarray:
+    def _multiplyWithDerivative_Beamlets(self, diff:DoseImage, derivative:Beamlets, alpha:float=1.) -> Sequence[BiComponentCEM]:
         diffVal = diff.imageArray
 
         diffVal = np.flip(diffVal, 0)
@@ -70,13 +71,12 @@ class CEMAbstractDoseFidelityTerm:
         originalPlan = self.doseCalculator.plan
 
         productRes = diffVal @ derivativeMat
-        res = np.array([])
+        outCEMs = []
 
         productInd = 0
         for b, beam in enumerate(derivativePlan):
             beamSubproduct = np.zeros(originalPlan[b].cem.imageArray.shape)
 
-            ctBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0., cropROI=self.roi, cropDim0=True, cropDim1=True, cropDim2=False)
             isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(diff, beam, beam.isocenterPosition)
 
             for layer in beam:
@@ -97,15 +97,14 @@ class CEMAbstractDoseFidelityTerm:
                         pass
                     productInd += 1
 
-            if len(res)==0:
-                res = beamSubproduct.flatten()
-            else:
-                res = np.concatenate((res, beamSubproduct.flatten()))
+            outCEM = copy.deepcopy(originalPlan[b].cem)
+            outCEM.imageArray = beamSubproduct*alpha
+            outCEMs.append(outCEM)
 
-        return res
+        return outCEMs
 
-    def _multiplyWithDerivative_Sequence(self, diff:DoseImage, derivativeSequence:Sequence[DoseImage]) -> np.ndarray:
-        res = np.array([])
+    def _multiplyWithDerivative_Sequence(self, diff:DoseImage, derivativeSequence:Sequence[DoseImage], alpha:float=1.) -> Sequence[BiComponentCEM]:
+        outCEMs = []
 
         plan = self.doseCalculator.plan
 
@@ -116,12 +115,12 @@ class CEMAbstractDoseFidelityTerm:
             derivativeProd = np.sum(derivative.imageArray * diffBEV.imageArray, axis=2)
             derivativeProd = derivativeProd.flatten()
 
-            if len(res)==0:
-                res = derivativeProd
-            else:
-                res = np.concatenate((res, derivativeProd))
+            derivativeProd = np.reshape(derivativeProd, plan[b].cem.gridSize)
+            outCEM = copy.deepcopy(plan[b].cem)
+            outCEM.imageArray = derivativeProd*alpha
+            outCEMs.append(outCEM)
 
-        return res
+        return outCEMs
 
 
 class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
@@ -144,8 +143,8 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
     def _roiVoxels(self):
         return np.count_nonzero(self.roi.imageArray.astype(int))
 
-    def getValue(self, weights:np.ndarray, cemThickness: np.ndarray) -> float:
-        doseImage = self.doseCalculator.computeDose(weights, cemThickness)
+    def getValue(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> float:
+        doseImage = self.doseCalculator.computeDose(weights, cems)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
@@ -157,8 +156,8 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
 
         return val
 
-    def getCEMDerivative(self, weights:np.ndarray, cemVals:np.ndarray) -> np.ndarray:
-        doseImage = self.doseCalculator.computeDose(weights, cemVals)
+    def getCEMDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> Sequence[BiComponentCEM]:
+        doseImage = self.doseCalculator.computeDose(weights, cems)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
@@ -168,13 +167,12 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
         diffImage = copy.deepcopy(doseImage)
         diffImage.imageArray = diff
 
-        diff = self._multiplyWithDerivative(diffImage, self.doseCalculator.computeDerivative(weights, cemVals))
-        diff *= 2. / self._roiVoxels
+        diff = self._multiplyWithDerivative(diffImage, self.doseCalculator.computeDerivative(weights, cems), alpha=-2./self._roiVoxels)
 
         return diff
 
-    def getWeightDerivative(self, weights:np.ndarray, cemVals:np.ndarray) -> np.ndarray:
-        doseImage = self.doseCalculator.computeDose(weights, cemVals)
+    def getWeightDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> np.ndarray:
+        doseImage = self.doseCalculator.computeDose(weights, cems)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
@@ -186,7 +184,7 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
         diff = np.maximum(0., dose - self.maxDose)
         diff = np.transpose(diff)
 
-        beamlets = self.doseCalculator.computeBeamlets(cemVals)
+        beamlets = self.doseCalculator.computeBeamlets(cems)
 
         diff = diff @ beamlets.toSparseMatrix()
         diff *= 2. / self._roiVoxels
@@ -216,8 +214,8 @@ class DoseMinObjective(CEMAbstractDoseFidelityTerm):
     def _roiVoxels(self):
         return np.count_nonzero(self.roi.imageArray)
 
-    def getValue(self, weights:np.ndarray, cemThickness:np.ndarray) -> float:
-        doseImage = self.doseCalculator.computeDose(weights, cemThickness)
+    def getValue(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> float:
+        doseImage = self.doseCalculator.computeDose(weights, cems)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
@@ -228,8 +226,8 @@ class DoseMinObjective(CEMAbstractDoseFidelityTerm):
 
         return val
 
-    def getCEMDerivative(self, weights:np.ndarray, cemVals:np.ndarray) -> np.ndarray:
-        doseImage = self.doseCalculator.computeDose(weights, cemVals)
+    def getCEMDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> Sequence[BiComponentCEM]:
+        doseImage = self.doseCalculator.computeDose(weights, cems)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
@@ -239,13 +237,12 @@ class DoseMinObjective(CEMAbstractDoseFidelityTerm):
         diffImage = copy.deepcopy(doseImage)
         diffImage.imageArray = diff
 
-        diff = self._multiplyWithDerivative(diffImage, self.doseCalculator.computeDerivative(weights, cemVals))
-        diff *= -2. / self._roiVoxels
+        diff = self._multiplyWithDerivative(diffImage, self.doseCalculator.computeDerivative(weights, cems), alpha=-2./self._roiVoxels)
 
         return diff
 
-    def getWeightDerivative(self, weights:np.ndarray, cemVals:np.ndarray) -> np.ndarray:
-        doseImage = self.doseCalculator.computeDose(weights, cemVals)
+    def getWeightDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> np.ndarray:
+        doseImage = self.doseCalculator.computeDose(weights, cems)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
@@ -257,7 +254,7 @@ class DoseMinObjective(CEMAbstractDoseFidelityTerm):
         diff = np.maximum(0., self.minDose-dose)
         diff = np.transpose(diff)
 
-        beamlets = self.doseCalculator.computeBeamlets(cemVals)
+        beamlets = self.doseCalculator.computeBeamlets(cems)
 
         diff = diff @ beamlets.toSparseMatrix()
         diff *= -2. / self._roiVoxels
