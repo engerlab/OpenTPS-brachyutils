@@ -12,7 +12,8 @@ from Core.event import Event
 from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
-from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import CEMOptimizer, CEMDoseCalculator
+from Extensions.FLASH.Core.Processing.CEMOptimization.cemDoseCalculator import CEMDoseCalculator
+from Extensions.FLASH.Core.Processing.CEMOptimization.cemOptimizer import CEMOptimizer
 from Extensions.FLASH.Core.Processing.RangeEnergy import energyToRange
 
 
@@ -164,7 +165,7 @@ class SingleBeamCEMOptimizationWorkflow():
     def _initializeCEM(self):
         # Initialize CEM
         beam = self._plan.beams[0]
-        cem = BiComponentCEM.fromBeam(self._ctWithCEM, beam, cropROI=self._globalROI)
+        cem = BiComponentCEM.fromBeam(self._ctWithCEM, beam, targetMask=self._targetROI)
         cem.cemRSP = self.cemRSP
         cem.rangeShifterRSP = self.rangeShifterRSP
         beam.cem = cem
@@ -185,7 +186,7 @@ class SingleBeamCEMOptimizationWorkflow():
 
         self.cemOptimizer.maxIterations = 25
         self.cemOptimizer.spotSpacing = self.spotSpacing
-        self.cemOptimizer.targetMask = self._targetROI # TODO !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.cemOptimizer.targetMask = self._targetROI
         self.cemOptimizer.absTol = 1.
         self.cemOptimizer.ctCalibration = self.ctCalibration
 

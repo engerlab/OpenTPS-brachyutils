@@ -27,10 +27,11 @@ class CEM(AbstractCTObject, Image2D):
         self._referenceImage = None
         self._referenceImageBEV = None # _referenceImage in BEV. Nice to have it cached since computing BEV is not neglectible
         self._referenceBeam = None
+        self._targetMask = None
 
     @classmethod
-    def fromBeam(cls, ct:Image3D, beam:PlanIonBeam, cropROI=None):
-        imageBEV = imageTransform3D.dicomToIECGantry(ct, beam, cropROI=cropROI, cropDim0=True, cropDim1=True, cropDim2=False)
+    def fromBeam(cls, ct:Image3D, beam:PlanIonBeam, targetMask=None):
+        imageBEV = imageTransform3D.dicomToIECGantry(ct, beam, cropROI=targetMask, cropDim0=True, cropDim1=True, cropDim2=False)
 
         newCEM = cls()
         newCEM._referenceImage = CTImage.fromImage3D(ct)
@@ -40,11 +41,48 @@ class CEM(AbstractCTObject, Image2D):
         newCEM.spacing = imageBEV.spacing[0:-1]
         newCEM.imageArray = np.zeros(imageBEV.gridSize[0:-1])
 
+        newCEM._targetMask = targetMask
+        print("self._targetROI")
+        print(newCEM._targetMask)
+
         return newCEM
+
+    @property
+    def targetMask(self) -> ROIMask:
+        return self._targetMask
 
     @property
     def referenceBeam(self):
         return self._referenceBeam
+
+    def computeBoundingBox(self) -> ROIMask:
+        beam = self._referenceBeam
+        referenceImageBEV = Image3D.fromImage3D(self._referenceImageBEV)
+        referenceImage = self._referenceImage
+
+        referenceImageBEV.origin = (self.origin[0], self.origin[1], referenceImageBEV.origin[2])
+        data = np.zeros((self.imageArray.shape[0], self.imageArray.shape[1], referenceImageBEV.imageArray.shape[2]))
+        referenceImageBEV.imageArray = data
+
+        cemPixelsInDim2 = self._cemPixelsInDim2(referenceImage, referenceImageBEV, beam)
+        availableSpaceInPixels = self._availableSpaceInPixels()
+
+        cemPixelsInDim2 = cemPixelsInDim2.max()
+        data[:, :, availableSpaceInPixels-cemPixelsInDim2:availableSpaceInPixels] = 1
+
+        roiBEV = ROIMask.fromImage3D(referenceImageBEV)
+        roiBEV.imageArray = data
+        cropROI = ROIMask.fromImage3D(referenceImage)
+        cropROI.imageArray = np.ones(cropROI.imageArray.shape).astype(bool)
+        roi = imageTransform3D.iecGantryToDicom(roiBEV, beam)
+
+        imageTransform3D.intersect(roi, referenceImage, inPlace=True, fillValue=0)
+
+        imageArray = roi.imageArray
+        imageArray[imageArray <= 0.5] = 0
+        roi.imageArray = imageArray.astype(bool)
+
+        return roi
 
     def computeROI(self) -> ROIMask:
         beam = self._referenceBeam
@@ -122,23 +160,19 @@ class BiComponentCEM(CEM):
     @property
     def origin(self) -> np.ndarray:
         return self._simpleCEM.origin
-
-    @origin.setter
-    def origin(self, origin: np.ndarray):
-        self._simpleCEM.origin = origin
-
+    
     @property
     def spacing(self) -> np.ndarray:
         return self._simpleCEM.spacing
 
-    @spacing.setter
-    def spacing(self, spacing: np.ndarray):
-        self._simpleCEM.spacing = spacing
+    @property
+    def targetMask(self) -> ROIMask:
+        return self._simpleCEM.targetMask
 
     @classmethod
-    def fromBeam(cls, ct:Image3D, beam:PlanIonBeam, cropROI=None):
+    def fromBeam(cls, ct:Image3D, beam:PlanIonBeam, targetMask=None):
         newCEM = cls()
-        newCEM._simpleCEM = CEM.fromBeam(ct, beam, cropROI=cropROI)
+        newCEM._simpleCEM = CEM.fromBeam(ct, beam, targetMask=targetMask)
 
         return newCEM
 
@@ -149,7 +183,6 @@ class BiComponentCEM(CEM):
         outROI.imageArray = np.logical_or(rsROI.imageArray, cemROI.imageArray)
 
         return outROI
-
 
     def computeROIs(self) -> Tuple[ROIMask, ROIMask]:
         simpleRS, simpleCEM = self.split()

@@ -95,7 +95,6 @@ class AnalyticalNoScattering(AbstractDoseCalculator):
                     doseImageArray[i, j, :] += fluence[i, j] * f(np.squeeze(cumRSP.imageArray[i, j, :]))
 
         doseImageBEV.imageArray = doseImageArray
-        doseImageBEV.patient = ct.patient
 
         doseImageDicom = imageTransform3D.iecGantryToDicom(doseImageBEV, beam, fillValue=0)
 
