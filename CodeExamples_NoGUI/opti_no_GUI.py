@@ -4,27 +4,37 @@ import numpy as np
 import scipy.sparse as sp
 from matplotlib import pyplot as plt
 
-from Process.PatientData import *
+from Core.Data.patientList import PatientList
 from Process.PlanOptimization import *
 from Process.MCsquare import *
 from Process.MCsquare_sparse_format import *
-from Process.RTdose import *
+from Process.RTdose import * #--> from Core.Data.Images.doseImage import DoseImage
 from Process.DVH import *
+from Core.IO.dataLoader import loadAllData, listAllFiles
+from Core.IO.dicomReader import readDicomCT
+from Core.Processing.DoseCalculation.MCsquare import *
 
 # User config:
 patient_data_path = "../python_interface/data/Prostate"
 output_path = os.path.join(patient_data_path, "OpenTPS")
+ctImagePath = "4DCTDicomLight/00"
+dataStructPath = '/MidP_CT_rtstruct.dcm'
 
 # Create output folder
 if not os.path.isdir(output_path):
   os.mkdir(output_path)
 
 # Load patient data
-Patients = PatientList()
-Patients.list_dicom_files(patient_data_path, 1)
-Patients.print_patient_list()
-Patients.list[0].import_patient_data() # import patient 0
-Patients.list[0].RTstructs[0].print_ROINames()
+
+filesList = listAllFiles(ctImagePath)
+print(filesList)
+image1 = readDicomCT(filesList['Dicom'])
+print(type(image1))
+
+
+structData = loadAllData(dataStructPath)[0]
+print('Available ROIs')
+structData.print_ROINames()
 
 # Configure MCsquare
 mc2 = MCsquare()
@@ -35,12 +45,17 @@ mc2.dose2water = True
 
 # Plan parameters:
 ct = Patients.list[0].CTimages[0]
+
 Target = Patients.list[0].RTstructs[0].Contours[10] # 7="PTV 74 gy", 10="MIROpt-structure"
+gtvContour = rtStruct.getContourByName(otherContourToUse)
+GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
+
 OAR = Patients.list[0].RTstructs[0].Contours[6] # 4="Rectum", 6="Vessie"
+
 BeamNames = ["Beam1", "Beam2"]
 GantryAngles = [90., 270.]
 CouchAngles = [0., 0.]
-    
+
 # Load / Generate new plan
 plan_file = os.path.join(output_path, "NewPlan.tps")
 if os.path.isfile(plan_file):
