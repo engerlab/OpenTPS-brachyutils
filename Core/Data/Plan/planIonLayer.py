@@ -76,7 +76,7 @@ class PlanIonLayer:
         return len(self._weights)
 
     def addToSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
+        if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
                 self._addToSinglepot(xElem, y[i], weight[i], t)
@@ -91,7 +91,7 @@ class PlanIonLayer:
             self._appendSingleSpot(x, y, weight, timing)
 
     def appendSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
+        if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
                 self._appendSingleSpot(xElem, y[i], weight[i], t)
@@ -101,7 +101,8 @@ class PlanIonLayer:
     def _appendSingleSpot(self, x:float, y:float, weight:float, timing:Optional[float]=None):
         alreadyExists, _ = self.spotDefinedInXY(x, y)
         if alreadyExists:
-            raise ValueError('Spot already exists in (x,y)')
+            if timing is None: # possible to have two spots at the same location with different timings (e.g. bursts in synchrocyclotron)
+                raise ValueError('Spot already exists in (x,y)')
 
         self._x = np.append(self._x, x)
         self._y = np.append(self._y, y)
@@ -111,7 +112,7 @@ class PlanIonLayer:
             assert len(self._weights) == len(self._timings)
 
     def setSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
+        if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
                 self._setSingleSpot(xElem, y[i], weight[i], t)
@@ -138,7 +139,7 @@ class PlanIonLayer:
             self._timings = np.delete(self._timings, spotPos)
 
     def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> Tuple[bool, int]:
-        if isinstance(x, Sequence):
+        if isinstance(x, Iterable):
             exist = []
             where = []
             for i, xElem in enumerate(x):
