@@ -6,6 +6,7 @@ from Core.event import Event
 from Extensions.FLASH.flashPanel import FlashPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
 from GUI.Panels.patientDataPanel import PatientDataPanel
+from GUI.Panels.planOptiPanel import PlanOptiPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.Panels.breathingSignalPanel import BreathingSignalPanel
@@ -47,6 +48,7 @@ class MainToolbar(QToolBox):
         # initialize toolbox panels
         patientDataPanel = PatientDataPanel(self._viewController)
         roiPanel = ROIPanel(self._viewController)
+        planOptiPanel = PlanOptiPanel(self._viewController)
         dosePanel = DoseComputationPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
         breathingSignalPanel = BreathingSignalPanel(self._viewController)
@@ -55,6 +57,8 @@ class MainToolbar(QToolBox):
         item = self.ToolbarItem(patientDataPanel, 'Patient data')
         self.showItem(item)
         item = self.ToolbarItem(roiPanel, 'ROI')
+        self.showItem(item)
+        item = self.ToolbarItem(planOptiPanel, 'Plan optimization')
         self.showItem(item)
         item = self.ToolbarItem(dosePanel, 'Dose computation')
         self.showItem(item)
