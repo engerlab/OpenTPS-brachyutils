@@ -1,7 +1,6 @@
-import os, sys
+import datetime
 import pydicom
 import numpy as np
-from PIL import Image, ImageDraw
 import logging
 from Core.Data.Plan.rangeShifter import RangeShifter
 
@@ -100,7 +99,7 @@ def readDicomDose(dcmFile):
     elif(dcm.BitsStored == 32 and dcm.PixelRepresentation == 1):
       dt = np.dtype('int32')
     else:
-      logging.error("Error: Unknown data type for " + self.DcmFile)
+      logging.error("Error: Unknown data type for " + dcmFile)
       return None
       
     if(dcm.HighBit == dcm.BitsStored-1):
@@ -235,7 +234,7 @@ def readDicomVectorField(dcmFile):
     return field
 
 
-def readDicomPlan(dcmFile):
+def readDicomPlan(dcmFile) -> RTPlan:
     dcm = pydicom.dcmread(dcmFile)
 
     # collect patient information
@@ -425,3 +424,118 @@ def readDicomPlan(dcmFile):
       plan.appendBeam(beam)
       
     return plan
+
+def writeRTPlan(plan:RTPlan, filePath):
+    SOPInstanceUID = pydicom.uid.generate_uid()
+
+    # meta data
+    meta = pydicom.dataset.FileMetaDataset()
+    meta.MediaStorageSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.8"
+    meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+    meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'
+
+    # dicom dataset
+    dcm_file = pydicom.dataset.FileDataset(filePath, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
+    dcm_file.SOPInstanceUID = SOPInstanceUID
+
+    # patient information
+    dcm_file.PatientName = plan.patient.name
+    dcm_file.PatientID = plan.patient.id
+    dcm_file.PatientBirthDate = plan.patient.birthDate
+    dcm_file.PatientSex = plan.patient.sex
+
+    # content information
+    dt = datetime.datetime.now()
+    dcm_file.ContentDate = dt.strftime('%Y%m%d')
+    dcm_file.ContentTime = dt.strftime('%H%M%S.%f')
+    dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
+    dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
+    dcm_file.Modality = 'RTPLAN'
+    dcm_file.Manufacturer = 'OpenMCsquare'
+    dcm_file.ManufacturerModelName = 'OpenTPS'
+    # dcm_file.SeriesDescription = self.ImgName
+    # dcm_file.StudyInstanceUID = self.StudyInfo.StudyInstanceUID
+    # dcm_file.StudyID = self.StudyInfo.StudyID
+    # dcm_file.StudyDate = self.StudyInfo.StudyDate
+    # dcm_file.StudyTime = self.StudyInfo.StudyTime
+
+    SeriesInstanceUID = plan.seriesInstanceUID
+    if SeriesInstanceUID=="" or (SeriesInstanceUID is None):
+        SeriesInstanceUID = pydicom.uid.generate_uid()
+
+    dcm_file.SeriesInstanceUID = SeriesInstanceUID
+    # dcm_file.SeriesNumber = 1
+    # dcm_file.InstanceNumber = 1
+
+    # plan information
+    dcm_file.FractionGroupSequence = []
+    fractionGroup = pydicom.dataset.Dataset()
+    # Only 1 fraction spported right now!
+    fractionGroup.NumberOfFractionsPlanned = 1 # plan.numberOfFractionsPlanned
+    dcm_file.FractionGroupSequence.append(fractionGroup)
+    fractionGroup.ReferencedBeamSequence = []
+
+    dcm_file.IonBeamSequence = []
+
+    for beamNumber, beam in enumerate(plan):
+        referencedBeam = pydicom.dataset.Dataset()
+        referencedBeam.BeamMeterset = beam.meterset
+        referencedBeam.ReferencedBeamNumber = beamNumber
+        fractionGroup.ReferencedBeamSequence.append(referencedBeam)
+
+        dcm_beam = pydicom.dataset.Dataset()
+        dcm_beam.BeamName = beam.name
+        dcm_beam.SeriesInstanceUID = SeriesInstanceUID
+        dcm_beam.TreatmentMachineName = plan.treatmentMachineName
+        dcm_beam.RadiationType = "PROTON"
+        dcm_beam.ScanMode = "MODULATED"
+        dcm_beam.TreatmentDeliveryType = "TREATMENT"
+        dcm_beam.FinalCumulativeMetersetWeight = beam.meterset
+        dcm_beam.BeamNumber = beamNumber
+
+        rangeShifter = beam.rangeShifter
+        if rangeShifter is None:
+            dcm_beam.NumberOfRangeShifters = 0
+        else:
+            dcm_beam.NumberOfRangeShifters = 1
+
+        dcm_beam.RangeShifterSequence = []
+        dcm_rs = pydicom.dataset.Dataset()
+        dcm_rs.RangeShifterID = rangeShifter.ID
+        if rangeShifter.type == "binary":
+            dcm_rs.RangeShifterType = "BINARY"
+        elif rangeShifter.type == "analog":
+            dcm_rs.RangeShifterType = "ANALOG"
+        else:
+            print("ERROR: Unknown range shifter type: " + rangeShifter.type)
+
+        dcm_beam.RangeShifterSequence.append(dcm_rs)
+
+        dcm_file.IonBeamSequence.append(dcm_beam)
+
+        dcm_beam.IonControlPointSequence = []
+        for layer in beam:
+            dcm_layer = pydicom.dataset.Dataset()
+            dcm_layer.seriesInstanceUID = SeriesInstanceUID
+            dcm_layer.NumberOfPaintings = layer.numberOfPaintings
+            dcm_layer.NominalBeamEnergy = layer.nominalEnergy
+            dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
+            dcm_layer.ScanSpotMetersetWeights = layer.spotWeights.tolist()
+            dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
+            dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1], beam.isocenterPosition[2]]
+            dcm_layer.GantryAngle = beam.gantryAngle
+            dcm_layer.PatientSupportAngle = beam.patientSupportAngle
+
+            dcm_layer.RangeShifterSettingsSequence = []
+            dcm_rsSettings = pydicom.dataset.Dataset()
+            dcm_rsSettings.IsocenterToRangeShifterDistance = layer.rangeShifterSettings.isocenterToRangeShifterDistance
+            if not (layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness is None):
+                dcm_rsSettings.RangeShifterWaterEquivalentThickness = layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness
+            dcm_rsSettings.RangeShifterSetting = layer.rangeShifterSettings.rangeShifterSetting
+            dcm_rsSettings.ReferencedRangeShifterNumber = 0
+            dcm_layer.RangeShifterSettingsSequence.append(dcm_rsSettings)
+
+            dcm_beam.IonControlPointSequence.append(dcm_layer)
+
+    dcm_file.save_as(filePath)

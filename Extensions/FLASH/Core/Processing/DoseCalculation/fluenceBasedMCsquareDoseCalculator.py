@@ -9,6 +9,8 @@ import numpy as np
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Plan.planIonBeam import PlanIonBeam
+from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO import mcsquareIO
@@ -16,13 +18,13 @@ from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseC
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.fluenceCalculator import FluenceCalculator
 from Extensions.FLASH.Core.Processing.DoseCalculation.MCsquare.mcsquareFlashConfig import MCsquareFlashConfig
+from Extensions.FLASH.Core.Processing.RangeEnergy import rangeToEnergy, energyToRange
 
 
 class Beamlets():
     def __init__(self):
         self.sparseBeamlets:SparseBeamlets = None
         self.referencePlan:RTPlan = None
-
 
 class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
     HU_AIR = -1024
@@ -46,10 +48,11 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
         self._plan = plan
         return super().computeDose(ct, self._fluencePlan(plan))
 
-    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask]=None) -> Beamlets:
-        self._ct = ct
-        self._plan = self._fluencePlan(plan)
-        self._roi = roi
+    def computeBeamlets(self, ct:CTImage, plan:RTPlan, roi:Optional[ROIMask]=None, deltaR:float=0.) -> Beamlets:
+        self._ct = CTImage.fromImage3D(ct)
+        self._roi = ROIMask.fromImage3D(roi)
+        self._plan = self._fluencePlan(plan, deltaR)
+
         self._config = self._noSpotSizeConfig
 
         self._writeFilesToSimuDir()
@@ -63,28 +66,35 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
 
         return beamlets
 
-    def _fluencePlan(self, plan:RTPlan) -> RTPlan:
-        newPlan = copy.deepcopy(plan)
+    def _fluencePlan(self, plan:RTPlan, deltaR:float=0.) -> RTPlan:
+        newPlan = RTPlan()
 
-        for beam in newPlan:
-            ctBEV = imageTransform3D.dicomToIECGantry(self._ct, beam, self.HU_AIR)
-            isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(self._ct, beam, beam.isocenterPosition)
+        for beam in plan:
+            newBeam = PlanIonBeam()
+            newBeam.gantryAngle = beam.gantryAngle
+            newBeam.patientSupportAngle = beam.patientSupportAngle
+            newBeam.isocenterPosition = np.array(beam.isocenterPosition)
+            # TODO: Can there be any range shifter?
+
+            ctBEV = imageTransform3D.dicomToIECGantry(self._ct, newBeam, self.HU_AIR, cropROI=self._roi, cropDim0=True, cropDim1=True, cropDim2=False)
+            isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(self._ct, newBeam, newBeam.isocenterPosition)
 
             for layer in beam:
                 fluenceCalculator = FluenceCalculator()
                 fluenceCalculator.beamModel = self.beamModel
-                fluence = fluenceCalculator.layerFluenceAtNozzle(layer, self._ct, beam)
+                fluence = fluenceCalculator.layerFluenceAtNozzle(layer, self._ct, newBeam, roi=self._roi)
                 fluence = fluence.imageArray
 
                 fluence[fluence<self.SPOT_WEIGHT_THRESHOLD] = 0.
                 #fluence = fluence*layer.meterset/np.sum(fluence)
 
-                layer.removeSpot(layer.spotX, layer.spotY) # Empty layer
+                newLayer = PlanIonLayer(nominalEnergy = rangeToEnergy(energyToRange(layer.nominalEnergy)+deltaR))
+
                 fluenceX, fluenceY = np.meshgrid(range(fluence.shape[0]), range(fluence.shape[1]))
 
                 for i in range(fluenceX.shape[0]):
                     for j in range(fluenceX.shape[1]):
-                        if fluence[fluenceX[i, j], fluenceY[i, j]]:
+                        if (fluence[fluenceX[i, j], fluenceY[i, j]]>0.):
                             posNozzle = ctBEV.getPositionFromVoxelIndex((fluenceX[i, j], fluenceY[i, j], isocenterBEV[2]))
                             pos0Nozzle = posNozzle[0] - isocenterBEV[0]
                             pos1Nozzle = -posNozzle[1] + isocenterBEV[1]
@@ -92,7 +102,10 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
                             pos0Iso = pos0Nozzle*self.beamModel.smx/(self.beamModel.smx-self.beamModel.nozzle_isocenter)
                             pos1Iso = pos1Nozzle*self.beamModel.smy/(self.beamModel.smy-self.beamModel.nozzle_isocenter)
 
-                            layer.appendSpot(pos0Iso, pos1Iso, fluence[fluenceX[i, j], fluenceY[i, j]])
+                            newLayer.appendSpot(pos0Iso, pos1Iso, fluence[fluenceX[i, j], fluenceY[i, j]])
+
+                newBeam.appendLayer(newLayer)
+            newPlan.appendBeam(newBeam)
         return newPlan
 
     @property
@@ -128,8 +141,8 @@ class FluenceBasedMCsquareDoseCalculator(MCsquareDoseCalculator):
 
         mcsquareIO.writeCT(self._ct, self._ctFilePath)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
-        mcsquareIO.writeBDL(self._beamModel, self._bdlFilePath)
-        mcsquareIO.writeCTCalibration(self._ctCalibration, self._scannerFolder, self._materialFolder)
+        mcsquareIO.writeCTCalibrationAndBDL(self._ctCalibration, self._scannerFolder, self._materialFolder,
+                                            self._beamModel, self._bdlFilePath)
         mcsquareIO.writeConfig(self._config, self._configFilePath)
         self._writeBin() # We export the FLASH specific version of MCsquare
 

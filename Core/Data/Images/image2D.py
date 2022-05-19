@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import numpy as np
 
 from Core.Data.patientData import PatientData
@@ -57,3 +59,19 @@ class Image2D(PatientData):
     @property
     def gridSizeInWorldUnit(self) -> np.ndarray:
         return self.gridSize * self.spacing
+
+    def getDataAtPosition(self, position:Sequence):
+        voxelIndex = self.getVoxelIndexFromPosition(position)
+        dataNumpy = self.imageArray[voxelIndex[0], voxelIndex[1]]
+
+        return dataNumpy
+
+    def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
+        positionInMM = np.array(position)
+        shiftedPosInMM = positionInMM - self.origin
+        posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
+
+        return posInVoxels
+
+    def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        return self.origin + np.array(index).astype(dtype=float)*self.spacing
