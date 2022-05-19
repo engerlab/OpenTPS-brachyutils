@@ -64,6 +64,10 @@ class SparseBeamlets(PatientData):
     def doseOrientation(self):
         return self._orientation
 
+    @property
+    def shape(self):
+        return self._sparseBeamlets.shape
+
     @doseOrientation.setter
     def doseOrientation(self, orientation):
         self._orientation = orientation

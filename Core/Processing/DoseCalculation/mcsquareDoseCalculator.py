@@ -264,7 +264,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
 
-        config["Stat_uncertainty"] = 2.
+        # config["Stat_uncertainty"] = 2.
 
         return config
 

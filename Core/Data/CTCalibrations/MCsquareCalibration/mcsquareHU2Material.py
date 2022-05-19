@@ -85,7 +85,9 @@ class MCsquareHU2Material:
             if last_folder=='':
                 last_folder = y[-2]
 
-            copy_tree(folder, os.path.join(folderPath, os.path.basename(last_folder)))
+            targetFolder = os.path.join(folderPath, os.path.basename(last_folder))
+            os.makedirs(targetFolder, exist_ok=False)
+            copy_tree(folder, targetFolder)
 
     def _writeMCsquareList(self, listFile):
         matList = MCsquareMaterial.getMaterialList('default')

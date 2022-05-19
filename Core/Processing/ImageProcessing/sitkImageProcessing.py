@@ -57,7 +57,7 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     outData = np.array(sitk.GetArrayFromImage(outImg))
 
     if imgType==bool:
-        outData[outData<0] = 0
+        outData[outData<0.5] = 0
     outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)
@@ -66,14 +66,9 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     image.origin = newOrigin
     image.spacing = newSpacing
 
-def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
+
+def extremePoints(image:Image3D):
     img = image3DToSITK(image)
-    tform = tform[0:-1, 0:-1]
-
-    dimension = img.GetDimension()
-
-    transform = sitk.AffineTransform(dimension)
-    transform.SetMatrix(tform.flatten())
 
     extreme_points = [img.TransformIndexToPhysicalPoint(np.array([0, 0, 0]).astype(int).tolist()),
                       img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], 0, 0]).astype(int).tolist()),
@@ -87,6 +82,19 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
                       img.TransformIndexToPhysicalPoint(
                           np.array([0, image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
                       img.TransformIndexToPhysicalPoint(np.array([0, 0, image.gridSize[2]]).astype(int).tolist())]
+
+    return extreme_points
+
+def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
+    img = image3DToSITK(image)
+    tform = tform[0:-1, 0:-1]
+
+    dimension = img.GetDimension()
+
+    transform = sitk.AffineTransform(dimension)
+    transform.SetMatrix(tform.flatten())
+
+    extreme_points = extremePoints(image)
 
     inv_transform = transform.GetInverse()
 
@@ -133,7 +141,7 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
 
     outData = np.array(sitk.GetArrayFromImage(outImg))
     if imgType==bool:
-        outData[outData<0] = 0
+        outData[outData<0.5] = 0
     outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)
