@@ -1,3 +1,4 @@
+import copy
 from typing import Sequence
 
 import numpy as np
@@ -21,6 +22,12 @@ class Image2D(PatientData):
         gs = self.gridSize
         s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
         return s
+
+    # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D
+    @classmethod
+    def fromImage2D(cls, image):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing,
+                       angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
 
     @property
     def origin(self) -> np.ndarray:
