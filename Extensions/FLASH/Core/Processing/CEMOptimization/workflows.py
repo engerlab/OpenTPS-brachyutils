@@ -2,6 +2,7 @@ from typing import Tuple, Sequence
 
 import numpy as np
 
+from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.rtPlan import RTPlan
@@ -9,6 +10,7 @@ from Core.Data.roiContour import ROIContour
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Core.event import Event
+from Extensions.FLASH.Core.Data.aperture import Aperture
 from Extensions.FLASH.Core.Data.cem import BiComponentCEM
 from Extensions.FLASH.Core.Data.cemBeam import CEMBeam
 from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
@@ -27,13 +29,14 @@ class SingleBeamCEMOptimizationWorkflow():
         self.ctCalibration = None
         self.beamModel = None
         self.gantryAngle = 0
-        self.cemToIsocenter = 100
+        self.apertureToIsocenter = 100
         self.beamEnergy = 226
         self.ct = None
         self.objectives:Sequence[Objective] = []
         self.spotSpacing = 5.
         self.rangeShifterRSP = 1.
         self.cemRSP = 1.
+        self.apertureRSP = 8.73
         self.bodyROI = None
 
         self.doseUpdateEvent = Event(object)
@@ -69,6 +72,11 @@ class SingleBeamCEMOptimizationWorkflow():
         self._computeTargetAndGlobalROIs()
 
         self._initializePlan()
+        #self._initializeAperture()
+        beam = self._plan.beams[0]
+        if (beam.aperture is None):
+            beam.cemToIsocenter = self.apertureToIsocenter
+
         self._plan.patient = patient
         self.planUpdateEvent.emit(self._plan)
 
@@ -136,11 +144,38 @@ class SingleBeamCEMOptimizationWorkflow():
         beam = CEMBeam()
         beam.isocenterPosition = self._targetROI.centerOfMass
         beam.gantryAngle = self.gantryAngle
-        beam.cemToIsocenter = self.cemToIsocenter  # Distance between CEM and isocenter
+        beam.apertureToIsocenter = self.apertureToIsocenter
 
         layer = PlanIonLayer(nominalEnergy=self.beamEnergy)
         beam.appendLayer(layer)
         self._plan.appendBeam(beam)
+
+    def _initializeAperture(self):
+        #TODO: is there a case where we do not want the aperture?
+
+        beam = self._plan.beams[0]
+        aperture = Aperture.fromBeam(self.ct, beam, targetMask=self._targetROI)
+        aperture.rsp = self.apertureRSP
+        aperture.wet = energyToRange(self.beamEnergy)+10 # 10 is just a margin
+        beam.aperture = aperture
+
+        beam.cemToIsocenter = beam.apertureToIsocenter + aperture.wet/aperture.rsp
+
+        self._updateROIsWithAperture()
+
+    def _updateROIsWithAperture(self):
+        beam = self._plan.beams[0]
+        if beam.aperture is None:
+            return
+
+        globalROI = imageTransform3D.intersect(self._globalROI, self.ct, inPlace=False, fillValue=0)
+        apertureROI = imageTransform3D.intersect(beam.aperture.computeROI(), self.ct, inPlace=False, fillValue=0)
+
+        globalROI.imageArray = np.logical_or(globalROI.imageArray, apertureROI.imageArray)
+        globalROI = imageTransform3D.dicomToIECGantry(globalROI, beam, fillValue=0, cropROI=globalROI, cropDim0=True, cropDim1=True, cropDim2=False)
+
+        self._globalROI = imageTransform3D.iecGantryToDicom(globalROI, beam, fillValue=0)
+        imageTransform3D.intersect(self._targetROI, self._globalROI, fillValue=0, inPlace=True)
 
     def _initializeCTWithCEM(self):
         beam = self._plan.beams[0]
@@ -156,14 +191,22 @@ class SingleBeamCEMOptimizationWorkflow():
         ctBEV.imageArray = newArray
         ctBEV.origin = newOrigin
 
-        self._ctWithCEM = imageTransform3D.iecGantryToDicom(ctBEV, beam, fillValue=-1024.)
+        ct = imageTransform3D.iecGantryToDicom(ctBEV, beam, fillValue=-1024.)
+
+        if not (beam.aperture is None):
+            apertureROI = beam.aperture.computeROI()
+            apertureROI = imageTransform3D.intersect(apertureROI, ct, fillValue=0)
+            ctArray = ct.imageArray
+            ctArray[apertureROI.imageArray.astype(bool)] = self.ctCalibration.convertRSP2HU(beam.aperture.rsp, energy=100.)
+            ct.imageArray = ctArray
+
+        self._ctWithCEM = ct
 
     def _cropTargetAndGlobalROIsToCT(self):
         imageTransform3D.intersect(self._targetROI, self._ctWithCEM, fillValue=0, inPlace=True)
         imageTransform3D.intersect(self._globalROI, self._ctWithCEM, fillValue=0, inPlace=True)
 
     def _initializeCEM(self):
-        # Initialize CEM
         beam = self._plan.beams[0]
         cem = BiComponentCEM.fromBeam(self._ctWithCEM, beam, targetMask=self._targetROI)
         cem.cemRSP = self.cemRSP
@@ -213,7 +256,7 @@ class SingleBeamCEMOptimizationWorkflow():
     def _initializeDoseCalculator(self):
         self._doseCalculator = CEMDoseCalculator()
         self._doseCalculator.beamModel = self.beamModel
-        self._doseCalculator.nbPrimaries = 1e4
+        self._doseCalculator.nbPrimaries = 5e3
         self._doseCalculator.ctCalibration = self.ctCalibration
         self._doseCalculator.plan = self._plan
         self._doseCalculator.roi = self._globalROI

@@ -110,7 +110,8 @@ class CEMAbstractDoseFidelityTerm:
 
         for b, derivative in enumerate(derivativeSequence):
             beam = plan.beams[b]
-            diffBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0., cropROI=self.roi, cropDim0=True, cropDim1=True, cropDim2=False)
+            diffBEV = imageTransform3D.dicomToIECGantry(diff, beam, fillValue=0., cropROI=plan[b].cem.targetMask, cropDim0=True, cropDim1=True, cropDim2=False)
+            imageTransform3D.intersect(derivative, diffBEV, fillValue=0., inPlace=True)
 
             derivativeProd = np.sum(derivative.imageArray * diffBEV.imageArray, axis=2)
             derivativeProd = derivativeProd.flatten()
@@ -145,6 +146,7 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
 
     def getValue(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> float:
         doseImage = self.doseCalculator.computeDose(weights, cems)
+        doseImage = imageTransform3D.intersect(doseImage, self.roi, fillValue=0., inPlace=False)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
@@ -158,13 +160,12 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
 
     def getCEMDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> Sequence[BiComponentCEM]:
         doseImage = self.doseCalculator.computeDose(weights, cems)
+        diffImage = imageTransform3D.intersect(doseImage, self.roi, fillValue=0., inPlace=False)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
 
         diff = np.maximum(0., dose - self.maxDose)
-
-        diffImage = copy.deepcopy(doseImage)
         diffImage.imageArray = diff
 
         diff = self._multiplyWithDerivative(diffImage, self.doseCalculator.computeDerivative(weights, cems), alpha=-2./self._roiVoxels)
@@ -173,6 +174,7 @@ class DoseMaxObjective(CEMAbstractDoseFidelityTerm):
 
     def getWeightDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> np.ndarray:
         doseImage = self.doseCalculator.computeDose(weights, cems)
+        doseImage = imageTransform3D.intersect(doseImage, self.roi, fillValue=0., inPlace=False)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = 0.
@@ -216,6 +218,7 @@ class DoseMinObjective(CEMAbstractDoseFidelityTerm):
 
     def getValue(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> float:
         doseImage = self.doseCalculator.computeDose(weights, cems)
+        doseImage = imageTransform3D.intersect(doseImage, self.roi, fillValue=0., inPlace=False)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
@@ -228,13 +231,12 @@ class DoseMinObjective(CEMAbstractDoseFidelityTerm):
 
     def getCEMDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> Sequence[BiComponentCEM]:
         doseImage = self.doseCalculator.computeDose(weights, cems)
+        diffImage = imageTransform3D.intersect(doseImage, self.roi, fillValue=0., inPlace=False)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose
 
         diff = np.maximum(0., self.minDose-dose)
-
-        diffImage = copy.deepcopy(doseImage)
         diffImage.imageArray = diff
 
         diff = self._multiplyWithDerivative(diffImage, self.doseCalculator.computeDerivative(weights, cems), alpha=-2./self._roiVoxels)
@@ -243,6 +245,7 @@ class DoseMinObjective(CEMAbstractDoseFidelityTerm):
 
     def getWeightDerivative(self, weights:np.ndarray, cems:Sequence[BiComponentCEM]) -> np.ndarray:
         doseImage = self.doseCalculator.computeDose(weights, cems)
+        doseImage = imageTransform3D.intersect(doseImage, self.roi, fillValue=0., inPlace=False)
 
         dose = np.array(doseImage.imageArray)
         dose[np.logical_not(self.roi.imageArray.astype(bool))] = self.minDose

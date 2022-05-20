@@ -200,7 +200,10 @@ class CEMOptimizer:
             doseImage = doseCalculator.computeDose(self._plan.spotWeights, self._objectives.cems)
             self.doseUpdateEvent.emit(doseImage)
 
-            if self._iteration>2 and (fValPrev - fVal)<self.absTol:
+            if self._iteration>4 and (fValPrev - fVal)<self.absTol:
+                return spotWeightsPrev, prevCEMs # TEST
+
+
                 # TODO We assume that this will change doseCalculator of all objectives but is it true/OK?
                 if doseCalculator.derivativeMode==doseCalculator.DerivativeModes.ANALYTICAL:
                     doseCalculator.derivativeMode = doseCalculator.DerivativeModes.MC

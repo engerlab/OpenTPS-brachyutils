@@ -2,6 +2,7 @@ import copy
 import logging
 import math
 from typing import Optional, Tuple
+from scipy.ndimage import morphology
 
 import numpy as np
 
@@ -30,6 +31,20 @@ class CEM(AbstractCTObject, Image2D):
         self._targetMask = None
 
     @classmethod
+    def fromCEM(cls, cem):
+        newCEM = cls()
+        newCEM._referenceImage = CTImage.fromImage3D(cem._referenceImage)
+        newCEM._referenceImageBEV = CTImage.fromImage3D(cem._referenceImageBEV)
+        newCEM._referenceBeam = cem._referenceBeam
+        newCEM._targetMask = ROIMask.fromImage3D(cem._targetMask)
+        newCEM.origin = np.array(cem._origin)
+        newCEM.spacing = np.array(cem._spacing)
+        newCEM.imageArray = np.array(cem.imageArray)
+        newCEM.rsp = cem.rsp
+
+        return newCEM
+
+    @classmethod
     def fromBeam(cls, ct:Image3D, beam:PlanIonBeam, targetMask=None):
         imageBEV = imageTransform3D.dicomToIECGantry(ct, beam, cropROI=targetMask, cropDim0=True, cropDim1=True, cropDim2=False)
 
@@ -37,11 +52,10 @@ class CEM(AbstractCTObject, Image2D):
         newCEM._referenceImage = CTImage.fromImage3D(ct)
         newCEM._referenceImageBEV = imageBEV
         newCEM._referenceBeam = beam
+        newCEM._targetMask = targetMask
         newCEM.origin = imageBEV.origin[0:-1]
         newCEM.spacing = imageBEV.spacing[0:-1]
         newCEM.imageArray = np.zeros(imageBEV.gridSize[0:-1])
-
-        newCEM._targetMask = targetMask
 
         return newCEM
 
@@ -134,6 +148,33 @@ class CEM(AbstractCTObject, Image2D):
 
         return int(isocenterCoord[2] - distInPixels)
 
+class RangeShifter(CEM):
+    def dilate(self, radius:float=1.):
+        radiusPixel = np.round(radius/self.spacing).astype(int)
+
+        origin = self.origin
+        origin = origin - radiusPixel*self.spacing
+
+        rangeShifterWaterEquivThick = np.mean(self.imageArray[self.imageArray>0])
+
+        imageArray = self.imageArray
+        imageArray = np.pad(imageArray, ((radiusPixel[0], radiusPixel[0]), (radiusPixel[1], radiusPixel[1])), 'constant', constant_values=0)
+        imageArray = imageArray.astype(bool)
+
+        diameter = radiusPixel * 2 + 1  # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
+        diameter = diameter + (diameter + 1) % 2
+        diameter = np.round(diameter).astype(int)
+
+        filt = np.zeros((diameter[0] + 2, diameter[1] + 2))
+        filt[1:diameter[0] + 2, 1:diameter[1] + 2] = 1
+        filt = filt.astype(bool)
+
+        imageArray = morphology.binary_dilation(imageArray, structure=filt)
+
+        self.imageArray = rangeShifterWaterEquivThick*imageArray.astype(float)
+        self.origin = origin
+
+
 
 class BiComponentCEM(CEM):
     def __init__(self):
@@ -141,6 +182,7 @@ class BiComponentCEM(CEM):
         self.cemRSP = 1.
         self.minCEMThickness = 5. # in physical mm not in water equivalent mm
         self.rangeShifterToCEM = 10. # Free space between CEM and RS
+        self.rangeShifterLateralMargin = 10
 
         self._simpleCEM = CEM()
         self._simpleCEM.rsp = 1.
@@ -193,12 +235,13 @@ class BiComponentCEM(CEM):
         return rsROI, cemROI
 
 
-    def split(self) -> Tuple[CEM, CEM]:
+    def split(self) -> Tuple[RangeShifter, CEM]:
         rangeShifterWaterEquivThick = self._rangeShifterWET()
 
-        simpleRS = copy.deepcopy(self._simpleCEM)
+        simpleRS = RangeShifter.fromCEM(self._simpleCEM)
         simpleRS.imageArray = rangeShifterWaterEquivThick*np.ones(simpleRS.imageArray.shape)*np.array(self._simpleCEM.imageArray.astype(bool).astype(float))
         simpleRS.rsp = self.rangeShifterRSP
+        simpleRS.dilate(radius=self.rangeShifterLateralMargin)
 
         simpleCEM = copy.deepcopy(self._simpleCEM)
         imageArray = np.array(self._simpleCEM.imageArray) - rangeShifterWaterEquivThick

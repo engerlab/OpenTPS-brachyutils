@@ -8,6 +8,7 @@ import numpy as np
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
@@ -149,7 +150,7 @@ class CEMDoseCalculator:
         return not(np.allclose(self._flattenCEMs(cems), self._cemThicknessForDerivative, atol=0.1) and np.allclose(weights, self._weightsForDerivative, atol=0.1))
 
     def _updateAnalyticalDerivative(self, cems:Sequence[BiComponentCEM]):
-        deltaR = 0.1
+        deltaR = 1
 
         self._analyticalCalculator.beamModel = self.beamModel
         self._analyticalCalculator.ctCalibration = self.ctCalibration
@@ -168,6 +169,7 @@ class CEMDoseCalculator:
 
         derivSequence = []
         for i, dose in enumerate(doseSequence):
+            dose = Image3D.fromImage3D(dose)
             dose.imageArray = (dose.imageArray - doseSequence2[i].imageArray)/deltaR
             outDose = DoseImage.fromImage3D(dose)
             outDose = imageTransform3D.dicomToIECGantry(outDose, plan.beams[i], fillValue=0., cropROI=self.roi, cropDim0=True, cropDim1=True, cropDim2=False)

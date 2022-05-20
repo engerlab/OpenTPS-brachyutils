@@ -2,20 +2,16 @@ import os
 import threading
 from typing import Sequence, Tuple
 
-from PyQt5.QtGui import QPixmap, QColor, QIcon
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QVBoxLayout, QLabel, QLineEdit, QMainWindow, QCheckBox, \
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QPushButton, QVBoxLayout, QLabel, QLineEdit, QMainWindow, \
     QFrame, QTableWidget, QTableWidgetItem, QGridLayout
 
 from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.dvh import DVH
-from Core.Data.patient import Patient
 from Core.Data.roiContour import ROIContour
-from Core.Data.rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.Processing.ImageProcessing import imageTransform3D
 from Core.event import Event
@@ -23,8 +19,6 @@ from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives, work
 from Extensions.FLASH.Core.Processing.CEMOptimization.workflows import SingleBeamCEMOptimizationWorkflow
 from Extensions.FLASH.GUI.convergencePlot import ConvergencePlot
 from GUI.Panels.patientDataPanel import PatientDataTree, PatientComboBox
-from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
-from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.DataViewerComponents.dvhPlot import DVHPlot
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
@@ -258,10 +252,11 @@ class UserInputPanel(QWidget):
             fromFiles=(defaultDataPath + os.path.sep + 'calibration_cef.txt', defaultDataPath + os.path.sep + 'materials_cef.txt'))
         self.cemOptimizer.beamModel = mcsquareIO.readBDL(defaultDataPath + os.path.sep + 'BDL_default_RS_Leuven_4_5_5.txt')
         self.cemOptimizer.gantryAngle = self._beamEditor.beamAngle
-        self.cemOptimizer.cemToIsocenter = self._beamEditor.cemIsoDist
+        self.cemOptimizer.apertureToIsocenter = self._beamEditor.apertureIsoDist
         self.cemOptimizer.beamEnergy = self._beamEditor.beamEnergy
         self.cemOptimizer.ct = selectedCT[0]
         self.cemOptimizer.spotSpacing = self._beamEditor.spotSpacing
+        self.cemOptimizer.apertureDensity = self.cemOptimizer.ctCalibration.convertMassDensity2RSP(self._beamEditor.apertureDensity)
         self.cemOptimizer.cemRSP = self.cemOptimizer.ctCalibration.convertMassDensity2RSP(self._beamEditor.cemDensity)
         self.cemOptimizer.rangeShifterRSP = self.cemOptimizer.ctCalibration.convertMassDensity2RSP(self._beamEditor.rangeShifterDensity)
         self.cemOptimizer.objectives = self._roiTable.getObjectiveTerms()
@@ -310,6 +305,12 @@ class UserInputPanel(QWidget):
                 ctArray[cemROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.cemRSP, energy=100.)
                 ctArray[rsROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(cem.rangeShifterRSP, energy=100.)
 
+                if not (beam.aperture is None):
+                    apertureROI = beam.aperture.computeROI()
+                    apertureROI = imageTransform3D.intersect(apertureROI, ct, fillValue=0)
+                    ctArray = ct.imageArray
+                    ctArray[apertureROI.imageArray.astype(bool)] = self.cemOptimizer.ctCalibration.convertRSP2HU(beam.aperture.rsp, energy=100.)
+
                 ct.imageArray = ctArray
 
         self.ctSelectedEvent.emit(ct)
@@ -326,7 +327,9 @@ class BeamEditor(QWidget):
         self._angleLabel = QLabel(self)
         self._angleLabel.setText('Angle: ')
         self._distanceLabel = QLabel(self)
-        self._distanceLabel.setText('CEM-isocenter distance: ')
+        self._distanceLabel.setText('Aperture-isocenter distance: ')
+        self._apertureDensityLabel = QLabel(self)
+        self._apertureDensityLabel.setText('Aperture density: ')
         self._rsDensityLabel = QLabel(self)
         self._rsDensityLabel.setText('Range shifter density: ')
         self._cemDensityLabel = QLabel(self)
@@ -340,6 +343,8 @@ class BeamEditor(QWidget):
         self._angleEdit.setText(str(0))
         self._distanceEdit = QLineEdit(self)
         self._distanceEdit.setText(str(100))
+        self._apertureDensityEdit = QLineEdit(self)
+        self._apertureDensityEdit.setText(str(8.73))
         self._rsDensityEdit = QLineEdit(self)
         self._rsDensityEdit.setText(str(2.7))
         self._cemDensityEdit = QLineEdit(self)
@@ -355,6 +360,8 @@ class BeamEditor(QWidget):
         self._mainLayout.addWidget(self._distanceEdit)
         self._mainLayout.addWidget(self._spotSpacingLabel)
         self._mainLayout.addWidget(self._spotSpacingEdit)
+        self._mainLayout.addWidget(self._apertureDensityLabel)
+        self._mainLayout.addWidget(self._apertureDensityEdit)
         self._mainLayout.addWidget(self._rsDensityLabel)
         self._mainLayout.addWidget(self._rsDensityEdit)
         self._mainLayout.addWidget(self._cemDensityLabel)
@@ -369,8 +376,12 @@ class BeamEditor(QWidget):
         return float(self._angleEdit.text())
 
     @property
-    def cemIsoDist(self) -> float:
+    def apertureIsoDist(self) -> float:
         return float(self._distanceEdit.text())
+
+    @property
+    def apertureDensity(self) -> float:
+        return float(self._apertureDensityEdit.text())
 
     @property
     def rangeShifterDensity(self):
@@ -465,100 +476,3 @@ class ROITable(QTableWidget):
                 rois.append(self._rois[i])
 
         return rois
-
-class ROIPanel(QWidget):
-  def __init__(self, viewController, parent=None):
-    super().__init__(parent)
-
-    self.selectionEvent = Event(object)
-
-    self.items:Sequence[ROIItem] = []
-    self.layout = QVBoxLayout()
-    self._patient = None
-    self._viewController = viewController
-
-    self.setLayout(self.layout)
-
-    self.setCurrentPatient(self._viewController.currentPatient)
-    self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
-
-  @property
-  def selected(self):
-      selected  = []
-
-      for item in self.items:
-          if item.isChecked():
-              selected.append(item)
-
-      return selected
-
-  def addRTStruct(self, rtStruct:RTStruct):
-    for contour in rtStruct.contours:
-      checkbox = ROIItem(ROIContourForViewer(contour), self._viewController)
-      checkbox.selectedEvent.connect(self.selectionEvent.emit)
-
-      self.layout.addWidget(checkbox)
-      self.items.append(checkbox)
-
-    self.layout.addStretch()
-
-  def addROIMask(self, roiMask:ROIMask):
-    checkbox = ROIItem(ROIMaskForViewer(roiMask), self._viewController)
-    checkbox.selectedEvent.connect(self.selectionEvent.emit)
-
-    self.layout.addWidget(checkbox)
-    self.items.append(checkbox)
-    self.layout.addStretch()
-
-  def removeRTStruct(self, rtStruct:RTStruct):
-    for contour in rtStruct.contours:
-      for item in self.items:
-        if item._contour == contour:
-          self.layout.removeWidget(item)
-          item.setParent(None)
-          return
-
-  def setCurrentPatient(self, patient:Patient):
-    if patient==self._patient:
-      return
-
-    self._patient = patient
-    for rtStruct in self._patient.rtStructs:
-      self.addRTStruct(rtStruct)
-
-    for roiMask in self._patient.roiMasks:
-      self.addROIMask(roiMask)
-
-    self._patient.rtStructAddedSignal.connect(self.addRTStruct)
-    self._patient.rtStructRemovedSignal.connect(self.removeRTStruct)
-
-    self._patient.roiMaskAddedSignal.connect(self.addROIMask)
-    #TODO remove ROI mask
-
-
-class ROIItem(QCheckBox):
-  def __init__(self, contour, viewController):
-    super().__init__(contour.name)
-
-    self._contour = contour
-    self._viewController = viewController
-
-    self.selectedEvent = Event(object)
-
-    self.setChecked(self._contour.visible)
-
-    self._contour.visibleChangedSignal.connect(self.setChecked)
-
-    self.clicked.connect(lambda c: self.handleClick(c))
-
-    pixmap = QPixmap(100, 100)
-    pixmap.fill(QColor(contour.color[0], contour.color[1], contour.color[2], 255))
-    self.setIcon(QIcon(pixmap))
-
-  @property
-  def contour(self):
-    return self._contour.data
-
-  def handleClick(self, isChecked):
-    self._contour.visible = isChecked
-    self.selectedEvent.emit(self._contour.data)
