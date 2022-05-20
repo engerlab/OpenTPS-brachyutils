@@ -12,7 +12,7 @@ class Image2D(PatientData):
 
         self.dataChangedSignal = Event()
 
-        self.imageArray = imageArray
+        self.imageArray:np.ndarray = imageArray
         self._origin = np.array(origin)
         self._spacing = np.array(spacing)
         self._angles = np.array(angles)
