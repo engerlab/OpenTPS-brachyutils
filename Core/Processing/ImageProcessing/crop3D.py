@@ -11,7 +11,7 @@ from Core.api import API
 
 
 @API.loggedViaAPI
-def crop3DDataAroundBox(data, box, marginInMM=[10, 10, 10]):
+def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
 
     """
     Crop a 3D data around a box given in scanner coordinates
