@@ -1,3 +1,5 @@
+from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy
+from Core.Processing.PlanOptimization.Acceleration.backtracking import Backtracking
 class Fista(Dummy):
     """
     Acceleration scheme for forward-backward solvers.
@@ -5,7 +7,7 @@ class Fista(Dummy):
 
     def __init__(self, **kwargs):
         self.t = 1.
-        super(fista, self).__init__(**kwargs)
+        super(Fista, self).__init__(**kwargs)
 
     def _pre(self, functions, x0):
         self.sol = np.array(x0, copy=True)

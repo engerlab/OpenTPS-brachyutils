@@ -14,6 +14,7 @@ class PlanIonBeam:
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
         self.gantryAngle = 0.0
+        self.couchAngle = 0.0
         self.patientSupportAngle = 0.0
         self.rangeShifter: Optional[RangeShifter] = None
         self.seriesInstanceUID = ""

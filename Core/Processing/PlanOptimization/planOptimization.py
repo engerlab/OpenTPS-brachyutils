@@ -11,7 +11,7 @@ except:
     use_MKL = 0
 
 from Core.Processing.PlanOptimization.Solvers import gradientDescent, bfgs, fista, localSearch, mip, sparcling, \
-    beamletFree
+    beamletFree, lp
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +93,8 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = fista.FISTA()
         elif self.method == "BLFree":
             self.solver = beamletFree.BLFree()
+        elif self.method == "LP":
+            self.solver = lp.LP()
         else:
             logger.error(
                 'Method {} is not implemented. Pick among ["Scipy-lBFGS", "Gradient", "BFGS", "FISTA"]'.format(

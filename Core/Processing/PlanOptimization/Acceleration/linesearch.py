@@ -1,3 +1,4 @@
+from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy
 # -----------------------------------------------------------------------------
 # Stepsize optimizers
 # -----------------------------------------------------------------------------
@@ -23,7 +24,7 @@ class LineSearch(Dummy):
         self.c1 = c1
         self.c2 = c2
         self.eps = eps
-        super(linesearch, self).__init__(**kwargs)
+        super(LineSearch, self).__init__(**kwargs)
 
     def _update_step(self, solver, objective, niter):
         # Save current state of the solver
