@@ -53,8 +53,6 @@ class ProgramSettingEditor(QMainWindow):
         self._activeExtensions = ActiveExtensions(self.mainToolbar)
         self._layout.addWidget(self._activeExtensions)
 
-
-
     @property
     def programSettings(self) -> ProgramSettings:
         return self._staticVars["programSettings"]
@@ -97,6 +95,8 @@ class MachineParam(QWidget):
     def __init__(self, programSettings:ProgramSettings):
         super().__init__()
 
+        self._programSettings = programSettings
+
         self._layout = QVBoxLayout(self)
         self.setLayout(self._layout)
 
@@ -106,8 +106,8 @@ class MachineParam(QWidget):
         self._bdlField = EditableSetting("BDL", str(programSettings.bdlFile), self._setBDL)
         self._layout.addWidget(self._bdlField)
 
-    def _setScanner(self, item, checked):
-        pass
+    def _setScanner(self, text):
+        self._programSettings.scannerFolder = text
 
-    def _setBDL(self, item, checked):
-        pass
+    def _setBDL(self, text):
+        self._programSettings.bdlFile = text
