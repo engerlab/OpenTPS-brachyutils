@@ -1,15 +1,12 @@
-from typing import Sequence
+from typing import Sequence, Optional
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, QPushButton, QTableWidget, \
-    QTableWidgetItem
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, QPushButton, QDoubleSpinBox, \
+    QTableWidget, QTableWidgetItem, QMainWindow
 
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.patient import Patient
-from Core.IO import mcsquareIO
-from Core.IO.scannerReader import readScanner
-from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives
-from programSettings import ProgramSettings
+from Core.event import Event
+from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives, workflows
 
 
 class PlanOptiPanel(QWidget):
@@ -24,8 +21,11 @@ class PlanOptiPanel(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self._planLabel = QLabel('Label:')
+        self._planLabel = QLabel('Plan name:')
         self.layout.addWidget(self._planLabel)
+        self._planNameEdit = QLineEdit(self)
+        self._planNameEdit.setText('New plan')
+        self.layout.addWidget(self._planNameEdit)
 
         self._ctLabel = QLabel('CT:')
         self.layout.addWidget(self._ctLabel)
@@ -33,14 +33,38 @@ class PlanOptiPanel(QWidget):
         self._ctComboBox.currentIndexChanged.connect(self._handleCTIndex)
         self.layout.addWidget(self._ctComboBox)
 
-        self._roiTable = ROITable(self._viewController, parent=self)
-        self.layout.addWidget(self._roiTable)
+        self._spacingLabel = QLabel('Spot spacing:')
+        self.layout.addWidget(self._spacingLabel)
+        self._spacingSpin = QDoubleSpinBox()
+        self._spacingSpin.setGroupSeparatorShown(True)
+        self._spacingSpin.setRange(0.1, 100.0)
+        self._spacingSpin.setSingleStep(1.0)
+        self._spacingSpin.setValue(5.0)
+        self._spacingSpin.setSuffix(" mm")
+        self.layout.addWidget(self._spacingSpin)
 
-        self._primariesLabel = QLabel('Primaries:')
-        self.layout.addWidget(self._primariesLabel)
-        self._primariesEdit = QLineEdit(self)
-        self._primariesEdit.setText(str(int(1e7)))
-        self.layout.addWidget(self._primariesEdit)
+        self._layerLabel = QLabel('Layer spacing:')
+        self.layout.addWidget(self._layerLabel)
+        self._layerSpin = QDoubleSpinBox()
+        self._layerSpin.setGroupSeparatorShown(True)
+        self._layerSpin.setRange(0.1, 100.0)
+        self._layerSpin.setSingleStep(1.0)
+        self._layerSpin.setValue(2.0)
+        self._layerSpin.setSuffix(" mm")
+        self.layout.addWidget(self._layerSpin)
+
+        self._marginLabel = QLabel('Target margin:')
+        self.layout.addWidget(self._marginLabel)
+        self._marginSpin = QDoubleSpinBox()
+        self._marginSpin.setGroupSeparatorShown(True)
+        self._marginSpin.setRange(0.1, 100.0)
+        self._marginSpin.setSingleStep(1.0)
+        self._marginSpin.setValue(5.0)
+        self._marginSpin.setSuffix(" mm")
+        self.layout.addWidget(self._marginSpin)
+
+        self._objectivesWidget = ObjectivesWidget(self._viewController)
+        self.layout.addWidget(self._objectivesWidget)
 
         self._runButton = QPushButton('Run')
         self._runButton.clicked.connect(self._run)
@@ -60,7 +84,6 @@ class PlanOptiPanel(QWidget):
             self._patient.imageRemovedSignal.disconnect(self._handleImageAddedOrRemoved)
 
         self._patient = patient
-        self._roiTable.setCurrentPatient(self._patient)
 
         if self._patient is None:
             self._removeAllCTs()
@@ -69,6 +92,8 @@ class PlanOptiPanel(QWidget):
 
             self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
             self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
+
+        self._objectivesWidget.setPatient(patient)
 
     def _updateCTComboBox(self):
         self._removeAllCTs()
@@ -90,10 +115,6 @@ class PlanOptiPanel(QWidget):
         for ct in self._ctImages:
             self._removeCT(ct)
 
-    def _removeAllROIs(self):
-        for roi in self._rois:
-            self._removeROI(roi)
-
     def _addCT(self, ct:CTImage):
         self._ctComboBox.addItem(ct.name, ct)
         ct.nameChangedSignal.connect(self._handleCTChanged)
@@ -112,20 +133,63 @@ class PlanOptiPanel(QWidget):
         self._updateCTComboBox()
 
     def _run(self):
-        settings = ProgramSettings()
+        pass
 
-        beamModel = mcsquareIO.readBDL(settings.bdlFile)
-        calibration = readScanner(settings.scannerFolder)
+class ObjectivesWidget(QWidget):
+    DEFAULT_OBJECTIVES_TEXT = 'No objective defined yet'
 
-        doseCalculator = MCsquareDoseCalculator()
+    def __init__(self, viewController):
+        QWidget.__init__(self)
 
-        doseCalculator.beamModel = beamModel
-        doseCalculator.nbPrimaries = int(self._primariesEdit.text())
-        doseCalculator.ctCalibration = calibration
-        doseCalculator.overwriteOutsideROI = self._selectedROI
+        self._roiWindow = QMainWindow(self)
+        self._roiWindow.hide()
+        self._roitTable = ROITable(viewController, self._roiWindow)
+        self._roiWindow.setCentralWidget(self._roitTable)
 
-        doseImage = doseCalculator.computeDose(self._selectedCT, self._selectedPlan)
-        doseImage.patient = self._selectedCT.patient
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self._objectivesLabels = QLabel(self.DEFAULT_OBJECTIVES_TEXT)
+        self.layout.addWidget(self._objectivesLabels)
+
+        self._objectiveButton = QPushButton('Open objectives panel')
+        self._objectiveButton.clicked.connect(self._openObjectivePanel)
+        self.layout.addWidget(self._objectiveButton)
+
+        self._roitTable.objectivesModifiedEvent.connect(self._showObjectives)
+
+    def setPatient(self, p:Patient):
+        self._roitTable.patient = p
+
+    def _showObjectives(self):
+        # Modify this with conventional objectives!!!!!!!!!!!!!
+
+        objStr = self.DEFAULT_OBJECTIVES_TEXT
+
+        objectives = self._roitTable.getObjectiveTerms()
+
+        if len(objectives)<=0:
+            return
+
+        objStr = ''
+        for objective in objectives:
+            objStr += str(objective.weight)
+            objStr += " x "
+            objStr += objective.objectiveTerm.roi.name
+
+            if isinstance(objective.objectiveTerm, cemObjectives.DoseMinObjective):
+                objStr += " < "
+                objStr += str(objective.objectiveTerm.minDose)
+            if isinstance(objective.objectiveTerm, cemObjectives.DoseMaxObjective):
+                objStr += " > "
+                objStr += str(objective.objectiveTerm.maxDose)
+
+            objStr += ' Gy\n'
+
+        self._objectivesLabels.setText(objStr)
+
+    def _openObjectivePanel(self):
+        self._roiWindow.show()
 
 class ROITable(QTableWidget):
     DMIN_THRESH = 0.
@@ -135,19 +199,48 @@ class ROITable(QTableWidget):
     def __init__(self, viewController, parent=None):
         super().__init__(100, 4, parent)
 
+        self.objectivesModifiedEvent = Event()
+
+        self._patient:Optional[Patient] = None
         self._rois = []
 
         self._viewController = viewController
+
+        self.cellChanged.connect(lambda *args: self.objectivesModifiedEvent.emit())
+
+    @property
+    def patient(self) -> Optional[Patient]:
+        return self._patient
+
+    @patient.setter
+    def patient(self, p:Optional[Patient]):
+        if p==self._patient:
+            return
+
+        if not self._patient is None:
+            self._patient.rtStructAddedSignal.disconnect(self.updateTable)
+            self._patient.rtStructRemovedSignal.disconnect(self.updateTable)
+
+        self._patient = p
+
+        self._patient.rtStructAddedSignal.connect(self.updateTable)
+        self._patient.rtStructRemovedSignal.connect(self.updateTable)
+
+        self.updateTable()
+
+    def updateTable(self, *args):
+        self.reset()
+        self._fillRoiTable()
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
+        self.objectivesModifiedEvent.emit()
 
-    def setCurrentPatient(self, patient):
-        self.reset()
+    def _fillRoiTable(self):
+        patient = self._patient
 
-        if not(patient is None):
-            self._fillRoiTable(patient)
+        if patient is None:
+            return
 
-    def _fillRoiTable(self, patient:Patient):
         self._rois = []
         i = 0
         for rtStruct in patient.rtStructs:
@@ -175,7 +268,8 @@ class ROITable(QTableWidget):
 
         self.setHorizontalHeaderLabels(['ROI', 'Weight', 'Dmin', 'Dmax'])
 
-    def getObjectiveTerms(self) -> Sequence[cemObjectives.CEMAbstractDoseFidelityTerm]:
+    def getObjectiveTerms(self) -> Sequence[workflows.Objective]:
+        # Modify this with conventional objectives!!!!!!!!!!!!!
         terms = []
 
         for i in range(len(self._rois)):
