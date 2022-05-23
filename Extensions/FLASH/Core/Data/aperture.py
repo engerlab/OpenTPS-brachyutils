@@ -32,9 +32,7 @@ class Aperture(AbstractCTObject, Image2D):
         newCEM = cls()
 
         targetMaskDilated = ROIMask.fromImage3D(targetMask)
-        print(lateralThickness+clearance+ct.spacing.max())
         targetMaskDilated.dilate(lateralThickness+clearance+ct.spacing.max()) # ct.spacing.max() is just a margin
-        print('dilated')
         newCEM._cropROI = targetMaskDilated
 
         targetMaskWithClearance = ROIMask.fromImage3D(targetMask)

@@ -249,7 +249,7 @@ class UserInputPanel(QWidget):
         defaultDataPath = defaultDataModule.__path__[0]
 
         self.cemOptimizer.ctCalibration = RayStationCTCalibration(
-            fromFiles=(defaultDataPath + os.path.sep + 'calibration_cef.txt', defaultDataPath + os.path.sep + 'materials_cef.txt'))
+            fromFiles=(defaultDataPath + os.path.sep + 'calibration_RS' + os.path.sep + 'calibration_cef.txt', defaultDataPath + os.path.sep + 'calibration_RS' + os.path.sep + 'materials_cef.txt'))
         self.cemOptimizer.beamModel = mcsquareIO.readBDL(defaultDataPath + os.path.sep + 'BDL_default_RS_Leuven_4_5_5.txt')
         self.cemOptimizer.gantryAngle = self._beamEditor.beamAngle
         self.cemOptimizer.apertureToIsocenter = self._beamEditor.apertureIsoDist
@@ -442,7 +442,7 @@ class ROITable(QTableWidget):
 
         self.setHorizontalHeaderLabels(['ROI', 'Weight', 'Dmin', 'Dmax'])
 
-    def getObjectiveTerms(self) -> Sequence[cemObjectives.CEMAbstractDoseFidelityTerm]:
+    def getObjectiveTerms(self) -> Sequence[workflows.Objective]:
         terms = []
 
         for i in range(len(self._rois)):

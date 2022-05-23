@@ -182,7 +182,7 @@ class BiComponentCEM(CEM):
         self.cemRSP = 1.
         self.minCEMThickness = 5. # in physical mm not in water equivalent mm
         self.rangeShifterToCEM = 10. # Free space between CEM and RS
-        self.rangeShifterLateralMargin = 10
+        self.rangeShifterLateralMargin = 15
 
         self._simpleCEM = CEM()
         self._simpleCEM.rsp = 1.

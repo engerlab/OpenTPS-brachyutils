@@ -71,6 +71,9 @@ class SingleBeamCEMOptimizationWorkflow():
 
         self._computeTargetAndGlobalROIs()
 
+        self._targetROI.dilate(radius=5) # TEST!!!!!!!!!!!!!!!!
+        self._globalROI.dilate(radius=5)  # TEST!!!!!!!!!!!!!!!!
+
         self._initializePlan()
         #self._initializeAperture()
         beam = self._plan.beams[0]
@@ -256,7 +259,7 @@ class SingleBeamCEMOptimizationWorkflow():
     def _initializeDoseCalculator(self):
         self._doseCalculator = CEMDoseCalculator()
         self._doseCalculator.beamModel = self.beamModel
-        self._doseCalculator.nbPrimaries = 5e3
+        self._doseCalculator.nbPrimaries = 1e4
         self._doseCalculator.ctCalibration = self.ctCalibration
         self._doseCalculator.plan = self._plan
         self._doseCalculator.roi = self._globalROI
