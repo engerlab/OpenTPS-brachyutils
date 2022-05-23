@@ -32,8 +32,9 @@ class PlanStructure:
         self.couchAngles = []
 
 
-    def createPlanStructure(self):
+    def createPlan(self):
         plan = RTPlan()
+        plan.planDesign = self
         plan.SOPInstanceUID = pydicom.uid.generate_uid()
         plan.seriesInstanceUID = plan.SOPInstanceUID + ".1"
         plan.planName = "newPlan"

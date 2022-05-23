@@ -33,8 +33,8 @@ if not os.path.isdir(output_path):
 # image1 = readDicomCT(filesList['Dicom'])
 dataList = loadAllData(ctImagePath, maxDepth=0)
 print(dataList)
-ct = dataList[5]
-contours = dataList[4]
+ct = dataList[6]
+contours = dataList[5]
 # structData = loadAllData(dataStructPath)[0]
 print('Available ROIs')
 contours.print_ROINames()
@@ -81,19 +81,18 @@ else:
     plan = planInit.createPlanStructure()  # Spot placement
     plan.PlanName = "NewPlan"
     beamlets = doseCalculator.computeBeamlets(ct,plan,roi=targetMask)
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
+    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm").tosparsematrix
     plan.save(plan_file)
 
 quit()
 # Load openTPS plan
 # plan = dataList[3]
-
 # Load Dicom plan
-# plan_path = '../data/.dcm'
-# plan = readDicomPlan(plan_path)
+plan = dataList[0]
+
 
 # Load Beamlets
-beamletPath = os.path.join(output_path,"")
+beamletPath = os.path.join(output_path,"BeamletMatrix_1.2.826.0.1.3680043.8.498.62034899547733008021049446064726276654.1.blm")
 plan.beamlets = loadBeamlets(beamletPath)
 
 # optimization objectives
@@ -108,12 +107,12 @@ dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_
 dose = plan.beamlets.toDoseImage()
 
 # Compute DVH
-target_DVH = DVH(Target, doseImage)
-chiasm_DVH = DVH(Optic_Chiasm, doseImage)
-stem_DVH = DVH(Brain_Stem, doseImage)
+target_DVH = DVH(target, doseImage)
+chiasm_DVH = DVH(opticChiasm, doseImage)
+stem_DVH = DVH(brainStem, doseImage)
 
 # Find target center for display
-maskY, maskX, maskZ = np.nonzero(TargetMask)
+maskY, maskX, maskZ = np.nonzero(targetMask)
 targetCenter = [np.mean(maskX), np.mean(maskY), np.mean(maskZ)]
 Z_coord = int(targetCenter[2])
 

@@ -88,7 +88,7 @@ class SparseBeamlets(PatientData):
         totalDose = np.flip(totalDose, 0)
         totalDose = np.flip(totalDose, 1)
 
-        doseImage =  DoseImage(imageArray=totalDose, origin=self._origin, spacing=self._spacing, angles=self._orientation)
+        doseImage = DoseImage(imageArray=totalDose, origin=self._origin, spacing=self._spacing, angles=self._orientation)
         doseImage.patient = self.patient
 
         return doseImage

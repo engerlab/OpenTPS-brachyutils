@@ -90,6 +90,8 @@ class PlanIonLayer:
             self._appendSingleSpot(x, y, weight, timing)
 
     def appendSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
+        if isinstance(weight,float):
+            weight = [weight]
         if isinstance(x, Sequence):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]

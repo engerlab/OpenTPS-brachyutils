@@ -6,6 +6,8 @@ from typing import Sequence
 import numpy as np
 import sys
 
+from Core.Data.Plan.planStructure import PlanStructure
+
 sys.path.append('/home/vhamaide/opentps/')
 
 from Core.Data.Plan.planIonBeam import PlanIonBeam
@@ -43,6 +45,7 @@ class RTPlan(PatientData):
                            "syst_range": 0.0}
         self.scenarios = []
         self.numScenarios = 0
+        self.planDesign = PlanStructure()
 
     def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]
