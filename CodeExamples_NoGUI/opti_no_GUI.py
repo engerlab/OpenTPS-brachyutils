@@ -1,3 +1,4 @@
+import math
 import os
 import numpy as np
 import scipy.sparse as sp
@@ -11,6 +12,7 @@ from Core.IO.dataLoader import loadAllData, listAllFiles
 from Core.IO.dicomReader import readDicomCT, readDicomPlan
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
@@ -57,7 +59,8 @@ targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacin
 opticChiasm = contours.getContourByName('Optic Chiasm')
 brainStem = contours.getContourByName('Brain Stem')
 
-
+#print('contour shape = ', target.imageArray.shape)
+print('mask shape = ', targetMask.imageArray.shape)
 
 beamNames = ["Beam1", "Beam2"]
 gantryAngles = [90., 270.]
@@ -66,7 +69,7 @@ couchAngles = [0., 0.]
 # Load / Generate new plan
 plan_file = os.path.join(output_path, "NewPlan.tps")
 
-if os.path.isfile(plan_file):
+'''if os.path.isfile(plan_file):
     print('test')
     plan = loadRTPlan(plan_file)
 else:
@@ -78,83 +81,83 @@ else:
     planInit.beamNames = beamNames
     planInit.couchAngles = couchAngles
     planInit.calibration = calibration
-    plan = planInit.createPlanStructure()  # Spot placement
+    plan = planInit.createPlan()  # Spot placement
     plan.PlanName = "NewPlan"
-    beamlets = doseCalculator.computeBeamlets(ct,plan,roi=targetMask)
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm").tosparsematrix
+    beamlets = doseCalculator.computeBeamlets(ct,plan,roi=targetMask).toSparseMatrix()
+    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
     plan.save(plan_file)
 
-quit()
+quit()'''
 # Load openTPS plan
 # plan = dataList[3]
 # Load Dicom plan
 plan = dataList[0]
+print(type(plan))
+plan.objectives = ObjectivesList()
 
 
 # Load Beamlets
-beamletPath = os.path.join(output_path,"BeamletMatrix_1.2.826.0.1.3680043.8.498.62034899547733008021049446064726276654.1.blm")
+beamletPath = os.path.join(output_path,"beamlet_IMPT_test.blm")
 plan.beamlets = loadBeamlets(beamletPath)
+print(type(plan.beamlets))
 
 # optimization objectives
-plan.objectives.setTarget(target.ROIName, 60.0)
+plan.objectives.setTarget(target.name, 60.0)
 plan.objectives.fidObjList = []
-plan.objectives.addFidObjective(target.ROIName, "Dmax", "<", 60.0, 5.0)
-plan.objectives.addFidObjective(target.ROIName, "Dmin", ">", 60.0, 5.0)
+plan.objectives.addFidObjective(target.name, "Dmax", "<", 60.0, 5.0)
+plan.objectives.addFidObjective(target.name, "Dmin", ">", 60.0, 5.0)
+scoring_spacing = [2,2,2]
+scoring_grid_size = [int(math.floor(i/j*k)) for i,j,k in zip(ct.gridSize,scoring_spacing,ct.spacing)]
+plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
+objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), formatArray=64)
 
-# Compute pre-optimization dose
-dose_vector = plan.beamlets.Compute_dose_from_beamlets()
-dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
-dose = plan.beamlets.toDoseImage()
+
+
+
+# Optimize treatment plan
+solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction])
+#solver = IMPTPlanOptimizer(method='Gradient', plan=plan, contours=contours, functions=[objectiveFunction])
+w, dose_vector, ps = solver.optimize()
+# dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
+plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
+#saveRTPlan(plan, plan_filepath)
+
+# MCsquare simulation
+doseImage = doseCalculator.computeDose(ct, plan)
+print('beamletshape = ', type(plan.beamlets.toSparseMatrix()))
+print('weights shape = ', plan.beamlets.beamletWeights.shape)
+print('weights =', plan.beamlets.beamletWeights[:10])
+#doseImage = plan.beamlets.toDoseImage()
 
 # Compute DVH
 target_DVH = DVH(target, doseImage)
 chiasm_DVH = DVH(opticChiasm, doseImage)
 stem_DVH = DVH(brainStem, doseImage)
 
-# Find target center for display
-maskY, maskX, maskZ = np.nonzero(targetMask)
-targetCenter = [np.mean(maskX), np.mean(maskY), np.mean(maskZ)]
-Z_coord = int(targetCenter[2])
-
-# Display dose
-plt.figure(figsize=(10, 10))
-plt.subplot(2, 2, 1)
-plt.imshow(ct.imageArray[:, :, Z_coord], cmap='gray')
-#plt.imshow(Target.ContourMask[:, :, Z_coord], alpha=.2, cmap='binary')  # PTV
-#plt.imshow(dose.Image[:, :, Z_coord], cmap='jet', alpha=.2)
-plt.title("Pre-optimization dose")
-plt.subplot(2, 2, 2)
-plt.plot(target_DVH.dose, target_DVH.volume, label=target_DVH.ROIName)
-plt.plot(chiasm_DVH.dose, chiasm_DVH.volume, label=chiasm_DVH.ROIName)
-plt.plot(stem_DVH.dose, stem_DVH.volume, label=stem_DVH.ROIName)
-plt.title("Pre-optimization DVH")
-
-# Optimize treatment plan
-solver = IMPTPlanOptimizer(method='Scipy-BFGS', plan=plan, contours=contours)
-w, dose_vector, ps = solver.optimize()
-# dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
-plan_file = os.path.join(output_path, "NewPlan_optimized.tps")
-plan.save(plan_file)
-
-# MCsquare simulation
-# doseImage = doseCalculator.computeDose(ct, plan3)
-
-# Compute DVH
-target_DVH = DVH(Target, doseImage)
-chiasm_DVH = DVH(Optic_Chiasm, doseImage)
-stem_DVH = DVH(Brain_Stem, doseImage)
-
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 
+# center of mass
+COM_coord = targetMask.centerOfMass
+COM_index = targetMask.getVoxelIndexFromPosition(COM_coord)
+Z_coord = COM_index[2]
+
+img_dose = doseImage.imageArray[:, :, Z_coord].transpose(1,0)
+img_ct = ct.imageArray[:, :, Z_coord].transpose(1,0)
+contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
+img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1,0)
+
 # Display dose
-plt.subplot(2, 2, 3)
-plt.imshow(ct.imageArray[:, :, Z_coord], cmap='gray')
+plt.figure(figsize=(10,6))
+plt.subplot(1,2,1)
+plt.imshow(img_ct, cmap='gray')
 # plt.imshow(Target.ContourMask[:, :, Z_coord], alpha=.2, cmap='binary')  # PTV
-# plt.imshow(dose.Image[:, :, Z_coord], cmap='jet', alpha=.2)
+plt.imshow(img_mask, alpha=.2, cmap='binary')  # PTV
+plt.imshow(img_dose, cmap='jet', alpha=.2)
 plt.title("Optimized dose")
-plt.subplot(2, 2, 4)
-plt.plot(target_DVH.dose, target_DVH.volume, label=target_DVH.ROIName)
-plt.plot(chiasm_DVH.dose, chiasm_DVH.volume, label=chiasm_DVH.ROIName)
-plt.plot(stem_DVH.dose, stem_DVH.volume, label=stem_DVH.ROIName)
+plt.subplot(1, 2, 2)
+plt.plot(target_DVH.histogram[0], target_DVH.histogram[1], label=target_DVH.name)
+plt.plot(chiasm_DVH.histogram[0], chiasm_DVH.histogram[1], label=chiasm_DVH.name)
+plt.plot(stem_DVH.histogram[0], stem_DVH.histogram[1], label=stem_DVH.name)
+plt.legend()
 plt.title("Optimized DVH")
 plt.show()

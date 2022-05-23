@@ -109,9 +109,9 @@ def loadRTPlan(file_path):
     plan.__dict__.update(tmp)
     return plan
 
-def saveBeamlets(plan, file_path):
+def saveBeamlets(beamlets, file_path):
     with open(file_path, 'wb') as fid:
-        pickle.dump(self.__dict__, fid, protocol=4)
+        pickle.dump(beamlets.__dict__, fid, protocol=4)
 
 def loadBeamlets(file_path):
     with open(file_path, 'rb') as fid:

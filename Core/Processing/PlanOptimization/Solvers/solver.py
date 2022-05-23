@@ -15,7 +15,7 @@ class ConvexSolver:
     to the "pyOpti.solvers.solve` solving function
     """
 
-    def __init__(self, step=1., accel=None):
+    def __init__(self, step=0.1, accel=None):
         self.nonSmoothFuns = None
         self.smoothFuns = None
         self.sol = None

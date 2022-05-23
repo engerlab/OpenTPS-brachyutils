@@ -11,7 +11,7 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Images.rspImage import RSPImage
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.Plan.rtPlan import RTPlan
+
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Extensions.FLASH.Core.Processing.RangeEnergy import rangeToEnergy
 
@@ -33,6 +33,7 @@ class PlanStructure:
 
 
     def createPlan(self):
+        from Core.Data.Plan.rtPlan import RTPlan
         plan = RTPlan()
         plan.planDesign = self
         plan.SOPInstanceUID = pydicom.uid.generate_uid()

@@ -15,6 +15,7 @@ class DVH:
         self.dataUpdatedEvent = Event()
 
         self._roiMask = roiMask
+        self._roiName = roiMask.name
         self._doseImage = dose
 
         self._dose = None
@@ -58,6 +59,10 @@ class DVH:
     @property
     def histogram(self):
         return self._dose, self._volume
+
+    @property
+    def name(self):
+        return self._roiName
 
     @property
     def Dmean(self):

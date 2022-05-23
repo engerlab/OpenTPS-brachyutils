@@ -10,6 +10,8 @@ try:
 except:
     use_MKL = 0
 
+from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.rtStruct import RTStruct
 from Core.Processing.PlanOptimization.Solvers import gradientDescent, bfgs, fista, localSearch, mip, sparcling, \
     beamletFree, lp
 
@@ -17,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
-    def __init__(self, plan, contours, functions=None, opti_params=None, **kwargs):
+    def __init__(self, plan: RTPlan, contours: RTStruct, functions=None, opti_params={}, **kwargs):
         if functions is None:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
@@ -25,22 +27,25 @@ class PlanOptimizer:
         self.contours = contours
         self.opti_params = opti_params
         self.functions = functions
+        self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
 
     def intializeWeights(self):
         # Total Dose calculation
-        Weights = np.ones(self.plan.beamlets.NbrSpots, dtype=np.float32)
+        Weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
+
         if use_MKL == 1:
-            TotalDose = sparse_dot_mkl.dot_product_mkl(self.plan.beamlets.BeamletMatrix, Weights)
+            TotalDose = sparse_dot_mkl.dot_product_mkl(self.beamletMatrix, Weights)
         else:
-            TotalDose = sp.csc_matrix.dot(self.plan.beamlets.BeamletMatrix, Weights)
+            TotalDose = sp.csc_matrix.dot(self.beamletMatrix, Weights)
 
         maxDose = np.max(TotalDose)
         try:
             x0 = self.opti_params['init_weights']
         except KeyError:
-            x0 = (self.plan.Objectives.targetPrescription / maxDose) * np.ones(self.plan.beamlets.NbrSpots,
+            x0 = (self.plan.objectives.targetPrescription / maxDose) * np.ones(self.plan.numberOfSpots,
                                                                                dtype=np.float32)
         return x0
+
 
     def optimize(self):
         # initialize objective function and weights
@@ -48,8 +53,8 @@ class PlanOptimizer:
         # self.plan.Objectives.initialize_objective_function(self.contours)
         x0 = self.intializeWeights()
         # Optimization
-        result = self.solver.solve(self.functions, x0, self.opti_params)
-        self.postProcess(result)
+        result = self.solver.solve(self.functions, x0, **self.opti_params)
+        return self.postProcess(result)
 
     def postProcess(self, result):
         weights = result['sol']
@@ -67,8 +72,10 @@ class PlanOptimizer:
 
         # total dose
         logger.info("Total dose calculation ...")
-        self.plan.update_spot_weights(weights)
-        totalDose = self.plan.beamlets.Compute_dose_from_beamlets(weights)
+        self.plan.spotWeights = np.square(weights).astype(np.float32)
+        self.plan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
+        print('type beamlets = ', type(self.plan.beamlets))
+        totalDose = self.plan.beamlets.toDoseImage()
 
         return weights, totalDose, cost
 
@@ -100,8 +107,8 @@ class IMPTPlanOptimizer(PlanOptimizer):
                 'Method {} is not implemented. Pick among ["Scipy-lBFGS", "Gradient", "BFGS", "FISTA"]'.format(
                     self.method))
 
-    def optimize(self):
-        super(IMPTPlanOptimizer, self).optimize()
+    #def optimize(self):
+    #    super(IMPTPlanOptimizer, self).optimize()
 
 
 class ARCPTPlanOptimizer(PlanOptimizer):

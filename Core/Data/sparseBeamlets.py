@@ -102,3 +102,6 @@ class SparseBeamlets(PatientData):
 
     def cropFromROI(self, roi):
         raise NotImplementedError()
+
+    def unload(self):
+        self._sparseBeamlets = []
