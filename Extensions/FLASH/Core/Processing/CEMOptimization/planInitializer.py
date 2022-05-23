@@ -49,9 +49,9 @@ class PlanInitializer:
         rangeLayers = np.arange(minWEPL-layerSpacing, maxWEPL+layerSpacing, layerSpacing)
         energyLayers = rangeToEnergy(rangeLayers)
 
-        targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, 0.)
+        targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, fillValue=0., cropROI=targetROI, cropDim0=True, cropDim1=True, cropDim2=False)
         isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(rspImage, beam, beam.isocenterPosition)
-        cumRSPBEV = imageTransform3D.dicomToIECGantry(cumRSP, beam, 0.)
+        cumRSPBEV = imageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0., cropROI=targetROI, cropDim0=True, cropDim1=True, cropDim2=False)
         weplMeV = rangeToEnergy(cumRSPBEV.imageArray)
 
         spotGridX, spotGridY = self._defineHexagSpotGridAroundIsocenter(spotSpacing, cumRSPBEV, isocenterBEV)

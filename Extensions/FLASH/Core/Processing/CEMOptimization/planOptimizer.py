@@ -52,7 +52,7 @@ class PlanDoseCalculator:
         self.ct = None
         self.plan = None
         self.roi = None
-        self.nbPrimaries = 1e4
+        self.nbPrimaries = 5e4
         self._doseCalculator = MCsquareDoseCalculator()
 
         self._weights:np.ndarray = None

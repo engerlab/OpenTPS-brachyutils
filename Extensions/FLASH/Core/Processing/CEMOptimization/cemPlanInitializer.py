@@ -26,7 +26,7 @@ class CEMPlanInitializer:
     def _intializeBeam(self, beam:CEMBeam, targetROI:ROIMask, spotSpacing:float):
         beam.isocenterPosition = targetROI.centerOfMass
 
-        targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, 0.)
+        targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, fillValue=0., cropROI=targetROI, cropDim0=True, cropDim1=True, cropDim2=False)
         isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(targetROI, beam, beam.isocenterPosition)
 
         spotGridX, spotGridY = self._defineHexagSpotGridAroundIsocenter(spotSpacing, targetROIBEV, isocenterBEV)

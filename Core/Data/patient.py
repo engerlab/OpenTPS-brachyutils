@@ -60,6 +60,9 @@ class Patient:
             self.patientInfo = patientInfo
 
         self._name = self.patientInfo.name
+        self.id = self.patientInfo.patientID
+        self.birthDate = self.patientInfo.birthDate
+        self.sex = self.patientInfo.sex
         self._patientData = []
         self._images = []
         self._plans = []

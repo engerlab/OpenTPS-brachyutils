@@ -85,6 +85,14 @@ class PlanIonBeam:
             ind += len(layer.spotTimings)
 
     @property
+    def spotXY(self) -> np.ndarray:
+        xy = np.array([])
+        for layer in self._layers:
+            xy = np.concatenate((xy, layer.spotXY))
+
+        return xy
+
+    @property
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 
@@ -111,3 +119,11 @@ class PlanIonBeam:
     def _fusionDuplicates(self):
         #TODO
         raise NotImplementedError()
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def createEmptyBeamWithSameMetaData(self):
+        beam = self.copy()
+        beam._layers = []
+        return beam

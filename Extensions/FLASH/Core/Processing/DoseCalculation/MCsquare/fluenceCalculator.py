@@ -1,9 +1,11 @@
+from typing import Optional
 
 import numpy as np
 from scipy.ndimage import gaussian_filter
 
 from Core.Data.Images.image2D import Image2D
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
@@ -14,8 +16,8 @@ class FluenceCalculator:
     def __init__(self):
         self.beamModel:BDL = None
 
-    def layerFluenceAtNozzle(self, layer:PlanIonLayer, ct:Image3D, beam:PlanIonBeam) -> Image2D:
-        fluenceImage = self._pointSpreadFluenceAtNozzle(layer, ct, beam)
+    def layerFluenceAtNozzle(self, layer:PlanIonLayer, ct:Image3D, beam:PlanIonBeam, roi:Optional[ROIMask]=None) -> Image2D:
+        fluenceImage = self._pointSpreadFluenceAtNozzle(layer, ct, beam, roi)
 
         sigmaX, sigmaY = self.beamModel.spotSizes(layer.nominalEnergy)
         sigmaX /= fluenceImage.spacing[0]
@@ -29,8 +31,8 @@ class FluenceCalculator:
 
         return fluenceImage
 
-    def _pointSpreadFluenceAtNozzle(self, layer:PlanIonLayer, ct:Image3D, beam:PlanIonBeam) -> Image2D:
-        ctBEV = imageTransform3D.dicomToIECGantry(ct, beam, fillValue=-1024.)
+    def _pointSpreadFluenceAtNozzle(self, layer:PlanIonLayer, ct:Image3D, beam:PlanIonBeam, roi:Optional[ROIMask]) -> Image2D:
+        ctBEV = imageTransform3D.dicomToIECGantry(ct, beam, fillValue=-1024., cropROI=roi, cropDim0=True, cropDim1=True, cropDim2=False)
         isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(ct, beam, beam.isocenterPosition)
 
         fluence = np.zeros((ctBEV.imageArray.shape[0], ctBEV.imageArray.shape[1]))

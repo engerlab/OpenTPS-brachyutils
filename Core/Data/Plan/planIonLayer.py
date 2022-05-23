@@ -1,3 +1,4 @@
+import copy
 import unittest
 from typing import Iterable, Union, Sequence, Optional, Tuple
 
@@ -75,7 +76,7 @@ class PlanIonLayer:
         return len(self._weights)
 
     def addToSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
+        if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
                 self._addToSinglepot(xElem, y[i], weight[i], t)
@@ -90,19 +91,22 @@ class PlanIonLayer:
             self._appendSingleSpot(x, y, weight, timing)
 
     def appendSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(weight,float):
-            weight = [weight]
-        if isinstance(x, Sequence):
-            for i, xElem in enumerate(x):
-                t = timing if timing is None else timing[i]
-                self._appendSingleSpot(xElem, y[i], weight[i], t)
-        else:
-            self._appendSingleSpot(x, y, weight, timing)
+        if not isinstance(x, Iterable): x = [x]
+        if not isinstance(y, Iterable): y = [y]
+        if not isinstance(weight, Iterable): weight = [weight]
+        if timing != None and not isinstance(weight, Iterable): timing = [timing]
+
+        for i, xElem in enumerate(x):
+            t = timing if timing is None else timing[i]
+            self._appendSingleSpot(xElem, y[i], weight[i], t)
+
+
 
     def _appendSingleSpot(self, x:float, y:float, weight:float, timing:Optional[float]=None):
         alreadyExists, _ = self.spotDefinedInXY(x, y)
         if alreadyExists:
-            raise ValueError('Spot already exists in (x,y)')
+            if timing is None: # possible to have two spots at the same location with different timings (e.g. bursts in synchrocyclotron)
+                raise ValueError('Spot already exists in (x,y)')
 
         self._x = np.append(self._x, x)
         self._y = np.append(self._y, y)
@@ -112,7 +116,7 @@ class PlanIonLayer:
             assert len(self._weights) == len(self._timings)
 
     def setSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
+        if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
                 self._setSingleSpot(xElem, y[i], weight[i], t)
@@ -139,7 +143,7 @@ class PlanIonLayer:
             self._timings = np.delete(self._timings, spotPos)
 
     def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> Tuple[bool, int]:
-        if isinstance(x, Sequence):
+        if isinstance(x, Iterable):
             exist = []
             where = []
             for i, xElem in enumerate(x):
@@ -202,10 +206,22 @@ class PlanIonLayer:
         if len(self._timings)==n:
             self._timings = np.array([self._timings[i] for i in order])
 
-
     def simplify(self, threshold:float=0.0):
         # TODO
         raise(NotImplementedError('TODO'))
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def createEmptyLayerWithSameMetaData(self):
+        layer = self.copy()
+        layer._x = np.array([])
+        layer._y = np.array([])
+        layer._weights = np.array([])
+        layer._timings = np.array([])
+        return layer
+
+    
 
 class RangeShifterSettings:
     def __init__(self):

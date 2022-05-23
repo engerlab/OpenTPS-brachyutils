@@ -1,3 +1,6 @@
+import copy
+from typing import Sequence
+
 import numpy as np
 
 from Core.Data.patientData import PatientData
@@ -10,7 +13,7 @@ class Image2D(PatientData):
 
         self.dataChangedSignal = Event()
 
-        self.imageArray = imageArray
+        self.imageArray:np.ndarray = imageArray
         self._origin = np.array(origin)
         self._spacing = np.array(spacing)
         self._angles = np.array(angles)
@@ -19,6 +22,12 @@ class Image2D(PatientData):
         gs = self.gridSize
         s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
         return s
+
+    # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D
+    @classmethod
+    def fromImage2D(cls, image):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing,
+                       angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
 
     @property
     def origin(self) -> np.ndarray:
@@ -57,3 +66,19 @@ class Image2D(PatientData):
     @property
     def gridSizeInWorldUnit(self) -> np.ndarray:
         return self.gridSize * self.spacing
+
+    def getDataAtPosition(self, position:Sequence):
+        voxelIndex = self.getVoxelIndexFromPosition(position)
+        dataNumpy = self.imageArray[voxelIndex[0], voxelIndex[1]]
+
+        return dataNumpy
+
+    def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
+        positionInMM = np.array(position)
+        shiftedPosInMM = positionInMM - self.origin
+        posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
+
+        return posInVoxels
+
+    def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        return self.origin + np.array(index).astype(dtype=float)*self.spacing
