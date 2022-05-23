@@ -95,6 +95,12 @@ class ProgramSettings(metaclass=Singleton):
         self.writeConfig()
         return self._config["machine_param"]["scannerFolder"]
 
+    @scannerFolder.setter
+    def scannerFolder(self, path):
+        self._config["machine_param"]["scannerFolder"] = path
+
+        self.writeConfig()
+
     @property
     def bdlFile(self):
         try:
@@ -107,6 +113,12 @@ class ProgramSettings(metaclass=Singleton):
         self._config["machine_param"].update({"bdlFile" : bdlModule.__path__[0] + os.sep  + 'UMCG_P1_v2_RangeShifter.txt'})
         self.writeConfig()
         return self._config["machine_param"]["bdlFile"]
+
+    @bdlFile.setter
+    def bdlFile(self, path):
+        self._config["machine_param"]["bdlFile"] = path
+
+        self.writeConfig()
 
     def writeConfig(self):
         with open(self._configFile, 'w') as file:
