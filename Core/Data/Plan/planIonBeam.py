@@ -118,3 +118,11 @@ class PlanIonBeam:
     def _fusionDuplicates(self):
         #TODO
         raise NotImplementedError()
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def createEmptyBeamWithSameMetaData(self):
+        beam = self.copy()
+        beam._layers = []
+        return beam
