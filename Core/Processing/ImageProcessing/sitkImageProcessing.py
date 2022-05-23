@@ -72,15 +72,11 @@ def extremePoints(image:Image3D):
 
     extreme_points = [img.TransformIndexToPhysicalPoint(np.array([0, 0, 0]).astype(int).tolist()),
                       img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], 0, 0]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([image.gridSize[0], image.gridSize[1], 0]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([image.gridSize[0], image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([image.gridSize[0], 0, image.gridSize[2]]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], image.gridSize[1], 0]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], 0, image.gridSize[2]]).astype(int).tolist()),
                       img.TransformIndexToPhysicalPoint(np.array([0, image.gridSize[1], 0]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([0, image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([0, image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
                       img.TransformIndexToPhysicalPoint(np.array([0, 0, image.gridSize[2]]).astype(int).tolist())]
 
     return extreme_points
@@ -130,7 +126,7 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     transform.SetMatrix(tform.flatten())
 
     output_origin = [min_x, min_y, min_z]
-    output_size = [int((max_x - min_x) / image.spacing[0]), int((max_y - min_y) / image.spacing[1]), int((max_z - min_z) / image.spacing[1])]
+    output_size = [int((max_x-min_x)/image.spacing[0])+1, int((max_y-min_y)/image.spacing[1])+1, int((max_z-min_z)/image.spacing[1])+1]
 
     reference_image = sitk.Image(output_size, img.GetPixelIDValue())
     reference_image.SetOrigin(output_origin)
