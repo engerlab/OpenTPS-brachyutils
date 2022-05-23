@@ -6,8 +6,6 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, 
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.patient import Patient
 from Core.event import Event
-from Extensions.FLASH.Core.Processing.CEMOptimization import cemObjectives, workflows
-
 
 class PlanOptiPanel(QWidget):
     def __init__(self, viewController):
@@ -268,7 +266,7 @@ class ROITable(QTableWidget):
 
         self.setHorizontalHeaderLabels(['ROI', 'Weight', 'Dmin', 'Dmax'])
 
-    def getObjectiveTerms(self) -> Sequence[workflows.Objective]:
+    def getObjectiveTerms(self) -> Sequence:
         # Modify this with conventional objectives!!!!!!!!!!!!!
         terms = []
 
