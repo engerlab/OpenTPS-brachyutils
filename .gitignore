@@ -13,3 +13,4 @@ scripts/
 tests/
 notebooks/
 *.txt
+Extensions/*

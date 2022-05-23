@@ -15,7 +15,7 @@ def readScanner(scannerFolder) -> AbstractCTCalibration:
         pass
 
     try:
-        materialsFile =  glob.glob('material*.*')[0]
+        materialsFile = glob.glob('material*.*')[0]
         conversionFile = glob.glob('calibration*.*')
         conversionFile += (glob.glob('Density*.*'))
         conversionFile  = conversionFile[0]
