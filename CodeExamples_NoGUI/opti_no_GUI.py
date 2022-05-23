@@ -59,9 +59,6 @@ targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacin
 opticChiasm = contours.getContourByName('Optic Chiasm')
 brainStem = contours.getContourByName('Brain Stem')
 
-#print('contour shape = ', target.imageArray.shape)
-print('mask shape = ', targetMask.imageArray.shape)
-
 beamNames = ["Beam1", "Beam2"]
 gantryAngles = [90., 270.]
 couchAngles = [0., 0.]
@@ -92,16 +89,12 @@ quit()'''
 # plan = dataList[3]
 # Load Dicom plan
 plan = dataList[0]
-print(type(plan))
-plan.objectives = ObjectivesList()
-
-
 # Load Beamlets
 beamletPath = os.path.join(output_path,"beamlet_IMPT_test.blm")
 plan.beamlets = loadBeamlets(beamletPath)
-print(type(plan.beamlets))
 
 # optimization objectives
+plan.objectives = ObjectivesList()
 plan.objectives.setTarget(target.name, 60.0)
 plan.objectives.fidObjList = []
 plan.objectives.addFidObjective(target.name, "Dmax", "<", 60.0, 5.0)
@@ -110,9 +103,6 @@ scoring_spacing = [2,2,2]
 scoring_grid_size = [int(math.floor(i/j*k)) for i,j,k in zip(ct.gridSize,scoring_spacing,ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
 objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), formatArray=64)
-
-
-
 
 # Optimize treatment plan
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction])
@@ -123,11 +113,8 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 #saveRTPlan(plan, plan_filepath)
 
 # MCsquare simulation
-doseImage = doseCalculator.computeDose(ct, plan)
-print('beamletshape = ', type(plan.beamlets.toSparseMatrix()))
-print('weights shape = ', plan.beamlets.beamletWeights.shape)
-print('weights =', plan.beamlets.beamletWeights[:10])
-#doseImage = plan.beamlets.toDoseImage()
+#doseImage = doseCalculator.computeDose(ct, plan)
+doseImage = plan.beamlets.toDoseImage()
 
 # Compute DVH
 target_DVH = DVH(target, doseImage)
@@ -147,17 +134,19 @@ contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gr
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1,0)
 
 # Display dose
-plt.figure(figsize=(10,6))
-plt.subplot(1,2,1)
-plt.imshow(img_ct, cmap='gray')
-# plt.imshow(Target.ContourMask[:, :, Z_coord], alpha=.2, cmap='binary')  # PTV
-plt.imshow(img_mask, alpha=.2, cmap='binary')  # PTV
-plt.imshow(img_dose, cmap='jet', alpha=.2)
-plt.title("Optimized dose")
-plt.subplot(1, 2, 2)
-plt.plot(target_DVH.histogram[0], target_DVH.histogram[1], label=target_DVH.name)
-plt.plot(chiasm_DVH.histogram[0], chiasm_DVH.histogram[1], label=chiasm_DVH.name)
-plt.plot(stem_DVH.histogram[0], stem_DVH.histogram[1], label=stem_DVH.name)
+fig, ax = plt.subplots(1,2, figsize=(10,6))
+ax[0].axes.get_xaxis().set_visible(False)
+ax[0].axes.get_yaxis().set_visible(False)
+ax[0].imshow(img_ct, cmap='gray')
+ax[0].imshow(img_mask, alpha=.2, cmap='binary')  # PTV
+dose = ax[0].imshow(img_dose, cmap='jet', alpha=.2)
+plt.colorbar(dose, ax=ax[0])
+ax[1].plot(target_DVH.histogram[0], target_DVH.histogram[1], label=target_DVH.name)
+ax[1].plot(chiasm_DVH.histogram[0], chiasm_DVH.histogram[1], label=chiasm_DVH.name)
+ax[1].plot(stem_DVH.histogram[0], stem_DVH.histogram[1], label=stem_DVH.name)
+ax[1].set_xlabel("Dose (Gy)")
+ax[1].set_ylabel("Volume (%)")
+plt.grid(True)
 plt.legend()
-plt.title("Optimized DVH")
+
 plt.show()

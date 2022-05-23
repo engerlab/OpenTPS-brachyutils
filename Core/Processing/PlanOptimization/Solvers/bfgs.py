@@ -15,13 +15,13 @@ class ScipyOpt:
 
     def solve(self, func, x0, param=None):
         startTime = time.time()
-        if not func.formatArray == 64:
+        if not func[0].formatArray == 64:
             logger.error('{} requires the objective in format array = 64'.format(self.__class__.__name__))
         if param is None:
-            param = {'fTol': 1e-5, 'maxIter': 100}
-        if 'GRAD' not in func.cap(x0):
+            param = {'fTol': 1e-5, 'maxIter': 200}
+        if 'GRAD' not in func[0].cap(x0):
             logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
-        res = scipy.optimize.minimize(func.eval, x0, method=self.meth, jac=func.grad,
+        res = scipy.optimize.minimize(func[0].eval, x0, method=self.meth, jac=func[0].grad,
                                       options={'maxiter': param['maxIter'], 'disp':True})
 
         result = {'sol': res.x, 'crit': res.message, 'niter': res.nit, 'time': time.time() - startTime,

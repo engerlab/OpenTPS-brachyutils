@@ -47,7 +47,7 @@ class ObjectivesList():
                     objective.maskVec = contour.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
                     objective.maskVec.resample(scoringGridSize, ct.origin, scoringSpacing)
                     objective.maskVec = np.flip(objective.maskVec.imageArray, (0, 1))
-                    objective.maskVec = np.ndarray.flatten(objective.maskVec).astype('bool')
+                    objective.maskVec = np.ndarray.flatten(objective.maskVec,'F').astype('bool')
 
     def addExoticObjective(self, weight):
         objective = ExoticObjective()
