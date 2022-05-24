@@ -270,6 +270,8 @@ class PatientDataTree(QTreeView):
 
         print('Right click options class: ', dataClass)
 
+        self.info_action = QAction("Info")
+        self.info_action.triggered.connect(lambda checked: self._showImageInfo(selectedData[0]))
         if (len(selected) > 0):
             self.context_menu = QMenu()
             if not dataClass == 'mixed':
@@ -287,8 +289,6 @@ class PatientDataTree(QTreeView):
                     self.superimpose_action.triggered.connect(lambda checked: self._setSecondaryImage(selectedData[0]))
                     self.context_menu.addAction(self.superimpose_action)
 
-                    self.info_action = QAction("Info")
-                    self.info_action.triggered.connect(lambda checked: self._showImageInfo(selectedData[0]))
                     self.context_menu.addAction(self.info_action)
 
                     self.copy_action = QAction("Copy")
@@ -330,6 +330,9 @@ class PatientDataTree(QTreeView):
                 self.compute3DModelAction.triggered.connect(
                     lambda checked, selected3DSequence=selectedData[0]: self.computeDynamic3DModel(selected3DSequence))
                 self.context_menu.addAction(self.compute3DModelAction)
+
+            if (dataClass==RTPlan and len(selected)==1):
+                self.context_menu.addAction(self.info_action)
 
             # # actions for plans
             # if (dataClass == 'plan' and len(UIDs) == 1):
