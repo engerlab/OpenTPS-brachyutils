@@ -16,6 +16,7 @@ from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelit
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
+from Core.Data.Images.deformation3D import im
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planStructure import PlanStructure
 
@@ -95,10 +96,10 @@ plan.beamlets = loadBeamlets(beamletPath)
 
 # optimization objectives
 plan.objectives = ObjectivesList()
-plan.objectives.setTarget(target.name, 60.0)
+plan.objectives.setTarget(target.name, 65.0)
 plan.objectives.fidObjList = []
-plan.objectives.addFidObjective(target.name, "Dmax", "<", 60.0, 5.0)
-plan.objectives.addFidObjective(target.name, "Dmin", ">", 60.0, 5.0)
+plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.0)
+plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 scoring_spacing = [2,2,2]
 scoring_grid_size = [int(math.floor(i/j*k)) for i,j,k in zip(ct.gridSize,scoring_spacing,ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
@@ -108,6 +109,8 @@ objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSpa
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction])
 #solver = IMPTPlanOptimizer(method='Gradient', plan=plan, contours=contours, functions=[objectiveFunction])
 w, dose_vector, ps = solver.optimize()
+#with open('test_weights.npy', 'wb') as f:
+#    np.save(f, w)
 # dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 #saveRTPlan(plan, plan_filepath)
@@ -122,6 +125,8 @@ chiasm_DVH = DVH(opticChiasm, doseImage)
 stem_DVH = DVH(brainStem, doseImage)
 
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
+print('D5 = ' + str(target_DVH.D5) + ' Gy')
+print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
 
 # center of mass
 COM_coord = targetMask.centerOfMass
@@ -129,6 +134,7 @@ COM_index = targetMask.getVoxelIndexFromPosition(COM_coord)
 Z_coord = COM_index[2]
 
 img_dose = doseImage.imageArray[:, :, Z_coord].transpose(1,0)
+img_dose =  imageT
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1,0)
 contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1,0)

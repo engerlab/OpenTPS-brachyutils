@@ -13,7 +13,7 @@ from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
-from Extensions.FLASH.Core.Processing.RangeEnergy import rangeToEnergy
+from Core.Processing.RangeEnergy import rangeToEnergy
 
 
 class PlanStructure:
