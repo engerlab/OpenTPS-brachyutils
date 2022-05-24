@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QVBoxLayout, QFileDialog, \
     QStackedWidget, QListView, QComboBox, QWidgetAction
 
-from Core.IO import dataLoader
+from Core.IO import dataLoader, dataExporter
 from Core.event import Event
 from GUI.Tools.cropTool import CropWidget
 from GUI.Viewer.dataViewer import DataViewer
@@ -36,6 +36,9 @@ class ViewerToolbar(QToolBar):
         self._buttonOpen.setStatusTip("Open files or folder")
         self._buttonOpen.triggered.connect(self._handleLoadData)
         self._buttonOpen.setCheckable(False)
+
+        self._buttonSave = QAction(QIcon(self.iconPath + "save.png"), "Export", self)
+        self._buttonSave.triggered.connect(self._handleExportData)
 
         self._buttonIndependentViews = QAction(QIcon(self.iconPath + "chain-unchain.png"), "Independent views", self)
         self._buttonIndependentViews.setStatusTip("Independent views")
@@ -71,6 +74,7 @@ class ViewerToolbar(QToolBar):
 
         self.addAction(self._buttonSettings)
         self.addAction(self._buttonOpen)
+        self.addAction(self._buttonSave)
         self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonWindowLevel)
@@ -154,6 +158,16 @@ class ViewerToolbar(QToolBar):
         self.dataPath = withoutLastElementPath
 
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
+
+    def _handleExportData(self):
+        folderpath = QFileDialog.getExistingDirectory(self, 'Select Folder')
+
+        if folderpath=="":
+            return
+
+        # TODO A nice window to select the patient and the output format
+        dataExporter.exportPatientAsDicom(self._viewController.currentPatient, folderpath)
+
 
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:

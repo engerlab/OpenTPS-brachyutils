@@ -6,7 +6,7 @@ sys.path.append(currentWorkingDir)
 
 from Core.IO.mhdReadWrite import *
 from Core.IO.dataLoader import listAllFiles, loadAllData
-from Core.IO.dicomReader import readDicomCT
+from Core.IO.dicomIO import readDicomCT
 
 if __name__ == '__main__':
 

@@ -517,7 +517,7 @@ def writeRTPlan(plan:RTPlan, filePath):
         dcm_beam.IonControlPointSequence = []
         for layer in beam:
             dcm_layer = pydicom.dataset.Dataset()
-            dcm_layer.seriesInstanceUID = SeriesInstanceUID
+            dcm_layer.SeriesInstanceUID = SeriesInstanceUID
             dcm_layer.NumberOfPaintings = layer.numberOfPaintings
             dcm_layer.NominalBeamEnergy = layer.nominalEnergy
             dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()

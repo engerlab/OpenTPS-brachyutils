@@ -9,7 +9,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.dvh import DVH
 from Core.IO import mcsquareIO
 from Core.IO.dataLoader import loadAllData, listAllFiles
-from Core.IO.dicomReader import readDicomCT, readDicomPlan
+from Core.IO.dicomIO import readDicomCT, readDicomPlan
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity

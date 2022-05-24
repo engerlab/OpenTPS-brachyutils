@@ -13,7 +13,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan
-from Core.IO.dicomReader import readDicomCT, readDicomPlan
+from Core.IO.dicomIO import readDicomCT, readDicomPlan
 
 # Create plan from scratch
 plan = RTPlan()
