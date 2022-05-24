@@ -25,7 +25,6 @@ def _checkAndRenameFile(folderPath:str, fileName:str) -> str:
     numb = 1
     while True:
         newPath = "{0}_{2}{1}".format(*os.path.splitext(fileName) + (numb,))
-        print(os.path.join(folderPath, newPath))
         if os.path.isfile(os.path.join(folderPath, newPath)):
             numb += 1
         else:
