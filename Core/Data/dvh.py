@@ -109,7 +109,7 @@ class DVH:
         self._convertContourToROI()
 
         if not(self._doseImage.hasSameGrid(self._roiMask)):
-            self._doseImage = imageTransform3D.intersect(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
+            self._doseImage = imageTransform3D.resampleOn(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
 
         dose = self._doseImage.imageArray
         mask = self._roiMask.imageArray.astype(bool)

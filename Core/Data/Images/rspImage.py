@@ -39,6 +39,6 @@ class RSPImage(Image3D):
         rspIEC.imageArray = np.cumsum(rspIEC.imageArray, axis=2)*rspIEC.spacing[2]
 
         outImage = imageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
-        outImage = imageTransform3D.intersect(outImage, self, inPlace=True, fillValue=0.)
+        outImage = imageTransform3D.resampleOn(outImage, self, inPlace=True, fillValue=0.)
 
         return outImage
