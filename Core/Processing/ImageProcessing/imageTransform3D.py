@@ -24,7 +24,7 @@ def add(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:flo
 def subtract(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
     raise NotImplementedError
 
-def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
     if not inPlace:
         image = image.__class__.fromImage3D(image)
 
