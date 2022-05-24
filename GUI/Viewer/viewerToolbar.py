@@ -32,9 +32,6 @@ class ViewerToolbar(QToolBar):
         self._buttonSettings = QAction(QIcon(self.iconPath + "settings-5-line.png"), "Settings", self)
         self._buttonSettings.triggered.connect(self._openSettings)
 
-        self._buttonReloadModules = QAction(QIcon(self.iconPath + "reload.png"), "Reload python modules", self)
-        self._buttonReloadModules.triggered.connect(self._reloadModules)
-
         self._buttonOpen = QAction(QIcon(self.iconPath + "folder-open.png"), "Open files or folder", self)
         self._buttonOpen.setStatusTip("Open files or folder")
         self._buttonOpen.triggered.connect(self._handleLoadData)
@@ -73,7 +70,6 @@ class ViewerToolbar(QToolBar):
         self._dropModeAction.setDefaultWidget(self._dropModeCombo)
 
         self.addAction(self._buttonSettings)
-        self.addAction(self._buttonReloadModules)
         self.addAction(self._buttonOpen)
         self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
@@ -111,15 +107,6 @@ class ViewerToolbar(QToolBar):
         self._viewController.independentViewsEnabledSignal.connect(self._handleButtonIndependentViews)
         self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
         self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
-
-    def _reloadModules(self):
-        # Does not seem to reload the modules
-        modules = [module for module in sys.modules.values()]
-        for module in modules:
-            try:
-                importlib.reload(module)
-            except Exception as e:
-                pass
 
     def _dropModeToIndex(self, dropMode):
         return list(self._dropModeToStr.keys()).index(dropMode)
