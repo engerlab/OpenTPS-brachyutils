@@ -160,7 +160,7 @@ class ViewerToolbar(QToolBar):
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
 
     def _handleExportData(self):
-        folderpath = QFileDialog.getExistingDirectory(self, 'Select Folder')
+        folderpath = QFileDialog.getExistingDirectory(self, 'Select folder')
 
         if folderpath=="":
             return

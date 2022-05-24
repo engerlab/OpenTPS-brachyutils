@@ -4,7 +4,7 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.IO.mhdReadWrite import *
+from Core.IO.mhdIO import *
 from Core.IO.dataLoader import listAllFiles, loadAllData
 from Core.IO.dicomIO import readDicomCT
 
