@@ -56,7 +56,7 @@ if __name__ == '__main__':
     sequenceDurationInSecs = 10
     samplingFrequency = 2
     #subSequenceSize = 20
-    #outputSize = [64, 64]
+    outputSize = [64, 64]
 
     ## ROI choice and crop options 
     bodyContourToUse = 'Body'
@@ -80,7 +80,7 @@ if __name__ == '__main__':
 
     # multiProcessing 
     maxMultiProcUse = 6
-    
+    subSequenceSize = maxMultiProcUse
 
 
     ## Start the script ---------------------------------
@@ -269,5 +269,5 @@ if __name__ == '__main__':
         print('Script with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
         print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
     
-        savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_serie_{seqIdx}'
-        saveSerializedObjects(resultList, savingPath)
+        serieSavingPath = savingPath + resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_serie_{seqIdx}'
+        saveSerializedObjects(resultList, serieSavingPath)
