@@ -28,25 +28,28 @@ def events(L,meanDurationEvents,varianceDurationEvents,Tend):
 
 #entre deux timestamps successifs, un event est cree
 #Un event correspond a une fonction echellon 
-def vectorSimulation(diff,timestamps,listOfEvents): 
+def vectorSimulation(coeffMin,coeffMax,amplitude,frequency,timestamps,listOfEvents): 
     t = timestamps      
-    y = np.zeros(len(t))
+    y_amplitude = np.zeros(len(t))
+    y_frequency = np.zeros(len(t))
     i = 0
     while i < len(listOfEvents):
         if i+2 < len(listOfEvents):
-            value = np.random.uniform(-diff,diff)
+            dA = np.random.uniform(coeffMin,coeffMax)*amplitude #amplitude variation
+            df = np.abs(frequency-(1/frequency+np.random.uniform(coeffMin,coeffMax))**-1) #frequency variation
+            value_amplitude = np.random.uniform(-dA,dA)
+            value_frequency = np.random.uniform(-df,df)
             t1 = listOfEvents[i+1]
             t2 = listOfEvents[i+2]
-            y[(t>=t1) & (t<=t2)] = value
+            y_amplitude[(t>=t1) & (t<=t2)] = value_amplitude
+            y_frequency[(t>=t1) & (t<=t2)] = value_frequency
         i+=2
-    return y
+    return y_amplitude,y_frequency
 
 #creation des donnees respiratoires
 def signalGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120):
     amp = amplitude
     freq = 1 / period
-    dA = np.random.uniform(coeffMin,coeffMax)*amp #amplitude variation
-    df = np.abs(freq-(period+np.random.uniform(coeffMin,coeffMax))**-1) #frequency variation
     timestamps = np.arange(0,signalDuration,step)
     #creation des events
     #s il y a un changement d amplitude, alors il y a un changement de frequence
@@ -58,8 +61,9 @@ def signalGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signal
     listOfEventsApnea = events(meanEventApnea,meanDurationEventsApnea,varianceDurationEventsApnea,signalDuration)
    
     
-    amplitude += vectorSimulation(dA,timestamps,listOfEvents)
-    freq += vectorSimulation(df,timestamps,listOfEvents)
+    y_amplitude, y_frequency = vectorSimulation(coeffMin,coeffMax,amp,freq,timestamps,listOfEvents)
+    amplitude += y_amplitude
+    freq += y_frequency
     noise = np.random.normal(loc=mean,scale=sigma,size=len(timestamps))
     
     signal = (amplitude / 2) * np.sin(2 * np.pi * freq * (timestamps % (1 / freq))) ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
@@ -112,7 +116,7 @@ def signalGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signal
             signal[timeIndex::] = sig[0:len(signal)-timeIndex]
         
     
-    return timestamps * 1000, signal
+    return timestamps * 1000, signal, amplitude
 
 
 def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
@@ -136,16 +140,16 @@ def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, sign
 
 
 
-# for i in range(10):
-#     time,samples,amplitude = signalGeneration()
-#     time = np.arange(0,100,0.5)
-#     plt.figure(figsize=(15,10))
-#     plt.plot(time,samples)
-#     plt.plot(time,amplitude)
-#     plt.xlabel("Time [s]")
-#     plt.ylabel("Amplitude [mm]")
-#     plt.title("Breathing signal part 1")
-#     #plt.xlim((0,100))
-#     plt.ylim((-30,30))
+for i in range(1):
+    time,samples,amplitude = signalGeneration()
+    time = np.arange(0,100,0.5)
+    plt.figure(figsize=(15,10))
+    plt.plot(time,samples)
+    plt.plot(time,amplitude)
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude [mm]")
+    plt.title("Breathing signal part 1")
+    #plt.xlim((0,100))
+    plt.ylim((-30,30))
 
 
