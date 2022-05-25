@@ -269,5 +269,5 @@ if __name__ == '__main__':
         print('Script with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
         print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
     
-        savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM'
+        savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_serie_{seqIdx}'
         saveSerializedObjects(resultList, savingPath)
