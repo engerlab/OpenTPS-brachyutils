@@ -29,7 +29,6 @@ from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR
 from Core.Processing.ImageProcessing.crop3D import *
 
 if __name__ == '__main__':
-
     ## paths selection ------------------------------------
 
     patientFolder = 'Patient_0'
