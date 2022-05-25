@@ -88,7 +88,14 @@ class PlanIonBeam:
     def spotXY(self) -> np.ndarray:
         xy = np.array([])
         for layer in self._layers:
-            xy = np.concatenate((xy, layer.spotXY))
+            layerXY = list(layer.spotXY)
+            if len(layerXY)<=0:
+                continue
+
+            if len(xy)<=0:
+                xy = layerXY
+            else:
+                xy = np.concatenate((xy, layerXY))
 
         return xy
 

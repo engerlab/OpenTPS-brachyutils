@@ -13,7 +13,7 @@ sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from Core.IO.dicomReader import readDicomCT
+from Core.IO.dicomIO import readDicomCT
 from Core.IO.dataLoader import listAllFiles, loadAllData
 from Core.IO.serializedObjectIO import saveSerializedObjects
 

@@ -3,6 +3,7 @@ import os
 import shutil
 from distutils.dir_util import copy_tree
 from glob import glob
+from typing import Sequence
 
 import numpy as np
 
@@ -62,15 +63,15 @@ class MCsquareHU2Material:
         self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
 
     def _writeHU2MaterialFile(self, huMaterialFile):
-        printedMaterials = self.materialsOrderedForPrinting()
+        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
 
         with open(huMaterialFile, 'w') as f:
             for i, hu in enumerate(self.__hu):
-                s = str(hu) + ' ' + str(printedMaterials.index(self.__materials[i])+1) + '\n'
+                s = str(hu) + ' ' + str(materialsOrderedForPrinting.index(self.__materials[i])+1) + '\n'
                 f.write(s)
 
     def _writeMaterials(self, folderPath):
-        materialsOrderedForPrinting = self._allMaterialsandElements()
+        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
         matNames = [mat.name for mat in materialsOrderedForPrinting]
 
         for material in self._allMaterialsandElements():
@@ -90,56 +91,46 @@ class MCsquareHU2Material:
             copy_tree(folder, targetFolder)
 
     def _writeMCsquareList(self, listFile):
-        matList = MCsquareMaterial.getMaterialList('default')
+        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
 
         with open(listFile, 'w') as f:
-            #We keep the default MCsquare list because some IDs (eg. that of Water) are hard coded in MCsquare.
-            for mat in matList:
-                id = mat["ID"]
-                f.write(str(id) + ' ' + mat["name"] + '\n')
-
-            for i, mat in enumerate(self._allMaterialsandElements()):
-                # If no material defined with number i we set the closest. MCsquare does not accept jumps in list.dat
-                f.write(str(i+id+1) + ' ' + mat.name + '\n')
+            for i, mat in enumerate(materialsOrderedForPrinting):
+                f.write(str(i+1) + ' ' + mat.name + '\n')
 
     def materialsOrderedForPrinting(self):
         materials = self._allMaterialsandElements()
         defaultMats = MCsquareMaterial.getMaterialList('default')
 
-        printedMaterials = []
-        for i in enumerate(defaultMats):
-            printedMaterials.append('Default MCsquare material')
+        orderMaterials = []
+        for mat in defaultMats:
+            newMat = MCsquareMaterial()
+            newMat.name = mat["name"]
+            orderMaterials.append(newMat)
 
         for material in materials:
-            printedMaterials.append(material)
+            orderMaterials.append(material)
 
-        return printedMaterials
+        return orderMaterials
 
     def _allMaterialsandElements(self):
-        materialNbs = []
         materials = []
         for material in self.__materials:
-            if material.number in materialNbs:
-                pass
-
             materials.append(material)
-            materialNbs.append(material.number)
 
             for element in material.MCsquareElements:
-                if element.number in materialNbs:
-                    pass
                 materials.append(element)
-                materialNbs.append(element.number)
 
-        return self._sortMaterialsandElements(materialNbs, materials)
+        return self._sortMaterialsandElements(materials)
 
-    def _sortMaterialsandElements(self, materialNbs, materials):
+    def _sortMaterialsandElements(self, materials:Sequence[MCsquareMaterial]) -> Sequence[MCsquareMaterial]:
         uniqueMaterials = []
 
-        materialNbs = np.array(materialNbs)
-        _, ind = np.unique(materialNbs, return_index=True)
+        materialNames = [material.name for material in materials]
+        _, ind = np.unique(materialNames, return_index=True)
 
         for i in ind:
             uniqueMaterials.append(materials[i])
+
+        uniqueMaterials.sort(key=lambda e:e.number)
 
         return uniqueMaterials
