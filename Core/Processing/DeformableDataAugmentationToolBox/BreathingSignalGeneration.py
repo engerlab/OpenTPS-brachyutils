@@ -133,29 +133,6 @@ def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, sign
 
     return timestamps, signal3D
 
-<<<<<<< HEAD
-"""
-#parametres changeables
-amplitude = 10 #amplitude (mm)
-dA = 5 #variation d amplitude possible (mm)
-period = 4.0 #periode respiratoire (s)
-df = 0.5 #variation de frequence possible (Hz)
-dS = 5 #shift du signal (mm)
-step = 0.2 #periode d echantillonnage
-signalDuration = 100 #temps de simulation
-L = 2/30 #moyenne des evenements aleatoires
-
-time,samples = signalGeneration()
-time = np.arange(0, signalDuration, step)
-plt.figure(figsize=(15,10))
-plt.plot(time,samples)
-plt.xlabel("Time [s]")
-plt.ylabel("Amplitude [mm]")
-plt.title("Breathing signal part 1")
-plt.xlim((0,100))
-=======
->>>>>>> 7390f9baa4507d335627709a968b8a87404e6578
-
 
 
 
