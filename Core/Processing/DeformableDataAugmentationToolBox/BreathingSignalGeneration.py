@@ -158,18 +158,17 @@ plt.xlim((0,100))
 
 
 
-"""
-for i in range(10):
-    time,samples,amplitude = signalGeneration()
-    time = np.arange(0,100,0.5)
-    plt.figure(figsize=(15,10))
-    plt.plot(time,samples)
-    plt.plot(time,amplitude)
-    plt.xlabel("Time [s]")
-    plt.ylabel("Amplitude [mm]")
-    plt.title("Breathing signal part 1")
-    #plt.xlim((0,100))
-    plt.ylim((-30,30))
-"""
+
+# for i in range(10):
+#     time,samples,amplitude = signalGeneration()
+#     time = np.arange(0,100,0.5)
+#     plt.figure(figsize=(15,10))
+#     plt.plot(time,samples)
+#     plt.plot(time,amplitude)
+#     plt.xlabel("Time [s]")
+#     plt.ylabel("Amplitude [mm]")
+#     plt.title("Breathing signal part 1")
+#     #plt.xlim((0,100))
+#     plt.ylim((-30,30))
 
 
