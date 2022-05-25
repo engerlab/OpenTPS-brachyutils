@@ -18,96 +18,34 @@ from scipy.ndimage import zoom
 import math
 import time
 import concurrent
-from multiprocessing import pool
-import multiprocessing
 from itertools import repeat
-
+import socket 
+# os.chdir("/export/home/grotsartdehe/opentps")
+print(socket.gethostname())
+print(os.getcwd())
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.DRRToolBox import forwardProjection
+from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
 from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 from Core.Processing.ImageProcessing.crop3D import *
 
-## ------------------------------------------------------------------------------------
-def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=0, projectionAxis='Z', tryGPU=True,
-                                        outputSize=[]):
-    """
-    This function is specific to this example and used to :
-    - deform a CTImage and an ROIMask,
-    - compute the deformed mask 3D center of mass
-    - create DRR's for both,
-    - binarize the DRR of the ROIMask
-    - compute the 2D center of mass for the ROI DRR
-    """
-    
-    print('Start deformations and projections for deformation', deformation.name)
-    image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
-    # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
-    mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
-    # print('mask', type(mask), type(mask.imageArray[0,0,0]))
-    centerOfMass3D = mask.centerOfMass
-
-    DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
-    DRRMask = forwardProjection(mask, projectionAngle, axis=projectionAxis)
-
-    halfDiff = int((DRR.shape[1] - image.gridSize[2]) / 2)  ## not sure this will work if orientation is changed
-    croppedDRR = DRR[:, halfDiff + 1:DRR.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
-    croppedDRRMask = DRRMask[:,
-                        halfDiff + 1:DRRMask.shape[1] - halfDiff - 1]  ## not sure this will work if orientation is changed
-
-    if outputSize:
-        # print('Before resampling')
-        # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
-        ratio = [outputSize[0] / croppedDRR.shape[0], outputSize[1] / croppedDRR.shape[1]]
-        croppedDRR = zoom(croppedDRR, ratio)
-        croppedDRRMask = zoom(croppedDRRMask, ratio)
-        # print('After resampling')
-        # print(croppedDRR.shape, np.min(croppedDRR), np.max(croppedDRR), np.mean(croppedDRR))
-
-    binaryDRRMask = getBinaryMaskFromROIDRR(croppedDRRMask)
-    centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
-    # print('CenterOfMass:', centerOfMass)
-
-    del image  # to release the RAM
-    del mask  # to release the RAM
-
-    print('Deformations and projections finished for deformation', deformation.name)
-
-    #plt.figure()
-    #plt.subplot(1, 5, 1)
-    #plt.imshow(DRR)
-    #plt.subplot(1, 5, 2)
-    #plt.imshow(croppedDRR)
-    #plt.subplot(1, 5, 3)
-    #plt.imshow(DRRMask)
-    #plt.subplot(1, 5, 4)
-    #plt.imshow(croppedDRRMask)
-    #plt.subplot(1, 5, 5)
-    #plt.imshow(binaryDRRMask)
-    #plt.show()
-
-    return [croppedDRR, binaryDRRMask, centerOfMass, centerOfMass3D]
-
-## ------------------------------------------------------------------------------------
-
 if __name__ == '__main__':
 
-    multiprocessing.set_start_method('spawn')
-
     organ = 'lung'
-    patientFolder = 'Patient_4'
+    patientFolder = 'Patient_5'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/test3/'
+    resultFolder = '/test9/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
-
+    #dataPath = '/export/home/grotsartdehe/dynModAndROIs.p'
+    #savingPath = '/export/home/grotsartdehe/Data_test/2/'
     if not os.path.exists(savingPath):
         os.umask(0)
         os.makedirs(savingPath)  # Create a new directory because it does not exist
@@ -118,12 +56,12 @@ if __name__ == '__main__':
 
 
     sequenceDurationInSecs = 20
-    samplingFrequency = 4
+    samplingFrequency = 5
     subSequenceSize = 50
     outputSize = [64, 64]
     bodyContourToUse = 'Body'
     otherContourToUse = 'GTV T'
-    marginInMM = [50, 10, 100]
+    marginInMM = [50, 0, 100]
 
     # breathing signal parameters
     amplitude = 'model'
@@ -142,11 +80,86 @@ if __name__ == '__main__':
     projAxis = 'Z'
 
     multiprocessing = True
-    maxMultiProcUse = 2
+    maxMultiProcUse = 20
     tryGPU = True
 
+    ## ------------------------------------------------------------------------------------
+    def deformImageAndMaskAndComputeDRRs(img, ROIMask, deformation, projectionAngle=0, projectionAxis='Z', tryGPU=True,
+                                         outputSize=[]):
+        """
+        This function is specific to this example and used to :
+        - deform a CTImage and an ROIMask,
+        - compute the deformed mask 3D center of mass
+        - create DRR's for both,
+        - binarize the DRR of the ROIMask
+        - compute the 2D center of mass for the ROI DRR
+        """
+
+        print('Start deformations and projections for deformation', deformation.name)
+        image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
+        # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
+        mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
+        # print('mask', type(mask), type(mask.imageArray[0,0,0]))
+        centerOfMass3D = mask.centerOfMass
+
+        DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)
+        DRRMask = forwardProjection(mask, projectionAngle, axis=projectionAxis)
+
+        rowsToRemove = []
+        for i in range(DRR.shape[0]):
+            if np.std(DRR[i, :]) == 0:
+                rowsToRemove.append(i)
+
+        if rowsToRemove:
+            rowsToRemove.reverse
+            DRR = np.delete(DRR, rowsToRemove, 0)
+            DRRMask = np.delete(DRRMask, rowsToRemove, 0)
+
+        columnsToRemove = []
+        for i in range(DRR.shape[1]):
+            if np.std(DRR[:, i]) == 0:
+                columnsToRemove.append(i)
+
+        if columnsToRemove:
+            columnsToRemove.reverse
+            DRR = np.delete(DRR, columnsToRemove, 1)
+            DRRMask = np.delete(DRRMask, columnsToRemove, 1)
+        
+        if outputSize:
+            # print('Before resampling')
+            # print(DRR.shape, np.min(DRR), np.max(DRR), np.mean(DRR))
+            ratio = [outputSize[0] / DRR.shape[0], outputSize[1] / DRR.shape[1]]
+            DRR = zoom(DRR, ratio)
+            DRRMask = zoom(DRRMask, ratio)
+            # print('After resampling')
+            # print(DRR.shape, np.min(DRR), np.max(DRR), np.mean(DRR))
+
+        binaryDRRMask = getBinaryMaskFromROIDRR(DRRMask)
+        centerOfMass = get2DMaskCenterOfMass(binaryDRRMask)
+        # print('CenterOfMass:', centerOfMass)
+
+        del image  # to release the RAM
+        del mask  # to release the RAM
+
+        print('Deformations and projections finished for deformation', deformation.name)
+
+        #plt.figure()
+        #plt.subplot(1, 5, 1)
+        #plt.imshow(DRR)
+        #plt.subplot(1, 5, 2)
+        #plt.imshow(croppedDRR)
+        #plt.subplot(1, 5, 3)
+        #plt.imshow(DRRMask)
+        #plt.subplot(1, 5, 4)
+        #plt.imshow(croppedDRRMask)
+        #plt.subplot(1, 5, 5)
+        #plt.imshow(binaryDRRMask)
+        #plt.show()
+
+        return [DRR, binaryDRRMask, centerOfMass, centerOfMass3D]
 
 
+    ## ------------------------------------------------------------------------------------
 
 
     patient = loadDataStructure(dataPath)[0]
@@ -169,11 +182,11 @@ if __name__ == '__main__':
     bodyBox = getBoxAroundROI(bodyMask)
 
     if projAngle == 0 and projAxis == 'Z':  # coronal
-        croppingBox = [gtvBox[0], [bodyBox[1][0], bodyBox[1][1]+0], gtvBox[2]]  ## create the used box combining the two boxes
+        croppingBox = [gtvBox[0], bodyBox[1], gtvBox[2]]  ## create the used box combining the two boxes
     elif projAngle == 90 and projAxis == 'Z':  # sagittal
         croppingBox = [bodyBox[0], gtvBox[1], gtvBox[2]]
     elif projAngle == 0 and projAxis == 'X':  # coronal
-        croppingBox = [gtvBox[0], [bodyBox[1][0], bodyBox[1][1]+0], gtvBox[2]]
+        croppingBox = [gtvBox[0], bodyBox[1], gtvBox[2]]
     elif projAngle == 0 and projAxis == 'Y':  # sagittal
         croppingBox = [bodyBox[0], gtvBox[1], gtvBox[2]]
     else:
@@ -234,14 +247,12 @@ if __name__ == '__main__':
         ax = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 1)
         ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
         ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
-        ax.imshow(np.rot90(GTVMask.imageArray[:, pointVoxelList[pointIndex][1], :]), alpha=0.3)
         ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
                    c=colors[pointIndex], marker="x", s=100)
         ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
         ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
         ax2.imshow(np.rot90(dynMod.midp.imageArray[:, :, pointVoxelList[pointIndex][2]]))
-        ax2.imshow(np.rot90(GTVMask.imageArray[:, :, pointVoxelList[pointIndex][2]]), alpha=0.3)
-        ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]],
+        ax2.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
                    c=colors[pointIndex], marker="x", s=100)
         signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
 
@@ -291,13 +302,11 @@ if __name__ == '__main__':
             resultList += results
 
         print('ResultList lenght', len(resultList))
-        # for deformation in deformationList:
-        #     resultList += deformImageAndMaskAndComputeDRRs(dynMod.midp, GTVMask, deformation, projectionAngle=projAngle, projectionAxis=projAxis, outputSize=outputSize)
 
-    savingPath += resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_multiProcTest'
+    savingPath += resultDataFolder + patientFolder + f'_{sequenceSize}_DRRMasksAndCOM'
     saveSerializedObjects(resultList, savingPath)
 
     stopTime = time.time()
-    print('Test with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'finished in',
+    print('Test with multiprocessing =', multiprocessing, '. Sub-sequence size:', str(subSequenceSize), 'finished in',
           np.round(stopTime - startTime, 2) / 60, 'minutes')
     print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')

@@ -1,17 +1,42 @@
+from typing import Sequence
+
+import numpy as np
+
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMolecule import MCsquareMolecule
+
+
 class RangeShifter:
     def __init__(self):
         self.ID = ''
         self.type = ''
-        self.material = -1
+        self.material:MCsquareMolecule = None
         self.density = 0.0
         self.WET = 0.0
 
     def __str__(self):
         s = ''
-        s = s + 'RS_ID = ' + self.ID
-        s = s + 'RS_type = ' + self.type
-        s = s + 'RS_material = ' + str(self.material)
-        s = s + 'RS_density = ' + str(self.density)
-        s = s + 'RS_WET = ' + str(self.WET)
+        s = s + 'RS_ID = ' + self.ID + '\n'
+        s = s + 'RS_type = ' + self.type + '\n'
+        s = s + 'RS_density = ' + str(self.density) + '\n'
+        s = s + 'RS_WET = ' + str(self.WET) + '\n'
+
+        return s
+
+    def mcsquareFormatted(self, materials) -> str:
+        materialIndex = -1
+        for i, material in enumerate(materials):
+            if material["name"] == self.material.name:
+                materialIndex = material["ID"]
+
+        if materialIndex==-1:
+            raise Exception('RS material ' + self.material.name + ' not found in material list')
+
+        s = ''
+        s = s + 'RS_ID = ' + self.ID + '\n'
+        s = s + 'RS_type = ' + self.type + '\n'
+        s = s + 'RS_material = ' + str(materialIndex) + '\n'
+        s = s + 'RS_density = ' + str(self.density) + '\n'
+        s = s + 'RS_WET = ' + str(self.WET) + '\n'
 
         return s

@@ -7,7 +7,7 @@ from GUI.Panels.mainToolbar import MainToolbar
 from GUI.Viewer.viewerPanel import ViewerPanel
 from GUI.programSettingEditor import ProgramSettingEditor
 from GUI.statusBar import StatusBar
-from mainConfig import MainConfig
+from programSettings import ProgramSettings
 
 
 class MainWindow(QMainWindow):
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
         self.mainToolbar.setFixedWidth(self.toolbox_width)
         self.mainLayout.addWidget(self.mainToolbar)
 
-        ProgramSettingEditor.setMainConfig(MainConfig())
+        ProgramSettingEditor.setProgramSettings(ProgramSettings())
         ProgramSettingEditor.setMainToolbar(self.mainToolbar)
 
         # create and add the viewer panel

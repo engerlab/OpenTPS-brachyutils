@@ -5,6 +5,7 @@ import bz2
 import _pickle as cPickle
 import pickle
 import os
+from Core.Data.Plan.rtPlan import RTPlan
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -43,7 +44,7 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False):
             for idx in range(0, len(bytes_out), max_bytes):
                 f_out.write(bytes_out[idx:idx + max_bytes])
 
-    print('Serialized data structure saved in drive')
+    print('Serialized data structure saved in drive:', savingPath + ".p")
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -69,6 +70,7 @@ def loadDataStructure(filePath):
     print('Serialized data list of', len(data), 'items loaded')
     for itemIndex, item in enumerate(data):
         print(itemIndex + 1, type(item))
+
     return data
 
 
@@ -77,3 +79,30 @@ def loadSerializedObject(filePath):
     """
     to do in the same way as for saving (object - structure)
     """
+    pass
+
+
+def saveRTPlan(plan , file_path):
+    if plan.beamlets != []:
+        plan.beamlets.unload()
+
+    for scenario in plan.scenarios:
+        scenario.unload()
+        
+    # dcm = plan.OriginalDicomDataset
+    # plan.OriginalDicomDataset = []
+
+    with open(file_path, 'wb') as fid:
+        pickle.dump(plan.__dict__, fid)
+
+    # plan.OriginalDicomDataset = dcm
+
+
+def loadRTPlan(file_path):
+    with open(file_path, 'rb') as fid:
+        tmp = pickle.load(fid)
+
+    plan = RTPlan()
+    plan.__dict__.update(tmp)
+    return plan
+

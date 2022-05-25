@@ -8,9 +8,15 @@ def forwardProjectionTigre(ct, angles, axis='Z', ctIsocenter=None, SAD=1000, SID
 
     try:
         import tigre  # https://github.com/CERN/TIGRE/blob/master/Frontispiece/python_installation.md
-        from tigre.utilities import CTnoise
     except:
         logger.error('No module tigre available. Abort forwardProjectionTigre.')
+    
+    try:
+        from tigre.utilities import CTnoise
+    except:
+        logger.error('Noise model from Tigre library not available. No noise is added.')
+        poissonNoise = None
+        gaussianNoise = None
 
     if not(isinstance(angles,(np.ndarray, np.generic))):
         if isinstance(angles, list):

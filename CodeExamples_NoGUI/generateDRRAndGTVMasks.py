@@ -24,7 +24,7 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.DRRToolBox import forwardProjection
+from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
 from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 from Core.Processing.ImageProcessing.crop3D import *
 
@@ -74,8 +74,8 @@ if __name__ == '__main__':
     projAngle = 0
     projAxis = 'Z'
 
-    multiprocessing = True
-    maxMultiProcUse = 12
+    multiprocessing = False
+    maxMultiProcUse = 4
     tryGPU = True
 
 

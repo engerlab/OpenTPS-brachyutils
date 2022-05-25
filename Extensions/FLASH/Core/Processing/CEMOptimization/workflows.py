@@ -47,6 +47,18 @@ class SingleBeamCEMOptimizationWorkflow():
 
         self._targetROI = None
         self._globalROI = None
+        self._finalDose = None
+
+    @property
+    def finalDose(self):
+        return self._finalDose
+
+    @property
+    def finalPlan(self):
+        return self._plan
+
+    def abort(self):
+        self.cemOptimizer.abort()
 
     def run(self) -> RTPlan:
         patient = self.ct.patient
@@ -54,6 +66,9 @@ class SingleBeamCEMOptimizationWorkflow():
         self._setTargetROI()
 
         self._plan = self._initializePlan()
+        self._plan.patient = patient
+        self.planUpdateEvent.emit(self._plan)
+
         beam = self._plan.beams[0]
 
         # Pad CT
@@ -76,6 +91,8 @@ class SingleBeamCEMOptimizationWorkflow():
         doseImage.patient = patient
         doseImage.name = 'Final dose'
         self.doseUpdateEvent.emit(doseImage)
+
+        self._finalDose = doseImage
 
         return self._plan
 
