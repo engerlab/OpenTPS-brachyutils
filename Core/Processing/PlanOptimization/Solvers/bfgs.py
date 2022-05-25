@@ -13,16 +13,15 @@ class ScipyOpt:
     def __init__(self, meth='L-BFGS'):
         self.meth = meth
 
-    def solve(self, func, x0, param=None):
+    def solve(self, func, x0, **kwargs):
+        params = kwargs
         startTime = time.time()
         if not func[0].formatArray == 64:
             logger.error('{} requires the objective in format array = 64'.format(self.__class__.__name__))
-        if param is None:
-            param = {'fTol': 1e-5, 'maxIter': 200}
         if 'GRAD' not in func[0].cap(x0):
             logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
         res = scipy.optimize.minimize(func[0].eval, x0, method=self.meth, jac=func[0].grad,
-                                      options={'maxiter': param['maxIter'], 'disp':True})
+                                      options={'maxiter': params.get('maxit', 100), 'disp': True})
 
         result = {'sol': res.x, 'crit': res.message, 'niter': res.nit, 'time': time.time() - startTime,
                   'objective': res.fun}
@@ -64,7 +63,8 @@ class BFGS(GradientDescent):
         sk = self.sol - xk
         yk = self.f.grad(self.sol) - self.f.grad(xk)
         rhok = float(1.0 / yk.dot(sk))
-        self.hessiank = (self.indentity - rhok * np.outer(sk, yk)).dot(hk).dot(self.indentity - rhok * np.outer(yk, sk)) + rhok * np.outer(
+        self.hessiank = (self.indentity - rhok * np.outer(sk, yk)).dot(hk).dot(
+            self.indentity - rhok * np.outer(yk, sk)) + rhok * np.outer(
             sk, sk)
 
     def _post(self):

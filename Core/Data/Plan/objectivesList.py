@@ -45,8 +45,9 @@ class ObjectivesList():
             for contour in contours:
                 if objective.roiName == contour.name:
                     objective.maskVec = contour.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
-                    objective.maskVec.resample(scoringGridSize, ct.origin, scoringSpacing)
-                    objective.maskVec = np.flip(objective.maskVec.imageArray, (0, 1))
+                    from Core.Processing.ImageProcessing import sitkImageProcessing
+                    sitkImageProcessing.resize(objective.maskVec, scoringSpacing, ct.origin, scoringGridSize)
+                                        objective.maskVec = np.flip(objective.maskVec.imageArray, (0, 1))
                     objective.maskVec = np.ndarray.flatten(objective.maskVec,'F').astype('bool')
 
     def addExoticObjective(self, weight):

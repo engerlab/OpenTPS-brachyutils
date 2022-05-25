@@ -28,6 +28,7 @@ class PlanOptimizer:
         self.opti_params = opti_params
         self.functions = functions
         self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
+        self.xSquared = True
 
     def intializeWeights(self):
         # Total Dose calculation
@@ -81,8 +82,8 @@ class PlanOptimizer:
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan, contours, functions=None, **kwargs):
-        super().__init__(plan, contours, functions)
+    def __init__(self, method, plan, contours, functions=None, opti_params={}, **kwargs):
+        super().__init__(plan, contours, functions, opti_params)
         if functions is None:
             logger.error('You must specify the function you want to optimize')
         self.method = method

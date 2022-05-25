@@ -16,7 +16,7 @@ from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelit
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Data.Images.deformation3D import im
+from Core.Processing.ImageProcessing.imageTransform3D import resampleOn
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planStructure import PlanStructure
 
@@ -60,6 +60,8 @@ targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacin
 opticChiasm = contours.getContourByName('Optic Chiasm')
 brainStem = contours.getContourByName('Brain Stem')
 
+#rings = target.createROIRings(ct,contours,3,2)
+
 beamNames = ["Beam1", "Beam2"]
 gantryAngles = [90., 270.]
 couchAngles = [0., 0.]
@@ -100,14 +102,17 @@ plan.objectives.setTarget(target.name, 65.0)
 plan.objectives.fidObjList = []
 plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.0)
 plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
-scoring_spacing = [2,2,2]
+# plan.objectives.addFidObjective(rings[0].name, "Dmax", "<", 65.0, 1.0)
+# plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
+# plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
+scoring_spacing = np.array([2,2,2])
 scoring_grid_size = [int(math.floor(i/j*k)) for i,j,k in zip(ct.gridSize,scoring_spacing,ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
 objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), formatArray=64)
 
 # Optimize treatment plan
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction])
-#solver = IMPTPlanOptimizer(method='Gradient', plan=plan, contours=contours, functions=[objectiveFunction])
+#solver = IMPTPlanOptimizer(method='Gradient', plan=plan, contours=contours, functions=[objectiveFunction], opti_params = {'maxit':200})
 w, dose_vector, ps = solver.optimize()
 #with open('test_weights.npy', 'wb') as f:
 #    np.save(f, w)
@@ -133,11 +138,13 @@ COM_coord = targetMask.centerOfMass
 COM_index = targetMask.getVoxelIndexFromPosition(COM_coord)
 Z_coord = COM_index[2]
 
-img_dose = doseImage.imageArray[:, :, Z_coord].transpose(1,0)
-img_dose =  imageT
+
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1,0)
 contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1,0)
+img_dose = resampleOn(doseImage,ct)
+img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1,0)
+
 
 # Display dose
 fig, ax = plt.subplots(1,2, figsize=(10,6))
