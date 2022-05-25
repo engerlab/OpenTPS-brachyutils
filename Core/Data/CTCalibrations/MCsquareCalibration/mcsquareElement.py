@@ -13,6 +13,7 @@ class MCsquareElement(MCsquareMaterial):
         self._nuclear_data = ""
         self._nuclearElasticData = None
         self._nuclearInelasticData = None
+        self._promptGamma = None
 
     def __str__(self):
         return self.mcsquareFormatted()
@@ -77,6 +78,10 @@ class MCsquareElement(MCsquareMaterial):
                         file = open(os.path.join(elementPath, 'ICRU_Nuclear_inelastic.dat'), mode='r')
                         self._nuclearInelasticData = file.read()
                         file.close()
+
+                        file = open(os.path.join(elementPath, 'ICRU_PromptGamma.dat'), mode='r')
+                        self._promptGamma = file.read()
+                        file.close()
                     else:
                         self._nuclear_data = 'proton-proton'
 
@@ -97,3 +102,6 @@ class MCsquareElement(MCsquareMaterial):
 
             with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_inelastic.dat'), 'w') as f:
                 f.write(self._nuclearInelasticData)
+
+            with open(os.path.join(folderPath, self.name, 'ICRU_PromptGamma.dat'), 'w') as f:
+                f.write(self._promptGamma)
