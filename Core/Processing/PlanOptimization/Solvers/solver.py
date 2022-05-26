@@ -16,8 +16,8 @@ class ConvexSolver:
     """
 
     def __init__(self, step=0.1, accel=None):
-        self.nonSmoothFuns = None
-        self.smoothFuns = None
+        self.nonSmoothFuns = []
+        self.smoothFuns = []
         self.sol = None
         if step < 0:
             logger.error('Step should be a positive number.')
@@ -135,14 +135,15 @@ class ConvexSolver:
         """
         Solver-specific pre-processing;
         functions split in two lists:
-        - self.smooth_funs : functions involved in gradient steps
-        - self.non_smooth_funs : functions involved in proximal steps
+        - self.smoothFuns : functions involved in gradient steps
+        - self.nonSmoothFuns : functions involved in proximal steps
         """
         self.sol = np.asarray(x0)
         self.smoothFuns = []
         self.nonSmoothFuns = []
         self._pre(functions, self.sol)
         self.accel.pre(functions, self.sol)
+
 
     def _pre(self, functions, x0):
         logging.error("Class user should define this method.")

@@ -32,12 +32,12 @@ class PlanOptimizer:
 
     def intializeWeights(self):
         # Total Dose calculation
-        Weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
+        weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
 
         if use_MKL == 1:
-            TotalDose = sparse_dot_mkl.dot_product_mkl(self.beamletMatrix, Weights)
+            TotalDose = sparse_dot_mkl.dot_product_mkl(self.beamletMatrix, weights)
         else:
-            TotalDose = sp.csc_matrix.dot(self.beamletMatrix, Weights)
+            TotalDose = sp.csc_matrix.dot(self.beamletMatrix, weights)
 
         maxDose = np.max(TotalDose)
         try:
@@ -73,9 +73,13 @@ class PlanOptimizer:
 
         # total dose
         logger.info("Total dose calculation ...")
-        self.plan.spotWeights = np.square(weights).astype(np.float32)
-        self.plan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
-        print('type beamlets = ', type(self.plan.beamlets))
+        if self.xSquared:
+            self.plan.spotWeights = np.square(weights).astype(np.float32)
+            self.plan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
+        else:
+            self.plan.spotWeights = weights.astype(np.float32)
+            self.plan.beamlets.beamletWeights = weights.astype(np.float32)
+
         totalDose = self.plan.beamlets.toDoseImage()
 
         return weights, totalDose, cost

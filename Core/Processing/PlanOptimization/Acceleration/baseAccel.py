@@ -73,6 +73,7 @@ class Dummy(Accel):
     """
 
     def _pre(self, functions, x0):
+        logger.info('dummy accel')
         pass
 
     def _update_step(self, solver, objective, niter):
