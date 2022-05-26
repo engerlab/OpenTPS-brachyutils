@@ -26,9 +26,9 @@ class ObjectivesList():
             return
 
         if condition == "LessThan" or condition == "<":
-            objective.Condition = "<"
+            objective.condition = "<"
         elif condition == "GreaterThan" or condition == ">":
-            objective.Condition = ">"
+            objective.condition = ">"
         else:
             print("Error: objective condition " + condition + " is not supported.")
             return
@@ -39,13 +39,16 @@ class ObjectivesList():
 
         self.fidObjList.append(objective)
 
-    def vectorizeContours(self, contours):
+    def initializeContours(self, contours, ct, scoringGridSize, scoringSpacing):
         '''I might move this function elsewhere'''
         for objective in self.fidObjList:
             for contour in contours:
-                if objective.roiName == contour.ROIName:
-                    objective.maskVec = np.flip(contour.mask, (0, 1))
-                    objective.maskVec = np.ndarray.flatten(objective.maskVec, 'F')
+                if objective.roiName == contour.name:
+                    objective.maskVec = contour.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
+                    from Core.Processing.ImageProcessing import sitkImageProcessing
+                    sitkImageProcessing.resize(objective.maskVec, scoringSpacing, ct.origin, scoringGridSize)
+                    objective.maskVec = np.flip(objective.maskVec.imageArray, (0, 1))
+                    objective.maskVec = np.ndarray.flatten(objective.maskVec,'F').astype('bool')
 
     def addExoticObjective(self, weight):
         objective = ExoticObjective()
@@ -54,7 +57,7 @@ class ObjectivesList():
 
 class FidObjective:
   def __init__(self):
-    self.roiIName = ""
+    self.roiName = ""
     self.metric = ""
     self.condition = ""
     self.limitValue = ""

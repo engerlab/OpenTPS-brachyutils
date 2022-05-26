@@ -9,6 +9,9 @@ from Core.Data.Plan.rtPlan import RTPlan
 
 
 # ---------------------------------------------------------------------------------------------------
+from Core.Data.sparseBeamlets import SparseBeamlets
+
+
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
 
     if splitPatientsBool:
@@ -105,4 +108,17 @@ def loadRTPlan(file_path):
     plan = RTPlan()
     plan.__dict__.update(tmp)
     return plan
+
+def saveBeamlets(beamlets, file_path):
+    with open(file_path, 'wb') as fid:
+        pickle.dump(beamlets.__dict__, fid, protocol=4)
+
+def loadBeamlets(file_path):
+    with open(file_path, 'rb') as fid:
+        tmp = pickle.load(fid)
+    beamletDose = SparseBeamlets()
+    beamletDose.__dict__.update(tmp)
+    return beamletDose
+
+
 

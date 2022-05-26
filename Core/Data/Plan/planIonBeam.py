@@ -14,6 +14,7 @@ class PlanIonBeam:
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
         self.gantryAngle = 0.0
+        self.couchAngle = 0.0
         self.patientSupportAngle = 0.0
         self.rangeShifter: Optional[RangeShifter] = None
         self.seriesInstanceUID = ""
@@ -84,6 +85,21 @@ class PlanIonBeam:
             ind += len(layer.spotTimings)
 
     @property
+    def spotXY(self) -> np.ndarray:
+        xy = np.array([])
+        for layer in self._layers:
+            layerXY = list(layer.spotXY)
+            if len(layerXY)<=0:
+                continue
+
+            if len(xy)<=0:
+                xy = layerXY
+            else:
+                xy = np.concatenate((xy, layerXY))
+
+        return xy
+
+    @property
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 
@@ -110,3 +126,11 @@ class PlanIonBeam:
     def _fusionDuplicates(self):
         #TODO
         raise NotImplementedError()
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def createEmptyBeamWithSameMetaData(self):
+        beam = self.copy()
+        beam._layers = []
+        return beam
