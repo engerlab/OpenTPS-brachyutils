@@ -22,7 +22,7 @@ from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
-from Core.IO.mhdReadWrite import exportImageMHD, importImageMHD
+from Core.IO.mhdIO import exportImageMHD, importImageMHD
 from Core.Processing.ImageProcessing import crop3D
 
 
@@ -204,15 +204,13 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     # Crop CT image with contour
     if overwriteOutsideROI is not None:
         print(f'Cropping CT around {overwriteOutsideROI.name}')
-        # TODO: clone CT and intersect with mask!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         contour_mask = overwriteOutsideROI.getBinaryMask(image.origin, image.gridSize, image.spacing)
         image.imageArray[contour_mask.imageArray.astype(bool) == False] = -1024
 
-        # TODO: cropCTContour:
-        #ctCropped = CTImage.fromImage3D(ct)
-        #box = crop3D.getBoxAroundROI(cropCTContour)
-        #crop3D.crop3DDataAroundBox(ctCropped, box)
+    # TODO: cropCTContour:
+    #ctCropped = CTImage.fromImage3D(ct)
+    #box = crop3D.getBoxAroundROI(cropCTContour)
+    #crop3D.crop3DDataAroundBox(ctCropped, box)
 
     image.imageArray = np.flip(image.imageArray, 0)
     image.imageArray = np.flip(image.imageArray, 1)
@@ -390,7 +388,7 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
     FinalCumulativeMeterSetWeight = 0.
     for i, beam in enumerate(plan):
         CumulativeMetersetWeight = 0.
-        
+
         fid.write("\n")
         fid.write("#FIELD-DESCRIPTION\n")
         fid.write("###FieldID\n")

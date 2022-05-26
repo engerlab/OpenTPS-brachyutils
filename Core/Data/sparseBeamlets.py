@@ -64,6 +64,10 @@ class SparseBeamlets(PatientData):
     def doseOrientation(self):
         return self._orientation
 
+    @property
+    def shape(self):
+        return self._sparseBeamlets.shape
+
     @doseOrientation.setter
     def doseOrientation(self, orientation):
         self._orientation = orientation
@@ -88,7 +92,7 @@ class SparseBeamlets(PatientData):
         totalDose = np.flip(totalDose, 0)
         totalDose = np.flip(totalDose, 1)
 
-        doseImage =  DoseImage(imageArray=totalDose, origin=self._origin, spacing=self._spacing, angles=self._orientation)
+        doseImage = DoseImage(imageArray=totalDose, origin=self._origin, spacing=self._spacing, angles=self._orientation)
         doseImage.patient = self.patient
 
         return doseImage
@@ -98,3 +102,6 @@ class SparseBeamlets(PatientData):
 
     def cropFromROI(self, roi):
         raise NotImplementedError()
+
+    def unload(self):
+        self._sparseBeamlets = []

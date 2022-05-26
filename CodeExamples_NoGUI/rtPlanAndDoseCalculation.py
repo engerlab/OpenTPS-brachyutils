@@ -8,12 +8,12 @@ from Core.IO.dataLoader import listAllFiles, loadAllData
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.IO.mhdReadWrite import exportImageMHD
+from Core.IO.mhdIO import exportImageMHD
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan
-from Core.IO.dicomReader import readDicomCT, readDicomPlan
+from Core.IO.dicomIO import readDicomCT, readDicomPlan
 
 # Create plan from scratch
 plan = RTPlan()

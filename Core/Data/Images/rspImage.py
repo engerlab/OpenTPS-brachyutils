@@ -33,12 +33,12 @@ class RSPImage(Image3D):
 
         return newRSPImage
 
-    def computeCumulativeWEPL(self, beam:PlanIonBeam, sad=np.Inf) -> Image3D:
-        rspIEC = imageTransform3D.dicomToIECGantry(self, beam, 0.)
+    def computeCumulativeWEPL(self, beam:PlanIonBeam, sad=np.Inf, roi=None) -> Image3D:
+        rspIEC = imageTransform3D.dicomToIECGantry(self, beam, fillValue=0., cropROI=roi, cropDim0=True, cropDim1=True, cropDim2=False)
 
         rspIEC.imageArray = np.cumsum(rspIEC.imageArray, axis=2)*rspIEC.spacing[2]
 
         outImage = imageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
-        outImage = imageTransform3D.intersect(outImage, self, inPlace=True, fillValue=0.)
+        outImage = imageTransform3D.resampleOn(outImage, self, inPlace=True, fillValue=0.)
 
         return outImage
