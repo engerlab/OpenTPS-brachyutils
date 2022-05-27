@@ -1,3 +1,5 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import copy
 import logging
 

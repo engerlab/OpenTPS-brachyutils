@@ -1,3 +1,5 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import numpy as np
 import numpy.linalg as la
 import logging

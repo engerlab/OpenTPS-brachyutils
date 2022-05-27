@@ -1,5 +1,6 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import logging
-
 import numpy as np
 
 from Core.Processing.PlanOptimization.Solvers.solver import ConvexSolver

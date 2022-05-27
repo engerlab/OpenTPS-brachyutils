@@ -47,12 +47,13 @@ class PlanOptimizer:
                                                                                dtype=np.float32)
         return x0
 
+    def inializeContours(self):
+        pass
+
 
     def optimize(self):
-        # initialize objective function and weights
-        # logger.info("Initialize objective function ...")
-        # self.plan.Objectives.initialize_objective_function(self.contours)
         x0 = self.intializeWeights()
+        # self.initializeContours
         # Optimization
         result = self.solver.solve(self.functions, x0, **self.opti_params)
         return self.postProcess(result)
@@ -111,10 +112,6 @@ class IMPTPlanOptimizer(PlanOptimizer):
             logger.error(
                 'Method {} is not implemented. Pick among ["Scipy-lBFGS", "Gradient", "BFGS", "FISTA"]'.format(
                     self.method))
-
-    #def optimize(self):
-    #    super(IMPTPlanOptimizer, self).optimize()
-
 
 class ARCPTPlanOptimizer(PlanOptimizer):
     def __init__(self, method, plan, contours, functions=None, **kwargs):

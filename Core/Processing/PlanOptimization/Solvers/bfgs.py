@@ -19,6 +19,7 @@ class ScipyOpt:
             logger.info('Iteration {} of Scipy-{}'.format(self.Nfeval, self.meth))
             logger.info('objective = {0:.6e}  '.format(func[0].eval(Xi)))
             self.Nfeval += 1
+
         params = kwargs
         startTime = time.time()
         if not func[0].formatArray == 64:
@@ -32,6 +33,7 @@ class ScipyOpt:
                   'objective': res.fun}
 
         return result
+
 
 class BFGS(GradientDescent):
     """

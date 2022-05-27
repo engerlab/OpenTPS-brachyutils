@@ -1,5 +1,8 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import numpy as np
 import logging
+
 logger = logging.getLogger(__name__)
 
 from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy

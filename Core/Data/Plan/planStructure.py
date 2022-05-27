@@ -13,6 +13,7 @@ from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
+from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Processing.RangeEnergy import rangeToEnergy
 
 
@@ -30,6 +31,8 @@ class PlanStructure:
         self.beamNames = []
         self.gantryAngles = []
         self.couchAngles = []
+        self.accumulatedLayer = 0
+        self.accumulatedSpot = 0
 
 
     def createPlan(self):
@@ -56,14 +59,15 @@ class PlanStructure:
             plan.beams[b].name = self.beamNames[b]
             plan.beams[b].gantryAngle = self.gantryAngles[b]
             plan.beams[b].couchAngle = self.couchAngles[b]
-            plan.beams[b].isocenterPosition = isoCenter
+            plan.beams[b].isocenterPosition = self.targetMask.centerOfMass
+            plan.beams[b].id = b
 
-            self._intializeBeam(plan.beams[b], rspImage, roiDilated, self.spotSpacing, self.layerSpacing)
+            self._intializeBeam(plan, plan.beams[b], rspImage, roiDilated, self.spotSpacing, self.layerSpacing)
 
         return plan
 
 
-    def _intializeBeam(self, beam: PlanIonBeam, rspImage: RSPImage, targetROI: ROIMask, spotSpacing: float,
+    def _intializeBeam(self, plan, beam: PlanIonBeam, rspImage: RSPImage, targetROI: ROIMask, spotSpacing: float,
                        layerSpacing: float):
         beam.isocenterPosition = targetROI.centerOfMass
 
@@ -121,10 +125,20 @@ class PlanStructure:
             spotPosCandidates = np.unique(np.array(list(zip(spotGridX[ind], -spotGridY[ind]))), axis=0)
 
             layer = PlanIonLayer(energy)
+            layer.id = self.accumulatedLayer
+            layer.beamID = beam.id
             for i in range(spotPosCandidates.shape[0]):
                 spotPos = spotPosCandidates[i, :]
-                layer.appendSpot(spotPos[0], spotPos[1], 1.)
+                spot = PlanIonSpot()
+                spot.id = self.accumulatedSpot
+                spot.beamID = beam.id
+                spot.layerID = layer.id
+                spot.energy = layer.nominalEnergy
+                layer.appendSpot(spot, spotPos[0], spotPos[1], 1.)
+                self.accumulatedSpot += 1
             beam.appendLayer(layer)
+            plan.appendLayer(layer)
+            self.accumulatedLayer += 1
 
     def _defineHexagSpotGridAroundIsocenter(self, spotSpacing: float, imageBEV: Image3D, isocenterBEV: Sequence[float]):
         origin = imageBEV.origin

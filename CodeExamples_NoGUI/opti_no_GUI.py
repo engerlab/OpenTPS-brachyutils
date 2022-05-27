@@ -15,6 +15,7 @@ from Core.IO.dicomIO import readDicomCT, readDicomPlan
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
+from Core.Processing.PlanOptimization.Objectives.norms import NormL1
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
@@ -115,11 +116,13 @@ plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 scoring_spacing = np.array([2, 2, 2])
 scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
-objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(),xSquare=False,
+objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False,
                                  formatArray=64)
-
+sparsity = NormL1(lambda_=0.01)
 # Optimize treatment plan
-solver = IMPTPlanOptimizer(method='FISTA', plan=plan, contours=contours, functions=[objectiveFunction], step=0.1, opti_params={'maxit': 200})
+solver = IMPTPlanOptimizer(method='FISTA', plan=plan, contours=contours, functions=[objectiveFunction, sparsity],
+                           step=0.1,
+                           opti_params={'maxit': 200})
 # solver = IMPTPlanOptimizer(method='BFGS', plan=plan, contours=contours, functions=[objectiveFunction], opti_params = {'maxit':200})
 solver.xSquared = False
 w, dose_vector, ps = solver.optimize()

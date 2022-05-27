@@ -1,5 +1,5 @@
-#Copyright (c) 2014, EPFL LTS2
-#All rights reserved.
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 
 import logging
 
@@ -89,16 +89,9 @@ class FISTA(ConvexSolver):
         """
 
         # Forward step
-        x_temp = self.sol - self.step * self.smoothFuns[0].grad(self.sol)
-        # Positive projection
-        x_temp_pos = self.projection.prox(x_temp, self.step)
+        x = self.sol - self.step * self.smoothFuns[0].grad(self.sol)
         # Backward step
-        x = self.nonSmoothFuns[0].prox(x_temp_pos, self.step)
-        # indicator step
-        if self.indicator is not None:
-            self.sol[:] = self.indicator.prox(x, self.smoothFuns[0].grad(x))
-        else:
-            self.sol[:] = x
+        self.sol[:] = self.nonSmoothFuns[0].prox(x, self.step)
 
     def solveGeneralizedForwardBackward(self):
         """
@@ -121,9 +114,9 @@ class FISTA(ConvexSolver):
 
         else:
             sol = np.zeros_like(self.sol)
-            for i, g in enumerate(self.non_smooth_funs):
+            for i, g in enumerate(self.nonSmoothFuns):
                 tmp = 2 * self.sol - self.z[i] - self.step * grad
-                tmp[:] = g.prox(tmp, self.step * len(self.non_smooth_funs))
+                tmp[:] = g.prox(tmp, self.step * len(self.nonSmoothFuns))
                 self.z[i] += self.lambda_ * (tmp - self.sol)
-                sol += 1. * self.z[i] / len(self.non_smooth_funs)
+                sol += 1. * self.z[i] / len(self.nonSmoothFuns)
             self.sol[:] = sol
