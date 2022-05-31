@@ -28,7 +28,8 @@ def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:
     if not inPlace:
         image = image.__class__.fromImage3D(image)
 
-    resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
+    if not(image.hasSameGrid(fixedImage)):
+        resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
 
     return image
 
