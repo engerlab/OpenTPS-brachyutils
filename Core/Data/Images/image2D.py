@@ -13,7 +13,7 @@ class Image2D(PatientData):
 
         self.dataChangedSignal = Event()
 
-        self.imageArray:np.ndarray = imageArray
+        self._imageArray = imageArray
         self._origin = np.array(origin)
         self._spacing = np.array(spacing)
         self._angles = np.array(angles)
@@ -28,6 +28,14 @@ class Image2D(PatientData):
     def fromImage2D(cls, image):
         return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing,
                        angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+
+    @property
+    def imageArray(self) -> np.ndarray:
+        return self._imageArray
+
+    @imageArray.setter
+    def imageArray(self, array:np.ndarray):
+        self._imageArray = array
 
     @property
     def origin(self) -> np.ndarray:
