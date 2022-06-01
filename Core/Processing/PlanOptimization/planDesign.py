@@ -1,20 +1,12 @@
 import numpy as np
-import json
 import scipy.ndimage
 import pydicom
 import time
 import logging
 import math
 
-try:
-  import sparse_dot_mkl
-  use_MKL = 1
-except:
-  use_MKL = 0
-
 from Processing.RTplan import *
 from Processing.C_libraries.libRayTracing_wrapper import *
-
 
 logger = logging.getLogger(__name__)
 
@@ -79,13 +71,13 @@ class PlanDesign:
         # spot placement
         plan = self.placeSpots(plan)
 
-        #previous_energy = 999
+        #previousEnergy = 999
         for beam in plan.beams:
           beam.layers.sort(reverse=True, key=(lambda element: element.nominalBeamEnergy))
           
           # # arc pt
           # for l in range(len(beam.layers)):
-          #   if(beam.layers[l].nominalBeamEnergy < previous_energy):
+          #   if(beam.layers[l].nominalBeamEnergy < previousEnergy):
           #     previousEnergy = beam.layers[l].nominalBeamEnergy
           #     beam.layers = [beam.layers[l]]
           #     print(beam.layers[0].nominalBeamEnergy)
