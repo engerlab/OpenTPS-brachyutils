@@ -8,7 +8,7 @@ Subpackages
    :maxdepth: 4
 
    GUI.Viewer.DataForViewer
-   GUI.Viewer.Viewers
+   GUI.Viewer.DataViewerComponents
 
 Submodules
 ----------
@@ -17,14 +17,6 @@ GUI.Viewer.dataViewer module
 ----------------------------
 
 .. automodule:: GUI.Viewer.dataViewer
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-GUI.Viewer.dataViewerToolbar module
------------------------------------
-
-.. automodule:: GUI.Viewer.dataViewerToolbar
    :members:
    :undoc-members:
    :show-inheritance:

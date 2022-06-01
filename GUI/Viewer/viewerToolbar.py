@@ -1,9 +1,19 @@
+import importlib
 import os
+import sys
 
-from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtCore import QSize, QDir
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QScrollBar, QVBoxLayout
+from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QVBoxLayout, QFileDialog, \
+    QStackedWidget, QListView, QComboBox, QWidgetAction
+
+from Core.IO import dataLoader, dataExporter
 from Core.event import Event
+from GUI.Tools.cropTool import CropWidget
+from GUI.Viewer.dataViewer import DataViewer
+from GUI.programSettingEditor import ProgramSettingEditor
+
+import GUI.res.icons as IconModule
 
 
 class ViewerToolbar(QToolBar):
@@ -17,30 +27,59 @@ class ViewerToolbar(QToolBar):
         self._viewController = viewController
         self.setIconSize(QSize(16, 16))
 
-        self.iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+        self.iconPath = str(IconModule.__path__[0]) + os.path.sep
+
+        self._buttonSettings = QAction(QIcon(self.iconPath + "settings-5-line.png"), "Settings", self)
+        self._buttonSettings.triggered.connect(self._openSettings)
 
         self._buttonOpen = QAction(QIcon(self.iconPath + "folder-open.png"), "Open files or folder", self)
+        self._buttonOpen.setStatusTip("Open files or folder")
+        self._buttonOpen.triggered.connect(self._handleLoadData)
+        self._buttonOpen.setCheckable(False)
 
-        self._buttonChain = QAction(QIcon(self.iconPath+"chain-unchain.png"), "Independent views", self)
-        self._buttonChain.setStatusTip("Independent views")
-        self._buttonChain.triggered.connect(self._handleButtonChain)
-        self._buttonChain.setCheckable(True)
-        self._buttonChain.setChecked(self._viewController.independentViewsEnabled)
+        self._buttonSave = QAction(QIcon(self.iconPath + "save.png"), "Export", self)
+        self._buttonSave.triggered.connect(self._handleExportData)
 
-        self._buttonContrast = QAction(QIcon(self.iconPath + "contrast.png"), "Window level", self)
-        self._buttonContrast.setStatusTip("Window level")
-        self._buttonContrast.triggered.connect(self._handleWindowLevel)
-        self._buttonContrast.setCheckable(True)
+        self._buttonIndependentViews = QAction(QIcon(self.iconPath + "chain-unchain.png"), "Independent views", self)
+        self._buttonIndependentViews.setStatusTip("Independent views")
+        self._buttonIndependentViews.triggered.connect(self._handleButtonIndependentViews)
+        self._buttonIndependentViews.setCheckable(True)
+        self._buttonIndependentViews.setChecked(self._viewController.independentViewsEnabled)
+
+        self._buttonWindowLevel = QAction(QIcon(self.iconPath + "contrast.png"), "Window level", self)
+        self._buttonWindowLevel.setStatusTip("Window level")
+        self._buttonWindowLevel.triggered.connect(self._handleWindowLevel)
+        self._buttonWindowLevel.setCheckable(True)
 
         self._buttonCrossHair = QAction(QIcon(self.iconPath + "geolocation.png"), "Crosshair", self)
         self._buttonCrossHair.setStatusTip("Crosshair")
         self._buttonCrossHair.triggered.connect(self._handleCrossHair)
         self._buttonCrossHair.setCheckable(True)
 
+        self._buttonCrop = QAction(QIcon(self.iconPath + "crop.png"), "Crop", self)
+        self._buttonCrop.setStatusTip("Crop")
+        self._buttonCrop.triggered.connect(self._handleCrop)
+        self._buttonCrop.setCheckable(False)
+
+        self._dropModeCombo = QComboBox()
+        self._dropModeToStr = {DataViewer.DropModes.AUTO: 'Drop mode: auto',
+                               DataViewer.DropModes.PRIMARY: 'Drop as primary image',
+                               DataViewer.DropModes.SECONDARY: 'Drop as secondaryImage'}
+        self._strToDropMode = {v: k for k, v in self._dropModeToStr.items()}
+        self._dropModeCombo.addItems(list(self._dropModeToStr.values()))
+        self._dropModeCombo.setCurrentIndex(self._dropModeToIndex(self._viewController.dropMode))
+        self._dropModeCombo.currentIndexChanged.connect(self._handleDropModeSelection)
+        self._dropModeAction = QWidgetAction(None)
+        self._dropModeAction.setDefaultWidget(self._dropModeCombo)
+
+        self.addAction(self._buttonSettings)
         self.addAction(self._buttonOpen)
-        self.addAction(self._buttonChain)
+        self.addAction(self._buttonSave)
+        self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
-        self.addAction(self._buttonContrast)
+        self.addAction(self._buttonWindowLevel)
+        self.addAction(self._buttonCrop)
+        self.addAction(self._dropModeAction)
 
         self.addSeparator()
 
@@ -69,14 +108,27 @@ class ViewerToolbar(QToolBar):
         self.refreshRateValue = 24
         # self.addDynamicButtons()
 
-        self._viewController.independentViewsEnabledSignal.connect(self._handleButtonChain)
+        self._viewController.independentViewsEnabledSignal.connect(self._handleButtonIndependentViews)
         self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
         self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
 
-    def _handleButtonChain(self, pressed):
+    def _dropModeToIndex(self, dropMode):
+        return list(self._dropModeToStr.keys()).index(dropMode)
+
+    def _indexToDropMode(self, index):
+        return list(self._dropModeToStr.keys())[index]
+
+    def _handleDropModeSelection(self, selectionIndex):
+        self._viewController.dropMode = self._indexToDropMode(selectionIndex)
+
+    def _openSettings(self, pressed):
+        self._imageFusionProp = ProgramSettingEditor()
+        self._imageFusionProp.show()
+
+    def _handleButtonIndependentViews(self, pressed):
         # This is useful if controller emit a signal:
-        if self._buttonChain.isChecked() != pressed:
-            self._buttonChain.setChecked(pressed)
+        if self._buttonIndependentViews.isChecked() != pressed:
+            self._buttonIndependentViews.setChecked(pressed)
             return
 
         self._viewController.independentViewsEnabled = pressed
@@ -89,10 +141,38 @@ class ViewerToolbar(QToolBar):
 
         self._viewController.crossHairEnabled = pressed
 
+    def _handleCrop(self):
+        self._cropWidget = CropWidget(self._viewController)
+        self._cropWidget.show()
+
+    def _handleLoadData(self):
+        filesOrFoldersList = self._getOpenFilesAndDirs(caption="Open patient data files or folders",
+                                                  directory=QDir.currentPath())
+        if len(filesOrFoldersList) < 1:
+            return
+
+        splitPath = filesOrFoldersList[0].split('/')
+        withoutLastElementPath = ''
+        for element in splitPath[:-1]:
+            withoutLastElementPath += element + '/'
+        self.dataPath = withoutLastElementPath
+
+        dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
+
+    def _handleExportData(self):
+        folderpath = QFileDialog.getExistingDirectory(self, 'Select folder')
+
+        if folderpath=="":
+            return
+
+        # TODO A nice window to select the patient and the output format
+        dataExporter.exportPatientAsDicom(self._viewController.currentPatient, folderpath)
+
+
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:
-        if self._buttonContrast.isChecked() != pressed:
-            self._buttonContrast.setChecked(pressed)
+        if self._buttonWindowLevel.isChecked() != pressed:
+            self._buttonWindowLevel.setChecked(pressed)
             return
 
         self._viewController.windowLevelEnabled = pressed
@@ -138,6 +218,50 @@ class ViewerToolbar(QToolBar):
         if (refreshRateDialog.exec()):
             self.refreshRateValue = float(refreshRateDialog.rRValueLine.text())
             self.refreshRateChangedSignal.emit(self.refreshRateValue)
+
+    # TODO : this is duplicated from patientDataPanel
+    def _getOpenFilesAndDirs(self, parent=None, caption='', directory='',
+                             filter='', initialFilter='', options=None):
+        def updateText():
+            # update the contents of the line edit widget with the selected files
+            selected = []
+            for index in view.selectionModel().selectedRows():
+                selected.append('"{}"'.format(index.data()))
+            lineEdit.setText(' '.join(selected))
+
+        dialog = QFileDialog(parent, windowTitle=caption)
+        dialog.setFileMode(dialog.ExistingFiles)
+        if options:
+            dialog.setOptions(options)
+        dialog.setOption(dialog.DontUseNativeDialog, True)
+        if directory:
+            dialog.setDirectory(directory)
+        if filter:
+            dialog.setNameFilter(filter)
+            if initialFilter:
+                dialog.selectNameFilter(initialFilter)
+
+        # by default, if a directory is opened in file listing mode,
+        # QFileDialog.accept() shows the contents of that directory, but we
+        # need to be able to "open" directories as we can do with files, so we
+        # just override accept() with the default QDialog implementation which
+        # will just return exec_()
+        dialog.accept = lambda: QDialog.accept(dialog)
+
+        # there are many item views in a non-native dialog, but the ones displaying
+        # the actual contents are created inside a QStackedWidget; they are a
+        # QTreeView and a QListView, and the tree is only used when the
+        # viewMode is set to QFileDialog.Details, which is not this case
+        stackedWidget = dialog.findChild(QStackedWidget)
+        view = stackedWidget.findChild(QListView)
+        view.selectionModel().selectionChanged.connect(updateText)
+
+        lineEdit = dialog.findChild(QLineEdit)
+        # clear the line edit contents whenever the current directory changes
+        dialog.directoryEntered.connect(lambda: lineEdit.setText(''))
+
+        dialog.exec_()
+        return dialog.selectedFiles()
 
 
 class RefreshRateDialog(QDialog):

@@ -3,6 +3,8 @@ import logging
 
 from Core.event import Event
 from GUI.MainWindow import MainWindow
+from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget
+from GUI.Viewer.dataViewer import DataViewer
 from GUI.Viewer.dynamicDisplayController import DynamicDisplayController
 
 class ViewController():
@@ -11,24 +13,32 @@ class ViewController():
         self.crossHairEnabledSignal = Event(bool)
         self.currentPatientChangedSignal = Event(object)
         self.independentViewsEnabledSignal = Event(bool)
-        self.lineWidgetEnabledSignal = Event(object)
+        self.profileWidgetEnabledSignal = Event(object)
         self.mainImageChangedSignal = Event(object)
         self.patientAddedSignal = Event(object)
         self.patientRemovedSignal = Event(object)
         self.secondaryImageChangedSignal = Event(object)
+        self.planChangedSignal = Event(object)
         self.showContourSignal = Event(object)
         self.windowLevelEnabledSignal = Event(bool)
+        self.dropModeSignal = Event(object)
+        self.droppedDataSignal = Event(object)
         #self.dynamicViewerSwitchedOnSignal = Event(object)
+
+        self.mainConfig = None
 
         self._activePatients = [patient for patient in patientList.patients]
         self._crossHairEnabled = None
         self._currentPatient = None
+        self._dropMode = DataViewer.DropModes.DEFAULT
+        self._droppedImage = None
         self._independentViewsEnabled = False
-        self.lineWidgetCallback = lambda : None
-        self._lineWidgetEnabled = False
+        self.profileWidgetCallback = ProfileWidget.ProfileWidgetCallback()
+        self._profileWidgetEnabled = False
         self._mainImage = None
         self.multipleActivePatientsEnabled = False #TODO
         self._patientList = patientList
+        self._plan = None
         self._selectedImage = None
         self._windowLevelEnabled = None
 
@@ -99,6 +109,18 @@ class ViewController():
         self.currentPatientChangedSignal.emit(self._currentPatient)
 
     @property
+    def dropMode(self):
+        return self._dropMode
+
+    @dropMode.setter
+    def dropMode(self, mode):
+        if mode == self._dropMode:
+            return
+
+        self._dropMode = mode
+        self.dropModeSignal.emit(self._dropMode)
+
+    @property
     def independentViewsEnabled(self):
         return self._independentViewsEnabled
 
@@ -112,22 +134,27 @@ class ViewController():
         self.independentViewsEnabledSignal.emit(self._independentViewsEnabled)
 
     @property
-    def lineWidgetEnabled(self):
-        return self._lineWidgetEnabled
+    def profileWidgetEnabled(self):
+        return self._profileWidgetEnabled
 
-    @lineWidgetEnabled.setter
-    def lineWidgetEnabled(self, enabled):
-        self._lineWidgetEnabled = enabled
-        self.lineWidgetEnabledSignal.emit(self._lineWidgetEnabled)
+    @profileWidgetEnabled.setter
+    def profileWidgetEnabled(self, enabled):
+        self._profileWidgetEnabled = enabled
+        self.profileWidgetEnabledSignal.emit(self._profileWidgetEnabled)
 
     @property
     def mainImage(self):
         if self.independentViewsEnabled:
             # mainImage is only available when only one image can be shown
-            raise()
+            raise Exception("mainImage is only available when only one image can be shown")
+        return self._mainImage
 
     @mainImage.setter
     def mainImage(self, image):
+        if self.independentViewsEnabled:
+            # mainImage is only available when only one image can be shown
+            raise Exception("mainImage is only available when only one image can be shown")
+
         self._mainImage = image
         self.mainImageChangedSignal.emit(self._mainImage)
         # self.dynamicOrStaticModeChangedSignal.emit(self._mainImage)
@@ -136,13 +163,51 @@ class ViewController():
     @property
     def secondaryImage(self):
         if self.independentViewsEnabled:
-            # mainImage is only available when only one image can be shown
-            raise()
+            # secondaryImage is only available when only one image can be shown
+            raise("secondaryImage is only available when only one image can be shown")
+        return self._secondaryImage
 
     @secondaryImage.setter
     def secondaryImage(self, image):
+        if self.independentViewsEnabled:
+            # secondaryImage is only available when only one image can be shown
+            raise("secondaryImage is only available when only one image can be shown")
+
         self._secondaryImage = image
         self.secondaryImageChangedSignal.emit(self._secondaryImage)
+
+    @property
+    def plan(self):
+        if self.independentViewsEnabled:
+            # secondaryImage is only available when only one image can be shown
+            raise ("plan is only available when only one image can be shown")
+        return self._plan
+
+    @plan.setter
+    def plan(self, plan):
+        if self.independentViewsEnabled:
+            # secondaryImage is only available when only one image can be shown
+            raise ("plan is only available when only one image can be shown")
+
+        self._plan = plan
+        self.planChangedSignal.emit(self._plan)
+
+    @property
+    def droppedImage(self):
+        if self.independentViewsEnabled:
+            # droppedImage is only available when only one image can be shown
+            raise()
+
+        return self._droppedImage
+
+    @droppedImage.setter
+    def droppedImage(self, image):
+        if self.independentViewsEnabled:
+            # droppedImage is only available when only one image can be shown
+            raise()
+
+        self._droppedImage = image
+        self.droppedDataSignal.emit(self._droppedImage)
 
     @property
     def selectedImage(self):

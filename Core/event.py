@@ -11,6 +11,7 @@ class Event:
     True
 
     """
+
     def __init__(self, *args):
         self._slots = []
         self.objectType = None
@@ -18,6 +19,11 @@ class Event:
         if len(args) > 0:
             self.objectType = args[0]
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        # Don't pickle methods in _slots. Those methods might be linked to object that cannot be pickled (eg. the whole progamm)
+        state["_slots"] = []
+        return state
 
     def __deepcopy__(self, memodict={}):
         newEvent = Event()
@@ -26,8 +32,10 @@ class Event:
 
         for slot in self._slots:
             try:
-                newSlot = copy.deepcopy(slot)
-                newEvent.slots.append(newSlot)
+                # To me it does not make sense to deep copy the functions (and their underlying data model)
+                newEvent.slots.append(slot)
+                #newSlot = copy.deepcopy(slot, memodict)
+                #newEvent.slots.append(newSlot)
             except:
                 pass
 
@@ -56,9 +64,9 @@ class Event:
             if len(args) != 1:
                 raise ValueError('Incorrect argument')
             if not isinstance(args[0], self.objectType):
-                raise ValueError('Incorrect argument')
+                raise ValueError('Incorrect argument. Argument is of type ' + str(type(args[0])) + 'but should be of type ' + str(self.objectType))
 
-        for slot in self._slots:
+        for slot in self.slots: # I use slots and not _slots because if a slot is disconnected in this loop it is not removed from slots
             try:
                 slot(*args)
             except Exception as e:

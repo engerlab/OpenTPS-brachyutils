@@ -1,5 +1,7 @@
 import logging
-
+import numpy as np
+import copy
+from typing import Sequence
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.vectorField3D import VectorField3D
 
@@ -21,11 +23,11 @@ class Deformation3D(Image3D):
             if patientInfo is None:
                 patientInfo = displacement.patientInfo
         elif not(velocity is None) and not(displacement is None):
-            if velocity._origin == displacement._origin:
+            if np.array_equal(velocity._origin, displacement._origin):
                 origin = velocity._origin
             else:
                 logger.error("Velocity and displacement fields have different origin. Cannot create deformation object.")
-            if velocity._spacing == displacement._spacing:
+            if np.array_equal(velocity._spacing, displacement._spacing):
                 spacing = velocity._spacing
             else:
                 logger.error("Velocity and displacement fields have different spacing. Cannot create deformation object.")
@@ -43,16 +45,39 @@ class Deformation3D(Image3D):
 
             Returns
             -------
-            list
+            np.array
                 Grid size of velocity field and/or displacement field.
             """
 
         if (self.velocity is None) and (self.displacement is None):
-            return (0, 0, 0)
+            return np.array([0, 0, 0])
         elif self.displacement is None:
-            return self.velocity._imageArray.shape[0:3]
+            return np.array([self.velocity._imageArray.shape[0:3]])[0]
         else:
-            return self.displacement._imageArray.shape[0:3]
+            return np.array([self.displacement._imageArray.shape[0:3]])[0]
+
+    def copy(self):
+        return Deformation3D(velocity=copy.deepcopy(self.velocity), displacement=copy.deepcopy(self.displacement), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
+
+    def setVelocityArray(self, velocityArray):
+        self.velocity._imageArray = velocityArray
+        self.displacement = None
+
+    def setDisplacementArray(self, displacementArray):
+        self.displacement._imageArray = displacementArray
+        self.velocity = None
+
+    def setVelocityArrayXYZ(self, velocityArrayX, velocityArrayY, velocityArrayZ):
+        self.velocity._imageArray[:, :, :, 0] = velocityArrayX
+        self.velocity._imageArray[:, :, :, 1] = velocityArrayY
+        self.velocity._imageArray[:, :, :, 2] = velocityArrayZ
+        self.displacement = None
+
+    def setDisplacementArrayXYZ(self, displacementArrayX, displacementArrayY, displacementArrayZ):
+        self.displacement._imageArray[:, :, :, 0] = displacementArrayX
+        self.displacement._imageArray[:, :, :, 1] = displacementArrayY
+        self.displacement._imageArray[:, :, :, 2] = displacementArrayZ
+        self.velocity = None
 
     def initFromImage(self, image):
         """Initialize deformation using the voxel grid of the input image.
@@ -103,7 +128,7 @@ class Deformation3D(Image3D):
         self.angles = field._angles
         self.patientInfo = field.patientInfo
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
         """Resample deformation (velocity and/or displacement field) according to new voxel grid using linear interpolation.
 
             Parameters
@@ -121,13 +146,13 @@ class Deformation3D(Image3D):
             """
 
         if not(self.velocity is None):
-            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
+            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         if not(self.displacement is None):
-            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType)
+            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def deformImage(self, image, fillValue=-1000):
+    def deformImage(self, image, fillValue=-1000, outputType=np.float32, tryGPU=True):
         """Deform 3D image using linear interpolation.
 
             Parameters
@@ -144,19 +169,26 @@ class Deformation3D(Image3D):
             """
 
         if (self.displacement is None):
-            field = self.velocity.exponentiateField()
-        else:
-            field = self.displacement
+            self.displacement = self.velocity.exponentiateField(tryGPU=tryGPU)
+
+        field = self.displacement.copy()
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
-            logger.warning("Image and field dimensions do not match. Resample displacement field to image grid.")
-            field = field.deepCopyWithoutEvent()
-            field.resample(image.gridSize, image._origin, image._spacing)
+            logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
+            field.resample(image.gridSize, image._origin, image._spacing, tryGPU=tryGPU)
 
-        image = image.dumpableCopy()
-        image._imageArray = field.warp(image._imageArray, fillValue=fillValue)
+        image = image.copy()
+        init_dtype = image._imageArray.dtype
+        image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
+        if init_dtype == 'bool':
+            image._imageArray[image._imageArray < 0.5] = 0
+            image._imageArray[image._imageArray >= 0.5] = 1
+            image._imageArray = image._imageArray.astype(bool)
 
         return image
 
     def dumpableCopy(self):
-        return Deformation3D(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, velocity=self.velocity, displacement=self.displacement)
+        dumpableDef = Deformation3D(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, velocity=self.velocity, displacement=self.displacement)
+        # dumpableDef.patient = self.patient
+        return dumpableDef

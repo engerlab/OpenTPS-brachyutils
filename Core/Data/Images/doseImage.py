@@ -1,3 +1,7 @@
+import numpy as np
+import copy
+import pydicom
+
 from Core.Data.Images.image3D import Image3D
 
 
@@ -10,7 +14,9 @@ class DoseImage(Image3D):
         self.sopInstanceUID = sopInstanceUID
         self.planSOPInstanceUID = planSOPInstanceUID
 
-
+    @classmethod
+    def fromImage3D(cls, image: Image3D):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
 
     def __str__(self):
         """
@@ -20,58 +26,30 @@ class DoseImage(Image3D):
         pass
     
     
+    @classmethod
+    def fromImage(cls, image:Image3D):
+        doseImage = cls()
+        doseImage.imageArray = np.array(image.imageArray)
+        doseImage.origin = np.array(image.origin)
+        doseImage.spacing = np.array(image.spacing)
+        doseImage.angles = np.array(image.angles)
+        doseImage.seriesInstanceUID = image.seriesInstanceUID
     
-    def initializeFromMHD(self, imgName, mhdDose, ct, plan):
-        """
-        Initialize the DoseImage object from a MHDImage.
+        return doseImage
 
-        Parameters
-        ----------
-        imgName : str
-            Name of the dose image as it will be displayed to the user
-        mhdDose : MHDImage object
-            MHD image of the dose distribution
-        ct : ctImage object
-            CT image used for dose calculation
-        plan : RTPlan object
-            Treatment plan used for dose calculation
-        """
 
-        pass
-    
-    
-    
-    def initializeFromBeamletDose(self, imgName, beamlets, doseVector, ct):
-        """
-        Initialize the DoseImage object from a dose vector calculated using the beamlet matrix. 
-
-        Parameters
-        ----------
-        imgName : str
-            Name of the dose image as it will be displayed to the user
-        beamlets : MHDImage object
-            MHD image of the dose distribution
-        doseVector : np Array
-            1D vector resulting from the product of the beamlet matrix and the spot weight vector
-        ct : ctImage object
-            CT image used for dose calculation
-        """
-
-        pass
-    
-    
-      
     def resampleToImageGrid(self, ct):
         pass
 
 
-
     def copy(self):
-        return super().copy()
-        
-        
+        return DoseImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
+
+
     def exportDicom(self, outputFile, planUID=[]):
         pass
 
     def dumpableCopy(self):
-        return DoseImage(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, frameOfReferenceUID=self.frameOfReferenceUID, sopInstanceUID=self.sopInstanceUID, planSOPInstanceUID=self.planSOPInstanceUID)
+        dumpableDose = DoseImage(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, frameOfReferenceUID=self.frameOfReferenceUID, sopInstanceUID=self.sopInstanceUID, planSOPInstanceUID=self.planSOPInstanceUID)
+        # dumpableDose.patient = self.patient
+        return dumpableDose

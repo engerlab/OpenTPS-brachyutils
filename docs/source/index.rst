@@ -23,5 +23,4 @@ Contents
 
    installation
    Core
-   Controllers
    GUI

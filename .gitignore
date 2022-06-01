@@ -3,9 +3,14 @@
 *.pyc
 *~
 README.sublime-workspace
-*.dat
 /test_*
 config.txt
 *py.sw*
 *.swp
 docs/build
+tests/*
+scripts/
+tests/
+notebooks/
+*.txt
+Extensions/*

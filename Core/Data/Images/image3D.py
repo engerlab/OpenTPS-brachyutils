@@ -1,4 +1,6 @@
 import copy
+from typing import Sequence
+
 import numpy as np
 import logging
 
@@ -20,9 +22,9 @@ class Image3D(PatientData):
         self.dataChangedSignal = Event()
 
         self._imageArray = imageArray
-        self._origin = list(origin)
-        self._spacing = list(spacing)
-        self._angles = list(angles)
+        self._origin = np.array(origin)
+        self._spacing = np.array(spacing)
+        self._angles = np.array(angles)
         # if UID is None:
         #     UID = generate_uid()
         # self.UID = UID
@@ -32,13 +34,16 @@ class Image3D(PatientData):
         s = 'Image3D ' + str(gs[0]) + ' x ' +  str(gs[1]) +  ' x ' +  str(gs[2]) + '\n'
         return s
 
+    # This is different from deepcopy because image can be a subclass of image3D but the method always returns an Image3D
+    @classmethod
+    def fromImage3D(cls, image):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+
     def copy(self):
-        img = copy.deepcopy(self)
-        img.name = img.name + '_copy'
-        return img
+        return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     @property
-    def imageArray(self):
+    def imageArray(self) -> np.ndarray:
         return self._imageArray
 
     @imageArray.setter
@@ -47,50 +52,53 @@ class Image3D(PatientData):
         self.dataChangedSignal.emit()
 
     @property
-    def origin(self):
+    def origin(self) -> np.ndarray:
         return self._origin
 
     @origin.setter
     def origin(self, origin):
-        self._origin = list(origin)
+        self._origin = np.array(origin)
         self.dataChangedSignal.emit()
 
     @property
-    def spacing(self):
+    def spacing(self) -> np.ndarray:
         return self._spacing
 
     @spacing.setter
     def spacing(self, spacing):
-        self._spacing = list(spacing)
+        self._spacing = np.array(spacing)
         self.dataChangedSignal.emit()
 
     @property
-    def angles(self):
+    def angles(self) -> np.ndarray:
         return self._angles
 
     @angles.setter
     def angles(self, angles):
-        self._angles = list(angles)
+        self._angles = np.array(angles)
         self.dataChangedSignal.emit()
 
     @property
-    def gridSize(self):
+    def gridSize(self) -> np.ndarray:
         """Compute the voxel grid size of the image.
 
             Returns
             -------
-            list
+            np.array
                 Image grid size.
             """
-
         if self._imageArray is None:
-            return (0, 0, 0)
+            return np.array([0, 0, 0])
         elif np.size(self._imageArray) == 0:
-            return (0, 0, 0)
-        return self._imageArray.shape[0:3]
+            return np.array([0, 0, 0])
+        return np.array(self._imageArray.shape)
+
+    @property
+    def gridSizeInWorldUnit(self)  -> np.ndarray:
+        return self.gridSize*self.spacing
 
 
-    def hasSameGrid(self, otherImage):
+    def hasSameGrid(self, otherImage) -> bool:
         """Check whether the voxel grid is the same as the voxel grid of another image given as input.
 
             Parameters
@@ -104,14 +112,18 @@ class Image3D(PatientData):
                 True if grids are identical, False otherwise.
             """
 
-        if (self.gridSize == otherImage.gridSize and
+        if (np.array_equal(self.gridSize, otherImage.gridSize) and
                 euclidean_dist(self._origin, otherImage._origin) < 0.01 and
                 euclidean_dist(self._spacing, otherImage._spacing) < 0.01):
             return True
         else:
             return False
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None):
+    @property
+    def numberOfVoxels(self):
+        return self.gridSize[0] * self.gridSize[1] * self.gridSize[2]
+
+    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
         """Resample image according to new voxel grid using linear interpolation.
 
             Parameters
@@ -128,11 +140,11 @@ class Image3D(PatientData):
                 type of the output.
             """
 
-        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, list(self.gridSize), origin, spacing, gridSize, fillValue=fillValue, outputType=outputType)
-        self._origin = list(origin)
-        self._spacing = list(spacing)
+        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+        self._origin = np.array(origin)
+        self._spacing = np.array(spacing)
 
-    def resampleToImageGrid(self, otherImage, fillValue=0, outputType=None):
+    def resampleToImageGrid(self, otherImage, fillValue=0, outputType=None, tryGPU=True):
         """Resample image using the voxel grid of another image given as input, using linear interpolation.
 
             Parameters
@@ -146,5 +158,21 @@ class Image3D(PatientData):
             """
 
         if (not otherImage.hasSameGrid(self)):
-            logger.info('Resample field to CT grid.')
-            self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType)
+            logger.info('Resample image to CT grid.')
+            self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
+    def getDataAtPosition(self, position: Sequence):
+        voxelIndex = self.getVoxelIndexFromPosition(position)
+        dataNumpy = self.imageArray[voxelIndex[0], voxelIndex[1], voxelIndex[2]]
+
+        return dataNumpy
+
+    def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
+        positionInMM = np.array(position)
+        shiftedPosInMM = positionInMM - self.origin
+        posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
+
+        return posInVoxels
+
+    def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        return self.origin + np.array(index).astype(dtype=float)*self.spacing

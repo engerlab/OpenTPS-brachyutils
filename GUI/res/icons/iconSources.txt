@@ -1,0 +1,6 @@
+graph.png https://iconarchive.com/show/oxygen-icons-by-oxygen-icons.org/Actions-office-chart-line-stacked-icon.html
+slider.png https://icons.iconarchive.com/icons/google/noto-emoji-objects/128/62802-level-slider-icon.png
+crop.png https://icons.iconarchive.com/icons/iconsmind/outline/512/Crop-2-icon.png
+reload.png https://icons.iconarchive.com/icons/custom-icon-design/flatastic-8/512/Refresh-icon.png
+save.png https://iconarchive.com/show/pretty-office-7-icons-by-custom-icon-design/Save-icon.html
+

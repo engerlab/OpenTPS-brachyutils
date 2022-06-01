@@ -1,19 +1,15 @@
 import os
+from typing import Sequence
+
 import pydicom
 import logging
 
+from Core.Data.patientData import PatientData
 from Core.api import API
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.vectorField3D import VectorField3D
-from Core.Data.dynamic3DModel import Dynamic3DModel
-from Core.Data.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.patient import Patient
 from Core.Data.patientList import PatientList
-from Core.Data.rtStruct import RTStruct
-from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct
-from Core.IO import mhdReadWrite
+from Core.IO.dicomIO import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
+from Core.IO import mhdIO
 from Core.IO.serializedObjectIO import loadDataStructure
 
 @API.loggedViaAPI
@@ -43,30 +39,17 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             patientList.append(patient)
 
         # add data to patient
-        if(isinstance(data, Image3D)):
-            patient.appendImage(data)
-        elif(isinstance(data, CTImage)):
-            patient.appendImage(data)
-        elif(isinstance(data, DoseImage)):
-            patient.appendImage(data)
-        elif(isinstance(data, RTStruct)):
-            patient.appendRTStruct(data)
-        elif (isinstance(data, VectorField3D)):
-            patient.appendRTStruct(data)
-        elif (isinstance(data, Dynamic3DSequence)):
-            patient.appendDyn3DSeq(data)
+        if(isinstance(data, PatientData)):
+            patient.appendPatientData(data)
         # elif (isinstance(data, Dynamic2DSequence)): ## not implemented in patient yet, maybe only one function for both 2D and 3D dynamic sequences ?
         #     patient.appendDyn2DSeq(data)
-        elif (isinstance(data, Dynamic3DModel)):
-            patient.appendDyn3DMod(data)
         elif (isinstance(data, Patient)):
             pass  # see above, the Patient case is considered
         else:
             logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
             continue
 
-
-def loadAllData(inputPaths, maxDepth=-1):
+def loadAllData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
     """
     Load all data found at the given input path.
 
@@ -121,7 +104,8 @@ def loadAllData(inputPaths, maxDepth=-1):
 
         # Dicom RT Ion Plan
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
-            logging.warning("WARNING: cannot import " + filePath + " because RT ion plan import is not implemented yet")
+            plan = readDicomPlan(filePath)
+            dataList.append(plan)
 
         # Dicom struct
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.3":
@@ -188,7 +172,7 @@ def listAllFiles(inputPaths, maxDepth=-1):
 
     # check content of the input path
     if os.path.isdir(inputPaths):
-        inputPathContent = os.listdir(inputPaths)
+        inputPathContent = sorted(os.listdir(inputPaths))
     else:
         inputPathContent = [inputPaths]
         inputPaths = ""

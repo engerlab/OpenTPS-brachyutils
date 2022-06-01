@@ -28,12 +28,18 @@ class RayStationMaterial:
 
     def __init__(self, density=None, I=None):
         self._As = []
-        self._density = density
+        if density<=0:
+            self._density = 1e-12
+        else:
+            self._density = density
         self._I = I
         self._weights = []
         self._Zs = []
 
     def __str__(self):
+        return self.rayStationFormatted()
+
+    def rayStationFormatted(self):
         s = 'Density = ' + str(self._density) + ' gr/cm3 nElements = ' + str(len(self._weights)) + ' I = ' + str(self._I) + ' eV\n'
         for i, _ in enumerate(self._weights):
             s = s + str(i) + ' ' + str(self._Zs[i]) + ' ' + str(self._As[i]) + ' ' + str(self._weights[i]) + '\n'
@@ -45,10 +51,12 @@ class RayStationMaterial:
         self._As.append(A)
         self._Zs.append(Z)
 
-    def getDensity(self):
+    @property
+    def density(self):
         return self._density
 
-    def getElectronDensity(self):
+    @property
+    def electronDensity(self):
         w = np.array(self._weights)
         A = np.array(self._As)
         Z = np.array(self._Zs)
@@ -57,7 +65,8 @@ class RayStationMaterial:
 
         return a1*self._density*self._NA
 
-    def getRadiationLength(self):
+    @property
+    def radiationLength(self):
         X = np.array(X0)
         w = np.array(self._weights)
         Z = np.array(self._Zs, dtype=int)
@@ -70,19 +79,21 @@ class RayStationMaterial:
         if energy<=0:
             return 0
 
-        E = energy * self._MeV  # energy of protons
+        SPR = self._density * self.getSP(energy) / self._waterSP(energy)
+        return SPR
 
-        # SP of water
+    def _waterSP(self, energy):
+        E = energy * self._MeV
         a1 = sum(self._w_water * self._Z_water / self._A_water)
         a2 = log(2.0 * self._m_e * self._c * self._c / self._I_water)
         beta_2 = 1.0 - np.power(1 + E / (self._m_p * self._c * self._c), -2)
-        S_water_Jm2g_RS = 4 * pi * self._NA * self._re * self._re * self._m_e * self._c * self._c * a1 * (a2 - log(1.0 / beta_2 - 1.0) - beta_2) / beta_2
+        S_water_Jm2g_RS = 4 * pi * self._NA * self._re * self._re * self._m_e * self._c * self._c * a1 * (
+                    a2 - log(1.0 / beta_2 - 1.0) - beta_2) / beta_2
 
-        SPR = self._density * self.getSP(energy) / (S_water_Jm2g_RS)
-        return SPR
+        return S_water_Jm2g_RS
 
     def getSP(self, energy):
-        E = energy * self._MeV  # energy of protons
+        E = energy * self._MeV
         I = self._I * self._eV
 
         w = np.array(self._weights)
@@ -97,7 +108,6 @@ class RayStationMaterial:
         return S
 
     def toMCSquareMaterial(self, materialsPath='default'):
-        print('Converting material of density ' + str(self._density))
         materialNumbers = MCsquareMaterial.getMaterialNumbers(materialsPath)
 
         MCSquareElements = []
@@ -146,7 +156,7 @@ class RayStationMaterial:
 
         newName = str(self._density).replace('.', '_')
 
-        return MCsquareMolecule(density=self._density, electronDensity=self.getElectronDensity(), name=newName,
-                                number=0, sp=sp, radiationLength=self.getRadiationLength(),
+        return MCsquareMolecule(density=self._density, electronDensity=self.electronDensity, name=newName,
+                                number=0, sp=sp, radiationLength=self.radiationLength,
                                 MCsquareElements=selectedElement, weights=weigths)
 

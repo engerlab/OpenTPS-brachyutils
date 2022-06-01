@@ -7,8 +7,8 @@ import json
 from argparse import ArgumentParser
 from configparser import ConfigParser
 
-LOGGING_CONFIG_FILE = 'logging_config.json'
-CONFIG_FILE = 'main.conf'
+LOGGING_CONFIG_FILE = 'logger/logging_config.json'
+CONFIG_FILE = 'logger/main.conf'
 CONFIG_LOCATIONS = ['etc',
                     '/usr/local/etc',
                     os.curdir,
