@@ -47,7 +47,7 @@ def vectorSimulation(coeffMin,coeffMax,amplitude,frequency,timestamps,listOfEven
     return y_amplitude,y_frequency
 
 #creation des donnees respiratoires
-def signalGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120):
+def signalGeneration(amplitude=2, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.15, meanEvent = 1/20, meanEventApnea=1/120):
     amp = amplitude
     freq = 1 / period
     timestamps = np.arange(0,signalDuration,step)
@@ -59,7 +59,7 @@ def signalGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signal
     varianceDurationEventsApnea = 5
     listOfEvents = events(meanEvent,meanDurationEvents,varianceDurationEvents,signalDuration)
     listOfEventsApnea = events(meanEventApnea,meanDurationEventsApnea,varianceDurationEventsApnea,signalDuration)
-   
+    sigma *= amp/20
     
     y_amplitude, y_frequency = vectorSimulation(coeffMin,coeffMax,amp,freq,timestamps,listOfEvents)
     amplitude += y_amplitude
@@ -116,7 +116,7 @@ def signalGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signal
             signal[timeIndex::] = sig[0:len(signal)-timeIndex]
         
     
-    return timestamps * 1000, signal
+    return timestamps * 1000, signal, amplitude
 
 
 def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
@@ -140,16 +140,16 @@ def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, sign
 
 
 
-#for i in range(1):
-    #time,samples,amplitude = signalGeneration()
-    #time = np.arange(0,100,0.5)
-    #plt.figure(figsize=(15,10))
-    #plt.plot(time,samples)
-    #plt.plot(time,amplitude)
-    #plt.xlabel("Time [s]")
-    #plt.ylabel("Amplitude [mm]")
-    #plt.title("Breathing signal part 1")
-    #plt.xlim((0,100))
-    #plt.ylim((-30,30))
+for i in range(1):
+    time,samples,amplitude = signalGeneration()
+    time = np.arange(0,100,0.5)
+    plt.figure(figsize=(15,10))
+    plt.plot(time,samples)
+    plt.plot(time,amplitude)
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude [mm]")
+    plt.title("Breathing signal part 1")
+    plt.xlim((0,100))
+    plt.ylim((-30,30))
 
 
