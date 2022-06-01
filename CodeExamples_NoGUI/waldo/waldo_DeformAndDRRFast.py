@@ -32,11 +32,11 @@ from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods imp
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_5'
-    patientComplement = '/1/FDG1'
+    patientFolder = 'Patient_2'
+    patientComplement = '/2/FDG2'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/test10/'
+    resultFolder = '/Regular/sim5k/exp1/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
@@ -52,9 +52,9 @@ if __name__ == '__main__':
 
     ## sequence duration, sampling and signal's regularity
     regularityIndex = 1
-    numberOfSequences = 3
-    sequenceDurationInSecs = 10
-    samplingFrequency = 2
+    numberOfSequences = 5
+    sequenceDurationInSecs = 205
+    samplingFrequency = 5
     #subSequenceSize = 20
     outputSize = [64, 64]
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     projAxis = 'Z'
 
     # multiProcessing 
-    maxMultiProcUse = 6
+    maxMultiProcUse = 10
     subSequenceSize = maxMultiProcUse
 
 
@@ -269,5 +269,5 @@ if __name__ == '__main__':
         print('Script with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
         print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
     
-        serieSavingPath = savingPath + resultDataFolder + f'Patient_0_{sequenceSize}_DRRMasksAndCOM_serie_{seqIdx}'
+        serieSavingPath = savingPath + resultDataFolder + patientFolder + f'_{sequenceSize}_DRRMasksAndCOM_serie_{seqIdx}'
         saveSerializedObjects(resultList, serieSavingPath)

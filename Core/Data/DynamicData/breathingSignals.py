@@ -36,13 +36,9 @@ class SyntheticBreathingSignal(BreathingSignal):
 
 
     def generate1DBreathingSignal(self):
-        self.timestamps, self.breathingSignal = signalGeneration(self.amplitude, self.breathingPeriod, self.meanNoise, self.varianceNoise,
-                                                                 self.samplingPeriod, self.simulationTime, self.coeffMin, self.coeffMax, 
-                                                                 self.meanEvent, self.meanEventApnea)
+        self.timestamps, self.breathingSignal = signalGeneration(self.amplitude, self.breathingPeriod, self.meanNoise, self.varianceNoise, self.samplingPeriod, self.simulationTime, self.coeffMin, self.coeffMax,self.meanEvent, self.meanEventApnea)
         return self.breathingSignal
 
     def generate3DBreathingSignal(self):
-        self.timestamps, self.breathingSignal = signal3DGeneration(self.amplitude,self.breathingPeriod, self.meanNoise, self.varianceNoise,
-                                                                   self.samplingPeriod, self.simulationTime, self.coeffMin, self.coeffMax,
-                                                                   self.meanEvent, self.meanEventApnea)
+        self.timestamps, self.breathingSignal = signal3DGeneration(self.amplitude,self.breathingPeriod, self.meanNoise, self.varianceNoise, self.samplingPeriod, self.simulationTime, self.coeffMin, self.coeffMax,self.meanEvent, self.meanEventApnea)
         return self.breathingSignal
