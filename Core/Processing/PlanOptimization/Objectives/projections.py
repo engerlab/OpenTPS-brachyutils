@@ -57,7 +57,7 @@ class Indicator(BaseProj):
         super(Indicator, self).__init__(**kwargs)
         self.plan = plan
         self.eps = eps
-        self.struct = tools.weightStructure(self.plan)
+        self.struct = tools.WeightStructure(self.plan)
         self.smooth_fun = smooth_fun
 
     def _prox(self, x, T):
@@ -65,8 +65,8 @@ class Indicator(BaseProj):
         gxk = self.smooth_fun.grad(x)
 
         beamStruct = self.struct.nLayersInBeam
-        energyStruct = self.struct.energyStructure(x)
-        g_energyStruct = self.struct.energyStructure(gxk)
+        energyStruct = self.struct.getEnergyStructure(x)
+        g_energyStruct = self.struct.getEnergyStructure(gxk)
         X = []
         accumulateLayers = 0
         LayersReactivated = 0

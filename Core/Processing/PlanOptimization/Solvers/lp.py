@@ -4,11 +4,12 @@ logger = logging.getLogger(__name__)
 try:
     import gurobipy as gp
     from gurobipy import GRB
-except:
-    logger.exception('No module Gurobi found')
+except ModuleNotFoundError:
+    logger.info('No module Gurobi found\n!Licence required!\nGet free Academic license on '
+                'https://www.gurobi.com/academia/academic-program-and-licenses/ ')
 import numpy as np
-import json
-from random import randint, choice
+import time
+from random import choice
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Processing.PlanOptimization.tools import WeightStructure
 
@@ -19,7 +20,10 @@ class LP:
         self.model = None
         self.solStruct = WeightStructure(plan)
         self.xVars = None
+
         params = kwargs
+        # global weight for dose fidelity term
+        self.fidWeight = params.get('Fid_weight', 1)
         # LNS
         self.LNSNIter = params.get('LNS_n_iter', 0)
         self.LNSPercentLayers = params.get('LNS_percent_layers', -1)
@@ -40,11 +44,11 @@ class LP:
                                                                    "provide values where group_spots_init % " \
                                                                    "group_spots_iter == 0 "
 
+        self.inputf = params.get('inputf', None)
+        self.solFile = params.get('solFile', None)
+
     def solve(self, func, x0, **kwargs):
-        param = kwargs
-        inputf = param.get('inputf', None)
-        outputf = param.get('outputf', None)
-        solFile = param.get('solFile', None)
+        startTime = time.time()
         self.solStruct.x = x0
         g = 1
         for n in np.linspace(self.groupSpotsInit, 0, self.groupSpotsIter + 1):
@@ -137,9 +141,9 @@ class LP:
                         print("########################################### LNS done ! Complete OPTIMIZATION starts ")
 
                     # set initial solution
-                    if inputf is not None:
+                    if self.inputf is not None:
                         self.model.update()
-                        self.model.read(inputf)
+                        self.model.read(self.inputf)
                     else:
                         if self.groupSpots:
                             self.solStruct.groupSol()
@@ -185,8 +189,8 @@ class LP:
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, var_obj, var_obj * objective.Weight))
 
-                        if solFile is not None:
-                            self.model.write(solFile + str(i) + '_group_' + str(int(n)) + '.sol')
+                        if self.solFile is not None:
+                            self.model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
 
                         # update solution
                         if self.groupSpots:
@@ -207,20 +211,15 @@ class LP:
                                 x_ungrouped[s] = self.solStruct.xGrouped[idx]
                             self.solStruct.loadSolution(x_ungrouped)
 
-                        # print("recompute cost : {}".format(self.sol.getCost()))
-                        if outputf is not None:
-                            jOut = {"optimal": (status == GRB.OPTIMAL and (
-                                    self.LNSPercentLayers >= 100 or self.LNSNIter == 0)), "solution": self.solStruct.x}
-                            with open(outputf, 'w') as f:
-                                json.dump(jOut, f)
-                            print("--> Solution written to output file")
-
+                        result = {'sol': self.solStruct.x, 'crit': status, 'niter': None,
+                                  'time': time.time() - startTime, 'objective': self.model.objVal}
             except gp.GurobiError as e:
                 print('Error code ' + str(e.errno) + ': ' + str(e))
 
             except AttributeError:
                 print('Encountered an attribute error')
             g += 1
+            return result
 
     def createModel(self):
         self.model = gp.Model("LP")
@@ -245,9 +244,9 @@ class LP:
             nnz = np.nonzero(objective.Mask_vec)[0].tolist()
 
             if self.groupSpots:
-                beamlets = self.solStruct.sparseMatrixGrouped[nnz, ]
+                beamlets = self.solStruct.sparseMatrixGrouped[nnz,]
             else:
-                beamlets = self.solStruct.beamletMatrix[nnz, ]
+                beamlets = self.solStruct.beamletMatrix[nnz,]
             dose = beamlets @ self.xVars
             p = np.ones((len(nnz),)) * objective.limitValue
             if objective.metric == "Dmax" and objective.condition == "<":
@@ -272,3 +271,5 @@ class LP:
                 self.model.addConstr((vmean >= (aux.sum() / M) - objective.limitValue),
                                      name=objective.ROIName.replace(" ", "_") + "_meanConstr")
                 fidelity += vmean * objective.weight
+
+            self.model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")

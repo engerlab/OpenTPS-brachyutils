@@ -76,7 +76,7 @@ class NormL21(Norm):
                  **kwargs):
         super(NormL21, self).__init__(**kwargs)
         self.plan = plan
-        self.struct = tools.weightStructure(self.plan)
+        self.struct = tools.WeightStructure(self.plan)
         # liste de taille nSpots qui dit à quel layer appartient le spot en question
         self.groups_ids_ = np.concatenate([size * [i] for i, size in enumerate(self.struct.nSpotsInLayer)])
         # liste de taille nLayers qui reprend tous les weights et == true si actif dans la layer en question
@@ -174,12 +174,12 @@ class NormL21(Norm):
     def _get_reg_vector(self, x, reg):
         """Get the group-wise regularisation coefficients from ``reg``.
         """
-        self.activeEnergies = self.struct.activeEnergies(x)
-        self.activeLayersInBeam = self.struct.info(x)
+        self.activeEnergies = self.struct.getListOfActiveEnergies(x)
+        self.activeLayersInBeam = self.struct.getListOfActiveLayersInBeams(x)
         self.activeLayers = np.concatenate(
             [size * [item] for item, size in zip(self.activeLayersInBeam, self.struct.nLayersInBeam)])
         energiesWeight = tools.getEnergyWeights(self.activeEnergies)
-        X = self.struct.energyStructure(x)
+        X = self.struct.getEnergyStructure(x)
         scale_reg = str(self.scale_reg).lower()
         if isinstance(reg, Number) and scale_reg != "l21demi":
             reg = [
