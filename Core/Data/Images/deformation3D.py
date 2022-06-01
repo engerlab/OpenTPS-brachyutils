@@ -59,6 +59,14 @@ class Deformation3D(Image3D):
     def copy(self):
         return Deformation3D(velocity=copy.deepcopy(self.velocity), displacement=copy.deepcopy(self.displacement), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
+    def setVelocity(self, velocity):
+        self.velocity = velocity
+        self.displacement = None
+
+    def setDisplacement(self, displacement):
+        self.displacement = displacement
+        self.velocity = None
+
     def setVelocityArray(self, velocityArray):
         self.velocity._imageArray = velocityArray
         self.displacement = None
@@ -179,7 +187,13 @@ class Deformation3D(Image3D):
 
         image = image.copy()
         init_dtype = image._imageArray.dtype
-        image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
+        if isinstance(image, VectorField3D):
+            image._imageArray[:, :, :, 0] = field.warp(image._imageArray[:, :, :, 0], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            image._imageArray[:, :, :, 1] = field.warp(image._imageArray[:, :, :, 1], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            image._imageArray[:, :, :, 2] = field.warp(image._imageArray[:, :, :, 2], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+        else:
+            image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
         if init_dtype == 'bool':
             image._imageArray[image._imageArray < 0.5] = 0

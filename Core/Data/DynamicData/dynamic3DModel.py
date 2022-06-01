@@ -16,6 +16,9 @@ class Dynamic3DModel(PatientData):
         self.midp = midp
         self.deformationList = deformationList
 
+    def copy(self):
+        return Dynamic3DModel(midp=self.midp, deformationList=self.deformationList)
+
     def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=1, tryGPU=True):
         """Compute the mid-position image from the 4DCT by means of deformable registration between breathing phases.
 
