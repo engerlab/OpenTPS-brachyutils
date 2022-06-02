@@ -164,30 +164,30 @@ class LP:
                             print("Time limit reached !")
 
                         print('Obj : {}'.format(self.model.objVal))
-                        for o, objective in enumerate(self.plan.objectives.list):
-                            if objective.Type == "Soft":
+                        '''for o, objective in enumerate(self.plan.objectives.list):
+                            if objective.kind == "Soft":
                                 names_to_retrieve = []
-                                M = len(np.nonzero(objective.Mask_vec)[0].tolist())
+                                M = len(np.nonzero(objective.maskVec)[0].tolist())
                                 if objective.Metric == "Dmax" and objective.Condition == "<":
-                                    name = objective.ROIName.replace(" ", "_") + '_maxObj'
+                                    name = objective.roiName.replace(" ", "_") + '_maxObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
                                 elif objective.Metric == "Dmin" and objective.Condition == ">":
-                                    name = objective.ROIName.replace(" ", "_") + '_minObj'
+                                    name = objective.roiName.replace(" ", "_") + '_minObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
                                 elif objective.Metric == "Dmean" and objective.Condition == "<":
-                                    name = objective.ROIName.replace(" ", "_") + '_meanObj[0]'
+                                    name = objective.roiName.replace(" ", "_") + '_meanObj[0]'
                                     var_obj = self.model.getVarByName(name).X
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, var_obj, var_obj * objective.Weight))
+                                            o, name, var_obj, var_obj * objective.Weight))'''
 
                         if self.solFile is not None:
                             self.model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
@@ -211,7 +211,7 @@ class LP:
                                 x_ungrouped[s] = self.solStruct.xGrouped[idx]
                             self.solStruct.loadSolution(x_ungrouped)
 
-                        result = {'sol': self.solStruct.x, 'crit': status, 'niter': None,
+                        result = {'sol': self.solStruct.x, 'crit': status, 'niter': 1,
                                   'time': time.time() - startTime, 'objective': self.model.objVal}
             except gp.GurobiError as e:
                 print('Error code ' + str(e.errno) + ': ' + str(e))
@@ -226,11 +226,11 @@ class LP:
         self.model.ModelSense = GRB.MINIMIZE
         if self.groupSpots:
             logger.info("number of spots grouped = ", self.solStruct.nSpotsGrouped)
-            self.xVars = self.model.addMVar(shape=(self.solStruct.nSpotsGrouped,), lb=0.0, ub=self.M,
+            self.xVars = self.model.addMVar(shape=(int(self.solStruct.nSpotsGrouped),), lb=0.0, ub=self.M,
                                             vtype=GRB.CONTINUOUS,
                                             name='x')
         else:
-            self.xVars = self.model.addMVar(shape=(self.plan.numberOfSpots,), lb=0.0, ub=self.M, vtype=GRB.CONTINUOUS,
+            self.xVars = self.model.addMVar(shape=(int(self.plan.numberOfSpots),), lb=0.0, ub=self.M, vtype=GRB.CONTINUOUS,
                                             name='x')
 
         if self.groupSpots:
@@ -239,9 +239,9 @@ class LP:
             N = self.plan.numberOfSpots
         fidelity = self.model.addMVar(1, name='fidelity')
         for objective in self.plan.objectives.fidObjList:
-            M = len(np.nonzero(objective.Mask_vec)[0].tolist())
-            print("ROI Name: {}, NNZ voxels= {}".format(objective.ROIName, M))
-            nnz = np.nonzero(objective.Mask_vec)[0].tolist()
+            M = len(np.nonzero(objective.maskVec)[0].tolist())
+            print("ROI Name: {}, NNZ voxels= {}".format(objective.roiName, M))
+            nnz = np.nonzero(objective.maskVec)[0].tolist()
 
             if self.groupSpots:
                 beamlets = self.solStruct.sparseMatrixGrouped[nnz,]
@@ -250,7 +250,7 @@ class LP:
             dose = beamlets @ self.xVars
             p = np.ones((len(nnz),)) * objective.limitValue
             if objective.metric == "Dmax" and objective.condition == "<":
-                if objective.Type == "Soft":
+                if objective.kind == "Soft":
                     vmax = self.model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_maxObj')
                     self.model.addConstr((vmax >= dose - p), name=objective.roiName.replace(" ", "_") + "_maxConstr")
                     fidelity += vmax.sum() * (objective.weight / M)
@@ -258,7 +258,7 @@ class LP:
                     self.model.addConstr(dose <= p, name=objective.roiName.replace(" ", "_") + "_maxConstr")
 
             elif objective.metric == "Dmin" and objective.condition == ">":
-                if objective.type == "Soft":
+                if objective.kind == "Soft":
                     vmin = self.model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_minObj')
                     self.model.addConstr((vmin >= p - dose), name=objective.roiName.replace(" ", "_") + "_minConstr")
                     fidelity += vmin.sum() * (objective.weight / M)
@@ -269,7 +269,7 @@ class LP:
                 aux = self.model.addMVar(M, name=objective.roiName.replace(" ", "_") + '_aux')
                 self.model.addConstr(aux == dose, name=objective.roiName.replace(" ", "_") + "_auxConstr")
                 self.model.addConstr((vmean >= (aux.sum() / M) - objective.limitValue),
-                                     name=objective.ROIName.replace(" ", "_") + "_meanConstr")
+                                     name=objective.roiName.replace(" ", "_") + "_meanConstr")
                 fidelity += vmean * objective.weight
 
             self.model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")

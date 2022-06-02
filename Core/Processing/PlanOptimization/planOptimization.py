@@ -104,7 +104,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
         elif method == "BLFree":
             self.solver = beamletFree.BLFree()
         elif method == "LP":
-            self.solver = lp.LP(**kwargs)
+            self.solver = lp.LP(self.plan,**kwargs)
         else:
             logger.error(
                 'Method {} is not implemented. Pick among ["Scipy-lBFGS", "Gradient", "BFGS", "FISTA"]'.format(

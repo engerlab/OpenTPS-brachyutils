@@ -12,7 +12,7 @@ class ObjectivesList():
         self.targetName = roiName
         self.targetPrescription = prescription
 
-    def addFidObjective(self, roiName, metric, condition, limitValue, weight, robust=False):
+    def addFidObjective(self, roiName, metric, condition, limitValue, weight, kind = "Soft", robust=False):
         objective = FidObjective()
         objective.roiName = roiName
 
@@ -36,6 +36,7 @@ class ObjectivesList():
 
         objective.limitValue = limitValue
         objective.weight = weight
+        objective.kind = kind
         objective.robust = robust
 
         self.fidObjList.append(objective)
@@ -68,7 +69,7 @@ class FidObjective:
         self.limitValue = ""
         self.weight = ""
         self.robust = False
-        self.type = "Soft"
+        self.kind = "Soft"
         self.maskVec = []
 
 
