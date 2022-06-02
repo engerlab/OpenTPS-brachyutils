@@ -24,12 +24,11 @@ def add(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:flo
 def subtract(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
     raise NotImplementedError
 
-def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
     if not inPlace:
         image = image.__class__.fromImage3D(image)
 
-    resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int),
-                               fillValue=fillValue)
+    resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
 
     return image
 
@@ -41,17 +40,50 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     outImage = image.__class__.fromImage3D(image)
 
-    outputBox = None
-    if not (cropROI is None):
-        outputBox = sitkImageProcessing.extremePointsAfterTransform(image, tform)
-        box = crop3D.getBoxAroundROI(cropROI)
-        if cropDim0:
-            outputBox[0] = box[0]
-            outputBox[1] = box[1]
+    outputBox = _cropBoxAfterTransform(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
 
     sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage
+
+def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
+    outputBox = None
+
+    if not (cropROI is None):
+        outputBox = sitkImageProcessing.extremePoints(cropROI)
+        roiBox = crop3D.getBoxAroundROI(cropROI)
+        if cropDim0:
+            outputBox[0] = roiBox[0][0]
+            outputBox[1] = roiBox[0][1]
+        if cropDim1:
+            outputBox[2] = roiBox[1][0]
+            outputBox[3] = roiBox[1][1]
+        if cropDim2:
+            outputBox[4] = roiBox[2][0]
+            outputBox[5] = roiBox[2][1]
+
+    return outputBox
+
+def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
+    outputBox = None
+
+    if not (cropROI is None):
+        outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
+        cropROIBEV = ROIMask.fromImage3D(cropROI)
+        sitkImageProcessing.applyTransform(cropROIBEV, tform, fillValue=0)
+        cropROIBEV.imageArray = cropROIBEV.imageArray.astype(bool)
+        roiBox = crop3D.getBoxAroundROI(cropROIBEV)
+        if cropDim0:
+            outputBox[0] = roiBox[0][0]
+            outputBox[1] = roiBox[0][1]
+        if cropDim1:
+            outputBox[2] = roiBox[1][0]
+            outputBox[3] = roiBox[1][1]
+        if cropDim2:
+            outputBox[4] = roiBox[2][0]
+            outputBox[5] = roiBox[2][1]
+
+    return outputBox
 
 def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
     u = point[0]
@@ -63,13 +95,14 @@ def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[fl
 
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
-def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0) -> Image3D:
+def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
+                     cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     tform = _forwardDicomToIECGantry(image, beam)
 
-    #tform = linalg.inv(tform)
+    outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
 
     outImage = image.__class__.fromImage3D(image)
-    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue)
+    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage
 
@@ -79,7 +112,6 @@ def iecGantryCoordinatetoDicom(image: Image3D, beam: PlanIonBeam, point: Sequenc
     w = point[2]
 
     tform = _forwardDicomToIECGantry(image, beam)
-    #tform = linalg.inv(tform)
 
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
@@ -108,8 +140,6 @@ def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
     Flip = np.array(Flip)
 
     T = linalg.inv(Flip @ Trs) @ M @ Flip @ Trs
-
-    #T = np.transpose(T)
 
     return T
 

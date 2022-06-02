@@ -1,3 +1,4 @@
+from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy
 class Backtracking(Dummy):
     """
     Backtracking based on a local quadratic approximation of the smooth

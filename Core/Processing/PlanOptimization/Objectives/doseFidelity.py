@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
 
-
 try:
     import sparse_dot_mkl
 
@@ -11,8 +10,10 @@ except:
 
 from Core.Processing.PlanOptimization.Objectives.baseFunction import BaseFunc
 
+
 class DoseFidelity(BaseFunc):
-    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False, formatArray=32):
+    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False,
+                 formatArray=32):
         super(DoseFidelity, self).__init__()
         if scenariosBL is None:
             scenariosBL = []
@@ -23,8 +24,7 @@ class DoseFidelity(BaseFunc):
         self.returnWorstCase = returnWorstCase
         self.formatArray = formatArray
 
-
-    def _eval(self, x):
+    def computeFidelityFunction(self, x):
         if self.xSquare:
             weights = np.square(x).astype(np.float32)
         else:
@@ -39,7 +39,6 @@ class DoseFidelity(BaseFunc):
             doseTotal = sparse_dot_mkl.dot_product_mkl(self.beamlets, weights)
         else:
             doseTotal = sp.csc_matrix.dot(self.beamlets, weights)
-
         for objective in self.list:
             if objective.metric == "Dmax" and objective.condition == "<":
                 f = np.mean(np.maximum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
@@ -47,7 +46,6 @@ class DoseFidelity(BaseFunc):
                 f = np.maximum(0, np.mean(doseTotal[objective.maskVec], dtype=np.float32) - objective.limitValue) ** 2
             elif objective.metric == "Dmin" and objective.condition == ">":
                 f = np.mean(np.minimum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
-
             if not objective.robust:
                 fTot += objective.weight * f
             else:
@@ -100,7 +98,7 @@ class DoseFidelity(BaseFunc):
             return fTot, scenarioList.index(
                 max(scenarioList)) - 1  # returns id of the worst case scenario (-1 for nominal)
 
-    def _grad(self, x):
+    def computeFidelityGradient(self, x):
         # get worst case scenario
         if self.scenariosBL:
             self.returnWorstCase = True
@@ -186,4 +184,10 @@ class DoseFidelity(BaseFunc):
 
         return dfTot
 
+    def _eval(self, x):
+        f = self.computeFidelityFunction(x)
+        return f
 
+    def _grad(self, x):
+        g = self.computeFidelityGradient(x)
+        return g

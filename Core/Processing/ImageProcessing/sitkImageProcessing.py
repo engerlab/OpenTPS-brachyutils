@@ -66,6 +66,21 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     image.origin = newOrigin
     image.spacing = newSpacing
 
+
+def extremePoints(image:Image3D):
+    img = image3DToSITK(image)
+
+    extreme_points = [img.TransformIndexToPhysicalPoint(np.array([0, 0, 0]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], 0, 0]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], image.gridSize[1], 0]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], 0, image.gridSize[2]]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([0, image.gridSize[1], 0]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([0, image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
+                      img.TransformIndexToPhysicalPoint(np.array([0, 0, image.gridSize[2]]).astype(int).tolist())]
+
+    return extreme_points
+
 def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
     img = image3DToSITK(image)
     tform = tform[0:-1, 0:-1]
@@ -75,18 +90,7 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tform.flatten())
 
-    extreme_points = [img.TransformIndexToPhysicalPoint(np.array([0, 0, 0]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(np.array([image.gridSize[0], 0, 0]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([image.gridSize[0], image.gridSize[1], 0]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([image.gridSize[0], image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([image.gridSize[0], 0, image.gridSize[2]]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(np.array([0, image.gridSize[1], 0]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(
-                          np.array([0, image.gridSize[1], image.gridSize[2]]).astype(int).tolist()),
-                      img.TransformIndexToPhysicalPoint(np.array([0, 0, image.gridSize[2]]).astype(int).tolist())]
+    extreme_points = extremePoints(image)
 
     inv_transform = transform.GetInverse()
 
@@ -122,7 +126,7 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     transform.SetMatrix(tform.flatten())
 
     output_origin = [min_x, min_y, min_z]
-    output_size = [int((max_x - min_x) / image.spacing[0]), int((max_y - min_y) / image.spacing[1]), int((max_z - min_z) / image.spacing[1])]
+    output_size = [int((max_x-min_x)/image.spacing[0])+1, int((max_y-min_y)/image.spacing[1])+1, int((max_z-min_z)/image.spacing[1])+1]
 
     reference_image = sitk.Image(output_size, img.GetPixelIDValue())
     reference_image.SetOrigin(output_origin)

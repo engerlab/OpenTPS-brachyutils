@@ -33,8 +33,8 @@ class DoseComputationPanel(QWidget):
         self._ctComboBox.currentIndexChanged.connect(self._handleCTIndex)
         self.layout.addWidget(self._ctComboBox)
 
-        self._ctLabel = QLabel('Plan:')
-        self.layout.addWidget(self._ctLabel)
+        self._planLabel = QLabel('Plan:')
+        self.layout.addWidget(self._planLabel)
         self._planComboBox = QComboBox(self)
         self._planComboBox.currentIndexChanged.connect(self._handlePlanIndex)
         self.layout.addWidget(self._planComboBox)
