@@ -164,30 +164,30 @@ class LP:
                             print("Time limit reached !")
 
                         print('Obj : {}'.format(self.model.objVal))
-                        '''for o, objective in enumerate(self.plan.objectives.list):
+                        for o, objective in enumerate(self.plan.objectives.fidObjList):
                             if objective.kind == "Soft":
                                 names_to_retrieve = []
                                 M = len(np.nonzero(objective.maskVec)[0].tolist())
-                                if objective.Metric == "Dmax" and objective.Condition == "<":
+                                if objective.metric == "Dmax" and objective.condition == "<":
                                     name = objective.roiName.replace(" ", "_") + '_maxObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
-                                elif objective.Metric == "Dmin" and objective.Condition == ">":
+                                            o, name, sum(vars_obj), sum(vars_obj) * objective.weight / M))
+                                elif objective.metric == "Dmin" and objective.condition == ">":
                                     name = objective.roiName.replace(" ", "_") + '_minObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
-                                elif objective.Metric == "Dmean" and objective.Condition == "<":
+                                            o, name, sum(vars_obj), sum(vars_obj) * objective.weight / M))
+                                elif objective.metric == "Dmean" and objective.condition == "<":
                                     name = objective.roiName.replace(" ", "_") + '_meanObj[0]'
                                     var_obj = self.model.getVarByName(name).X
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, var_obj, var_obj * objective.Weight))'''
+                                            o, name, var_obj, var_obj * objective.weight))
 
                         if self.solFile is not None:
                             self.model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
@@ -272,4 +272,5 @@ class LP:
                                      name=objective.roiName.replace(" ", "_") + "_meanConstr")
                 fidelity += vmean * objective.weight
 
+            #self.model.setObjective(fidelity)
             self.model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")

@@ -5,6 +5,10 @@ import scipy.sparse as sp
 from matplotlib import pyplot as plt
 import logging.config
 import json
+import sys
+
+
+sys.path.insert(0, '/home/sophie/refactor/opentps/')
 
 from Core.Data.patientList import PatientList
 from Core.Data.Images.doseImage import DoseImage
@@ -25,12 +29,13 @@ from Core.Processing.ImageProcessing.imageTransform3D import resampleOn
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planStructure import PlanStructure
 
-with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
+
+with open('/home/sophie/refactor/opentps/config/logger/logging_config.json',
           'r') as log_fid:
     config_dict = json.load(log_fid)
 logging.config.dictConfig(config_dict)
 # User config:
-ctImagePath = "/home/sophie/Documents/Protontherapy/OpenTPS/arc_dev/opentps/data/Plan_IMPT_patient1"
+ctImagePath = "/home/sophie/opentps/data/Plan_IMPT_patient1"
 output_path = os.path.join(ctImagePath, "OpenTPS")
 # dataStructPath = os.path.join(ctImagePath, "reggui_phantom_5mm_rtstruct.dcm")
 
@@ -44,14 +49,14 @@ if not os.path.isdir(output_path):
 # image1 = readDicomCT(filesList['Dicom'])
 dataList = loadAllData(ctImagePath, maxDepth=0)
 print(dataList)
-ct = dataList[6]
-contours = dataList[5]
+ct = dataList[7]
+contours = dataList[6]
 # structData = loadAllData(dataStructPath)[0]
 print('Available ROIs')
 contours.print_ROINames()
 
 # Configure MCsquare
-MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
+MCSquarePath = '/home/sophie/refactor/opentps/Core/Processing/DoseCalculation/MCsquare/'
 doseCalculator = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 doseCalculator.beamModel = beamModel
@@ -101,28 +106,29 @@ quit()'''
 # Load Dicom plan
 plan = dataList[0]
 # Load Beamlets
-beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
+beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
 plan.beamlets = loadBeamlets(beamletPath)
 
 # optimization objectives
 plan.objectives = ObjectivesList()
 plan.objectives.setTarget(target.name, 65.0)
 plan.objectives.fidObjList = []
-plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.0)
+plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.)
 plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[0].name, "Dmax", "<", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
 # plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
-scoring_spacing = np.array([2, 2, 2])
+scoring_spacing = np.array([5, 5, 5])
 scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
 objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False,
                                  formatArray=64)
 sparsity = NormL1(lambda_=0.01)
 # Optimize treatment plan
-solver = IMPTPlanOptimizer(method='FISTA', plan=plan, contours=contours, functions=[objectiveFunction, sparsity],
-                           step=0.1,
-                           opti_params={'maxit': 200})
+solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
+#solver = IMPTPlanOptimizer(method='FISTA', plan=plan, contours=contours, functions=[objectiveFunction, sparsity],
+#                           step=0.1,
+#                           opti_params={'maxit': 200})
 # solver = IMPTPlanOptimizer(method='BFGS', plan=plan, contours=contours, functions=[objectiveFunction], opti_params = {'maxit':200})
 solver.xSquared = False
 w, dose_vector, ps = solver.optimize()
