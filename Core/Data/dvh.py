@@ -10,13 +10,14 @@ from Core.event import Event
 
 
 class DVH:
-    def __init__(self, roiMask=Union[ROIContour, ROIMask], dose:DoseImage=None, prescription=None):
+    def __init__(self, ct, roiMask=Union[ROIContour, ROIMask], dose:DoseImage=None, prescription=None):
 
         self.dataUpdatedEvent = Event()
 
         self._roiMask = roiMask
         self._roiName = roiMask.name
         self._doseImage = dose
+        self.ct = ct
 
         self._dose = None
         self._volume = None
@@ -102,7 +103,11 @@ class DVH:
 
     def _convertContourToROI(self):
         if isinstance(self._roiMask, ROIContour):
-            self._roiMask = self._roiMask.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
+            #self._roiMask = self._roiMask.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
+            self._roiMask = self._roiMask.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
+                                                      spacing=self.ct.spacing)
+            from Core.Processing.ImageProcessing import sitkImageProcessing
+            sitkImageProcessing.resize(self._roiMask, self._doseImage.spacing, self.ct.origin,self._doseImage.gridSize)
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
     def computeDVH(self, maxDVH=100.0):
@@ -114,7 +119,6 @@ class DVH:
         dose = self._doseImage.imageArray
         mask = self._roiMask.imageArray.astype(bool)
         spacing = self._doseImage.spacing
-
         number_of_bins = 4096
         DVH_interval = [0, maxDVH]
         bin_size = (DVH_interval[1] - DVH_interval[0]) / number_of_bins

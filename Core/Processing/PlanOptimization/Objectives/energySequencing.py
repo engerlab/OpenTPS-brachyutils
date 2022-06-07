@@ -13,7 +13,7 @@ class EnergySeq(BaseFunc):
     gamma is the regularization parameter.
     """
 
-    def __init__(self, plan, gamma, factor, **kwargs):
+    def __init__(self, plan, gamma, factor=0.001, **kwargs):
         self.gamma = gamma
         self.struct = tools.WeightStructure(plan)
         self.factor = factor

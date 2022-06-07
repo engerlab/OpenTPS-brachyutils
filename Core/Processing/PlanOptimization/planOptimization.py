@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
-    def __init__(self, plan: RTPlan, contours: RTStruct, functions=None, opti_params={}, **kwargs):
+    def __init__(self, plan: RTPlan, contours: RTStruct, functions=None, **kwargs):
         if functions is None:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
         self.plan = plan
         self.contours = contours
-        self.opti_params = opti_params
+        self.opti_params = kwargs
         self.functions = functions
         self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
         self.xSquared = True
@@ -53,7 +53,7 @@ class PlanOptimizer:
         x0 = self.intializeWeights()
         # self.initializeContours
         # Optimization
-        result = self.solver.solve(self.functions, x0, **self.opti_params)
+        result = self.solver.solve(self.functions, x0)
         return self.postProcess(result)
 
     def postProcess(self, result):
@@ -85,24 +85,24 @@ class PlanOptimizer:
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan, contours, functions=None, opti_params={}, **kwargs):
-        super().__init__(plan, contours, functions, opti_params, **kwargs)
+    def __init__(self, method, plan, contours, functions=None, **kwargs):
+        super().__init__(plan, contours, functions, **kwargs)
         if functions is None:
             logger.error('You must specify the function you want to optimize')
         if method == 'Scipy-BFGS':
-            self.solver = bfgs.ScipyOpt('BFGS')
+            self.solver = bfgs.ScipyOpt('BFGS',**kwargs)
         elif method == 'Scipy-LBFGS':
-            self.solver = bfgs.ScipyOpt('L-BFGS-B')
+            self.solver = bfgs.ScipyOpt('L-BFGS-B',**kwargs)
         elif method == 'Gradient':
-            self.solver = gradientDescent.GradientDescent()
+            self.solver = gradientDescent.GradientDescent(**kwargs)
         elif method == 'BFGS':
-            self.solver = bfgs.BFGS()
+            self.solver = bfgs.BFGS(**kwargs)
         elif method == "lBFGS":
-            self.solver = bfgs.LBFGS()
+            self.solver = bfgs.LBFGS(**kwargs)
         elif method == "FISTA":
-            self.solver = fista.FISTA()
+            self.solver = fista.FISTA(**kwargs)
         elif method == "BLFree":
-            self.solver = beamletFree.BLFree()
+            self.solver = beamletFree.BLFree(**kwargs)
         elif method == "LP":
             self.solver = lp.LP(self.plan,**kwargs)
         else:

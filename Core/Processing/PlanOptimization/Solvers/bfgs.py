@@ -10,24 +10,24 @@ logger = logging.getLogger(__name__)
 
 
 class ScipyOpt:
-    def __init__(self, meth='L-BFGS'):
+    def __init__(self, meth='L-BFGS', **kwargs):
         self.meth = meth
         self.Nfeval = 1
+        self.params = kwargs
 
-    def solve(self, func, x0, **kwargs):
+    def solve(self, func, x0):
         def callbackF(Xi):
             logger.info('Iteration {} of Scipy-{}'.format(self.Nfeval, self.meth))
             logger.info('objective = {0:.6e}  '.format(func[0].eval(Xi)))
             self.Nfeval += 1
 
-        params = kwargs
         startTime = time.time()
         if not func[0].formatArray == 64:
             logger.error('{} requires the objective in format array = 64'.format(self.__class__.__name__))
         if 'GRAD' not in func[0].cap(x0):
             logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
         res = scipy.optimize.minimize(func[0].eval, x0, method=self.meth, jac=func[0].grad, callback=callbackF,
-                                      options={'maxiter': params.get('maxit', 100)})
+                                      options={'maxiter': self.params.get('maxit', 100)})
 
         result = {'sol': res.x, 'crit': res.message, 'niter': res.nit, 'time': time.time() - startTime,
                   'objective': res.fun}

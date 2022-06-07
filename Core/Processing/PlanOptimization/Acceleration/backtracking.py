@@ -32,13 +32,13 @@ class Backtracking(Dummy):
         # Initialize some useful variables
         fn = 0
         grad = np.zeros_like(properties['sol'])
-        for f in solver.smooth_funs:
+        for f in solver.smoothFuns:
             fn += f.eval(properties['sol'])
             grad += f.grad(properties['sol'])
         step = properties['step']
 
         logger.debug('fn = {}'.format(fn))
-
+        n = 0
         while True:
             # Run the solver with the current stepsize
             solver.step = step
@@ -48,7 +48,7 @@ class Backtracking(Dummy):
                 '(During) solver properties: {}'.format(vars(solver)))
 
             # Record results
-            fp = np.sum([f.eval(solver.sol) for f in solver.smooth_funs])
+            fp = np.sum([f.eval(solver.sol) for f in solver.smoothFuns])
             logger.debug('fp = {}'.format(fp))
 
             dot_prod = np.dot(solver.sol - properties['sol'], grad)
@@ -63,11 +63,12 @@ class Backtracking(Dummy):
             logger.debug('(Reset) solver properties: {}'.format(vars(solver)))
 
             if \
-                    2. * step * (fp - fn - dot_prod) <= norm_diff:
+                    (2. * step * (fp - fn - dot_prod) <= norm_diff) or n > 10:
                 logger.debug('Break condition reached')
                 break
             else:
                 logger.debug('Decreasing step')
                 step *= self.eta
+                n += 1
 
         return step

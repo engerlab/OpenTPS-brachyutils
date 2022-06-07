@@ -19,12 +19,15 @@ from Core.IO.dicomIO import readDicomCT, readDicomPlan
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
-from Core.Processing.PlanOptimization.Objectives.norms import NormL1
+from Core.Processing.PlanOptimization.Objectives.norms import NormL1, NormL21
+from Core.Processing.PlanOptimization.Objectives.energySequencing import EnergySeq
+from Core.Processing.PlanOptimization.Objectives.logBarrier import LogBarrier
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
-from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking
+from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking, FistaAccel
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
 from Core.Processing.ImageProcessing.imageTransform3D import resampleOn
+from Core.Processing.PlanOptimization.tools import WeightStructure
 
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planStructure import PlanStructure
@@ -106,6 +109,7 @@ quit()'''
 # Load Dicom plan
 plan = dataList[0]
 # Load Beamlets
+# beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
 beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
 plan.beamlets = loadBeamlets(beamletPath)
 
@@ -119,21 +123,43 @@ plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
 # plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
 scoring_spacing = np.array([5, 5, 5])
+# scoring_spacing = np.array([2, 2, 2])
 scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
-objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False,
-                                 formatArray=64)
-sparsity = NormL1(lambda_=0.01)
+
+
+# Objective functions
+objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
+# objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(),formatArray=64)
+spotSparsity = NormL1(lambda_= 1)
+energySeq = EnergySeq(plan, gamma=0.1)
+# logBarrier = LogBarrier(plan, beta=0.1)
+layerSparsity = NormL21(plan, scaleReg="summu")
+
+# Acceleration
+#accel = FistaBacktracking()
+accel = FistaAccel()
+# Solvers
 # Optimize treatment plan
-solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
-#solver = IMPTPlanOptimizer(method='FISTA', plan=plan, contours=contours, functions=[objectiveFunction, sparsity],
-#                           step=0.1,
-#                           opti_params={'maxit': 200})
-# solver = IMPTPlanOptimizer(method='BFGS', plan=plan, contours=contours, functions=[objectiveFunction], opti_params = {'maxit':200})
+#solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
+solver = IMPTPlanOptimizer(method='FISTA',
+                           plan=plan,
+                           contours=contours,
+                           functions=[objectiveFunction, layerSparsity, energySeq],
+                           step=0.001,
+                           accel=accel,
+                           maxit=100)
+# solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction], maxit = 100)
 solver.xSquared = False
 w, dose_vector, ps = solver.optimize()
-# with open('test_weights.npy', 'wb') as f:
-#    np.save(f, w)
+struct = WeightStructure(plan)
+irradTime, ups, downs = struct.computeIrradiationTime(w)
+layerSparsityPercentage = struct.computeELSparsity(w, 1)
+print("Irradiation time = {}, Ups = {}, Downs = {}".format(irradTime, ups, downs))
+print("EL sparsity = {} %".format(layerSparsityPercentage))
+
+with open('test_weights.npy', 'wb') as f:
+    np.save(f, w)
 # dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # saveRTPlan(plan, plan_filepath)
@@ -143,9 +169,9 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 doseImage = plan.beamlets.toDoseImage()
 
 # Compute DVH
-target_DVH = DVH(target, doseImage)
-chiasm_DVH = DVH(opticChiasm, doseImage)
-stem_DVH = DVH(brainStem, doseImage)
+target_DVH = DVH(ct, target, doseImage)
+chiasm_DVH = DVH(ct, opticChiasm, doseImage)
+stem_DVH = DVH(ct, brainStem, doseImage)
 
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')
