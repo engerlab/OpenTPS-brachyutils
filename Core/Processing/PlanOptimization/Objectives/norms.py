@@ -72,44 +72,43 @@ class NormL21(Norm):
     source lasso
     """
 
-    def __init__(self, plan=None, groups=None, group_reg=0.05, scale_reg="group_size", old_regularisation=False,
+    def __init__(self, plan=None, scaleReg="group_size", oldRegularisation=False,
                  **kwargs):
         super(NormL21, self).__init__(**kwargs)
         self.plan = plan
         self.struct = tools.WeightStructure(self.plan)
         # liste de taille nSpots qui dit à quel layer appartient le spot en question
-        self.groups_ids_ = np.concatenate([size * [i] for i, size in enumerate(self.struct.nSpotsInLayer)])
+        self.groupsIds_ = np.concatenate([size * [i] for i, size in enumerate(self.struct.nSpotsInLayer)])
         # liste de taille nLayers qui reprend tous les weights et == true si actif dans la layer en question
-        self.groups_ = [self.groups_ids_ == u for u in np.unique(self.groups_ids_) if u >= 0]
-        self.group_reg = group_reg
-        self.scale_reg = scale_reg
-        self.old_regularisation = old_regularisation
-        targetMask = self.plan.Objectives.list[0].maskVec
+        self.groups_ = [self.groupsIds_ == u for u in np.unique(self.groupsIds_) if u >= 0]
+        self.scaleReg = scaleReg
+        self.oldRegularisation = oldRegularisation
+        targetMask = self.plan.objectives.fidObjList[0].maskVec
         targetIndices = targetMask.nonzero()[0]
-        self.BLTarget = plan.beamlets.BeamletMatrix[targetIndices, :]
+        self.BLTarget = plan.beamlets.toSparseMatrix()[targetIndices, :]
         self.iter = 0
 
     def _eval(self, x):
         if self.iter % 10 == 0:
-            self.group_reg_vector_ = self._get_reg_vector(x, self.group_reg)
-            group_reg_vector_ = self.group_reg_vector_
+            self.groupRegVector_ = self._get_reg_vector(x, self.lambda_)
+            groupRegVector_ = self.groupRegVector_
         else:
-            group_reg_vector_ = self.group_reg_vector_
+            groupRegVector_ = self.groupRegVector_
         regulariser = 0
-        for group, reg in zip(self.groups_, group_reg_vector_):
+        for group, reg in zip(self.groups_, groupRegVector_):
             regulariser += reg * la.norm(x[group])
         return regulariser
 
     def _prox(self, x, T):
         if self.iter % 10 == 0:
-            self.group_reg_vector = self._get_reg_vector(x, self.group_reg)
-            group_reg_vector = self.group_reg_vector_
+            self.groupRegVector = self._get_reg_vector(x, self.lambda_)
+            groupRegVector = self.groupRegVector_
         else:
-            group_reg_vector = self.group_reg_vector_
-        if not self.old_regularisation:
-            group_reg_vector = np.asarray(group_reg_vector) * T
+            groupRegVector = self.groupRegVector_
+        if not self.oldRegularisation:
+            groupRegVector = np.asarray(groupRegVector) * T
         self.iter += 1
-        return self._group_l2_prox(x, group_reg_vector, self.groups_)
+        return self._group_l2_prox(x, groupRegVector, self.groups_)
 
     def _l2_prox(self, x, reg):
         """The proximal operator for reg*||w||_2 (not squared).
@@ -129,19 +128,19 @@ class NormL21(Norm):
         total = math.sqrt(np.sum(res))
         return total
 
-    def _group_l2_prox(self, x, reg_coeffs, groups):
+    def _group_l2_prox(self, x, regCoeffs, groups):
         """The proximal map for the specified groups of coefficients.
         """
         x = x.copy()
 
-        for group, reg in zip(groups, reg_coeffs):
+        for group, reg in zip(groups, regCoeffs):
             x[group] = self._l2_prox(x[group], reg)
         return x
 
     def _get_reg_strength(self, x1D, x, group, reg, energyWeight, index):
         """Get the regularisation coefficient for one group.
         """
-        scale_reg = str(self.scale_reg).lower()
+        scale_reg = str(self.scaleReg).lower()
         if scale_reg == "group_size":
             scale = math.sqrt(group.sum())
         elif scale_reg == "none":
@@ -180,7 +179,7 @@ class NormL21(Norm):
             [size * [item] for item, size in zip(self.activeLayersInBeam, self.struct.nLayersInBeam)])
         energiesWeight = tools.getEnergyWeights(self.activeEnergies)
         X = self.struct.getEnergyStructure(x)
-        scale_reg = str(self.scale_reg).lower()
+        scale_reg = str(self.scaleReg).lower()
         if isinstance(reg, Number) and scale_reg != "l21demi":
             reg = [
                 self._get_reg_strength(x, X, group, reg, energiesWeight[i], i) for i, group in enumerate(self.groups_)

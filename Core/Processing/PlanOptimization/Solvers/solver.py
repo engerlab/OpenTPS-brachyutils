@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class ConvexSolver(object):
 
-    def __init__(self, step=0.1, accel=None):
+    def __init__(self, step=0.1, accel=None, **kwargs):
         self.nonSmoothFuns = []
         self.smoothFuns = []
         self.sol = None
@@ -20,8 +20,9 @@ class ConvexSolver(object):
             logger.error('Step should be a positive number.')
         self.step = step
         self.accel = baseAccel.Dummy() if accel is None else accel
+        self.params = kwargs
 
-    def solve(self, functions, x0, **kwargs):
+    def solve(self, functions, x0):
         """
         Solve an optimization problem whose objective function is the sum of some
         convex functions.
@@ -32,7 +33,6 @@ class ConvexSolver(object):
         - solver: solver class instance.If no solver object are provided, a standard one will be chosen
           given the number of convex function objects and their implemented methods.
         """
-        params = kwargs
 
         # Add a second dummy convex function if only one function is provided.
         if len(functions) < 1:
@@ -60,7 +60,7 @@ class ConvexSolver(object):
 
             niter += 1
 
-            if 'xtol' in params:
+            if 'xtol' in self.params:
                 last_sol = np.array(self.sol, copy=True)
 
             logger.info('Iteration {} of {}:'.format(niter, self.__class__.__name__))
@@ -80,13 +80,13 @@ class ConvexSolver(object):
                 bestWeights = self.sol
 
             # Verify stopping criteria.
-            if 'atol' in params and (not (params['atol'] is None)):
-                if current < params['atol']:
+            if 'atol' in self.params and (not (self.params['atol'] is None)):
+                if current < self.params['atol']:
                     crit = 'ATOL'
-            if 'dtol' in params and (not (params['dtol'] is None)):
-                if np.abs(current - last) < params['dtol']:
+            if 'dtol' in self.params and (not (self.params['dtol'] is None)):
+                if np.abs(current - last) < self.params['dtol']:
                     crit = 'DTOL'
-            if 'ftol' in params and (not (params['ftol'] is None)):
+            if 'ftol' in self.params and (not (self.params['ftol'] is None)):
                 div = current  # Prevent division by 0.
                 if div == 0:
                     logger.warning('WARNING: (ftol) objective function is equal to 0 !')
@@ -97,15 +97,15 @@ class ConvexSolver(object):
                 else:
                     ftol_only_zeros = False
                 relative = np.abs((current - last) / div)
-                if relative < params['ftol'] and not ftol_only_zeros:
+                if relative < self.params['ftol'] and not ftol_only_zeros:
                     crit = 'FTOL'
-            if 'xtol' in params and (not (params['xtol'] is None)):
+            if 'xtol' in self.params and (not (self.params['xtol'] is None)):
                 err = np.linalg.norm(self.sol - last_sol)
                 err /= np.sqrt(last_sol.size)
-                if err < params['xtol']:
+                if err < self.params['xtol']:
                     crit = 'XTOL'
-            if 'maxit' in params:
-                if niter >= params['maxit']:
+            if 'maxit' in self.params:
+                if niter >= self.params['maxit']:
                     crit = 'MAXIT'
 
             logger.info('    objective = {:.2e}'.format(current))
@@ -151,6 +151,7 @@ class ConvexSolver(object):
         """
         self.sol[:] = self.accel.update_sol(self, objective, niter)
         self.step = self.accel.update_step(self, objective, niter)
+        print(self.step)
         self._algo()
 
     def _algo(self):
