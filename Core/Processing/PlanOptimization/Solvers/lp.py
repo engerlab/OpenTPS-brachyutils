@@ -17,7 +17,6 @@ from Core.Processing.PlanOptimization.tools import WeightStructure
 class LP:
     def __init__(self, plan: RTPlan, **kwargs):
         self.plan = plan
-        self.model = None
         self.solStruct = WeightStructure(plan)
         self.xVars = None
 
@@ -68,30 +67,30 @@ class LP:
                 x = self.solStruct.x
                 nSpots = self.solStruct.nSpots
 
-            self.createModel()
+            model = self.createModel()
             if n == 0:
-                self.model.setParam('TimeLimit', self.timeLimit)
+                model.setParam('TimeLimit', self.timeLimit)
             else:
-                self.model.setParam('TimeLimit', 1800 * g)
+                model.setParam('TimeLimit', 1800 * g)
 
             # Tune your own parameters here
-            # self.model.setParam('MIPGapAbs', 1e-2)
+            # model.setParam('MIPGapAbs', 1e-2)
             # use barrier for the MIP root relaxation
-            # self.model.setParam('Method', 2)
+            # model.setParam('Method', 2)
             # Limits the number of passes performed by presolve
-            # self.model.setParam('PrePasses', 1)
+            # model.setParam('PrePasses', 1)
             # Limits the amount of time spent in the NoRel heuristic before solving the root relaxation
-            # self.model.setParam('NoRelHeurTime', 100)
+            # model.setParam('NoRelHeurTime', 100)
             # find feasible solutions quickly
-            # self.model.setParam('MIPFocus', 1)
-            # self.model.setParam('Cuts', 0)
+            # model.setParam('MIPFocus', 1)
+            # model.setParam('Cuts', 0)
             # avoid multiple 'Total elapsed time' messages in the log immediately after the root relaxation log
-            # self.model.setParam('DegenMoves', 0)
+            # model.setParam('DegenMoves', 0)
             # barrier only
-            # self.model.setParam('CrossoverBasis', 0)
-            # self.model.setParam('LogFile', "brain_mipfocus1.log")
-            # self.model.write("brain_small.lp")
-            # self.model.setParam('SolFiles', '/home/sophie/opentps/MCO/solutions/sol')
+            # model.setParam('CrossoverBasis', 0)
+            # model.setParam('LogFile', "brain_mipfocus1.log")
+            # model.write("brain_small.lp")
+            # model.setParam('SolFiles', '/home/sophie/opentps/MCO/solutions/sol')
 
             try:
                 addedConstraints = []
@@ -100,7 +99,7 @@ class LP:
                     nIter += 1
                 for i in range(1, nIter + 1):
                     for constr in addedConstraints:
-                        self.model.remove(constr)
+                        model.remove(constr)
                     addedConstraints.clear()
 
                     if self.LNSNIter > 0 and i <= self.LNSNIter:
@@ -133,7 +132,7 @@ class LP:
                                 print("{}{}".format(el.id, itm), end=" ")
                             else:
                                 for spotID in el.spotIndices:
-                                    addedConstraints.append(self.model.addConstr(self.xVars[spotID] == x[spotID],
+                                    addedConstraints.append(model.addConstr(self.xVars[spotID] == x[spotID],
                                                                                  "fixed_spot_" + str(spotID)))
                         print("\n-----------")
 
@@ -142,8 +141,8 @@ class LP:
 
                     # set initial solution
                     if self.inputf is not None:
-                        self.model.update()
-                        self.model.read(self.inputf)
+                        model.update()
+                        model.read(self.inputf)
                     else:
                         if self.groupSpots:
                             self.solStruct.groupSol()
@@ -154,16 +153,16 @@ class LP:
                             for k in range(self.solStruct.nSpots):
                                 self.xVars[k].Start = self.solStruct.x[k]
                     # optimize
-                    self.model.optimize()
-                    # self.model.optimize(mycallback)
-                    status = self.model.Status
+                    model.optimize()
+                    # model.optimize(mycallback)
+                    status = model.Status
                     if status not in (GRB.INF_OR_UNBD, GRB.INFEASIBLE, GRB.UNBOUNDED):
                         if status == GRB.OPTIMAL:
                             print("OPTIMAL SOLUTION FOUND")
                         else:
                             print("Time limit reached !")
 
-                        print('Obj : {}'.format(self.model.objVal))
+                        print('Obj : {}'.format(model.objVal))
                         for o, objective in enumerate(self.plan.objectives.fidObjList):
                             if objective.kind == "Soft":
                                 names_to_retrieve = []
@@ -171,26 +170,26 @@ class LP:
                                 if objective.metric == "Dmax" and objective.condition == "<":
                                     name = objective.roiName.replace(" ", "_") + '_maxObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
-                                    vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
+                                    vars_obj = [model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.weight / M))
                                 elif objective.metric == "Dmin" and objective.condition == ">":
                                     name = objective.roiName.replace(" ", "_") + '_minObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
-                                    vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
+                                    vars_obj = [model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.weight / M))
                                 elif objective.metric == "Dmean" and objective.condition == "<":
                                     name = objective.roiName.replace(" ", "_") + '_meanObj[0]'
-                                    var_obj = self.model.getVarByName(name).X
+                                    var_obj = model.getVarByName(name).X
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, var_obj, var_obj * objective.weight))
 
                         if self.solFile is not None:
-                            self.model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
+                            model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
 
                         # update solution
                         if self.groupSpots:
@@ -212,7 +211,7 @@ class LP:
                             self.solStruct.loadSolution(x_ungrouped)
 
                         result = {'sol': self.solStruct.x, 'crit': status, 'niter': 1,
-                                  'time': time.time() - startTime, 'objective': self.model.objVal}
+                                  'time': time.time() - startTime, 'objective': model.objVal}
             except gp.GurobiError as e:
                 print('Error code ' + str(e.errno) + ': ' + str(e))
 
@@ -221,23 +220,23 @@ class LP:
             g += 1
             return result
 
-    def createModel(self):
-        self.model = gp.Model("LP")
-        self.model.ModelSense = GRB.MINIMIZE
+    def createModel(self, name = "LP"):
+        model = gp.Model(name)
+        model.ModelSense = GRB.MINIMIZE
         if self.groupSpots:
             logger.info("number of spots grouped = ", self.solStruct.nSpotsGrouped)
-            self.xVars = self.model.addMVar(shape=(int(self.solStruct.nSpotsGrouped),), lb=0.0, ub=self.M,
+            self.xVars = model.addMVar(shape=(int(self.solStruct.nSpotsGrouped),), lb=0.0, ub=self.M,
                                             vtype=GRB.CONTINUOUS,
                                             name='x')
         else:
-            self.xVars = self.model.addMVar(shape=(int(self.plan.numberOfSpots),), lb=0.0, ub=self.M, vtype=GRB.CONTINUOUS,
+            self.xVars = model.addMVar(shape=(int(self.plan.numberOfSpots),), lb=0.0, ub=self.M, vtype=GRB.CONTINUOUS,
                                             name='x')
 
         if self.groupSpots:
             N = self.solStruct.nSpotsGrouped
         else:
             N = self.plan.numberOfSpots
-        fidelity = self.model.addMVar(1, name='fidelity')
+        fidelity = model.addMVar(1, name='fidelity')
         for objective in self.plan.objectives.fidObjList:
             M = len(np.nonzero(objective.maskVec)[0].tolist())
             print("ROI Name: {}, NNZ voxels= {}".format(objective.roiName, M))
@@ -251,26 +250,27 @@ class LP:
             p = np.ones((len(nnz),)) * objective.limitValue
             if objective.metric == "Dmax" and objective.condition == "<":
                 if objective.kind == "Soft":
-                    vmax = self.model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_maxObj')
-                    self.model.addConstr((vmax >= dose - p), name=objective.roiName.replace(" ", "_") + "_maxConstr")
+                    vmax = model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_maxObj')
+                    model.addConstr((vmax >= dose - p), name=objective.roiName.replace(" ", "_") + "_maxConstr")
                     fidelity += vmax.sum() * (objective.weight / M)
                 else:
-                    self.model.addConstr(dose <= p, name=objective.roiName.replace(" ", "_") + "_maxConstr")
+                    model.addConstr(dose <= p, name=objective.roiName.replace(" ", "_") + "_maxConstr")
 
             elif objective.metric == "Dmin" and objective.condition == ">":
                 if objective.kind == "Soft":
-                    vmin = self.model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_minObj')
-                    self.model.addConstr((vmin >= p - dose), name=objective.roiName.replace(" ", "_") + "_minConstr")
+                    vmin = model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_minObj')
+                    model.addConstr((vmin >= p - dose), name=objective.roiName.replace(" ", "_") + "_minConstr")
                     fidelity += vmin.sum() * (objective.weight / M)
                 else:
-                    self.model.addConstr(dose >= p, name=objective.roiName.replace(" ", "_") + "_minConstr")
+                    model.addConstr(dose >= p, name=objective.roiName.replace(" ", "_") + "_minConstr")
             elif objective.metric == "Dmean" and objective.condition == "<":
-                vmean = self.model.addMVar((1,), lb=0, name=objective.roiName.replace(" ", "_") + '_meanObj')
-                aux = self.model.addMVar(M, name=objective.roiName.replace(" ", "_") + '_aux')
-                self.model.addConstr(aux == dose, name=objective.roiName.replace(" ", "_") + "_auxConstr")
-                self.model.addConstr((vmean >= (aux.sum() / M) - objective.limitValue),
+                vmean = model.addMVar((1,), lb=0, name=objective.roiName.replace(" ", "_") + '_meanObj')
+                aux = model.addMVar(M, name=objective.roiName.replace(" ", "_") + '_aux')
+                model.addConstr(aux == dose, name=objective.roiName.replace(" ", "_") + "_auxConstr")
+                model.addConstr((vmean >= (aux.sum() / M) - objective.limitValue),
                                      name=objective.roiName.replace(" ", "_") + "_meanConstr")
                 fidelity += vmean * objective.weight
 
-            #self.model.setObjective(fidelity)
-            self.model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")
+            #model.setObjective(fidelity)
+        model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")
+        return model

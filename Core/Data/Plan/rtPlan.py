@@ -9,6 +9,7 @@ import numpy as np
 from Core.Data.Plan.planStructure import PlanStructure
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
+from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Data.patientData import PatientData
 from Core.Data.Plan.objectivesList import ObjectivesList
 
@@ -22,6 +23,7 @@ class RTPlan(PatientData):
 
         self._beams = []
         self._layers = []
+        self._spots = []
         self._numberOfFractionsPlanned: int = 1
 
         self.seriesInstanceUID = ""
@@ -75,9 +77,10 @@ class RTPlan(PatientData):
         # For backwards compatibility, but we can now access each layer with indexing brackets
         return [layer for layer in self._layers]
 
-    def appendLayer(self, layer: PlanIonLayer):
+    def appendLayerAccum(self, layer: PlanIonLayer):
         self._layers.append(layer)
-
+    def appendSpotAccum(self, spot: PlanIonSpot):
+        self._spots.append(spot)
     def removeLayer(self, layer: PlanIonLayer):
         self._layers.remove(layer)
 
@@ -222,6 +225,7 @@ class RTPlan(PatientData):
             raise ValueError('Layer already exists in plan')
 
         self._beams[index_beam].appendLayer(layer)
+        self._layers.append(layer)
 
 
     def createEmptyPlanWithSameMetaData(self):

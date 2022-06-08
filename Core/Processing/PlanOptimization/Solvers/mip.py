@@ -1,6 +1,7 @@
 import time
 
 from Core.Processing.PlanOptimization.Solvers.lp import LP
+from Core.Data.Plan.rtPlan import RTPlan
 
 import logging
 import json
@@ -17,21 +18,22 @@ from random import choice
 
 
 class MIP(LP):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, plan: RTPlan, **kwargs):
+        super().__init__(plan, **kwargs)
         params = kwargs
         # constraints
         self.maxSwitchUp = params.get('max_switch_ups', -1)
         # objectives
-        self.noELCost = params.get('EL_cost', 'nocost') == 'nocost'
-        self.machine = params.get('EL_cost', 'nocost') == "machine"
+        self.noELCost = params.get('EL_cost', False)
+        self.machine = params.get('EL_cost', False)
         self.timeWeight = params.get('ES_up_weight', -1)
 
 
         if self.noELCost: print("Warning: EL switch costs are taken into account")
 
-    def createMIPModel(self):
-        self.model = super().createModel()
+    def createMIPModel(self, name = "MIP"):
+        model = super().createModel(name)
+        
         # Energy sequencing
         # Define the digraph for the EL path
         sourceID = self.solStruct.nLayers
@@ -58,81 +60,83 @@ class MIP(LP):
                     ESCost[el1.id][el2.id] = 1.0 * (el1.nominalEnergy < el2.nominalEnergy)
                 assert ESCost[el1.id][el2.id] == -1 or ESCost[el1.id][el2.id] >= 0, ""
 
-                # Linear model
-                eRaw = []
-                eID = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2), dtype=np.int) * (-1)
-                for i in range(len(ESCost)):
-                    for j in range(len(ESCost[i])):
-                        if ESCost[i][j] >= 0:
-                            assert i == sourceID or j == sinkID or self.plan.layers[i].beamID < self.plan.layers[
-                                j].beamID, "{},{}".format(i, j)
-                            eRaw.append(self.model.addVar(lb=0.0, ub=1.0, obj=0.0, vtype=GRB.BINARY,
-                                                          name="e_" + str(i) + "_" + str(j)))
-                            eID[i][j] = len(eRaw) - 1
-                        else:
-                            assert ESCost[i][j] == -1, "{}, {}: {}".format(i, j, ESCost[i][j])
-            # Flow
-            outgoingSource = gp.LinExpr()
-            incomingSink = gp.LinExpr()
-            for i in range(len(ESCost)):
-                if eID[sourceID][i] >= 0:
-                    # outgoing_source += e_raw_matrix[eID[sourceID][i]]
-                    outgoingSource.add(eRaw[eID[sourceID][i]])
-                if eID[i][sinkID] >= 0:
-                    incomingSink.add(eRaw[eID[i][sinkID]])
-                if i == sourceID or i == sinkID: continue
-                incoming = gp.LinExpr()
-                outgoing = gp.LinExpr()
-                for j in range(len(ESCost[i])):
-                    if eID[j][i] >= 0:
-                        assert j != sinkID, ''
-                        assert j == sourceID or self.plan.layers[j].beamID < self.plan.layers[
-                            i].beamID, "{}, {}".format(j, i)
-                        assert ESCost[j][i] >= 0 and j != sinkID, "{} , {}: {}".format(j, i, ESCost[j][i])
-
-                        incoming.add(eRaw[eID[j][i]])
-                    else:
-                        assert ESCost[j][i] == -1, "{}, {} : {}".format(j, i, ESCost[j][i])
-
-                    if eID[i][j] >= 0:
-                        assert j != sourceID, ''
-                        assert j == sinkID or self.plan.layers[i].beamID < self.plan.layers[j].beamID, "{}, {}".format(
-                            i, j)
-                        assert ESCost[i][j] >= 0 and j != sourceID, "{} , {}: {}".format(i, j, ESCost[i][j])
-
-                        outgoing.add(eRaw[eID[i][j]])
-                    else:
-                        assert ESCost[i][j] == -1, "{}, {} : {}".format(i, j, ESCost[i][j])
-                self.model.addConstr(incoming == outgoing, 'EL_flow_' + str(i))
-            self.model.addConstr(outgoingSource == 1, 'EL_source')
-
-            # ES path cost
-            pathCost = gp.LinExpr()
-            for i in range(len(ESCost)):
-                for j in range(len(ESCost[i])):
-                    if eID[i][j] >= 0:
-                        assert ESCost[i][j] >= 0, "{}, {} : {}".format(i, j, ESCost[i][j])
-                        assert eID[i][j] < len(eRaw), "{} geq {}".format(eID[i][j], len(eRaw))
-                        pathCost.add(eRaw[eID[i][j]] * ESCost[i][j])
-
-            # Link x with e
-            for i in range(len(ESCost)):
-                if i == sourceID or i == sinkID: continue
-                incoming = gp.quicksum(eRaw[eID[j][i]] for j in range(len(ESCost[i])) if eID[j][i] >= 0)
-                if self.groupSpots:
-                    for spot in self.solStruct.layersGrouped[i].spots:
-                        self.model.addConstr(self.xVars[spot.id] <= incoming * self.M,
-                                             "x_" + str(spot.id) + "_leq_e_" + str(i) + "xM")
+         # Linear model
+        eRaw = []
+        eID = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2), dtype=np.int) * (-1)
+        for i in range(len(ESCost)):
+            for j in range(len(ESCost[i])):
+                if ESCost[i][j] >= 0:
+                    assert i == sourceID or j == sinkID or self.plan.layers[i].beamID < self.plan.layers[
+                        j].beamID, "{},{}".format(i, j)
+                    eRaw.append(model.addVar(lb=0.0, ub=1.0, obj=0.0, vtype=GRB.BINARY,
+                                                  name="e_" + str(i) + "_" + str(j)))
+                    eID[i][j] = len(eRaw) - 1
                 else:
-                    for spot in self.plan.layers[i].spots:
-                        self.model.addConstr(self.xVars[spot.id] <= incoming * self.M,
-                                             "x_" + str(spot.id) + "_leq_e_" + str(i) + "xM")
+                    assert ESCost[i][j] == -1, "{}, {}: {}".format(i, j, ESCost[i][j])
 
-            if self.maxSwitchUp >= 0:
-                self.model.addConstr(pathCost <= self.maxSwitchUp, "ES_fixed_switch_ups")
+        # Flow
+        outgoingSource = gp.LinExpr()
+        incomingSink = gp.LinExpr()
+        for i in range(len(ESCost)):
+            if eID[sourceID][i] >= 0:
+                # outgoing_source += e_raw_matrix[eID[sourceID][i]]
+                outgoingSource.add(eRaw[eID[sourceID][i]])
+            if eID[i][sinkID] >= 0:
+                incomingSink.add(eRaw[eID[i][sinkID]])
+            if i == sourceID or i == sinkID: continue
+            incoming = gp.LinExpr()
+            outgoing = gp.LinExpr()
+            for j in range(len(ESCost[i])):
+                if eID[j][i] >= 0:
+                    assert j != sinkID, ''
+                    assert j == sourceID or self.plan.layers[j].beamID < self.plan.layers[
+                        i].beamID, "{}, {}".format(j, i)
+                    assert ESCost[j][i] >= 0 and j != sinkID, "{} , {}: {}".format(j, i, ESCost[j][i])
+
+                    incoming.add(eRaw[eID[j][i]])
+                else:
+                    assert ESCost[j][i] == -1, "{}, {} : {}".format(j, i, ESCost[j][i])
+
+                if eID[i][j] >= 0:
+                    assert j != sourceID, ''
+                    assert j == sinkID or self.plan.layers[i].beamID < self.plan.layers[j].beamID, "{}, {}".format(
+                        i, j)
+                    assert ESCost[i][j] >= 0 and j != sourceID, "{} , {}: {}".format(i, j, ESCost[i][j])
+
+                    outgoing.add(eRaw[eID[i][j]])
+                else:
+                    assert ESCost[i][j] == -1, "{}, {} : {}".format(i, j, ESCost[i][j])
+            model.addConstr(incoming == outgoing, 'EL_flow_' + str(i))
+        model.addConstr(outgoingSource == 1, 'EL_source')
+
+        # ES path cost
+        pathCost = gp.LinExpr()
+        for i in range(len(ESCost)):
+            for j in range(len(ESCost[i])):
+                if eID[i][j] >= 0:
+                    assert ESCost[i][j] >= 0, "{}, {} : {}".format(i, j, ESCost[i][j])
+                    assert eID[i][j] < len(eRaw), "{} geq {}".format(eID[i][j], len(eRaw))
+                    pathCost.add(eRaw[eID[i][j]] * ESCost[i][j])
+
+        # Link x with e
+        for i in range(len(ESCost)):
+            if i == sourceID or i == sinkID: continue
+            incoming = gp.quicksum(eRaw[eID[j][i]] for j in range(len(ESCost[i])) if eID[j][i] >= 0)
+            if self.groupSpots:
+                for spot in self.solStruct.layersGrouped[i].spots:
+                    model.addConstr(self.xVars[spot.id] <= incoming * self.M,
+                                         "x_" + str(spot.id) + "_leq_e_" + str(i) + "xM")
             else:
-                # self.model.setObjectiveN(path_cost, 1, 1, self.ESWeight, 0, 0, "minimize EL path cost")
-                self.model.setObjectiveN(pathCost, 1, 0, self.timeWeight, 0, 0, "EL path cost")
+                for spot in self.plan.layers[i].spots:
+                    model.addConstr(self.xVars[spot.id] <= incoming * self.M,
+                                         "x_" + str(spot.id) + "_leq_e_" + str(i) + "xM")
+
+        if self.maxSwitchUp >= 0:
+            model.addConstr(pathCost <= self.maxSwitchUp, "ES_fixed_switch_ups")
+        else:
+            # model.setObjectiveN(path_cost, 1, 1, self.ESWeight, 0, 0, "minimize EL path cost")
+            model.setObjectiveN(pathCost, 1, 0, self.timeWeight, 0, 0, "EL path cost")
+        return model
 
     def solve(self, func, x0, **kwargs):
         startTime = time.time()
@@ -155,30 +159,30 @@ class MIP(LP):
                 x = self.solStruct.x
                 nSpots = self.solStruct.nSpots
 
-            self.createMIPModel()
+            model = self.createMIPModel()
             if n == 0:
-                self.model.setParam('TimeLimit', self.timeLimit)
+                model.setParam('TimeLimit', self.timeLimit)
             else:
-                self.model.setParam('TimeLimit', 1800 * g)
+                model.setParam('TimeLimit', 1800 * g)
 
             # Tune your own parameters here
-            # self.model.setParam('MIPGapAbs', 1e-2)
+            # model.setParam('MIPGapAbs', 1e-2)
             # use barrier for the MIP root relaxation
-            # self.model.setParam('Method', 2)
+            # model.setParam('Method', 2)
             # Limits the number of passes performed by presolve
-            # self.model.setParam('PrePasses', 1)
+            # model.setParam('PrePasses', 1)
             # Limits the amount of time spent in the NoRel heuristic before solving the root relaxation
-            # self.model.setParam('NoRelHeurTime', 100)
+            # model.setParam('NoRelHeurTime', 100)
             # find feasible solutions quickly
-            # self.model.setParam('MIPFocus', 1)
-            # self.model.setParam('Cuts', 0)
+            # model.setParam('MIPFocus', 1)
+            # model.setParam('Cuts', 0)
             # avoid multiple 'Total elapsed time' messages in the log immediately after the root relaxation log
-            # self.model.setParam('DegenMoves', 0)
+            # model.setParam('DegenMoves', 0)
             # barrier only
-            # self.model.setParam('CrossoverBasis', 0)
-            # self.model.setParam('LogFile', "brain_mipfocus1.log")
-            # self.model.write("brain_small.lp")
-            # self.model.setParam('SolFiles', '/home/sophie/opentps/MCO/solutions/sol')
+            # model.setParam('CrossoverBasis', 0)
+            # model.setParam('LogFile', "brain_mipfocus1.log")
+            # model.write("brain_small.lp")
+            # model.setParam('SolFiles', '/home/sophie/opentps/MCO/solutions/sol')
 
             try:
                 addedConstraints = []
@@ -187,7 +191,7 @@ class MIP(LP):
                     nIter += 1
                 for i in range(1, nIter + 1):
                     for constr in addedConstraints:
-                        self.model.remove(constr)
+                        model.remove(constr)
                     addedConstraints.clear()
 
                     if self.LNSNIter > 0 and i <= self.LNSNIter:
@@ -220,7 +224,7 @@ class MIP(LP):
                                 print("{}{}".format(el.id, itm), end=" ")
                             else:
                                 for spotID in el.spotIndices:
-                                    addedConstraints.append(self.model.addConstr(self.xVars[spotID] == x[spotID],
+                                    addedConstraints.append(model.addConstr(self.xVars[spotID] == x[spotID],
                                                                                  "fixed_spot_" + str(spotID)))
                         print("\n-----------")
 
@@ -229,8 +233,8 @@ class MIP(LP):
 
                     # set initial solution
                     if self.inputf is not None:
-                        self.model.update()
-                        self.model.read(self.inputf)
+                        model.update()
+                        model.read(self.inputf)
                     else:
                         if self.groupSpots:
                             self.solStruct.groupSol()
@@ -241,43 +245,20 @@ class MIP(LP):
                             for k in range(self.solStruct.nSpots):
                                 self.xVars[k].Start = self.solStruct.x[k]
                     # optimize
-                    self.model.optimize()
-                    # self.model.optimize(mycallback)
-                    status = self.model.Status
+                    model.optimize()
+                    # model.optimize(mycallback)
+                    status = model.Status
                     if status not in (GRB.INF_OR_UNBD, GRB.INFEASIBLE, GRB.UNBOUNDED):
                         if status == GRB.OPTIMAL:
                             print("OPTIMAL SOLUTION FOUND")
                         else:
                             print("Time limit reached !")
 
-                        print('Obj : {}'.format(self.model.objVal))
-                        for o, objective in enumerate(self.plan.objectives.list):
-                            if objective.Type == "Soft":
-                                names_to_retrieve = []
-                                M = len(np.nonzero(objective.Mask_vec)[0].tolist())
-                                if objective.Metric == "Dmax" and objective.Condition == "<":
-                                    name = objective.ROIName.replace(" ", "_") + '_maxObj'
-                                    names_to_retrieve = (f"{name}[{i}]" for i in range(M))
-                                    vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
-                                    print(
-                                        " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
-                                elif objective.Metric == "Dmin" and objective.Condition == ">":
-                                    name = objective.ROIName.replace(" ", "_") + '_minObj'
-                                    names_to_retrieve = (f"{name}[{i}]" for i in range(M))
-                                    vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
-                                    print(
-                                        " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
-                                elif objective.Metric == "Dmean" and objective.Condition == "<":
-                                    name = objective.ROIName.replace(" ", "_") + '_meanObj[0]'
-                                    var_obj = self.model.getVarByName(name).X
-                                    print(
-                                        " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, var_obj, var_obj * objective.Weight))
+                        print('Obj : {}'.format(model.objVal))
+                        
 
                         if self.solFile is not None:
-                            self.model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
+                            model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
 
                         # update solution
                         if self.groupSpots:
@@ -298,8 +279,8 @@ class MIP(LP):
                                 x_ungrouped[s] = self.solStruct.xGrouped[idx]
                             self.solStruct.loadSolution(x_ungrouped)
 
-                        result = {'sol': self.solStruct.x, 'crit': status, 'niter': None,
-                                  'time': time.time() - startTime, 'objective': self.model.objVal}
+                        result = {'sol': self.solStruct.x, 'crit': status, 'niter': 1,
+                                  'time': time.time() - startTime, 'objective': model.objVal}
             except gp.GurobiError as e:
                 print('Error code ' + str(e.errno) + ': ' + str(e))
 

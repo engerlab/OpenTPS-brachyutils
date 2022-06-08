@@ -121,7 +121,7 @@ class ARCPTPlanOptimizer(PlanOptimizer):
         elif method == 'LS':
             self.solver = localSearch.LS()
         elif method == 'MIP':
-            self.solver = mip.MIP(**kwargs)
+            self.solver = mip.MIP(self.plan,**kwargs)
         elif method == 'SPArcling':
             try:
                 mode = self.params['mode']

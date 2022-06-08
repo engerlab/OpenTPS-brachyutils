@@ -22,7 +22,7 @@ from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelit
 from Core.Processing.PlanOptimization.Objectives.norms import NormL1, NormL21
 from Core.Processing.PlanOptimization.Objectives.energySequencing import EnergySeq
 from Core.Processing.PlanOptimization.Objectives.logBarrier import LogBarrier
-from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
+from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer, ARCPTPlanOptimizer
 from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking, FistaAccel
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
@@ -75,6 +75,7 @@ target = contours.getContourByName('CTV')
 targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 opticChiasm = contours.getContourByName('Optic Chiasm')
 brainStem = contours.getContourByName('Brain Stem')
+body = contours.getContourByName('BODY')
 
 # rings = target.createROIRings(ct,contours,3,2)
 
@@ -109,7 +110,7 @@ quit()'''
 # Load Dicom plan
 plan = dataList[0]
 # Load Beamlets
-# beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
+#beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
 beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
 plan.beamlets = loadBeamlets(beamletPath)
 
@@ -119,11 +120,16 @@ plan.objectives.setTarget(target.name, 65.0)
 plan.objectives.fidObjList = []
 plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.)
 plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
+#plan.objectives.addFidObjective(body.name, "Dmax", "<", 65.0, 0.1)
+#plan.objectives.addFidObjective(opticChiasm.name, "Dmax", "<", 60.0, 0.1)
+#plan.objectives.addFidObjective(opticChiasm.name, "Dmean", "<", 50.0, 0.1)
+#plan.objectives.addFidObjective(brainStem.name, "Dmax", "<", 55.0, 0.1)
+#plan.objectives.addFidObjective(brainStem.name, "Dmean", "<", 8.5, 0.1)
 # plan.objectives.addFidObjective(rings[0].name, "Dmax", "<", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
 # plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
 scoring_spacing = np.array([5, 5, 5])
-# scoring_spacing = np.array([2, 2, 2])
+#scoring_spacing = np.array([2, 2, 2])
 scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
 
@@ -142,13 +148,14 @@ accel = FistaAccel()
 # Solvers
 # Optimize treatment plan
 #solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
-solver = IMPTPlanOptimizer(method='FISTA',
+solver = ARCPTPlanOptimizer(method='MIP', plan=plan, contours=contours, functions=[], max_switch_ups = 5, time_limit = 600)
+'''solver = IMPTPlanOptimizer(method='FISTA',
                            plan=plan,
                            contours=contours,
                            functions=[objectiveFunction, layerSparsity, energySeq],
                            step=0.001,
                            accel=accel,
-                           maxit=100)
+                           maxit=100)'''
 # solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction], maxit = 100)
 solver.xSquared = False
 w, dose_vector, ps = solver.optimize()

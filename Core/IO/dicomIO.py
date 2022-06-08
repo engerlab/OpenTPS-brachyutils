@@ -409,6 +409,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
             layer = PlanIonLayer()
             layer.seriesInstanceUID = plan.seriesInstanceUID
             layer.id = accumulatedLayer
+            layer.beamID = beam.id
 
             if hasattr(dcm_layer, 'SnoutPosition'):
                 SnoutPosition = float(dcm_layer.SnoutPosition)
@@ -421,17 +422,22 @@ def readDicomPlan(dcmFile) -> RTPlan:
             layer.nominalEnergy = float(dcm_layer.NominalBeamEnergy)
 
             if (plan.scanMode == "MODULATED"):
-                spot = PlanIonSpot()
-                spot.id = accumulatedSpot
-                spot.beamID = beam.id
-                spot.layerID = layer.id
-                spot.energy = layer.nominalEnergy
                 _x = dcm_layer.ScanSpotPositionMap[0::2]
                 _y = dcm_layer.ScanSpotPositionMap[1::2]
                 w = np.array(
                     dcm_layer.ScanSpotMetersetWeights) * BeamMeterset / FinalCumulativeMetersetWeight  # spot weights are converted to MU
-                layer.appendSpot(spot, _x, _y, w)
-                accumulatedSpot +=1
+                layer.appendSpot(_x, _y, w)
+
+                for xElem in _x:
+                    spot = PlanIonSpot()
+                    spot.id = accumulatedSpot
+                    spot.beamID = layer.beamID
+                    spot.layerID = layer.id
+                    spot.energy = layer.nominalEnergy
+                    layer._spots.append(spot)
+                    layer._spotIndices.append(spot.id)
+                    plan.appendSpotAccum(spot)
+                    accumulatedSpot +=1
 
             elif (plan.scanMode == "LINE"):
                 raise NotImplementedError()
@@ -470,6 +476,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.rangeShifterSettings.referencedRangeShifterNumber = ReferencedRangeShifterNumber
 
             beam.appendLayer(layer)
+            plan.appendLayerAccum(layer)
             accumulatedLayer += 1
 
         plan.appendBeam(beam)

@@ -15,6 +15,7 @@ class PlanIonLayer:
         self._timings = np.array([])
         self._spots = []
         self._spotIndices = []
+        
 
         self.id, self.beamID = 0, 0
         self.nominalEnergy: float = nominalEnergy
@@ -111,7 +112,7 @@ class PlanIonLayer:
         else:
             self._appendSingleSpot(x, y, weight, timing)
 
-    def appendSpot(self, spot: PlanIonSpot, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
+    def appendSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
                    weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
         if not isinstance(x, Iterable): x = [x]
         if not isinstance(y, Iterable): y = [y]
@@ -121,8 +122,7 @@ class PlanIonLayer:
         for i, xElem in enumerate(x):
             t = timing if timing is None else timing[i]
             self._appendSingleSpot(xElem, y[i], weight[i], t)
-            self._spots.append(spot)
-            self._spotIndices.append(spot.id)
+            
 
     def _appendSingleSpot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
         alreadyExists, _ = self.spotDefinedInXY(x, y)
