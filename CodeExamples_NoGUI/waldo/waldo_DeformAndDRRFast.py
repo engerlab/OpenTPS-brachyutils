@@ -32,11 +32,11 @@ from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods imp
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_2'
-    patientComplement = '/2/FDG2'
+    patientFolder = 'Patient_12'
+    patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/Regular/sim5k/exp1/'
+    resultFolder = '/Irregular/sim5k/exp2/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     ## parameters selection ------------------------------------
 
     ## sequence duration, sampling and signal's regularity
-    regularityIndex = 1
+    regularityIndex = 3
     numberOfSequences = 5
     sequenceDurationInSecs = 205
     samplingFrequency = 5
@@ -59,8 +59,8 @@ if __name__ == '__main__':
     outputSize = [64, 64]
 
     ## ROI choice and crop options 
-    bodyContourToUse = 'Body'
-    targetContourToUse = 'GTV T'
+    bodyContourToUse = 'patient'#'external'#'Body'
+    targetContourToUse = 'gtv t'#'GTVp'#'GTV T'
 
     croppingContoursUsedXYZ = [targetContourToUse, bodyContourToUse, targetContourToUse]
     isBoxHardCoded = False
