@@ -8,8 +8,6 @@ import json
 import sys
 
 
-sys.path.insert(0, '/home/sophie/refactor/opentps/')
-
 from Core.Data.patientList import PatientList
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.dvh import DVH
@@ -32,13 +30,12 @@ from Core.Processing.PlanOptimization.tools import WeightStructure
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planStructure import PlanStructure
 
-
-with open('/home/sophie/refactor/opentps/config/logger/logging_config.json',
+with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
           'r') as log_fid:
     config_dict = json.load(log_fid)
 logging.config.dictConfig(config_dict)
 # User config:
-ctImagePath = "/home/sophie/opentps/data/Plan_IMPT_patient1"
+ctImagePath = "/home/sophie/Documents/Protontherapy/OpenTPS/arc_dev/opentps/data/Plan_IMPT_patient1"
 output_path = os.path.join(ctImagePath, "OpenTPS")
 # dataStructPath = os.path.join(ctImagePath, "reggui_phantom_5mm_rtstruct.dcm")
 
@@ -59,11 +56,11 @@ print('Available ROIs')
 contours.print_ROINames()
 
 # Configure MCsquare
-MCSquarePath = '/home/sophie/refactor/opentps/Core/Processing/DoseCalculation/MCsquare/'
+MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
 doseCalculator = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 doseCalculator.beamModel = beamModel
-doseCalculator.nbPrimaries = 5e4
+doseCalculator.nbPrimaries = 1e7
 scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
                                                os.path.join(scannerPath, 'HU_Material_Conversion.txt'),
@@ -86,11 +83,9 @@ couchAngles = [0., 0.]
 # Load / Generate new plan
 plan_file = os.path.join(output_path, "NewPlan.tps")
 
-'''if os.path.isfile(plan_file):
-    print('test')
+if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
 else:
-    print('test 2 ')
     planInit = PlanStructure()
     planInit.ct = ct
     planInit.targetMask = targetMask
@@ -104,13 +99,13 @@ else:
     outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
     plan.save(plan_file)
 
-quit()'''
+quit()
 # Load openTPS plan
 # plan = dataList[3]
 # Load Dicom plan
 plan = dataList[0]
 # Load Beamlets
-#beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
+# beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
 beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
 plan.beamlets = loadBeamlets(beamletPath)
 
@@ -120,42 +115,41 @@ plan.objectives.setTarget(target.name, 65.0)
 plan.objectives.fidObjList = []
 plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.)
 plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
-#plan.objectives.addFidObjective(body.name, "Dmax", "<", 65.0, 0.1)
-#plan.objectives.addFidObjective(opticChiasm.name, "Dmax", "<", 60.0, 0.1)
-#plan.objectives.addFidObjective(opticChiasm.name, "Dmean", "<", 50.0, 0.1)
-#plan.objectives.addFidObjective(brainStem.name, "Dmax", "<", 55.0, 0.1)
-#plan.objectives.addFidObjective(brainStem.name, "Dmean", "<", 8.5, 0.1)
+# plan.objectives.addFidObjective(body.name, "Dmax", "<", 65.0, 0.1)
+# plan.objectives.addFidObjective(opticChiasm.name, "Dmax", "<", 60.0, 0.1)
+# plan.objectives.addFidObjective(opticChiasm.name, "Dmean", "<", 50.0, 0.1)
+# plan.objectives.addFidObjective(brainStem.name, "Dmax", "<", 55.0, 0.1)
+# plan.objectives.addFidObjective(brainStem.name, "Dmean", "<", 8.5, 0.1)
 # plan.objectives.addFidObjective(rings[0].name, "Dmax", "<", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
 # plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
 scoring_spacing = np.array([5, 5, 5])
-#scoring_spacing = np.array([2, 2, 2])
+# scoring_spacing = np.array([2, 2, 2])
 scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
 plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
-
 
 # Objective functions
 objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
 # objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(),formatArray=64)
-spotSparsity = NormL1(lambda_= 1)
+spotSparsity = NormL1(lambda_=1)
 energySeq = EnergySeq(plan, gamma=0.1)
 # logBarrier = LogBarrier(plan, beta=0.1)
-layerSparsity = NormL21(plan, scaleReg="summu")
+layerSparsity = NormL21(plan, lambda_=1, scaleReg="summu")
 
 # Acceleration
-#accel = FistaBacktracking()
-accel = FistaAccel()
+accel = FistaBacktracking()
+#accel = FistaAccel()
 # Solvers
 # Optimize treatment plan
-#solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
-solver = ARCPTPlanOptimizer(method='MIP', plan=plan, contours=contours, functions=[], max_switch_ups = 5, time_limit = 600)
-'''solver = IMPTPlanOptimizer(method='FISTA',
+# solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
+#solver = ARCPTPlanOptimizer(method='MIP', plan=plan, contours=contours, functions=[], max_switch_ups=5, time_limit=600)
+solver = IMPTPlanOptimizer(method='FISTA',
                            plan=plan,
                            contours=contours,
-                           functions=[objectiveFunction, layerSparsity, energySeq],
-                           step=0.001,
+                           functions=[objectiveFunction, ],
+                           step=1,
                            accel=accel,
-                           maxit=100)'''
+                           maxit=100)
 # solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction], maxit = 100)
 solver.xSquared = False
 w, dose_vector, ps = solver.optimize()
@@ -172,8 +166,8 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # saveRTPlan(plan, plan_filepath)
 
 # MCsquare simulation
-# doseImage = doseCalculator.computeDose(ct, plan)
-doseImage = plan.beamlets.toDoseImage()
+doseImage = doseCalculator.computeDose(ct, plan)
+#doseImage = plan.beamlets.toDoseImage()
 
 # Compute DVH
 target_DVH = DVH(ct, target, doseImage)
