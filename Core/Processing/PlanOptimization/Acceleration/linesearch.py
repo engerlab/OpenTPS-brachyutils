@@ -1,6 +1,13 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
+import copy
+import numpy as np
+from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy
 # -----------------------------------------------------------------------------
 # Stepsize optimizers
 # -----------------------------------------------------------------------------
+import logging
+logger = logging.getLogger(__name__)
 
 class LineSearch(Dummy):
     r"""
@@ -23,14 +30,14 @@ class LineSearch(Dummy):
         self.c1 = c1
         self.c2 = c2
         self.eps = eps
-        super(linesearch, self).__init__(**kwargs)
+        super(LineSearch, self).__init__(**kwargs)
 
     def _update_step(self, solver, objective, niter):
         # Save current state of the solver
         properties = copy.deepcopy(vars(solver))
-        #logger.debug('(Begin) solver properties: {}'.format(properties))
+        logger.debug('(Begin) solver properties: {}'.format(properties))
         # initialize some useful variables
-        self.f = solver.smooth_funs[0]
+        self.f = solver.smoothFuns[0]
         derphi = np.dot(self.f.grad(properties['sol']),solver.pk)
         step = 1.0
         n = 0
@@ -50,7 +57,7 @@ class LineSearch(Dummy):
             self.c2 = (self.c2+1)/2 # reduce the step modifier
             if 1-self.c2 < 1e-4: break
 
-          if step * len_p < self.eps or n>30:
+          if step * len_p < self.eps or n>10:
             logger.debug('  Step is  too small, stop')
             break
 

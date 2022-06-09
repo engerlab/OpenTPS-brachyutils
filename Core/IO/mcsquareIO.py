@@ -22,7 +22,7 @@ from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
-from Core.IO.mhdReadWrite import exportImageMHD, importImageMHD
+from Core.IO.mhdIO import exportImageMHD, importImageMHD
 from Core.Processing.ImageProcessing import crop3D
 
 

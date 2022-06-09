@@ -1,11 +1,22 @@
-class Fista(Dummy):
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
+import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
+
+from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy
+from Core.Processing.PlanOptimization.Acceleration.backtracking import Backtracking
+
+
+class FistaAccel(Dummy):
     """
     Acceleration scheme for forward-backward solvers.
     """
 
     def __init__(self, **kwargs):
         self.t = 1.
-        super(fista, self).__init__(**kwargs)
+        super(FistaAccel, self).__init__(**kwargs)
 
     def _pre(self, functions, x0):
         self.sol = np.array(x0, copy=True)
@@ -22,7 +33,7 @@ class Fista(Dummy):
         del self.sol
 
 
-class FistaBacktracking(Backtracking, Fista):
+class FistaBacktracking(Backtracking, FistaAccel):
     """
     Acceleration scheme with backtracking for forward-backward solvers.
     For details about the acceleration scheme and backtracking strategy, see A. Beck and M. Teboulle,
@@ -31,6 +42,5 @@ class FistaBacktracking(Backtracking, Fista):
     """
 
     def __init__(self, eta=0.5, **kwargs):
-        backtracking.__init__(self, eta=eta, **kwargs)
-        fista.__init__(self, **kwargs)
-
+        Backtracking.__init__(self, eta=eta, **kwargs)
+        FistaAccel.__init__(self, **kwargs)

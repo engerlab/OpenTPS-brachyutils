@@ -1,5 +1,6 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import logging
-
 import numpy as np
 
 from Core.Processing.PlanOptimization.Solvers.solver import ConvexSolver
@@ -33,3 +34,6 @@ class GradientDescent(ConvexSolver):
         for f in self.smoothFuns:
             grad += f.grad(self.sol)
         self.sol[:] -= self.step * grad
+
+    def _post(self):
+        pass

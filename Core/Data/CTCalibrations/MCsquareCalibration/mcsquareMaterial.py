@@ -87,4 +87,5 @@ class MCsquareMaterial:
             f.write(self.mcsquareFormatted(materialNamesOrderedForPrinting))
 
         self.sp.write(spFile)
-        self.pstarSP.write(spFilePSTAR)
+        if not (self.pstarSP is None):
+            self.pstarSP.write(spFilePSTAR)
