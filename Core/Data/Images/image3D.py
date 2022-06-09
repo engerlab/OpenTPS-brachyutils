@@ -113,8 +113,8 @@ class Image3D(PatientData):
             """
 
         if (np.array_equal(self.gridSize, otherImage.gridSize) and
-                euclidean_dist(self._origin, otherImage._origin) < 0.01 and
-                euclidean_dist(self._spacing, otherImage._spacing) < 0.01):
+                np.allclose(self._origin, otherImage._origin, atol=0.01) and
+                np.allclose(self._spacing, otherImage.spacing, atol=0.01)):
             return True
         else:
             return False

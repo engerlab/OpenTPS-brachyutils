@@ -33,8 +33,40 @@ def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:
 
     return image
 
+def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Sequence[Image3D]:
+    newOrigin = np.array([np.Inf, np.Inf, np.Inf])
+    newSpacing = np.array([np.Inf, np.Inf, np.Inf])
+    newEnd = np.array([-np.Inf, -np.Inf, -np.Inf])
+
+    for image in images:
+        o = image.origin
+        e = image.origin + image.gridSizeInWorldUnit
+        s = image.spacing
+
+        for i in range(3):
+            if o[i]<newOrigin[i]:
+                newOrigin[i] = o[i]
+            if e[i]>newEnd[i]:
+                newEnd[i] = e[i]
+            if s[i]<newSpacing[i]:
+                newSpacing[i] = s[i]
+
+    outImages = []
+    for image in images:
+        if not inPlace:
+            image = image.__class__.fromImage3D(image)
+
+        resize(image, newSpacing, newOrigin=newOrigin, newShape=np.round((newEnd - newOrigin)/newSpacing).astype(int),
+               fillValue=fillValue)
+
+        outImages.append(image)
+
+    return outImages
+
+
 def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    cropROI = None # TEST !!!!
     tform = _forwardDicomToIECGantry(image, beam)
 
     tform = linalg.inv(tform)
@@ -98,6 +130,7 @@ def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[fl
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    cropROI = None  # TEST !!!!
     tform = _forwardDicomToIECGantry(image, beam)
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
