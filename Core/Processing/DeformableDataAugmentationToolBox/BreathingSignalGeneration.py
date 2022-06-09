@@ -116,7 +116,7 @@ def signalGeneration(amplitude=2, period=4.0, mean=0, sigma=3, step=0.5, signalD
             signal[timeIndex::] = sig[0:len(signal)-timeIndex]
         
     
-    return timestamps * 1000, signal, amplitude
+    return timestamps * 1000, signal
 
 
 def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
