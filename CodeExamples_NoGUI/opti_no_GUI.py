@@ -7,7 +7,6 @@ import logging.config
 import json
 import sys
 
-
 from Core.Data.patientList import PatientList
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.dvh import DVH
@@ -60,7 +59,10 @@ MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
 doseCalculator = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 doseCalculator.beamModel = beamModel
-doseCalculator.nbPrimaries = 1e7
+doseCalculator.nbPrimaries = 5e4
+#doseCalculator.independentScoringGrid = True
+#doseCalculator.scoringVoxelSpacing = [5.0, 5.0, 5.0]
+# doseCalculator.
 scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
                                                os.path.join(scannerPath, 'HU_Material_Conversion.txt'),
@@ -76,9 +78,9 @@ body = contours.getContourByName('BODY')
 
 # rings = target.createROIRings(ct,contours,3,2)
 
-beamNames = ["Beam1", "Beam2"]
-gantryAngles = [90., 270.]
-couchAngles = [0., 0.]
+beamNames = ["Beam1"]
+gantryAngles = [90.]
+couchAngles = [0.]
 
 # Load / Generate new plan
 plan_file = os.path.join(output_path, "NewPlan.tps")
@@ -95,19 +97,20 @@ else:
     planInit.calibration = calibration
     plan = planInit.createPlan()  # Spot placement
     plan.PlanName = "NewPlan"
-    beamlets = doseCalculator.computeBeamlets(ct,plan,roi=targetMask).toSparseMatrix()
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.SeriesInstanceUID + ".blm")
-    plan.save(plan_file)
+    beamlets = doseCalculator.computeBeamlets(ct, plan, roi=targetMask)
+    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
+    #saveBeamlets(beamlets, outputBeamletFile)
+    #saveRTPlan(plan, plan_file)
 
-quit()
 # Load openTPS plan
 # plan = dataList[3]
 # Load Dicom plan
-plan = dataList[0]
+# plan = dataList[0]
 # Load Beamlets
 # beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
-beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
-plan.beamlets = loadBeamlets(beamletPath)
+# beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
+# plan.beamlets = loadBeamlets(beamletPath)
+plan.beamlets = beamlets
 
 # optimization objectives
 plan.objectives = ObjectivesList()
@@ -138,11 +141,11 @@ layerSparsity = NormL21(plan, lambda_=1, scaleReg="summu")
 
 # Acceleration
 accel = FistaBacktracking()
-#accel = FistaAccel()
+# accel = FistaAccel()
 # Solvers
 # Optimize treatment plan
 # solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
-#solver = ARCPTPlanOptimizer(method='MIP', plan=plan, contours=contours, functions=[], max_switch_ups=5, time_limit=600)
+# solver = ARCPTPlanOptimizer(method='MIP', plan=plan, contours=contours, functions=[], max_switch_ups=5, time_limit=600)
 solver = IMPTPlanOptimizer(method='FISTA',
                            plan=plan,
                            contours=contours,
@@ -167,7 +170,7 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 
 # MCsquare simulation
 doseImage = doseCalculator.computeDose(ct, plan)
-#doseImage = plan.beamlets.toDoseImage()
+# doseImage = plan.beamlets.toDoseImage()
 
 # Compute DVH
 target_DVH = DVH(ct, target, doseImage)
