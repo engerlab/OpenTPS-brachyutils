@@ -8,8 +8,8 @@ from Core.Data.patientData import PatientData
 from Core.api import API
 from Core.Data.patient import Patient
 from Core.Data.patientList import PatientList
-from Core.IO.dicomReader import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
-from Core.IO import mhdReadWrite
+from Core.IO.dicomIO import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
+from Core.IO import mhdIO
 from Core.IO.serializedObjectIO import loadDataStructure
 
 @API.loggedViaAPI

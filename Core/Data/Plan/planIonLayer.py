@@ -1,19 +1,25 @@
+import copy
 import unittest
 from typing import Iterable, Union, Sequence, Optional, Tuple
 
 import numpy as np
 
+from Core.Data.Plan.planIonSpot import PlanIonSpot
+
 
 class PlanIonLayer:
-    def __init__(self, nominalEnergy:float=0.0):
+    def __init__(self, nominalEnergy: float = 0.0):
         self._x = np.array([])
         self._y = np.array([])
         self._weights = np.array([])
         self._timings = np.array([])
+        self._spots = []
+        self._spotIndices = []
 
-        self.nominalEnergy:float = nominalEnergy
-        self.numberOfPaintings:int = 1
-        self.rangeShifterSettings:RangeShifterSettings = RangeShifterSettings()
+        self.id, self.beamID = 0, 0
+        self.nominalEnergy: float = nominalEnergy
+        self.numberOfPaintings: int = 1
+        self.rangeShifterSettings: RangeShifterSettings = RangeShifterSettings()
         self.seriesInstanceUID = ""
 
     def __len__(self):
@@ -27,6 +33,15 @@ class PlanIonLayer:
         for xyAndWeight in xyAndWeights:
             s += str(xyAndWeight)
         return s
+
+    @property
+    def spots(self) -> Sequence[PlanIonSpot]:
+        # For backwards compatibility but we can now access each spot with indexing brackets
+        return [spot for spot in self._spots]
+
+    @property
+    def spotIndices(self) -> Sequence[int]:
+        return [i for i in self._spotIndices]
 
     @property
     def spotX(self) -> Sequence[float]:
@@ -45,11 +60,13 @@ class PlanIonLayer:
         return np.array(self._weights)
 
     @spotWeights.setter
-    def spotWeights(self, w:Sequence[float]):
+    def spotWeights(self, w: Sequence[float]):
         w = np.array(w)
 
         if len(self._weights) != len(w):
-            raise ValueError("Length of provided weights is not correct. Provided: " + str(len(w)) + " - Expected: " + str(len(self._weights)))
+            raise ValueError(
+                "Length of provided weights is not correct. Provided: " + str(len(w)) + " - Expected: " + str(
+                    len(self._weights)))
 
         self._weights = w
 
@@ -58,11 +75,13 @@ class PlanIonLayer:
         return np.array(self._timings)
 
     @spotTimings.setter
-    def spotTimings(self, w:Sequence[float]):
+    def spotTimings(self, w: Sequence[float]):
         w = np.array(w)
 
         if len(self._timings) != len(w):
-            raise ValueError("Length of provided spot timings is not correct. Provided: " + str(len(w)) + " - Expected: " + str(len(self._timings)))
+            raise ValueError(
+                "Length of provided spot timings is not correct. Provided: " + str(len(w)) + " - Expected: " + str(
+                    len(self._timings)))
 
         self._timings = w
 
@@ -74,33 +93,42 @@ class PlanIonLayer:
     def numberOfSpots(self) -> int:
         return len(self._weights)
 
-    def addToSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
+
+
+    def addToSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
+                  weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+        if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
                 self._addToSinglepot(xElem, y[i], weight[i], t)
         else:
             self._addToSinglepot(x, y, weight, timing)
 
-    def _addToSinglepot(self, x:float, y:float, weight:float, timing:Optional[float]=None):
+    def _addToSinglepot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
         alreadyExists, where = self.spotDefinedInXY(x, y)
         if alreadyExists:
             self._weights[where] = self._weights[where] + weight
         else:
             self._appendSingleSpot(x, y, weight, timing)
 
-    def appendSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
-            for i, xElem in enumerate(x):
-                t = timing if timing is None else timing[i]
-                self._appendSingleSpot(xElem, y[i], weight[i], t)
-        else:
-            self._appendSingleSpot(x, y, weight, timing)
+    def appendSpot(self, spot: PlanIonSpot, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
+                   weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+        if not isinstance(x, Iterable): x = [x]
+        if not isinstance(y, Iterable): y = [y]
+        if not isinstance(weight, Iterable): weight = [weight]
+        if timing != None and not isinstance(weight, Iterable): timing = [timing]
 
-    def _appendSingleSpot(self, x:float, y:float, weight:float, timing:Optional[float]=None):
+        for i, xElem in enumerate(x):
+            t = timing if timing is None else timing[i]
+            self._appendSingleSpot(xElem, y[i], weight[i], t)
+            self._spots.append(spot)
+            self._spotIndices.append(spot.id)
+
+    def _appendSingleSpot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
         alreadyExists, _ = self.spotDefinedInXY(x, y)
         if alreadyExists:
-            raise ValueError('Spot already exists in (x,y)')
+            if timing is None:  # possible to have two spots at the same location with different timings (e.g. bursts in synchrocyclotron)
+                raise ValueError('Spot already exists in (x,y)')
 
         self._x = np.append(self._x, x)
         self._y = np.append(self._y, y)
@@ -109,15 +137,16 @@ class PlanIonLayer:
             self._timings = np.append(self._timings, timing)
             assert len(self._weights) == len(self._timings)
 
-    def setSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]], weight:Union[float, Sequence[float]], timing:Optional[Union[float, Sequence[float]]]=None):
-        if isinstance(x, Sequence):
+    def setSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
+                weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+        if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
                 self._setSingleSpot(xElem, y[i], weight[i], t)
         else:
             self._setSingleSpot(x, y, weight, timing)
 
-    def _setSingleSpot(self, x:float, y:float, weight:float, timing:Optional[float]=None):
+    def _setSingleSpot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
         alreadyExists, spotPos = self.spotDefinedInXY(x, y)
         if alreadyExists:
             self._x[spotPos] = x
@@ -127,17 +156,17 @@ class PlanIonLayer:
         else:
             self.appendSpot(x, y, weight, timing)
 
-    def removeSpot(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]):
+    def removeSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]]):
         _, spotPos = self.spotDefinedInXY(x, y)
 
         self._x = np.delete(self._x, spotPos)
         self._y = np.delete(self._y, spotPos)
         self._weights = np.delete(self._weights, spotPos)
-        if len(self._timings)>0:
+        if len(self._timings) > 0:
             self._timings = np.delete(self._timings, spotPos)
 
-    def spotDefinedInXY(self, x:Union[float, Sequence[float]], y:Union[float, Sequence[float]]) -> Tuple[bool, int]:
-        if isinstance(x, Sequence):
+    def spotDefinedInXY(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]]) -> Tuple[bool, int]:
+        if isinstance(x, Iterable):
             exist = []
             where = []
             for i, xElem in enumerate(x):
@@ -150,42 +179,48 @@ class PlanIonLayer:
 
         return (exist, where)
 
-    def _singleSpotCheck(self, x:float, y:float) -> Tuple[bool, Optional[int]]:
+    def _singleSpotCheck(self, x: float, y: float) -> Tuple[bool, Optional[int]]:
         for i, (x_xy, y_xy) in enumerate(self.spotXY):
             if (x == x_xy and y == y_xy):
                 return (True, i)
         return (False, None)
 
-    def reorderSpots(self, order:Union[str, Sequence[int]]='scanAlgo'):
+    def reorderSpots(self, order: Union[str, Sequence[int]] = 'scanAlgo'):
         if type(order) is str:
-            if order=='scanAlgo': # the way scanAlgo sort spots in a serpentine fashion
+            if order == 'scanAlgo':  # the way scanAlgo sort spots in a serpentine fashion
                 coord = np.column_stack((self._x, self._y)).astype(float)
-                order = np.argsort(coord.view('f8,f8'), order=['f1','f0'],axis=0).ravel() # sort according to y then x
+                order = np.argsort(coord.view('f8,f8'), order=['f1', 'f0'],
+                                   axis=0).ravel()  # sort according to y then x
                 coord = coord[order]
-                _, ind_unique = np.unique(coord[:,1], return_index=True) # unique y's
+                _, ind_unique = np.unique(coord[:, 1], return_index=True)  # unique y's
                 n_unique = len(ind_unique)
                 if n_unique > 1:
-                    for i in range(1,n_unique):
+                    for i in range(1, n_unique):
                         if i == n_unique - 1:
                             ind_last_x_at_current_y = coord.shape[0]
                         else:
-                            ind_last_x_at_current_y = ind_unique[i+1] - 1
-                        if ind_unique[i] == ind_last_x_at_current_y: # only 1 spot for current y coord
+                            ind_last_x_at_current_y = ind_unique[i + 1] - 1
+                        if ind_unique[i] == ind_last_x_at_current_y:  # only 1 spot for current y coord
                             continue
 
-                        coord_last_x_at_current_y = coord[ind_last_x_at_current_y-1,0]
+                        coord_last_x_at_current_y = coord[ind_last_x_at_current_y - 1, 0]
                         ind_previous = ind_unique[i] - 1
-                        coord_previous = coord[ind_previous,0]
+                        coord_previous = coord[ind_previous, 0]
                         ind_first_x_at_current_y = ind_unique[i]
-                        coord_first_x_at_current_y = coord[ind_first_x_at_current_y,0]
+                        coord_first_x_at_current_y = coord[ind_first_x_at_current_y, 0]
 
                         # Check closest point to coord_previous
-                        if np.abs(coord_previous-coord_first_x_at_current_y) > np.abs(coord_previous-coord_last_x_at_current_y):
+                        if np.abs(coord_previous - coord_first_x_at_current_y) > np.abs(
+                                coord_previous - coord_last_x_at_current_y):
                             # Need to inverse the order of the spot irradiated for those coordinates:
-                            order[ind_first_x_at_current_y:ind_last_x_at_current_y] = order[ind_first_x_at_current_y:ind_last_x_at_current_y][::-1]
-                            coord[ind_first_x_at_current_y:ind_last_x_at_current_y] = coord[ind_first_x_at_current_y:ind_last_x_at_current_y][::-1]
-            
-            elif order=='timing': # sort spots by increasing order of timings
+                            order[ind_first_x_at_current_y:ind_last_x_at_current_y] = order[
+                                                                                      ind_first_x_at_current_y:ind_last_x_at_current_y][
+                                                                                      ::-1]
+                            coord[ind_first_x_at_current_y:ind_last_x_at_current_y] = coord[
+                                                                                      ind_first_x_at_current_y:ind_last_x_at_current_y][
+                                                                                      ::-1]
+
+            elif order == 'timing':  # sort spots by increasing order of timings
                 assert len(self._timings) == len(self._weights)
                 order = np.argsort(self._timings)
             else:
@@ -197,20 +232,32 @@ class PlanIonLayer:
         self._x = np.array([self._x[i] for i in order])
         self._y = np.array([self._y[i] for i in order])
         self._weights = np.array([self._weights[i] for i in order])
-        if len(self._timings)==n:
+        if len(self._timings) == n:
             self._timings = np.array([self._timings[i] for i in order])
 
-
-    def simplify(self, threshold:float=0.0):
+    def simplify(self, threshold: float = 0.0):
         # TODO
-        raise(NotImplementedError('TODO'))
+        raise (NotImplementedError('TODO'))
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def createEmptyLayerWithSameMetaData(self):
+        layer = self.copy()
+        layer._x = np.array([])
+        layer._y = np.array([])
+        layer._weights = np.array([])
+        layer._timings = np.array([])
+        return layer
+
 
 class RangeShifterSettings:
     def __init__(self):
         self.isocenterToRangeShifterDistance = 0.0
-        self.rangeShifterWaterEquivalentThickness = None # Means get thickness from BDL! This is extremely error prone!
+        self.rangeShifterWaterEquivalentThickness = None  # Means get thickness from BDL! This is extremely error prone!
         self.rangeShifterSetting = 'OUT'
         self.referencedRangeShifterNumber = 0
+
 
 class PlanIonLayerTestCase(unittest.TestCase):
     def testAppendSpot(self):
@@ -224,7 +271,7 @@ class PlanIonLayerTestCase(unittest.TestCase):
         self.assertEqual(list(layer.spotXY), [(x, y)])
         self.assertEqual(layer.spotWeights, 0)
 
-        self.assertRaises(Exception, lambda :layer.appendSpot(x, y, weight))
+        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, weight))
 
     def testAppendSpotWithTiming(self):
         layer = PlanIonLayer()
@@ -239,7 +286,7 @@ class PlanIonLayerTestCase(unittest.TestCase):
         self.assertEqual(layer.spotWeights, 0)
         self.assertEqual(layer.spotTimings, 0)
 
-        self.assertRaises(Exception, lambda :layer.appendSpot(x, y, weight, timing))
+        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, weight, timing))
 
     def testSetSpot(self):
         layer = PlanIonLayer()
@@ -298,7 +345,6 @@ class PlanIonLayerTestCase(unittest.TestCase):
         self.assertEqual(layer.spotWeights, 0)
         self.assertEqual(layer.spotTimings, 0)
 
-
     def testSpotDefinedInXY(self):
         layer = PlanIonLayer()
 
@@ -326,22 +372,21 @@ class PlanIonLayerTestCase(unittest.TestCase):
 
         layer.appendSpot(x, y, weight)
         layer.reorderSpots(order='scanAlgo')
-        np.testing.assert_array_equal(layer.spotX, [3,0,1,2])
-        np.testing.assert_array_equal(layer.spotY, [0,1,2,2])
-        np.testing.assert_array_equal(layer.spotWeights, np.array([0.1,0.2,0.3,0.5]))
+        np.testing.assert_array_equal(layer.spotX, [3, 0, 1, 2])
+        np.testing.assert_array_equal(layer.spotY, [0, 1, 2, 2])
+        np.testing.assert_array_equal(layer.spotWeights, np.array([0.1, 0.2, 0.3, 0.5]))
 
         layer = PlanIonLayer()
         x = [0, 1, 2, 3]
         y = [1, 2, 2, 0]
         weight = [0.2, 0.5, 0.3, 0.1]
-        timing = [3,2,5,6]
+        timing = [3, 2, 5, 6]
         layer.appendSpot(x, y, weight, timing)
         layer.reorderSpots(order='timing')
-        np.testing.assert_array_equal(layer.spotX, [1,0,2,3])
-        np.testing.assert_array_equal(layer.spotY, [2,1,2,0])
-        np.testing.assert_array_equal(layer.spotWeights, np.array([0.5,0.2,0.3,0.1]))
-        np.testing.assert_array_equal(layer.spotTimings, np.array([2,3,5,6]))
-
+        np.testing.assert_array_equal(layer.spotX, [1, 0, 2, 3])
+        np.testing.assert_array_equal(layer.spotY, [2, 1, 2, 0])
+        np.testing.assert_array_equal(layer.spotWeights, np.array([0.5, 0.2, 0.3, 0.1]))
+        np.testing.assert_array_equal(layer.spotTimings, np.array([2, 3, 5, 6]))
 
 
 if __name__ == '__main__':

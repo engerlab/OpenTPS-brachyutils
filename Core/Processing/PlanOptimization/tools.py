@@ -1,89 +1,15 @@
 import numpy as np
-import math
-import scipy
+import scipy.sparse as sp
+import pandas as pd
 
+from Core.Data.Plan.planIonBeam import PlanIonBeam
+from Core.Data.Plan.planIonLayer import PlanIonLayer
+from Core.Data.Plan.planIonSpot import PlanIonSpot
+from Core.Data.Plan.rtPlan import RTPlan
 
-def dilate(ct, mask, dilatation):
-    """ Dilate ROI mask by [x] mm
-    inputs:
-    - CT: Patient CT images
-    - mask: ROI mask attribute
-    - dilatation: margin use to dilate ROI [mm]
-    """
-    rtvMargin = dilatation  # mm
-    rtvMarginX = rtvMargin / ct.PixelSpacing[0]  # voxels
-    rtvMarginY = rtvMargin / ct.PixelSpacing[1]  # voxels
-    rtvMarginZ = rtvMargin / ct.PixelSpacing[2]  # voxels
-    rtvSize = 2 * np.ceil(np.array([rtvMarginY, rtvMarginX, rtvMarginZ])).astype(
-        int) + 1  # size of the structuring element
-    struct = np.zeros(tuple(rtvSize)).astype(bool)
-    for i in range(rtvSize[0]):
-        for j in range(rtvSize[1]):
-            for k in range(rtvSize[2]):
-                y = i - math.floor(rtvSize[0] / 2)
-                x = j - math.floor(rtvSize[1] / 2)
-                z = k - math.floor(rtvSize[2] / 2)
-                if (
-                        y ** 2 / rtvMarginY ** 2 + x ** 2 / rtvMarginX ** 2 + z ** 2 / rtvMarginZ ** 2 <= 1):
-                    # generate ellipsoid structuring element
-                    struct[i, j, k] = True
-    rtvMask = scipy.ndimage.binary_dilation(mask, structure=struct).astype(mask.dtype)
-    return rtvMask
+import logging
 
-
-def createROIRings(ct, patient, targetMask, nRings, deltaMM):
-    """
-    Create a ring ROI to obtain nice gradient dose around the organ
-        inputs:
-    patient: ROI added to which patient contours
-    target_mask: Organ around which the ring is created
-    nRings: Number of rings to be created
-    delta_mm: thickness of each ring
-    """
-    rings = []
-    targetSizes = [targetMask]
-
-    for i in range(nRings):
-        tgDil = dilate(ct, targetMask, deltaMM * (i + 1))
-        targetSizes.append(tgDil)
-
-    for i in range(nRings):
-        ringMask = np.logical_xor(targetSizes[i + 1], targetSizes[i])
-        ring = ROIcontour()
-        ring.ROIName = 'ring_' + str(i + 1)
-        ring.SeriesInstanceUID = patient.RTstructs[0].Contours[0].SeriesInstanceUID
-        ring.ROIDisplayColor = patient.RTstructs[0].Contours[0].ROIDisplayColor
-        ring.Mask = ringMask
-        ring.Mask_GridSize = patient.RTstructs[0].Contours[0].Mask, patient.RTstructs[0].Contours[5].Mask_GridSize
-        ring.Mask_PixelSpacing = patient.RTstructs[0].Contours[0].Mask, patient.RTstructs[0].Contours[
-            5].Mask_PixelSpacing
-        ring.Mask_Offset = patient.RTstructs[0].Contours[0].Mask, patient.RTstructs[0].Contours[5].Mask_Offset
-        ring.Mask_NumVoxels = patient.RTstructs[0].Contours[0].Mask, patient.RTstructs[0].Contours[5].Mask_NumVoxels
-        patient.RTstructs[0].Contours.append(ring)
-        patient.RTstructs[0].NumContours += 1
-        rings.append(ring)
-    return rings
-
-
-def permuteSparseMatrix(M, newRowOrder=None, newColOrder=None):
-    """
-    Reorders the rows and/or columns in a scipy sparse matrix
-    using the specified array(s) of indexes
-    e.g., [1,0,2,3,...] would swap the first and second row/col.
-    """
-    if newRowOrder is None and newColOrder is None:
-        return M
-
-    newM = M
-    if newRowOrder is not None:
-        identity = scipy.sparse.eye(M.shape[0]).tocoo()
-        identity.row = identity.row[newRowOrder]
-        newM = identity.dot(newM)
-    if newColOrder is not None:
-        identity = scipy.sparse.eye(M.shape[1]).tocoo()
-        identity.col = identity.col[newColOrder]
-        newM = newM.dot(identity)
-    return newM.astype(np.float32)
+logger = logging.getLogger(__name__)
 
 
 class WeightStructure:
@@ -95,25 +21,42 @@ class WeightStructure:
     but also functions computing ELST, sparsity of the plan, etc.
     """
 
-    def __init__(self, plan):
+    def __init__(self, plan: RTPlan):
+
         self.plan = plan
+        # beamlets
+        self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
         # weights
-        self.flatWeights = self.plan.get_spot_weights()
+        self.x = self.plan.spotWeights
+        # total number of spots
+        self.nSpots = self.plan.numberOfSpots
         # total number of beam
-        self.nBeams = len(self.plan.Beams)
+        self.nBeams = len(self.plan.beams)
         # total number of layers
         self.nLayers = self.computeNOfLayers()
         # Number of spots in each layer, number of spots in each beam, number of layers in each beam, energy of each
         # layer
         self.nSpotsInLayer, self.nSpotsInBeam, self.nLayersInBeam, self.energyLayers = self.getWeightsStruct()
+        # Spot grouping
+        self.nSpotsGrouped = 0
+        self.sparseMatrixGrouped = None
+        self.xGrouped = None
+        self.spotsGrouped = None
+        self.beamsGrouped = None
+        self.layersGrouped = None
+        self.spotNewID = None
+
+    def loadSolution(self, x):
+        logger.info("LoadingSolution x ...")
+        self.x = x
 
     def computeNOfLayers(self):
         """
         return total number of energy layers in the plan
         """
         res = 0
-        for i in range(len(self.plan.Beams)):
-            for j in range(len(self.plan.Beams[i].Layers)):
+        for i in range(len(self.plan.beams)):
+            for j in range(len(self.plan.beams[i].layers)):
                 res += 1
         return res
 
@@ -152,13 +95,13 @@ class WeightStructure:
         nOfSpotsInBeam = np.zeros(self.nBeams)
         energies = []
 
-        for i in range(len(self.plan.Beams)):
-            nOfLayersInBeam[i] = len(self.plan.Beams[i].Layers)
+        for i in range(len(self.plan.beams)):
+            nOfLayersInBeam[i] = len(self.plan.beams[i].layers)
             energiesInbeam = []
-            for j in range(len(self.plan.Beams[i].Layers)):
-                nOfSpotsInLayer[accumulateLayers] = len(self.plan.Beams[i].Layers[j].SpotMU)
-                energiesInbeam.append(self.plan.Beams[i].Layers[j].NominalBeamEnergy)
-                nOfSpotsInBeam[i] += len(self.plan.Beams[i].Layers[j].SpotMU)
+            for j in range(len(self.plan.beams[i].layers)):
+                nOfSpotsInLayer[accumulateLayers] = len(self.plan.beams[i].layers[j].spotWeights)
+                energiesInbeam.append(self.plan.beams[i].layers[j].nominalEnergy)
+                nOfSpotsInBeam[i] += len(self.plan.beams[i].layers[j].spotWeights)
                 accumulateLayers += 1
             energies.append(energiesInbeam)
 
@@ -325,6 +268,14 @@ class WeightStructure:
 
         return time, switchUp, switchDown
 
+    def isActivated(self, el: PlanIonLayer) -> bool:
+        activated = False
+        for spotID in el.spotIndices:
+            if self.x[spotID] > 0.0:
+                activated = True
+                break
+        return activated
+
     def getListOfActiveLayersInBeams(self, x):
         """
         return list of number of active energy layers in each beam (len = nBeams)
@@ -356,6 +307,111 @@ class WeightStructure:
             meanMUinbeams.append(meanOfMUinbeam)
             j += 1
         return layersActiveInBeams
+
+    def groupSpots(self, groupSpotsby=10):
+        """Group spot by a given parameter. Allows to get a faster optimal solution to be used as a warm start for
+        higher scale problem """
+        accumulatedSpots = 0
+        accumulatedLayers = 0
+        nNewSpotsInLayer = []
+        self.spotsGrouped = []
+        self.spotNewID = []
+
+        for i, beam in enumerate(self.plan.beams):
+            for j, layer in enumerate(beam.layers):
+                nSpotsInLayer = len(layer.spots)
+                nNewSpots = divmod(nSpotsInLayer, groupSpotsby)
+                for k in range(nNewSpots[0] + 1):
+                    spot = PlanIonSpot()
+                    spot.id = accumulatedSpots
+                    spot.beamID = i
+                    spot.layerID = accumulatedLayers
+                    spot.energy = self.energyLayers[i][j]
+                    if k == nNewSpots[0]:
+                        self.spotNewID += nNewSpots[1] * [accumulatedSpots]
+                        if nNewSpots[1] > 0:
+                            accumulatedSpots += 1
+                            self.spotsGrouped.append(spot)
+                    else:
+                        self.spotNewID += groupSpotsby * [accumulatedSpots]
+                        self.spotsGrouped.append(spot)
+                        accumulatedSpots += 1
+                if nNewSpots[1] > 0:
+                    nNewSpotsInLayer.append(nNewSpots[0] + 1)
+                else:
+                    nNewSpotsInLayer.append(nNewSpots[0])
+                accumulatedLayers += 1
+        self.nSpotsGrouped = accumulatedSpots
+        self.xGrouped = np.zeros(self.nSpotsGrouped)
+        logger.info("New number of spots = ", self.nSpotsGrouped)
+        # New structure:
+        accumulatedLayers = 0
+        accumulatedSpots = 0
+        self.layersGrouped = []
+        self.beamsGrouped = []
+        # BEAMS
+        for i in range(self.nBeams):
+            b = PlanIonBeam()
+            b.id = i
+            # LAYERS
+            for j in range(self.nLayersInBeam[i]):
+                el = PlanIonLayer()
+                el.id = accumulatedLayers
+                el.beamID = i
+                el.nominalEnergy = self.energyLayers[i][j]
+                # SPOTS
+                for k in range(nNewSpotsInLayer[accumulatedLayers]):
+                    el._spotIndices.append(accumulatedSpots)
+                    el._spots.append(self.spotsGrouped[accumulatedSpots])
+                    accumulatedSpots += 1
+                self.layersGrouped.append(el)
+                b._layerIndices.append(el.id)
+                b._layers.append(el)
+                accumulatedLayers += 1
+            self.beamsGrouped.append(b)
+        logger.info("accumulated spots = ", accumulatedSpots)
+        # BEAMLET
+        # Load beamlet matrix
+        matrix_coo = sp.coo_matrix(self.beamletMatrix)
+        beamletsGrouped = [matrix_coo.row, [], matrix_coo.data]
+        for i in range(len(beamletsGrouped[0])):
+            spot_id = self.spotNewID[matrix_coo.col[i]]
+            # minidose is tricky
+            beamletsGrouped[1].append(spot_id)
+        logger.info('new index in sparse matrix')
+        # get index of elements with same voxel_id and spot_id
+        zipList = list(zip(matrix_coo.row, beamletsGrouped[1]))
+        idx_duplicates = list(pd.DataFrame(zipList).groupby([0, 1], axis=0).indices.values())
+        logger.info('find index of duplicates')
+        # merge dose corresponding to same new spot id
+        for elem in idx_duplicates:
+            minidose = 0
+            for idx in elem:
+                minidose += beamletsGrouped[2][idx]
+            for idx in elem:
+                beamletsGrouped[2][idx] = minidose
+        logger.info('add dose corresponding to same new spot id')
+        # to remove duplicated from list and reduce beamlet size
+        res = list(set(list(zip(beamletsGrouped[0], beamletsGrouped[1], beamletsGrouped[2]))))
+        logger.info('remove duplicated')
+        # unzip result (use zip(*iterable) ?)
+        beamletsGrouped = [[i for i, j, k in res], [j for i, j, k in res], [k for i, j, k in res]]
+        logger.info('unzip beamlets')
+        # create final sparse matrix
+        self.sparseMatrixGrouped = sp.csc_matrix((beamletsGrouped[2], (beamletsGrouped[0], beamletsGrouped[1])),
+                                                 shape=(self.beamletMatrix.get_shape()[0], self.nSpotsGrouped))
+        logger.info('convert to sparse matrix')
+
+    def ungroupSol(self):
+        for i in range(self.nSpots):
+            idx = self.spotNewID[i]
+            self.x[i] = self.xGrouped[idx]
+
+    def groupSol(self):
+        # u, idx_repeated = np.unique(self.spot_new_id, return_index=True)
+        idx_repeated = pd.DataFrame(self.spotNewID).groupby([0]).indices
+        for i, itm in enumerate(idx_repeated.values()):
+            self.xGrouped[i] = self.x[itm[0]]
 
 
 def getEnergyWeights(energyList):

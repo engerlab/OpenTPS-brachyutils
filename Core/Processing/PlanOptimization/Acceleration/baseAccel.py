@@ -1,3 +1,5 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import logging
 
 logger = logging.getLogger(__name__)
@@ -73,6 +75,7 @@ class Dummy(Accel):
     """
 
     def _pre(self, functions, x0):
+        logger.info('dummy accel')
         pass
 
     def _update_step(self, solver, objective, niter):

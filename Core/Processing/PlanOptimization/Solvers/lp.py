@@ -1,9 +1,4 @@
-import time
-
-from Core.Processing.PlanOptimization.Solvers.lp import LP
-
 import logging
-import json
 
 logger = logging.getLogger(__name__)
 try:
@@ -13,126 +8,44 @@ except ModuleNotFoundError:
     logger.info('No module Gurobi found\n!Licence required!\nGet free Academic license on '
                 'https://www.gurobi.com/academia/academic-program-and-licenses/ ')
 import numpy as np
+import time
 from random import choice
+from Core.Data.Plan.rtPlan import RTPlan
+from Core.Processing.PlanOptimization.tools import WeightStructure
 
 
-class MIP(LP):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+class LP:
+    def __init__(self, plan: RTPlan, **kwargs):
+        self.plan = plan
+        self.model = None
+        self.solStruct = WeightStructure(plan)
+        self.xVars = None
+
         params = kwargs
-        # constraints
-        self.maxSwitchUp = params.get('max_switch_ups', -1)
-        # objectives
-        self.noELCost = params.get('EL_cost', 'nocost') == 'nocost'
-        self.machine = params.get('EL_cost', 'nocost') == "machine"
-        self.timeWeight = params.get('ES_up_weight', -1)
+        # global weight for dose fidelity term
+        self.fidWeight = params.get('Fid_weight', 1)
+        # LNS
+        self.LNSNIter = params.get('LNS_n_iter', 0)
+        self.LNSPercentLayers = params.get('LNS_percent_layers', -1)
+        self.completeAfterLNS = params.get('complete_after_LNS', self.LNSNIter < 1)
+        self.LNSPercentLayersInc = params.get('LNS_percent_layers_inc', 0)
+        # Spot grouping
+        self.groupSpotsInit = params.get('group_spots_init', 0)
+        self.groupSpotsIter = params.get('group_spots_iter', 0)
+        self.completeAfterGroup = params.get('complete_after_group', self.groupSpotsIter < 1)
+        self.groupSpots = self.groupSpotsInit > 0
 
+        self.M = params.get('max_spot_MU', 20)
+        self.timeLimit = params.get('time_limit', 300)
 
-        if self.noELCost: print("Warning: EL switch costs are taken into account")
+        assert self.LNSNIter == 0 or self.LNSPercentLayers > 0, ""
+        if self.groupSpotsIter > 0:
+            assert self.groupSpotsInit % self.groupSpotsIter == 0, "If you want to use spot grouping method, you must " \
+                                                                   "provide values where group_spots_init % " \
+                                                                   "group_spots_iter == 0 "
 
-    def createMIPModel(self):
-        self.model = super().createModel()
-        # Energy sequencing
-        # Define the digraph for the EL path
-        sourceID = self.solStruct.nLayers
-        sinkID = self.solStruct.nLayers + 1
-        # ESCost[i][j] = cost of switch from EL i to EL j ; cost = -1 if the arc (ij) is not allowed (e.g. i and j on the same beam)
-        ESCost = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2)) * (-1)
-        for el1 in self.plan.layers:
-            ESCost[sourceID][el1.id] = 0.0
-            ESCost[el1.id][sinkID] = 0.0
-            for el2 in self.plan.layers:
-                if el2.beamID <= el1.beamID: continue
-                # arc with depth > 5 not allowed
-                # if el2.beam_id - el1.beam_id > 5: continue
-                if self.machine:
-                    if el1.nominalEnergy < el2.nominalEnergy:
-                        ESCost[el1.id][el2.id] = 6.5
-                    elif el1.nominalEnergy > el2.nominalEnergy:
-                        ESCost[el1.id][el2.id] = 1.6
-                    elif el1.nominalEnergy == el2.nominalEnergy:
-                        ESCost[el1.id][el2.id] = 1.2
-                elif self.noELCost:
-                    ESCost[el1.id][el2.id] = 0.0
-                else:
-                    ESCost[el1.id][el2.id] = 1.0 * (el1.nominalEnergy < el2.nominalEnergy)
-                assert ESCost[el1.id][el2.id] == -1 or ESCost[el1.id][el2.id] >= 0, ""
-
-                # Linear model
-                eRaw = []
-                eID = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2), dtype=np.int) * (-1)
-                for i in range(len(ESCost)):
-                    for j in range(len(ESCost[i])):
-                        if ESCost[i][j] >= 0:
-                            assert i == sourceID or j == sinkID or self.plan.layers[i].beamID < self.plan.layers[
-                                j].beamID, "{},{}".format(i, j)
-                            eRaw.append(self.model.addVar(lb=0.0, ub=1.0, obj=0.0, vtype=GRB.BINARY,
-                                                          name="e_" + str(i) + "_" + str(j)))
-                            eID[i][j] = len(eRaw) - 1
-                        else:
-                            assert ESCost[i][j] == -1, "{}, {}: {}".format(i, j, ESCost[i][j])
-            # Flow
-            outgoingSource = gp.LinExpr()
-            incomingSink = gp.LinExpr()
-            for i in range(len(ESCost)):
-                if eID[sourceID][i] >= 0:
-                    # outgoing_source += e_raw_matrix[eID[sourceID][i]]
-                    outgoingSource.add(eRaw[eID[sourceID][i]])
-                if eID[i][sinkID] >= 0:
-                    incomingSink.add(eRaw[eID[i][sinkID]])
-                if i == sourceID or i == sinkID: continue
-                incoming = gp.LinExpr()
-                outgoing = gp.LinExpr()
-                for j in range(len(ESCost[i])):
-                    if eID[j][i] >= 0:
-                        assert j != sinkID, ''
-                        assert j == sourceID or self.plan.layers[j].beamID < self.plan.layers[
-                            i].beamID, "{}, {}".format(j, i)
-                        assert ESCost[j][i] >= 0 and j != sinkID, "{} , {}: {}".format(j, i, ESCost[j][i])
-
-                        incoming.add(eRaw[eID[j][i]])
-                    else:
-                        assert ESCost[j][i] == -1, "{}, {} : {}".format(j, i, ESCost[j][i])
-
-                    if eID[i][j] >= 0:
-                        assert j != sourceID, ''
-                        assert j == sinkID or self.plan.layers[i].beamID < self.plan.layers[j].beamID, "{}, {}".format(
-                            i, j)
-                        assert ESCost[i][j] >= 0 and j != sourceID, "{} , {}: {}".format(i, j, ESCost[i][j])
-
-                        outgoing.add(eRaw[eID[i][j]])
-                    else:
-                        assert ESCost[i][j] == -1, "{}, {} : {}".format(i, j, ESCost[i][j])
-                self.model.addConstr(incoming == outgoing, 'EL_flow_' + str(i))
-            self.model.addConstr(outgoingSource == 1, 'EL_source')
-
-            # ES path cost
-            pathCost = gp.LinExpr()
-            for i in range(len(ESCost)):
-                for j in range(len(ESCost[i])):
-                    if eID[i][j] >= 0:
-                        assert ESCost[i][j] >= 0, "{}, {} : {}".format(i, j, ESCost[i][j])
-                        assert eID[i][j] < len(eRaw), "{} geq {}".format(eID[i][j], len(eRaw))
-                        pathCost.add(eRaw[eID[i][j]] * ESCost[i][j])
-
-            # Link x with e
-            for i in range(len(ESCost)):
-                if i == sourceID or i == sinkID: continue
-                incoming = gp.quicksum(eRaw[eID[j][i]] for j in range(len(ESCost[i])) if eID[j][i] >= 0)
-                if self.groupSpots:
-                    for spot in self.solStruct.layersGrouped[i].spots:
-                        self.model.addConstr(self.xVars[spot.id] <= incoming * self.M,
-                                             "x_" + str(spot.id) + "_leq_e_" + str(i) + "xM")
-                else:
-                    for spot in self.plan.layers[i].spots:
-                        self.model.addConstr(self.xVars[spot.id] <= incoming * self.M,
-                                             "x_" + str(spot.id) + "_leq_e_" + str(i) + "xM")
-
-            if self.maxSwitchUp >= 0:
-                self.model.addConstr(pathCost <= self.maxSwitchUp, "ES_fixed_switch_ups")
-            else:
-                # self.model.setObjectiveN(path_cost, 1, 1, self.ESWeight, 0, 0, "minimize EL path cost")
-                self.model.setObjectiveN(pathCost, 1, 0, self.timeWeight, 0, 0, "EL path cost")
+        self.inputf = params.get('inputf', None)
+        self.solFile = params.get('solFile', None)
 
     def solve(self, func, x0, **kwargs):
         startTime = time.time()
@@ -155,7 +68,7 @@ class MIP(LP):
                 x = self.solStruct.x
                 nSpots = self.solStruct.nSpots
 
-            self.createMIPModel()
+            self.createModel()
             if n == 0:
                 self.model.setParam('TimeLimit', self.timeLimit)
             else:
@@ -251,30 +164,30 @@ class MIP(LP):
                             print("Time limit reached !")
 
                         print('Obj : {}'.format(self.model.objVal))
-                        for o, objective in enumerate(self.plan.objectives.list):
-                            if objective.Type == "Soft":
+                        '''for o, objective in enumerate(self.plan.objectives.list):
+                            if objective.kind == "Soft":
                                 names_to_retrieve = []
-                                M = len(np.nonzero(objective.Mask_vec)[0].tolist())
+                                M = len(np.nonzero(objective.maskVec)[0].tolist())
                                 if objective.Metric == "Dmax" and objective.Condition == "<":
-                                    name = objective.ROIName.replace(" ", "_") + '_maxObj'
+                                    name = objective.roiName.replace(" ", "_") + '_maxObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
                                 elif objective.Metric == "Dmin" and objective.Condition == ">":
-                                    name = objective.ROIName.replace(" ", "_") + '_minObj'
+                                    name = objective.roiName.replace(" ", "_") + '_minObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [self.model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.Weight / M))
                                 elif objective.Metric == "Dmean" and objective.Condition == "<":
-                                    name = objective.ROIName.replace(" ", "_") + '_meanObj[0]'
+                                    name = objective.roiName.replace(" ", "_") + '_meanObj[0]'
                                     var_obj = self.model.getVarByName(name).X
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
-                                            o, name, var_obj, var_obj * objective.Weight))
+                                            o, name, var_obj, var_obj * objective.Weight))'''
 
                         if self.solFile is not None:
                             self.model.write(self.solFile + str(i) + '_group_' + str(int(n)) + '.sol')
@@ -298,7 +211,7 @@ class MIP(LP):
                                 x_ungrouped[s] = self.solStruct.xGrouped[idx]
                             self.solStruct.loadSolution(x_ungrouped)
 
-                        result = {'sol': self.solStruct.x, 'crit': status, 'niter': None,
+                        result = {'sol': self.solStruct.x, 'crit': status, 'niter': 1,
                                   'time': time.time() - startTime, 'objective': self.model.objVal}
             except gp.GurobiError as e:
                 print('Error code ' + str(e.errno) + ': ' + str(e))
@@ -307,3 +220,56 @@ class MIP(LP):
                 print('Encountered an attribute error')
             g += 1
             return result
+
+    def createModel(self):
+        self.model = gp.Model("LP")
+        self.model.ModelSense = GRB.MINIMIZE
+        if self.groupSpots:
+            logger.info("number of spots grouped = ", self.solStruct.nSpotsGrouped)
+            self.xVars = self.model.addMVar(shape=(int(self.solStruct.nSpotsGrouped),), lb=0.0, ub=self.M,
+                                            vtype=GRB.CONTINUOUS,
+                                            name='x')
+        else:
+            self.xVars = self.model.addMVar(shape=(int(self.plan.numberOfSpots),), lb=0.0, ub=self.M, vtype=GRB.CONTINUOUS,
+                                            name='x')
+
+        if self.groupSpots:
+            N = self.solStruct.nSpotsGrouped
+        else:
+            N = self.plan.numberOfSpots
+        fidelity = self.model.addMVar(1, name='fidelity')
+        for objective in self.plan.objectives.fidObjList:
+            M = len(np.nonzero(objective.maskVec)[0].tolist())
+            print("ROI Name: {}, NNZ voxels= {}".format(objective.roiName, M))
+            nnz = np.nonzero(objective.maskVec)[0].tolist()
+
+            if self.groupSpots:
+                beamlets = self.solStruct.sparseMatrixGrouped[nnz,]
+            else:
+                beamlets = self.solStruct.beamletMatrix[nnz,]
+            dose = beamlets @ self.xVars
+            p = np.ones((len(nnz),)) * objective.limitValue
+            if objective.metric == "Dmax" and objective.condition == "<":
+                if objective.kind == "Soft":
+                    vmax = self.model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_maxObj')
+                    self.model.addConstr((vmax >= dose - p), name=objective.roiName.replace(" ", "_") + "_maxConstr")
+                    fidelity += vmax.sum() * (objective.weight / M)
+                else:
+                    self.model.addConstr(dose <= p, name=objective.roiName.replace(" ", "_") + "_maxConstr")
+
+            elif objective.metric == "Dmin" and objective.condition == ">":
+                if objective.kind == "Soft":
+                    vmin = self.model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_minObj')
+                    self.model.addConstr((vmin >= p - dose), name=objective.roiName.replace(" ", "_") + "_minConstr")
+                    fidelity += vmin.sum() * (objective.weight / M)
+                else:
+                    self.model.addConstr(dose >= p, name=objective.roiName.replace(" ", "_") + "_minConstr")
+            elif objective.metric == "Dmean" and objective.condition == "<":
+                vmean = self.model.addMVar((1,), lb=0, name=objective.roiName.replace(" ", "_") + '_meanObj')
+                aux = self.model.addMVar(M, name=objective.roiName.replace(" ", "_") + '_aux')
+                self.model.addConstr(aux == dose, name=objective.roiName.replace(" ", "_") + "_auxConstr")
+                self.model.addConstr((vmean >= (aux.sum() / M) - objective.limitValue),
+                                     name=objective.roiName.replace(" ", "_") + "_meanConstr")
+                fidelity += vmean * objective.weight
+
+            self.model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")

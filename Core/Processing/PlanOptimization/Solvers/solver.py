@@ -1,3 +1,5 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import logging
 import time
 
@@ -8,16 +10,11 @@ import Core.Processing.PlanOptimization.Acceleration.baseAccel as baseAccel
 logger = logging.getLogger(__name__)
 
 
-class ConvexSolver:
-    """
-    Solver object interface.
-    The instanced objects are meant to be passed
-    to the "pyOpti.solvers.solve` solving function
-    """
+class ConvexSolver(object):
 
-    def __init__(self, step=1., accel=None):
-        self.nonSmoothFuns = None
-        self.smoothFuns = None
+    def __init__(self, step=0.1, accel=None):
+        self.nonSmoothFuns = []
+        self.smoothFuns = []
         self.sol = None
         if step < 0:
             logger.error('Step should be a positive number.')
@@ -135,8 +132,8 @@ class ConvexSolver:
         """
         Solver-specific pre-processing;
         functions split in two lists:
-        - self.smooth_funs : functions involved in gradient steps
-        - self.non_smooth_funs : functions involved in proximal steps
+        - self.smoothFuns : functions involved in gradient steps
+        - self.nonSmoothFuns : functions involved in proximal steps
         """
         self.sol = np.asarray(x0)
         self.smoothFuns = []
@@ -171,3 +168,15 @@ class ConvexSolver:
 
     def _post(self):
         logging.error("Class user should define this method.")
+
+    def objective(self, x):
+        """
+        Return the objective function at x.
+        Necessitate `solver._pre(...)` to be run first.
+        """
+        return self._objective(x)
+
+    def _objective(self, x):
+        objSmooth = [f.eval(x) for f in self.smoothFuns]
+        objNonsmooth = [f.eval(x) for f in self.nonSmoothFuns]
+        return objNonsmooth + objSmooth

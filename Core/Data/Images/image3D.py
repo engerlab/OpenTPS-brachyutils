@@ -119,6 +119,10 @@ class Image3D(PatientData):
         else:
             return False
 
+    @property
+    def numberOfVoxels(self):
+        return self.gridSize[0] * self.gridSize[1] * self.gridSize[2]
+
     def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
         """Resample image according to new voxel grid using linear interpolation.
 

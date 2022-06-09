@@ -8,7 +8,7 @@ import logging
 try:
     import cupy
     import cupyx
-    cupy.cuda.Device(0).use()
+    # cupy.cuda.Device(0).use()
 except:
     print('cupy not found.')
 
