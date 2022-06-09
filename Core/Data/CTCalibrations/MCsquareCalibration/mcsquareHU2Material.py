@@ -1,11 +1,11 @@
 import logging
 import os
-import shutil
 from distutils.dir_util import copy_tree
 from glob import glob
-from typing import Sequence
+from typing import Sequence, Union
 
 import numpy as np
+from numpy.matlib import repmat
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMolecule import MCsquareMolecule
@@ -19,10 +19,20 @@ class MCsquareHU2Material:
         self.__materials = piecewiseTable[1]
 
         if not (fromFile[0] is None):
-            self.__load(fromFile[0], materialsPath=fromFile[1])
+            self._initializeFromFiles(fromFile[0], materialsPath=fromFile[1])
 
     def __str__(self):
         return self.mcsquareFormatted()
+
+    @classmethod
+    def fromFiles(cls, huMaterialFile, materialsPath='default'):
+        newObj = cls()
+        newObj._initializeFromFiles(huMaterialFile, materialsPath)
+
+        return newObj
+
+    def _initializeFromFiles(self, huMaterialFile, materialsPath='default'):
+        self.__load(huMaterialFile, materialsPath=materialsPath)
 
     def mcsquareFormatted(self):
         mats = self._allMaterialsandElements()
@@ -34,6 +44,78 @@ class MCsquareHU2Material:
             s += self.__materials[i].mcsquareFormatted(matNames) + '\n'
 
         return s
+
+    def convertHU2SP(self, hu:Union[float, np.ndarray], energy:float = 100.) ->  Union[float, np.ndarray]:
+        huIsScalar = not isinstance(hu, np.ndarray)
+
+        if huIsScalar:
+            return self._convert2DHU2SP(np.array([hu]), energy=energy)[0]
+        else:
+            if len(hu.shape) == 2:
+                return self._convert2DHU2SP(hu, energy=energy)
+            elif len(hu.shape) == 3:
+                rsps = np.zeros(hu.shape)
+                for i in range(hu.shape[2]):
+                    rsps[:, :, i] = self._convert2DHU2SP(hu[:, :, i], energy=energy)
+                return rsps
+            else:
+                return np.vectorize(lambda h: self.convertHU2SP(h, energy=energy))(hu)
+
+    def _convert2DHU2SP(self, hu:np.ndarray, energy:float=100.) -> np.ndarray:
+        huShape = hu.shape
+
+        hu = hu.flatten()
+        huLen = max(hu.shape)
+
+        spRef = np.array([material.stoppingPower(energy) for material in self.__materials])
+        huRef = np.array(self.__hu)
+        huRefLen = max(spRef.shape)
+
+        referenceHUs = repmat(huRef.reshape(huRefLen, 1), 1, huLen)
+        queryHUs = repmat(hu.reshape(1, huLen), huRefLen, 1)
+
+        diff = referenceHUs - queryHUs
+        diff[diff>0] = -9999
+        indexOfClosestSP = (np.abs(diff)).argmin(axis=0)
+
+        sp = spRef[indexOfClosestSP]
+
+        return np.reshape(sp, huShape)
+
+    def convertSP2HU(self, sp:Union[float, np.ndarray], energy:float = 100.) ->  Union[float, np.ndarray]:
+        spIsScalar = not isinstance(sp, np.ndarray)
+
+        if spIsScalar:
+            return self._convert2DSP2HU(np.array([sp]), energy=energy)[0]
+        else:
+            if len(sp.shape) == 2:
+                return self._convert2DSP2HU(sp, energy=energy)
+            elif len(sp.shape) == 3:
+                rsps = np.zeros(sp.shape)
+                for i in range(sp.shape[2]):
+                    rsps[:, :, i] = self._convert2DSP2HU(sp[:, :, i], energy=energy)
+                return rsps
+            else:
+                return np.vectorize(lambda s: self.convertHU2SP(s, energy=energy))(sp)
+
+    def _convert2DSP2HU(self, sp:np.ndarray, energy:float=100.) -> np.ndarray:
+        spShape = sp.shape
+
+        sp = sp.flatten()
+        spLen = max(sp.shape)
+
+        spRef = np.array([material.stoppingPower(energy) for material in self.__materials])
+        spRefLen = max(spRef.shape)
+
+        referenceSPs = repmat(spRef.reshape(spRefLen, 1), 1, spLen)
+        querySPs = repmat(sp.reshape(1, spLen), spRefLen, 1)
+
+        indexOfClosestSP = (np.abs(referenceSPs - querySPs)).argmin(axis=0)
+
+        refHUs = np.array(self.__hu)
+        hu = refHUs[indexOfClosestSP]
+
+        return np.reshape(hu, spShape)
 
     def __load(self, materialFile, materialsPath='default'):
         self.__hu = []
