@@ -3,6 +3,7 @@ from typing import Sequence
 
 import numpy as np
 import pydicom
+import logging
 
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images.ctImage import CTImage
@@ -15,6 +16,8 @@ from Core.Data.Plan.planIonLayer import PlanIonLayer
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Processing.RangeEnergy import rangeToEnergy
+
+logger = logging.getLogger(__name__)
 
 
 class PlanStructure:
@@ -34,7 +37,6 @@ class PlanStructure:
         self.accumulatedLayer = 0
         self.accumulatedSpot = 0
 
-
     def createPlan(self):
         from Core.Data.Plan.rtPlan import RTPlan
         plan = RTPlan()
@@ -50,26 +52,21 @@ class PlanStructure:
 
         roiDilated = ROIMask.fromImage3D(self.targetMask)
         roiDilated.dilate(radius=self.targetMargin)
-
         rspImage = RSPImage.fromCT(self.ct, self.calibration, energy=100.)
 
         # initialize each beam
         for b in range(len(self.gantryAngles)):
-            plan.appendBeam(PlanIonBeam())
-            plan.beams[b].name = self.beamNames[b]
-            plan.beams[b].gantryAngle = self.gantryAngles[b]
-            plan.beams[b].couchAngle = self.couchAngles[b]
-            plan.beams[b].isocenterPosition = self.targetMask.centerOfMass
-            plan.beams[b].id = b
-
-            self._intializeBeam(plan, plan.beams[b], rspImage, roiDilated, self.spotSpacing, self.layerSpacing)
+            beam = PlanIonBeam()
+            self._intializeBeam(b, plan, beam, rspImage, roiDilated)
 
         return plan
 
-
-    def _intializeBeam(self, plan, beam: PlanIonBeam, rspImage: RSPImage, targetROI: ROIMask, spotSpacing: float,
-                       layerSpacing: float):
+    def _intializeBeam(self, bID, plan, beam: PlanIonBeam, rspImage: RSPImage, targetROI: ROIMask):
+        beam.name = self.beamNames[bID]
+        beam.gantryAngle = self.gantryAngles[bID]
+        beam.couchAngle = self.couchAngles[bID]
         beam.isocenterPosition = targetROI.centerOfMass
+        beam.id = bID
 
         cumRSP = rspImage.computeCumulativeWEPL(beam)
         imageArray = np.array(cumRSP.imageArray)
@@ -79,7 +76,7 @@ class PlanStructure:
         maxWEPL = cumRSP.imageArray.max()
         minWEPL = cumRSP.imageArray[cumRSP.imageArray > 0.].min()
 
-        rangeLayers = np.arange(minWEPL - layerSpacing, maxWEPL + layerSpacing, layerSpacing)
+        rangeLayers = np.arange(minWEPL - self.layerSpacing, maxWEPL + self.layerSpacing, self.layerSpacing)
         energyLayers = rangeToEnergy(rangeLayers)
 
         targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, fillValue=0., cropROI=targetROI,
@@ -89,7 +86,7 @@ class PlanStructure:
                                                       cropDim1=True, cropDim2=False)
         weplMeV = rangeToEnergy(cumRSPBEV.imageArray)
 
-        spotGridX, spotGridY = self._defineHexagSpotGridAroundIsocenter(spotSpacing, cumRSPBEV, isocenterBEV)
+        spotGridX, spotGridY = self._defineHexagSpotGridAroundIsocenter(cumRSPBEV, isocenterBEV)
         coordGridX, coordGridY = self._pixelCoordinatedWrtIsocenter(cumRSPBEV, isocenterBEV)
 
         spotGridX = spotGridX.flatten()
@@ -134,17 +131,21 @@ class PlanStructure:
                 spot.beamID = beam.id
                 spot.layerID = layer.id
                 spot.energy = layer.nominalEnergy
-                layer.appendSpot(spot, spotPos[0], spotPos[1], 1.)
+                layer.addToSpot(spotPos[0], spotPos[1], 1.)
+                layer._spots.append(spot)
+                layer._spotIndices.append(spot.id)
+                plan.appendSpotAccum(spot)
                 self.accumulatedSpot += 1
             beam.appendLayer(layer)
-            plan.appendLayer(layer)
+            plan.appendLayerAccum(layer)
             self.accumulatedLayer += 1
+        plan.appendBeam(beam)
 
-    def _defineHexagSpotGridAroundIsocenter(self, spotSpacing: float, imageBEV: Image3D, isocenterBEV: Sequence[float]):
+    def _defineHexagSpotGridAroundIsocenter(self, imageBEV: Image3D, isocenterBEV: Sequence[float]):
         origin = imageBEV.origin
         end = imageBEV.origin + imageBEV.spacing * imageBEV.imageArray.shape
 
-        spotGridSpacing = [spotSpacing / 2., spotSpacing * cos(pi / 6.)]
+        spotGridSpacing = [self.spotSpacing / 2., self.spotSpacing * cos(pi / 6.)]
 
         xFromIsoToOrigin = np.arange(isocenterBEV[0], origin[0], -spotGridSpacing[0])
         xFromOriginToIso = np.flipud(xFromIsoToOrigin)
@@ -187,4 +188,3 @@ class PlanStructure:
         coordGridY = coordGridY - isocenterBEV[1]
 
         return coordGridX, coordGridY
-

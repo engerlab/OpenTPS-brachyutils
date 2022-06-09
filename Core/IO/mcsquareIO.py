@@ -19,6 +19,7 @@ from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
+from Core.Data.Plan.objectivesList import ObjectivesList
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
@@ -26,7 +27,7 @@ from Core.IO.mhdIO import exportImageMHD, importImageMHD
 from Core.Processing.ImageProcessing import crop3D
 
 
-def readBeamlets(file_path, roi:Optional[ROIMask]=None):
+def readBeamlets(file_path, roi: Optional[ROIMask] = None):
     if (not file_path.endswith('.txt')):
         raise NameError('File ', file_path, ' is not a valid sparse matrix header')
 
@@ -39,7 +40,7 @@ def readBeamlets(file_path, roi:Optional[ROIMask]=None):
 
     # Read sparse beamlets binary file
     print('Read binary file: ', file_path)
-    sparseBeamlets =  _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"], roi)
+    sparseBeamlets = _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"], roi)
 
     beamletDose = SparseBeamlets()
     beamletDose.setUnitaryBeamlets(sparseBeamlets)
@@ -49,6 +50,7 @@ def readBeamlets(file_path, roi:Optional[ROIMask]=None):
     beamletDose.doseGridSize = header["ImageSize"]
 
     return beamletDose
+
 
 def _read_sparse_header(file_path):
     header = {}
@@ -81,7 +83,8 @@ def _read_sparse_header(file_path):
 
     return header
 
-def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=None) -> csc_matrix:
+
+def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] = None) -> csc_matrix:
     BeamletMatrix = []
 
     fid = open(Binary_file, 'rb')
@@ -93,6 +96,10 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=No
     data_id = 0
     last_stacked_col = 0
     num_unstacked_col = 1
+
+    print("roi shape = ", roi.imageArray.shape)
+    print('nspots =', NbrSpots)
+    print('nvox =', NbrVoxels)
 
     if not (roi is None):
         roiData = roi.imageArray
@@ -152,11 +159,11 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=No
 
                 break
 
-
-
     # stack last cols
     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
                       shape=(NbrVoxels, num_unstacked_col - 1), dtype=np.float32)
+    print("A shape = ", A.shape)
+    print("BL shape = ", beamlet_data.shape)
     BeamletMatrix = sp.hstack([BeamletMatrix, A])
 
     print('Beamlets imported in ' + str(time.time() - time_start) + ' sec')
@@ -196,6 +203,7 @@ def readDose(filePath):
 
     return doseImage
 
+
 def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
@@ -208,9 +216,9 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
         image.imageArray[contour_mask.imageArray.astype(bool) == False] = -1024
 
     # TODO: cropCTContour:
-    #ctCropped = CTImage.fromImage3D(ct)
-    #box = crop3D.getBoxAroundROI(cropCTContour)
-    #crop3D.crop3DDataAroundBox(ctCropped, box)
+    # ctCropped = CTImage.fromImage3D(ct)
+    # box = crop3D.getBoxAroundROI(cropCTContour)
+    # crop3D.crop3DDataAroundBox(ctCropped, box)
 
     image.imageArray = np.flip(image.imageArray, 0)
     image.imageArray = np.flip(image.imageArray, 1)
@@ -218,7 +226,7 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     exportImageMHD(filtePath, image)
 
 
-def writeCTCalibrationAndBDL(calibration:AbstractCTCalibration, scannerPath, materialPath, bdl:BDL, bdlFileName):
+def writeCTCalibrationAndBDL(calibration: AbstractCTCalibration, scannerPath, materialPath, bdl: BDL, bdlFileName):
     _writeCTCalibration(calibration, scannerPath, materialPath)
 
     materials = MCsquareMaterial.getMaterialList(materialPath)
@@ -227,13 +235,14 @@ def writeCTCalibrationAndBDL(calibration:AbstractCTCalibration, scannerPath, mat
     with open(os.path.join(materialPath, 'list.dat'), "a") as listFile:
         for rangeShifter in bdl.RangeShifters:
             rangeShifter.material.write(materialPath, matNames)
-            listFile.write(str(len(materials)+1) + ' ' + rangeShifter.material.name)
+            listFile.write(str(len(materials) + 1) + ' ' + rangeShifter.material.name)
 
     materials = MCsquareMaterial.getMaterialList(materialPath)
 
     _writeBDL(bdl, bdlFileName, materials)
 
-def _writeCTCalibration(calibration:AbstractCTCalibration, scannerPath, materialPath):
+
+def _writeCTCalibration(calibration: AbstractCTCalibration, scannerPath, materialPath):
     if not isinstance(calibration, MCsquareCTCalibration):
         calibration = MCsquareCTCalibration.fromCTCalibration(calibration)
 
@@ -364,7 +373,7 @@ def _writeBDL(bdl: BDL, fileName, materials):
         f.write(bdl.mcsquareFormatted(materials))
 
 
-def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
+def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
     DestFolder, DestFile = os.path.split(file_path)
     FileName, FileExtension = os.path.splitext(DestFile)
 
@@ -401,9 +410,10 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
         fid.write("###PatientSupportAngle\n")
         fid.write("%f\n" % beam.patientSupportAngle)
         fid.write("###IsocenterPosition\n")
-        fid.write("%f\t %f\t %f\n" % _dicomIsocenterToMCsquare(beam.isocenterPosition, CT.origin, CT.spacing, CT.gridSize))
+        fid.write(
+            "%f\t %f\t %f\n" % _dicomIsocenterToMCsquare(beam.isocenterPosition, CT.origin, CT.spacing, CT.gridSize))
 
-        if not(beam.rangeShifter is None):
+        if not (beam.rangeShifter is None):
             if beam.rangeShifter.ID not in [rs.ID for rs in bdl.RangeShifters]:
                 raise Exception('Range shifter in plan not in BDL')
             else:
@@ -428,7 +438,7 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
             fid.write("####Energy (MeV)\n")
             fid.write("%f\n" % layer.nominalEnergy)
 
-            if not(beam.rangeShifter is None) and (beam.rangeShifter.type == "binary"):
+            if not (beam.rangeShifter is None) and (beam.rangeShifter.type == "binary"):
                 fid.write("####RangeShifterSetting\n")
                 fid.write("%s\n" % layer.rangeShifterSettings.rangeShifterSetting)
                 fid.write("####IsocenterToRangeShifterDistance\n")
@@ -440,8 +450,10 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
                     ID = RS_index.index(beam.rangeShifter.ID)
                     fid.write("%f\n" % bdl.RangeShifters[ID].WET)
                 else:
-                    print('layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness',layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
-                    print('type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)',type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness))
+                    print('layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness',
+                          layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
+                    print('type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)',
+                          type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness))
                     fid.write("%f\n" % layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
 
             fid.write("####NbOfScannedSpots\n")
@@ -453,8 +465,32 @@ def writePlan(plan: RTPlan, file_path, CT:CTImage, bdl:BDL):
 
     fid.close()
 
+
+def writeObjectives(objectives: ObjectivesList, file_path):
+    targetName = objectives.targetName.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
+
+    print("Write plan objectives: " + file_path)
+    fid = open(file_path, 'w');
+    fid.write("# List of objectives for treatment plan optimization\n\n")
+    fid.write("Target_ROIName:\n" + targetName + "\n\n")
+    fid.write("Dose_prescription:\n" + str(objectives.targetPrescription) + "\n\n")
+    fid.write("Number_of_objectives:\n" + str(len(objectives.fidObjList)) + "\n\n")
+
+    for objective in objectives.fidObjList:
+        contourName = objective.roiName.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
+
+        fid.write("Objective_parameters:\n")
+        fid.write("ROIName = " + contourName + "\n")
+        fid.write("Weight = " + str(objective.weight) + "\n")
+        fid.write(objective.metric + " " + objective.condition + " " + str(objective.limitValue) + "\n")
+        fid.write("\n")
+
+    fid.close()
+
+
 def _dicomIsocenterToMCsquare(isocenter, ctImagePositionPatient, ctPixelSpacing, ctGridSize):
-    MCsquareIsocenter0 = isocenter[0] - ctImagePositionPatient[0] + ctPixelSpacing[0] / 2  # change coordinates (origin is now in the corner of the image)
+    MCsquareIsocenter0 = isocenter[0] - ctImagePositionPatient[0] + ctPixelSpacing[
+        0] / 2  # change coordinates (origin is now in the corner of the image)
     MCsquareIsocenter1 = isocenter[1] - ctImagePositionPatient[1] + ctPixelSpacing[1] / 2
     MCsquareIsocenter2 = isocenter[2] - ctImagePositionPatient[2] + ctPixelSpacing[2] / 2
 
@@ -497,7 +533,6 @@ def writeBin(destFolder):
         destination_path = os.path.join(destFolder, "MCsquare_linux_sse4")
         shutil.copyfile(source_path, destination_path)
         shutil.copymode(source_path, destination_path)
-
 
         source_path = os.path.join(mcsquarePath, "MCsquare_opti")
         destination_path = os.path.join(destFolder, "MCsquare_opti")

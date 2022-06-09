@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class ObjectivesList():
+class ObjectivesList:
     def __init__(self):
         self.fidObjList = []
         self.exoticObjList = []
