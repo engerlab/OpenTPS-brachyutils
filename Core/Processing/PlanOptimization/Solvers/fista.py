@@ -1,148 +1,122 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
+
 import logging
 
-from Core.Processing.PlanOptimization.Acceleration.fistaAccel import Fista,FistaBacktracking
+import numpy as np
+
+from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaAccel, FistaBacktracking
 from Core.Processing.PlanOptimization.Solvers.solver import ConvexSolver
+from Core.Processing.PlanOptimization.Objectives.projections import PositiveProj
+
 logger = logging.getLogger(__name__)
 
 
-class FISTA():
-    def __init__(self):
-        self.solver = ""
-    def _pre(self):
+class FISTA(ConvexSolver):
+    def __init__(self, accel=FistaAccel(), indicator=None, lambda_=1, **kwargs):
+        super().__init__(accel=accel, **kwargs)
+        self.meth = ""
+        self.indicator = indicator
+        self.projection = PositiveProj()
+        self.lambda_ = lambda_
+        self.z = []
+
+    def _pre(self, functions, x0):
         if len(functions) == 2:
             fb0 = 'GRAD' in functions[0].cap(x0) and \
                   'PROX' in functions[1].cap(x0)
             fb1 = 'GRAD' in functions[1].cap(x0) and \
                   'PROX' in functions[0].cap(x0)
             if fb0 or fb1:
-                self.solver = ForwardBackward()  # Need one prox and 1 grad.
+                self.meth = "ForwardBackward"  # Need one prox and 1 grad.
+                logger.info('Forward-backward method')
+                if len(functions) != 2:
+                    logger.error('Forward-backward requires two convex functions.')
+
+                if 'PROX' in functions[0].cap(x0) and 'GRAD' in functions[1].cap(x0):
+                    # To work with dummy as proximal
+                    # self.smooth_funs.append(functions[0])
+                    # self.non_smooth_funs.append(functions[1])
+                    # Original config
+                    self.smoothFuns.append(functions[1])
+                    self.nonSmoothFuns.append(functions[0])
+                elif 'PROX' in functions[1].cap(x0) and 'GRAD' in functions[0].cap(x0):
+                    self.smoothFuns.append(functions[0])
+                    self.nonSmoothFuns.append(functions[1])
+                else:
+                    logger.error('Forward-backward requires a function to '
+                                 'implement prox() and the other grad().')
             else:
                 logger.error('No suitable solver for the given functions.')
         elif len(functions) > 2:
-            self.solver = GeneralizedForwardBackward()
+            self.meth = "GeneralizedForwardBackward"
+            if self.lambda_ <= 0 or self.lambda_ > 1:
+                logger.error('Lambda is bounded by 0 and 1.')
 
+            for f in functions:
 
-class ForwardBackward(ConvexSolver):
-    """
-    Forward-backward proximal splitting algorithm (ISTA and FISTA).
-    Can be used for problems composed of the sum of a
-    smooth and a non-smooth function.
-    For details about the algorithm, see A. Beck and M. Teboulle,
-    "A fast iterative shrinkage-thresholding algorithm for linear inverse problems",
-    SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.
-    """
+                if 'GRAD' in f.cap(x0):
+                    self.smoothFuns.append(f)
+                elif 'PROX' in f.cap(x0):
+                    self.nonSmoothFuns.append(f)
+                    self.z.append(np.array(x0, copy=True))
+                else:
+                    logger.error('Generalized forward-backward requires each '
+                                 'function to implement prox() or grad().')
 
-    def __init__(self, accel=Fista(), indicator=None, **kwargs):
-        super(ForwardBackward, self).__init__(accel=accel, **kwargs)
-        self.indicator = indicator
-        self.projection = proj_positive()
-
-    def _pre(self, functions, x0):
-
-        logger.info('Forward-backward method')
-
-        if len(functions) != 2:
-            logger.error('Forward-backward requires two convex functions.')
-
-        if 'PROX' in functions[0].cap(x0) and 'GRAD' in functions[1].cap(x0):
-            # To work with dummy as proximal
-            # self.smooth_funs.append(functions[0])
-            # self.non_smooth_funs.append(functions[1])
-            # Original config
-            self.smoothFuns.append(functions[1])
-            self.nonSmoothFuns.append(functions[0])
-        elif 'PROX' in functions[1].cap(x0) and 'GRAD' in functions[0].cap(x0):
-            self.smoothFuns.append(functions[0])
-            self.nonSmoothFuns.append(functions[1])
-        else:
-            logger.error('Forward-backward requires a function to '
-                         'implement prox() and the other grad().')
+            logger.info('Generalized forward-backward minimizing {} smooth '
+                        'functions and {} non-smooth functions.'.format(
+                len(self.smoothFuns), len(self.nonSmoothFuns)))
+            pass
 
     def _algo(self):
-        # Forward step
-        x_temp = self.sol - self.step * self.smoothFuns[0].grad(self.sol)
-        # Positive projection
-        x_temp_pos = self.projection.prox(x_temp, self.step)
-        # Backward step
-        x = self.nonSmoothFuns[0].prox(x_temp_pos, self.step)
-        # indicator step
-        if self.indicator is not None:
-            self.sol[:] = self.indicator._prox(x, self.smooth_funs[0].grad(x))
+        if self.meth == "ForwardBackward":
+            self.solveForwardBackward()
         else:
-            self.sol[:] = x
-        # self.sol[:] = x
-
-    def _post(self):
-        pass
-
-
-class GeneralizedForwardBackward(ConvexSolver):
-    """
-    Generalized forward-backward proximal splitting algorithm.
-    Can be used for problems composed of the sum of any number of
-    smooth and non-smooth functions.
-    For details about the algorithm, see H. Raguet,
-    "A Generalized Forward-Backward Splitting",
-    SIAM Journal on Imaging Sciences, vol. 6, no. 13, pp 1199-1226, 2013.
-    """
-
-    def __init__(self, accel=Fista(), lambda_=1, indicator=None, **kwargs):
-        super(GeneralizedForwardBackward, self).__init__(accel=accel, **kwargs)
-        self.lambda_ = lambda_
-        self.projection = proj_positive()
-        self.indicator = indicator
-
-    def _pre(self, functions, x0):
-
-        if self.lambda_ <= 0 or self.lambda_ > 1:
-            logger.error('Lambda is bounded by 0 and 1.')
-
-        self.z = []
-        for f in functions:
-
-            if 'GRAD' in f.cap(x0):
-                self.smooth_funs.append(f)
-            elif 'PROX' in f.cap(x0):
-                self.non_smooth_funs.append(f)
-                self.z.append(np.array(x0, copy=True))
-            else:
-                logger.error('Generalized forward-backward requires each '
-                             'function to implement prox() or grad().')
-
-        logger.info('Generalized forward-backward minimizing {} smooth '
-                    'functions and {} non-smooth functions.'.format(
-            len(self.smooth_funs), len(self.non_smooth_funs)))
-
-    def _algo(self):
-
-        # Smooth functions.
-        grad = np.zeros_like(self.sol)
-        for f in self.smooth_funs:
-            grad += f.grad(self.sol)
-
-        # Non-smooth functions.
-        if not self.non_smooth_funs:
-            self.sol[:] -= self.step * grad  # Reduces to gradient descent.
-
-        else:
-            '''sol = np.zeros(self.sol.shape)
-            for i, g in enumerate(self.non_smooth_funs):
-                tmp = 2 * self.sol - self.z[i] - self.step * grad
-                tmp[:] = g.prox(tmp, self.step * len(self.non_smooth_funs))
-                self.z[i] += self.lambda_ * (tmp - self.sol)
-                sol += 1. * self.z[i] / len(self.non_smooth_funs)
-            self.sol[:] = sol'''
-            # Forward step
-            x_temp = self.sol - self.step * grad
-            # Positive projection
-            x_temps_pos = self.projection.prox(x_temp, self.step)
-            # Backward step
-            x = self.non_smooth_funs[0].prox(x_temps_pos, self.step)
-
-        # indicator step
-        if self.indicator is not None:
-            x = self.indicator._prox(x, self.smooth_funs[0].grad(x))
-        self.sol[:] = x
+            self.solveGeneralizedForwardBackward()
 
     def _post(self):
         del self.z
+
+    def solveForwardBackward(self):
+        """
+        Forward-backward proximal splitting algorithm (ISTA and FISTA).
+        Can be used for problems composed of the sum of a
+        smooth and a non-smooth function.
+        For details about the algorithm, see A. Beck and M. Teboulle,
+        "A fast iterative shrinkage-thresholding algorithm for linear inverse problems",
+        SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.
+        """
+
+        # Forward step
+        x = self.sol - self.step * self.smoothFuns[0].grad(self.sol)
+        # Backward step
+        self.sol[:] = self.nonSmoothFuns[0].prox(x, self.step)
+
+    def solveGeneralizedForwardBackward(self):
+        """
+        Generalized forward-backward proximal splitting algorithm.
+        Can be used for problems composed of the sum of any number of
+        smooth and non-smooth functions.
+        For details about the algorithm, see H. Raguet,
+        "A Generalized Forward-Backward Splitting",
+        SIAM Journal on Imaging Sciences, vol. 6, no. 13, pp 1199-1226, 2013.
+        """
+
+        # Smooth functions.
+        grad = np.zeros_like(self.sol)
+        for f in self.smoothFuns:
+            grad += f.grad(self.sol)
+
+        # Non-smooth functions.
+        if not self.nonSmoothFuns:
+            self.sol[:] -= self.step * grad  # Reduces to gradient descent.
+
+        else:
+            sol = np.zeros_like(self.sol)
+            for i, g in enumerate(self.nonSmoothFuns):
+                tmp = 2 * self.sol - self.z[i] - self.step * grad
+                tmp[:] = g.prox(tmp, self.step * len(self.nonSmoothFuns))
+                self.z[i] += self.lambda_ * (tmp - self.sol)
+                sol += 1. * self.z[i] / len(self.nonSmoothFuns)
+            self.sol[:] = sol

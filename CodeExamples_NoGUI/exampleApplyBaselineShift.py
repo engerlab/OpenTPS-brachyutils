@@ -26,9 +26,9 @@ if __name__ == '__main__':
     roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 2, 3])
 
     # APPLY BASELINE SHIFT
-    ctDef1 = applyBaselineShift(ct, roi, [5, 5, 5])
-    ctDef2 = applyBaselineShift(ct, roi, [-5, -5, -5])
-    ctDef3 = applyBaselineShift(ct, roi, [0, 0, -20])
+    ctDef1, maskDef1 = applyBaselineShift(ct, roi, [5, 5, 5])
+    ctDef2, maskDef2 = applyBaselineShift(ct, roi, [-5, -5, -5])
+    ctDef3, maskDef3 = applyBaselineShift(ct, roi, [0, 0, -20])
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 4)
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     ax[0,2].imshow(ctDef2.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[0,2].title.set_text('baseline shift -5,-5,-5')
     ax[0,3].imshow(ctDef3.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-    ax[0,3].title.set_text('baseline shift 0,0,-15')
+    ax[0,3].title.set_text('baseline shift 0,0,-20')
 
     ax[1,0].imshow(ct.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[1,0].title.set_text('CT')
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     ax[1,2].imshow(ctDef2.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[1,2].title.set_text('baseline shift -5,-5,-5')
     ax[1,3].imshow(ctDef3.imageArray[:, :, z_slice].T[::1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-    ax[1,3].title.set_text('baseline shift 0,0,-15')
+    ax[1,3].title.set_text('baseline shift 0,0,-20')
 
     plt.show()
 

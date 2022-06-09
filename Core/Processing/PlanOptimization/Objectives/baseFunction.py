@@ -1,5 +1,6 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import logging
-
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ class BaseFunc(object):
         """
         sol = self._eval(np.asarray(x))
         name = self.__class__.__name__
-        logger.info('    {} evaluation: {}'.format(name, sol))
+        logger.debug('    {} evaluation: {}'.format(name, sol))
         return sol
 
     def _eval(self, x):

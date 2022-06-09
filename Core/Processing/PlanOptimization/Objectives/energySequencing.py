@@ -15,12 +15,12 @@ class EnergySeq(BaseFunc):
 
     def __init__(self, plan, gamma, factor, **kwargs):
         self.gamma = gamma
-        self.struct = tools.weightStructure(plan)
+        self.struct = tools.WeightStructure(plan)
         self.factor = factor
         super(EnergySeq, self).__init__(**kwargs)
 
     def _eval(self, x):
-        beamLayerStruct = self.struct.beamStructure(x)
+        beamLayerStruct = self.struct.getBeamStructure(x)
 
         beamElements = np.zeros(self.struct.nBeams)
         for i, beam in enumerate(beamLayerStruct):
@@ -44,7 +44,7 @@ class EnergySeq(BaseFunc):
         return res * self.gamma
 
     def _grad(self, x):
-        beamLayerStruct = self.struct.beamStructure(x)
+        beamLayerStruct = self.struct.getBeamStructure(x)
         res = []
         gradX = [[]]
         beamKs = []
