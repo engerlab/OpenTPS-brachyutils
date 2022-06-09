@@ -152,3 +152,4 @@ def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, sign
 #     plt.xlim((0,100))
 #     plt.ylim((-30,30))
 
+

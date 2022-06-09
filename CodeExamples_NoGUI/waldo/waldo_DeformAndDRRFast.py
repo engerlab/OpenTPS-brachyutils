@@ -12,8 +12,9 @@ import matplotlib.pyplot as plt
 import os
 import sys
 currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
+#while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+#sys.path.append(currentWorkingDir)
+os.chdir("/export/home/grotsartdehe/opentps")
 import math
 import time
 import numpy as np 
@@ -41,6 +42,7 @@ if __name__ == '__main__':
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
+    savingPath = basePath + organ  + '/' + patientFolder + patientComplement + '/TestAmp/'
 
     if not os.path.exists(savingPath):
         os.umask(0)
@@ -79,7 +81,7 @@ if __name__ == '__main__':
     projAxis = 'Z'
 
     # multiProcessing 
-    maxMultiProcUse = 10
+    maxMultiProcUse = 1#10
     subSequenceSize = maxMultiProcUse
 
 
