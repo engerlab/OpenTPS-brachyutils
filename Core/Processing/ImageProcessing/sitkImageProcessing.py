@@ -81,13 +81,18 @@ def extremePoints(image:Image3D):
 
     return extreme_points
 
-def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
+def extremePointsAfterTransform(image:Image3D, tform:np.ndarray, translation:Sequence[float]=[0, 0, 0]):
     img = image3DToSITK(image)
+
+    if tform.shape[1] == 4:
+        translation = tform[0:-1, -1]
+        tform = tform[0:-1, 0:-1]
 
     dimension = img.GetDimension()
 
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tform.flatten())
+    transform.Translate(translation)
 
     extreme_points = extremePoints(image)
 
@@ -104,21 +109,24 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
     return min_x, max_x, min_y, max_y, min_z, max_z
 
 def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
-                   centre:Optional[Sequence[float]]=None):
+                   translation:Sequence[float]=[0, 0, 0]):
     imgType = image.imageArray.dtype
 
+    print(tform)
+
     img = image3DToSITK(image)
+    if tform.shape[1] == 4:
+        translation = tform[0:-1, -1]
+        tform = tform[0:-1, 0:-1]
 
     dimension = img.GetDimension()
 
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tform.flatten())
-
-    if not (centre is None):
-        transform.SetCenter(centre)
+    transform.Translate(translation)
 
     if outputBox == 'keepAll':
-        min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tform)
+        min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tform, translation=translation)
 
         output_origin = [min_x, min_y, min_z]
         output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
@@ -155,12 +163,14 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     image.imageArray = outData
     image.origin = output_origin
 
-def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, centre:Optional[Sequence[float]]=None):
+def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, translation:Sequence[float]=[0, 0, 0]):
+    if tform.shape[1] == 4:
+        translation = tform[0:-1, -1]
+        tform = tform[0:-1, 0:-1]
+
     transform = sitk.AffineTransform(3)
     transform.SetMatrix(tform.flatten())
-
-    if not (centre is None):
-        transform.SetCenter(centre)
+    transform.Translate(translation)
 
     inv_transform = transform.GetInverse()
 

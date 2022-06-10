@@ -71,8 +71,6 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     tform = linalg.inv(tform)
 
-    tform = tform[0:-1, 0:-1]
-
     outImage = image.__class__.fromImage3D(image)
 
     outputBox = _cropBoxAfterTransform(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
@@ -128,16 +126,12 @@ def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[fl
     tform = _forwardDicomToIECGantry(image, beam)
     tform = linalg.inv(tform)
 
-    tform = tform[0:-1, 0:-1]
-
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     cropROI = None  # TEST !!!!
     tform = _forwardDicomToIECGantry(image, beam)
-
-    tform = tform[0:-1, 0:-1]
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
 
@@ -153,8 +147,6 @@ def iecGantryCoordinatetoDicom(image: Image3D, beam: PlanIonBeam, point: Sequenc
 
     tform = _forwardDicomToIECGantry(image, beam)
 
-    tform = tform[0:-1, 0:-1]
-
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
 def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
@@ -162,7 +154,7 @@ def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
     gantryAngle = beam.gantryAngle
     patientSupportAngle = beam.patientSupportAngle
 
-    orig = np.array(isocenter) - np.array(image.origin)
+    orig = np.array(isocenter)
 
     M = _roll(-gantryAngle, [0, 0, 0]) @ \
         _rot(patientSupportAngle, [0, 0, 0]) @ \
