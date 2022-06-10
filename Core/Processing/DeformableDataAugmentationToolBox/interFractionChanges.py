@@ -8,7 +8,7 @@ from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.vectorField3D import VectorField3D
 from Core.Data.Images.roiMask import ROIMask
-from Core.Processing.ImageProcessing.cupyImageProcessing import rotateCupy, translateCupy
+from Core.Processing.ImageProcessing.cupyImageProcessing import rotateCupy, translateCupy, affineTransformCupy, rotateUsingMapCoordinatesCupy
 from Core.Processing.ImageProcessing.sitkImageProcessing import rotateImage3DSitk
 
 
@@ -197,7 +197,29 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
             print('Rotate the Image3D of', rotationInDeg, 'degrees')
             # data.imageArray = rotateCupy(data.imageArray, rotationInDeg=rotationInDeg)
             for i in range(3):
-                if rotationInDeg[i] != 0: data = rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i)
+                if rotationInDeg[i] != 0:
+                    data = rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i)
+
+                    # affineTMatrix = np.zeros((4,4))
+                    #
+                    # rotAngleInDeg = rotationInDeg[i]
+                    # rotAxis = i
+                    #
+                    # test = np.roll(np.array([1, 0, 0]), rotAxis)
+                    # print(test)
+                    # r = R.from_rotvec(rotAngleInDeg * np.array([0, 1, 0]), degrees=True)
+                    # print(r.as_matrix())
+                    # print(data.spacing)
+                    # affineTMatrix[0:3, 0:3] = r.as_matrix()
+                    # print(affineTMatrix)
+                    # for i in range(3):
+                    #     affineTMatrix[i, i] = data.spacing[i] / data.spacing[0]
+                    #
+                    # print(affineTMatrix)
+                    #
+                    # data = affineTransformCupy(data, affineTMatrix)
+                    # data = affineTransformCupy(data, affineTMatrix)
+                    # data = rotateUsingMapCoordinatesCupy(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i)
 
 
 def translateData(data, translationInMM=[0, 0, 0], cval=-1000):

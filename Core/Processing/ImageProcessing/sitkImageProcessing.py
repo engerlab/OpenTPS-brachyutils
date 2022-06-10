@@ -1,6 +1,6 @@
 
 import time
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
@@ -84,7 +84,8 @@ def extremePoints(image:Image3D):
 
 def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
     img = image3DToSITK(image)
-    tform = tform[0:-1, 0:-1]
+    if tform.shape[0] == 4:
+        tform = tform[0:-1, 0:-1]
 
     dimension = img.GetDimension()
 
@@ -105,8 +106,8 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
 
     return min_x, max_x, min_y, max_y, min_z, max_z
 
-def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Sequence[float], str]='keepAll',
-                   centre:Optional[Sequence[float]]=None):
+def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
+                   centre: Optional[Sequence[float]]=None):
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image)
@@ -128,8 +129,8 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
         output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
                        int((max_z - min_z) / image.spacing[2]) + 1]
     elif outputBox == 'same':
-        output_origin = image.origin
-        output_size = image.gridSizeInWorldUnit
+        output_origin = list(image.origin)
+        output_size = [int(image.gridSize[0]), int(image.gridSize[1]), int(image.gridSize[2])]
     else:
         min_x = outputBox[0]
         max_x = outputBox[1]
@@ -181,7 +182,11 @@ def rotateImage3DSitk(img, rotAngleInDeg=0, rotAxis=0):
     r = R.from_rotvec(rotAngleInDeg * np.array([0, 1, 0]), degrees=True)
     print(r.as_matrix())
 
-    applyTransform(img, r.as_matrix())
+    # imgCenter = img.origin + img.gridSizeInWorldUnit / 2
+    # img.origin = np.array([0.0, 0.0, 0.0])
+    imgCenter = img.origin + img.gridSizeInWorldUnit / 2
+    print('imgCenter', imgCenter)
+    applyTransform(img, r.as_matrix(), outputBox='same', centre=imgCenter)
 
     # if rotAxis == 0:
     #     rotMatrix = np.array([[1., 0., 0., 0.],
