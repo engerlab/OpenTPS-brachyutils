@@ -59,9 +59,9 @@ MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
 doseCalculator = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 doseCalculator.beamModel = beamModel
-doseCalculator.nbPrimaries = 5e4
-#doseCalculator.independentScoringGrid = True
-#doseCalculator.scoringVoxelSpacing = [5.0, 5.0, 5.0]
+doseCalculator.nbPrimaries = 1e7
+# doseCalculator.independentScoringGrid = True
+# doseCalculator.scoringVoxelSpacing = [5.0, 5.0, 5.0]
 # doseCalculator.
 scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
@@ -85,7 +85,7 @@ couchAngles = [0.]
 # Load / Generate new plan
 plan_file = os.path.join(output_path, "NewPlan.tps")
 
-if os.path.isfile(plan_file):
+'''if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
 else:
     planInit = PlanStructure()
@@ -99,18 +99,18 @@ else:
     plan.PlanName = "NewPlan"
     beamlets = doseCalculator.computeBeamlets(ct, plan, roi=targetMask)
     outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
-    #saveBeamlets(beamlets, outputBeamletFile)
+    #saveBeamlets(beamlets, outputBeamletFile)   
     #saveRTPlan(plan, plan_file)
+    plan.beamlets = beamlets'''
 
 # Load openTPS plan
 # plan = dataList[3]
 # Load Dicom plan
-# plan = dataList[0]
+plan = dataList[0]
 # Load Beamlets
 # beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
-# beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
-# plan.beamlets = loadBeamlets(beamletPath)
-plan.beamlets = beamlets
+beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
+plan.beamlets = loadBeamlets(beamletPath)
 
 # optimization objectives
 plan.objectives = ObjectivesList()
@@ -129,10 +129,10 @@ plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 scoring_spacing = np.array([5, 5, 5])
 # scoring_spacing = np.array([2, 2, 2])
 scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
-plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
-
+# plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
+plan.objectives.initializeContours(contours, ct, ct.gridSize, ct.spacing)
 # Objective functions
-objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
+'''objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
 # objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(),formatArray=64)
 spotSparsity = NormL1(lambda_=1)
 energySeq = EnergySeq(plan, gamma=0.1)
@@ -156,21 +156,25 @@ solver = IMPTPlanOptimizer(method='FISTA',
 # solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, contours=contours, functions=[objectiveFunction], maxit = 100)
 solver.xSquared = False
 w, dose_vector, ps = solver.optimize()
+with open('test_weights.npy', 'wb') as f:
+    np.save(f, w)
 struct = WeightStructure(plan)
 irradTime, ups, downs = struct.computeIrradiationTime(w)
 layerSparsityPercentage = struct.computeELSparsity(w, 1)
 print("Irradiation time = {}, Ups = {}, Downs = {}".format(irradTime, ups, downs))
-print("EL sparsity = {} %".format(layerSparsityPercentage))
+print("EL sparsity = {} %".format(layerSparsityPercentage))'''
 
-with open('test_weights.npy', 'wb') as f:
-    np.save(f, w)
 # dose = RTdose().Initialize_from_beamlet_dose(plan.PlanName, plan.beamlets, dose_vector, ct)
 plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # saveRTPlan(plan, plan_filepath)
 
 # MCsquare simulation
-doseImage = doseCalculator.computeDose(ct, plan)
+# doseImage = doseCalculator.computeDose(ct, plan)
 # doseImage = plan.beamlets.toDoseImage()
+
+# MCsquare beamlet free optimization
+
+doseImage = doseCalculator.optimizeBeamletFree(ct, plan, targetMask)
 
 # Compute DVH
 target_DVH = DVH(ct, target, doseImage)
