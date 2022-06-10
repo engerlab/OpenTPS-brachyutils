@@ -3,14 +3,15 @@ import time
 from typing import Optional, Sequence, Union
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
-from Core.Data.Images.image3D import Image3D
 try:
     import SimpleITK as sitk
 except:
     print('No module SimpleITK found')
 
 from Core.Processing.ImageProcessing import resampler3D
+from Core.Data.Images.image3D import Image3D
 
 
 def image3DToSITK(image:Image3D, type=np.float32):
@@ -81,7 +82,8 @@ def extremePoints(image:Image3D):
 
     return extreme_points
 
-def extremePointsAfterTransform(image:Image3D, tform:np.ndarray, translation:Sequence[float]=[0, 0, 0]):
+def extremePointsAfterTransform(image:Image3D, tform:np.ndarray,
+                                centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     img = image3DToSITK(image)
 
     if tform.shape[1] == 4:
@@ -93,6 +95,8 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray, translation:Seq
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
+    if not (centre is None):
+        transform.SetCenter(centre)
 
     extreme_points = extremePoints(image)
 
@@ -109,7 +113,7 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray, translation:Seq
     return min_x, max_x, min_y, max_y, min_z, max_z
 
 def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
-                   translation:Sequence[float]=[0, 0, 0]):
+    centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image)
@@ -122,6 +126,9 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
+
+    if not (centre is None):
+        transform.SetCenter(centre)
 
     if outputBox == 'keepAll':
         min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tform, translation=translation)
@@ -161,7 +168,7 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     image.imageArray = outData
     image.origin = output_origin
 
-def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, translation:Sequence[float]=[0, 0, 0]):
+def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     if tform.shape[1] == 4:
         translation = tform[0:-1, -1]
         tform = tform[0:-1, 0:-1]
@@ -170,6 +177,9 @@ def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, translation:Sequence
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
 
+    if not (centre is None):
+        transform.SetCenter(centre)
+
     inv_transform = transform.GetInverse()
 
     return inv_transform.TransformPoint(pnt.tolist())
@@ -177,6 +187,28 @@ def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, translation:Sequence
 def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
+
+def rotateImage3DSitk(img, rotAngleInDeg=0, rotAxis=0):
+
+    print('in rotateSitk')
+    test = np.roll(np.array([1, 0, 0]), rotAxis)
+    print(test)
+    r = R.from_rotvec(rotAngleInDeg * np.array([0, 1, 0]), degrees=True)
+    print(r.as_matrix())
+
+    # imgCenter = img.origin + img.gridSizeInWorldUnit / 2
+    # img.origin = np.array([0.0, 0.0, 0.0])
+    imgCenter = img.origin + img.gridSizeInWorldUnit / 2
+    print('imgCenter', imgCenter)
+    applyTransform(img, r.as_matrix(), outputBox='same', centre=imgCenter)
+
+    # if rotAxis == 0:
+    #     rotMatrix = np.array([[1., 0., 0., 0.],
+    #                           [0., 1., 0., 0.],
+    #                           [0., 0., -1., 0.],
+    #                           [0., 0., 0., 1.]])
+
+    return 0
 
 
 if __name__ == "__main__":
@@ -224,3 +256,5 @@ if __name__ == "__main__":
     end = time.time()
     print('Kevin from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')
+
+
