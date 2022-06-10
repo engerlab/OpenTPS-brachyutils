@@ -10,7 +10,6 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 class PlanIonBeam:
     def __init__(self):
         self._layers = []
-        self._layerIndices = []
 
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
@@ -40,14 +39,8 @@ class PlanIonBeam:
         # For backwards compatibility but we can now access each layer with indexing brackets
         return [layer for layer in self._layers]
 
-    @property
-    def layersIndices(self) -> Sequence[int]:
-        # Accumulated index for layer
-        return [i for i in self._layerIndices]
-
     def appendLayer(self, layer: PlanIonLayer):
         self._layers.append(layer)
-        self._layerIndices.append(layer.id)
 
     def removeLayer(self, layer: Union[PlanIonLayer, Sequence[PlanIonLayer]]):
         if isinstance(layer, Sequence):

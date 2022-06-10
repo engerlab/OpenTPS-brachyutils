@@ -3,18 +3,19 @@ from typing import Sequence
 
 import numpy as np
 
+from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Data.Plan.rtPlan import RTPlan
 
 
 def extendPlanLayers(plan:RTPlan) -> RTPlan:
-    outPlan = copy.deepcopy(plan)
+    outPlan = RTPlan()
 
     layerID = 0
     spotID = 0
     for beamID, referencBeam in enumerate(plan):
-        outBeam = outPlan[beamID]
+        outBeam = ExtendedBeam.fromBeam(referencBeam)
         outBeam.removeLayer(outBeam.layers) # Remove all layers
 
         for referenceLayer in referencBeam:
@@ -31,6 +32,32 @@ def extendPlanLayers(plan:RTPlan) -> RTPlan:
             layerID += 1
 
     return outPlan
+
+class ExtendedBeam(PlanIonBeam):
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def fromBeam(cls, beam:PlanIonBeam):
+        newBeam = cls()
+
+        newBeam.name = beam.name
+        newBeam.isocenterPosition = beam.isocenterPosition
+        newBeam.gantryAngle = beam.gantryAngle
+        newBeam.couchAngle = beam.couchAngle
+        newBeam.id = beam.id
+        newBeam.patientSupportAngle = beam.patientSupportAngle
+        newBeam.rangeShifter = beam.rangeShifter
+        newBeam.seriesInstanceUID = beam.seriesInstanceUID
+
+        for layer in beam:
+            newBeam.appendLayer(layer)
+
+        return newBeam
+
+    @property
+    def layersIndices(self) -> Sequence[int]:
+        return [layer.id for layer in self.layers]
 
 class ExtendedPlanIonLayer(PlanIonLayer):
     def __init__(self, nominalEnergy:float=0.0):
