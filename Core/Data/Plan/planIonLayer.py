@@ -4,8 +4,6 @@ from typing import Iterable, Union, Sequence, Optional, Tuple
 
 import numpy as np
 
-from Core.Data.Plan.planIonSpot import PlanIonSpot
-
 
 class PlanIonLayer:
     def __init__(self, nominalEnergy: float = 0.0):
@@ -13,11 +11,7 @@ class PlanIonLayer:
         self._y = np.array([])
         self._weights = np.array([])
         self._timings = np.array([])
-        self._spots = []
-        self._spotIndices = []
-        
 
-        self.id, self.beamID = 0, 0
         self.nominalEnergy: float = nominalEnergy
         self.numberOfPaintings: int = 1
         self.rangeShifterSettings: RangeShifterSettings = RangeShifterSettings()
@@ -34,15 +28,6 @@ class PlanIonLayer:
         for xyAndWeight in xyAndWeights:
             s += str(xyAndWeight)
         return s
-
-    @property
-    def spots(self) -> Sequence[PlanIonSpot]:
-        # For backwards compatibility but we can now access each spot with indexing brackets
-        return [spot for spot in self._spots]
-
-    @property
-    def spotIndices(self) -> Sequence[int]:
-        return [i for i in self._spotIndices]
 
     @property
     def spotX(self) -> Sequence[float]:
@@ -94,8 +79,6 @@ class PlanIonLayer:
     def numberOfSpots(self) -> int:
         return len(self._weights)
 
-
-
     def addToSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
                   weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
         if isinstance(x, Iterable):
@@ -122,7 +105,6 @@ class PlanIonLayer:
         for i, xElem in enumerate(x):
             t = timing if timing is None else timing[i]
             self._appendSingleSpot(xElem, y[i], weight[i], t)
-            
 
     def _appendSingleSpot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
         alreadyExists, _ = self.spotDefinedInXY(x, y)

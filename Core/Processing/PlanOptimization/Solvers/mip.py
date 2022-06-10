@@ -201,11 +201,11 @@ class MIP(LP):
                         activeLayerBeamID = []
                         activeLayerID = []
 
-                        for el in layers:
+                        for layerId, el in enumerate(layers):
                             elActivated = self.solStruct.isActivated(el)
                             if elActivated:
                                 activeLayerBeamID.append(el.beamID)
-                                activeLayerID.append(el.id)
+                                activeLayerID.append(layerId)
                         randomLayerSelected = []
                         for b in self.plan.beams:
                             if b.id not in activeLayerBeamID:

@@ -1,6 +1,6 @@
 
 import time
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -83,7 +83,6 @@ def extremePoints(image:Image3D):
 
 def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
     img = image3DToSITK(image)
-    tform = tform[0:-1, 0:-1]
 
     dimension = img.GetDimension()
 
@@ -104,9 +103,29 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
 
     return min_x, max_x, min_y, max_y, min_z, max_z
 
-def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Sequence[float]]=None):
-    if outputBox is None:
+def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
+                   centre:Optional[Sequence[float]]=None):
+    imgType = image.imageArray.dtype
+
+    img = image3DToSITK(image)
+
+    dimension = img.GetDimension()
+
+    transform = sitk.AffineTransform(dimension)
+    transform.SetMatrix(tform.flatten())
+
+    if not (centre is None):
+        transform.SetCenter(centre)
+
+    if outputBox == 'keepAll':
         min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tform)
+
+        output_origin = [min_x, min_y, min_z]
+        output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
+                       int((max_z - min_z) / image.spacing[2]) + 1]
+    elif outputBox == 'same':
+        output_origin = image.origin
+        output_size = image.gridSizeInWorldUnit
     else:
         min_x = outputBox[0]
         max_x = outputBox[1]
@@ -115,18 +134,9 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
         min_z = outputBox[4]
         max_z = outputBox[5]
 
-    imgType = image.imageArray.dtype
-
-    img = image3DToSITK(image)
-    tform = tform[0:-1, 0:-1]
-
-    dimension = img.GetDimension()
-
-    transform = sitk.AffineTransform(dimension)
-    transform.SetMatrix(tform.flatten())
-
-    output_origin = [min_x, min_y, min_z]
-    output_size = [int((max_x-min_x)/image.spacing[0])+1, int((max_y-min_y)/image.spacing[1])+1, int((max_z-min_z)/image.spacing[2])+1]
+        output_origin = [min_x, min_y, min_z]
+        output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
+                       int((max_z - min_z) / image.spacing[2]) + 1]
 
     reference_image = sitk.Image(output_size, img.GetPixelIDValue())
     reference_image.SetOrigin(output_origin)
@@ -145,11 +155,12 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     image.imageArray = outData
     image.origin = output_origin
 
-def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray):
-    tform = tform[0:-1, 0:-1]
-
+def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, centre:Optional[Sequence[float]]=None):
     transform = sitk.AffineTransform(3)
     transform.SetMatrix(tform.flatten())
+
+    if not (centre is None):
+        transform.SetCenter(centre)
 
     inv_transform = transform.GetInverse()
 
