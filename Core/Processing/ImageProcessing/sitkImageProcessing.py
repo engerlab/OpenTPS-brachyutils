@@ -112,8 +112,6 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
                    translation:Sequence[float]=[0, 0, 0]):
     imgType = image.imageArray.dtype
 
-    print(tform)
-
     img = image3DToSITK(image)
     if tform.shape[1] == 4:
         translation = tform[0:-1, -1]
@@ -132,8 +130,8 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
         output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
                        int((max_z - min_z) / image.spacing[2]) + 1]
     elif outputBox == 'same':
-        output_origin = image.origin
-        output_size = image.gridSizeInWorldUnit
+        output_origin = image.origin.tolist()
+        output_size = image.gridSize.astype(int).tolist()
     else:
         min_x = outputBox[0]
         max_x = outputBox[1]
