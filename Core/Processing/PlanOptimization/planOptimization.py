@@ -3,6 +3,8 @@ import logging
 import numpy as np
 import scipy.sparse as sp
 
+from Core.Processing.PlanOptimization import planPreprocessing
+
 try:
     import sparse_dot_mkl
     use_MKL = 1
@@ -22,7 +24,7 @@ class PlanOptimizer:
         if functions is None:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
-        self.plan = plan
+        self.plan = planPreprocessing.extendPlanLayers(plan)
         self.contours = contours
         self.opti_params = opti_params
         self.functions = functions
