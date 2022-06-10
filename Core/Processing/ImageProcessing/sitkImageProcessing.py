@@ -1,6 +1,6 @@
 
 import time
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -83,7 +83,6 @@ def extremePoints(image:Image3D):
 
 def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
     img = image3DToSITK(image)
-    tform = tform[0:-1, 0:-1]
 
     dimension = img.GetDimension()
 
@@ -104,12 +103,11 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray):
 
     return min_x, max_x, min_y, max_y, min_z, max_z
 
-def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Sequence[float], str]='keepAll',
+def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
                    centre:Optional[Sequence[float]]=None):
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image)
-    tform = tform[0:-1, 0:-1]
 
     dimension = img.GetDimension()
 
@@ -157,11 +155,12 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     image.imageArray = outData
     image.origin = output_origin
 
-def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray):
-    tform = tform[0:-1, 0:-1]
-
+def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, centre:Optional[Sequence[float]]=None):
     transform = sitk.AffineTransform(3)
     transform.SetMatrix(tform.flatten())
+
+    if not (centre is None):
+        transform.SetCenter(centre)
 
     inv_transform = transform.GetInverse()
 

@@ -71,6 +71,8 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     tform = linalg.inv(tform)
 
+    tform = tform[0:-1, 0:-1]
+
     outImage = image.__class__.fromImage3D(image)
 
     outputBox = _cropBoxAfterTransform(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
@@ -80,7 +82,7 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
     return outImage
 
 def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
-    outputBox = None
+    outputBox = "keepAll"
 
     if not (cropROI is None):
         outputBox = sitkImageProcessing.extremePoints(cropROI)
@@ -98,7 +100,7 @@ def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, crop
     return outputBox
 
 def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
-    outputBox = None
+    outputBox = 'keepAll'
 
     if not (cropROI is None):
         outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
@@ -126,12 +128,16 @@ def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[fl
     tform = _forwardDicomToIECGantry(image, beam)
     tform = linalg.inv(tform)
 
+    tform = tform[0:-1, 0:-1]
+
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     cropROI = None  # TEST !!!!
     tform = _forwardDicomToIECGantry(image, beam)
+
+    tform = tform[0:-1, 0:-1]
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
 
@@ -146,6 +152,8 @@ def iecGantryCoordinatetoDicom(image: Image3D, beam: PlanIonBeam, point: Sequenc
     w = point[2]
 
     tform = _forwardDicomToIECGantry(image, beam)
+
+    tform = tform[0:-1, 0:-1]
 
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
