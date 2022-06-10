@@ -3,8 +3,6 @@ import logging
 import numpy as np
 import scipy.sparse as sp
 
-from Core.Processing.PlanOptimization import planPreprocessing
-
 try:
     import sparse_dot_mkl
     use_MKL = 1
@@ -15,6 +13,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.rtStruct import RTStruct
 from Core.Processing.PlanOptimization.Solvers import gradientDescent, bfgs, fista, localSearch, mip, sparcling, \
     beamletFree, lp
+from Core.Processing.PlanOptimization import planPreprocessing
 
 logger = logging.getLogger(__name__)
 

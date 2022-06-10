@@ -424,17 +424,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
                     dcm_layer.ScanSpotMetersetWeights) * BeamMeterset / FinalCumulativeMetersetWeight  # spot weights are converted to MU
                 layer.appendSpot(_x, _y, w)
 
-                for xElem in _x:
-                    spot = PlanIonSpot()
-                    spot.id = accumulatedSpot
-                    spot.beamID = layer.beamID
-                    spot.layerID = layer.id
-                    spot.energy = layer.nominalEnergy
-                    layer._spots.append(spot)
-                    layer._spotIndices.append(spot.id)
-                    plan.appendSpotAccum(spot)
-                    accumulatedSpot +=1
-
             elif (plan.scanMode == "LINE"):
                 raise NotImplementedError()
                 # print("SpotNumber: ", dcm_layer[0x300b1092].value)

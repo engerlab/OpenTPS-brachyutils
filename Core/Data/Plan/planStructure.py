@@ -122,23 +122,10 @@ class PlanStructure:
             spotPosCandidates = np.unique(np.array(list(zip(spotGridX[ind], -spotGridY[ind]))), axis=0)
 
             layer = PlanIonLayer(energy)
-            layer.id = self.accumulatedLayer
-            layer.beamID = beam.id
             for i in range(spotPosCandidates.shape[0]):
                 spotPos = spotPosCandidates[i, :]
-                spot = PlanIonSpot()
-                spot.id = self.accumulatedSpot
-                spot.beamID = beam.id
-                spot.layerID = layer.id
-                spot.energy = layer.nominalEnergy
                 layer.addToSpot(spotPos[0], spotPos[1], 1.)
-                layer._spots.append(spot)
-                layer._spotIndices.append(spot.id)
-                plan.appendSpotAccum(spot)
-                self.accumulatedSpot += 1
             beam.appendLayer(layer)
-            plan.appendLayerAccum(layer)
-            self.accumulatedLayer += 1
         plan.appendBeam(beam)
 
     def _defineHexagSpotGridAroundIsocenter(self, imageBEV: Image3D, isocenterBEV: Sequence[float]):

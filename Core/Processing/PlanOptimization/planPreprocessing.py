@@ -9,17 +9,18 @@ from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Data.Plan.rtPlan import RTPlan
 
 
-def extendPlanLayers(plan:RTPlan) -> RTPlan:
+def extendPlanLayers(plan: RTPlan) -> RTPlan:
     outPlan = RTPlan()
 
     layerID = 0
     spotID = 0
     for beamID, referencBeam in enumerate(plan):
         outBeam = ExtendedBeam.fromBeam(referencBeam)
-        outBeam.removeLayer(outBeam.layers) # Remove all layers
+        outBeam.removeLayer(outBeam.layers)  # Remove all layers
 
         for referenceLayer in referencBeam:
             outLayer = ExtendedPlanIonLayer.fromLayer(referenceLayer)
+            outLayer.id = layerID
 
             for spot in outLayer.spots:
                 spot.id = spotID
@@ -33,12 +34,13 @@ def extendPlanLayers(plan:RTPlan) -> RTPlan:
 
     return outPlan
 
+
 class ExtendedBeam(PlanIonBeam):
     def __init__(self):
         super().__init__()
 
     @classmethod
-    def fromBeam(cls, beam:PlanIonBeam):
+    def fromBeam(cls, beam: PlanIonBeam):
         newBeam = cls()
 
         newBeam.name = beam.name
@@ -59,17 +61,18 @@ class ExtendedBeam(PlanIonBeam):
     def layersIndices(self) -> Sequence[int]:
         return [layer.id for layer in self.layers]
 
+
 class ExtendedPlanIonLayer(PlanIonLayer):
-    def __init__(self, nominalEnergy:float=0.0):
+    def __init__(self, nominalEnergy: float = 0.0):
         super().__init__(nominalEnergy=nominalEnergy)
 
         self._spots = []
 
-        self.id =0
+        self.id = 0
         self.beamID = 0
 
     @classmethod
-    def fromLayer(cls, layer:PlanIonLayer):
+    def fromLayer(cls, layer: PlanIonLayer):
         newLayer = cls(layer.nominalEnergy)
         spotXY = list(layer.spotXY)
         spotWeights = layer.spotWeights
