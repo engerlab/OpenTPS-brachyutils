@@ -10,7 +10,9 @@ from Core.Data.Plan.rtPlan import RTPlan
 
 
 def extendPlanLayers(plan: RTPlan) -> RTPlan:
-    outPlan = RTPlan()
+    outPlan = copy.deepcopy(plan)
+    #outPlan.beamlets = plan.beamlets
+
 
     layerID = 0
     spotID = 0
@@ -29,8 +31,10 @@ def extendPlanLayers(plan: RTPlan) -> RTPlan:
                 spot.energy = outLayer.nominalEnergy
 
                 spotID += 1
+                outPlan.appendSpotAccum(spot)
 
             layerID += 1
+            outPlan.appendLayerAccum(outLayer)
 
     return outPlan
 
