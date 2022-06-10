@@ -3,14 +3,15 @@ import time
 from typing import Optional, Sequence
 
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
-from Core.Data.Images.image3D import Image3D
 try:
     import SimpleITK as sitk
 except:
     print('No module SimpleITK found')
 
 from Core.Processing.ImageProcessing import resampler3D
+from Core.Data.Images.image3D import Image3D
 
 
 def image3DToSITK(image:Image3D, type=np.float32):
@@ -118,7 +119,8 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image)
-    tform = tform[0:-1, 0:-1]
+    if tform.shape[0] == 4:
+        tform = tform[0:-1, 0:-1]
 
     dimension = img.GetDimension()
 
@@ -158,6 +160,24 @@ def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray):
 def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
+
+def rotateImage3DSitk(img, rotAngleInDeg=0, rotAxis=0):
+
+    print('in rotateSitk')
+    test = np.roll(np.array([1, 0, 0]), rotAxis)
+    print(test)
+    r = R.from_rotvec(rotAngleInDeg * np.array([0, 1, 0]), degrees=True)
+    print(r.as_matrix())
+
+    applyTransform(img, r.as_matrix())
+
+    # if rotAxis == 0:
+    #     rotMatrix = np.array([[1., 0., 0., 0.],
+    #                           [0., 1., 0., 0.],
+    #                           [0., 0., -1., 0.],
+    #                           [0., 0., 0., 1.]])
+
+    return 0
 
 
 if __name__ == "__main__":
@@ -205,3 +225,5 @@ if __name__ == "__main__":
     end = time.time()
     print('Kevin from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')
+
+
