@@ -77,8 +77,8 @@ class BeamLayer:
 
         self._sphereSource.SetCenter(posAfterInverse[0], posAfterInverse[1], 0)
 
-        point2 = imageTransform3D.dicomCoordinate2iecGantry(referenceImage, beam, beam.isocenterPosition)
-        point2 = imageTransform3D.iecGantryCoordinatetoDicom(referenceImage, beam, [point2[0], point2[1], point2[2]-500])
+        point2 = imageTransform3D.dicomCoordinate2iecGantry(beam, beam.isocenterPosition)
+        point2 = imageTransform3D.iecGantryCoordinatetoDicom(beam, [point2[0], point2[1], point2[2]-500])
 
         posAfterInverse2 = transfo_mat.MultiplyPoint((point2[0], point2[1], point2[2], 1))
 

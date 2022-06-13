@@ -67,7 +67,7 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
 def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     cropROI = None # TEST !!!!
-    tform = _forwardDicomToIECGantry(image, beam)
+    tform = _forwardDicomToIECGantry(beam)
 
     tform = linalg.inv(tform)
 
@@ -118,12 +118,12 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
 
     return outputBox
 
-def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
+def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
     u = point[0]
     v = point[1]
     w = point[2]
 
-    tform = _forwardDicomToIECGantry(image, beam)
+    tform = _forwardDicomToIECGantry(beam)
     tform = linalg.inv(tform)
 
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
@@ -131,7 +131,7 @@ def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[fl
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     cropROI = None  # TEST !!!!
-    tform = _forwardDicomToIECGantry(image, beam)
+    tform = _forwardDicomToIECGantry(beam)
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
 
@@ -140,16 +140,16 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     return outImage
 
-def iecGantryCoordinatetoDicom(image: Image3D, beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
+def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
     u = point[0]
     v = point[1]
     w = point[2]
 
-    tform = _forwardDicomToIECGantry(image, beam)
+    tform = _forwardDicomToIECGantry(beam)
 
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
-def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
+def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
     isocenter = beam.isocenterPosition
     gantryAngle = beam.gantryAngle
     patientSupportAngle = beam.patientSupportAngle
