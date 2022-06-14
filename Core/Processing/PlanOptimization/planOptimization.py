@@ -19,12 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
-    def __init__(self, plan: RTPlan, contours: RTStruct, functions=None, **kwargs):
+    def __init__(self, plan: RTPlan, functions=None, **kwargs):
         if functions is None:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
         self.plan = planPreprocessing.extendPlanLayers(plan)
-        self.contours = contours
         self.opti_params = kwargs
         self.functions = functions
         self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
@@ -47,12 +46,8 @@ class PlanOptimizer:
                                                                                dtype=np.float32)
         return x0
 
-    def inializeContours(self):
-        pass
-
     def optimize(self):
         x0 = self.intializeWeights()
-        # self.initializeContours
         # Optimization
         result = self.solver.solve(self.functions, x0)
         return self.postProcess(result)
@@ -86,8 +81,8 @@ class PlanOptimizer:
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan, contours, functions=None, **kwargs):
-        super().__init__(plan, contours, functions, **kwargs)
+    def __init__(self, method, plan, functions=None, **kwargs):
+        super().__init__(plan, functions, **kwargs)
         if functions is None:
             logger.error('You must specify the function you want to optimize')
         if method == 'Scipy-BFGS':
@@ -113,10 +108,10 @@ class IMPTPlanOptimizer(PlanOptimizer):
 
 
 class ARCPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan, contours, functions=None, **kwargs):
+    def __init__(self, method, plan, functions=None, **kwargs):
         if functions is None:
             functions = []
-        super(ARCPTPlanOptimizer, self).__init__(plan, contours, functions, **kwargs)
+        super(ARCPTPlanOptimizer, self).__init__(plan, functions, **kwargs)
         if method == 'FISTA':
             self.solver = fista.FISTA()
         elif method == 'LS':
