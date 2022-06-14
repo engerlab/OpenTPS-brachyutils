@@ -159,8 +159,8 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
 
     outData = np.array(sitk.GetArrayFromImage(outImg))
-    if imgType==bool:
-        outData[outData<0.3] = 0
+    if imgType == bool:
+        outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)
@@ -188,27 +188,13 @@ def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
 
-def rotateImage3DSitk(img, rotAngleInDeg=0, rotAxis=0):
+def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
 
-    print('in rotateSitk')
-    test = np.roll(np.array([1, 0, 0]), rotAxis)
-    print(test)
-    r = R.from_rotvec(rotAngleInDeg * np.array([0, 1, 0]), degrees=True)
-    print(r.as_matrix())
+    r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
+    imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
 
-    # imgCenter = img.origin + img.gridSizeInWorldUnit / 2
-    # img.origin = np.array([0.0, 0.0, 0.0])
-    imgCenter = img.origin + img.gridSizeInWorldUnit / 2
-    print('imgCenter', imgCenter)
-    applyTransform(img, r.as_matrix(), outputBox='same', centre=imgCenter)
+    applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
 
-    # if rotAxis == 0:
-    #     rotMatrix = np.array([[1., 0., 0., 0.],
-    #                           [0., 1., 0., 0.],
-    #                           [0., 0., -1., 0.],
-    #                           [0., 0., 0., 1.]])
-
-    return 0
 
 
 if __name__ == "__main__":

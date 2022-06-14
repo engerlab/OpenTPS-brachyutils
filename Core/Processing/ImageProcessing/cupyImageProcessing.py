@@ -6,11 +6,21 @@ import matplotlib.pyplot as plt
 
 ## ------------------------------------------------------------------------------------------------
 def translateCupy(dataArray, translationInPixels=[0, 0, 0], cval=-1000):
+    """
 
+    Parameters
+    ----------
+    dataArray : ND numpy array, the data to translate
+    translationInPixels : sequence of the translation in pixels in the 3 direction [X, Y, Z]
+    cval : the value to fill the data for points coming, after translation, from outside the image
+
+    Returns
+    -------
+    ND numpy array, the translated data
+    """
     cupyArray = cupy.asarray(dataArray)
 
     if not (np.array(translationInPixels == np.array([0, 0, 0])).all() or np.array(translationInPixels == np.array([0, 0, 0, 0])).all()):
-        print('Apply translation in pixels', translationInPixels)
         cupyArray = cupyx.scipy.ndimage.shift(cupyArray, translationInPixels, mode='constant', cval=cval)
 
     return cupy.asnumpy(cupyArray)
@@ -27,8 +37,12 @@ def rotateCupy(dataArray, rotationInDeg=[0, 0, 0], cval=-1000):
 
     Returns
     -------
+    ND numpy array, the rotated data
+
     NB: the order of applied rotation is important because rotations in 3D are not commutative. So to change the order to something different than X, Y, Z
     the user can call the function multiple time with the angles specified in the order or rotation
+
+    !!! This does not take into account a difference in voxel spacing !!!
     """
     cupyArray = cupy.asarray(dataArray)
 
@@ -48,21 +62,44 @@ def rotateCupy(dataArray, rotationInDeg=[0, 0, 0], cval=-1000):
 ## ------------------------------------------------------------------------------------------------
 def affineTransformCupy(img, matrix, cval=-1000):
 
-    print('in affine transform cupy')
+    """
+    WIP
+    Parameters
+    ----------
+    img
+    matrix
+    cval
+
+    Returns
+    -------
+
+    """
+
     cupyArray = cupy.asarray(img.imageArray)
     cupyMatrix = cupy.asarray(matrix)
     cupyArray = cupyx.scipy.ndimage.affine_transform(cupyArray, cupyMatrix, offset=[30, 0, 0])#img.gridSize/2)
 
     img.imageArray = cupy.asnumpy(cupyArray)
 
-    plt.figure()
-    plt.imshow(img.imageArray[:, 100, :])
-    plt.show()
+    # plt.figure()
+    # plt.imshow(img.imageArray[:, 100, :])
+    # plt.show()
 
 
 ## ------------------------------------------------------------------------------------------------
 def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
+    """
+    WIP
+    Parameters
+    ----------
+    img
+    rotAngleInDeg
+    rotAxis
 
+    Returns
+    -------
+
+    """
     voxelCoordsAroundCenterOfImageX = np.linspace((-img.gridSize[0] / 2) + 0.5, (img.gridSize[0] / 2) + 0.5, num=img.gridSize[0]) * img.spacing[0]
     voxelCoordsAroundCenterOfImageY = np.linspace((-img.gridSize[1] / 2) + 0.5, (img.gridSize[1] / 2) + 0.5, num=img.gridSize[1]) * img.spacing[1]
     voxelCoordsAroundCenterOfImageZ = np.linspace((-img.gridSize[2] / 2) + 0.5, (img.gridSize[2] / 2) + 0.5, num=img.gridSize[2]) * img.spacing[2]
@@ -72,9 +109,7 @@ def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
     print(voxelCoordsAroundCenterOfImageX[:10])
     print(voxelCoordsAroundCenterOfImageY[:10])
 
-    coordsMatrix = np.stack((x,
-                             y,
-                             z), axis=-1)
+    coordsMatrix = np.stack((x, y, z), axis=-1)
 
     print(coordsMatrix.shape)
 
