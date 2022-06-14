@@ -104,6 +104,10 @@ class PlanIonBeam:
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
 
+    @meterset.setter
+    def meterset(self, meterSet: float):
+        self.meterset = meterSet
+
     @property
     def numberOfSpots(self) -> int:
         return np.sum(np.array([layer.numberOfSpots for layer in self._layers]))

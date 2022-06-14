@@ -11,18 +11,18 @@ from Core.Data.Plan.rtPlan import RTPlan
 
 def extendPlanLayers(plan: RTPlan) -> RTPlan:
     outPlan = copy.deepcopy(plan)
-    #outPlan.beamlets = plan.beamlets
-
 
     layerID = 0
     spotID = 0
     for beamID, referencBeam in enumerate(plan):
         outBeam = ExtendedBeam.fromBeam(referencBeam)
         outBeam.removeLayer(outBeam.layers)  # Remove all layers
+        outBeam.id = beamID
 
         for referenceLayer in referencBeam:
             outLayer = ExtendedPlanIonLayer.fromLayer(referenceLayer)
             outLayer.id = layerID
+            outLayer.beamID = beamID
 
             for spot in outLayer.spots:
                 spot.id = spotID
@@ -51,7 +51,6 @@ class ExtendedBeam(PlanIonBeam):
         newBeam.isocenterPosition = beam.isocenterPosition
         newBeam.gantryAngle = beam.gantryAngle
         newBeam.couchAngle = beam.couchAngle
-        newBeam.id = beam.id
         newBeam.patientSupportAngle = beam.patientSupportAngle
         newBeam.rangeShifter = beam.rangeShifter
         newBeam.seriesInstanceUID = beam.seriesInstanceUID

@@ -17,6 +17,7 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.roiContour import ROIContour
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
@@ -129,15 +130,23 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return beamletDose
 
-    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: Optional[ROIMask] = None) -> DoseImage:
+    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, contours: Sequence[ROIMask]) -> DoseImage:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
-        self._roi = roi
+        # Generate MCsquare configuration file
         self._config = self._generalMCsquareConfig
-
+        # Export useful data
         self._writeFilesToSimuDir()
+        mcsquareIO.writeObjectives(self._plan.objectives, self._objFilePath)
+        for contour in contours:
+            mcsquareIO.writeContours(contour, self._contourFolderPath)
         self._cleanDir(self._outputDir)
+        # Start simulation
         self._startMCsquare(opti=True)
+
+        # Import optimized plan
+        #file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
+        #mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
 
         doseImage = self._importDose()
         return doseImage
@@ -158,7 +167,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         mcsquareIO.writeCT(self._ct, self._ctFilePath, self.overwriteOutsideROI)
         mcsquareIO.writePlan(self._plan, self._planFilePath, self._ct, self._beamModel)
-        mcsquareIO.writeObjectives(self._plan.objectives,  self._objFilePath)
         mcsquareIO.writeCTCalibrationAndBDL(self._ctCalibration, self._scannerFolder, self._materialFolder,
                                             self._beamModel, self._bdlFilePath)
         mcsquareIO.writeConfig(self._config, self._configFilePath)
@@ -190,7 +198,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def _importDose(self) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
         dose.patient = self._ct.patient
-
+        print(self._deliveredProtons())
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000
 
         return dose
@@ -250,6 +258,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     @property
     def _objFilePath(self):
         return os.path.join(self._mcsquareSimuDir, 'PlanObjectives.txt')
+
+    @property
+    def _contourFolderPath(self):
+        return os.path.join(self._mcsquareSimuDir, "structs")
 
     @property
     def _bdlFilePath(self):
@@ -329,9 +341,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 0] / 2.0
             config["Scoring_origin"][2] = self._ct.angles[2] - config["Scoring_voxel_spacing"][
                 2] / 2.0
-            config["Scoring_origin"][1] = -self._ct.angles[1] - config["Scoring_voxel_spacing"][1] * \
-                                          config["Scoring_grid_size"][1] + \
-                                          config["Scoring_voxel_spacing"][1] / 2.0
+            #config["Scoring_origin"][1] = -self._ct.angles[1] - config["Scoring_voxel_spacing"][1] * \
+            #                              config["Scoring_grid_size"][1] + \
+            #                              config["Scoring_voxel_spacing"][1] / 2.0
+            config["Scoring_origin"][1] = self._ct.angles[1] - config["Scoring_voxel_spacing"][
+                1] / 2.0
 
             from Core.Processing.ImageProcessing import sitkImageProcessing
             sitkImageProcessing.resize(self._roi, np.array(self.scoringVoxelSpacing), self._ct.origin,
