@@ -75,6 +75,10 @@ class PlanIonLayer:
     def meterset(self) -> float:
         return np.sum(self._weights)
 
+    @meterset.setter
+    def meterset(self, meterSet: float):
+        self.meterset = meterSet
+
     @property
     def numberOfSpots(self) -> int:
         return len(self._weights)

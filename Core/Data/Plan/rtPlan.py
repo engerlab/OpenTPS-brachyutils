@@ -21,6 +21,7 @@ class RTPlan(PatientData):
     def __init__(self, name="RTPlan", patientInfo=None):
         super().__init__(name=name, patientInfo=patientInfo)
 
+        self.deliveredProtons = None
         self._beams = []
         self._layers = []
         self._spots = []
@@ -139,9 +140,17 @@ class RTPlan(PatientData):
     def meterset(self) -> float:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
 
+    @meterset.setter
+    def meterset(self, meterSet: float):
+        self.meterset = meterSet
+
     @property
     def numberOfSpots(self) -> int:
         return np.sum(np.array([beam.numberOfSpots for beam in self._beams]))
+
+    @numberOfSpots.setter
+    def numberOfSpots(self, nSpots: int):
+        self.numberOfSpots = nSpots
 
     @property
     def numberOfFractionsPlanned(self) -> int:

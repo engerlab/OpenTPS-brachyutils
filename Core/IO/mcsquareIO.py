@@ -7,6 +7,7 @@ import unittest
 from typing import Optional, Sequence
 
 import numpy as np
+import pydicom
 import scipy.sparse as sp
 from scipy.sparse import csc_matrix
 
@@ -20,9 +21,12 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.objectivesList import ObjectivesList
+from Core.Data.Plan.planIonBeam import PlanIonBeam
+from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
+from Core.IO import mhdIO
 from Core.IO.mhdIO import exportImageMHD, importImageMHD
 from Core.Processing.ImageProcessing import crop3D
 
@@ -164,6 +168,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
                       shape=(NbrVoxels, num_unstacked_col - 1), dtype=np.float32)
     print("A shape = ", A.shape)
     print("BL shape = ", beamlet_data.shape)
+    print("num_unstacked_col =", num_unstacked_col)
     BeamletMatrix = sp.hstack([BeamletMatrix, A])
 
     print('Beamlets imported in ' + str(time.time() - time_start) + ' sec')
@@ -202,6 +207,146 @@ def readDose(filePath):
     doseImage = DoseImage.fromImage(doseMHD)
 
     return doseImage
+
+def readMCsquarePlan(ct: CTImage, file_path):
+    destFolder, destFile = os.path.split(file_path)
+    fileName, fileExtension = os.path.splitext(destFile)
+
+    plan = RTPlan()
+    plan.seriesInstanceUID = pydicom.uid.generate_uid()
+    plan.planName = fileName
+    plan.modality = "Ion therapy"
+    plan.radiationType = "Proton"
+    plan.scanMode = "MODULATED"
+    plan.treatmentMachineName = "Unknown"
+
+    numSpots = 0
+
+    with open(file_path, 'r') as f:
+        line = f.readline()
+        while line:
+            # clean the string
+            line = line.replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
+
+            if line == "#PlanName":
+                plan.planName = f.readline().replace('\r', '').replace('\n', '').replace('\t', ' ')
+
+            elif line == "#NumberOfFractions":
+                plan.numberOfFractionsPlanned = int(f.readline())
+
+            elif line == "#TotalMetersetWeightOfAllFields":
+                plan.meterset = float(f.readline())
+
+            elif line == "#FIELD-DESCRIPTION":
+                plan._beams.append(PlanIonBeam())
+                plan.beams[-1].seriesInstanceUID = plan.seriesInstanceUID
+
+            elif line == "###FieldID" and len(plan.beams) > 0:
+                plan.beams[-1].name = f.readline()
+
+            elif line == "###FinalCumulativeMeterSetWeight":
+                plan.beams[-1].meterset = float(f.readline())
+
+            elif line == "###GantryAngle":
+                plan.beams[-1].gantryAngle = float(f.readline())
+
+            elif line == "###PatientSupportAngle":
+                plan.beams[-1].patientSupportAngle = float(f.readline())
+
+            elif line == "###IsocenterPosition":
+                # read isocenter in MCsquare coordinates
+                iso = f.readline().replace('\r', '').replace('\n', '').replace('\t', ' ').split()
+                iso = [float(i) for i in iso]
+
+                #plan.beams[-1].MCsquareIsocenter = iso
+
+                # convert isocenter in dicom coordinates
+                iso[1] = ct.gridSize[1] * ct.spacing[1] - iso[1]
+                iso[0] = iso[0] + ct.angles[0] - ct.spacing[0] / 2
+                iso[1] = iso[1] + ct.angles[1] - ct.spacing[1] / 2
+                iso[2] = iso[2] + ct.angles[2] - ct.spacing[2] / 2
+                plan.beams[-1].isocenterPosition = iso
+
+            elif line == "###RangeShifterID":
+                plan.beams[-1].rangeShifter.ID = f.readline().replace('\r', '').replace('\n', '').replace('\t', '')
+
+            elif line == "###RangeShifterType":
+                plan.beams[-1].rangeShifter.ID = f.readline().replace('\r', '').replace('\n', '').replace('\t', '')
+
+            elif line == "####ControlPointIndex":
+                plan.beams[-1]._layers.append(PlanIonLayer())
+                plan.beams[-1].layers[-1].seriesInstanceUID = plan.seriesInstanceUID
+                line = f.readline()
+
+            elif line == "####CumulativeMetersetWeight":
+                plan.beams[-1].layers[-1].meterset = float(f.readline())
+
+            elif line == "####Energy(MeV)":
+                plan.beams[-1].layers[-1].nominalEnergy = float(f.readline())
+
+            elif line == "####RangeShifterSetting":
+                plan.beams[-1].layers[-1].rangeShifterSettings = f.readline().replace('\r', '').replace('\n',
+                                                                                                       '').replace('\t',
+                                                                                                                   '')
+
+            elif line == "####IsocenterToRangeShifterDistance":
+                plan.beams[-1].layers[-1].rangeShifterSettings.isocenterToRangeShifterDistance = float(f.readline())
+
+            elif line == "####RangeShifterWaterEquivalentThickness":
+                plan.beams[-1].layers[-1].rangeShifterSettings.rangeShifterWaterEquivalentThickness = float(f.readline())
+
+            elif line == "####NbOfScannedSpots":
+                numSpots = int(f.readline())
+                plan.numberOfSpots += numSpots
+
+            elif line == "####XYWeight":
+                for s in range(numSpots):
+                    data = f.readline().replace('\r', '').replace('\n', '').replace('\t', '').split()
+                    plan.beams[-1].layers[-1]._x.append(float(data[0]))
+                    plan.beams[-1].layers[-1]._y.append(float(data[1]))
+                    #plan.beams[-1].layers[-1].meterset.append(float(data[2]))
+                    plan.beams[-1].layers[-1]._weights.append(float(data[2]))
+
+            elif line == "####XYWeightTime":
+                for s in range(numSpots):
+                    data = f.readline().replace('\r', '').replace('\n', '').replace('\t', '').split()
+                    plan.beams[-1].layers[-1]._x.append(float(data[0]))
+                    plan.beams[-1].layers[-1]._y.append(float(data[1]))
+                    #plan.beams[-1].layers[-1].meterset.append(float(data[2]))
+                    plan.beams[-1].layers[-1]._weights.append(float(data[2]))
+                    plan.beams[-1].layers[-1]._timings.append(float(data[3]))
+
+            line = f.readline()
+
+    # plan.Beams[-1].Layers[-1].RangeShifterSetting = 'OUT'
+    # plan.Beams[-1].Layers[-1].IsocenterToRangeShifterDistance = 0.0
+    # plan.Beams[-1].Layers[-1].RangeShifterWaterEquivalentThickness = 0.0
+    # plan.Beams[-1].Layers[-1].ReferencedRangeShifterNumber = 0
+
+    # plan.Beams[-1].RangeShifter = "none"
+    # plan.NumberOfSpots = ""
+    plan.isLoaded = 1
+
+    return plan
+
+
+def update_weights_from_PlanPencil(ct: CTImage, initialPlan: RTPlan, file_path, bdl):
+    # read PlanPencil generated by MCsquare
+    PlanPencil = readMCsquarePlan(ct, file_path)
+
+    # update weight of initial plan with those from PlanPencil
+    initialPlan.DeliveredProtons = 0
+    initialPlan.TotalMeterset = PlanPencil.meterset
+    for b in range(len(PlanPencil.beams)):
+        initialPlan.beams[b].meterset = PlanPencil.beams[b].meterset
+        for l in range(len(PlanPencil.beams[b].layers)):
+            initialPlan.beams[b].layers[l].meterset = PlanPencil.beams[b].layers[l].meterset
+            initialPlan.beams[b].layers[l].spotWeights = PlanPencil.beams[b].layers[l].spotWeights
+            if bdl.isLoaded:
+                initialPlan.deliveredProtons += sum(initialPlan.beams[b].layers[l].spotWeights) * np.interp(
+                    initialPlan.beams[b].layers[l].nominalEnergy, bdl.NominalEnergy, bdl.ProtonsMU)
+            else:
+                initialPlan.deliveredProtons += bdl.computeMU2Protons(initialPlan.beams[b].layers[l].nominalEnergy)
 
 
 def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
@@ -465,6 +610,19 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
 
     fid.close()
 
+
+def writeContours(contour: ROIMask, folder_path):
+    # Convert data for compatibility with MCsquare
+    # These transformations may be modified in a future version
+    #contour.imageArray = np.flip(contour.imageArray, (0,1))
+    contour.imageArray = np.flip(contour.imageArray, 0)
+    contour.imageArray = np.flip(contour.imageArray, 1)
+
+    if not os.path.isdir(folder_path):
+        os.mkdir(folder_path)
+    contourName = contour.name.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
+    file_path = os.path.join(folder_path, contourName + ".mhd")
+    mhdIO.exportImageMHD(file_path, contour)
 
 def writeObjectives(objectives: ObjectivesList, file_path):
     targetName = objectives.targetName.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
