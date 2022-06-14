@@ -145,8 +145,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare(opti=True)
 
         # Import optimized plan
-        file_path = os.path.join(self._plan.objectives, "Outputs", "Optimized_Plan.txt")
-        update_weights_from_PlanPencil(file_path, CT, Plan, self.BDL)
+        #file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
+        #mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
 
         doseImage = self._importDose()
         return doseImage
