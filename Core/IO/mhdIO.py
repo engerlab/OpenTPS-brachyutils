@@ -66,7 +66,7 @@ def exportImageMHD(outputPath, image):
 
     binaryData = image._imageArray
     if isinstance(image, ROIMask):
-        metaData["ElementType"] = "MET_BOOL"
+        metaData["ElementType"] = "MET_FLOAT"
     if image._imageArray is not None and image._imageArray.ndim == 4: # save vectorField3D
         metaData["ElementNumberOfChannels"] = image._imageArray.shape[3]
     if hasattr(image, 'velocity'): # save deformation3D
