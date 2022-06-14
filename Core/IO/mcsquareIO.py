@@ -335,8 +335,8 @@ def updateWeightsFromPlanPencil(ct: CTImage, initialPlan: RTPlan, file_path, bdl
     PlanPencil = readMCsquarePlan(ct, file_path)
 
     # update weight of initial plan with those from PlanPencil
-    initialPlan.DeliveredProtons = 0
-    initialPlan.TotalMeterset = PlanPencil.meterset
+    initialPlan.deliveredProtons = 0
+    initialPlan.meterset = PlanPencil.meterset
     for b in range(len(PlanPencil.beams)):
         initialPlan.beams[b].meterset = PlanPencil.beams[b].meterset
         for l in range(len(PlanPencil.beams[b].layers)):

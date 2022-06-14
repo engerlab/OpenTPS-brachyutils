@@ -134,7 +134,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         # Generate MCsquare configuration file
-        self._config = self._generalMCsquareConfig
+        self._config = self._beamletFreeOptiConfig
         # Export useful data
         self._writeFilesToSimuDir()
         mcsquareIO.writeObjectives(self._plan.objectives, self._objFilePath)
@@ -145,7 +145,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare(opti=True)
 
         # Import optimized plan
-        #file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
+        file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
         #mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
 
         doseImage = self._importDose()
