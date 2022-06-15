@@ -12,7 +12,7 @@ class PiecewiseHU2Density:
         self.__densities = piecewiseTable[1]
 
         if not (fromFile is None):
-            self.__load(fromFile)
+            self._initializeFromFile(fromFile)
 
     # despite __ in __str__ this is not considered 'private' by python which is more than logical
     # If we subclass this class, __str__ is overloaded and when we call __str__ from this class we would actually call __str__ from subclass
@@ -21,6 +21,16 @@ class PiecewiseHU2Density:
 
     def __str(self):
         return self.writeableTable()
+
+    @classmethod
+    def fromFile(cls, huDensityFile):
+        newObj = cls()
+        newObj._initializeFromFile(huDensityFile)
+
+        return newObj
+
+    def _initializeFromFile(self, huDensityFile):
+        self.__load(huDensityFile)
 
     def writeableTable(self):
         s = ''
@@ -54,7 +64,14 @@ class PiecewiseHU2Density:
 
         hu = interpolate.interp1d(density_ref, HU_ref, kind='linear', fill_value='extrapolate')
 
-        return hu(densities)
+        # If densities as 0, interpolation returns nan but we must return 0
+        res = np.array(hu(densities))
+        res[np.isnan(res)] = 0.
+
+        if res.ndim==1:
+            res = res[0]
+
+        return res
 
     def convertHU2MassDensity(self, hu):
         f = interpolate.interp1d(self.__hu, self.__densities, kind='linear', fill_value='extrapolate')

@@ -16,6 +16,7 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
 from programSettings import ProgramSettings
@@ -94,7 +95,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return doseImage
 
-    def computeBeamlets(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None):
+    def computeBeamlets(self, ct:CTImage, plan: RTPlan, roi:Optional[ROIMask]=None) -> SparseBeamlets:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
@@ -136,7 +137,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._subprocessKilled = False
 
         if (platform.system() == "Linux"):
-            self._subprocess = subprocess.Popen(["sh", "MCsquare_opti"], cwd=self._mcsquareSimuDir)
+            self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
             self._subprocess.wait()
             if self._subprocessKilled:
                 self._subprocessKilled = False

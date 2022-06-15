@@ -165,7 +165,7 @@ class DVHCurve:
 
     def _setCurveData(self, *args):
         mycolor = (self._referenceROI.color[0], self._referenceROI.color[1], self._referenceROI.color[2])
-        pen = mkPen(color=mycolor, width=1)
+        pen = mkPen(color=mycolor, width=2)
 
         dose, volume = self._dvh.histogram
         self.curve.setData(dose, volume, pen=pen, name=self._referenceROI.name)

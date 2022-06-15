@@ -1,6 +1,7 @@
 import numpy as np
 
-class ObjectivesList:
+
+class ObjectivesList():
     def __init__(self):
         self.fidObjList = []
         self.exoticObjList = []
@@ -11,7 +12,7 @@ class ObjectivesList:
         self.targetName = roiName
         self.targetPrescription = prescription
 
-    def addFidObjective(self, roiName, metric, condition, limitValue, weight, robust=False):
+    def addFidObjective(self, roiName, metric, condition, limitValue, weight, kind = "Soft", robust=False):
         objective = FidObjective()
         objective.roiName = roiName
 
@@ -26,44 +27,52 @@ class ObjectivesList:
             return
 
         if condition == "LessThan" or condition == "<":
-            objective.Condition = "<"
+            objective.condition = "<"
         elif condition == "GreaterThan" or condition == ">":
-            objective.Condition = ">"
+            objective.condition = ">"
         else:
             print("Error: objective condition " + condition + " is not supported.")
             return
 
         objective.limitValue = limitValue
         objective.weight = weight
+        objective.kind = kind
         objective.robust = robust
 
         self.fidObjList.append(objective)
 
-    def vectorizeContours(self, contours):
+    def initializeContours(self, contours, ct, scoringGridSize, scoringSpacing):
         '''I might move this function elsewhere'''
         for objective in self.fidObjList:
             for contour in contours:
-                if objective.roiName == contour.ROIName:
-                    objective.maskVec = np.flip(contour.mask, (0, 1))
-                    objective.maskVec = np.ndarray.flatten(objective.maskVec, 'F')
+                if objective.roiName == contour.name:
+                    objective.maskVec = contour.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize,
+                                                              spacing=ct.spacing)
+                    from Core.Processing.ImageProcessing import sitkImageProcessing
+                    sitkImageProcessing.resize(objective.maskVec, scoringSpacing, ct.origin, scoringGridSize)
+                    #objective.maskVec.resample(scoringGridSize, ct.origin, scoringSpacing)
+                    #print('nnz mask = ', len(np.flatnonzero(objective.maskVec.imageArray)))
+                    objective.maskVec = np.flip(objective.maskVec.imageArray, (0, 1))
+                    objective.maskVec = np.ndarray.flatten(objective.maskVec, 'F').astype('bool')
 
     def addExoticObjective(self, weight):
         objective = ExoticObjective()
         objective.weight = weight
         self.exoticObjList.append(objective)
 
+
 class FidObjective:
-  def __init__(self):
-    self.roiIName = ""
-    self.metric = ""
-    self.condition = ""
-    self.limitValue = ""
-    self.weight = ""
-    self.robust = False
-    self.maskVec = []
+    def __init__(self):
+        self.roiName = ""
+        self.metric = ""
+        self.condition = ""
+        self.limitValue = ""
+        self.weight = ""
+        self.robust = False
+        self.kind = "Soft"
+        self.maskVec = []
+
 
 class ExoticObjective:
-  def __init__(self):
-    self.weight = ""
-
-
+    def __init__(self):
+        self.weight = ""

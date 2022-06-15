@@ -1,6 +1,8 @@
 import os
 import re
 
+import numpy as np
+
 from Core.Data.CTCalibrations.MCsquareCalibration.G4StopPow import G4StopPow
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareElement import MCsquareElement
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
@@ -15,6 +17,10 @@ class MCsquareMolecule(MCsquareMaterial):
     def __str__(self):
         return self.mcsquareFormatted()
 
+    def stoppingPower(self, energy:float=100.) -> float:
+        e, s = self.sp.toList()
+        return np.interp(energy, e, s)
+
     def mcsquareFormatted(self, materialNamesOrderedForPrinting):
         s = 'Name ' + self.name + '\n'
         s += 'Molecular_Weight 	0.0 		 # N.C.\n'
@@ -22,7 +28,7 @@ class MCsquareMolecule(MCsquareMaterial):
         electronDensity = self.electronDensity if self.electronDensity > 0. else 1e-4
         s += 'Electron_Density ' + str(electronDensity) + " # in cm-3 \n"
         s += 'Radiation_Length ' + str(self.radiationLength) + " # in g/cm2 \n"
-        s += 'Nuclear_Data 		Mixture ' + str(len(self.weights)) + ' # mixture with ' + str(len(self.weights)) + ' components \n'
+        s += 'Nuclear_Data 		Mixture ' + str(len(self.weights)) + ' # mixture with ' + str(len(self.weights)) + ' components\n'
         s += '# 	Label 	Name 		fraction by mass (in %)\n'
 
         for i, element in enumerate(self.MCsquareElements):

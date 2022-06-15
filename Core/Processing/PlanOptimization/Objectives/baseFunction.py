@@ -1,5 +1,6 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import logging
-
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -22,11 +23,11 @@ class BaseFunc(object):
         """
         sol = self._eval(np.asarray(x))
         name = self.__class__.__name__
-        logger.info('    {} evaluation: {:e}'.format(name, sol))
+        logger.debug('    {} evaluation: {}'.format(name, sol))
         return sol
 
     def _eval(self, x):
-        logger.error("Class user should define this method.")
+        raise NotImplementedError("Class user should define this prox method.")
 
     def prox(self, x, T):
         """
@@ -35,7 +36,7 @@ class BaseFunc(object):
         return self._prox(np.asarray(x), T)
 
     def _prox(self, x, T):
-        logger.error("Class user should define this method.")
+        raise NotImplementedError("Class user should define this prox method.")
 
     def grad(self, x):
         """
@@ -44,7 +45,7 @@ class BaseFunc(object):
         return self._grad(np.asarray(x))
 
     def _grad(self, x):
-        logger.error("Class user should define this method.")
+        raise NotImplementedError("Class user should define this prox method.")
 
     def cap(self, x):
         """
@@ -53,19 +54,16 @@ class BaseFunc(object):
         cap = ['EVAL', 'GRAD', 'PROX']
         try:
             self.eval(x)
-        except:
+        except NotImplementedError:
             cap.remove('EVAL')
-            logger.exception('Not implemented')
         try:
             self.grad(x)
-        except:
+        except NotImplementedError:
             cap.remove('GRAD')
-            logger.exception('Not implemented')
         try:
             self.prox(x, 1)
-        except:
+        except NotImplementedError:
             cap.remove('PROX')
-            logger.exception('Not implemented')
         return cap
 
 

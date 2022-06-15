@@ -1,3 +1,13 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
+import copy
+import logging
+
+import numpy as np
+
+from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy
+logger = logging.getLogger(__name__)
+
 class Backtracking(Dummy):
     """
     Backtracking based on a local quadratic approximation of the smooth
@@ -12,7 +22,7 @@ class Backtracking(Dummy):
         if (eta > 1) or (eta <= 0):
             logger.error("eta must be between 0 and 1.")
         self.eta = eta
-        super(backtracking, self).__init__(**kwargs)
+        super(Backtracking, self).__init__(**kwargs)
 
     def _update_step(self, solver, objective, niter):
         # Save current state of the solver
@@ -52,7 +62,8 @@ class Backtracking(Dummy):
                 setattr(solver, key, copy.copy(val))
             logger.debug('(Reset) solver properties: {}'.format(vars(solver)))
 
-            if (2. * step * (fp - fn - dot_prod) <= norm_diff):
+            if \
+                    2. * step * (fp - fn - dot_prod) <= norm_diff:
                 logger.debug('Break condition reached')
                 break
             else:

@@ -14,11 +14,13 @@ class PlanIonBeam:
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
         self.gantryAngle = 0.0
+        self.couchAngle = 0.0
+        self.id = 0
         self.patientSupportAngle = 0.0
         self.rangeShifter: Optional[RangeShifter] = None
         self.seriesInstanceUID = ""
 
-    def  __getitem__(self, layerNb) -> PlanIonLayer:
+    def __getitem__(self, layerNb) -> PlanIonLayer:
         return self._layers[layerNb]
 
     def __len__(self):
@@ -37,10 +39,10 @@ class PlanIonBeam:
         # For backwards compatibility but we can now access each layer with indexing brackets
         return [layer for layer in self._layers]
 
-    def appendLayer(self, layer:PlanIonLayer):
+    def appendLayer(self, layer: PlanIonLayer):
         self._layers.append(layer)
 
-    def removeLayer(self, layer:Union[PlanIonLayer, Sequence[PlanIonLayer]]):
+    def removeLayer(self, layer: Union[PlanIonLayer, Sequence[PlanIonLayer]]):
         if isinstance(layer, Sequence):
             layers = layer
             for layer in layers:
@@ -63,7 +65,7 @@ class PlanIonBeam:
 
         ind = 0
         for layer in self._layers:
-            layer.spotWeights = w[ind:ind+len(layer.spotWeights)]
+            layer.spotWeights = w[ind:ind + len(layer.spotWeights)]
             ind += len(layer.spotWeights)
 
     @property
@@ -80,8 +82,23 @@ class PlanIonBeam:
 
         ind = 0
         for layer in self._layers:
-            layer.spotTimings = t[ind:ind+len(layer.spotTimings)]
+            layer.spotTimings = t[ind:ind + len(layer.spotTimings)]
             ind += len(layer.spotTimings)
+
+    @property
+    def spotXY(self) -> np.ndarray:
+        xy = np.array([])
+        for layer in self._layers:
+            layerXY = list(layer.spotXY)
+            if len(layerXY) <= 0:
+                continue
+
+            if len(xy) <= 0:
+                xy = layerXY
+            else:
+                xy = np.concatenate((xy, layerXY))
+
+        return xy
 
     @property
     def meterset(self) -> float:
@@ -91,7 +108,7 @@ class PlanIonBeam:
     def numberOfSpots(self) -> int:
         return np.sum(np.array([layer.numberOfSpots for layer in self._layers]))
 
-    def simplify(self, threshold:float=0.0):
+    def simplify(self, threshold: float = 0.0):
         self._fusionDuplicates()
 
         for layer in self._layers:
@@ -99,14 +116,21 @@ class PlanIonBeam:
 
     def reorderLayers(self, order: Optional[Union[str, Sequence[int]]] = 'decreasing'):
         if type(order) is str:
-            if order == 'decreasing' or order=='scanAlgo':
+            if order == 'decreasing' or order == 'scanAlgo':
                 order = np.argsort([layer.nominalEnergy for layer in self._layers])[::-1]
             else:
                 raise ValueError(f"Reordering method {order} does not exist.")
 
         self._layers = [self._layers[i] for i in order]
 
-
     def _fusionDuplicates(self):
-        #TODO
+        # TODO
         raise NotImplementedError()
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def createEmptyBeamWithSameMetaData(self):
+        beam = self.copy()
+        beam._layers = []
+        return beam

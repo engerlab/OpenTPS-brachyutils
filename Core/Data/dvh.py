@@ -15,6 +15,7 @@ class DVH:
         self.dataUpdatedEvent = Event()
 
         self._roiMask = roiMask
+        self._roiName = roiMask.name
         self._doseImage = dose
 
         self._dose = None
@@ -58,6 +59,10 @@ class DVH:
     @property
     def histogram(self):
         return self._dose, self._volume
+
+    @property
+    def name(self):
+        return self._roiName
 
     @property
     def Dmean(self):
@@ -104,7 +109,7 @@ class DVH:
         self._convertContourToROI()
 
         if not(self._doseImage.hasSameGrid(self._roiMask)):
-            self._doseImage = imageTransform3D.intersect(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
+            self._doseImage = imageTransform3D.resampleOn(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
 
         dose = self._doseImage.imageArray
         mask = self._roiMask.imageArray.astype(bool)

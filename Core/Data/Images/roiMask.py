@@ -25,7 +25,7 @@ class ROIMask(Image3D):
         self._displayColor = displayColor
 
     @classmethod
-    def fromImage3D(cls, image: Image3D):
+    def fromImage3D(cls, image:Image3D):
         return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
 
     @property
