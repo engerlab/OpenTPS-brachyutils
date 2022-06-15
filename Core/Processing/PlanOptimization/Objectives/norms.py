@@ -84,7 +84,7 @@ class NormL21(Norm):
         self.scaleReg = scaleReg
         self.oldRegularisation = oldRegularisation
         targetMask = self.plan.objectives.fidObjList[0].maskVec
-        targetIndices = targetMask.nonzero()[0]
+        targetIndices = np.array(targetMask).nonzero()[0]
         self.BLTarget = plan.beamlets.toSparseMatrix()[targetIndices, :]
         self.iter = 0
 
