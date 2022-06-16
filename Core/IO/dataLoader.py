@@ -122,7 +122,7 @@ def loadAllData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
 
     # read MHD images
     for filePath in fileLists["MHD"]:
-        mhdImage = mhdReadWrite.importImageMHD(filePath)
+        mhdImage = mhdIO.importImageMHD(filePath)
         dataList.append(mhdImage)
 
     # read serialized object files
