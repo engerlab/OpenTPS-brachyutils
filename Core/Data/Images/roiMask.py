@@ -185,7 +185,7 @@ class ROIMask(Image3D):
                                     coordsInPixels[0], coordsInPixels[1] = coordsInPixels[1], coordsInPixels[0]
 
                 orderedCoordsInPixels.append(orderedCoordsInPixels[0])
-                
+
                 for pointIndex in range(len(orderedCoordsInPixels)):
                     xCoord = orderedCoordsInPixels[pointIndex][0] * self.spacing[0] + self.origin[0]
                     yCoord = orderedCoordsInPixels[pointIndex][1] * self.spacing[1] + self.origin[1]
@@ -197,7 +197,7 @@ class ROIMask(Image3D):
 
                 polygonMeshList.append(polygonMesh)
 
-        from Core.Data.roiContour import ROIContour
+        from Core.Data.roiContour import ROIContour ## this is done here to avoir circular imports issue
         contour = ROIContour(name=self.name, patientInfo=self.patientInfo, displayColor=self._displayColor)
         contour.polygonMesh = polygonMeshList
 
