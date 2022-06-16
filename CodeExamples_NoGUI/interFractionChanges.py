@@ -53,7 +53,6 @@ if __name__ == '__main__':
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
     rtStruct = patient.getPatientDataOfType("RTStruct")[0]
 
-    ## get the ROI and mask on which we want to apply the motion signal
     print('Available ROIs')
     rtStruct.print_ROINames()
 
