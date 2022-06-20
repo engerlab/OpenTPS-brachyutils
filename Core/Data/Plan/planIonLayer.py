@@ -31,17 +31,23 @@ class PlanIonLayer:
 
     def __deepcopy__(self, memodict={}):
         newLayer = PlanIonLayer()
-        newLayer._x = np.array(self._x)
-        newLayer._y = np.array(self._y)
-        newLayer._weights = np.array(self._weights)
-        newLayer._timings = np.array(self._timings)
 
-        newLayer.nominalEnergy = self.nominalEnergy
-        newLayer.numberOfPaintings = self.numberOfPaintings
-        newLayer.rangeShifterSettings = self.rangeShifterSettings.__deepcopy__(memodict=memodict)
-        newLayer.seriesInstanceUID = self.seriesInstanceUID
+        memodict[id(self)] = newLayer
+
+        newLayer._deepCopyProperties(self, memodict)
 
         return newLayer
+
+    def _deepCopyProperties(self, otherLayer, memodict):
+        self._x = np.array(otherLayer._x)
+        self._y = np.array(otherLayer._y)
+        self._weights = np.array(otherLayer._weights)
+        self._timings = np.array(otherLayer._timings)
+
+        self.nominalEnergy = otherLayer.nominalEnergy
+        self.numberOfPaintings = otherLayer.numberOfPaintings
+        self.rangeShifterSettings = otherLayer.rangeShifterSettings.__deepcopy__(memodict)
+        self.seriesInstanceUID = otherLayer.seriesInstanceUID
 
     @property
     def spotX(self) -> Sequence[float]:

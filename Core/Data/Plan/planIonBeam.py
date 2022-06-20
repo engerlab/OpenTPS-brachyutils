@@ -37,18 +37,24 @@ class PlanIonBeam:
     def __deepcopy__(self, memodict={}):
         newBeam = PlanIonBeam()
 
-        newBeam._layers = [layer.__deepcopy__(memodict=memodict) for layer in self._layers]
+        memodict[id(self)] = newBeam
 
-        newBeam.name = self.name
-        newBeam.isocenterPosition = np.array(self.isocenterPosition)
-        newBeam.gantryAngle = self.gantryAngle
-        newBeam.couchAngle = self.couchAngle
-        newBeam.id = self.id
-        newBeam.patientSupportAngle = self.patientSupportAngle
-        newBeam.rangeShifter = copy.deepcopy(self.rangeShifter, memodict)
-        newBeam.seriesInstanceUID = self.seriesInstanceUID
+        newBeam._deepCopyProperties(self, memodict)
 
         return newBeam
+
+    def _deepCopyProperties(self, otherBeam, memodict):
+        self._layers = [layer.__deepcopy__(memodict) for layer in otherBeam._layers]
+
+        self.name = otherBeam.name
+        self.isocenterPosition = np.array(otherBeam.isocenterPosition)
+        self.gantryAngle = otherBeam.gantryAngle
+        self.couchAngle = otherBeam.couchAngle
+        self.id = otherBeam.id
+        self.patientSupportAngle = otherBeam.patientSupportAngle
+        self.rangeShifter = copy.deepcopy(otherBeam.rangeShifter, memodict)
+        self.seriesInstanceUID = otherBeam.seriesInstanceUID
+
 
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
