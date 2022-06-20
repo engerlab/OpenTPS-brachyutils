@@ -57,34 +57,6 @@ class RTPlan(PatientData):
             s += str(beam)
         return s
 
-    def __deepcopy__(self, memodict={}):
-        newPlan = RTPlan()
-
-        newPlan._beams = [beam.__deepcopy__(memodict=memodict) for beam in self._beams]
-        newPlan._numberOfFractionsPlanned = self._numberOfFractionsPlanned
-
-        newPlan.seriesInstanceUID = self.seriesInstanceUID
-        newPlan.SOPInstanceUID = self.SOPInstanceUID
-        # self.PatientInfo = {}
-        # self.StudyInfo = {}
-        # self.DcmFile = ""
-        newPlan.modality = self.modality
-        newPlan.radiationType = self.radiationType
-        newPlan.scanMode = self.scanMode
-        newPlan.treatmentMachineName = self.treatmentMachineName
-        newPlan.objectives = copy.deepcopy(self.objectives)
-        newPlan.planName = self.planName
-        newPlan.isLoaded = self.isLoaded
-        newPlan.beamlets = copy.deepcopy(self.beamlets)
-        newPlan.beamletsLET = copy.deepcopy(self.beamletsLET)
-        newPlan.originalDicomDataset = copy.deepcopy(self.originalDicomDataset)
-        newPlan.robustOpti = copy.deepcopy(self.robustOpti)
-        newPlan.scenarios = copy.deepcopy(self.scenarios)
-        newPlan.numScenarios = self.numScenarios
-        newPlan.planDesign = copy.deepcopy(self.planDesign)
-
-        return newPlan
-
     @property
     def beams(self) -> Sequence[PlanIonBeam]:
         # For backwards compatibility but we can now access each beam with indexing brackets

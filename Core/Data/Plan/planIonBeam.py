@@ -45,7 +45,7 @@ class PlanIonBeam:
         newBeam.couchAngle = self.couchAngle
         newBeam.id = self.id
         newBeam.patientSupportAngle = self.patientSupportAngle
-        newBeam.rangeShifter = copy.deepcopy(self.rangeShifter)
+        newBeam.rangeShifter = copy.deepcopy(self.rangeShifter, memodict)
         newBeam.seriesInstanceUID = self.seriesInstanceUID
 
         return newBeam
