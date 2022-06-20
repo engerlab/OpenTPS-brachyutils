@@ -44,7 +44,7 @@ class Image3D(PatientData):
 
     @property
     def imageArray(self) -> np.ndarray:
-        return self._imageArray
+        return np.array(self._imageArray)
 
     @imageArray.setter
     def imageArray(self, array):

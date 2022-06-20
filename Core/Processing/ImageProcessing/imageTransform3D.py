@@ -1,4 +1,5 @@
 import copy
+import logging
 from math import pi, cos, sin
 from typing import Sequence, Optional, Union
 
@@ -9,6 +10,10 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.roiContour import ROIContour
+
+
+logger = logging.getLogger(__name__)
+
 
 try:
     from Core.Processing.ImageProcessing import sitkImageProcessing, crop3D
@@ -29,7 +34,10 @@ def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:
         image = image.__class__.fromImage3D(image)
 
     if not(image.hasSameGrid(fixedImage)):
+        logger.info("Resampling image")
         resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
+    else:
+        logger.info("Image not resampled because sampling grids are already identical.")
 
     return image
 
@@ -66,7 +74,6 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
 
 def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
-    cropROI = None # TEST !!!!
     tform = _forwardDicomToIECGantry(beam)
 
     tform = linalg.inv(tform)
@@ -130,7 +137,6 @@ def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequen
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
-    cropROI = None  # TEST !!!!
     tform = _forwardDicomToIECGantry(beam)
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)

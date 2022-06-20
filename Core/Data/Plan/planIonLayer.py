@@ -29,6 +29,20 @@ class PlanIonLayer:
             s += str(xyAndWeight)
         return s
 
+    def __deepcopy__(self, memodict={}):
+        newLayer = PlanIonLayer()
+        newLayer._x = np.array(self._x)
+        newLayer._y = np.array(self._y)
+        newLayer._weights = np.array(self._weights)
+        newLayer._timings = np.array(self._timings)
+
+        newLayer.nominalEnergy = self.nominalEnergy
+        newLayer.numberOfPaintings = self.numberOfPaintings
+        newLayer.rangeShifterSettings = self.rangeShifterSettings.__deepcopy__(memodict=memodict)
+        newLayer.seriesInstanceUID = self.seriesInstanceUID
+
+        return newLayer
+
     @property
     def spotX(self) -> Sequence[float]:
         return [x for x in self._x]
@@ -239,6 +253,16 @@ class RangeShifterSettings:
         self.rangeShifterWaterEquivalentThickness = None  # Means get thickness from BDL! This is extremely error prone!
         self.rangeShifterSetting = 'OUT'
         self.referencedRangeShifterNumber = 0
+
+    def __deepcopy__(self, memodict={}):
+        newSettings = RangeShifterSettings()
+
+        newSettings.isocenterToRangeShifterDistance = self.isocenterToRangeShifterDistance
+        newSettings.rangeShifterWaterEquivalentThickness = self.rangeShifterWaterEquivalentThickness
+        newSettings.rangeShifterSetting = self.rangeShifterSetting
+        newSettings.referencedRangeShifterNumber = self.referencedRangeShifterNumber
+
+        return newSettings
 
 
 class PlanIonLayerTestCase(unittest.TestCase):
