@@ -74,6 +74,8 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
 
 def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    logger.info("Resampling image DICOM -> IEC Gantry")
+
     tform = _forwardDicomToIECGantry(beam)
 
     tform = linalg.inv(tform)
@@ -137,6 +139,8 @@ def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequen
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    logger.info("Resampling image IEC Gantry -> DICOM")
+
     tform = _forwardDicomToIECGantry(beam)
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)

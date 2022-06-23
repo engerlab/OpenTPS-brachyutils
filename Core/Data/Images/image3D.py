@@ -48,6 +48,8 @@ class Image3D(PatientData):
 
     @imageArray.setter
     def imageArray(self, array):
+        if not (array is None):
+            logger.debug("Array " + str(array.shape))
         self._imageArray = array
         self.dataChangedSignal.emit()
 
