@@ -10,17 +10,38 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.roiContour import ROIContour
-
+from Core.Processing.ImageProcessing import resampler3D, crop3D
 
 logger = logging.getLogger(__name__)
 
-
 try:
-    from Core.Processing.ImageProcessing import sitkImageProcessing, crop3D
-
-    resize = sitkImageProcessing.resize
+    from Core.Processing.ImageProcessing import sitkImageProcessing
 except:
-    print('No module SimpleITK found')
+    logger.warning('No module SimpleITK found')
+
+
+
+def resampleImage(image:Image3D,
+             newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=None, newShape:Optional[np.ndarray]=None,
+             fillValue:float=0., inPlace:bool=False, method:str="simpleITK"):
+    if not inPlace:
+        image = image.__class__.fromImage3D(image)
+
+    if method=="simpleITK":
+        try:
+            from Core.Processing.ImageProcessing import sitkImageProcessing
+            sitkImageProcessing.resize(image, newSpacing, newOrigin, newShape, fillValue=fillValue)
+        except:
+            logger.warning('No module SimpleITK found')
+            resampler3D.resample(image, newOrigin, newSpacing, newShape, fillValue=fillValue, tryGPU=True)
+    elif method=="cupy":
+        image.data = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                          newOrigin, newSpacing, newShape, fillValue=fillValue, tryGPU=True)
+    else:
+        image.data = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                          newOrigin, newSpacing, newShape, fillValue=fillValue, tryGPU=True)
+
+    return image
 
 
 def add(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
@@ -29,17 +50,18 @@ def add(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:flo
 def subtract(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
     raise NotImplementedError
 
-def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
+def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0., method:str="simpleITK") -> Optional[Image3D]:
     if not inPlace:
         image = image.__class__.fromImage3D(image)
 
     if not(image.hasSameGrid(fixedImage)):
-        logger.info("Resampling image")
-        resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
+        resampleImage(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue, inPlace=True, method=method)
     else:
         logger.info("Image not resampled because sampling grids are already identical.")
 
     return image
+
+
 
 def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Sequence[Image3D]:
     newOrigin = np.array([np.Inf, np.Inf, np.Inf])
@@ -64,7 +86,7 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
         if not inPlace:
             image = image.__class__.fromImage3D(image)
 
-        resize(image, newSpacing, newOrigin=newOrigin, newShape=np.round((newEnd - newOrigin)/newSpacing).astype(int),
+        sitkImageProcessing.resize(image, newSpacing, newOrigin=newOrigin, newShape=np.round((newEnd - newOrigin)/newSpacing).astype(int),
                fillValue=fillValue)
 
         outImages.append(image)

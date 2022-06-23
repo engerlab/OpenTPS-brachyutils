@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+
+from Core.Processing.ImageProcessing import imageTransform3D
+
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
@@ -24,7 +27,7 @@ if __name__ == "__main__":
     df = reg.compute()
 
     # DISPLAY RESULTS
-    df.resampleToImageGrid(moving)
+    imageTransform3D.resampleOn(df, moving, inPlace=True, fillValue=-1024.)
     diff_before = fixed.copy()
     diff_before._imageArray = moving.imageArray - fixed.imageArray
     diff_after = fixed.copy()

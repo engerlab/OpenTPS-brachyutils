@@ -21,8 +21,8 @@ class LETImage(Image3D):
     
     def prepareImageForViewer(self, allowNegative=False):
         pass
-    
-    
+
+
     
     def initializeFromMHD(self, imgName, mhdDose, ct, plan):
         pass
@@ -30,16 +30,6 @@ class LETImage(Image3D):
     
     
     def initializeFromBeamletDose(self, imgName, beamlets, doseVector, ct):
-        pass
-    
-    
-      
-    def resampleToImageGrid(self, ct):
-        pass
-    
-    
-      
-    def resampleImage(self, gridSize, offset, pixelSpacing):
         pass
 
 

@@ -140,12 +140,6 @@ class ROIMask(Image3D):
         else:
             self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
-        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32', tryGPU=tryGPU)
-        self.data = self._imageArray >= 0.5
-        if not(outputType is None):
-            self.data = self.data.astype(outputType)
-
     def getROIContour(self):
 
         polygonMeshList = []

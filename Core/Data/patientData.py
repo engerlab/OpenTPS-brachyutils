@@ -46,7 +46,7 @@ class PatientData:
                 setattr(result, attrKey, copy.deepcopy(attrVal, memodict))
 
         self._patient = patient
-        result.patient = patient
+        #result.patient = patient
         return result
 
     def deepCopyWithoutEventExceptNdArray(self):
