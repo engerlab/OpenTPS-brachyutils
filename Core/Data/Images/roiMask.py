@@ -5,7 +5,7 @@ from skimage.measure import label, find_contours
 from skimage.segmentation import find_boundaries
 import copy
 import logging
-import cv2
+# import cv2
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
@@ -219,75 +219,75 @@ class ROIMask(Image3D):
 
         return contour
 
-    def getROIContoursCV2(self):
-
-        polygonMeshList = []
-        for zSlice in range(self._imageArray.shape[2]):
-            labeledImg, numberOfLabel = label(self._imageArray[:, :, zSlice], return_num=True)
-            for i in range(1, numberOfLabel + 1):
-
-                singleLabelImg = labeledImg == i
-
-                # import matplotlib.pyplot as plt
-                # plt.figure()
-                # plt.imshow(singleLabelImg)
-                # plt.show()
-
-                contours, _ = cv2.findContours(singleLabelImg.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-
-                print('ici')
-                print(len(contours))
-                # print(_)
-                # print(contours[0])
-                # print('---')
-                # print(contours[1])
-
-                polygonMesh = []
-                contour = contours[0]
-
-                for point in contour:
-                    xCoord = point[0][0] * self.spacing[1] + self.origin[1]
-                    yCoord = point[0][1] * self.spacing[0] + self.origin[0]
-                    zCoord = zSlice * self.spacing[2] + self.origin[2]
-
-                    polygonMesh.append(yCoord)
-                    polygonMesh.append(xCoord)
-                    polygonMesh.append(zCoord)
-
-                polygonMeshList.append(polygonMesh)
-
-                if len(contours) == 2:
-
-                    internalContour = contours[1]
-
-                    inversedImage = np.logical_not(singleLabelImg)
-                    labeledImg, numberOfLabel = label(inversedImage, return_num=True)
-
-                    contours2, _2 = cv2.findContours(inversedImage.astype(np.uint8), cv2.RETR_CCOMP,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
-
-                    import matplotlib.pyplot as plt
-                    plt.figure()
-                    plt.imshow(inversedImage)
-                    plt.show()
-
-
-                # for contourIndex, contour in enumerate(contours):
-                #     polygonMesh = []
-                #     print(contourIndex)
-                #     print(contour)
-                #     print(_[0][contourIndex])
-
-
-                # print(coords)
-
-                # polygonMesh.append(coords)
-
-        from Core.Data.roiContour import ROIContour  ## this is done here to avoir circular imports issue
-        contour = ROIContour(name=self.name, patientInfo=self.patientInfo, displayColor=self._displayColor)
-        contour.polygonMesh = polygonMeshList
-
-        return contour
+    # def getROIContoursCV2(self):
+    #
+    #     polygonMeshList = []
+    #     for zSlice in range(self._imageArray.shape[2]):
+    #         labeledImg, numberOfLabel = label(self._imageArray[:, :, zSlice], return_num=True)
+    #         for i in range(1, numberOfLabel + 1):
+    #
+    #             singleLabelImg = labeledImg == i
+    #
+    #             # import matplotlib.pyplot as plt
+    #             # plt.figure()
+    #             # plt.imshow(singleLabelImg)
+    #             # plt.show()
+    #
+    #             contours, _ = cv2.findContours(singleLabelImg.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    #
+    #             print('ici')
+    #             print(len(contours))
+    #             # print(_)
+    #             # print(contours[0])
+    #             # print('---')
+    #             # print(contours[1])
+    #
+    #             polygonMesh = []
+    #             contour = contours[0]
+    #
+    #             for point in contour:
+    #                 xCoord = point[0][0] * self.spacing[1] + self.origin[1]
+    #                 yCoord = point[0][1] * self.spacing[0] + self.origin[0]
+    #                 zCoord = zSlice * self.spacing[2] + self.origin[2]
+    #
+    #                 polygonMesh.append(yCoord)
+    #                 polygonMesh.append(xCoord)
+    #                 polygonMesh.append(zCoord)
+    #
+    #             polygonMeshList.append(polygonMesh)
+    #
+    #             if len(contours) == 2:
+    #
+    #                 internalContour = contours[1]
+    #
+    #                 inversedImage = np.logical_not(singleLabelImg)
+    #                 labeledImg, numberOfLabel = label(inversedImage, return_num=True)
+    #
+    #                 contours2, _2 = cv2.findContours(inversedImage.astype(np.uint8), cv2.RETR_CCOMP,
+    #                                                cv2.CHAIN_APPROX_SIMPLE)
+    #
+    #                 import matplotlib.pyplot as plt
+    #                 plt.figure()
+    #                 plt.imshow(inversedImage)
+    #                 plt.show()
+    #
+    #
+    #             # for contourIndex, contour in enumerate(contours):
+    #             #     polygonMesh = []
+    #             #     print(contourIndex)
+    #             #     print(contour)
+    #             #     print(_[0][contourIndex])
+    #
+    #
+    #             # print(coords)
+    #
+    #             # polygonMesh.append(coords)
+    #
+    #     from Core.Data.roiContour import ROIContour  ## this is done here to avoir circular imports issue
+    #     contour = ROIContour(name=self.name, patientInfo=self.patientInfo, displayColor=self._displayColor)
+    #     contour.polygonMesh = polygonMeshList
+    #
+    #     return contour
 
     def getROIContoursSKImage(self):
 

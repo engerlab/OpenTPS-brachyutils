@@ -33,10 +33,10 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [-20, 0, 0]
-    translation = [0, 0, 30]
-    rotation = [0, 10, 0]
-    shrinkSize = [7, 7, 10]
+    baselineShift = [-2, 0, 0]
+    translation = [-20, 0, 10]
+    rotation = [0, 5, 0]
+    shrinkSize = [3, 3, 3]
 
     # data loading
     patient = loadDataStructure(dataPath)[0]
