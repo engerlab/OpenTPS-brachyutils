@@ -8,6 +8,7 @@ This file contains an example on how to:
 """
 import copy
 import matplotlib.pyplot as plt
+import time
 import os
 import sys
 currentWorkingDir = os.getcwd()
@@ -21,10 +22,16 @@ from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineSh
 
 if __name__ == '__main__':
 
-    ## paths selection ------------------------------------
-    basePath = 'D:/ImageData/lung/Patient_4/1/FDG1/'
-    dataPath = basePath + 'dynModAndROIs_bodyCropped.p'
-    savingPath = basePath
+    organ = 'lung'
+    patientFolder = 'Patient_1'
+    patientComplement = '/1/FDG1'
+    basePath = '/DATA2/public/'
+
+    resultFolder = '/test10/'
+    resultDataFolder = 'data/'
+
+    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
+    savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
     # parameters selection ------------------------------------
     bodyContourToUse = 'Body'
@@ -33,10 +40,10 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [-20, 0, 0]
-    translation = [0, 0, 30]
-    rotation = [0, 10, 0]
-    shrinkSize = [7, 7, 10]
+    baselineShift = [-5, 0, 0]
+    translation = [-10, 0, 20]
+    rotation = [0, 5, 0]
+    shrinkSize = [3, 3, 3]
 
     # data loading
     patient = loadDataStructure(dataPath)[0]
@@ -53,6 +60,8 @@ if __name__ == '__main__':
 
     dynModCopy = copy.deepcopy(dynMod)
     GTVMaskCopy = copy.deepcopy(GTVMask)
+
+    startTime = time.time()
 
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
@@ -74,6 +83,10 @@ if __name__ == '__main__':
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     print('-' * 50)
+
+    stopTime = time.time()
+    print('time:', stopTime-startTime)
+   
     patient.appendPatientData(shrinkedDynMod)
     patient.appendPatientData(shrinkedOrganMask)
 
@@ -92,4 +105,4 @@ if __name__ == '__main__':
     plt.show()
 
     ## to save the model with inter fraction changes applied
-    # saveSerializedObjects(patient, savingPath + 'crop_InterFracChanged_ModelAndROIs')
+    # saveSerializedObjects(patient, savingPath + 'interFracChanged_ModelAndROIs')
