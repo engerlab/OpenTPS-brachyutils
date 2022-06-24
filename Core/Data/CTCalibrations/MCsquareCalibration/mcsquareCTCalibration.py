@@ -1,7 +1,9 @@
-
 import os
+import numpy as np
+from scipy.interpolate import interpolate
 
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareHU2Material import MCsquareHU2Material
+from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMolecule import MCsquareMolecule
 from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
 from Core.Data.CTCalibrations.piecewiseHU2Density import PiecewiseHU2Density
 
@@ -19,23 +21,58 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
 
         return s
 
+    @classmethod
+    def fromFiles(cls, huDensityFile, huMaterialFile, materialsPath='default'):
+        newObj = cls()
+
+        newObj._initializeFromFile(huDensityFile)
+        newObj._initializeFromFiles(huMaterialFile, materialsPath=materialsPath)
+
+        return newObj
+
     def convertHU2MassDensity(self, hu):
         return PiecewiseHU2Density.convertHU2MassDensity(self, hu)
 
     def convertHU2RSP(self, hu, energy=100):
-        raise('TODO')
+        densities = self.convertHU2MassDensity(hu)
+        return densities*self.convertHU2SP(hu, energy=energy)/self.waterSP(energy=energy)
+
+    def waterSP(self, energy:float=100.) -> float:
+        material = MCsquareMolecule()
+        material.load(17, 'default') # 17 is the ID of Water. This is hard-coded in MCsquare
+        return material.stoppingPower(energy)
 
     def convertMassDensity2HU(self, density):
         return PiecewiseHU2Density.convertMassDensity2HU(self, density)
 
     def convertMassDensity2RSP(self, density, energy=100):
-        raise('TODO')
+        return self.convertHU2RSP(self.convertMassDensity2HU(density), energy=energy)
 
     def convertRSP2HU(self, rsp, energy=100):
-        return self.convertMassDensity2HU(self.convertRSP2MassDensity(rsp, energy))
+        hu_ref, rsp_ref = self._getBijectiveHU2RSP(energy=energy)
+
+        density = interpolate.interp1d(rsp_ref, hu_ref, kind='linear', fill_value='extrapolate')
+
+        return density(rsp)
+
+    def _getBijectiveHU2RSP(self, HuMin=-1100., huMax=5000., step=2., energy=100):
+        hu_ref = np.arange(HuMin, huMax, step)
+        rsp_ref = self.convertHU2RSP(hu_ref, energy)
+        rsp_ref = np.array(rsp_ref)
+
+        while not np.all(np.diff(rsp_ref) >= 0):
+            rsp_diff = np.concatenate((np.array([1.0]), np.diff(rsp_ref)))
+
+            rsp_ref = rsp_ref[rsp_diff > 0]
+            hu_ref = hu_ref[rsp_diff > 0]
+
+            rsp_ref, ind = np.unique(rsp_ref, return_index=True)
+            hu_ref = hu_ref[ind]
+
+        return (hu_ref, rsp_ref)
 
     def convertRSP2MassDensity(self, rsp, energy=100):
-        raise('TODO')
+        return self.convertHU2MassDensity(self.convertRSP2HU(rsp, energy=energy))
 
     def write(self, scannerPath, materialPath):
         PiecewiseHU2Density.write(self, os.path.join(scannerPath, 'HU_Density_Conversion.txt'))
@@ -53,9 +90,9 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
 # test
 if __name__ == '__main__':
     import os
-    import MCsquare
+    import Core.Processing.DoseCalculation.MCsquare as MCsquareModule
 
-    MCSquarePath = str(MCsquare.__path__[0])
+    MCSquarePath = str(MCsquareModule.__path__[0])
     scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 
     calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
@@ -64,4 +101,13 @@ if __name__ == '__main__':
 
     print(calibration)
 
-    calibration.write('/home/sylvain/Documents/sandbox', 'scanner')
+    #calibration.write('/home/sylvain/Documents/sandbox', 'scanner')
+
+    print(calibration.convertHU2RSP(-2000))
+    print(calibration.convertHU2MassDensity(-2000))
+    print(calibration.convertMassDensity2HU(calibration.convertHU2MassDensity(-2000)))
+    print(calibration.convertRSP2HU(calibration.convertHU2RSP(-2000)))
+    print(calibration.convertRSP2MassDensity(calibration.convertHU2RSP(-2000)))
+
+    print(calibration.convertMassDensity2HU(8.3))
+    print(calibration.convertMassDensity2RSP(1.5))

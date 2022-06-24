@@ -1,11 +1,14 @@
 import numpy as np
 import scipy
 from scipy.ndimage import morphology
+from skimage.measure import label
+from skimage.segmentation import find_boundaries
 import copy
 import logging
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
+
 
 try:
     import cupy
@@ -142,6 +145,63 @@ class ROIMask(Image3D):
         self.data = self._imageArray >= 0.5
         if not(outputType is None):
             self.data = self.data.astype(outputType)
+
+    def getROIContour(self):
+
+        polygonMeshList = []
+        for zSlice in range(self._imageArray.shape[2]):
+            labeledImg, numberOfLabel = label(self._imageArray[:, :, zSlice], return_num=True)
+            for i in range(1, numberOfLabel + 1):
+
+                polygonMesh = []
+                singleLabelImg = labeledImg == i
+
+                singleLabelBorder = find_boundaries(singleLabelImg, mode='inner')
+
+                coordsInPixels = np.where(singleLabelBorder)
+                coordsInPixels = list(zip(coordsInPixels[0], coordsInPixels[1]))
+
+                orderedCoordsInPixels = []
+                numberOfPoints = len(coordsInPixels)
+
+                while len(orderedCoordsInPixels) < numberOfPoints:
+                    orderedCoordsInPixels.append(coordsInPixels[0])
+                    del coordsInPixels[0]
+                    if len(coordsInPixels) > 1:
+                        coordsInPixels.sort(key=lambda p: (p[0] - orderedCoordsInPixels[-1][0]) ** 2 + (p[1] - orderedCoordsInPixels[-1][1]) ** 2)
+
+
+                        ## this part is to handle the case where two points are at the same distance
+                        ## if that is the case, the chosen point is the one with higher X, and if X is equal, the higher Y
+                        distanceWithFirstPoint = (coordsInPixels[0][0] - orderedCoordsInPixels[-1][0]) ** 2 + (coordsInPixels[0][1] - orderedCoordsInPixels[-1][1]) ** 2
+                        distanceWithSecondPoint = (coordsInPixels[1][0] - orderedCoordsInPixels[-1][0]) ** 2 + (coordsInPixels[1][1] - orderedCoordsInPixels[-1][1]) ** 2
+                        if distanceWithFirstPoint == distanceWithSecondPoint:
+                            # print('2 points at same distance from current point')
+                            # print(orderedCoordsInPixels[-1], coordsInPixels[0], coordsInPixels[1])
+                            if coordsInPixels[0][0] < coordsInPixels[1][0]:
+                                coordsInPixels[0], coordsInPixels[1] = coordsInPixels[1], coordsInPixels[0]
+                            elif coordsInPixels[0][0] == coordsInPixels[1][0]:
+                                if coordsInPixels[0][1] < coordsInPixels[1][1]:
+                                    coordsInPixels[0], coordsInPixels[1] = coordsInPixels[1], coordsInPixels[0]
+
+                orderedCoordsInPixels.append(orderedCoordsInPixels[0])
+
+                for pointIndex in range(len(orderedCoordsInPixels)):
+                    xCoord = orderedCoordsInPixels[pointIndex][0] * self.spacing[0] + self.origin[0]
+                    yCoord = orderedCoordsInPixels[pointIndex][1] * self.spacing[1] + self.origin[1]
+                    zCoord = zSlice * self.spacing[2] + self.origin[2]
+
+                    polygonMesh.append(xCoord)
+                    polygonMesh.append(yCoord)
+                    polygonMesh.append(zCoord)
+
+                polygonMeshList.append(polygonMesh)
+
+        from Core.Data.roiContour import ROIContour ## this is done here to avoir circular imports issue
+        contour = ROIContour(name=self.name, patientInfo=self.patientInfo, displayColor=self._displayColor)
+        contour.polygonMesh = polygonMeshList
+
+        return contour
 
     def dumpableCopy(self):
         dumpableMask = ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)

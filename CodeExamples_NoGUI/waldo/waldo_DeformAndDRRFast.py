@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import os
 import sys
 currentWorkingDir = os.getcwd()
-#while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-#sys.path.append(currentWorkingDir)
-os.chdir("/export/home/grotsartdehe/opentps")
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+#os.chdir("/export/home/grotsartdehe/opentps")
 import math
 import time
 import numpy as np 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/Irregular/sim5k/exp2/'
+    resultFolder = '/Regular/sim5k/Training/exp7/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     ## parameters selection ------------------------------------
 
     ## sequence duration, sampling and signal's regularity
-    regularityIndex = 3
+    regularityIndex = 1
     numberOfSequences = 5
     sequenceDurationInSecs = 205
     samplingFrequency = 5
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     projAxis = 'Z'
 
     # multiProcessing 
-    maxMultiProcUse = 1#10
+    maxMultiProcUse = 15
     subSequenceSize = maxMultiProcUse
 
     try:
