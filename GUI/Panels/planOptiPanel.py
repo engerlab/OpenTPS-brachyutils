@@ -173,7 +173,7 @@ class ObjectivesWidget(QWidget):
         for objective in objectives:
             objStr += str(objective.weight)
             objStr += " x "
-            objStr += objective.objectiveTerm.roi.name
+            objStr += objective.objectiveTerm.roiBEV.name
 
             if isinstance(objective.objectiveTerm, cemObjectives.DoseMinObjective):
                 objStr += " < "

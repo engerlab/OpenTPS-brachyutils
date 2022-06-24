@@ -117,7 +117,7 @@ def getBoxAroundROI(ROI) -> Sequence[Sequence[float]]:
     return boxInUniversalCoords
 
 
-def getBoxAboveThreshold(data, threshold=0.):
+def getBoxAboveThreshold(data:Image3D, threshold=0.):
     dataROI = ROIMask.fromImage3D(data)
     roiArray = np.zeros(dataROI.imageArray.shape)
     roiArray[data.imageArray > threshold] = 1

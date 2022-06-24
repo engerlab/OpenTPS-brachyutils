@@ -7,7 +7,6 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Data.patientInfo import PatientInfo
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
@@ -284,7 +283,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
         plan.modality = "Radiotherapy"
         return
 
-    # Ion plan  
+    # Ion plan
     elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
         plan.modality = "Ion therapy"
 
@@ -318,9 +317,8 @@ def readDicomPlan(dcmFile) -> RTPlan:
         plan.treatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName
     else:
         plan.treatmentMachineName = ""
-    accumulatedLayer = 0
-    accumulatedSpot = 0
-    for i, dcm_beam in enumerate(dcm.IonBeamSequence):
+
+    for dcm_beam in dcm.IonBeamSequence:
         if dcm_beam.TreatmentDeliveryType != "TREATMENT":
             continue
 
@@ -329,7 +327,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
         beam = PlanIonBeam()
         beam.seriesInstanceUID = plan.seriesInstanceUID
         beam.name = dcm_beam.BeamName
-        beam.id = i
         beam.isocenterPosition = [float(first_layer.IsocenterPosition[0]), float(first_layer.IsocenterPosition[1]),
                                   float(first_layer.IsocenterPosition[2])]
         beam.gantryAngle = float(first_layer.GantryAngle)
@@ -408,7 +405,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
 
             layer = PlanIonLayer()
             layer.seriesInstanceUID = plan.seriesInstanceUID
-            layer.id = accumulatedLayer
 
             if hasattr(dcm_layer, 'SnoutPosition'):
                 SnoutPosition = float(dcm_layer.SnoutPosition)
@@ -421,17 +417,11 @@ def readDicomPlan(dcmFile) -> RTPlan:
             layer.nominalEnergy = float(dcm_layer.NominalBeamEnergy)
 
             if (plan.scanMode == "MODULATED"):
-                spot = PlanIonSpot()
-                spot.id = accumulatedSpot
-                spot.beamID = beam.id
-                spot.layerID = layer.id
-                spot.energy = layer.nominalEnergy
                 _x = dcm_layer.ScanSpotPositionMap[0::2]
                 _y = dcm_layer.ScanSpotPositionMap[1::2]
                 w = np.array(
                     dcm_layer.ScanSpotMetersetWeights) * BeamMeterset / FinalCumulativeMetersetWeight  # spot weights are converted to MU
-                layer.appendSpot(spot, _x, _y, w)
-                accumulatedSpot +=1
+                layer.appendSpot(_x, _y, w)
 
             elif (plan.scanMode == "LINE"):
                 raise NotImplementedError()
@@ -470,7 +460,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.rangeShifterSettings.referencedRangeShifterNumber = ReferencedRangeShifterNumber
 
             beam.appendLayer(layer)
-            accumulatedLayer += 1
 
         plan.appendBeam(beam)
 

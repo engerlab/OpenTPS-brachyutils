@@ -28,12 +28,45 @@ def resampleOn(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:
     if not inPlace:
         image = image.__class__.fromImage3D(image)
 
-    resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
+    if not(image.hasSameGrid(fixedImage)):
+        resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
 
     return image
 
+def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Sequence[Image3D]:
+    newOrigin = np.array([np.Inf, np.Inf, np.Inf])
+    newSpacing = np.array([np.Inf, np.Inf, np.Inf])
+    newEnd = np.array([-np.Inf, -np.Inf, -np.Inf])
+
+    for image in images:
+        o = image.origin
+        e = image.origin + image.gridSizeInWorldUnit
+        s = image.spacing
+
+        for i in range(3):
+            if o[i]<newOrigin[i]:
+                newOrigin[i] = o[i]
+            if e[i]>newEnd[i]:
+                newEnd[i] = e[i]
+            if s[i]<newSpacing[i]:
+                newSpacing[i] = s[i]
+
+    outImages = []
+    for image in images:
+        if not inPlace:
+            image = image.__class__.fromImage3D(image)
+
+        resize(image, newSpacing, newOrigin=newOrigin, newShape=np.round((newEnd - newOrigin)/newSpacing).astype(int),
+               fillValue=fillValue)
+
+        outImages.append(image)
+
+    return outImages
+
+
 def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    cropROI = None # TEST !!!!
     tform = _forwardDicomToIECGantry(image, beam)
 
     tform = linalg.inv(tform)
@@ -47,7 +80,7 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
     return outImage
 
 def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
-    outputBox = None
+    outputBox = "keepAll"
 
     if not (cropROI is None):
         outputBox = sitkImageProcessing.extremePoints(cropROI)
@@ -65,7 +98,7 @@ def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, crop
     return outputBox
 
 def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
-    outputBox = None
+    outputBox = 'keepAll'
 
     if not (cropROI is None):
         outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
@@ -97,6 +130,7 @@ def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[fl
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    cropROI = None  # TEST !!!!
     tform = _forwardDicomToIECGantry(image, beam)
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
@@ -120,7 +154,7 @@ def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
     gantryAngle = beam.gantryAngle
     patientSupportAngle = beam.patientSupportAngle
 
-    orig = np.array(isocenter) - np.array(image.origin)
+    orig = np.array(isocenter)
 
     M = _roll(-gantryAngle, [0, 0, 0]) @ \
         _rot(patientSupportAngle, [0, 0, 0]) @ \
