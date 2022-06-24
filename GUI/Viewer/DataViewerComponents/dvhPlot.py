@@ -199,9 +199,9 @@ class DVHCurve:
                     # if item.mouseShape().contains(mousePoint):
                     # check if mouse.y is close to f(mouse.x)
                     if abs(y - mousePoint.y()) < 2.0 + abs(y2 - y):  # abs(y2-y) is to increase the distance in high gradient
-                        self.dvhLabel.setHtml("<b><font color='#" + "{:02x}{:02x}{:02x}".format(mycolor[2],
+                        self.dvhLabel.setHtml("<b><font color='#" + "{:02x}{:02x}{:02x}".format(mycolor[0],
                                                                                                 mycolor[1],
-                                                                                                mycolor[0]) + "'>" + \
+                                                                                                mycolor[2]) + "'>" + \
                                               item.name() + ":</font></b>" + \
                                                       "<br>D95 = {:.1f} Gy".format(self._dvh.D95) + \
                                                       "<br>D5 = {:.1f} Gy".format(self._dvh.D5) + \

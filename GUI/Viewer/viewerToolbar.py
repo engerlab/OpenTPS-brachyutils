@@ -7,10 +7,11 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, QVBoxLayout, QFileDialog, \
     QStackedWidget, QListView, QComboBox, QWidgetAction
 
-from Core.IO import dataLoader, dataExporter
+from Core.IO import dataLoader
 from Core.event import Event
 from GUI.Tools.cropTool import CropWidget
 from GUI.Viewer.dataViewer import DataViewer
+from GUI.Viewer.exportWindow import ExportWindow
 from GUI.programSettingEditor import ProgramSettingEditor
 
 import GUI.res.icons as IconModule
@@ -122,8 +123,8 @@ class ViewerToolbar(QToolBar):
         self._viewController.dropMode = self._indexToDropMode(selectionIndex)
 
     def _openSettings(self, pressed):
-        self._imageFusionProp = ProgramSettingEditor()
-        self._imageFusionProp.show()
+        self._settingEditor = ProgramSettingEditor()
+        self._settingEditor.show()
 
     def _handleButtonIndependentViews(self, pressed):
         # This is useful if controller emit a signal:
@@ -160,14 +161,8 @@ class ViewerToolbar(QToolBar):
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
 
     def _handleExportData(self):
-        folderpath = QFileDialog.getExistingDirectory(self, 'Select folder')
-
-        if folderpath=="":
-            return
-
-        # TODO A nice window to select the patient and the output format
-        dataExporter.exportPatientAsDicom(self._viewController.currentPatient, folderpath)
-
+        self._exportWindow = ExportWindow(self._viewController)
+        self._exportWindow.show()
 
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:
