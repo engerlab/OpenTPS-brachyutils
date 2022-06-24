@@ -43,8 +43,11 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
         print('Shrink size in voxels:', shrinkSizeInVoxels)
 
         # get the structural element used for the erosion and dilation
-        structuralElementYZ = rectangle(shrinkSizeInVoxels[1], shrinkSizeInVoxels[2])
-        structuralElementXYZ = np.stack([structuralElementYZ for _ in range(shrinkSizeInVoxels[0])])
+        structuralElementErosionYZ = rectangle(max(shrinkSizeInVoxels[1], 3), max(shrinkSizeInVoxels[2], 3))
+        structuralElementErosionXYZ = np.stack([structuralElementErosionYZ for _ in range(max(shrinkSizeInVoxels[0], 3))])
+
+        structuralElementDilationYZ = rectangle(3, 3)
+        structuralElementDilationXYZ = np.stack([structuralElementDilationYZ for _ in range(3)])
 
         # print('Structural element shape:', structuralElementXYZ.shape)
         # fig = plt.figure(figsize=(8, 8))
@@ -54,8 +57,8 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
 
         ## apply an erosion and dilation using Cupy
         cupyOrganMask = cupy.asarray(organMask.imageArray)
-        erodedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupyOrganMask, structure=cupy.asarray(structuralElementXYZ)))
-        dilatedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupyOrganMask, structure=cupy.asarray(structuralElementXYZ)))
+        erodedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupyOrganMask, structure=cupy.asarray(structuralElementErosionXYZ)))
+        dilatedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupyOrganMask, structure=cupy.asarray(structuralElementDilationXYZ)))
 
         ## get the new COM after mask erosion
         organROIMaskCopy = copy.deepcopy(organMask)

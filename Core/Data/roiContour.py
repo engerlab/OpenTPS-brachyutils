@@ -147,8 +147,9 @@ class ROIContour(PatientData):
             # convert polygon to mask (based on PIL - fast)
             img = Image.new('L', (gridSize[0], gridSize[1]), 0)
             if(len(coordXY) > 1): ImageDraw.Draw(img).polygon(coordXY, outline=1, fill=1)
-            mask2D = np.array(img).transpose(1,0)
-            mask3D[:,:,sliceZ] = np.logical_or(mask3D[:,:,sliceZ], mask2D)
+            mask2D = np.array(img).transpose(1, 0)
+            # mask3D[:, :, sliceZ] = np.logical_xor(mask3D[:, :, sliceZ], mask2D)
+            mask3D[:, :, sliceZ] = mask3D[:, :, sliceZ] - mask2D
 
         mask = ROIMask(imageArray=mask3D, name=self.name, patientInfo=self.patientInfo, origin=origin, spacing=spacing, displayColor=self._displayColor)
 
