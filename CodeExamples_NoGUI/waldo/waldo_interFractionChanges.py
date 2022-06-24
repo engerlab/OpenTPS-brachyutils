@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import time
 import os
 import sys
+
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
@@ -23,7 +24,7 @@ from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineSh
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_1'
+    patientFolder = 'Patient_4'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
@@ -44,6 +45,15 @@ if __name__ == '__main__':
     translation = [-20, 0, 10]
     rotation = [0, 5, 0]
     shrinkSize = [3, 3, 3]
+
+    # GPU used
+    usedGPU = 1
+
+    try:
+        import cupy
+        cupy.cuda.Device(usedGPU).use()
+    except:
+        print('Module Cupy not found')
 
     # data loading
     patient = loadDataStructure(dataPath)[0]
