@@ -40,8 +40,8 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [-5, 0, 0]
-    translation = [-10, 0, 20]
+    baselineShift = [-2, 0, 0]
+    translation = [-20, 0, 10]
     rotation = [0, 5, 0]
     shrinkSize = [3, 3, 3]
 
