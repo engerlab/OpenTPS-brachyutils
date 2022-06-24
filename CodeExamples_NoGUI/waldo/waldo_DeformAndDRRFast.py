@@ -12,9 +12,9 @@ import matplotlib.pyplot as plt
 import os
 import sys
 currentWorkingDir = os.getcwd()
-#while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-#sys.path.append(currentWorkingDir)
-os.chdir("/export/home/grotsartdehe/opentps")
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+#os.chdir("/export/home/grotsartdehe/opentps")
 import math
 import time
 import numpy as np 
@@ -37,12 +37,12 @@ if __name__ == '__main__':
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/Irregular/sim5k/exp2/'
+    resultFolder = '/Regular/sim5k/Training/exp7/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
-    savingPath = basePath + organ  + '/' + patientFolder + patientComplement + '/TestAmp/'
+    #savingPath = basePath + organ  + '/' + patientFolder + patientComplement + '/TestAmp/'
 
     if not os.path.exists(savingPath):
         os.umask(0)
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     ## parameters selection ------------------------------------
 
     ## sequence duration, sampling and signal's regularity
-    regularityIndex = 3
+    regularityIndex = 1
     numberOfSequences = 5
     sequenceDurationInSecs = 205
     samplingFrequency = 5
@@ -81,7 +81,7 @@ if __name__ == '__main__':
     projAxis = 'Z'
 
     # multiProcessing 
-    maxMultiProcUse = 1#10
+    maxMultiProcUse = 15
     subSequenceSize = maxMultiProcUse
 
 
