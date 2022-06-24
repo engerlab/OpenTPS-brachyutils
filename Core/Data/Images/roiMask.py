@@ -1,11 +1,15 @@
 import numpy as np
 import scipy
 from scipy.ndimage import morphology
-from skimage.measure import label, find_contours
-from skimage.segmentation import find_boundaries
+
+try:
+    from skimage.measure import label, find_contours
+    from skimage.segmentation import find_boundaries
+except:
+    print("Module scikit-image not installed")
+
 import copy
 import logging
-# import cv2
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
@@ -15,6 +19,7 @@ try:
     import cupy
     import cupyx.scipy.ndimage
 except:
+    print("Module cupy not installed")
     pass
 
 logger = logging.getLogger(__name__)
@@ -290,6 +295,12 @@ class ROIMask(Image3D):
     #     return contour
 
     def getROIContoursSKImage(self):
+
+        try:
+            import skimage
+        except:
+            print('Module skimage (scikit-image) not installed, ROIMask cannot be converted to ROIContour')
+            return 0
 
         polygonMeshList = []
         for zSlice in range(self._imageArray.shape[2]):
