@@ -58,7 +58,7 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     outData = np.array(sitk.GetArrayFromImage(outImg))
 
     if imgType==bool:
-        outData[outData<0.3] = 0
+        outData[outData<0.5] = 0
     outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)
@@ -159,8 +159,8 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
 
     outData = np.array(sitk.GetArrayFromImage(outImg))
-    if imgType == bool:
-        outData[outData < 0.5] = 0
+    if imgType==bool:
+        outData[outData<0.5] = 0
     outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)

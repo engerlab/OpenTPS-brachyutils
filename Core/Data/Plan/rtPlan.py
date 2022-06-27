@@ -21,7 +21,6 @@ class RTPlan(PatientData):
         super().__init__(name=name, patientInfo=patientInfo)
 
         self._beams = []
-        self._layers = []
         self._numberOfFractionsPlanned: int = 1
 
         self.seriesInstanceUID = ""
@@ -71,15 +70,11 @@ class RTPlan(PatientData):
 
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
-        # I want a list with all layers in the plan and not only beam-by-beam
-        # For backwards compatibility, but we can now access each layer with indexing brackets
-        return [layer for layer in self._layers]
+        layers = []
+        for beam in self.beams:
+            layers.extend(beam.layers)
 
-    def appendLayer(self, layer: PlanIonLayer):
-        self._layers.append(layer)
-
-    def removeLayer(self, layer: PlanIonLayer):
-        self._layers.remove(layer)
+        return layers
 
     @property
     def spotWeights(self) -> np.ndarray:
