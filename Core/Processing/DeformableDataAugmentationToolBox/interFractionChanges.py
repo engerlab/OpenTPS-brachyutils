@@ -43,7 +43,7 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
         print('Shrink size in voxels:', shrinkSizeInVoxels)
 
         # get the structural element used for the erosion and dilation
-        structuralElementErosionYZ = rectangle(max(shrinkSizeInVoxels[1], 3), max(shrinkSizeInVoxels[2], 3))
+        structuralElementErosionYZ = rectangle(max((2 * shrinkSizeInVoxels[1]) + 1, 3), max(( 2 * shrinkSizeInVoxels[2]) + 1, 3))
         structuralElementErosionXYZ = np.stack([structuralElementErosionYZ for _ in range(max(shrinkSizeInVoxels[0], 3))])
 
         structuralElementDilationYZ = rectangle(3, 3)

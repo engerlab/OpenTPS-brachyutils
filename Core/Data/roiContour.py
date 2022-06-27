@@ -40,7 +40,7 @@ class ROIContour(PatientData):
         allZ = np.array([])
 
         for contourData in self.polygonMesh:
-            Xs =  np.array(contourData[0::3])
+            Xs = np.array(contourData[0::3])
             Ys = np.array(contourData[1::3])
             Z = contourData[2]
 
@@ -91,7 +91,7 @@ class ROIContour(PatientData):
             img = Image.new('L', (contourGridSize[0], contourGridSize[1]), 0)
             if (len(coordXY) > 1): ImageDraw.Draw(img).polygon(coordXY, outline=1, fill=1)
             mask2D = np.array(img).transpose(1, 0)
-            mask3D[:, :, sliceZ] = np.logical_or(mask3D[:, :, sliceZ], mask2D)
+            mask3D[:, :, sliceZ] = np.logical_xor(mask3D[:, :, sliceZ], mask2D)
 
         mask = ROIMask(imageArray=mask3D, name=self.name, patientInfo=self.patientInfo, origin=contourOrigin, spacing=contourSpacing,
                        displayColor=self._displayColor)

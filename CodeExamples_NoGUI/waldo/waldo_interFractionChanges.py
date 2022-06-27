@@ -31,8 +31,8 @@ if __name__ == '__main__':
     resultFolder = '/test10/'
     resultDataFolder = 'data/'
 
-    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
-    savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
+    dataPath = basePath + organ + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    savingPath = basePath + organ + '/' + patientFolder + patientComplement + resultFolder
 
     # parameters selection ------------------------------------
     bodyContourToUse = 'Body'
