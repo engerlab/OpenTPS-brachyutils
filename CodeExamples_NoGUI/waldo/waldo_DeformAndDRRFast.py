@@ -42,7 +42,6 @@ if __name__ == '__main__':
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
-    #savingPath = basePath + organ  + '/' + patientFolder + patientComplement + '/TestAmp/'
 
     if not os.path.exists(savingPath):
         os.umask(0)
@@ -59,7 +58,7 @@ if __name__ == '__main__':
     samplingFrequency = 5
     #subSequenceSize = 20
     outputSize = [64, 64]
-
+    GPUNumber = 0
     ## ROI choice and crop options 
     bodyContourToUse = 'patient'#'external'#'Body'
     targetContourToUse = 'gtv t'#'GTVp'#'GTV T'
@@ -84,7 +83,12 @@ if __name__ == '__main__':
     maxMultiProcUse = 15
     subSequenceSize = maxMultiProcUse
 
-
+    try:
+        import cupy
+        import cupyx
+        cupy.cuda.Device(GPUNumber).use()
+    except:
+        print('cupy not found.')
     ## Start the script ---------------------------------
     patient = loadDataStructure(dataPath)[0]
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
