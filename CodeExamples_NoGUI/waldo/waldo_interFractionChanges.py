@@ -31,7 +31,7 @@ if __name__ == '__main__':
     resultFolder = '/test10/'
     resultDataFolder = 'data/'
 
-    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
+    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
     # parameters selection ------------------------------------
@@ -41,10 +41,10 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [-2, 0, 0]
+    baselineShift = [-20, 0, 0]
     translation = [-20, 0, 10]
     rotation = [0, 5, 0]
-    shrinkSize = [3, 3, 3]
+    shrinkSize = [0, 0, 0]
 
     # GPU used
     usedGPU = 1
