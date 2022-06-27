@@ -5,7 +5,6 @@ import numpy as np
 import logging
 
 from Core.Data.patientData import PatientData
-import Core.Processing.ImageProcessing.resampler3D as resampler3D
 from Core.event import Event
 
 logger = logging.getLogger(__name__)
@@ -44,10 +43,12 @@ class Image3D(PatientData):
 
     @property
     def imageArray(self) -> np.ndarray:
-        return self._imageArray
+        return np.array(self._imageArray)
 
     @imageArray.setter
     def imageArray(self, array):
+        if not (array is None):
+            logger.debug("Array " + str(array.shape))
         self._imageArray = array
         self.dataChangedSignal.emit()
 
@@ -140,26 +141,8 @@ class Image3D(PatientData):
                 type of the output.
             """
 
-        self._imageArray = resampler3D.resample(self._imageArray, self._origin, self._spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
-        self._origin = np.array(origin)
-        self._spacing = np.array(spacing)
-
-    def resampleToImageGrid(self, otherImage, fillValue=0, outputType=None, tryGPU=True):
-        """Resample image using the voxel grid of another image given as input, using linear interpolation.
-
-            Parameters
-            ----------
-            otherImage : numpy array
-                image from which the voxel grid is copied.
-            fillValue : scalar
-                interpolation value for locations outside the input voxel grid.
-            outputType : numpy data type
-                type of the output.
-            """
-
-        if (not otherImage.hasSameGrid(self)):
-            logger.info('Resample image to CT grid.')
-            self.resample(otherImage.gridSize, otherImage._origin, otherImage._spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+        from Core.Processing.ImageProcessing import imageTransform3D
+        imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)
 
     def getDataAtPosition(self, position: Sequence):
         voxelIndex = self.getVoxelIndexFromPosition(position)

@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+
+from Core.Processing.ImageProcessing import imageTransform3D
+
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
@@ -60,7 +63,7 @@ if __name__ == '__main__':
 
     # RESAMPLE WEIGHT MAPS TO IMAGE RESOLUTION
     for i in range(len(trackers)):
-        wm[i].resampleToImageGrid(Model4D.midp)
+        imageTransform3D.resampleOn(wm[i], Model4D.midp, inPlace=True, fillValue=-1024.)
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 5)

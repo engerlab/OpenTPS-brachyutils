@@ -31,6 +31,10 @@ class PatientData:
             self.seriesInstanceUID = pydicom.uid.generate_uid()
 
     def __deepcopy__(self, memodict={}):
+        # We don't copy patient
+        patient = self._patient
+        self._patient = None
+
         cls = self.__class__
         result = cls.__new__(cls)
         memodict[id(self)] = result
@@ -40,6 +44,9 @@ class PatientData:
                 setattr(result, attrKey, attrVal)
             else:
                 setattr(result, attrKey, copy.deepcopy(attrVal, memodict))
+
+        self._patient = patient
+        #result.patient = patient
         return result
 
     def deepCopyWithoutEventExceptNdArray(self):
