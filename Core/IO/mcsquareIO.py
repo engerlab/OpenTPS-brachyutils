@@ -147,7 +147,6 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=No
                     row_index = 0*row_index
                     col_index = 0*col_index
                 elif (data_id > buffer_size - NbrVoxels):
-                    print((col_index.max(), num_unstacked_col))
                     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
                                       shape=(NbrVoxels, num_unstacked_col+1), dtype=np.float32)
                     data_id = 0

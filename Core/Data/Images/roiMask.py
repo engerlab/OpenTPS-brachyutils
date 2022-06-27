@@ -1,11 +1,9 @@
 import numpy as np
 import scipy
 from scipy.ndimage import morphology
-from skimage.measure import label, find_contours
-from skimage.segmentation import find_boundaries
+
 import copy
 import logging
-import cv2
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
@@ -15,6 +13,7 @@ try:
     import cupy
     import cupyx.scipy.ndimage
 except:
+    print("Module cupy not installed")
     pass
 
 logger = logging.getLogger(__name__)
@@ -141,206 +140,37 @@ class ROIMask(Image3D):
         else:
             self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
 
+
     def getROIContour(self):
 
-        polygonMeshList = []
-        for zSlice in range(self._imageArray.shape[2]):
-            labeledImg, numberOfLabel = label(self._imageArray[:, :, zSlice], return_num=True)
-            for i in range(1, numberOfLabel + 1):
-
-                polygonMesh = []
-                singleLabelImg = labeledImg == i
-
-                singleLabelBorder = find_boundaries(singleLabelImg, mode='inner')
-
-                coordsInPixels = np.where(singleLabelBorder)
-                coordsInPixels = list(zip(coordsInPixels[0], coordsInPixels[1]))
-
-                orderedCoordsInPixels = []
-                numberOfPoints = len(coordsInPixels)
-                lastPointDirection = [0, 0]
-
-                while len(orderedCoordsInPixels) < numberOfPoints:
-                    orderedCoordsInPixels.append(coordsInPixels[0])
-                    del coordsInPixels[0]
-                    if len(coordsInPixels) > 1:
-                        coordsInPixels.sort(key=lambda p: (p[0] - orderedCoordsInPixels[-1][0]) ** 2 + (p[1] - orderedCoordsInPixels[-1][1]) ** 2)
-
-                        ## this part is to handle the case where two points are at the same distance
-                        ## if that is the case, the chosen point is towards the same direction as the last added point
-                        distanceWithFirstPoint = (coordsInPixels[0][0] - orderedCoordsInPixels[-1][0]) ** 2 + (coordsInPixels[0][1] - orderedCoordsInPixels[-1][1]) ** 2
-                        distanceWithSecondPoint = (coordsInPixels[1][0] - orderedCoordsInPixels[-1][0]) ** 2 + (coordsInPixels[1][1] - orderedCoordsInPixels[-1][1]) ** 2
-                        if distanceWithFirstPoint == distanceWithSecondPoint:
-                            # print('2 points at same distance from current point')
-                            # print(orderedCoordsInPixels[-1], coordsInPixels[0], coordsInPixels[1])
-
-                            if lastPointDirection[0] == '+X':
-                                if coordsInPixels[0][0] < coordsInPixels[1][0]:
-                                    coordsInPixels[0], coordsInPixels[1] = coordsInPixels[1], coordsInPixels[0]
-
-                            elif lastPointDirection[0] == '-X':
-                                if coordsInPixels[0][0] > coordsInPixels[1][0]:
-                                    coordsInPixels[0], coordsInPixels[1] = coordsInPixels[1], coordsInPixels[0]
-
-                            if lastPointDirection[1] == '+Y':
-                                if coordsInPixels[0][1] < coordsInPixels[1][1]:
-                                    coordsInPixels[0], coordsInPixels[1] = coordsInPixels[1], coordsInPixels[0]
-
-                            elif lastPointDirection[1] == '-Y':
-                                if coordsInPixels[0][1] > coordsInPixels[1][1]:
-                                    coordsInPixels[0], coordsInPixels[1] = coordsInPixels[1], coordsInPixels[0]
-
-                        lastPointDirection = [0, 0]
-                        if coordsInPixels[0][0] > orderedCoordsInPixels[-1][0]:
-                            lastPointDirection[0] = '+X'
-                        elif coordsInPixels[0][0] < orderedCoordsInPixels[-1][0]:
-                            lastPointDirection[0] = '-X'
-                        if coordsInPixels[0][1] > orderedCoordsInPixels[-1][1]:
-                            lastPointDirection[1] = '+Y'
-                        elif coordsInPixels[0][1] < orderedCoordsInPixels[-1][1]:
-                            lastPointDirection[1] = '-Y'
-
-                orderedCoordsInPixels.append(orderedCoordsInPixels[0])
-
-                for pointIndex in range(len(orderedCoordsInPixels)):
-                    xCoord = orderedCoordsInPixels[pointIndex][0] * self.spacing[0] + self.origin[0]
-                    yCoord = orderedCoordsInPixels[pointIndex][1] * self.spacing[1] + self.origin[1]
-                    zCoord = zSlice * self.spacing[2] + self.origin[2]
-
-                    polygonMesh.append(xCoord)
-                    polygonMesh.append(yCoord)
-                    polygonMesh.append(zCoord)
-
-                polygonMeshList.append(polygonMesh)
-
-        from Core.Data.roiContour import ROIContour ## this is done here to avoir circular imports issue
-        contour = ROIContour(name=self.name, patientInfo=self.patientInfo, displayColor=self._displayColor)
-        contour.polygonMesh = polygonMeshList
-
-        return contour
-
-    def getROIContoursCV2(self):
-
-        polygonMeshList = []
-        for zSlice in range(self._imageArray.shape[2]):
-            labeledImg, numberOfLabel = label(self._imageArray[:, :, zSlice], return_num=True)
-            for i in range(1, numberOfLabel + 1):
-
-                singleLabelImg = labeledImg == i
-
-                # import matplotlib.pyplot as plt
-                # plt.figure()
-                # plt.imshow(singleLabelImg)
-                # plt.show()
-
-                contours, _ = cv2.findContours(singleLabelImg.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
-
-                print('ici')
-                print(len(contours))
-                # print(_)
-                # print(contours[0])
-                # print('---')
-                # print(contours[1])
-
-                polygonMesh = []
-                contour = contours[0]
-
-                for point in contour:
-                    xCoord = point[0][0] * self.spacing[1] + self.origin[1]
-                    yCoord = point[0][1] * self.spacing[0] + self.origin[0]
-                    zCoord = zSlice * self.spacing[2] + self.origin[2]
-
-                    polygonMesh.append(yCoord)
-                    polygonMesh.append(xCoord)
-                    polygonMesh.append(zCoord)
-
-                polygonMeshList.append(polygonMesh)
-
-                if len(contours) == 2:
-
-                    internalContour = contours[1]
-
-                    inversedImage = np.logical_not(singleLabelImg)
-                    labeledImg, numberOfLabel = label(inversedImage, return_num=True)
-
-                    contours2, _2 = cv2.findContours(inversedImage.astype(np.uint8), cv2.RETR_CCOMP,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
-
-                    import matplotlib.pyplot as plt
-                    plt.figure()
-                    plt.imshow(inversedImage)
-                    plt.show()
-
-
-                # for contourIndex, contour in enumerate(contours):
-                #     polygonMesh = []
-                #     print(contourIndex)
-                #     print(contour)
-                #     print(_[0][contourIndex])
-
-
-                # print(coords)
-
-                # polygonMesh.append(coords)
-
-        from Core.Data.roiContour import ROIContour  ## this is done here to avoir circular imports issue
-        contour = ROIContour(name=self.name, patientInfo=self.patientInfo, displayColor=self._displayColor)
-        contour.polygonMesh = polygonMeshList
-
-        return contour
-
-    def getROIContoursSKImage(self):
+        try:
+            from skimage.measure import label, find_contours
+            from skimage.segmentation import find_boundaries
+        except:
+            print('Module skimage (scikit-image) not installed, ROIMask cannot be converted to ROIContour')
+            return 0
 
         polygonMeshList = []
         for zSlice in range(self._imageArray.shape[2]):
 
             labeledImg, numberOfLabel = label(self._imageArray[:, :, zSlice], return_num=True)
-            print('numberOfLabel', numberOfLabel)
+
             for i in range(1, numberOfLabel + 1):
 
                 singleLabelImg = labeledImg == i
-
                 contours = find_contours(singleLabelImg.astype(np.uint8), level=0.6)
-                print('ici')
-                print(len(contours))
 
-                # import matplotlib.pyplot as plt
-                # plt.figure()
-                # plt.imshow(singleLabelImg)
-                # plt.show()
-
-
-
-
-                # print(_)
-                # print(contours[0])
-                # print('---')
-                # print(contours[1])
                 if len(contours) > 0:
-                    print('ici')
-                    print(len(contours))
-
-                    # import matplotlib.pyplot as plt
-                    # plt.figure()
-                    # plt.imshow(singleLabelImg)
-                    # plt.show()
 
                     if len(contours) == 2:
-                        # internalContour = contours[1]
 
-                        inversedImage = np.logical_not(singleLabelImg)
-                        # labeledImg, numberOfLabel = label(inversedImage, return_num=True)
-
+                        ## use a different threshold in the case of an interior contour
                         contours2 = find_contours(singleLabelImg.astype(np.uint8), level=0.4)
-
-                        print(len(contours2))
-                        for contourElem in contours2:
-                            print(len(contourElem))
 
                         interiorContour = contours2[1]
                         polygonMesh = []
                         for point in interiorContour:
-                            # print(point)
+
                             xCoord = np.round(point[1]) * self.spacing[1] + self.origin[1]
                             yCoord = np.round(point[0]) * self.spacing[0] + self.origin[0]
                             zCoord = zSlice * self.spacing[2] + self.origin[2]
@@ -350,17 +180,12 @@ class ROIMask(Image3D):
                             polygonMesh.append(zCoord)
 
                         polygonMeshList.append(polygonMesh)
-                        # import matplotlib.pyplot as plt
-                        # plt.figure()
-                        # plt.imshow(inversedImage)
-                        # plt.show()
 
                     contour = contours[0]
-                    # for contour in contours:
-                        # print(contour)
+
                     polygonMesh = []
                     for point in contour:
-                        # print(point)
+
                         xCoord = np.round(point[1]) * self.spacing[1] + self.origin[1]
                         yCoord = np.round(point[0]) * self.spacing[0] + self.origin[0]
                         zCoord = zSlice * self.spacing[2] + self.origin[2]
@@ -370,8 +195,6 @@ class ROIMask(Image3D):
                         polygonMesh.append(zCoord)
 
                     polygonMeshList.append(polygonMesh)
-                    print('number of total contours', len(polygonMeshList))
-
 
 
         from Core.Data.roiContour import ROIContour  ## this is done here to avoir circular imports issue
@@ -381,7 +204,7 @@ class ROIMask(Image3D):
         return contour
 
 
-    def dumpableCopy(self):
-        dumpableMask = ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
-        # dumpableMask.patient = self.patient
-        return dumpableMask
+    # def dumpableCopy(self):
+    #     dumpableMask = ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
+    #     # dumpableMask.patient = self.patient
+    #     return dumpableMask
