@@ -37,7 +37,7 @@ if __name__ == '__main__':
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
-    resultFolder = '/Regular/sim5k/Training/exp7/'
+    resultFolder = '/Middle/sim5k/Training/exp8/'
     resultDataFolder = 'data/'
 
     dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     ## parameters selection ------------------------------------
 
     ## sequence duration, sampling and signal's regularity
-    regularityIndex = 1
+    regularityIndex = 2
     numberOfSequences = 5
     sequenceDurationInSecs = 205
     samplingFrequency = 5
