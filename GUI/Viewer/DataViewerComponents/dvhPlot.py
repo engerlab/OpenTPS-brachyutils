@@ -3,7 +3,7 @@ from typing import Union, Sequence, Optional
 
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
-from pyqtgraph import PlotWidget, mkPen, PlotCurveItem
+from pyqtgraph import PlotWidget, mkPen, PlotCurveItem, SignalProxy, TextItem, FillBetweenItem
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
@@ -136,6 +136,7 @@ class DVHPlot(PlotWidget):
     def appendDVH(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask]):
         curve = DVHCurve(dvh, referenceROI, self)
         self.addItem(curve.curve)
+        self.addItem(curve.dvhLabel)
 
         self._referenceROIs.append(referenceROI)
         self._dvhs.append(dvh)
@@ -161,6 +162,10 @@ class DVHCurve:
         self._referenceROI.nameChangedSignal.connect(self._setCurveData)
         self._referenceROI.colorChangedSignal.connect(self._setCurveData)
 
+        self._viewer_DVH_proxy = SignalProxy(self._parent.scene().sigMouseMoved, rateLimit=120, slot=self._handleMouseMoved)
+        self.dvhLabel = TextItem("", color=(255, 255, 255), fill=(0, 0, 0, 250), anchor=(0, 1))
+        self.dvhLabel.hide()
+
         self._setCurveData()
 
     def _setCurveData(self, *args):
@@ -169,7 +174,7 @@ class DVHCurve:
 
         dose, volume = self._dvh.histogram
         self.curve.setData(dose, volume, pen=pen, name=self._referenceROI.name)
-
+        self.curve.setData(dose, volume, pen=pen, name=self._referenceROI.name)
         # To force update the plot
         QApplication.processEvents()
 
@@ -179,3 +184,90 @@ class DVHCurve:
         self._referenceROI.nameChangedSignal.disconnect(self._setCurveData)
         self._referenceROI.colorChangedSignal.disconnect(self._setCurveData)
         self.curve.clear() # TODO does nothing, apparently...
+
+    def _handleMouseMoved(self, evt):
+        self.dvhLabel.hide()
+
+        mycolor = (self._referenceROI.color[0], self._referenceROI.color[1], self._referenceROI.color[2])
+
+        if self.curve.sceneBoundingRect().contains(evt[0]):
+            mousePoint = self._parent.getViewBox().mapSceneToView(evt[0])
+            for item in self.curve.scene().items():
+                if isinstance(item, PlotCurveItem):
+                    data = item.getData()
+                    y, y2 = np.interp([mousePoint.x(), mousePoint.x() * 1.01], data[0], data[1])
+                    # if item.mouseShape().contains(mousePoint):
+                    # check if mouse.y is close to f(mouse.x)
+                    if abs(y - mousePoint.y()) < 2.0 + abs(y2 - y):  # abs(y2-y) is to increase the distance in high gradient
+                        self.dvhLabel.setHtml("<b><font color='#" + "{:02x}{:02x}{:02x}".format(mycolor[0],
+                                                                                                mycolor[1],
+                                                                                                mycolor[2]) + "'>" + \
+                                              item.name() + ":</font></b>" + \
+                                                      "<br>D95 = {:.1f} Gy".format(self._dvh.D95) + \
+                                                      "<br>D5 = {:.1f} Gy".format(self._dvh.D5) + \
+                                                      "<br>Dmean = {:.1f} Gy".format(self._dvh.Dmean))
+                        self.dvhLabel.setPos(mousePoint)
+                        if (mousePoint.x() < 50 and mousePoint.y() < 50):
+                            self.dvhLabel.setAnchor((0, 1))
+                        elif (mousePoint.x() < 50 and mousePoint.y() >= 50):
+                            self.dvhLabel.setAnchor((0, 0))
+                        elif (mousePoint.x() >= 50 and mousePoint.y() < 50):
+                            self.dvhLabel.setAnchor((1, 1))
+                        elif (mousePoint.x() >= 50 and mousePoint.y() >= 50):
+                            self.dvhLabel.setAnchor((1, 0))
+                        self.dvhLabel.show()
+                        break
+
+class DVHBand:
+    def __init__(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], parent=None):
+        self._dvh = dvh
+        self._referenceROI = referenceROI
+        self._parent = parent
+
+        self.volume_low = []
+        self.volume_high = []
+        self.nominalDVH = []
+        self.ROIDisplayColor = []
+        self.Dmean = [0, 0]
+        self.D98 = [0, 0]
+        self.D95 = [0, 0]
+        self.D50 = [0, 0]
+        self.D5 = [0, 0]
+        self.D2 = [0, 0]
+
+    def compute_metrics(self):
+        # compute metrics
+        self.D98 = self.compute_band_Dx(98)
+        self.D95 = self.compute_band_Dx(95)
+        self.D50 = self.compute_band_Dx(50)
+        self.D5 = self.compute_band_Dx(5)
+        self.D2 = self.compute_band_Dx(2)
+
+    def compute_band_Dx(self, x):
+        dose = self._dvh.dose
+
+        index = np.searchsorted(-self.volume_low, -x)
+        if (index > len(self.volume_low) - 2): index = len(self.volume_low) - 2
+        volume = self.volume_low[index]
+        volume2 = self.volume_low[index + 1]
+        if (volume == volume2):
+            low_Dx = dose[index]
+        else:
+            w2 = (volume - x) / (volume - volume2)
+            w1 = (x - volume2) / (volume - volume2)
+            low_Dx = w1 * dose[index] + w2 * dose[index + 1]
+            if low_Dx < 0: low_Dx = 0
+
+        index = np.searchsorted(-self.volume_high, -x)
+        if (index > len(self.volume_high) - 2): index = len(self.volume_high) - 2
+        volume = self.volume_high[index]
+        volume2 = self.volume_high[index + 1]
+        if (volume == volume2):
+            high_Dx = dose[index]
+        else:
+            w2 = (volume - x) / (volume - volume2)
+            w1 = (x - volume2) / (volume - volume2)
+            high_Dx = w1 * dose[index] + w2 * dose[index + 1]
+            if high_Dx < 0: high_Dx = 0
+
+        return [low_Dx, high_Dx]
