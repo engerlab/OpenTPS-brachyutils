@@ -81,7 +81,7 @@ if __name__ == '__main__':
     projAxis = 'Z'
 
     # multiProcessing 
-    maxMultiProcUse = 6
+    maxMultiProcUse = 1
     
 
 

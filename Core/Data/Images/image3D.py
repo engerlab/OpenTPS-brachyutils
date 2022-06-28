@@ -3,6 +3,7 @@ from typing import Sequence
 
 import numpy as np
 import logging
+# from Core.Data.Images.vectorField3D import VectorField3D
 
 from Core.Data.patientData import PatientData
 from Core.event import Event
@@ -141,8 +142,17 @@ class Image3D(PatientData):
                 type of the output.
             """
 
-        from Core.Processing.ImageProcessing import imageTransform3D
-        imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)
+        # print('in image3D resample ----------------', type(self))
+        from Core.Data.Images.vectorField3D import VectorField3D
+        if isinstance(self, VectorField3D):
+            from Core.Processing.ImageProcessing.resampler3D import resample
+            self.imageArray = resample(self.imageArray, self.origin, self.spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+        else:
+            from Core.Processing.ImageProcessing import imageTransform3D
+            imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)
+
+        # from Core.Processing.ImageProcessing import imageTransform3D
+        # imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)
 
     def getDataAtPosition(self, position: Sequence):
         voxelIndex = self.getVoxelIndexFromPosition(position)

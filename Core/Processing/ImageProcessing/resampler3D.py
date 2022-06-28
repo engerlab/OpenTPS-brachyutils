@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpacing,outputGridSize,fillValue=0,outputType=None, tryGPU=True):
 
+    print('in resampler3D resample')
+
     """Resample 3D data according to new voxel grid using linear interpolation.
 
     Parameters
