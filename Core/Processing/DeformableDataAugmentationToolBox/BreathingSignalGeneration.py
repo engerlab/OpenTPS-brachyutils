@@ -47,7 +47,7 @@ def vectorSimulation(coeffMin,coeffMax,amplitude,frequency,timestamps,listOfEven
     return y_amplitude,y_frequency
 
 #creation des donnees respiratoires
-def signalGeneration(amplitude=2, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.15, meanEvent = 1/20, meanEventApnea=1/120):
+def signalGeneration(amplitude=10, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.15, meanEvent = 1/20, meanEventApnea=1/120):
     amp = amplitude
     freq = 1 / period
     timestamps = np.arange(0,signalDuration,step)
@@ -65,8 +65,8 @@ def signalGeneration(amplitude=2, period=4.0, mean=0, sigma=3, step=0.5, signalD
     amplitude += y_amplitude
     freq += y_frequency
     noise = np.random.normal(loc=mean,scale=sigma,size=len(timestamps))
-    
-    signal = (amplitude / 2) * np.sin(2 * np.pi * freq * (timestamps % (1 / freq))) ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
+    phi = np.random.uniform(0,2*np.pi)
+    signal = (amplitude / 2) * np.sin(2 * np.pi * freq * (timestamps % (1 / freq))+phi) ## we talk about breathing amplitude in mm so its more the total amplitude than the half one, meaning it must be divided by two here
     signal += noise
     
     #pour chaque event, la valeur min de tout le signal doit rester identique, meme s il y a un changement
@@ -141,11 +141,10 @@ def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, sign
 
 
 # for i in range(1):
-#     time,samples,amplitude = signalGeneration()
+#     time,samples = signalGeneration()
 #     time = np.arange(0,100,0.5)
 #     plt.figure(figsize=(15,10))
 #     plt.plot(time,samples)
-#     plt.plot(time,amplitude)
 #     plt.xlabel("Time [s]")
 #     plt.ylabel("Amplitude [mm]")
 #     plt.title("Breathing signal part 1")
