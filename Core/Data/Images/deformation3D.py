@@ -182,11 +182,10 @@ class Deformation3D(Image3D):
         field = self.displacement.copy()
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
-            print("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
             logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
-            print('in if tuple before resample', image.gridSize, field.gridSize)
+            # print('in deformation3D deformImage before resample', image.gridSize, field.gridSize)
             field.resample(image.gridSize, image.origin, image.spacing, tryGPU=tryGPU)
-            print('in if tuple after resample', image.gridSize, field.gridSize)
+            # print('in deformation3D deformImage after resample', image.gridSize, field.gridSize)
 
         image = image.copy()
         init_dtype = image.imageArray.dtype
@@ -200,7 +199,6 @@ class Deformation3D(Image3D):
 
 
         if init_dtype == 'bool':
-            print('in if bool', image.imageArray)
             testArray = image.imageArray
             testArray[testArray < 0.5] = 0
             testArray[testArray >= 0.5] = 1
