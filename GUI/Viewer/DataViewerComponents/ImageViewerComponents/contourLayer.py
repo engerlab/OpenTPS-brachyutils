@@ -26,6 +26,10 @@ class ContourLayer:
         for vtkContour in self._vtkContours:
             vtkContour.close()
 
+    @property
+    def contours(self) -> typing.Sequence[typing.Union[ROIContourForViewer, ROIMaskForViewer]]:
+        return self._contours
+
     def setNewContour(self, contour:typing.Union[ROIContour, ROIMask]):
         if isinstance(contour, ROIContour):
             contour = ROIContourForViewer(contour)
@@ -72,6 +76,9 @@ class ContourLayer:
     def _updateContoursResliceAxes(self):
         for vtkContour in self._vtkContours:
             vtkContour.resliceAxes = self._resliceAxes
+
+    def resliceDataFromPhysicalPoint(self, point):
+        return [contour.resliceDataFromPhysicalPoint(point) for contour in self._vtkContours]
 
 class vtkContour:
     def __init__(self, contour, renderWindow):
@@ -140,3 +147,10 @@ class vtkContour:
     def setVisible(self, visible: bool):
         self.actor.SetVisibility(visible)
         self.renderWindow.Render()
+
+    def resliceDataFromPhysicalPoint(self, point):
+        imageData = self.reslice.GetInput(0)
+
+        ind = [0, 0, 0]
+        imageData.TransformPhysicalPointToContinuousIndex(point, ind)
+        return imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)

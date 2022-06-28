@@ -28,8 +28,11 @@ class ProfileViewer(QWidget):
         self._layout.addWidget(self._profilePlot)
 
     def drawProfile(self, profileIndex, *args, **kwargs):
-        self._profilePlot.removeItem(self._profiles[profileIndex])
-        self._profiles[profileIndex] = self._profilePlot.newProfile(*args, **kwargs)
+        if profileIndex<len(self._profiles):
+            self._profilePlot.removeItem(self._profiles[profileIndex])
+            self._profiles[profileIndex] = self._profilePlot.newProfile(*args, **kwargs)
+        else:
+            self._profiles.append(self._profilePlot.newProfile(*args, **kwargs))
 
     @property
     def nbProfiles(self):
@@ -129,9 +132,16 @@ class _ProfileToolbar(QWidget):
             lambda *args, **kwargs: self._profileViewer.drawProfile(0, *args, **kwargs, pen=mkPen(0, width=1))
         self._viewController.profileWidgetCallback.setSecondaryImageData = \
             lambda *args, **kwargs: self._profileViewer.drawProfile(1, *args, **kwargs, pen=mkPen(1, width=1))
+        self._viewController.profileWidgetCallback.setContourData = \
+            lambda *args, **kwargs: self._drawContourProfiles(*args, **kwargs)
 
+    def _drawContourProfiles(self, contourData, name=[]):
+        for i, n in enumerate(name):
+            x, y = contourData[i]
+            self._profileViewer.drawProfile(2+i, x, y, name=n, pen=mkPen(2+i, width=1))
 
     def _setProfileWidgetDisabled(self):
         self._viewController.profileWidgetEnabled = False
         self._viewController.profileWidgetCallback.setPrimaryImageData = lambda *args, **kwargs: None
         self._viewController.profileWidgetCallback.setSecondaryImageData = lambda *args, **kwargs: None
+        self._viewController.profileWidgetCallback.setContourData = lambda *args, **kwargs: None
