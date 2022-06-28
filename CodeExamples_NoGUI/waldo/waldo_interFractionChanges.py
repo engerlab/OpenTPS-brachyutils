@@ -76,20 +76,20 @@ if __name__ == '__main__':
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
         print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
-        dynMod, GTVMask = applyBaselineShift(dynMod, GTVMask, baselineShift)
+        dynModCopy, GTVMaskCopy = applyBaselineShift(dynModCopy, GTVMaskCopy, baselineShift)
     else:
         print('Not implemented in this script --> must use the get contour by name function')
 
     print('-' * 50)
-    translateData(dynMod, translationInMM=translation)
-    translateData(GTVMask, translationInMM=translation)
+    translateData(dynModCopy, translationInMM=translation)
+    translateData(GTVMaskCopy, translationInMM=translation)
 
     print('-'*50)
-    rotateData(dynMod, rotationInDeg=rotation)
-    rotateData(GTVMask, rotationInDeg=rotation)
+    rotateData(dynModCopy, rotationInDeg=rotation)
+    rotateData(GTVMaskCopy, rotationInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask, newMask3DCOM = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
+    dynModCopy, GTVMaskCopy, newMask3DCOM = shrinkOrgan(dynModCopy, GTVMaskCopy, shrinkSize=shrinkSize)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     print('-' * 50)
