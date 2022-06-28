@@ -1,9 +1,8 @@
 import os
 
-from PyQt5.QtCore import QSize, pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QToolBar, QAction, QHBoxLayout, QGridLayout, QLabel, QPushButton, \
-    QFileDialog
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog
 from pyqtgraph import PlotWidget, PlotCurveItem, mkPen
 from pyqtgraph.exporters import ImageExporter
 
@@ -31,8 +30,14 @@ class ProfileViewer(QWidget):
         return len(self._profiles)
 
     def drawProfile(self, profileIndex, *args, **kwargs):
+        axY = self._profilePlot.getAxis('left')
+        yRange = axY.range
+
         self.removeProfile(profileIndex)
         self._profiles[profileIndex] = self._profilePlot.newProfile(*args, **kwargs)
+
+        if profileIndex>2:
+            self._profilePlot.setYRange(yRange[0], yRange[1], padding=0.)
 
     def removeProfile(self, profileIndex):
         profile = self._profiles[profileIndex]
@@ -142,7 +147,7 @@ class _ProfileToolbar(QWidget):
     def _drawImageProfile(self, ind, *args, name='', **kwargs):
         self._profileViewer.drawProfile(ind, *args, **kwargs, name=name)
 
-    def _drawContourProfiles(self, contourData, name=[]):
+    def _drawContourProfiles(self, contourData, name=[], pen=[]):
         currentNbProfiles = self._profileViewer.count()
         for i in range(currentNbProfiles):
             if currentNbProfiles-i-1>1:
@@ -150,7 +155,7 @@ class _ProfileToolbar(QWidget):
 
         for i, n in enumerate(name):
             x, y = contourData[i]
-            self._profileViewer.drawProfile(2+i, x, y, name=n, pen=mkPen(2+i, width=1))
+            self._profileViewer.drawProfile(2+i, x, y, name=n, pen=pen[i])
 
     def _setProfileWidgetDisabled(self):
         self._viewController.profileWidgetEnabled = False

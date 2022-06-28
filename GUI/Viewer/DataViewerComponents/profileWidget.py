@@ -2,6 +2,7 @@ import typing
 from math import sqrt
 
 import numpy as np
+from pyqtgraph import mkPen
 from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
 
 from Core.event import Event
@@ -139,7 +140,8 @@ class ProfileWidget:
 
         contourNames = [contour.name for contour in self._contourLayer.contours]
         contourData = self._resliceContoursBetweenTwoPoints(self._contourLayer, point1, point2)
-        self._lineWidgetCallback.setContourData(contourData, name=contourNames)
+        pen = [mkPen(color=contour.color, width=1) for contour in self._contourLayer.contours]
+        self._lineWidgetCallback.setContourData(contourData, name=contourNames, pen=pen)
 
     def _resliceLayerDataBewteenTwoPoints(self, layer, point1, point2):
         if layer.image is None:
@@ -189,7 +191,7 @@ class ProfileWidget:
         for i, p0 in enumerate(points0):
             contoursData = layer.resliceDataFromPhysicalPoint((p0, points1[i], points2[i]))
             for c, contour in enumerate(contours):
-                data[c, i] = contoursData[c]
+                data[c, i] = -10000+contoursData[c]*20000
 
         for c, contour in enumerate(contours):
             res.append((x, data[c, :]))
