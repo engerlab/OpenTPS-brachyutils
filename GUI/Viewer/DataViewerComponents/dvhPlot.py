@@ -2,6 +2,7 @@ from functools import partial
 from typing import Union, Sequence, Optional
 
 import numpy as np
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
 from pyqtgraph import PlotWidget, mkPen, PlotCurveItem, SignalProxy, TextItem, FillBetweenItem
 
@@ -19,10 +20,13 @@ class DVHViewer(QWidget):
         super().__init__(parent=parent)
 
         self.doseChangeEvent = Event(object)
+        self.dose2ChangeEvent = Event(object)
 
         self._dose = None
         self._rois = []
         self._dvhs = []
+        self._dose2 = None
+        self._dvhs2 = []
         self._partialVisibilityhandlers = []
 
         self._mainLayout = QVBoxLayout()
@@ -49,6 +53,23 @@ class DVHViewer(QWidget):
         self.doseChangeEvent.emit(self._dose)
 
     @property
+    def dose2(self) -> Optional[DoseImage]:
+        return self._dose
+
+    @dose2.setter
+    def dose2(self, dose: DoseImage):
+        if dose == self._dose:
+            return
+
+        self._dose2 = dose
+
+        for dvh in self._dvhs2:
+            dvh.dose = dose
+            dvh.computeDVH()
+
+        self.dose2ChangeEvent.emit(self._dose2)
+
+    @property
     def rois(self) -> Sequence[Union[ROIMask, ROIContour]]:
         return [roi for roi in self._rois]
 
@@ -71,15 +92,21 @@ class DVHViewer(QWidget):
         roiForViewer.visibleChangedSignal.connect(partialHandler)
 
         dvh = DVH(roi)
+        dvh2 = DVH(roi)
 
         self._rois.append(roi)
         self._partialVisibilityhandlers.append(partialHandler)
+
         self._dvhs.append(dvh)
         self._dvhPlot.appendDVH(dvh, roi)
+        self._dvhs2.append(dvh2)
+        self._dvhPlot.appendDVH(dvh2, roi, style=Qt.DotLine)
 
         if not (self._dose is None):
             dvh.dose = self.dose
             dvh.computeDVH()
+            dvh2.dose = self.dose2
+            dvh2.computeDVH()
 
     def _handleROIVisibility(self, roi, visibility):
         if not visibility:
@@ -88,6 +115,7 @@ class DVHViewer(QWidget):
     def removeROI(self, roi:Union[ROIMask, ROIContour]):
         partialHandler = self._partialVisibilityhandlers[self._rois.index(roi)]
         dvh = self._dvhs[self._rois.index(roi)]
+        dvh2 = self._dvhs2[self._rois.index(roi)]
 
         # TODO a factory in DataForViewer would be nice because this small piece of code is often duplicated
         if isinstance(roi, ROIMask):
@@ -100,7 +128,9 @@ class DVHViewer(QWidget):
         roiForViewer.visibleChangedSignal.disconnect(partialHandler)
 
         self._dvhPlot.removeDVH(dvh)
+        self._dvhPlot.removeDVH(dvh2)
         self._dvhs.remove(dvh)
+        self._dvhs.remove(dvh2)
         self._rois.remove(roi)
         self._partialVisibilityhandlers.remove(partialHandler)
 
@@ -108,6 +138,7 @@ class DVHViewer(QWidget):
         for roi in self._rois:
             self.removeROI(roi)
         self._dose = None
+        self._dose2 = None
 
 
 class DVHPlot(PlotWidget):
@@ -133,8 +164,8 @@ class DVHPlot(PlotWidget):
     def DVHs(self) -> Sequence[DVH]:
         return [dvh for dvh in self._dvhs]
 
-    def appendDVH(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask]):
-        curve = DVHCurve(dvh, referenceROI, self)
+    def appendDVH(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], style=Qt.DashLine):
+        curve = DVHCurve(dvh, referenceROI, self, style=style)
         self.addItem(curve.curve)
         self.addItem(curve.dvhLabel)
 
@@ -151,12 +182,12 @@ class DVHPlot(PlotWidget):
         self._dvhs.remove(dvh)
 
 class DVHCurve:
-    def __init__(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], parent=None):
+    def __init__(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], parent=None, style=Qt.DashLine):
         self._dvh = dvh
         self._referenceROI = referenceROI
         self._parent = parent
 
-        self.curve = PlotCurveItem(np.array([]), np.array([]))
+        self.curve = PlotCurveItem(np.array([]), np.array([]), style=style)
 
         self._dvh.dataUpdatedEvent.connect(self._setCurveData)
         self._referenceROI.nameChangedSignal.connect(self._setCurveData)
