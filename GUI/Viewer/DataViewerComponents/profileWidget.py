@@ -169,15 +169,18 @@ class ProfileWidget:
     def _resliceContoursBetweenTwoPoints(self, layer:ContourLayer, point1:typing.Sequence[float], point2:typing.Sequence[float]):
         contours = layer.contours
 
+        res = []
         if len(contours)<=0:
-            return [([0, 0], [0, 0])]
+            for contour in contours:
+                res.append(([0, 0], [0, 0]))
+            return res
 
         num = 1000
         points0 = np.linspace(point1[0], point2[0], num)
         points1 = np.linspace(point1[1], point2[1], num)
         points2 = np.linspace(point1[2], point2[2], num)
 
-        res = []
+
         data = np.zeros((len(contours), num))
         x = np.linspace(0, sqrt((point2[0] - point1[0]) * (point2[0] - point1[0]) + (point2[1] - point1[1]) * (
                 point2[1] - point1[1]) + (point2[2] - point1[2]) * (point2[2] - point1[2])), num)

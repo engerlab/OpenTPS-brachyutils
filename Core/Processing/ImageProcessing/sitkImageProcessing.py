@@ -91,7 +91,7 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     else:  
         outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
         outData = np.array(sitk.GetArrayFromImage(outImg))
-    
+
     if imgType==bool:
         outData[outData<0.5] = 0
     outData = outData.astype(imgType)

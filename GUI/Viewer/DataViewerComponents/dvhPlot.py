@@ -130,7 +130,7 @@ class DVHViewer(QWidget):
         self._dvhPlot.removeDVH(dvh)
         self._dvhPlot.removeDVH(dvh2)
         self._dvhs.remove(dvh)
-        self._dvhs.remove(dvh2)
+        self._dvhs2.remove(dvh2)
         self._rois.remove(roi)
         self._partialVisibilityhandlers.remove(partialHandler)
 
