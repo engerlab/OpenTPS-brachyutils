@@ -89,6 +89,8 @@ if __name__ == '__main__':
         cupy.cuda.Device(GPUNumber).use()
     except:
         print('cupy not found.')
+    
+
     ## Start the script ---------------------------------
     patient = loadDataStructure(dataPath)[0]
     dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
