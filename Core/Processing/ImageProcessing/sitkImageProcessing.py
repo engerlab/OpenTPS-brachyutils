@@ -92,11 +92,11 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
         outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
         outData = np.array(sitk.GetArrayFromImage(outImg))
     
-    outData = np.swapaxes(outData, 0, 2)
-
     if imgType==bool:
         outData[outData<0.5] = 0
     outData = outData.astype(imgType)
+
+    outData = np.swapaxes(outData, 0, 2)
 
     image.imageArray = outData
     print('in sitk image proc resize end image.imageArray.shape', image.imageArray.shape)
