@@ -33,12 +33,13 @@ def resampleImage(image:Image3D,
             sitkImageProcessing.resize(image, newSpacing, newOrigin, newShape, fillValue=fillValue)
         except:
             logger.warning('No module SimpleITK found')
-            resampler3D.resample(image, newOrigin, newSpacing, newShape, fillValue=fillValue, tryGPU=True)
+            image.imageArray = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                          newOrigin, newSpacing, newShape, fillValue=fillValue, tryGPU=True)
     elif method=="cupy":
-        image.data = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
+        image.imageArray = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
                                           newOrigin, newSpacing, newShape, fillValue=fillValue, tryGPU=True)
     else:
-        image.data = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
+        image.imageArray = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
                                           newOrigin, newSpacing, newShape, fillValue=fillValue, tryGPU=True)
 
     return image

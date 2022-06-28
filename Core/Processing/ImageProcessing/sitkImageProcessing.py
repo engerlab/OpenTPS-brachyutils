@@ -4,6 +4,7 @@ from typing import Optional, Sequence, Union
 
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from Core.Data.Images.vectorField3D import VectorField3D
 
 try:
     import SimpleITK as sitk
@@ -16,11 +17,22 @@ from Core.Data.Images.image3D import Image3D
 
 def image3DToSITK(image:Image3D, type=np.float32):
     imageData = image.imageArray.astype(type)
-    imageData = np.swapaxes(imageData, 0, 2)
-    img = sitk.GetImageFromArray(imageData)
 
-    img.SetOrigin(image.origin.tolist())
-    img.SetSpacing(image.spacing.tolist())
+    print('in image3DToSITK before swap axis image.imageArray.shape', image.imageArray.shape)
+    imageData = np.swapaxes(imageData, 0, 2)
+
+    if isinstance(image, VectorField3D):
+        img = []
+        for i in range(3):
+            img.append(sitk.GetImageFromArray(imageData[:, :, :, i].astype(type)))
+            img[-1].SetOrigin(image.origin.tolist())
+            img[-1].SetSpacing(image.origin.tolist())
+            
+    else:
+        img = sitk.GetImageFromArray(imageData)
+        img.SetOrigin(image.origin.tolist())
+        img.SetSpacing(image.spacing.tolist())
+
     # TODO SetDirection from angles but it is not clear how angles is defined
 
     return img
@@ -34,6 +46,8 @@ def sitkImageToImage3D(sitkImage:sitk.Image, type=float):
     return image
 
 def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=None, newShape:Optional[np.ndarray]=None, fillValue:float=0.):
+    
+    # print('in sitkImageProcessing resize', type(image))
     if newOrigin is None:
         newOrigin = image.origin
 
@@ -43,27 +57,49 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
 
     imgType = image.imageArray.dtype
     img = image3DToSITK(image)
-
-    dimension = img.GetDimension()
-
-    reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
+    if isinstance(image, VectorField3D):
+        dimension = img[0].GetDimension()
+        reference_image = sitk.Image(newShape.tolist(), img[0].GetPixelIDValue())
+        reference_image.SetDirection(img[0].GetDirection())
+    else:
+        dimension = img.GetDimension()
+        reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
+        reference_image.SetDirection(img.GetDirection())
+    # print('in sitkImageProcessing resize', dimension)
+    # reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
     reference_image.SetOrigin(newOrigin.tolist())
     reference_image.SetSpacing(newSpacing.tolist())
-    reference_image.SetDirection(img.GetDirection())
+    
 
     transform = sitk.AffineTransform(dimension)
-    transform.SetMatrix(img.GetDirection())
+    if isinstance(image, VectorField3D):
+        transform.SetMatrix(img[0].GetDirection())
+    else:
+        transform.SetMatrix(img.GetDirection())
 
-    outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
-    outData = np.array(sitk.GetArrayFromImage(outImg))
+    if isinstance(image, VectorField3D):
+        outImg1 = sitk.Resample(img[0], reference_image, transform, sitk.sitkLinear, fillValue)
+        outImg2 = sitk.Resample(img[1], reference_image, transform, sitk.sitkLinear, fillValue)
+        outImg3 = sitk.Resample(img[2], reference_image, transform, sitk.sitkLinear, fillValue)
+        outData1 = np.array(sitk.GetArrayFromImage(outImg1))
+        outData2 = np.array(sitk.GetArrayFromImage(outImg2))
+        outData3 = np.array(sitk.GetArrayFromImage(outImg3))
+        print('in sitk image proc resize last isinstance')
+        print(outData1.shape, outData2.shape, outData3.shape)
+        outData = np.stack((outData1, outData2, outData3),  axis=3)
+        # np.stack(arrays, axis=0)
+    else:  
+        outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
+        outData = np.array(sitk.GetArrayFromImage(outImg))
+    
+    outData = np.swapaxes(outData, 0, 2)
 
     if imgType==bool:
         outData[outData<0.5] = 0
     outData = outData.astype(imgType)
 
-    outData = np.swapaxes(outData, 0, 2)
-
     image.imageArray = outData
+    print('in sitk image proc resize end image.imageArray.shape', image.imageArray.shape)
     image.origin = newOrigin
     image.spacing = newSpacing
 
