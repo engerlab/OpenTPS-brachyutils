@@ -5,7 +5,7 @@ import numpy as np
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.roiContour import ROIContour
-from Core.Processing.ImageProcessing import imageTransform3D
+from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
 from Core.event import Event
 
 
@@ -109,7 +109,7 @@ class DVH:
         self._convertContourToROI()
 
         if not(self._doseImage.hasSameGrid(self._roiMask)):
-            self._doseImage = imageTransform3D.resampleImage3DOn3DImage(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
+            self._doseImage = resampler3D.resampleImage3DOnImage3D(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
 
         dose = self._doseImage.imageArray
         mask = self._roiMask.imageArray.astype(bool)

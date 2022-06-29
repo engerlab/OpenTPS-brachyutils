@@ -10,7 +10,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.roiContour import ROIContour
-from Core.Processing.ImageProcessing import resampler3D, segmentation3D
+from Core.Processing.ImageProcessing import segmentation3D
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, crop
 
     if not (cropROI is None):
         outputBox = sitkImageProcessing.extremePoints(cropROI)
-        roiBox = crop3D.getBoxAroundROI(cropROI)
+        roiBox = segmentation3D.getBoxAroundROI(cropROI)
         if cropDim0:
             outputBox[0] = roiBox[0][0]
             outputBox[1] = roiBox[0][1]
@@ -93,7 +93,7 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
         cropROIBEV = ROIMask.fromImage3D(cropROI)
         sitkImageProcessing.applyTransform(cropROIBEV, tform, fillValue=0)
         cropROIBEV.imageArray = cropROIBEV.imageArray.astype(bool)
-        roiBox = crop3D.getBoxAroundROI(cropROIBEV)
+        roiBox = segmentation3D.getBoxAroundROI(cropROIBEV)
         if cropDim0:
             outputBox[0] = roiBox[0][0]
             outputBox[1] = roiBox[0][1]

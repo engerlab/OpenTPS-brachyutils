@@ -85,6 +85,8 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
         try:
             image.imageArray = resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
                                                       origin, spacing, gridSize, fillValue=fillValue, tryGPU=True, outputType=outputType)
+            image.spacing = spacing
+            image.origin = origin
         except:
             trySITK = True
     else:
@@ -101,6 +103,8 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
         try:
             image.imageArray = resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
                                                       origin, spacing, gridSize, fillValue=fillValue, tryGPU=False, outputType=outputType)
+            image.spacing = spacing
+            image.origin = origin
         except:
             trySciPy = True
 
