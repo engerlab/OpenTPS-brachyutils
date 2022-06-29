@@ -1,13 +1,94 @@
+from typing import Sequence, Any
+
 import numpy as np
 import logging
 
 import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+from Core.Data.Images.image3D import Image3D
 from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 
 logger = logging.getLogger(__name__)
 
 
-def resample(data,inputOrigin,inputSpacing,inputGridSize,outputOrigin,outputSpacing,outputGridSize,fillValue=0,outputType=None, tryGPU=True):
+def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
+             fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
+    if isinstance(data, Image3D):
+        return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
+                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+    else:
+        raise NotImplementedError
+
+def resampleOnImage3D(data:Any, fixedImage:Image3D, fillValue:float=0., inPlace:bool=False, tryGPU:bool=False):
+    if isinstance(data, Image3D):
+        return resampleImage3DOnImage3D(data, fixedImage, fillValue=fillValue, inPlace=inPlace, tryGPU=tryGPU)
+    else:
+        raise NotImplementedError
+
+
+def resampleImage3DOnImage3D(image:Image3D, fixedImage:Image3D, fillValue:float=0., inPlace:bool=False, tryGPU:bool=False):
+    if not inPlace:
+        image = image.__class__.fromImage3D(image)
+
+    if not (image.hasSameGrid(fixedImage)):
+        resampleImage3D(image, spacing=fixedImage.spacing, origin=fixedImage.origin, gridSize=fixedImage.gridSize.astype(int),
+                      fillValue=fillValue, inPlace=True, tryGPU=tryGPU)
+
+    return image
+
+def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
+                    fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
+    if not inPlace:
+        image = image.__class__.fromImage3D(image)
+
+    # spacing is None
+    if spacing is None:
+        if gridSize is None:
+            if origin is None:
+                raise ValueError('spacing, gridSize and origin cannot be simultaneously None')
+            else:
+                gridSize = image.gridSize
+        spacing = image.spacing*image.gridSize/gridSize
+
+    # gridSize is None but spacing is not
+    if gridSize is None:
+        gridSize = image.gridSize*image.spacing/spacing
+
+    if origin is None:
+        origin = image.origin
+
+    trySITK = False
+    tryOpenMP = False
+    trySciPy = False
+
+    if tryGPU:
+        try:
+            image.imageArray = resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                      origin, spacing, gridSize, fillValue=fillValue, tryGPU=True, outputType=outputType)
+        except:
+            trySITK = True
+    else:
+        trySITK = True
+
+    if trySITK:
+        try:
+            from Core.Processing.ImageProcessing import sitkImageProcessing
+            sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)
+        except:
+            tryOpenMP = True
+
+    if tryOpenMP:
+        try:
+            image.imageArray = resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                      origin, spacing, gridSize, fillValue=fillValue, tryGPU=False, outputType=outputType)
+        except:
+            trySciPy = True
+
+    if trySciPy:
+        raise NotImplementedError
+
+    return image
+
+def resampleOpenMP(data, inputOrigin, inputSpacing, inputGridSize, outputOrigin, outputSpacing, outputGridSize, fillValue=0, outputType=None, tryGPU=True):
 
     """Resample 3D data according to new voxel grid using linear interpolation.
 

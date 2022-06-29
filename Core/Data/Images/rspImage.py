@@ -44,7 +44,7 @@ class RSPImage(Image3D):
 
         if not (beam is None):
             outImage = imageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
-            outImage = imageTransform3D.resampleOn(outImage, self, inPlace=True, fillValue=0.)
+            outImage = imageTransform3D.resampleImage3DOn3DImage(outImage, self, inPlace=True, fillValue=0.)
         else:
             outImage = rspIEC
 

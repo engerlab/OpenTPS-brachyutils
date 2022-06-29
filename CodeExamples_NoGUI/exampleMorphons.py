@@ -27,7 +27,7 @@ if __name__ == "__main__":
     df = reg.compute()
 
     # DISPLAY RESULTS
-    imageTransform3D.resampleOn(df, moving, inPlace=True, fillValue=-1024.)
+    imageTransform3D.resampleImage3DOn3DImage(df, moving, inPlace=True, fillValue=-1024.)
     diff_before = fixed.copy()
     diff_before._imageArray = moving.imageArray - fixed.imageArray
     diff_after = fixed.copy()

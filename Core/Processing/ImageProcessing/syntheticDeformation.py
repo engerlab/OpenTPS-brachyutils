@@ -33,7 +33,7 @@ def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
         maskFixed = maskMoving.copy()
         for i in range(3):
             maskFixed.origin[i] += shift[i]
-        imageTransform3D.resampleOn(maskFixed, image, inPlace=True, fillValue=0)
+        imageTransform3D.resampleImage3DOn3DImage(maskFixed, image, inPlace=True, fillValue=0)
         maskFixed._imageArray = np.logical_or(maskFixed.imageArray, maskMoving.imageArray)
 
         deformation = Deformation3D()

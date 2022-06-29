@@ -57,7 +57,7 @@ class RegistrationQuick(Registration):
         self.deformed = self.moving.copy()
         gridSize = np.array(self.moving.gridSize()) * np.array(self.moving._spacing) / np.array(self.fixed._spacing)
         gridSize = gridSize.astype(np.int)
-        self.deformed.resample(gridSize, self.moving._origin, self.fixed._spacing, tryGPU=tryGPU)
+        self.deformed.resampleOpenMP(gridSize, self.moving._origin, self.fixed._spacing, tryGPU=tryGPU)
 
         # search shift in x
         fixedProfile = np.sum(self.fixed._imageArray, (0, 2))

@@ -20,7 +20,7 @@ from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Processing.ImageProcessing.imageTransform3D import resampleOn
+from Core.Processing.ImageProcessing.imageTransform3D import resampleImage3DOn3DImage
 
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planStructure import PlanStructure
@@ -153,7 +153,7 @@ Z_coord = COM_index[2]
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
 contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
-img_dose = resampleOn(doseImage, ct)
+img_dose = resampleImage3DOn3DImage(doseImage, ct)
 img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
 # Display dose

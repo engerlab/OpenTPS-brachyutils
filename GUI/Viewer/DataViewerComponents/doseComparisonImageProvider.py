@@ -66,7 +66,7 @@ class DoseComparisonImageProvider:
             dose = None
         else:
             dose = DoseImage.fromImage3D(self._dose1)
-            dose2 = imageTransform3D.resampleOn(self._dose2, dose)
+            dose2 = imageTransform3D.resampleImage3DOn3DImage(self._dose2, dose)
 
             if self._comparisonMetric == self.Metric.DIFFERENCE:
                 dose.imageArray = dose.imageArray - dose2.imageArray

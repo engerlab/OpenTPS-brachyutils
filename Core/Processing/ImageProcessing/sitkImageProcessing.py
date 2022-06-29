@@ -248,33 +248,33 @@ if __name__ == "__main__":
 
 
     start = time.time()
-    imageArrayCupy = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=True)
+    imageArrayCupy = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                fillValue=0, outputType=None, tryGPU=True)
     end = time.time()
     print('Cupy from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(end - start) + ' s')
 
     start = time.time()
-    imageArrayCupy = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=True)
+    imageArrayCupy = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                fillValue=0, outputType=None, tryGPU=True)
     end = time.time()
     print('Cupy from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')
 
     start = time.time()
-    imageArrayCupy = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=True)
+    imageArrayCupy = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                fillValue=0, outputType=None, tryGPU=True)
     end = time.time()
     print('Cupy from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')
 
 
     start = time.time()
-    imageArrayKevin = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=False)
+    imageArrayKevin = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                 imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                 fillValue=0, outputType=None, tryGPU=False)
     end = time.time()
     print('Kevin from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')

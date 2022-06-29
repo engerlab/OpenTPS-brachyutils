@@ -138,9 +138,9 @@ class _ProfileToolbar(QWidget):
     def _setProfileWidgetEnabled(self):
         self._viewController.profileWidgetEnabled = True
         self._viewController.profileWidgetCallback.setPrimaryImageData = \
-            lambda *args, **kwargs: self._drawImageProfile(0, *args, **kwargs, pen=mkPen(0, width=1))
+            lambda *args, **kwargs: self._drawImageProfile(0, *args, **kwargs, pen=mkPen(width=1, color=[125, 125, 125]))
         self._viewController.profileWidgetCallback.setSecondaryImageData = \
-            lambda *args, **kwargs: self._drawImageProfile(1, *args, **kwargs, pen=mkPen(1, width=1))
+            lambda *args, **kwargs: self._drawImageProfile(1, *args, **kwargs, pen=mkPen(width=1, color=[255, 255, 255]))
         self._viewController.profileWidgetCallback.setContourData = \
             lambda *args, **kwargs: self._drawContourProfiles(*args, **kwargs)
 

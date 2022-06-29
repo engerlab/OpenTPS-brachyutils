@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
     # RESAMPLE WEIGHT MAPS TO IMAGE RESOLUTION
     for i in range(len(trackers)):
-        imageTransform3D.resampleOn(wm[i], Model4D.midp, inPlace=True, fillValue=-1024.)
+        imageTransform3D.resampleImage3DOn3DImage(wm[i], Model4D.midp, inPlace=True, fillValue=-1024.)
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 5)
