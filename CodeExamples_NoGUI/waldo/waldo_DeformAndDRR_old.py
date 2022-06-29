@@ -32,7 +32,7 @@ from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesF
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
 from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
 from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
-from Core.Processing.ImageProcessing.howToNameThisFile import *
+from Core.Processing.ImageProcessing.segmentation3D import *
 
 if __name__ == '__main__':
 

@@ -18,7 +18,7 @@ import math
 import time
 
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
-from Core.Processing.ImageProcessing.howToNameThisFile import *
+from Core.Processing.ImageProcessing.segmentation3D import *
 from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
 
 if __name__ == '__main__':
