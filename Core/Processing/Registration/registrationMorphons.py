@@ -13,7 +13,7 @@ except:
 
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
 

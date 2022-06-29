@@ -5,7 +5,7 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.roiContour import ROIContour
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 from Core.Processing.ImageProcessing import imageTransform3D
 from Core.Processing.Segmentation.segmentationCT import compute3DStructuralElement
 

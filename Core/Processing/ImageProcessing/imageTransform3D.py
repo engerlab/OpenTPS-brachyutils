@@ -10,7 +10,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.roiContour import ROIContour
-from Core.Processing.ImageProcessing import resampler3D, crop3D
+from Core.Processing.ImageProcessing import resampler3D, howToNameThisFile
 
 logger = logging.getLogger(__name__)
 

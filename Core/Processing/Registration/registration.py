@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
 
