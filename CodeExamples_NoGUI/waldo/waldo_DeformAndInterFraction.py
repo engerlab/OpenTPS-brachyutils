@@ -52,6 +52,8 @@ if __name__ == '__main__':
     ## ROI choice and crop options 
     bodyContourToUse = 'patient'#'external'#'Body'
     targetContourToUse = 'gtv t'#'GTVp'#'GTV T'
+    lungContourToUse = 'R lung'
+    contourToAddShift = targetContourToUse
     
     # interfraction changes parameters
     baselineShift = [-20, 0, 0]
@@ -90,7 +92,7 @@ if __name__ == '__main__':
     #number of experience to generate
     #one experience corresponds to 5 sequences
     for idxExp in range(1,2):
-        resultFolder = regularityFolder + '/sim5k/Phase/Training/exp' + str(idxExp) + '/'
+        resultFolder = regularityFolder + '/sim5k/InterFraction/Training/exp' + str(idxExp) + '/'
         resultDataFolder = 'data/'
     
         dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
@@ -165,22 +167,23 @@ if __name__ == '__main__':
         rotation = [unif(-2,2), unif(-2,2), 0]
         shrinkSize = [shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5)]
         startTime = time.time()
-    
+        print("Avant baseline",type(dynModCopy.midp.origin))
         print('-' * 50)
         if contourToAddShift == targetContourToUse:
             print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
             dynModCopy, GTVMaskCopy = applyBaselineShift(dynModCopy, GTVMaskCopy, baselineShift)
+            print("Apres baseline",type(dynModCopy.midp.origin))
         else:
             print('Not implemented in this script --> must use the get contour by name function')
         endBaselineShift = time.time()
         #print('-' * 50)
         print("Time for baseline shift",endBaselineShift-startTime)
-        
+        print("Avant translate",type(dynModCopy.midp.origin))
         translateData(dynModCopy, translationInMM=translation)
         translateData(GTVMaskCopy, translationInMM=translation)
         endTranslation = time.time()
         print("Time for translation",endTranslation-endBaselineShift)
-        
+        print("Apres translate",type(dynModCopy.midp.origin))
         print('-'*50)
         rotateData(dynModCopy, rotationInDeg=rotation)
         rotateData(GTVMaskCopy, rotationInDeg=rotation)
@@ -195,7 +198,9 @@ if __name__ == '__main__':
     
         stopTime = time.time()
         print('time:', stopTime-startTime)
-    
+        patient.appendPatientData(shrinkedDynMod)
+        patient.appendPatientData(shrinkedOrganMask)
+        
         if amplitude == 'model':
             ## to get amplitude from model !!! it takes some time because 10 displacement fields must be computed just for this
             modelValues = getAverageModelValuesAroundPosition(gtvCenterOfMass, dynModCopy, dimensionUsed='Z')

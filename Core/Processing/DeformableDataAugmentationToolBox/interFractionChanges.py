@@ -157,7 +157,7 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
             print('Rotate the Dynamic3DModel of', rotationInDeg, 'degrees')
             print('Rotate dynamic 3D model - midp image')
             rotateData(data.midp, rotationInDeg=rotationInDeg)
-
+            
             for field in data.deformationList:
                 if field.velocity != None:
                     print('Rotate dynamic 3D model - velocity field')
@@ -204,8 +204,10 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
                 # data.imageArray = rotateCupy(data.imageArray, rotationInDeg=rotationInDeg)
                 for i in range(3):
                     if rotationInDeg[i] != 0:
+                        print("ro",type(data))
                         data = rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i)
-
+                        print("rotate Sitk fonctionne")
+                        print("after ro", type(data))
 
 ## --------------------------------------------------------------------------------------
 def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
