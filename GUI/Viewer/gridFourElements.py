@@ -2,6 +2,7 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QHBoxLayout, QFrame, QSplitter, QVBoxLayout
 
+from GUI.Viewer.doseComparisonDataViewer import DoseComparisonDataViewer
 from GUI.Viewer.grid import Grid
 from GUI.Viewer.dataViewer import DataViewer
 
@@ -77,23 +78,26 @@ class GridFourElements(Grid):
         rightPartSplitter.setStretchFactor(1, 1)
         rightPartLayout.addWidget(rightPartSplitter)
 
+        self._initializeViewers()
+
+    def _initializeViewers(self):
         # Fill grid elements with data viewers
-        gridElement = DataViewer(self._viewController)
+        gridElement = DoseComparisonDataViewer(self._viewController)
         gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.AXIAL
         gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.AXIAL
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
-        gridElement = DataViewer(self._viewController)
+        gridElement = DoseComparisonDataViewer(self._viewController)
         gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.CORONAL
         gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.CORONAL
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
-        gridElement = DataViewer(self._viewController)
+        gridElement = DoseComparisonDataViewer(self._viewController)
         gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.SAGITTAL
         gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
-        gridElement = DataViewer(self._viewController)
+        gridElement = DoseComparisonDataViewer(self._viewController)
         gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botRightLayout.addWidget(gridElement)

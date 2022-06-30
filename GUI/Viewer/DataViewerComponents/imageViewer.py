@@ -72,6 +72,7 @@ class ImageViewer(QWidget):
 
         self._profileWidget.primaryLayer = self._primaryImageLayer
         self._profileWidget.secondaryLayer = self._secondaryImageLayer
+        self._profileWidget.contourLayer = self._contourLayer
 
         self._setViewType(self._viewType)
         self._contourLayer.resliceAxes = self._viewMatrix

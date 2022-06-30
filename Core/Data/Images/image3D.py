@@ -145,11 +145,11 @@ class Image3D(PatientData):
         # print('in image3D resample ----------------', type(self))
         from Core.Data.Images.vectorField3D import VectorField3D
         if isinstance(self, VectorField3D):
-            from Core.Processing.ImageProcessing.resampler3D import resample
-            self.imageArray = resample(self.imageArray, self.origin, self.spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            from Core.Processing.ImageProcessing.resampler3D import resampleOpenMP
+            self.imageArray = resampleOpenMP(self.imageArray, self.origin, self.spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         else:
             from Core.Processing.ImageProcessing import imageTransform3D
-            imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)
+            imageTransform3D.resampleImage3D(self, spacing, origin, gridSize, fillValue=fillValue)
 
         # from Core.Processing.ImageProcessing import imageTransform3D
         # imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)

@@ -147,7 +147,7 @@ class PrimaryImageLayer:
 
             self._renderWindow.Render()
 
-    def _resliceDataFromPhysicalPoint(self, point):
+    def resliceDataFromPhysicalPoint(self, point):
         imageData = self._reslice.GetInput(0)
 
         ind = [0, 0, 0]

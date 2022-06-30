@@ -16,22 +16,21 @@ from Core.Data.Images.image3D import Image3D
 
 
 def image3DToSITK(image:Image3D, type=np.float32):
-    imageData = image.imageArray.astype(type)
 
-    print('in image3DToSITK before swap axis image.imageArray.shape', image.imageArray.shape)
+    imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 2)
 
-    if isinstance(image, VectorField3D):
-        img = []
-        for i in range(3):
-            img.append(sitk.GetImageFromArray(imageData[:, :, :, i].astype(type)))
-            img[-1].SetOrigin(image.origin.tolist())
-            img[-1].SetSpacing(image.origin.tolist())
-            
-    else:
-        img = sitk.GetImageFromArray(imageData)
-        img.SetOrigin(image.origin.tolist())
-        img.SetSpacing(image.spacing.tolist())
+    # if isinstance(image, VectorField3D):
+    #     img = []
+    #     for i in range(3):
+    #         img.append(sitk.GetImageFromArray(imageData[:, :, :, i].astype(type)))
+    #         img[-1].SetOrigin(image.origin.tolist())
+    #         img[-1].SetSpacing(image.origin.tolist())
+    #
+    # else:
+    img = sitk.GetImageFromArray(imageData)
+    img.SetOrigin(image.origin.tolist())
+    img.SetSpacing(image.spacing.tolist())
 
     # TODO SetDirection from angles but it is not clear how angles is defined
 
@@ -84,22 +83,19 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
         outData1 = np.array(sitk.GetArrayFromImage(outImg1))
         outData2 = np.array(sitk.GetArrayFromImage(outImg2))
         outData3 = np.array(sitk.GetArrayFromImage(outImg3))
-        print('in sitk image proc resize last isinstance')
-        print(outData1.shape, outData2.shape, outData3.shape)
         outData = np.stack((outData1, outData2, outData3),  axis=3)
         # np.stack(arrays, axis=0)
     else:  
         outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
         outData = np.array(sitk.GetArrayFromImage(outImg))
-    
-    outData = np.swapaxes(outData, 0, 2)
 
     if imgType==bool:
         outData[outData<0.5] = 0
     outData = outData.astype(imgType)
 
+    outData = np.swapaxes(outData, 0, 2)
+
     image.imageArray = outData
-    print('in sitk image proc resize end image.imageArray.shape', image.imageArray.shape)
     image.origin = newOrigin
     image.spacing = newSpacing
 
@@ -193,8 +189,8 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     reference_image.SetDirection(img.GetDirection())
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
     outData = np.array(sitk.GetArrayFromImage(outImg))
-    if imgType==bool:
-        outData[outData<0.5] = 0
+    if imgType == bool:
+        outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
     outData = np.swapaxes(outData, 0, 2)
     image.imageArray = outData
@@ -242,33 +238,33 @@ if __name__ == "__main__":
 
 
     start = time.time()
-    imageArrayCupy = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=True)
+    imageArrayCupy = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                fillValue=0, outputType=None, tryGPU=True)
     end = time.time()
     print('Cupy from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(end - start) + ' s')
 
     start = time.time()
-    imageArrayCupy = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=True)
+    imageArrayCupy = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                fillValue=0, outputType=None, tryGPU=True)
     end = time.time()
     print('Cupy from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')
 
     start = time.time()
-    imageArrayCupy = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=True)
+    imageArrayCupy = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                fillValue=0, outputType=None, tryGPU=True)
     end = time.time()
     print('Cupy from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')
 
 
     start = time.time()
-    imageArrayKevin = resampler3D.resample(image.imageArray, image.origin, image.spacing, image.gridSize,
-                                          imageITK.origin, imageITK.spacing, imageITK.gridSize,
-                                          fillValue=0, outputType=None, tryGPU=False)
+    imageArrayKevin = resampler3D.resampleOpenMP(image.imageArray, image.origin, image.spacing, image.gridSize,
+                                                 imageITK.origin, imageITK.spacing, imageITK.gridSize,
+                                                 fillValue=0, outputType=None, tryGPU=False)
     end = time.time()
     print('Kevin from shape ' + str(image.gridSize) + ' to shape ' + str(imageArrayCupy.shape) + ' in ' + str(
         end - start) + ' s')

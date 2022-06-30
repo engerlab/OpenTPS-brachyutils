@@ -23,7 +23,7 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO.mhdIO import exportImageMHD, importImageMHD
-from Core.Processing.ImageProcessing import crop3D
+from Core.Processing.ImageProcessing import segmentation3D
 
 
 def readBeamlets(file_path, roi:Optional[ROIMask]=None):

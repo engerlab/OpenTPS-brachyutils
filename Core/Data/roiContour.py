@@ -4,7 +4,7 @@ import logging
 
 from Core.Data.patientData import PatientData
 from Core.Data.Images.roiMask import ROIMask
-from Core.Processing.ImageProcessing import imageTransform3D
+from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
 from Core.event import Event
 
 
@@ -100,7 +100,7 @@ class ROIContour(PatientData):
             mask3D = np.zeros(gridSize).astype(bool)
             referenceImage = ROIMask(imageArray=mask3D, spacing=spacing, origin=origin)
 
-            mask = imageTransform3D.resampleOn(mask, referenceImage, inPlace=True, fillValue=0)
+            mask = resampler3D. resampleImage3DOnImage3D(mask, referenceImage, inPlace=True, fillValue=0)
 
         return mask
 

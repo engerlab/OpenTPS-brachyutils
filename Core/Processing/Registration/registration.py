@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ class Registration:
         # deform moving image
         self.deformed = self.moving.copy()
         self.translateOrigin(self.deformed, translation)
-        self.deformed.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
+        self.deformed.resampleOpenMP(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         # compute metric
         ssd = self.computeSSD(fixed, self.deformed._imageArray)
@@ -119,7 +119,7 @@ class Registration:
         if keepFixedShape == True:
             resampled = self.moving.copy()
             print('in registration resampleMovingImage')
-            resampled.resample(self.fixed.gridSize(), self.fixed._origin, self.fixed._spacing)
+            resampled.resampleOpenMP(self.fixed.gridSize(), self.fixed._origin, self.fixed._spacing)
 
         else:
             X_min = min(self.fixed._origin[0], self.moving._origin[0])
@@ -137,7 +137,7 @@ class Registration:
             gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
             resampled = self.moving.copy()
-            resampled.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
+            resampled.resampleOpenMP(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         return resampled
 
@@ -162,7 +162,7 @@ class Registration:
         gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
         resampled = self.fixed.copy()
-        resampled.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
+        resampled.resampleOpenMP(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         return resampled
 
