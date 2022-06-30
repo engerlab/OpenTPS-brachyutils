@@ -41,7 +41,7 @@ class ViewerToolbar(QToolBar):
         self._buttonSave = QAction(QIcon(self.iconPath + "save.png"), "Export", self)
         self._buttonSave.triggered.connect(self._handleExportData)
 
-        self._buttonIndependentViews = QAction(QIcon(self.iconPath + "chain-unchain.png"), "Independent views", self)
+        self._buttonIndependentViews = QAction(QIcon(self.iconPath + "independent_views.png"), "Independent views", self)
         self._buttonIndependentViews.setStatusTip("Independent views")
         self._buttonIndependentViews.triggered.connect(self._handleButtonIndependentViews)
         self._buttonIndependentViews.setCheckable(True)
