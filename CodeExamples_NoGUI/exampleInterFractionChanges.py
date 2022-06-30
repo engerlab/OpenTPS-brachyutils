@@ -46,13 +46,13 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [0, 0, 0]
-    translation = [0, 0, 0]
-    rotation = [0, 0, 0]
-    shrinkSize = [2, 2, 1]
+    baselineShift = [-20, 0, 0]
+    translation = [-20, 0, 10]
+    rotation = [0, 5, 0]
+    shrinkSize = [2, 2, 2]
 
     # GPU used
-    usedGPU = 1
+    usedGPU = 0
 
     try:
         import cupy
