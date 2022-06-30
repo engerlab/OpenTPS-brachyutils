@@ -16,21 +16,21 @@ from Core.Data.Images.image3D import Image3D
 
 
 def image3DToSITK(image:Image3D, type=np.float32):
-    imageData = image.imageArray.astype(type)
 
+    imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 2)
 
-    if isinstance(image, VectorField3D):
-        img = []
-        for i in range(3):
-            img.append(sitk.GetImageFromArray(imageData[:, :, :, i].astype(type)))
-            img[-1].SetOrigin(image.origin.tolist())
-            img[-1].SetSpacing(image.origin.tolist())
-            
-    else:
-        img = sitk.GetImageFromArray(imageData)
-        img.SetOrigin(image.origin.tolist())
-        img.SetSpacing(image.spacing.tolist())
+    # if isinstance(image, VectorField3D):
+    #     img = []
+    #     for i in range(3):
+    #         img.append(sitk.GetImageFromArray(imageData[:, :, :, i].astype(type)))
+    #         img[-1].SetOrigin(image.origin.tolist())
+    #         img[-1].SetSpacing(image.origin.tolist())
+    #
+    # else:
+    img = sitk.GetImageFromArray(imageData)
+    img.SetOrigin(image.origin.tolist())
+    img.SetSpacing(image.spacing.tolist())
 
     # TODO SetDirection from angles but it is not clear how angles is defined
 

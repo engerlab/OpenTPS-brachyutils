@@ -184,7 +184,7 @@ class Deformation3D(Image3D):
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
             # print('in deformation3D deformImage before resample', image.gridSize, field.gridSize)
-            field.resampleOpenMP(image.gridSize, image.origin, image.spacing, tryGPU=tryGPU)
+            field.resample(image.gridSize, image.origin, image.spacing, tryGPU=tryGPU)
             # print('in deformation3D deformImage after resample', image.gridSize, field.gridSize)
 
         image = image.copy()
