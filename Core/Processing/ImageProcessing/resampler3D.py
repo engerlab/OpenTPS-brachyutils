@@ -35,6 +35,21 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
     if isinstance(data, Image3D):
         return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
                                outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+
+    elif isinstance(data, Dynamic3DSequence):
+        resampledImageList = []
+        for image3D in data.dyn3DImageList:
+            resampledImageList.append(resampleImage3D(image3D, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
+                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU))
+            data.dyn3DImageList = resampledImageList
+        return data
+
+    elif isinstance(data, Dynamic3DModel):
+        resampledMidP = resampleImage3D(data.midp, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
+                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+        data.midp = resampledMidP
+        return data
+
     else:
         raise NotImplementedError
 

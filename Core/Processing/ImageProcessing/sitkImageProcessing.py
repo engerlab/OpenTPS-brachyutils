@@ -18,7 +18,6 @@ from Core.Data.Images.image3D import Image3D
 def image3DToSITK(image:Image3D, type=np.float32):
     imageData = image.imageArray.astype(type)
 
-    print('in image3DToSITK before swap axis image.imageArray.shape', image.imageArray.shape)
     imageData = np.swapaxes(imageData, 0, 2)
 
     if isinstance(image, VectorField3D):
@@ -84,8 +83,6 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
         outData1 = np.array(sitk.GetArrayFromImage(outImg1))
         outData2 = np.array(sitk.GetArrayFromImage(outImg2))
         outData3 = np.array(sitk.GetArrayFromImage(outImg3))
-        print('in sitk image proc resize last isinstance')
-        print(outData1.shape, outData2.shape, outData3.shape)
         outData = np.stack((outData1, outData2, outData3),  axis=3)
         # np.stack(arrays, axis=0)
     else:  
@@ -99,7 +96,6 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
     outData = np.swapaxes(outData, 0, 2)
 
     image.imageArray = outData
-    print('in sitk image proc resize end image.imageArray.shape', image.imageArray.shape)
     image.origin = newOrigin
     image.spacing = newSpacing
 
@@ -195,8 +191,8 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
 
     outData = np.array(sitk.GetArrayFromImage(outImg))
-    if imgType==bool:
-        outData[outData<0.5] = 0
+    if imgType == bool:
+        outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
 
     outData = np.swapaxes(outData, 0, 2)
