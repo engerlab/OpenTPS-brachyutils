@@ -41,10 +41,10 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [-20, 0, 0]
-    translation = [-20, 0, 10]
-    rotation = [0, 5, 0]
-    shrinkSize = [2, 2, 2]
+    baselineShift = [0,0,0]#[-2, 0, 0]
+    translation = [0,0,0]#[-20, 0, 10]
+    rotation = [1, 5, 3]
+    shrinkSize = [0,0,0]#[2, 2, 2]
 
     # GPU used
     usedGPU = 1
@@ -90,13 +90,13 @@ if __name__ == '__main__':
 
     print('-' * 50)
     dynModCopy, GTVMaskCopy, newMask3DCOM = shrinkOrgan(dynModCopy, GTVMaskCopy, shrinkSize=shrinkSize)
-    shrinkedDynMod.name = 'MidP_ShrinkedGTV'
+    #shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     print('-' * 50)
 
     stopTime = time.time()
     print('time:', stopTime-startTime)
-   
+    """
     patient.appendPatientData(shrinkedDynMod)
     patient.appendPatientData(shrinkedOrganMask)
 
@@ -113,6 +113,6 @@ if __name__ == '__main__':
     ax[3].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :])
     ax[3].set_title('mask difference')
     plt.show()
-
+    """
     ## to save the model with inter fraction changes applied
     # saveSerializedObjects(patient, savingPath + 'interFracChanged_ModelAndROIs')

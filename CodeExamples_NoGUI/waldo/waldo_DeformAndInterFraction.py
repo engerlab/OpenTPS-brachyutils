@@ -24,7 +24,8 @@ from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
 from Core.Processing.DeformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
-from Core.Processing.ImageProcessing.crop3D import *
+from Core.Processing.ImageProcessing.resampler3D import *
+from Core.Processing.ImageProcessing.segmentation3D import *
 from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineShift
 from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
 from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods import multiProcDeform
@@ -162,10 +163,10 @@ if __name__ == '__main__':
         
         shrinkValue = unif(0,3)
         # interfraction changes parameters
-        baselineShift = [unif(-5,5), unif(-5,5), unif(-5,5)]
-        translation = [unif(-3,3), unif(-3,3), unif(-3,3)]
-        rotation = [unif(-2,2), unif(-2,2), 0]
-        shrinkSize = [shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5)]
+        baselineShift = [0,0,0]#[unif(-5,5), unif(-5,5), unif(-5,5)]
+        translation = [0,0,0]#[unif(-3,3), unif(-3,3), unif(-3,3)]
+        rotation = [0,1,0]#[unif(-2,2), unif(-2,2), 0]
+        shrinkSize = [0,0,0]#[shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5)]
         startTime = time.time()
         print("Avant baseline",type(dynModCopy.midp.origin))
         print('-' * 50)
@@ -186,6 +187,7 @@ if __name__ == '__main__':
         print("Apres translate",type(dynModCopy.midp.origin))
         print('-'*50)
         rotateData(dynModCopy, rotationInDeg=rotation)
+        print("rotate dynMod OK")
         rotateData(GTVMaskCopy, rotationInDeg=rotation)
         endRotate = time.time()
         print("Time for rotation",endRotate-endTranslation)
