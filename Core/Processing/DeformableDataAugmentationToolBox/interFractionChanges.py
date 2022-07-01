@@ -40,109 +40,155 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
         ## get the shrink size in voxels
         print('Shrink size in mm:', shrinkSize)
         shrinkSizeInVoxels = np.round(shrinkSize / model.midp.spacing).astype(np.uint8)
+
+        # print('Shrink in a direction but not in another not implemented yet, minimum values in voxels is [1, 1, 1]')
+        # for i in range(3):
+        #     for j in range(3):
+        #         if shrinkSizeInVoxels[i] != 0:
+        #             if shrinkSizeInVoxels[j] == 0 and i != j:
+        #                 shrinkSizeInVoxels[j] = 1
+
         print('Shrink size in voxels:', shrinkSizeInVoxels)
 
-        # get the structural element used for the erosion and dilation
-        structuralElementErosionYZ = rectangle(max((2 * shrinkSizeInVoxels[1]) + 1, 3), max(( 2 * shrinkSizeInVoxels[2]) + 1, 3))
-        structuralElementErosionXYZ = np.stack([structuralElementErosionYZ for _ in range(max(shrinkSizeInVoxels[0], 3))])
+        if not np.array(shrinkSizeInVoxels == np.array([0, 0, 0])).all():
 
-        structuralElementDilationYZ = rectangle(3, 3)
-        structuralElementDilationXYZ = np.stack([structuralElementDilationYZ for _ in range(3)])
+            # get the structural element used for the erosion and dilation
+            structuralElementErosionYZ = rectangle((2 * shrinkSizeInVoxels[1]) + 1, ( 2 * shrinkSizeInVoxels[2]) + 1)
+            structuralElementErosionXYZ = np.stack([structuralElementErosionYZ for _ in range((2 * shrinkSizeInVoxels[0]) + 1)])
 
-        # print('Structural element shape:', structuralElementXYZ.shape)
-        # fig = plt.figure(figsize=(8, 8))
-        # ax = fig.add_subplot(1, 1, 1, projection=Axes3D.name)
-        # ax.voxels(structuralElementXYZ)
-        # plt.show()
+            structuralElementDilationYZ = rectangle(3, 3)
+            structuralElementDilationXYZ = np.stack([structuralElementDilationYZ for _ in range(3)])
 
-        ## apply an erosion and dilation using Cupy
-        cupyOrganMask = cupy.asarray(organMask.imageArray)
-        erodedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupyOrganMask, structure=cupy.asarray(structuralElementErosionXYZ)))
-        dilatedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupyOrganMask, structure=cupy.asarray(structuralElementDilationXYZ)))
+            # print('Structural element shape:', structuralElementErosionXYZ.shape)
+            # fig = plt.figure(figsize=(8, 8))
+            # ax = fig.add_subplot(1, 1, 1, projection=Axes3D.name)
+            # ax.voxels(structuralElementErosionXYZ)
+            # plt.show()
 
-        ## get the new COM after mask erosion
-        organROIMaskCopy = copy.deepcopy(organMask)
-        organROIMaskCopy.imageArray = erodedOrganMask
-        erodedMaskCOM = organROIMaskCopy.centerOfMass
+            ## apply an erosion and dilation using Cupy
+            cupyOrganMask = cupy.asarray(organMask.imageArray)
+            erodedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupyOrganMask, structure=cupy.asarray(structuralElementErosionXYZ)))
+            dilatedOrganMask = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupyOrganMask, structure=cupy.asarray(structuralElementDilationXYZ)))
 
-        erodedBand = organMask.imageArray ^ erodedOrganMask
-        dilatedBand = dilatedOrganMask ^ organMask.imageArray
+            ## get the new COM after mask erosion
+            organROIMaskCopy = copy.deepcopy(organMask)
+            organROIMaskCopy.imageArray = erodedOrganMask
+            erodedMaskCOM = organROIMaskCopy.centerOfMass
 
-        # plt.figure()
-        # plt.subplot(1, 2, 1)
-        # plt.imshow(erodedBand[:, :, organCOMInVoxels[2]])
-        # plt.subplot(1, 2, 2)
-        # plt.imshow(dilatedBand[:, :, organCOMInVoxels[2]])
-        # plt.show()
+            erodedBand = organMask.imageArray ^ erodedOrganMask
+            dilatedBand = dilatedOrganMask ^ organMask.imageArray
 
-        erodedBandPoints = np.argwhere(erodedBand == 1)
-        dilatedBandPoints = np.argwhere(dilatedBand == 1)
+            # plt.figure()
+            # plt.subplot(1, 2, 1)
+            # plt.imshow(erodedBand[:, organCOMInVoxels[1], :])
+            # plt.subplot(1, 2, 2)
+            # plt.imshow(dilatedBand[:, organCOMInVoxels[1], :])
+            # plt.show()
 
-        newArray = copy.deepcopy(model.midp.imageArray)
+            erodedBandPoints = np.argwhere(erodedBand == 1)
+            dilatedBandPoints = np.argwhere(dilatedBand == 1)
 
-        print('Start filling the eroded band with new values, this might take a few minutes')
-
-        for pointIndex, point in enumerate(erodedBandPoints):
-
-            distances = np.sqrt(np.sum(np.square(dilatedBandPoints - point), axis=1))
-            distances = np.expand_dims(distances, axis=1)
-
-            ##
-            dilBandPointsAndDists = np.concatenate((dilatedBandPoints, distances), axis=1)
-
-            ##
-            sortedPointAndDists = dilBandPointsAndDists[dilBandPointsAndDists[:, 3].argsort()]
-
-            ## take closest 10% of points
-            sortedPointAndDists = sortedPointAndDists[:int((10 / 100) * dilBandPointsAndDists.shape[0])]
+            # print(erodedBandPoints[:, 0])
 
 
-            imageValuesToUse = model.midp.imageArray[sortedPointAndDists[:, :3].astype(np.uint8)]
+            # print(model.midp.gridSize)
+            # print(np.min(erodedBandPoints[:, 0]), np.max(erodedBandPoints[:, 0]))
+            # print(np.min(erodedBandPoints[:, 1]), np.max(erodedBandPoints[:, 1]))
+            # print(np.min(erodedBandPoints[:, 2]), np.max(erodedBandPoints[:, 2]))
 
-            meanValueOfClosestPoints = np.mean(imageValuesToUse)
-            # varValueOfClosestPoints = np.std(imageValuesToUse)
+            newArray = copy.deepcopy(model.midp.imageArray)
 
-            ## this is not ideal, hard coded value which might not work for other organs than lung
-            meanValueOfClosestPoints -= 280
+            print('Start filling the eroded band with new values, this might take a few minutes')
 
-            newValue = np.random.normal(meanValueOfClosestPoints, 70)
-            newArray[point[0], point[1], point[2]] = newValue
+            for pointIndex, point in enumerate(erodedBandPoints):
 
-            # print('Point', pointIndex, point, 'meanValueOfClosestPointsAdjusted:', meanValueOfClosestPoints, 'new value:', newValue)
+                distances = np.sqrt(np.sum(np.square(dilatedBandPoints - point), axis=1))
+                distances = np.expand_dims(distances, axis=1)
+
+                ##
+                dilBandPointsAndDists = np.concatenate((dilatedBandPoints, distances), axis=1)
+
+                # print(dilBandPointsAndDists[:5])
+
+                ##
+                sortedPointAndDists = dilBandPointsAndDists[dilBandPointsAndDists[:, 3].argsort()]
+
+                # print(sortedPointAndDists.shape)
+                # print(sortedPointAndDists[:5])
+
+                ## take closest 10% of points
+                sortedPointAndDists = sortedPointAndDists[:int((2 / 100) * dilBandPointsAndDists.shape[0])]
+                # print(sortedPointAndDists.shape)
+                #
+                #
+                # print('ici')
+                # print(model.midp.imageArray[int(sortedPointAndDists[2, 0]), int(sortedPointAndDists[2, 1]), int(sortedPointAndDists[2, 2])])
+                # print(model.midp.imageArray[int(sortedPointAndDists[5, 0]), int(sortedPointAndDists[5, 1]), int(
+                #     sortedPointAndDists[5, 2])])
+                # print(model.midp.imageArray[int(sortedPointAndDists[0, 0]), int(sortedPointAndDists[0, 1]), int(
+                #     sortedPointAndDists[0, 2])])
+                # print('ici2')
+                # print(model.midp.imageArray[sortedPointAndDists[:11, :3].astype(np.uint8)])
+
+                sortedPointAndDists = sortedPointAndDists[:, :3].astype(np.uint16)
+
+                # print(sortedPointAndDists[:5])
+
+                indexlisttranspose = sortedPointAndDists.T.tolist()
+                # print('indexlist.T:', indexlisttranspose)
+                # print('y[indexlist.T]:', model.midp.imageArray[tuple(indexlisttranspose)][:10])
+
+                imageValuesToUse = model.midp.imageArray[tuple(indexlisttranspose)]
+                #
+                # print(imageValuesToUse[:5])
+
+                meanValueOfClosestPoints = np.mean(imageValuesToUse)
+                # varValueOfClosestPoints = np.std(imageValuesToUse)
+
+                ## this is not ideal, hard coded value which might not work for other organs than lung
+                meanValueOfClosestPoints -= 280
+
+                newValue = np.random.normal(meanValueOfClosestPoints, 70)
+                newArray[point[0], point[1], point[2]] = newValue
+
+                # print('Point', pointIndex, point, 'meanValueOfClosestPointsAdjusted:', meanValueOfClosestPoints, 'new value:', newValue)
 
 
-        cupyNewImg = cupy.asarray(newArray)
-        smoothedImg = cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupyNewImg, 1))
+            cupyNewImg = cupy.asarray(newArray)
+            smoothedImg = cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupyNewImg, 1))
 
-        newModel = copy.deepcopy(model)
-        newModel.midp.imageArray[dilatedOrganMask] = smoothedImg[dilatedOrganMask]
-        newModel.midp.name = 'MidP_ShrinkedGTV'
+            newModel = copy.deepcopy(model)
+            newModel.midp.imageArray[dilatedOrganMask] = smoothedImg[dilatedOrganMask]
+            newModel.midp.name = 'MidP_ShrinkedGTV'
 
-        organMask.imageArray = erodedOrganMask
-        # erodedBandMean = np.mean(image.imageArray[erodedBand == 1])
-        # dilatedBandMean = np.mean(image.imageArray[dilatedBand == 1])
-        # print(erodedBandMean, dilatedBandMean)
+            organMask.imageArray = erodedOrganMask
+            # erodedBandMean = np.mean(image.imageArray[erodedBand == 1])
+            # dilatedBandMean = np.mean(image.imageArray[dilatedBand == 1])
+            # print(erodedBandMean, dilatedBandMean)
 
-        # fig, axs = plt.subplots(1, 5, constrained_layout=True)
-        # fig.suptitle('organ shrinking example', fontsize=16)
-        # axs[0].imshow(model.midp.imageArray[:, :, organCOMInVoxels[2]])
-        # axs[0].set_title('original image')
-        #
-        # axs[1].imshow(newArray[:, :, organCOMInVoxels[2]])
-        # axs[1].set_title('values replaced image')
-        #
-        # axs[2].imshow(smoothedImg[:, :, organCOMInVoxels[2]])
-        # axs[2].set_title('smoothed image')
-        #
-        # axs[3].imshow(newModel.midp.imageArray[:, :, organCOMInVoxels[2]])
-        # axs[3].set_title('result image')
-        #
-        # axs[4].imshow(model.midp.imageArray[:, :, organCOMInVoxels[2]] - newModel.midp.imageArray[:, :, organCOMInVoxels[2]])
-        # axs[4].set_title('original-shrinked diff')
-        #
-        # plt.show()
+            # fig, axs = plt.subplots(1, 5, constrained_layout=True)
+            # fig.suptitle('organ shrinking example', fontsize=16)
+            # axs[0].imshow(model.midp.imageArray[:, :, organCOMInVoxels[2]])
+            # axs[0].set_title('original image')
+            #
+            # axs[1].imshow(newArray[:, :, organCOMInVoxels[2]])
+            # axs[1].set_title('values replaced image')
+            #
+            # axs[2].imshow(smoothedImg[:, :, organCOMInVoxels[2]])
+            # axs[2].set_title('smoothed image')
+            #
+            # axs[3].imshow(newModel.midp.imageArray[:, :, organCOMInVoxels[2]])
+            # axs[3].set_title('result image')
+            #
+            # axs[4].imshow(model.midp.imageArray[:, :, organCOMInVoxels[2]] - newModel.midp.imageArray[:, :, organCOMInVoxels[2]])
+            # axs[4].set_title('original-shrinked diff')
+            #
+            # plt.show()
 
-        return newModel, organMask, erodedMaskCOM
+            return newModel, organMask, erodedMaskCOM
+
+        else:
+            return model, organMask, organCOM
 
     else:
         return model, organMask, organCOM

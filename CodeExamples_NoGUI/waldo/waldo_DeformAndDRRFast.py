@@ -12,8 +12,6 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
-
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
@@ -29,6 +27,7 @@ from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions impor
 from Core.Processing.ImageProcessing.segmentation3D import *
 from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
 from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods import multiProcDeform
+from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
 
 
 ## ------------------------------------------------------------------------------------
