@@ -31,7 +31,7 @@ if __name__ == '__main__':
     resultFolder = '/test10/'
     resultDataFolder = 'data/'
 
-    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'#'/dynModAndROIs_bodyCropped.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
     # parameters selection ------------------------------------
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     baselineShift = [0,0,0]#[-2, 0, 0]
     translation = [0,0,0]#[-20, 0, 10]
     rotation = [1, 5, 3]
-    shrinkSize = [0,0,0]#[2, 2, 2]
+    shrinkSize = [2, 2, 2]
 
     # GPU used
     usedGPU = 1

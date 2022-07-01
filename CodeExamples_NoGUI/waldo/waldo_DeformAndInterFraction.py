@@ -36,7 +36,7 @@ from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods imp
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_12'
+    patientFolder = 'Patient_4'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
@@ -51,17 +51,17 @@ if __name__ == '__main__':
     outputSize = [64, 64]
     GPUNumber = 0
     ## ROI choice and crop options 
-    bodyContourToUse = 'patient'#'external'#'Body'
-    targetContourToUse = 'gtv t'#'GTVp'#'GTV T'
+    bodyContourToUse = 'Body'#'patient'#'external'#'Body'
+    targetContourToUse = 'GTV T'#'gtv t'#'GTVp'#'GTV T'
     lungContourToUse = 'R lung'
     contourToAddShift = targetContourToUse
-    
+    """
     # interfraction changes parameters
     baselineShift = [-20, 0, 0]
     translation = [-20, 0, 10]
     rotation = [0, 5, 0]
     shrinkSize = [2, 2, 2]
-    
+    """
     croppingContoursUsedXYZ = [targetContourToUse, bodyContourToUse, targetContourToUse]
     isBoxHardCoded = False
     hardCodedBox = [[88, 451], [79, 322], [20, 157]]
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         resultFolder = regularityFolder + '/sim5k/InterFraction/Training/exp' + str(idxExp) + '/'
         resultDataFolder = 'data/'
     
-        dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'
+        dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'#'/dynModAndROIs_bodyCropped.p'
         savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
     
         if not os.path.exists(savingPath):
@@ -163,45 +163,42 @@ if __name__ == '__main__':
         
         shrinkValue = unif(0,3)
         # interfraction changes parameters
-        baselineShift = [0,0,0]#[unif(-5,5), unif(-5,5), unif(-5,5)]
-        translation = [0,0,0]#[unif(-3,3), unif(-3,3), unif(-3,3)]
-        rotation = [0,1,0]#[unif(-2,2), unif(-2,2), 0]
-        shrinkSize = [0,0,0]#[shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5)]
+        baselineShift = [-2, 0, 0]#[unif(-5,5), unif(-5,5), unif(-5,5)]
+        translation = [-20, 0, 10]#[unif(-3,3), unif(-3,3), unif(-3,3)]
+        rotation = [0,5,0]#[unif(-2,2), unif(-2,2), 0]
+        shrinkSize = [1,1,2]#[shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5)]
+        
+        dynModCopy = copy.deepcopy(dynMod)
+        GTVMaskCopy = copy.deepcopy(GTVMask)
+    
         startTime = time.time()
-        print("Avant baseline",type(dynModCopy.midp.origin))
+    
         print('-' * 50)
         if contourToAddShift == targetContourToUse:
             print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
             dynModCopy, GTVMaskCopy = applyBaselineShift(dynModCopy, GTVMaskCopy, baselineShift)
-            print("Apres baseline",type(dynModCopy.midp.origin))
         else:
             print('Not implemented in this script --> must use the get contour by name function')
-        endBaselineShift = time.time()
-        #print('-' * 50)
-        print("Time for baseline shift",endBaselineShift-startTime)
-        print("Avant translate",type(dynModCopy.midp.origin))
+    
+        print('-' * 50)
         translateData(dynModCopy, translationInMM=translation)
         translateData(GTVMaskCopy, translationInMM=translation)
-        endTranslation = time.time()
-        print("Time for translation",endTranslation-endBaselineShift)
-        print("Apres translate",type(dynModCopy.midp.origin))
+    
         print('-'*50)
         rotateData(dynModCopy, rotationInDeg=rotation)
-        print("rotate dynMod OK")
         rotateData(GTVMaskCopy, rotationInDeg=rotation)
-        endRotate = time.time()
-        print("Time for rotation",endRotate-endTranslation)
-        
+    
         print('-' * 50)
         dynModCopy, GTVMaskCopy, newMask3DCOM = shrinkOrgan(dynModCopy, GTVMaskCopy, shrinkSize=shrinkSize)
-        shrinkedDynMod.name = 'MidP_ShrinkedGTV'
+        #shrinkedDynMod.name = 'MidP_ShrinkedGTV'
     
         print('-' * 50)
     
         stopTime = time.time()
         print('time:', stopTime-startTime)
-        patient.appendPatientData(shrinkedDynMod)
-        patient.appendPatientData(shrinkedOrganMask)
+        print('time:', stopTime-startTime)
+        #patient.appendPatientData(shrinkedDynMod)
+        #patient.appendPatientData(shrinkedOrganMask)
         
         if amplitude == 'model':
             ## to get amplitude from model !!! it takes some time because 10 displacement fields must be computed just for this
