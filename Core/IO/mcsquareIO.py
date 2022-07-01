@@ -102,7 +102,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=No
         roiData = roiData.astype(bool)
         roiData = roiData.flatten()
     else:
-        roiData = np.zeros((NbrVoxels, 1)).astype(bool)
+        roiData = np.ones((NbrVoxels, 1)).astype(bool)
 
     time_start = time.time()
 
