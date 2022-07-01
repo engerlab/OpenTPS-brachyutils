@@ -41,28 +41,28 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
         print('Shrink size in mm:', shrinkSize)
         shrinkSizeInVoxels = np.round(shrinkSize / model.midp.spacing).astype(np.uint8)
 
-        print('Shrink in a direction but not in another not implemented yet, minimum values in voxels is [1, 1, 1]')
-        for i in range(3):
-            for j in range(3):
-                if shrinkSizeInVoxels[i] != 0:
-                    if shrinkSizeInVoxels[j] == 0 and i != j:
-                        shrinkSizeInVoxels[j] = 1
+        # print('Shrink in a direction but not in another not implemented yet, minimum values in voxels is [1, 1, 1]')
+        # for i in range(3):
+        #     for j in range(3):
+        #         if shrinkSizeInVoxels[i] != 0:
+        #             if shrinkSizeInVoxels[j] == 0 and i != j:
+        #                 shrinkSizeInVoxels[j] = 1
 
         print('Shrink size in voxels:', shrinkSizeInVoxels)
 
         if not np.array(shrinkSizeInVoxels == np.array([0, 0, 0])).all():
 
             # get the structural element used for the erosion and dilation
-            structuralElementErosionYZ = rectangle(max((2 * shrinkSizeInVoxels[1]) + 1, 3), max(( 2 * shrinkSizeInVoxels[2]) + 1, 3))
-            structuralElementErosionXYZ = np.stack([structuralElementErosionYZ for _ in range(max(shrinkSizeInVoxels[0], 3))])
+            structuralElementErosionYZ = rectangle((2 * shrinkSizeInVoxels[1]) + 1, ( 2 * shrinkSizeInVoxels[2]) + 1)
+            structuralElementErosionXYZ = np.stack([structuralElementErosionYZ for _ in range((2 * shrinkSizeInVoxels[0]) + 1)])
 
             structuralElementDilationYZ = rectangle(3, 3)
             structuralElementDilationXYZ = np.stack([structuralElementDilationYZ for _ in range(3)])
 
-            # print('Structural element shape:', structuralElementXYZ.shape)
+            # print('Structural element shape:', structuralElementErosionXYZ.shape)
             # fig = plt.figure(figsize=(8, 8))
             # ax = fig.add_subplot(1, 1, 1, projection=Axes3D.name)
-            # ax.voxels(structuralElementXYZ)
+            # ax.voxels(structuralElementErosionXYZ)
             # plt.show()
 
             ## apply an erosion and dilation using Cupy
@@ -80,13 +80,21 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
 
             # plt.figure()
             # plt.subplot(1, 2, 1)
-            # plt.imshow(erodedBand[:, :, organCOMInVoxels[2]])
+            # plt.imshow(erodedBand[:, organCOMInVoxels[1], :])
             # plt.subplot(1, 2, 2)
-            # plt.imshow(dilatedBand[:, :, organCOMInVoxels[2]])
+            # plt.imshow(dilatedBand[:, organCOMInVoxels[1], :])
             # plt.show()
 
             erodedBandPoints = np.argwhere(erodedBand == 1)
             dilatedBandPoints = np.argwhere(dilatedBand == 1)
+
+            # print(erodedBandPoints[:, 0])
+
+
+            # print(model.midp.gridSize)
+            # print(np.min(erodedBandPoints[:, 0]), np.max(erodedBandPoints[:, 0]))
+            # print(np.min(erodedBandPoints[:, 1]), np.max(erodedBandPoints[:, 1]))
+            # print(np.min(erodedBandPoints[:, 2]), np.max(erodedBandPoints[:, 2]))
 
             newArray = copy.deepcopy(model.midp.imageArray)
 
@@ -100,14 +108,39 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
                 ##
                 dilBandPointsAndDists = np.concatenate((dilatedBandPoints, distances), axis=1)
 
+                # print(dilBandPointsAndDists[:5])
+
                 ##
                 sortedPointAndDists = dilBandPointsAndDists[dilBandPointsAndDists[:, 3].argsort()]
 
+                # print(sortedPointAndDists.shape)
+                # print(sortedPointAndDists[:5])
+
                 ## take closest 10% of points
-                sortedPointAndDists = sortedPointAndDists[:int((10 / 100) * dilBandPointsAndDists.shape[0])]
+                sortedPointAndDists = sortedPointAndDists[:int((2 / 100) * dilBandPointsAndDists.shape[0])]
+                # print(sortedPointAndDists.shape)
+                #
+                #
+                # print('ici')
+                # print(model.midp.imageArray[int(sortedPointAndDists[2, 0]), int(sortedPointAndDists[2, 1]), int(sortedPointAndDists[2, 2])])
+                # print(model.midp.imageArray[int(sortedPointAndDists[5, 0]), int(sortedPointAndDists[5, 1]), int(
+                #     sortedPointAndDists[5, 2])])
+                # print(model.midp.imageArray[int(sortedPointAndDists[0, 0]), int(sortedPointAndDists[0, 1]), int(
+                #     sortedPointAndDists[0, 2])])
+                # print('ici2')
+                # print(model.midp.imageArray[sortedPointAndDists[:11, :3].astype(np.uint8)])
 
+                sortedPointAndDists = sortedPointAndDists[:, :3].astype(np.uint16)
 
-                imageValuesToUse = model.midp.imageArray[sortedPointAndDists[:, :3].astype(np.uint8)]
+                # print(sortedPointAndDists[:5])
+
+                indexlisttranspose = sortedPointAndDists.T.tolist()
+                # print('indexlist.T:', indexlisttranspose)
+                # print('y[indexlist.T]:', model.midp.imageArray[tuple(indexlisttranspose)][:10])
+
+                imageValuesToUse = model.midp.imageArray[tuple(indexlisttranspose)]
+                #
+                # print(imageValuesToUse[:5])
 
                 meanValueOfClosestPoints = np.mean(imageValuesToUse)
                 # varValueOfClosestPoints = np.std(imageValuesToUse)

@@ -20,6 +20,8 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
 from Core.Processing.DeformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
 from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineShift
+from Core.Processing.ImageProcessing.segmentation3D import *
+from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
 
 if __name__ == '__main__':
 
@@ -39,17 +41,22 @@ if __name__ == '__main__':
     # dataPath = basePath + organ + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
     # savingPath = basePath + organ + '/' + patientFolder + patientComplement + resultFolder
 
+
+
     # parameters selection ------------------------------------
     bodyContourToUse = 'Body'
     targetContourToUse = 'GTV T'
     lungContourToUse = 'R lung'
     contourToAddShift = targetContourToUse
 
+    croppingContoursUsedXYZ = [targetContourToUse, bodyContourToUse, targetContourToUse]
+    marginInMM = [50, 0, 100]
+
     # interfraction changes parameters
     baselineShift = [-2, 0, 0]
     translation = [-20, 0, -10]
     rotation = [0, 5, 3]
-    shrinkSize = [0, 0, 2]
+    shrinkSize = [3, 3, 3]
 
     # GPU used
     usedGPU = 0
@@ -70,8 +77,42 @@ if __name__ == '__main__':
 
     gtvContour = rtStruct.getContourByName(targetContourToUse)
     GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
+    gtvBox = getBoxAroundROI(GTVMask)
     GTVCenterOfMass = gtvContour.getCenterOfMass(dynMod.midp.origin, dynMod.midp.gridSize, dynMod.midp.spacing)
     GTVCenterOfMassInVoxels = getVoxelIndexFromPosition(GTVCenterOfMass, dynMod.midp)
+
+    ## get the body contour to adjust the crop in the direction of the DRR projection
+    bodyContour = rtStruct.getContourByName(bodyContourToUse)
+    bodyMask = bodyContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
+    bodyBox = getBoxAroundROI(bodyMask)
+    print('Body Box from contour', bodyBox)
+
+    ##Define the cropping box
+    croppingBox = [[], [], []]
+    for i in range(3):
+        if croppingContoursUsedXYZ[i] == bodyContourToUse:
+            croppingBox[i] = bodyBox[i]
+        elif croppingContoursUsedXYZ[i] == targetContourToUse:
+            croppingBox[i] = gtvBox[i]
+
+    ## crop the model data using the box
+    crop3DDataAroundBox(dynMod, croppingBox, marginInMM=marginInMM)
+    GTVCenterOfMass = gtvContour.getCenterOfMass(dynMod.midp.origin, dynMod.midp.gridSize, dynMod.midp.spacing)
+    GTVCenterOfMassInVoxels = getVoxelIndexFromPosition(GTVCenterOfMass, dynMod.midp)
+
+    ## get the mask in cropped version (the dynMod.midp is now cropped so its origin and gridSize has changed)
+    GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize,
+                                       spacing=dynMod.midp.spacing)
+
+    fig, ax = plt.subplots(1, 3)
+    fig.suptitle('Example of baseline shift, translate, rotate and shrink')
+    ax[0].imshow(dynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[0].imshow(GTVMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
+    ax[1].imshow(dynMod.midp.imageArray[GTVCenterOfMassInVoxels[0], :, :])
+    ax[1].imshow(GTVMask.imageArray[GTVCenterOfMassInVoxels[0], :, :], alpha=0.5)
+    ax[2].imshow(dynMod.midp.imageArray[:, :, GTVCenterOfMassInVoxels[2]])
+    ax[2].imshow(GTVMask.imageArray[:, :, GTVCenterOfMassInVoxels[2]], alpha=0.5)
+    plt.show()
 
     dynModCopy = copy.deepcopy(dynMod)
     GTVMaskCopy = copy.deepcopy(GTVMask)
