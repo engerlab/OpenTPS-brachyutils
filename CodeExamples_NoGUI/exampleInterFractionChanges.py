@@ -56,7 +56,7 @@ if __name__ == '__main__':
     baselineShift = [-2, 0, 0]
     translation = [-20, 0, -10]
     rotation = [0, 5, 3]
-    shrinkSize = [3, 3, 3]
+    shrinkSize = [3, 0, 0]
 
     # GPU used
     usedGPU = 0
@@ -118,8 +118,6 @@ if __name__ == '__main__':
     GTVMaskCopy = copy.deepcopy(GTVMask)
 
     startTime = time.time()
-
-    print(dynMod.midp.gridSize)
 
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
