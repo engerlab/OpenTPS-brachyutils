@@ -221,7 +221,7 @@ def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
     r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
-    print("after 3D Sitk",type(imgCenter))
+
 
 if __name__ == "__main__":
     data = np.random.randint(0, high=500, size=(216, 216, 216))
