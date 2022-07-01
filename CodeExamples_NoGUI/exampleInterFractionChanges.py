@@ -46,10 +46,10 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [0, 0, 0]
-    translation = [0, 0, 0]
+    baselineShift = [-2, 0, 0]
+    translation = [-20, 0, -10]
     rotation = [0, 5, 3]
-    shrinkSize = [2, 2, 2]
+    shrinkSize = [0, 0, 2]
 
     # GPU used
     usedGPU = 0
@@ -78,6 +78,8 @@ if __name__ == '__main__':
 
     startTime = time.time()
 
+    print(dynMod.midp.gridSize)
+
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
         print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
@@ -85,17 +87,25 @@ if __name__ == '__main__':
     else:
         print('Not implemented in this script --> must use the get contour by name function')
 
+    print(dynMod.midp.gridSize)
+
     print('-' * 50)
     translateData(dynMod, translationInMM=translation)
     translateData(GTVMask, translationInMM=translation)
+
+    print(dynMod.midp.gridSize)
 
     print('-'*50)
     rotateData(dynMod, rotationInDeg=rotation)
     rotateData(GTVMask, rotationInDeg=rotation)
 
+    print(dynMod.midp.gridSize)
+
     print('-' * 50)
     shrinkedDynMod, shrinkedOrganMask, newMask3DCOM = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
+
+    print(dynMod.midp.gridSize)
 
     print('-' * 50)
 
