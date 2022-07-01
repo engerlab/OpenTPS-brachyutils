@@ -41,10 +41,10 @@ if __name__ == '__main__':
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [-20, 0, 0]
+    baselineShift = [-2, 0, 0]
     translation = [-20, 0, 10]
-    rotation = [0, 5, 0]
-    shrinkSize = [2, 2, 2]
+    rotation = [0, 5, 2]
+    shrinkSize = [3, 3, 3]
 
     # GPU used
     usedGPU = 1
