@@ -228,7 +228,6 @@ def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
 
 
-
 if __name__ == "__main__":
     data = np.random.randint(0, high=500, size=(216, 216, 216))
     data = data.astype('float32')
