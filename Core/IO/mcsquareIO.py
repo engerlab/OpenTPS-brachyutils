@@ -3,6 +3,7 @@ import platform
 import shutil
 import struct
 import time
+import logging
 import unittest
 from typing import Optional, Sequence
 
@@ -30,6 +31,7 @@ from Core.IO import mhdIO
 from Core.IO.mhdIO import exportImageMHD, importImageMHD
 from Core.Processing.ImageProcessing import crop3D
 
+logger = logging.getLogger(__name__)
 
 def readBeamlets(file_path, roi: Optional[ROIMask] = None):
     if (not file_path.endswith('.txt')):
@@ -234,18 +236,12 @@ def readMCsquarePlan(ct: CTImage, file_path):
             elif line == "#NumberOfFractions":
                 plan.numberOfFractionsPlanned = int(f.readline())
 
-            elif line == "#TotalMetersetWeightOfAllFields":
-                plan.meterset = float(f.readline())
-
             elif line == "#FIELD-DESCRIPTION":
                 plan._beams.append(PlanIonBeam())
                 plan.beams[-1].seriesInstanceUID = plan.seriesInstanceUID
 
             elif line == "###FieldID" and len(plan.beams) > 0:
                 plan.beams[-1].name = f.readline()
-
-            elif line == "###FinalCumulativeMeterSetWeight":
-                plan.beams[-1].meterset = float(f.readline())
 
             elif line == "###GantryAngle":
                 plan.beams[-1].gantryAngle = float(f.readline())
@@ -258,7 +254,7 @@ def readMCsquarePlan(ct: CTImage, file_path):
                 iso = f.readline().replace('\r', '').replace('\n', '').replace('\t', ' ').split()
                 iso = [float(i) for i in iso]
 
-                #plan.beams[-1].MCsquareIsocenter = iso
+                plan.beams[-1].mcsquareIsocenter = iso
 
                 # convert isocenter in dicom coordinates
                 iso[1] = ct.gridSize[1] * ct.spacing[1] - iso[1]
@@ -278,9 +274,6 @@ def readMCsquarePlan(ct: CTImage, file_path):
                 plan.beams[-1].layers[-1].seriesInstanceUID = plan.seriesInstanceUID
                 line = f.readline()
 
-            elif line == "####CumulativeMetersetWeight":
-                plan.beams[-1].layers[-1].meterset = float(f.readline())
-
             elif line == "####Energy(MeV)":
                 plan.beams[-1].layers[-1].nominalEnergy = float(f.readline())
 
@@ -288,7 +281,6 @@ def readMCsquarePlan(ct: CTImage, file_path):
                 plan.beams[-1].layers[-1].rangeShifterSettings = f.readline().replace('\r', '').replace('\n',
                                                                                                        '').replace('\t',
                                                                                                                    '')
-
             elif line == "####IsocenterToRangeShifterDistance":
                 plan.beams[-1].layers[-1].rangeShifterSettings.isocenterToRangeShifterDistance = float(f.readline())
 
@@ -297,34 +289,19 @@ def readMCsquarePlan(ct: CTImage, file_path):
 
             elif line == "####NbOfScannedSpots":
                 numSpots = int(f.readline())
-                plan.numberOfSpots += numSpots
 
             elif line == "####XYWeight":
                 for s in range(numSpots):
                     data = f.readline().replace('\r', '').replace('\n', '').replace('\t', '').split()
-                    plan.beams[-1].layers[-1]._x.append(float(data[0]))
-                    plan.beams[-1].layers[-1]._y.append(float(data[1]))
-                    #plan.beams[-1].layers[-1].meterset.append(float(data[2]))
-                    plan.beams[-1].layers[-1]._weights.append(float(data[2]))
+                    plan.beams[-1].layers[-1]._appendSingleSpot(float(data[0]), float(data[1]), float(data[2]))
+
 
             elif line == "####XYWeightTime":
                 for s in range(numSpots):
                     data = f.readline().replace('\r', '').replace('\n', '').replace('\t', '').split()
-                    plan.beams[-1].layers[-1]._x.append(float(data[0]))
-                    plan.beams[-1].layers[-1]._y.append(float(data[1]))
-                    #plan.beams[-1].layers[-1].meterset.append(float(data[2]))
-                    plan.beams[-1].layers[-1]._weights.append(float(data[2]))
-                    plan.beams[-1].layers[-1]._timings.append(float(data[3]))
+                    plan.beams[-1].layers[-1]._appendSingleSpot(float(data[0]), float(data[1]), float(data[2]), float(data[3]))
 
             line = f.readline()
-
-    # plan.Beams[-1].Layers[-1].RangeShifterSetting = 'OUT'
-    # plan.Beams[-1].Layers[-1].IsocenterToRangeShifterDistance = 0.0
-    # plan.Beams[-1].Layers[-1].RangeShifterWaterEquivalentThickness = 0.0
-    # plan.Beams[-1].Layers[-1].ReferencedRangeShifterNumber = 0
-
-    # plan.Beams[-1].RangeShifter = "none"
-    # plan.NumberOfSpots = ""
     plan.isLoaded = 1
 
     return plan
@@ -336,18 +313,9 @@ def updateWeightsFromPlanPencil(ct: CTImage, initialPlan: RTPlan, file_path, bdl
 
     # update weight of initial plan with those from PlanPencil
     initialPlan.deliveredProtons = 0
-    initialPlan.meterset = PlanPencil.meterset
     for b in range(len(PlanPencil.beams)):
-        initialPlan.beams[b].meterset = PlanPencil.beams[b].meterset
         for l in range(len(PlanPencil.beams[b].layers)):
-            initialPlan.beams[b].layers[l].meterset = PlanPencil.beams[b].layers[l].meterset
-            initialPlan.beams[b].layers[l].spotWeights = PlanPencil.beams[b].layers[l].spotWeights
-            if bdl.isLoaded:
-                initialPlan.deliveredProtons += sum(initialPlan.beams[b].layers[l].spotWeights) * np.interp(
-                    initialPlan.beams[b].layers[l].nominalEnergy, bdl.NominalEnergy, bdl.ProtonsMU)
-            else:
-                initialPlan.deliveredProtons += bdl.computeMU2Protons(initialPlan.beams[b].layers[l].nominalEnergy)
-
+            initialPlan.beams[b].layers[l].spotMUs = PlanPencil.beams[b].layers[l].spotMUs
 
 def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
     # Convert data for compatibility with MCsquare
@@ -378,7 +346,7 @@ def writeCTCalibrationAndBDL(calibration: AbstractCTCalibration, scannerPath, ma
     matNames = [mat["name"] for mat in materials]
 
     with open(os.path.join(materialPath, 'list.dat'), "a") as listFile:
-        for rangeShifter in bdl.RangeShifters:
+        for rangeShifter in bdl.rangeShifters:
             rangeShifter.material.write(materialPath, matNames)
             listFile.write(str(len(materials) + 1) + ' ' + rangeShifter.material.name)
 
@@ -457,17 +425,17 @@ def readBDL(path, materialsPath='default') -> BDL:
             # parse range shifter data
             if ("Range Shifter parameters" in line):
                 RS = RangeShifter()
-                bdl.RangeShifters.append(RS)
+                bdl.rangeShifters.append(RS)
 
             if ("RS_ID" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].ID = value
+                bdl.rangeShifters[-1].ID = value
 
             if ("RS_type" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].type = value.lower()
+                bdl.rangeShifters[-1].type = value.lower()
 
             if ("RS_material" in line):
                 line = line.split('=')
@@ -476,39 +444,41 @@ def readBDL(path, materialsPath='default') -> BDL:
                 material = MCsquareMolecule()
                 material.load(int(value), materialsPath)
 
-                bdl.RangeShifters[-1].material = material
+                bdl.rangeShifters[-1].material = material
 
             if ("RS_density" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].density = float(value)
+                bdl.rangeShifters[-1].density = float(value)
 
             if ("RS_WET" in line):
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
-                bdl.RangeShifters[-1].WET = float(value)
+                bdl.rangeShifters[-1].WET = float(value)
 
     # parse BDL table
     BDL_table = np.loadtxt(path, skiprows=table_line)
 
-    bdl.NominalEnergy = BDL_table[:, 0]
-    bdl.MeanEnergy = BDL_table[:, 1]
-    bdl.EnergySpread = BDL_table[:, 2]
-    bdl.ProtonsMU = BDL_table[:, 3]
-    bdl.Weight1 = BDL_table[:, 4]
-    bdl.SpotSize1x = BDL_table[:, 5]
-    bdl.Divergence1x = BDL_table[:, 6]
-    bdl.Correlation1x = BDL_table[:, 7]
-    bdl.SpotSize1y = BDL_table[:, 8]
-    bdl.Divergence1y = BDL_table[:, 9]
-    bdl.Correlation1y = BDL_table[:, 10]
-    bdl.Weight2 = BDL_table[:, 11]
-    bdl.SpotSize2x = BDL_table[:, 12]
-    bdl.Divergence2x = BDL_table[:, 13]
-    bdl.Correlation2x = BDL_table[:, 14]
-    bdl.SpotSize2y = BDL_table[:, 15]
-    bdl.Divergence2y = BDL_table[:, 16]
-    bdl.Correlation2y = BDL_table[:, 17]
+    bdl.nominalEnergy = BDL_table[:, 0]
+    bdl.meanEnergy = BDL_table[:, 1]
+    bdl.energySpread = BDL_table[:, 2]
+    bdl.protonsMU = BDL_table[:, 3]
+    bdl.weight1 = BDL_table[:, 4]
+    bdl.spotSize1x = BDL_table[:, 5]
+    bdl.divergence1x = BDL_table[:, 6]
+    bdl.correlation1x = BDL_table[:, 7]
+    bdl.spotSize1y = BDL_table[:, 8]
+    bdl.divergence1y = BDL_table[:, 9]
+    bdl.correlation1y = BDL_table[:, 10]
+    bdl.weight2 = BDL_table[:, 11]
+    bdl.spotSize2x = BDL_table[:, 12]
+    bdl.divergence2x = BDL_table[:, 13]
+    bdl.correlation2x = BDL_table[:, 14]
+    bdl.spotSize2y = BDL_table[:, 15]
+    bdl.divergence2y = BDL_table[:, 16]
+    bdl.correlation2y = BDL_table[:, 17]
+
+    bdl.isLoaded = 1
 
     return bdl
 
@@ -519,8 +489,15 @@ def _writeBDL(bdl: BDL, fileName, materials):
 
 
 def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
+    if (plan.scanMode != "MODULATED"):
+        print("Error: cannot simulate this treatment modality. Please convert the plan to PBS delivery mode.")
+        return
+
     DestFolder, DestFile = os.path.split(file_path)
     FileName, FileExtension = os.path.splitext(DestFile)
+
+    # export plan
+    logger.info("Write Plan: " + file_path)
 
     # export plan
     fid = open(file_path, 'w')
@@ -559,7 +536,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
             "%f\t %f\t %f\n" % _dicomIsocenterToMCsquare(beam.isocenterPosition, CT.origin, CT.spacing, CT.gridSize))
 
         if not (beam.rangeShifter is None):
-            if beam.rangeShifter.ID not in [rs.ID for rs in bdl.RangeShifters]:
+            if beam.rangeShifter.ID not in [rs.ID for rs in bdl.rangeShifters]:
                 raise Exception('Range shifter in plan not in BDL')
             else:
                 fid.write("###RangeShifterID\n")
@@ -591,9 +568,9 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
                 fid.write("####RangeShifterWaterEquivalentThickness\n")
                 if (layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness is None):
                     # fid.write("%f\n" % beam.rangeShifter.WET)
-                    RS_index = [rs.ID for rs in bdl.RangeShifters]
+                    RS_index = [rs.ID for rs in bdl.rangeShifters]
                     ID = RS_index.index(beam.rangeShifter.ID)
-                    fid.write("%f\n" % bdl.RangeShifters[ID].WET)
+                    fid.write("%f\n" % bdl.rangeShifters[ID].WET)
                 else:
                     print('layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness',
                           layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
@@ -606,7 +583,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
 
             fid.write("####X Y Weight\n")
             for i, xy in enumerate(layer.spotXY):
-                fid.write("%f %f %f\n" % (xy[0], xy[1], layer.spotWeights[i]))
+                fid.write("%f %f %f\n" % (xy[0], xy[1], layer.spotMUs[i]))
 
     fid.close()
 
