@@ -83,7 +83,21 @@ gantryAngles = [0., 45.]
 couchAngles = [0., 0.]
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "testRefactorPlan.tps")
+plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
+plan = loadRTPlan(plan_file)
+'''planInit = PlanStructure()
+planInit.ct = ct
+planInit.targetMask = targetMask
+planInit.gantryAngles = gantryAngles
+planInit.beamNames = beamNames
+planInit.couchAngles = couchAngles
+planInit.calibration = calibration
+planInit.spotSpacing = 6.0
+planInit.layerSpacing = 4.0
+planInit.targetMargin = 6.0
+plan = planInit.createPlan()  # Spot placement
+plan.PlanName = "NewPlan"
+saveRTPlan(plan, plan_file)'''
 
 '''if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
@@ -115,11 +129,11 @@ else:
 # Load openTPS plan
 # plan = dataList[3]
 # Load Dicom plan
-plan = dataList[1]
+#plan = dataList[1]
 # Load Beamlets
-beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
+#beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
 # beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
-plan.beamlets = loadBeamlets(beamletPath)
+# plan.beamlets = loadBeamlets(beamletPath)
 
 # optimization objectives
 plan.objectives = ObjectivesList()
@@ -141,14 +155,14 @@ plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 #plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
 #plan.objectives.initializeContours(contours, ct, ct.gridSize, ct.spacing)
 # Objective functions
-objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
+#objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
 print('pre init')
 #objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), formatArray=64)
 print('fidelity init done')
 spotSparsity = NormL1(lambda_=1)
-energySeq = EnergySeq(plan, gamma=0.1)
+#energySeq = EnergySeq(plan, gamma=0.1)
 # logBarrier = LogBarrier(plan, beta=0.1)
-layerSparsity = NormL21(plan, lambda_=1, scaleReg="summu")
+#layerSparsity = NormL21(plan, lambda_=1, scaleReg="summu")
 
 # Acceleration
 accel = FistaBacktracking()
@@ -182,7 +196,7 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # doseImage = plan.beamlets.toDoseImage()
 
 # MCsquare beamlet free optimization
-doseCalculator.nbPrimaries = 1e7
+doseCalculator.nbPrimaries = 1e6
 doseImage = doseCalculator.optimizeBeamletFree(ct, plan, [targetMask])
 
 # Compute DVH
