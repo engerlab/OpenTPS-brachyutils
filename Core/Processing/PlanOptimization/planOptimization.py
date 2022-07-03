@@ -69,10 +69,10 @@ class PlanOptimizer:
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.plan.spotWeights = np.square(weights).astype(np.float32)
+            self.plan.spotMUs = np.square(weights).astype(np.float32)
             self.plan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
         else:
-            self.plan.spotWeights = weights.astype(np.float32)
+            self.plan.spotMUs = weights.astype(np.float32)
             self.plan.beamlets.beamletWeights = weights.astype(np.float32)
 
         totalDose = self.plan.beamlets.toDoseImage()

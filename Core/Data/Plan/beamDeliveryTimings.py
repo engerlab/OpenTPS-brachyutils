@@ -101,7 +101,7 @@ class BDT:
                 conversion_coeff = self.get_charge_to_MU_conversion(original_layer, scanAlgo['layer'][l])
                 original_layer._x = np.array([])
                 original_layer._y = np.array([])
-                original_layer._weights = np.array([])
+                original_layer._mu = np.array([])
                 original_layer._timings = np.array([])
                 SA_x = [SA_layer[i]['clinicalx'] for i in range(N)]
                 SA_y = [SA_layer[i]['clinicaly'] for i in range(N)]
@@ -149,7 +149,7 @@ class BDT:
             conversion_coeff = self.get_charge_to_MU_conversion(original_layer, scanAlgo['layers'][l])
             original_layer._x = np.array([])
             original_layer._y = np.array([])
-            original_layer._weights = np.array([])
+            original_layer._mu = np.array([])
             original_layer._timings = np.array([])
 
             cumul_burst_time = 0.
@@ -204,14 +204,14 @@ class BDT:
             if isinstance(index_spot_scanAlgo, list):
                 factor = len(index_spot_scanAlgo)
                 index_spot_scanAlgo = index_spot_scanAlgo[0]
-            conversion_coeff = original_layer._weights[0] / (SA_layer['spot'][index_spot_scanAlgo]['charge'] * factor)
+            conversion_coeff = original_layer._mu[0] / (SA_layer['spot'][index_spot_scanAlgo]['charge'] * factor)
         elif self.gantry == 'POne':
             index_spot_scanAlgo = self.find_spot_index_json(SA_layer,
                     original_layer._x[0],
                     original_layer._y[0], return_first=False)
             # total_charge = sum([item for sublist in list(index_spot_scanAlgo.values()) for item in sublist])
             total_charge = sum([SA_layer['bursts'][b]['spots'][s]['targetCharge'] for b,spot_ind in index_spot_scanAlgo.items() for s in spot_ind])
-            conversion_coeff = original_layer._weights[0] / total_charge
+            conversion_coeff = original_layer._mu[0] / total_charge
         else:
             raise NotImplementedError(f'{self.Gantry} not implemented')
 

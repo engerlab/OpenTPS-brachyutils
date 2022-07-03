@@ -27,7 +27,7 @@ class WeightStructure:
         # beamlets
         self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
         # weights
-        self.x = self.plan.spotWeights
+        self.x = self.plan.spotMUs
         # total number of spots
         self.nSpots = self.plan.numberOfSpots
         # total number of beam
@@ -99,9 +99,9 @@ class WeightStructure:
             nOfLayersInBeam[i] = len(self.plan.beams[i].layers)
             energiesInbeam = []
             for j in range(len(self.plan.beams[i].layers)):
-                nOfSpotsInLayer[accumulateLayers] = len(self.plan.beams[i].layers[j].spotWeights)
+                nOfSpotsInLayer[accumulateLayers] = len(self.plan.beams[i].layers[j].spotMUs)
                 energiesInbeam.append(self.plan.beams[i].layers[j].nominalEnergy)
-                nOfSpotsInBeam[i] += len(self.plan.beams[i].layers[j].spotWeights)
+                nOfSpotsInBeam[i] += len(self.plan.beams[i].layers[j].spotMUs)
                 accumulateLayers += 1
             energies.append(energiesInbeam)
 

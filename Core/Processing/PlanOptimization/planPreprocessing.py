@@ -78,10 +78,10 @@ class ExtendedPlanIonLayer(PlanIonLayer):
     def fromLayer(cls, layer: PlanIonLayer):
         newLayer = cls(layer.nominalEnergy)
         spotXY = list(layer.spotXY)
-        spotWeights = layer.spotWeights
+        spotMUs = layer.spotMUs
 
         for s in range(layer.numberOfSpots):
-            newLayer.appendSpot(spotXY[s][0], spotXY[s][1], spotWeights[s])
+            newLayer.appendSpot(spotXY[s][0], spotXY[s][1], spotMUs[s])
             spot = PlanIonSpot()
             newLayer._spots.append(spot)
 

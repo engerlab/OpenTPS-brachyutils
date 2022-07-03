@@ -13,6 +13,7 @@ class PlanIonBeam:
 
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
+        self.mcsquareIsocenter = [0, 0, 0]
         self.gantryAngle = 0.0
         self.couchAngle = 0.0
         self.id = 0
@@ -52,21 +53,21 @@ class PlanIonBeam:
         self._layers.remove(layer)
 
     @property
-    def spotWeights(self):
-        weights = np.array([])
+    def spotMUs(self):
+        mu = np.array([])
         for layer in self._layers:
-            weights = np.concatenate((weights, layer.spotWeights))
+            mu = np.concatenate((mu, layer.spotMUs))
 
-        return weights
+        return mu
 
-    @spotWeights.setter
-    def spotWeights(self, w: Sequence[float]):
-        w = np.array(w)
+    @spotMUs.setter
+    def spotMUs(self, mu: Sequence[float]):
+        mu = np.array(mu)
 
         ind = 0
         for layer in self._layers:
-            layer.spotWeights = w[ind:ind + len(layer.spotWeights)]
-            ind += len(layer.spotWeights)
+            layer.spotMUs = mu[ind:ind + len(layer.spotMUs)]
+            ind += len(layer.spotMUs)
 
     @property
     def spotTimings(self):
@@ -103,10 +104,6 @@ class PlanIonBeam:
     @property
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
-
-    @meterset.setter
-    def meterset(self, meterSet: float):
-        self.meterset = meterSet
 
     @property
     def numberOfSpots(self) -> int:

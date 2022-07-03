@@ -115,7 +115,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return doseImage
 
-    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[ROIMask] = None) -> SparseBeamlets:
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIMask]] = []) -> SparseBeamlets:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
@@ -126,11 +126,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare()
 
         beamletDose = self._importBeamlets()
-        beamletDose.beamletWeights = np.array(plan.spotWeights)
+        beamletDose.beamletWeights = np.array(plan.spotMUs)
 
         return beamletDose
 
-    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, contours: Sequence[ROIMask]) -> DoseImage:
+    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: Sequence[ROIMask]) -> DoseImage:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         # Generate MCsquare configuration file
@@ -138,7 +138,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         # Export useful data
         self._writeFilesToSimuDir()
         mcsquareIO.writeObjectives(self._plan.objectives, self._objFilePath)
-        for contour in contours:
+        for contour in roi:
             mcsquareIO.writeContours(contour, self._contourFolderPath)
         self._cleanDir(self._outputDir)
         # Start simulation
@@ -146,14 +146,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         # Import optimized plan
         file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
-        #mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
+        mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
 
         doseImage = self._importDose()
         return doseImage
 
     def _setPlanWeightsTo1(self, plan):
         plan = copy.deepcopy(plan)
-        plan.spotWeights = np.ones(plan.spotWeights.shape)
+        plan.spotMUs = np.ones(plan.spotMUs.shape)
 
         return plan
 
@@ -198,7 +198,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def _importDose(self) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
         dose.patient = self._ct.patient
-        print(self._deliveredProtons())
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000
 
         return dose
@@ -222,7 +221,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         for beam in self._plan:
             for layer in beam:
                 Protons_per_MU = self._beamModel.computeMU2Protons(layer.nominalEnergy)
-                for spot in layer.spotWeights:
+                for spot in layer.spotMUs:
                     beamletRescaling.append(Protons_per_MU * 1.602176e-19 * 1000)
 
         return beamletRescaling
@@ -337,19 +336,20 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             config["Scoring_grid_size"] = [int(math.floor(i / j * k)) for i, j, k in
                                            zip(self._ct.gridSize, config["Scoring_voxel_spacing"], self._ct.spacing)]
             config["Scoring_origin"] = [0, 0, 0]
-            config["Scoring_origin"][0] = self._ct.angles[0] - config["Scoring_voxel_spacing"][
+            config["Scoring_origin"][0] = self._ct.origin[0] - config["Scoring_voxel_spacing"][
                 0] / 2.0
-            config["Scoring_origin"][2] = self._ct.angles[2] - config["Scoring_voxel_spacing"][
+            config["Scoring_origin"][2] = self._ct.origin[2] - config["Scoring_voxel_spacing"][
                 2] / 2.0
-            #config["Scoring_origin"][1] = -self._ct.angles[1] - config["Scoring_voxel_spacing"][1] * \
+            # config["Scoring_origin"][1] = -self._ct.origin[1] - config["Scoring_voxel_spacing"][1] * \
             #                              config["Scoring_grid_size"][1] + \
             #                              config["Scoring_voxel_spacing"][1] / 2.0
-            config["Scoring_origin"][1] = self._ct.angles[1] - config["Scoring_voxel_spacing"][
+            config["Scoring_origin"][1] = self._ct.origin[1] - config["Scoring_voxel_spacing"][
                 1] / 2.0
 
             from Core.Processing.ImageProcessing import sitkImageProcessing
-            sitkImageProcessing.resize(self._roi, np.array(self.scoringVoxelSpacing), self._ct.origin,
-                                       config["Scoring_grid_size"])
+            for contour in self._roi:
+                sitkImageProcessing.resize(contour, np.array(self.scoringVoxelSpacing), self._ct.origin,
+                                           config["Scoring_grid_size"])
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
 

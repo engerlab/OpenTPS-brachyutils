@@ -331,8 +331,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                                   float(first_layer.IsocenterPosition[2])]
         beam.gantryAngle = float(first_layer.GantryAngle)
         beam.patientSupportAngle = float(first_layer.PatientSupportAngle)
-        # beam.FinalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
-        FinalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
+        finalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
 
         # find corresponding beam in FractionGroupSequence (beam order may be different from IonBeamSequence)
         ReferencedBeam_id = next((x for x, val in enumerate(dcm.FractionGroupSequence[0].ReferencedBeamSequence) if
@@ -342,10 +341,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
             print("This beam is therefore discarded.")
             continue
         else:
-            # beam.BeamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
-            BeamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
-
-        # self.TotalMeterset += beam.BeamMeterset
+            beamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
 
         if dcm_beam.NumberOfRangeShifters == 0:
             # beam.rangeShifter.ID = ""
@@ -388,8 +384,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 ReferencedRangeShifterNumber = int(
                     first_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber)
 
-        CumulativeMeterset = 0
-
         for dcm_layer in dcm_beam.IonControlPointSequence:
             if (plan.scanMode == "MODULATED"):
                 if dcm_layer.NumberOfScanSpotPositions == 1:
@@ -406,7 +400,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
             layer = PlanIonLayer()
             layer.seriesInstanceUID = plan.seriesInstanceUID
 
-
             if hasattr(dcm_layer, 'SnoutPosition'):
                 SnoutPosition = float(dcm_layer.SnoutPosition)
 
@@ -416,13 +409,14 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.numberOfPaintings = 1
 
             layer.nominalEnergy = float(dcm_layer.NominalBeamEnergy)
+            layer.scalingFactor = beamMeterset / finalCumulativeMetersetWeight
 
             if (plan.scanMode == "MODULATED"):
                 _x = dcm_layer.ScanSpotPositionMap[0::2]
                 _y = dcm_layer.ScanSpotPositionMap[1::2]
-                w = np.array(
-                    dcm_layer.ScanSpotMetersetWeights) * BeamMeterset / FinalCumulativeMetersetWeight  # spot weights are converted to MU
-                layer.appendSpot(_x, _y, w)
+                mu = np.array(
+                    dcm_layer.ScanSpotMetersetWeights) * layer.scalingFactor  # spot weights are converted to MU
+                layer.appendSpot(_x, _y, mu)
 
             elif (plan.scanMode == "LINE"):
                 raise NotImplementedError()
@@ -437,7 +431,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.LineScanControlPoint_Weights = np.frombuffer(dcm_layer[0x300b1096].value,
                                                                    dtype=np.float32).tolist()
                 layer.LineScanControlPoint_MU = np.array(
-                    layer.LineScanControlPoint_Weights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight  # weights are converted to MU
+                    layer.LineScanControlPoint_Weights) * layer.scalingFactor  # weights are converted to MU
                 if layer.LineScanControlPoint_MU.size == 1:
                     layer.LineScanControlPoint_MU = [layer.LineScanControlPoint_MU]
                 else:
@@ -532,7 +526,7 @@ def writeRTPlan(plan: RTPlan, filePath):
         dcm_beam.RadiationType = "PROTON"
         dcm_beam.ScanMode = "MODULATED"
         dcm_beam.TreatmentDeliveryType = "TREATMENT"
-        dcm_beam.FinalCumulativeMetersetWeight = beam.meterset
+        dcm_beam.FinalCumulativeMetersetWeight = plan.beamCumulativeMetersetWeight[beamNumber]
         dcm_beam.BeamNumber = beamNumber
 
         rangeShifter = beam.rangeShifter
@@ -562,7 +556,7 @@ def writeRTPlan(plan: RTPlan, filePath):
             dcm_layer.NumberOfPaintings = layer.numberOfPaintings
             dcm_layer.NominalBeamEnergy = layer.nominalEnergy
             dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
-            dcm_layer.ScanSpotMetersetWeights = layer.spotWeights.tolist()
+            dcm_layer.ScanSpotMetersetWeights = layer.spotMUs.tolist()
             dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]
