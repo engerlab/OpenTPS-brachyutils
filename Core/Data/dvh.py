@@ -103,11 +103,7 @@ class DVH:
 
     def _convertContourToROI(self):
         if isinstance(self._roiMask, ROIContour):
-            #self._roiMask = self._roiMask.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
-            self._roiMask = self._roiMask.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
-                                                      spacing=self.ct.spacing)
-            from Core.Processing.ImageProcessing import sitkImageProcessing
-            sitkImageProcessing.resize(self._roiMask, self._doseImage.spacing, self.ct.origin,self._doseImage.gridSize)
+            self._roiMask = self._roiMask.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
     def computeDVH(self, maxDVH:float=100.0):

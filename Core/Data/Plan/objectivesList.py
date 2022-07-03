@@ -1,4 +1,5 @@
 import numpy as np
+from typing import Optional
 
 
 class ObjectivesList:
@@ -41,17 +42,18 @@ class ObjectivesList:
 
         self.fidObjList.append(objective)
 
-    def initializeContours(self, contours, ct, scoringGridSize, scoringSpacing):
+    def initializeContours(self, contours, ct, scoringGridSize: Optional, scoringSpacing: Optional):
         '''I might move this function elsewhere'''
         for objective in self.fidObjList:
             for contour in contours:
                 if objective.roiName == contour.name:
-                    objective.maskVec = contour.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize,
-                                                              spacing=ct.spacing)
-                    from Core.Processing.ImageProcessing import sitkImageProcessing
-                    sitkImageProcessing.resize(objective.maskVec, scoringSpacing, ct.origin, scoringGridSize)
-                    #objective.maskVec.resample(scoringGridSize, ct.origin, scoringSpacing)
-                    #print('nnz mask = ', len(np.flatnonzero(objective.maskVec.imageArray)))
+                    if scoringSpacing is not None and scoringGridSize is not None:
+                        # resample contours
+                        objective.maskVec = contour.getBinaryMask(origin=ct.origin, gridSize=scoringGridSize,
+                                                                  spacing=scoringSpacing)
+                    else:
+                        objective.maskVec = contour.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize,
+                                                                  spacing=ct.spacing)
                     objective.maskVec = np.flip(objective.maskVec.imageArray, (0, 1))
                     objective.maskVec = np.ndarray.flatten(objective.maskVec, 'F').astype('bool')
 
