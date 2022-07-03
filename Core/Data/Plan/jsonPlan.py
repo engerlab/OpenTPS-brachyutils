@@ -67,11 +67,11 @@ class JSONPlan:
                 layerDict['energy'] = str(layer.nominalEnergy)
                 layerDict['paintings'] = str(layer.numberOfPaintings)
                 layerDict['spot'] = []
-                for s in range(len(layer._weights)):
+                for s in range(len(layer._mu)):
                     spotDict = {}
                     spotDict['x'] = str(layer._x[s])
                     spotDict['y'] = str(layer._y[s])
-                    spotDict['metersetweight'] = str(layer._weights[s])
+                    spotDict['metersetweight'] = str(layer._mu[s])
                     #spotDict['metersetweight'] = str(layer.ScanSpotMetersetWeights[s])
                     layerDict['spot'].append(spotDict)
                 beamDict['layer'].append(layerDict)
@@ -85,11 +85,11 @@ class JSONPlan:
                 layerDict['nominalBeamEnergy'] = layer.nominalEnergy
                 layerDict['numberOfPaintings'] = layer.numberOfPaintings
                 layerDict['spots'] = []
-                for s in range(len(layer._weights)):
+                for s in range(len(layer._mu)):
                     spotDict = {}
                     spotDict['positionX'] = layer._x[s]
                     spotDict['positionY'] = layer._y[s]
-                    spotDict['metersetWeight'] = layer._weights[s]
+                    spotDict['metersetWeight'] = layer._mu[s]
                     layerDict['spots'].append(spotDict)
                 beamDict['layers'].append(layerDict)
         return beamDict
