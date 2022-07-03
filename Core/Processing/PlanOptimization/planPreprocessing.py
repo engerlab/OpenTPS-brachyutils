@@ -1,4 +1,4 @@
-
+import copy
 from typing import Sequence
 
 import numpy as np
@@ -14,12 +14,12 @@ def extendPlanLayers(plan: RTPlan) -> RTPlan:
 
     layerID = 0
     spotID = 0
-    for beamID, referencBeam in enumerate(plan):
-        outBeam = ExtendedBeam.fromBeam(referencBeam)
+    for beamID, referenceBeam in enumerate(plan):
+        outBeam = ExtendedBeam.fromBeam(referenceBeam)
         outBeam.removeLayer(outBeam.layers)  # Remove all layers
         outBeam.id = beamID
 
-        for referenceLayer in referencBeam:
+        for referenceLayer in referenceBeam:
             outLayer = ExtendedPlanIonLayer.fromLayer(referenceLayer)
             outLayer.id = layerID
             outLayer.beamID = beamID

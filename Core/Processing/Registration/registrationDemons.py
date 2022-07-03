@@ -43,9 +43,9 @@ class RegistrationDemons(Registration):
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing, tryGPU=tryGPU)
+            fixedResampled.resampleOpenMP(newGridSize, self.fixed.origin, newVoxelSpacing, tryGPU=tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize(), fixedResampled.origin, fixedResampled.spacing, tryGPU=tryGPU)
+            movingResampled.resampleOpenMP(fixedResampled.gridSize(), fixedResampled.origin, fixedResampled.spacing, tryGPU=tryGPU)
             gradFixed = np.gradient(fixedResampled.imageArray)
 
             if s != 0:

@@ -29,7 +29,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO import mhdIO
 from Core.IO.mhdIO import exportImageMHD, importImageMHD
-from Core.Processing.ImageProcessing import crop3D
+from Core.Processing.ImageProcessing import segmentation3D
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +100,8 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
     row_index = np.zeros((buffer_size), dtype=np.uint32)
     beamlet_data = np.zeros((buffer_size), dtype=np.float32)
     data_id = 0
-    last_stacked_col = 0
-    num_unstacked_col = 1
+    last_stacked_col = -1
+    num_unstacked_col = 0
 
     print("roi shape = ", roi.imageArray.shape)
     print('nspots =', NbrSpots)
@@ -115,7 +115,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
         roiData = roiData.astype(bool)
         roiData = roiData.flatten()
     else:
-        roiData = np.zeros((NbrVoxels, 1)).astype(bool)
+        roiData = np.ones((NbrVoxels, 1)).astype(bool)
 
     time_start = time.time()
 
@@ -126,7 +126,9 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
         [xcoord] = struct.unpack('<f', fid.read(4))
         [ycoord] = struct.unpack('<f', fid.read(4))
 
-        if (NonZeroVoxels == 0): continue
+        if (NonZeroVoxels == 0):
+            num_unstacked_col += 1
+            continue
 
         ReadVoxels = 0
         while (1):
@@ -142,7 +144,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
                 if roiData[rowIndexVal]:
                     beamlet_data[data_id] = temp
                     row_index[data_id] = rowIndexVal
-                    col_index[data_id] = spot - last_stacked_col
+                    col_index[data_id] = spot - last_stacked_col - 1
                     data_id += 1
 
             if (ReadVoxels >= NonZeroVoxels):
@@ -151,15 +153,23 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
                         (beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])), shape=(NbrVoxels, 1),
                         dtype=np.float32)
                     data_id = 0
-                    last_stacked_col = spot + 1
-                    num_unstacked_col = 1
+                    last_stacked_col = spot
+                    num_unstacked_col = 0
+
+                    beamlet_data = 0*beamlet_data
+                    row_index = 0*row_index
+                    col_index = 0*col_index
                 elif (data_id > buffer_size - NbrVoxels):
                     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
-                                      shape=(NbrVoxels, num_unstacked_col), dtype=np.float32)
+                                      shape=(NbrVoxels, num_unstacked_col+1), dtype=np.float32)
                     data_id = 0
                     BeamletMatrix = sp.hstack([BeamletMatrix, A])
-                    last_stacked_col = spot + 1
-                    num_unstacked_col = 1
+                    last_stacked_col = spot
+                    num_unstacked_col = 0
+
+                    beamlet_data = 0 * beamlet_data
+                    row_index = 0 * row_index
+                    col_index = 0 * col_index
                 else:
                     num_unstacked_col += 1
 
@@ -167,10 +177,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
 
     # stack last cols
     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
-                      shape=(NbrVoxels, num_unstacked_col - 1), dtype=np.float32)
-    print("A shape = ", A.shape)
-    print("BL shape = ", beamlet_data.shape)
-    print("num_unstacked_col =", num_unstacked_col)
+                      shape=(NbrVoxels, num_unstacked_col), dtype=np.float32)
     BeamletMatrix = sp.hstack([BeamletMatrix, A])
 
     print('Beamlets imported in ' + str(time.time() - time_start) + ' sec')

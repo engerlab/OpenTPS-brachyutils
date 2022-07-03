@@ -72,9 +72,11 @@ class RTPlan(PatientData):
 
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
-        # I want a list with all layers in the plan and not only beam-by-beam
-        # For backwards compatibility, but we can now access each layer with indexing brackets
-        return [layer for layer in self._layers]
+        layers = []
+        for beam in self.beams:
+            layers.extend(beam.layers)
+
+        return layers
 
     def appendLayerAccum(self, layer: PlanIonLayer):
         self._layers.append(layer)

@@ -1,15 +1,14 @@
 import os
 
-from PyQt5.QtCore import QSize, pyqtSignal
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QToolBar, QAction, QHBoxLayout, QGridLayout, QLabel, QPushButton, \
-    QFileDialog
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFileDialog
 from pyqtgraph import PlotWidget, PlotCurveItem, mkPen
 from pyqtgraph.exporters import ImageExporter
 
 
 class ProfileViewer(QWidget):
-    def __init__(self, viewController, nbProfiles=2):
+    def __init__(self, viewController, nbProfiles=10):
         QWidget.__init__(self)
 
         self._layout = QHBoxLayout(self)
@@ -27,9 +26,22 @@ class ProfileViewer(QWidget):
         self._layout.addWidget(self._toolbar)
         self._layout.addWidget(self._profilePlot)
 
+    def count(self):
+        return len(self._profiles)
+
     def drawProfile(self, profileIndex, *args, **kwargs):
-        self._profilePlot.removeItem(self._profiles[profileIndex])
+        axY = self._profilePlot.getAxis('left')
+        yRange = axY.range
+
+        self.removeProfile(profileIndex)
         self._profiles[profileIndex] = self._profilePlot.newProfile(*args, **kwargs)
+
+        if profileIndex>2:
+            self._profilePlot.setYRange(yRange[0], yRange[1], padding=0.)
+
+    def removeProfile(self, profileIndex):
+        profile = self._profiles[profileIndex]
+        self._profilePlot.removeItem(profile)
 
     @property
     def nbProfiles(self):
@@ -78,7 +90,7 @@ class _ProfilePlot(PlotWidget):
         fileName = dlg.getSaveFileName(filter=str)
         return fileName
 
-    def newProfile(self, *args, **kwargs):
+    def newProfile(self, *args, **kwargs) -> PlotCurveItem:
         pl = PlotCurveItem(*args, **kwargs)
         self.addItem(pl)
 
@@ -126,12 +138,27 @@ class _ProfileToolbar(QWidget):
     def _setProfileWidgetEnabled(self):
         self._viewController.profileWidgetEnabled = True
         self._viewController.profileWidgetCallback.setPrimaryImageData = \
-            lambda *args, **kwargs: self._profileViewer.drawProfile(0, *args, **kwargs, pen=mkPen(0, width=1))
+            lambda *args, **kwargs: self._drawImageProfile(0, *args, **kwargs, pen=mkPen(width=1, color=[125, 125, 125]))
         self._viewController.profileWidgetCallback.setSecondaryImageData = \
-            lambda *args, **kwargs: self._profileViewer.drawProfile(1, *args, **kwargs, pen=mkPen(1, width=1))
+            lambda *args, **kwargs: self._drawImageProfile(1, *args, **kwargs, pen=mkPen(width=1, color=[255, 255, 255]))
+        self._viewController.profileWidgetCallback.setContourData = \
+            lambda *args, **kwargs: self._drawContourProfiles(*args, **kwargs)
 
+    def _drawImageProfile(self, ind, *args, name='', **kwargs):
+        self._profileViewer.drawProfile(ind, *args, **kwargs, name=name)
+
+    def _drawContourProfiles(self, contourData, name=[], pen=[]):
+        currentNbProfiles = self._profileViewer.count()
+        for i in range(currentNbProfiles):
+            if currentNbProfiles-i-1>1:
+                self._profileViewer.drawProfile(currentNbProfiles-i-1, [0, 0], [0, 0])
+
+        for i, n in enumerate(name):
+            x, y = contourData[i]
+            self._profileViewer.drawProfile(2+i, x, y, name=n, pen=pen[i])
 
     def _setProfileWidgetDisabled(self):
         self._viewController.profileWidgetEnabled = False
         self._viewController.profileWidgetCallback.setPrimaryImageData = lambda *args, **kwargs: None
         self._viewController.profileWidgetCallback.setSecondaryImageData = lambda *args, **kwargs: None
+        self._viewController.profileWidgetCallback.setContourData = lambda *args, **kwargs: None

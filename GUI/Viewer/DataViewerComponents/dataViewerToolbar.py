@@ -15,12 +15,12 @@ class DataViewerToolbar(QToolBar):
 
         iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
 
-        self._buttonDVH = QAction(QIcon(iconPath + "equalizer.png"), "DVH", self)
+        self._buttonDVH = QAction(QIcon(iconPath + "dvh.png"), "DVH", self)
         self._buttonDVH.setStatusTip("DVH")
         self._buttonDVH.triggered.connect(self._handleButtonDVH)
         self._buttonDVH.setCheckable(True)
 
-        self._buttonProfile = QAction(QIcon(iconPath + "graph.png"), "Graph", self)
+        self._buttonProfile = QAction(QIcon(iconPath + "profile.png"), "Graph", self)
         self._buttonProfile.setStatusTip("Graph")
         self._buttonProfile.triggered.connect(self._handleButtonGraph)
         self._buttonProfile.setCheckable(True)

@@ -15,6 +15,7 @@ from Core.IO.dataLoader import loadAllData, listAllFiles
 from Core.IO.dicomIO import readDicomCT, readDicomPlan
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.Objectives.norms import NormL1, NormL21
 from Core.Processing.PlanOptimization.Objectives.energySequencing import EnergySeq
@@ -23,7 +24,7 @@ from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer,
 from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking, FistaAccel
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Processing.ImageProcessing.imageTransform3D import resampleOn
+#from Core.Processing.ImageProcessing.imageTransform3D import resampleOn
 from Core.Processing.PlanOptimization.tools import WeightStructure
 
 from Core.Data.Plan.rtPlan import RTPlan
@@ -79,7 +80,7 @@ body = contours.getContourByName('BODY')
 # rings = target.createROIRings(ct,contours,3,2)
 
 beamNames = ["Beam1", "Beam2"]
-gantryAngles = [0., 45.]
+gantryAngles = [0., 45.]git 
 couchAngles = [0., 0.]
 
 # Load / Generate new plan
@@ -216,7 +217,7 @@ Z_coord = COM_index[2]
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
 contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
-img_dose = resampleOn(doseImage, ct)
+img_dose = resampleImage3DOnImage3D(doseImage, ct)
 img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
 # Display dose

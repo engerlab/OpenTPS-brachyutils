@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from GUI.Viewer.dataViewer import DroppedObject
 from GUI.Viewer.gridFourElements import GridFourElements
-import GUI.Viewer.viewerToolbar
 from GUI.Viewer.viewerToolbar import ViewerToolbar
 
 class ViewerPanel(QWidget):

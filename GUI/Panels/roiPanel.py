@@ -22,6 +22,36 @@ class ROIPanel(QWidget):
     self.setCurrentPatient(self._viewController.currentPatient)
     self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
 
+  def setCurrentPatient(self, patient:Patient):
+    if patient==self._patient:
+      return
+    elif not self._patient is None:
+      self._patient.rtStructAddedSignal.disconnect(self.addRTStruct)
+      self._patient.rtStructRemovedSignal.disconnect(self.removeRTStruct)
+      self._patient.roiMaskAddedSignal.disconnect(self.addROIMask)
+      self._patient.roiMaskRemovedSignal.disconnect(self.removeROIMask)
+
+      self._resetList()
+
+    self._patient = patient
+    for rtStruct in self._patient.rtStructs:
+      self.addRTStruct(rtStruct)
+
+    for roiMask in self._patient.roiMasks:
+      self.addROIMask(roiMask)
+
+    self._patient.rtStructAddedSignal.connect(self.addRTStruct)
+    self._patient.rtStructRemovedSignal.connect(self.removeRTStruct)
+    self._patient.roiMaskAddedSignal.connect(self.addROIMask)
+    self._patient.roiMaskRemovedSignal.connect(self.removeROIMask)
+
+  def _resetList(self):
+    for widget in self.items:
+      if isinstance(widget, ROIItem):
+        widget.setVisible(False)
+        self.layout.removeWidget(widget)
+    self.items = []
+
   def addRTStruct(self, rtStruct:RTStruct):
     for contour in rtStruct.contours:
       checkbox = ROIItem(ROIContourForViewer(contour), self._viewController)
@@ -46,23 +76,12 @@ class ROIPanel(QWidget):
           item.setParent(None)
           return
 
-  def setCurrentPatient(self, patient:Patient):
-    if patient==self._patient:
-      return
-
-    self._patient = patient
-    for rtStruct in self._patient.rtStructs:
-      self.addRTStruct(rtStruct)
-
-    for roiMask in self._patient.roiMasks:
-      self.addROIMask(roiMask)
-
-    self._patient.rtStructAddedSignal.connect(self.addRTStruct)
-    self._patient.rtStructRemovedSignal.connect(self.removeRTStruct)
-
-    self._patient.roiMaskAddedSignal.connect(self.addROIMask)
-    #TODO remove ROI mask
-
+  def removeROIMask(self, roiMask:ROIMask):
+    for item in self.items:
+        if item._contour == roiMask:
+          self.layout.removeWidget(item)
+          item.setParent(None)
+          return
 
 class ROIItem(QCheckBox):
   def __init__(self, contour, viewController):

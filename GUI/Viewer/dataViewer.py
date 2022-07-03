@@ -108,17 +108,20 @@ class DataViewer(QWidget):
         self._dynImageViewer.hide()
         self._staticImageViewer.hide()
 
+        self._addViewersToLayout()
+
+        self._setDisplayType(self.DisplayTypes.DEFAULT)
+
+        # Logical control of the DataViewer is set here. We might want to move this to dedicated controller class
+        self._initializeControl()
+
+    def _addViewersToLayout(self):
         self._mainLayout.addWidget(self._toolbar)
         self._mainLayout.addWidget(self._dynImageViewer)
         self._mainLayout.addWidget(self._staticImageViewer)
         self._mainLayout.addWidget(self._staticProfileviewer)
         self._mainLayout.addWidget(self._noneViewer)
         self._mainLayout.addWidget(self._dvhViewer)
-
-        self._setDisplayType(self.DisplayTypes.DEFAULT)
-
-        # Logical control of the DataViewer is set here. We might want to move this to dedicated controller class
-        self._initializeControl()
 
     @property
     def cachedDynamicImageViewer(self) -> DynamicImageViewer:
@@ -443,7 +446,7 @@ class DataViewer(QWidget):
             oldImage = self.cachedStaticImageViewer.secondaryImage
             if oldImage is None:
                 return
-        else:
+        elif not (image.patient is None):
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
         self.cachedStaticImageViewer.secondaryImage = image

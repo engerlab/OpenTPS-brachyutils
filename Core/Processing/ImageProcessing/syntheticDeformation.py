@@ -5,7 +5,8 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.roiContour import ROIContour
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
+from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
 from Core.Processing.Segmentation.segmentationCT import compute3DStructuralElement
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
         maskFixed = maskMoving.copy()
         for i in range(3):
             maskFixed.origin[i] += shift[i]
-        maskFixed.resampleToImageGrid(image)
+        resampler3D.resampleImage3DOnImage3D(maskFixed, image, inPlace=True, fillValue=0)
         maskFixed._imageArray = np.logical_or(maskFixed.imageArray, maskMoving.imageArray)
 
         deformation = Deformation3D()

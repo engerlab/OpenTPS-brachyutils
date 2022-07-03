@@ -1,11 +1,11 @@
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.roiContour import ROIContour
-from Core.Processing.ImageProcessing import imageTransform3D
+from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
 from Core.event import Event
 
 
@@ -45,7 +45,7 @@ class DVH:
         return self._doseImage
 
     @dose.setter
-    def dose(self, dose):
+    def dose(self, dose:DoseImage):
         if dose==self._doseImage:
             return
 
@@ -62,31 +62,31 @@ class DVH:
         return self._dose, self._volume
 
     @property
-    def name(self):
+    def name(self) -> Optional[str]:
         return self._roiName
 
     @property
-    def Dmean(self):
+    def Dmean(self) -> float:
         return self._Dmean
 
     @property
-    def D98(self):
+    def D98(self) -> float:
         return self._D98
 
     @property
-    def D95(self):
+    def D95(self) -> float:
         return self._D95
 
     @property
-    def D50(self):
+    def D50(self) -> float:
         return self._D50
 
     @property
-    def D5(self):
+    def D5(self) -> float:
         return self._D5
 
     @property
-    def D2(self):
+    def D2(self) -> float:
         return self._D2
 
     @property
@@ -94,11 +94,11 @@ class DVH:
         return self._Dmin
 
     @property
-    def Dmax(self):
+    def Dmax(self) -> float:
         return self._Dmax
 
     @property
-    def Dstd(self):
+    def Dstd(self) -> float:
         return self._Dstd
 
     def _convertContourToROI(self):
@@ -110,11 +110,11 @@ class DVH:
             sitkImageProcessing.resize(self._roiMask, self._doseImage.spacing, self.ct.origin,self._doseImage.gridSize)
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
-    def computeDVH(self, maxDVH=100.0):
+    def computeDVH(self, maxDVH:float=100.0):
         self._convertContourToROI()
 
         if not(self._doseImage.hasSameGrid(self._roiMask)):
-            self._doseImage = imageTransform3D.resampleOn(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
+            self._doseImage = resampler3D.resampleImage3DOnImage3D(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
 
         dose = self._doseImage.imageArray
         mask = self._roiMask.imageArray.astype(bool)
@@ -147,7 +147,7 @@ class DVH:
 
         self.dataUpdatedEvent.emit()
 
-    def computeDx(self, percentile, return_percentage=False):
+    def computeDx(self, percentile:float, return_percentage:bool=False) -> float:
         """
         Compute Dx metric (e.g. D95% if x=95, dose that is reveived in at least 95% of the volume)
 
@@ -182,7 +182,7 @@ class DVH:
             return (Dx / self._prescription) * 100
         return Dx
 
-    def computeDcc(self, x, return_percentage=False):
+    def computeDcc(self, x:float, return_percentage:bool=False) -> float:
         """
         Compute Dcc metric (e.g. D200cc if x=200 for minimal dose that is received the most irradiated 200cm^3)
 
@@ -217,7 +217,7 @@ class DVH:
             return (Dcc / self._prescription) * 100
         return Dcc
 
-    def computeVg(self, x, return_percentage=True):
+    def computeVg(self, x:float, return_percentage:bool=True) -> float:
         """
         Compute Vg metric (e.g. V5 if x=5: volume that received at least 5Gy)
 
@@ -243,7 +243,7 @@ class DVH:
         else:
             return self._volume_absolute[index]
 
-    def computeVx(self, x, return_percentage=True):
+    def computeVx(self, x:float, return_percentage:bool=True) -> float:
         """
         Compute Vx metric (e.g. V95% if x=95: volume that received at least 95% of the prescription)
 
@@ -272,7 +272,7 @@ class DVH:
 
 
 
-    def homogeneityIndex(self, method='Yan_2019'):
+    def homogeneityIndex(self, method:float='Yan_2019') -> float:
         """
         Compute the homogeneity index of the contour
 
@@ -371,56 +371,3 @@ class DVH:
             return contour_volume_covered_by_prescription ** 2 / (isodose_prescription_volume * contour_volume)
 
         raise NotImplementedError(f'Conformity index method {method} not implemented.')
-
-
-class DVHBand:
-
-    def __init__(self):
-        self.Struct_SeriesInstanceUID = ""
-        self.ROIName = ""
-        self.dose = []
-        self.volume_low = []
-        self.volume_high = []
-        self.nominalDVH = []
-        self.ROIDisplayColor = []
-        self.Dmean = [0, 0]
-        self.D98 = [0, 0]
-        self.D95 = [0, 0]
-        self.D50 = [0, 0]
-        self.D5 = [0, 0]
-        self.D2 = [0, 0]
-
-    def compute_metrics(self):
-        # compute metrics
-        self.D98 = self.compute_band_Dx(98)
-        self.D95 = self.compute_band_Dx(95)
-        self.D50 = self.compute_band_Dx(50)
-        self.D5 = self.compute_band_Dx(5)
-        self.D2 = self.compute_band_Dx(2)
-
-    def compute_band_Dx(self, x):
-        index = np.searchsorted(-self.volume_low, -x)
-        if (index > len(self.volume_low) - 2): index = len(self.volume_low) - 2
-        volume = self.volume_low[index]
-        volume2 = self.volume_low[index + 1]
-        if (volume == volume2):
-            low_Dx = self.dose[index]
-        else:
-            w2 = (volume - x) / (volume - volume2)
-            w1 = (x - volume2) / (volume - volume2)
-            low_Dx = w1 * self.dose[index] + w2 * self.dose[index + 1]
-            if low_Dx < 0: low_Dx = 0
-
-        index = np.searchsorted(-self.volume_high, -x)
-        if (index > len(self.volume_high) - 2): index = len(self.volume_high) - 2
-        volume = self.volume_high[index]
-        volume2 = self.volume_high[index + 1]
-        if (volume == volume2):
-            high_Dx = self.dose[index]
-        else:
-            w2 = (volume - x) / (volume - volume2)
-            w1 = (x - volume2) / (volume - volume2)
-            high_Dx = w1 * self.dose[index] + w2 * self.dose[index + 1]
-            if high_Dx < 0: high_Dx = 0
-
-        return [low_Dx, high_Dx]

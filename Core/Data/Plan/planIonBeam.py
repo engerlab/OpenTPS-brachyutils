@@ -9,7 +9,7 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 
 class PlanIonBeam:
     def __init__(self):
-        self._layers = []
+        self._layers:Sequence[PlanIonLayer] = []
 
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
@@ -34,6 +34,28 @@ class PlanIonBeam:
             s += str(layer)
 
         return s
+
+    def __deepcopy__(self, memodict={}):
+        newBeam = PlanIonBeam()
+
+        memodict[id(self)] = newBeam
+
+        newBeam._deepCopyProperties(self, memodict)
+
+        return newBeam
+
+    def _deepCopyProperties(self, otherBeam, memodict):
+        self._layers = [layer.__deepcopy__(memodict) for layer in otherBeam._layers]
+
+        self.name = otherBeam.name
+        self.isocenterPosition = np.array(otherBeam.isocenterPosition)
+        self.gantryAngle = otherBeam.gantryAngle
+        self.couchAngle = otherBeam.couchAngle
+        self.id = otherBeam.id
+        self.patientSupportAngle = otherBeam.patientSupportAngle
+        self.rangeShifter = copy.deepcopy(otherBeam.rangeShifter, memodict)
+        self.seriesInstanceUID = otherBeam.seriesInstanceUID
+
 
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
