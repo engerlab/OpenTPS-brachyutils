@@ -12,25 +12,26 @@ class BDL:
         self.nozzle_isocenter = 0.0
         self.smx = 0.0
         self.smy = 0.0
-        self.NominalEnergy = []
-        self.MeanEnergy = []
-        self.EnergySpread = []
-        self.ProtonsMU = []
-        self.Weight1 = []
-        self.SpotSize1x = []
-        self.Divergence1x = []
-        self.Correlation1x = []
-        self.SpotSize1y = []
-        self.Divergence1y = []
-        self.Correlation1y = []
-        self.Weight2 = []
-        self.SpotSize2x = []
-        self.Divergence2x = []
-        self.Correlation2x = []
-        self.SpotSize2y = []
-        self.Divergence2y = []
-        self.Correlation2y = []
-        self.RangeShifters = []
+        self.isLoaded = 0
+        self.nominalEnergy = []
+        self.meanEnergy = []
+        self.energySpread = []
+        self.protonsMU = []
+        self.weight1 = []
+        self.spotSize1x = []
+        self.divergence1x = []
+        self.correlation1x = []
+        self.spotSize1y = []
+        self.divergence1y = []
+        self.correlation1y = []
+        self.weight2 = []
+        self.spotSize2x = []
+        self.divergence2x = []
+        self.correlation2x = []
+        self.spotSize2y = []
+        self.divergence2y = []
+        self.correlation2y = []
+        self.rangeShifters = []
 
     def __str__(self):
         return self.mcsquareFormatted()
@@ -44,63 +45,63 @@ class BDL:
         s += 'SMY to Isocenter distance\n'
         s += str(self.smy) + '\n\n'
 
-        if len(self.RangeShifters) >0:
+        if len(self.rangeShifters) >0:
             s += 'Range Shifter parameters\n'
-            for RS in self.RangeShifters:
+            for RS in self.rangeShifters:
                 s += RS.mcsquareFormatted(materials)
             s += '\n'
 
         s += 'Beam parameters\n'
-        s += str(len(self.NominalEnergy)) + ' energies\n\n'
+        s += str(len(self.nominalEnergy)) + ' energies\n\n'
         s += 'NominalEnergy 	 MeanEnergy 	 EnergySpread 	 ProtonsMU 	 Weight1 	 SpotSize1x 	 Divergence1x 	 Correlation1x 	 SpotSize1y 	 Divergence1y 	 Correlation1y 	 Weight2 	 SpotSize2x 	 Divergence2x 	 Correlation2x 	 SpotSize2y 	 Divergence2y 	 Correlation2y\n'
-        for i, energy in enumerate(self.NominalEnergy):
-            s += str(self.NominalEnergy[i]) + ' '
-            s += str(self.MeanEnergy[i]) + ' '
-            s += str(self.EnergySpread[i]) + ' '
-            s += str(self.ProtonsMU[i]) + ' '
-            s += str(self.Weight1[i]) + ' '
-            s += str(self.SpotSize1x[i]) + ' '
-            s += str(self.Divergence1x[i]) + ' '
-            s += str(self.Correlation1x[i]) + ' '
-            s += str(self.SpotSize1y[i]) + ' '
-            s += str(self.Divergence1y[i]) + ' '
-            s += str(self.Correlation1y[i]) + ' '
-            s += str(self.Weight2[i]) + ' '
-            s += str(self.SpotSize2x[i]) + ' '
-            s += str(self.Divergence2x[i]) + ' '
-            s += str(self.Correlation2x[i]) + ' '
-            s += str(self.SpotSize2y[i]) + ' '
-            s += str(self.Divergence2y[i]) + ' '
-            s += str(self.Correlation2y[i]) + ' '
+        for i, energy in enumerate(self.nominalEnergy):
+            s += str(self.nominalEnergy[i]) + ' '
+            s += str(self.meanEnergy[i]) + ' '
+            s += str(self.energySpread[i]) + ' '
+            s += str(self.protonsMU[i]) + ' '
+            s += str(self.weight1[i]) + ' '
+            s += str(self.spotSize1x[i]) + ' '
+            s += str(self.divergence1x[i]) + ' '
+            s += str(self.correlation1x[i]) + ' '
+            s += str(self.spotSize1y[i]) + ' '
+            s += str(self.divergence1y[i]) + ' '
+            s += str(self.correlation1y[i]) + ' '
+            s += str(self.weight2[i]) + ' '
+            s += str(self.spotSize2x[i]) + ' '
+            s += str(self.divergence2x[i]) + ' '
+            s += str(self.correlation2x[i]) + ' '
+            s += str(self.spotSize2y[i]) + ' '
+            s += str(self.divergence2y[i]) + ' '
+            s += str(self.correlation2y[i]) + ' '
             s += '\n'
 
         return s
 
     def computeMU2Protons(self, energy:float) -> float:
-        return np.interp(energy, self.NominalEnergy, self.ProtonsMU)
+        return np.interp(energy, self.nominalEnergy, self.protonsMU)
         #if = interpolate.interp1d(self.NominalEnergy, self.ProtonsMU, kind='linear', fill_value='extrapolate')
         #return f(energy)
 
     def correlations(self, energy:float) -> Tuple[float, float]:
-        correlationX = interpolate.interp1d(self.NominalEnergy, self.Correlation1x, kind='linear', fill_value='extrapolate')
+        correlationX = interpolate.interp1d(self.nominalEnergy, self.correlation1x, kind='linear', fill_value='extrapolate')
         correlationX = correlationX(energy)
-        correlationY = interpolate.interp1d(self.NominalEnergy, self.Correlation1y, kind='linear', fill_value='extrapolate')
+        correlationY = interpolate.interp1d(self.nominalEnergy, self.correlation1y, kind='linear', fill_value='extrapolate')
         correlationY = correlationY(energy)
 
         return (correlationX, correlationY)
 
     def divergences(self, energy:float) -> Tuple[float, float]:
-        divergenceX = interpolate.interp1d(self.NominalEnergy, self.Divergence1x, kind='linear',fill_value='extrapolate')
+        divergenceX = interpolate.interp1d(self.nominalEnergy, self.divergence1x, kind='linear', fill_value='extrapolate')
         divergenceX = divergenceX(energy)
-        divergenceY = interpolate.interp1d(self.NominalEnergy, self.Divergence1y, kind='linear',fill_value='extrapolate')
+        divergenceY = interpolate.interp1d(self.nominalEnergy, self.divergence1y, kind='linear', fill_value='extrapolate')
         divergenceY = divergenceY(energy)
 
         return (divergenceX, divergenceY)
 
     def spotSizes(self, energy:float) -> Tuple[float, float]:
-        sigmaX = interpolate.interp1d(self.NominalEnergy, self.SpotSize1x, kind='linear', fill_value='extrapolate')
+        sigmaX = interpolate.interp1d(self.nominalEnergy, self.spotSize1x, kind='linear', fill_value='extrapolate')
         sigmaX = sigmaX(energy)
-        sigmaY = interpolate.interp1d(self.NominalEnergy, self.SpotSize1y, kind='linear', fill_value='extrapolate')
+        sigmaY = interpolate.interp1d(self.nominalEnergy, self.spotSize1y, kind='linear', fill_value='extrapolate')
         sigmaY = sigmaY(energy)
 
         return (sigmaX, sigmaY)
