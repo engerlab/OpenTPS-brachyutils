@@ -61,8 +61,8 @@ doseCalculator = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 doseCalculator.beamModel = beamModel
 doseCalculator.nbPrimaries = 5e4
-# doseCalculator.independentScoringGrid = True
-# doseCalculator.scoringVoxelSpacing = [5.0, 5.0, 5.0]
+doseCalculator.independentScoringGrid = True
+doseCalculator.scoringVoxelSpacing = [5.0, 5.0, 5.0]
 # doseCalculator.
 scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
@@ -80,12 +80,12 @@ body = contours.getContourByName('BODY')
 # rings = target.createROIRings(ct,contours,3,2)
 
 beamNames = ["Beam1", "Beam2"]
-gantryAngles = [0., 45.]git 
+gantryAngles = [0., 45.]
 couchAngles = [0., 0.]
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
-plan = loadRTPlan(plan_file)
+#plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
+#plan = loadRTPlan(plan_file)
 '''planInit = PlanStructure()
 planInit.ct = ct
 planInit.targetMask = targetMask
@@ -130,11 +130,11 @@ else:
 # Load openTPS plan
 # plan = dataList[3]
 # Load Dicom plan
-#plan = dataList[1]
+plan = dataList[1]
 # Load Beamlets
-#beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
+beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
 # beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
-# plan.beamlets = loadBeamlets(beamletPath)
+plan.beamlets = loadBeamlets(beamletPath)
 
 # optimization objectives
 plan.objectives = ObjectivesList()
@@ -151,14 +151,14 @@ plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
 # plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
 # scoring_spacing = np.array([5, 5, 5])
-#scoring_spacing = np.array([2, 2, 2])
-#scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
-#plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
+scoring_spacing = np.array([2, 2, 2])
+scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
+plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
 #plan.objectives.initializeContours(contours, ct, ct.gridSize, ct.spacing)
 # Objective functions
 #objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
 print('pre init')
-#objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), formatArray=64)
+objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), formatArray=64)
 print('fidelity init done')
 spotSparsity = NormL1(lambda_=1)
 #energySeq = EnergySeq(plan, gamma=0.1)
@@ -178,16 +178,16 @@ accel = FistaBacktracking()
                            step=1,
                            accel=accel,
                            maxit=100)'''
-'''solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=100)
-solver.xSquared = False
+solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=100)
+#solver.xSquared = False
 w, doseImage, ps = solver.optimize()
-with open('test_weights.npy', 'wb') as f:
-    np.save(f, w)
+#with open('test_weights.npy', 'wb') as f:
+#    np.save(f, w)
 struct = WeightStructure(plan)
 irradTime, ups, downs = struct.computeIrradiationTime(w)
 layerSparsityPercentage = struct.computeELSparsity(w, 1)
 print("Irradiation time = {}, Ups = {}, Downs = {}".format(irradTime, ups, downs))
-print("EL sparsity = {} %".format(layerSparsityPercentage))'''
+print("EL sparsity = {} %".format(layerSparsityPercentage))
 
 plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # saveRTPlan(plan, plan_filepath)
@@ -197,8 +197,8 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # doseImage = plan.beamlets.toDoseImage()
 
 # MCsquare beamlet free optimization
-doseCalculator.nbPrimaries = 1e6
-doseImage = doseCalculator.optimizeBeamletFree(ct, plan, [targetMask])
+#doseCalculator.nbPrimaries = 1e6
+#doseImage = doseCalculator.optimizeBeamletFree(ct, plan, [targetMask])
 
 # Compute DVH
 target_DVH = DVH(ct, target, doseImage)
