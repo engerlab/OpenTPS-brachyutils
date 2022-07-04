@@ -103,19 +103,22 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
     last_stacked_col = -1
     num_unstacked_col = 0
 
-    print("roi shape = ", roi.imageArray.shape)
-    print('nspots =', NbrSpots)
-    print('nvox =', NbrVoxels)
-
     if not (roi is None):
-        roiData = roi.imageArray
-        roiData = np.flip(roiData, 0)
-        roiData = np.flip(roiData, 1)
-        roiData = roiData.flatten(order='F')
-        roiData = roiData.astype(bool)
-        roiData = roiData.flatten()
+        masks = []
+        for contour in roi:
+            roiData = contour.imageArray
+            roiData = np.flip(roiData, 0)
+            roiData = np.flip(roiData, 1)
+            roiData = roiData.flatten(order='F')
+            roiData = roiData.astype(bool)
+            roiData = roiData.flatten()
+            masks.append(roiData)
+        roiUnion = np.zeros_like(masks[0])
+        for mask in masks:
+            # ROI Union mask
+            roiUnion = np.logical_or(roiUnion, mask)
     else:
-        roiData = np.ones((NbrVoxels, 1)).astype(bool)
+        roiUnion = np.ones((NbrVoxels, 1)).astype(bool)
 
     time_start = time.time()
 
@@ -141,7 +144,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
                 [temp] = struct.unpack('<f', fid.read(4))
 
                 rowIndexVal = FirstIndex + j
-                if roiData[rowIndexVal]:
+                if roiUnion[rowIndexVal]:
                     beamlet_data[data_id] = temp
                     row_index[data_id] = rowIndexVal
                     col_index[data_id] = spot - last_stacked_col - 1
@@ -156,12 +159,12 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
                     last_stacked_col = spot
                     num_unstacked_col = 0
 
-                    beamlet_data = 0*beamlet_data
-                    row_index = 0*row_index
-                    col_index = 0*col_index
+                    beamlet_data = 0 * beamlet_data
+                    row_index = 0 * row_index
+                    col_index = 0 * col_index
                 elif (data_id > buffer_size - NbrVoxels):
                     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
-                                      shape=(NbrVoxels, num_unstacked_col+1), dtype=np.float32)
+                                      shape=(NbrVoxels, num_unstacked_col + 1), dtype=np.float32)
                     data_id = 0
                     BeamletMatrix = sp.hstack([BeamletMatrix, A])
                     last_stacked_col = spot
@@ -306,7 +309,8 @@ def readMCsquarePlan(ct: CTImage, file_path):
             elif line == "####XYWeightTime":
                 for s in range(numSpots):
                     data = f.readline().replace('\r', '').replace('\n', '').replace('\t', '').split()
-                    plan.beams[-1].layers[-1]._appendSingleSpot(float(data[0]), float(data[1]), float(data[2]), float(data[3]))
+                    plan.beams[-1].layers[-1]._appendSingleSpot(float(data[0]), float(data[1]), float(data[2]),
+                                                                float(data[3]))
 
             line = f.readline()
     plan.isLoaded = 1
@@ -598,7 +602,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
 def writeContours(contour: ROIMask, folder_path):
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
-    #contour.imageArray = np.flip(contour.imageArray, (0,1))
+    # contour.imageArray = np.flip(contour.imageArray, (0,1))
     contour.imageArray = np.flip(contour.imageArray, 0)
     contour.imageArray = np.flip(contour.imageArray, 1)
 

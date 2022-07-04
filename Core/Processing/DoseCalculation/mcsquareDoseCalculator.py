@@ -35,6 +35,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct: Optional[Image3D] = None
         self._plan: Optional[RTPlan] = None
         self._roi = None
+        self._roiMasks = None
         self._config = None
         self._mcsquareCTCalibration = None
         self._beamModel = None
@@ -115,7 +116,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return doseImage
 
-    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIMask]] = []) -> SparseBeamlets:
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> SparseBeamlets:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
@@ -130,7 +131,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return beamletDose
 
-    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: Sequence[ROIMask]) -> DoseImage:
+    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[ROIContour]]) -> DoseImage:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         # Generate MCsquare configuration file
@@ -139,7 +140,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._writeFilesToSimuDir()
         mcsquareIO.writeObjectives(self._plan.objectives, self._objFilePath)
         for contour in roi:
-            mcsquareIO.writeContours(contour, self._contourFolderPath)
+            mask = contour.getBinaryMask(self._ct.origin, self._ct.gridSize, self._ct.spacing)
+            mcsquareIO.writeContours(mask, self._contourFolderPath)
         self._cleanDir(self._outputDir)
         # Start simulation
         self._startMCsquare(opti=True)
@@ -212,7 +214,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._roiMasks)
         beamletDose.beamletRescaling = self._beamletRescaling()
         return beamletDose
 
@@ -345,11 +347,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             #                              config["Scoring_voxel_spacing"][1] / 2.0
             config["Scoring_origin"][1] = self._ct.origin[1] - config["Scoring_voxel_spacing"][
                 1] / 2.0
-
-            from Core.Processing.ImageProcessing import sitkImageProcessing
+            self._roiMasks = []
             for contour in self._roi:
-                sitkImageProcessing.resize(contour, np.array(self.scoringVoxelSpacing), self._ct.origin,
-                                           config["Scoring_grid_size"])
+                resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
+                                                      spacing=self.scoringVoxelSpacing)
+                self._roiMasks.append(resampledMask)
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
 
