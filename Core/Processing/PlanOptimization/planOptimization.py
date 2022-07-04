@@ -10,7 +10,6 @@ except:
     use_MKL = 0
 
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.rtStruct import RTStruct
 from Core.Processing.PlanOptimization.Solvers import gradientDescent, bfgs, fista, localSearch, mip, sparcling, \
     beamletFree, lp
 from Core.Processing.PlanOptimization import planPreprocessing
@@ -29,7 +28,7 @@ class PlanOptimizer:
         self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
         self.xSquared = True
 
-    def intializeWeights(self):
+    def initializeWeights(self):
         # Total Dose calculation
         weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
 
@@ -47,7 +46,7 @@ class PlanOptimizer:
         return x0
 
     def optimize(self):
-        x0 = self.intializeWeights()
+        x0 = self.initializeWeights()
         # Optimization
         result = self.solver.solve(self.functions, x0)
         return self.postProcess(result)
@@ -69,10 +68,10 @@ class PlanOptimizer:
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.plan.spotWeights = np.square(weights).astype(np.float32)
+            self.plan.spotMUs = np.square(weights).astype(np.float32)
             self.plan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
         else:
-            self.plan.spotWeights = weights.astype(np.float32)
+            self.plan.spotMUs = weights.astype(np.float32)
             self.plan.beamlets.beamletWeights = weights.astype(np.float32)
 
         totalDose = self.plan.beamlets.toDoseImage()

@@ -7,7 +7,7 @@ from vtkmodules.vtkInteractionWidgets import vtkBoxWidget2, vtkBoxRepresentation
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.Data.Images.image3D import Image3D
-from Core.Processing.ImageProcessing.crop3D import crop3DDataAroundBox
+from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
 from Core.event import Event
 from GUI.Panels.patientDataPanel import PatientComboBox, PatientDataTree
 from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer

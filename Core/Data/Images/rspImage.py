@@ -7,6 +7,7 @@ from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.image3D import Image3D
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
+from Core.Processing.ImageProcessing import resampler3D
 
 
 class RSPImage(Image3D):
@@ -44,7 +45,7 @@ class RSPImage(Image3D):
 
         if not (beam is None):
             outImage = imageTransform3D.iecGantryToDicom(rspIEC, beam, 0.)
-            outImage = imageTransform3D.resampleOn(outImage, self, inPlace=True, fillValue=0.)
+            outImage = resampler3D.resampleImage3DOnImage3D(outImage, self, inPlace=True, fillValue=0.)
         else:
             outImage = rspIEC
 

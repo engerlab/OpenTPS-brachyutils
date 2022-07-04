@@ -9,10 +9,11 @@ from Core.Data.Plan.rangeShifter import RangeShifter
 
 class PlanIonBeam:
     def __init__(self):
-        self._layers = []
+        self._layers:Sequence[PlanIonLayer] = []
 
         self.name = ""
         self.isocenterPosition = [0, 0, 0]
+        self.mcsquareIsocenter = [0, 0, 0]
         self.gantryAngle = 0.0
         self.couchAngle = 0.0
         self.id = 0
@@ -34,6 +35,28 @@ class PlanIonBeam:
 
         return s
 
+    def __deepcopy__(self, memodict={}):
+        newBeam = PlanIonBeam()
+
+        memodict[id(self)] = newBeam
+
+        newBeam._deepCopyProperties(self, memodict)
+
+        return newBeam
+
+    def _deepCopyProperties(self, otherBeam, memodict):
+        self._layers = [layer.__deepcopy__(memodict) for layer in otherBeam._layers]
+
+        self.name = otherBeam.name
+        self.isocenterPosition = np.array(otherBeam.isocenterPosition)
+        self.gantryAngle = otherBeam.gantryAngle
+        self.couchAngle = otherBeam.couchAngle
+        self.id = otherBeam.id
+        self.patientSupportAngle = otherBeam.patientSupportAngle
+        self.rangeShifter = copy.deepcopy(otherBeam.rangeShifter, memodict)
+        self.seriesInstanceUID = otherBeam.seriesInstanceUID
+
+
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
         # For backwards compatibility but we can now access each layer with indexing brackets
@@ -52,21 +75,21 @@ class PlanIonBeam:
         self._layers.remove(layer)
 
     @property
-    def spotWeights(self):
-        weights = np.array([])
+    def spotMUs(self):
+        mu = np.array([])
         for layer in self._layers:
-            weights = np.concatenate((weights, layer.spotWeights))
+            mu = np.concatenate((mu, layer.spotMUs))
 
-        return weights
+        return mu
 
-    @spotWeights.setter
-    def spotWeights(self, w: Sequence[float]):
-        w = np.array(w)
+    @spotMUs.setter
+    def spotMUs(self, mu: Sequence[float]):
+        mu = np.array(mu)
 
         ind = 0
         for layer in self._layers:
-            layer.spotWeights = w[ind:ind + len(layer.spotWeights)]
-            ind += len(layer.spotWeights)
+            layer.spotMUs = mu[ind:ind + len(layer.spotMUs)]
+            ind += len(layer.spotMUs)
 
     @property
     def spotTimings(self):
@@ -103,10 +126,6 @@ class PlanIonBeam:
     @property
     def meterset(self) -> float:
         return np.sum(np.array([layer.meterset for layer in self._layers]))
-
-    @meterset.setter
-    def meterset(self, meterSet: float):
-        self.meterset = meterSet
 
     @property
     def numberOfSpots(self) -> int:

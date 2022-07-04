@@ -81,7 +81,7 @@ class PlanStructure:
 
         targetROIBEV = imageTransform3D.dicomToIECGantry(targetROI, beam, fillValue=0., cropROI=targetROI,
                                                          cropDim0=True, cropDim1=True, cropDim2=False)
-        isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(rspImage, beam, beam.isocenterPosition)
+        isocenterBEV = imageTransform3D.dicomCoordinate2iecGantry(beam, beam.isocenterPosition)
         cumRSPBEV = imageTransform3D.dicomToIECGantry(cumRSP, beam, fillValue=0., cropROI=targetROI, cropDim0=True,
                                                       cropDim1=True, cropDim2=False)
         weplMeV = rangeToEnergy(cumRSPBEV.imageArray)

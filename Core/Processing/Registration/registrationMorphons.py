@@ -13,7 +13,7 @@ except:
 
 from Core.Data.Images.deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
 
@@ -123,14 +123,14 @@ class RegistrationMorphons(Registration):
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing, tryGPU=self.tryGPU)
+            fixedResampled.resampleOpenMP(newGridSize, self.fixed._origin, newVoxelSpacing, tryGPU=self.tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing, tryGPU=self.tryGPU)
+            movingResampled.resampleOpenMP(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing, tryGPU=self.tryGPU)
 
             if s != 0:
                 deformation.resampleToImageGrid(fixedResampled, tryGPU=self.tryGPU)
-                certainty.resample(fixedResampled.gridSize, fixedResampled._origin,
-                                   fixedResampled._spacing, fillValue=0, tryGPU=self.tryGPU)
+                certainty.resampleOpenMP(fixedResampled.gridSize, fixedResampled._origin,
+                                         fixedResampled._spacing, fillValue=0, tryGPU=self.tryGPU)
             else:
                 deformation.initFromImage(fixedResampled)
                 certainty = fixedResampled.copy()

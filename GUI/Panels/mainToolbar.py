@@ -6,6 +6,7 @@ import os
 from PyQt5.QtWidgets import QToolBox, QWidget
 
 from Core.event import Event
+from GUI.Panels.doseComparisonPanel import DoseComparisonPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
 from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.planOptiPanel import PlanOptiPanel
@@ -56,6 +57,7 @@ class MainToolbar(QToolBox):
         roiPanel = ROIPanel(self._viewController)
         planOptiPanel = PlanOptiPanel(self._viewController)
         dosePanel = DoseComputationPanel(self._viewController)
+        doseComparisonPanel = DoseComparisonPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
         breathingSignalPanel = BreathingSignalPanel(self._viewController)
         xRayProjPanel = DRRPanel(self._viewController)
@@ -67,6 +69,8 @@ class MainToolbar(QToolBox):
         item = self.ToolbarItem(planOptiPanel, 'Plan optimization')
         self.showItem(item)
         item = self.ToolbarItem(dosePanel, 'Dose computation')
+        self.showItem(item)
+        item = self.ToolbarItem(doseComparisonPanel, 'Dose comparison')
         self.showItem(item)
         item = self.ToolbarItem(scriptingPanel, 'Scripting')
         self.showItem(item)

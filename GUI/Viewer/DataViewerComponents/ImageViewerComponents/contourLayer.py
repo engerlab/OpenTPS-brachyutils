@@ -1,4 +1,5 @@
-import typing
+from functools import partial
+from typing import Optional, Union, Sequence
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -21,12 +22,17 @@ class ContourLayer:
         self._renderWindow = renderWindow
         self._resliceAxes = None
         self._vtkContours = []
+        self._partialHandlers = []
 
     def close(self):
         for vtkContour in self._vtkContours:
             vtkContour.close()
 
-    def setNewContour(self, contour:typing.Union[ROIContour, ROIMask]):
+    @property
+    def contours(self) -> Sequence[Union[ROIContourForViewer, ROIMaskForViewer]]:
+        return [contour for contour in self._contours]
+
+    def setNewContour(self, contour:Union[ROIContour, ROIMask]):
         if isinstance(contour, ROIContour):
             contour = ROIContourForViewer(contour)
         elif isinstance(contour, ROIMask):
@@ -35,6 +41,9 @@ class ContourLayer:
             raise ValueError(str(type(contour)) + ' is not a valid type for a contour.')
 
         if contour in self._contours:
+            return
+
+        if not contour.visible:
             return
 
         contour.referenceImage = self.referenceImage
@@ -47,10 +56,31 @@ class ContourLayer:
         vtkContourObj.resliceAxes = self._resliceAxes
         self._vtkContours.append(vtkContourObj)
 
+        partialHandler = partial(self._handleVisibilityChange, contour)
+        self._partialHandlers.append(partialHandler)
+        contour.visibleChangedSignal.connect(partialHandler)
+
         self._renderWindow.Render()
 
+    def _handleVisibilityChange(self, contour:Union[ROIContourForViewer, ROIMaskForViewer], visible):
+        if not contour.visible:
+            self._removeContour(contour)
+
+    def _removeContour(self, contour:Union[ROIContourForViewer, ROIMaskForViewer]):
+        contourIndex = self._contours.index(contour)
+        vtkContourObj = self._vtkContours[contourIndex]
+        partialHandler = self._partialHandlers[contourIndex]
+        self._renderer.RemoveActor(vtkContourObj.actor)
+
+        self._contours.remove(contour)
+        self._vtkContours.remove(vtkContourObj)
+        self._partialHandlers.remove(partialHandler)
+
+        contour.visibleChangedSignal.disconnect(partialHandler)
+
+
     @property
-    def referenceImage(self) -> typing.Optional[Image3D]:
+    def referenceImage(self) -> Optional[Image3D]:
         return self._referenceImage
 
     @referenceImage.setter
@@ -72,6 +102,9 @@ class ContourLayer:
     def _updateContoursResliceAxes(self):
         for vtkContour in self._vtkContours:
             vtkContour.resliceAxes = self._resliceAxes
+
+    def resliceDataFromPhysicalPoint(self, point):
+        return [contour.resliceDataFromPhysicalPoint(point) for contour in self._vtkContours]
 
 class vtkContour:
     def __init__(self, contour, renderWindow):
@@ -140,3 +173,10 @@ class vtkContour:
     def setVisible(self, visible: bool):
         self.actor.SetVisibility(visible)
         self.renderWindow.Render()
+
+    def resliceDataFromPhysicalPoint(self, point):
+        imageData = self.reslice.GetInput(0)
+
+        ind = [0, 0, 0]
+        imageData.TransformPhysicalPointToContinuousIndex(point, ind)
+        return imageData.GetScalarComponentAsFloat(int(ind[0]), int(ind[1]), int(ind[2]), 0)

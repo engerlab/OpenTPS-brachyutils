@@ -9,8 +9,9 @@ class PlanIonLayer:
     def __init__(self, nominalEnergy: float = 0.0):
         self._x = np.array([])
         self._y = np.array([])
-        self._weights = np.array([])
+        self._mu = np.array([])
         self._timings = np.array([])
+        self.scalingFactor = 1.
 
         self.nominalEnergy: float = nominalEnergy
         self.numberOfPaintings: int = 1
@@ -18,16 +19,36 @@ class PlanIonLayer:
         self.seriesInstanceUID = ""
 
     def __len__(self):
-        return len(self._weights)
+        return len(self._mu)
 
     def __str__(self):
         s = 'NominalEnergy: ' + str(self.nominalEnergy) + '\n'
         s += 'Spots ((x, y), MU): \n'
 
-        xyAndWeights = zip(list(self.spotXY), self._weights)
-        for xyAndWeight in xyAndWeights:
-            s += str(xyAndWeight)
+        xyAndMUs = zip(list(self.spotXY), self._mu)
+        for xyAndMU in xyAndMUs:
+            s += str(xyAndMU)
         return s
+
+    def __deepcopy__(self, memodict={}):
+        newLayer = PlanIonLayer()
+
+        memodict[id(self)] = newLayer
+
+        newLayer._deepCopyProperties(self, memodict)
+
+        return newLayer
+
+    def _deepCopyProperties(self, otherLayer, memodict):
+        self._x = np.array(otherLayer._x)
+        self._y = np.array(otherLayer._y)
+        self._mu = np.array(otherLayer._mu)
+        self._timings = np.array(otherLayer._timings)
+
+        self.nominalEnergy = otherLayer.nominalEnergy
+        self.numberOfPaintings = otherLayer.numberOfPaintings
+        self.rangeShifterSettings = otherLayer.rangeShifterSettings.__deepcopy__(memodict)
+        self.seriesInstanceUID = otherLayer.seriesInstanceUID
 
     @property
     def spotX(self) -> Sequence[float]:
@@ -42,19 +63,27 @@ class PlanIonLayer:
         return zip(self._x, self._y)
 
     @property
+    def spotMUs(self) -> np.ndarray:
+        return np.array(self._mu)
+
+    @spotMUs.setter
+    def spotMUs(self, mu: Sequence[float]):
+        mu = np.array(mu)
+
+        if len(self._mu) != len(mu):
+            raise ValueError(
+                "Length of provided MUs is not correct. Provided: " + str(len(mu)) + " - Expected: " + str(
+                    len(self._mu)))
+
+        self._mu = mu
+
+    @property
     def spotWeights(self) -> np.ndarray:
-        return np.array(self._weights)
+        return np.array(self._mu/self.scalingFactor)
 
     @spotWeights.setter
     def spotWeights(self, w: Sequence[float]):
-        w = np.array(w)
-
-        if len(self._weights) != len(w):
-            raise ValueError(
-                "Length of provided weights is not correct. Provided: " + str(len(w)) + " - Expected: " + str(
-                    len(self._weights)))
-
-        self._weights = w
+        self._mu = np.array(w * self.scalingFactor)
 
     @property
     def spotTimings(self) -> np.ndarray:
@@ -73,44 +102,40 @@ class PlanIonLayer:
 
     @property
     def meterset(self) -> float:
-        return np.sum(self._weights)
-
-    @meterset.setter
-    def meterset(self, meterSet: float):
-        self.meterset = meterSet
+        return np.sum(self._mu)
 
     @property
     def numberOfSpots(self) -> int:
-        return len(self._weights)
+        return len(self._mu)
 
     def addToSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
-                  weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+                  mu: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
         if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
-                self._addToSinglepot(xElem, y[i], weight[i], t)
+                self._addToSinglepot(xElem, y[i], mu[i], t)
         else:
-            self._addToSinglepot(x, y, weight, timing)
+            self._addToSinglepot(x, y, mu, timing)
 
-    def _addToSinglepot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
+    def _addToSinglepot(self, x: float, y: float, mu: float, timing: Optional[float] = None):
         alreadyExists, where = self.spotDefinedInXY(x, y)
         if alreadyExists:
-            self._weights[where] = self._weights[where] + weight
+            self._mu[where] = self._mu[where] + mu
         else:
-            self._appendSingleSpot(x, y, weight, timing)
+            self._appendSingleSpot(x, y, mu, timing)
 
     def appendSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
-                   weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+                   mu: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
         if not isinstance(x, Iterable): x = [x]
         if not isinstance(y, Iterable): y = [y]
-        if not isinstance(weight, Iterable): weight = [weight]
-        if timing != None and not isinstance(weight, Iterable): timing = [timing]
+        if not isinstance(mu, Iterable): mu = [mu]
+        if timing != None and not isinstance(mu, Iterable): timing = [timing]
 
         for i, xElem in enumerate(x):
             t = timing if timing is None else timing[i]
-            self._appendSingleSpot(xElem, y[i], weight[i], t)
+            self._appendSingleSpot(xElem, y[i], mu[i], t)
 
-    def _appendSingleSpot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
+    def _appendSingleSpot(self, x: float, y: float, mu: float, timing: Optional[float] = None):
         alreadyExists, _ = self.spotDefinedInXY(x, y)
         if alreadyExists:
             if timing is None:  # possible to have two spots at the same location with different timings (e.g. bursts in synchrocyclotron)
@@ -118,36 +143,36 @@ class PlanIonLayer:
 
         self._x = np.append(self._x, x)
         self._y = np.append(self._y, y)
-        self._weights = np.append(self._weights, weight)
+        self._mu = np.append(self._mu, mu)
         if timing is not None:
             self._timings = np.append(self._timings, timing)
-            assert len(self._weights) == len(self._timings)
+            assert len(self._mu) == len(self._timings)
 
     def setSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
-                weight: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+                mu: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
         if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = timing if timing is None else timing[i]
-                self._setSingleSpot(xElem, y[i], weight[i], t)
+                self._setSingleSpot(xElem, y[i], mu[i], t)
         else:
-            self._setSingleSpot(x, y, weight, timing)
+            self._setSingleSpot(x, y, mu, timing)
 
-    def _setSingleSpot(self, x: float, y: float, weight: float, timing: Optional[float] = None):
+    def _setSingleSpot(self, x: float, y: float, mu: float, timing: Optional[float] = None):
         alreadyExists, spotPos = self.spotDefinedInXY(x, y)
         if alreadyExists:
             self._x[spotPos] = x
             self._y[spotPos] = y
-            self._weights[spotPos] = weight
+            self._mu[spotPos] = mu
             if timing is not None: self._timings[spotPos] = timing
         else:
-            self.appendSpot(x, y, weight, timing)
+            self.appendSpot(x, y, mu, timing)
 
     def removeSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]]):
         _, spotPos = self.spotDefinedInXY(x, y)
 
         self._x = np.delete(self._x, spotPos)
         self._y = np.delete(self._y, spotPos)
-        self._weights = np.delete(self._weights, spotPos)
+        self._mu = np.delete(self._mu, spotPos)
         if len(self._timings) > 0:
             self._timings = np.delete(self._timings, spotPos)
 
@@ -207,7 +232,7 @@ class PlanIonLayer:
                                                                                       ::-1]
 
             elif order == 'timing':  # sort spots by increasing order of timings
-                assert len(self._timings) == len(self._weights)
+                assert len(self._timings) == len(self._mu)
                 order = np.argsort(self._timings)
             else:
                 raise ValueError(f"order method type {order} does not exist.")
@@ -217,7 +242,7 @@ class PlanIonLayer:
         n = len(order)
         self._x = np.array([self._x[i] for i in order])
         self._y = np.array([self._y[i] for i in order])
-        self._weights = np.array([self._weights[i] for i in order])
+        self._mu = np.array([self._mu[i] for i in order])
         if len(self._timings) == n:
             self._timings = np.array([self._timings[i] for i in order])
 
@@ -232,7 +257,7 @@ class PlanIonLayer:
         layer = self.copy()
         layer._x = np.array([])
         layer._y = np.array([])
-        layer._weights = np.array([])
+        layer._mu = np.array([])
         layer._timings = np.array([])
         return layer
 
@@ -244,6 +269,16 @@ class RangeShifterSettings:
         self.rangeShifterSetting = 'OUT'
         self.referencedRangeShifterNumber = 0
 
+    def __deepcopy__(self, memodict={}):
+        newSettings = RangeShifterSettings()
+
+        newSettings.isocenterToRangeShifterDistance = self.isocenterToRangeShifterDistance
+        newSettings.rangeShifterWaterEquivalentThickness = self.rangeShifterWaterEquivalentThickness
+        newSettings.rangeShifterSetting = self.rangeShifterSetting
+        newSettings.referencedRangeShifterNumber = self.referencedRangeShifterNumber
+
+        return newSettings
+
 
 class PlanIonLayerTestCase(unittest.TestCase):
     def testAppendSpot(self):
@@ -251,60 +286,60 @@ class PlanIonLayerTestCase(unittest.TestCase):
 
         x = 0
         y = 0
-        weight = 0
-        layer.appendSpot(x, y, weight)
+        mu = 0
+        layer.appendSpot(x, y, mu)
 
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
 
-        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, weight))
+        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, mu))
 
     def testAppendSpotWithTiming(self):
         layer = PlanIonLayer()
 
         x = 0
         y = 0
-        weight = 0
+        mu = 0
         timing = 0
-        layer.appendSpot(x, y, weight, timing)
+        layer.appendSpot(x, y, mu, timing)
 
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
 
-        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, weight, timing))
+        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, mu, timing))
 
     def testSetSpot(self):
         layer = PlanIonLayer()
 
         x = 0
         y = 0
-        weight = 0
+        mu = 0
 
-        layer.setSpot(x, y, weight)
+        layer.setSpot(x, y, mu)
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
 
-        layer.setSpot(x, y, weight)
+        layer.setSpot(x, y, mu)
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
 
     def testSetSpotWithTiming(self):
         layer = PlanIonLayer()
 
         x = 0
         y = 0
-        weight = 0
+        mu = 0
         timing = 0
 
-        layer.setSpot(x, y, weight, timing)
+        layer.setSpot(x, y, mu, timing)
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
 
-        layer.setSpot(x, y, weight)
+        layer.setSpot(x, y, mu)
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
 
     def testRemoveSpot(self):
@@ -312,23 +347,23 @@ class PlanIonLayerTestCase(unittest.TestCase):
 
         x = 0
         y = 0
-        weight = 0
+        mu = 0
         timing = 0
 
-        layer.setSpot(x, y, weight, timing)
+        layer.setSpot(x, y, mu, timing)
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
 
         layer.removeSpot(x, y)
 
         self.assertEqual(list(layer.spotXY), [])
-        np.testing.assert_array_equal(layer.spotWeights, np.array([]))
+        np.testing.assert_array_equal(layer.spotMUs, np.array([]))
         np.testing.assert_array_equal(layer.spotTimings, np.array([]))
 
-        layer.setSpot(x, y, weight, timing)
+        layer.setSpot(x, y, mu, timing)
         self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotWeights, 0)
+        self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
 
     def testSpotDefinedInXY(self):
@@ -336,9 +371,9 @@ class PlanIonLayerTestCase(unittest.TestCase):
 
         x = 0
         y = 0
-        weight = 0
+        mu = 0
 
-        layer.setSpot(x, y, weight)
+        layer.setSpot(x, y, mu)
 
         exists, where = layer.spotDefinedInXY(x, y)
         self.assertTrue(exists)
@@ -354,24 +389,24 @@ class PlanIonLayerTestCase(unittest.TestCase):
         layer = PlanIonLayer()
         x = [0, 2, 1, 3]
         y = [1, 2, 2, 0]
-        weight = [0.2, 0.5, 0.3, 0.1]
+        mu = [0.2, 0.5, 0.3, 0.1]
 
-        layer.appendSpot(x, y, weight)
+        layer.appendSpot(x, y, mu)
         layer.reorderSpots(order='scanAlgo')
         np.testing.assert_array_equal(layer.spotX, [3, 0, 1, 2])
         np.testing.assert_array_equal(layer.spotY, [0, 1, 2, 2])
-        np.testing.assert_array_equal(layer.spotWeights, np.array([0.1, 0.2, 0.3, 0.5]))
+        np.testing.assert_array_equal(layer.spotMUs, np.array([0.1, 0.2, 0.3, 0.5]))
 
         layer = PlanIonLayer()
         x = [0, 1, 2, 3]
         y = [1, 2, 2, 0]
-        weight = [0.2, 0.5, 0.3, 0.1]
+        mu = [0.2, 0.5, 0.3, 0.1]
         timing = [3, 2, 5, 6]
-        layer.appendSpot(x, y, weight, timing)
+        layer.appendSpot(x, y, mu, timing)
         layer.reorderSpots(order='timing')
         np.testing.assert_array_equal(layer.spotX, [1, 0, 2, 3])
         np.testing.assert_array_equal(layer.spotY, [2, 1, 2, 0])
-        np.testing.assert_array_equal(layer.spotWeights, np.array([0.5, 0.2, 0.3, 0.1]))
+        np.testing.assert_array_equal(layer.spotMUs, np.array([0.5, 0.2, 0.3, 0.1]))
         np.testing.assert_array_equal(layer.spotTimings, np.array([2, 3, 5, 6]))
 
 

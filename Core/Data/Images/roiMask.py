@@ -1,16 +1,19 @@
 import numpy as np
 import scipy
 from scipy.ndimage import morphology
+
 import copy
 import logging
 
 from Core.Data.Images.image3D import Image3D
 from Core.event import Event
 
+
 try:
     import cupy
     import cupyx.scipy.ndimage
 except:
+    print("Module cupy not installed")
     pass
 
 logger = logging.getLogger(__name__)
@@ -137,13 +140,71 @@ class ROIMask(Image3D):
         else:
             self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
-        Image3D.resample(self, gridSize, origin, spacing, fillValue=fillValue, outputType='float32', tryGPU=tryGPU)
-        self.data = self._imageArray >= 0.5
-        if not(outputType is None):
-            self.data = self.data.astype(outputType)
 
-    def dumpableCopy(self):
-        dumpableMask = ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
-        # dumpableMask.patient = self.patient
-        return dumpableMask
+    def getROIContour(self):
+
+        try:
+            from skimage.measure import label, find_contours
+            from skimage.segmentation import find_boundaries
+        except:
+            print('Module skimage (scikit-image) not installed, ROIMask cannot be converted to ROIContour')
+            return 0
+
+        polygonMeshList = []
+        for zSlice in range(self._imageArray.shape[2]):
+
+            labeledImg, numberOfLabel = label(self._imageArray[:, :, zSlice], return_num=True)
+
+            for i in range(1, numberOfLabel + 1):
+
+                singleLabelImg = labeledImg == i
+                contours = find_contours(singleLabelImg.astype(np.uint8), level=0.6)
+
+                if len(contours) > 0:
+
+                    if len(contours) == 2:
+
+                        ## use a different threshold in the case of an interior contour
+                        contours2 = find_contours(singleLabelImg.astype(np.uint8), level=0.4)
+
+                        interiorContour = contours2[1]
+                        polygonMesh = []
+                        for point in interiorContour:
+
+                            xCoord = np.round(point[1]) * self.spacing[1] + self.origin[1]
+                            yCoord = np.round(point[0]) * self.spacing[0] + self.origin[0]
+                            zCoord = zSlice * self.spacing[2] + self.origin[2]
+
+                            polygonMesh.append(yCoord)
+                            polygonMesh.append(xCoord)
+                            polygonMesh.append(zCoord)
+
+                        polygonMeshList.append(polygonMesh)
+
+                    contour = contours[0]
+
+                    polygonMesh = []
+                    for point in contour:
+
+                        xCoord = np.round(point[1]) * self.spacing[1] + self.origin[1]
+                        yCoord = np.round(point[0]) * self.spacing[0] + self.origin[0]
+                        zCoord = zSlice * self.spacing[2] + self.origin[2]
+
+                        polygonMesh.append(yCoord)
+                        polygonMesh.append(xCoord)
+                        polygonMesh.append(zCoord)
+
+                    polygonMeshList.append(polygonMesh)
+
+
+        from Core.Data.roiContour import ROIContour  ## this is done here to avoir circular imports issue
+        contour = ROIContour(name=self.name, patientInfo=self.patientInfo, displayColor=self._displayColor)
+        contour.polygonMesh = polygonMeshList
+
+        return contour
+
+
+    # def dumpableCopy(self):
+    #     dumpableMask = ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
+    #     # dumpableMask.patient = self.patient
+    #     return dumpableMask

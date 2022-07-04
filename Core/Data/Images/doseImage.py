@@ -38,10 +38,6 @@ class DoseImage(Image3D):
         return doseImage
 
 
-    def resampleToImageGrid(self, ct):
-        pass
-
-
     def copy(self):
         return DoseImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
 

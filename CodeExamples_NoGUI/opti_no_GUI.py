@@ -2,10 +2,10 @@ import math
 import os
 import numpy as np
 import scipy.sparse as sp
+import sparse_dot_mkl
 from matplotlib import pyplot as plt
 import logging.config
 import json
-import sys
 
 from Core.Data.patientList import PatientList
 from Core.Data.Images.doseImage import DoseImage
@@ -15,6 +15,7 @@ from Core.IO.dataLoader import loadAllData, listAllFiles
 from Core.IO.dicomIO import readDicomCT, readDicomPlan
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.Objectives.norms import NormL1, NormL21
 from Core.Processing.PlanOptimization.Objectives.energySequencing import EnergySeq
@@ -23,8 +24,14 @@ from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer,
 from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking, FistaAccel
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Processing.ImageProcessing.imageTransform3D import resampleOn
 from Core.Processing.PlanOptimization.tools import WeightStructure
+
+try:
+    import sparse_dot_mkl
+
+    use_MKL = 1
+except:
+    use_MKL = 0
 
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.Plan.planStructure import PlanStructure
@@ -43,9 +50,6 @@ if not os.path.isdir(output_path):
     os.mkdir(output_path)
 
 # Load patient data
-
-# filesList = listAllFiles(ctImagePath)
-# image1 = readDicomCT(filesList['Dicom'])
 dataList = loadAllData(ctImagePath, maxDepth=0)
 print(dataList)
 ct = dataList[7]
@@ -56,10 +60,10 @@ contours.print_ROINames()
 
 # Configure MCsquare
 MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
-doseCalculator = MCsquareDoseCalculator()
+mc2 = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
-doseCalculator.beamModel = beamModel
-doseCalculator.nbPrimaries = 5e4
+mc2.beamModel = beamModel
+mc2.nbPrimaries = 1e6
 # doseCalculator.independentScoringGrid = True
 # doseCalculator.scoringVoxelSpacing = [5.0, 5.0, 5.0]
 # doseCalculator.
@@ -67,7 +71,7 @@ scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
                                                os.path.join(scannerPath, 'HU_Material_Conversion.txt'),
                                                os.path.join(MCSquarePath, 'Materials')))
-doseCalculator.ctCalibration = calibration
+mc2.ctCalibration = calibration
 
 # ROIs
 target = contours.getContourByName('CTV')
@@ -83,9 +87,9 @@ gantryAngles = [0., 45.]
 couchAngles = [0., 0.]
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "testRefactorPlan.tps")
+'''plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
 
-'''if os.path.isfile(plan_file):
+if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
     print('plan loaded')
     beamletPath = os.path.join(output_path,
@@ -135,26 +139,40 @@ plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[0].name, "Dmax", "<", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
 # plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
+
+# Initialize contours + downsampling optional
 # scoring_spacing = np.array([5, 5, 5])
-#scoring_spacing = np.array([2, 2, 2])
-#scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
-#plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
-#plan.objectives.initializeContours(contours, ct, ct.gridSize, ct.spacing)
+scoring_spacing = np.array([2, 2, 2])
+scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
+plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
+# plan.objectives.initializeContours(contours, ct, ct.gridSize, ct.spacing)
+
+# Crop beamlet to optimization ROI
+'''roiObjectives = np.zeros_like(plan.objectives.fidObjList[0].maskVec)
+for objective in plan.objectives.fidObjList:
+    roiObjectives = np.logical_or(roiObjectives, objective.maskVec)
+if use_MKL == 1:
+    beamletMatrix = sparse_dot_mkl.dot_product_mkl(sp.diags(roiObjectives.astype(np.float32), format='csc'),
+                                                   plan.beamlets.toSparseMatrix())
+else:
+    beamletMatrix = sp.csc_matrix.dot(sp.diags(roiObjectives.astype(np.float32), format='csc'),
+                                      plan.beamlets.toSparseMatrix())'''
+
+beamletMatrix = plan.beamlets.toSparseMatrix()
 # Objective functions
-objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
-print('pre init')
-#objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), formatArray=64)
+# objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
+objectiveFunction = DoseFidelity(plan.objectives.fidObjList, beamletMatrix, formatArray=64)
 print('fidelity init done')
 spotSparsity = NormL1(lambda_=1)
-energySeq = EnergySeq(plan, gamma=0.1)
+# energySeq = EnergySeq(plan, gamma=0.1)
 # logBarrier = LogBarrier(plan, beta=0.1)
-layerSparsity = NormL21(plan, lambda_=1, scaleReg="summu")
+# layerSparsity = NormL21(plan, lambda_=1, scaleReg="summu")
 
 # Acceleration
 accel = FistaBacktracking()
 # accel = FistaAccel()
+
 # Solvers
-# Optimize treatment plan
 # solver = IMPTPlanOptimizer(method='LP', plan=plan, contours=contours, functions=[])
 # solver = ARCPTPlanOptimizer(method='MIP', plan=plan, contours=contours, functions=[], max_switch_ups=5, time_limit=600)
 '''solver = IMPTPlanOptimizer(method='FISTA',
@@ -163,27 +181,32 @@ accel = FistaBacktracking()
                            step=1,
                            accel=accel,
                            maxit=100)'''
-'''solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=100)
-solver.xSquared = False
+solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=100)
+# solver.xSquared = False
+
+# Optimize treatment plan
 w, doseImage, ps = solver.optimize()
-with open('test_weights.npy', 'wb') as f:
-    np.save(f, w)
+
+# Save weights to npy or new OpenTPS plan file
+# with open('test_weights.npy', 'wb') as f:
+#    np.save(f, w)
+plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
+# saveRTPlan(plan, plan_filepath)
+
+# Examine solution properties
 struct = WeightStructure(plan)
 irradTime, ups, downs = struct.computeIrradiationTime(w)
 layerSparsityPercentage = struct.computeELSparsity(w, 1)
 print("Irradiation time = {}, Ups = {}, Downs = {}".format(irradTime, ups, downs))
-print("EL sparsity = {} %".format(layerSparsityPercentage))'''
+print("EL sparsity = {} %".format(layerSparsityPercentage))
 
-plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
-# saveRTPlan(plan, plan_filepath)
 
-# MCsquare simulation
-# doseImage = doseCalculator.computeDose(ct, plan)
-# doseImage = plan.beamlets.toDoseImage()
 
-# MCsquare beamlet free optimization
-doseCalculator.nbPrimaries = 1e7
-doseImage = doseCalculator.optimizeBeamletFree(ct, plan, [targetMask])
+# Dose computation (beamlet_based or MCsquare)
+# plan.spotMUs = np.square(w).astype(np.float32)
+# doseImage = mc2.computeDose(ct, plan)
+plan.beamlets.beamletWeights = np.square(w).astype(np.float32)
+doseImage = plan.beamlets.toDoseImage()
 
 # Compute DVH
 target_DVH = DVH(ct, target, doseImage)
@@ -202,7 +225,7 @@ Z_coord = COM_index[2]
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
 contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
-img_dose = resampleOn(doseImage, ct)
+img_dose = resampleImage3DOnImage3D(doseImage, ct)
 img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
 # Display dose

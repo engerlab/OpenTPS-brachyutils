@@ -10,12 +10,15 @@ This file contains an example on how to:
 
 import os
 import sys
+
+from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
+
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.Processing.ImageProcessing.crop3D import *
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
+from Core.Processing.ImageProcessing.segmentation3D import *
+from Core.IO.serializedObjectIO import loadDataStructure
 
 if __name__ == '__main__':
 

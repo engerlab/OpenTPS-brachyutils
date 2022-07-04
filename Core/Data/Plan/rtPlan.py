@@ -5,14 +5,12 @@ from typing import Sequence
 
 import numpy as np
 
-
 from Core.Data.Plan.planStructure import PlanStructure
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Data.patientData import PatientData
 from Core.Data.Plan.objectivesList import ObjectivesList
-
 
 logger = logging.getLogger(__name__)
 
@@ -74,34 +72,38 @@ class RTPlan(PatientData):
 
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
-        # I want a list with all layers in the plan and not only beam-by-beam
-        # For backwards compatibility, but we can now access each layer with indexing brackets
-        return [layer for layer in self._layers]
+        layers = []
+        for beam in self.beams:
+            layers.extend(beam.layers)
+
+        return layers
 
     def appendLayerAccum(self, layer: PlanIonLayer):
         self._layers.append(layer)
+
     def appendSpotAccum(self, spot: PlanIonSpot):
         self._spots.append(spot)
+
     def removeLayer(self, layer: PlanIonLayer):
         self._layers.remove(layer)
 
     @property
-    def spotWeights(self) -> np.ndarray:
-        weights = np.array([])
+    def spotMUs(self) -> np.ndarray:
+        mu = np.array([])
 
         for beam in self._beams:
-            weights = np.concatenate((weights, beam.spotWeights))
+            mu = np.concatenate((mu, beam.spotMUs))
 
-        return weights
+        return mu
 
-    @spotWeights.setter
-    def spotWeights(self, w: Sequence[float]):
+    @spotMUs.setter
+    def spotMUs(self, w: Sequence[float]):
         w = np.array(w)
 
         ind = 0
         for beam in self._beams:
-            beam.spotWeights = w[ind:ind + len(beam.spotWeights)]
-            ind += len(beam.spotWeights)
+            beam.spotMUs = w[ind:ind + len(beam.spotMUs)]
+            ind += len(beam.spotMUs)
 
     @property
     def spotTimings(self) -> np.ndarray:
@@ -129,7 +131,7 @@ class RTPlan(PatientData):
             if len(beamXY) <= 0:
                 continue
 
-            if len(xy)<=0:
+            if len(xy) <= 0:
                 xy = beamXY
             else:
                 xy = np.concatenate((xy, beamXY))
@@ -140,17 +142,29 @@ class RTPlan(PatientData):
     def meterset(self) -> float:
         return np.sum(np.array([beam.meterset for beam in self._beams]))
 
-    @meterset.setter
-    def meterset(self, meterSet: float):
-        self.meterset = meterSet
+    @property
+    def beamCumulativeMetersetWeight(self) -> np.ndarray:
+        v_finalCumulativeMetersetWeight = np.array([])
+        for beam in self._beams:
+            cumulativeMetersetWeight = 0
+            for layer in beam.layers:
+                cumulativeMetersetWeight += sum(layer.spotWeights)
+            v_finalCumulativeMetersetWeight = np.concatenate(v_finalCumulativeMetersetWeight, cumulativeMetersetWeight)
+        return v_finalCumulativeMetersetWeight
+
+    @property
+    def layerCumulativeMetersetWeight(self) -> np.ndarray:
+        v_cumulativeMeterset = np.array([])
+        for beam in self._beams:
+            beamMeterset = 0
+            for layer in beam.layers:
+                beamMeterset += sum(layer.spotWeights)
+                v_cumulativeMeterset = np.concatenate(v_cumulativeMeterset, beamMeterset)
+        return v_cumulativeMeterset
 
     @property
     def numberOfSpots(self) -> int:
         return np.sum(np.array([beam.numberOfSpots for beam in self._beams]))
-
-    @numberOfSpots.setter
-    def numberOfSpots(self, nSpots: int):
-        self.numberOfSpots = nSpots
 
     @property
     def numberOfFractionsPlanned(self) -> int:
@@ -159,7 +173,7 @@ class RTPlan(PatientData):
     @numberOfFractionsPlanned.setter
     def numberOfFractionsPlanned(self, fraction: int):
         if fraction != self._numberOfFractionsPlanned:
-            self.spotWeights = self.spotWeights * (self._numberOfFractionsPlanned / fraction)
+            self.spotMUs = self.spotMUs * (self._numberOfFractionsPlanned / fraction)
             self._numberOfFractionsPlanned = fraction
 
     def simplify(self, threshold: float = 0.0):
@@ -173,17 +187,17 @@ class RTPlan(PatientData):
             for layer in beam._layers:
                 layer.reorderSpots(order_spots)
 
-    def removeZeroWeightSpots(self):
+    def removeZeroMUSpots(self):
         for beam in self._beams:
             for layer in beam._layers:
-                index_to_keep = np.flatnonzero(np.array(layer._weights)>0.)
-                layer._weights = np.array([layer._weights[i] for i in range(len(layer._weights)) if i in index_to_keep])
+                index_to_keep = np.flatnonzero(np.array(layer._mu) > 0.)
+                layer._mu = np.array([layer._mu[i] for i in range(len(layer._mu)) if i in index_to_keep])
                 layer._x = np.array([layer._x[i] for i in range(len(layer._x)) if i in index_to_keep])
                 layer._y = np.array([layer._y[i] for i in range(len(layer._y)) if i in index_to_keep])
 
         # Remove empty layers
         for beam in self._beams:
-            beam._layers = [layer for layer in beam._layers if len(layer._weights) > 0]
+            beam._layers = [layer for layer in beam._layers if len(layer._mu) > 0]
 
     def copy(self):
         return copy.deepcopy(self)  # recursive copy
@@ -192,50 +206,52 @@ class RTPlan(PatientData):
         # TODO
         raise NotImplementedError()
 
-
-    def appendSpot(self, beam:PlanIonBeam, layer:PlanIonLayer, spot_index:int):
+    def appendSpot(self, beam: PlanIonBeam, layer: PlanIonLayer, spot_index: int):
         """
         Assign a particular spot (beam, layer, spot_index) to plan
         """
         # Integrate in RTPlan
         # List gantry angles in plan
-        gantry_angles = [] if self._beams==[] else [b.gantryAngle for b in self._beams]
+        gantry_angles = [] if self._beams == [] else [b.gantryAngle for b in self._beams]
         if beam.gantryAngle not in gantry_angles:
             new_beam = beam.createEmptyBeamWithSameMetaData()
             self._beams.append(new_beam)
             gantry_angles.append(beam.gantryAngle)
-        
-        index_beam = np.where(np.array(gantry_angles)==beam.gantryAngle)[0][0]
-        energies = [] if self._beams[index_beam]._layers==[] else [l.nominalEnergy for l in self._beams[index_beam]._layers]
-        current_energy_index = np.flatnonzero(abs(np.array(energies) - layer.nominalEnergy) < 0.05) # if delta energy < 0.05: same layer
 
-        if current_energy_index.size==0:#layer.nominalEnergy not in energies:
+        index_beam = np.where(np.array(gantry_angles) == beam.gantryAngle)[0][0]
+        energies = [] if self._beams[index_beam]._layers == [] else [l.nominalEnergy for l in
+                                                                     self._beams[index_beam]._layers]
+        current_energy_index = np.flatnonzero(
+            abs(np.array(energies) - layer.nominalEnergy) < 0.05)  # if delta energy < 0.05: same layer
+
+        if current_energy_index.size == 0:  # layer.nominalEnergy not in energies:
             new_layer = layer.createEmptyLayerWithSameMetaData()
             self._beams[index_beam].appendLayer(new_layer)
             index_layer = -1
         else:
             index_layer = current_energy_index[0]
-        t = None if len(layer._timings)==0 else layer._timings[spot_index]
-        self._beams[index_beam]._layers[index_layer].appendSpot(layer._x[spot_index], layer._y[spot_index], layer._weights[spot_index], t)
+        t = None if len(layer._timings) == 0 else layer._timings[spot_index]
+        self._beams[index_beam]._layers[index_layer].appendSpot(layer._x[spot_index], layer._y[spot_index],
+                                                                layer._mu[spot_index], t)
 
-
-    def appendLayer(self, beam:PlanIonBeam, layer:PlanIonLayer):
-        gantry_angles = [] if self._beams==[] else [b.gantryAngle for b in self._beams]
+    def appendLayer(self, beam: PlanIonBeam, layer: PlanIonLayer):
+        gantry_angles = [] if self._beams == [] else [b.gantryAngle for b in self._beams]
         if beam.gantryAngle not in gantry_angles:
             new_beam = beam.createEmptyBeamWithSameMetaData()
             self._beams.append(new_beam)
             gantry_angles.append(beam.gantryAngle)
-        
-        index_beam = np.where(np.array(gantry_angles)==beam.gantryAngle)[0][0]
-        energies = [] if self._beams[index_beam]._layers==[] else [l.nominalEnergy for l in self._beams[index_beam]._layers]
-        current_energy_index = np.flatnonzero(abs(np.array(energies) - layer.nominalEnergy) < 0.05) # if delta energy < 0.05: same layer
 
-        if current_energy_index.size>0:
+        index_beam = np.where(np.array(gantry_angles) == beam.gantryAngle)[0][0]
+        energies = [] if self._beams[index_beam]._layers == [] else [l.nominalEnergy for l in
+                                                                     self._beams[index_beam]._layers]
+        current_energy_index = np.flatnonzero(
+            abs(np.array(energies) - layer.nominalEnergy) < 0.05)  # if delta energy < 0.05: same layer
+
+        if current_energy_index.size > 0:
             raise ValueError('Layer already exists in plan')
 
         self._beams[index_beam].appendLayer(layer)
         self._layers.append(layer)
-
 
     def createEmptyPlanWithSameMetaData(self):
         plan = self.copy()
@@ -279,15 +295,15 @@ class PlanIonLayerTestCase(unittest.TestCase):
         layer = PlanIonLayer(nominalEnergy=100.)
         x = [0, 2, 1, 3]
         y = [1, 2, 2, 0]
-        weight = [0.2, 0.5, 0.3, 0.1]
-        layer.appendSpot(x, y, weight)
+        mu = [0.2, 0.5, 0.3, 0.1]
+        layer.appendSpot(x, y, mu)
         beam.appendLayer(layer)
 
         layer2 = PlanIonLayer(nominalEnergy=120.)
         x2 = [0, 2, 1, 3]
         y2 = [3, 3, 5, 0]
-        weight2 = [0.2, 0.5, 0.3, 0.1]
-        layer2.appendSpot(x2, y2, weight2)
+        mu2 = [0.2, 0.5, 0.3, 0.1]
+        layer2.appendSpot(x2, y2, mu2)
         beam.appendLayer(layer2)
 
         plan.appendBeam(beam)
@@ -300,11 +316,11 @@ class PlanIonLayerTestCase(unittest.TestCase):
 
         np.testing.assert_array_equal(layer1.spotX, [3, 0, 1, 2])
         np.testing.assert_array_equal(layer1.spotY, [0, 1, 2, 2])
-        np.testing.assert_array_equal(layer1.spotWeights, np.array([0.1, 0.2, 0.3, 0.5]))
+        np.testing.assert_array_equal(layer1.spotMUs, np.array([0.1, 0.2, 0.3, 0.5]))
 
         np.testing.assert_array_equal(layer0.spotX, [3, 0, 2, 1])
         np.testing.assert_array_equal(layer0.spotY, [0, 3, 3, 5])
-        np.testing.assert_array_equal(layer0.spotWeights, np.array([0.1, 0.2, 0.5, 0.3]))
+        np.testing.assert_array_equal(layer0.spotMUs, np.array([0.1, 0.2, 0.5, 0.3]))
 
 
 if __name__ == '__main__':

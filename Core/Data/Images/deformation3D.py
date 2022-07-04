@@ -175,7 +175,7 @@ class Deformation3D(Image3D):
             numpy array
                 Deformed image.
             """
-
+    
         if (self.displacement is None):
             self.displacement = self.velocity.exponentiateField(tryGPU=tryGPU)
 
@@ -183,22 +183,28 @@ class Deformation3D(Image3D):
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
-            field.resample(image.gridSize, image._origin, image._spacing, tryGPU=tryGPU)
+            # print('in deformation3D deformImage before resample', image.gridSize, field.gridSize)
+            field.resample(image.gridSize, image.origin, image.spacing, tryGPU=tryGPU)
+            # print('in deformation3D deformImage after resample', image.gridSize, field.gridSize)
 
         image = image.copy()
-        init_dtype = image._imageArray.dtype
+        init_dtype = image.imageArray.dtype
 
         if isinstance(image, VectorField3D):
-            image._imageArray[:, :, :, 0] = field.warp(image._imageArray[:, :, :, 0], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
-            image._imageArray[:, :, :, 1] = field.warp(image._imageArray[:, :, :, 1], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
-            image._imageArray[:, :, :, 2] = field.warp(image._imageArray[:, :, :, 2], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            image.imageArray[:, :, :, 0] = field.warp(image.imageArray[:, :, :, 0], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            image.imageArray[:, :, :, 1] = field.warp(image.imageArray[:, :, :, 1], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            image.imageArray[:, :, :, 2] = field.warp(image.imageArray[:, :, :, 2], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         else:
-            image._imageArray = field.warp(image._imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            image.imageArray = field.warp(image.imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
 
         if init_dtype == 'bool':
-            image._imageArray[image._imageArray < 0.5] = 0
-            image._imageArray[image._imageArray >= 0.5] = 1
-            image._imageArray = image._imageArray.astype(bool)
+            testArray = image.imageArray
+            testArray[testArray < 0.5] = 0
+            testArray[testArray >= 0.5] = 1
+            # image._imageArray[image._imageArray < 0.5] = 0
+            # image._imageArray[image._imageArray >= 0.5] = 1
+            image.imageArray = testArray.astype(bool)
 
         return image
 

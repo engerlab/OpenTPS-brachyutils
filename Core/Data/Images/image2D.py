@@ -23,6 +23,20 @@ class Image2D(PatientData):
         s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
         return s
 
+    def __deepcopy__(self, memodict={}):
+        newImage = Image2D()
+
+        newImage._deepCopyProperties(self, memodict)
+
+        return newImage
+
+    def _deepCopyProperties(self, otherImage, memodict):
+        if not (otherImage.imageArray is None):
+            self._imageArray = np.array(otherImage.imageArray)
+        self._origin = np.array(otherImage.origin)
+        self._spacing = np.array(otherImage.spacing)
+        self._angles = np.array(otherImage.angles)
+
     # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D
     @classmethod
     def fromImage2D(cls, image):
@@ -31,7 +45,7 @@ class Image2D(PatientData):
 
     @property
     def imageArray(self) -> np.ndarray:
-        return self._imageArray
+        return np.array(self._imageArray)
 
     @imageArray.setter
     def imageArray(self, array:np.ndarray):

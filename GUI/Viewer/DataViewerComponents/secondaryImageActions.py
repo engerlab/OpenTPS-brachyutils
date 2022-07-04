@@ -24,7 +24,7 @@ class SecondaryImageActions:
         self._colorbarAction.triggered.connect(self._setColorbarOn)
         self._colorbarAction.setCheckable(True)
 
-        self._rangeAction = QAction(QIcon(iconPath + "color-adjustment.png"), "Range")
+        self._rangeAction = QAction(QIcon(iconPath + "colormap_histogram.png"), "Range")
         self._rangeAction.setStatusTip("Range")
         self._rangeAction.triggered.connect(self._showImageProperties)
 

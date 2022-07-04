@@ -331,8 +331,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                                   float(first_layer.IsocenterPosition[2])]
         beam.gantryAngle = float(first_layer.GantryAngle)
         beam.patientSupportAngle = float(first_layer.PatientSupportAngle)
-        # beam.FinalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
-        FinalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
+        finalCumulativeMetersetWeight = float(dcm_beam.FinalCumulativeMetersetWeight)
 
         # find corresponding beam in FractionGroupSequence (beam order may be different from IonBeamSequence)
         ReferencedBeam_id = next((x for x, val in enumerate(dcm.FractionGroupSequence[0].ReferencedBeamSequence) if
@@ -342,10 +341,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
             print("This beam is therefore discarded.")
             continue
         else:
-            # beam.BeamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
-            BeamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
-
-        # self.TotalMeterset += beam.BeamMeterset
+            beamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
 
         if dcm_beam.NumberOfRangeShifters == 0:
             # beam.rangeShifter.ID = ""
@@ -388,8 +384,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 ReferencedRangeShifterNumber = int(
                     first_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber)
 
-        CumulativeMeterset = 0
-
         for dcm_layer in dcm_beam.IonControlPointSequence:
             if (plan.scanMode == "MODULATED"):
                 if dcm_layer.NumberOfScanSpotPositions == 1:
@@ -406,7 +400,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
             layer = PlanIonLayer()
             layer.seriesInstanceUID = plan.seriesInstanceUID
 
-
             if hasattr(dcm_layer, 'SnoutPosition'):
                 SnoutPosition = float(dcm_layer.SnoutPosition)
 
@@ -416,13 +409,14 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.numberOfPaintings = 1
 
             layer.nominalEnergy = float(dcm_layer.NominalBeamEnergy)
+            layer.scalingFactor = beamMeterset / finalCumulativeMetersetWeight
 
             if (plan.scanMode == "MODULATED"):
                 _x = dcm_layer.ScanSpotPositionMap[0::2]
                 _y = dcm_layer.ScanSpotPositionMap[1::2]
-                w = np.array(
-                    dcm_layer.ScanSpotMetersetWeights) * BeamMeterset / FinalCumulativeMetersetWeight  # spot weights are converted to MU
-                layer.appendSpot(_x, _y, w)
+                mu = np.array(
+                    dcm_layer.ScanSpotMetersetWeights) * layer.scalingFactor  # spot weights are converted to MU
+                layer.appendSpot(_x, _y, mu)
 
             elif (plan.scanMode == "LINE"):
                 raise NotImplementedError()
@@ -437,7 +431,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.LineScanControlPoint_Weights = np.frombuffer(dcm_layer[0x300b1096].value,
                                                                    dtype=np.float32).tolist()
                 layer.LineScanControlPoint_MU = np.array(
-                    layer.LineScanControlPoint_Weights) * beam.BeamMeterset / beam.FinalCumulativeMetersetWeight  # weights are converted to MU
+                    layer.LineScanControlPoint_Weights) * layer.scalingFactor  # weights are converted to MU
                 if layer.LineScanControlPoint_MU.size == 1:
                     layer.LineScanControlPoint_MU = [layer.LineScanControlPoint_MU]
                 else:
@@ -532,7 +526,7 @@ def writeRTPlan(plan: RTPlan, filePath):
         dcm_beam.RadiationType = "PROTON"
         dcm_beam.ScanMode = "MODULATED"
         dcm_beam.TreatmentDeliveryType = "TREATMENT"
-        dcm_beam.FinalCumulativeMetersetWeight = beam.meterset
+        dcm_beam.FinalCumulativeMetersetWeight = plan.beamCumulativeMetersetWeight[beamNumber]
         dcm_beam.BeamNumber = beamNumber
 
         rangeShifter = beam.rangeShifter
@@ -562,7 +556,7 @@ def writeRTPlan(plan: RTPlan, filePath):
             dcm_layer.NumberOfPaintings = layer.numberOfPaintings
             dcm_layer.NominalBeamEnergy = layer.nominalEnergy
             dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
-            dcm_layer.ScanSpotMetersetWeights = layer.spotWeights.tolist()
+            dcm_layer.ScanSpotMetersetWeights = layer.spotMUs.tolist()
             dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]
@@ -581,3 +575,102 @@ def writeRTPlan(plan: RTPlan, filePath):
             dcm_beam.IonControlPointSequence.append(dcm_layer)
 
     dcm_file.save_as(filePath)
+
+def writeRTDose(dose:DoseImage, outputFile):
+    SOPInstanceUID = pydicom.uid.generate_uid()
+
+    # meta data
+    meta = pydicom.dataset.FileMetaDataset()
+    meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+    # meta.ImplementationClassUID = '1.2.826.0.1.3680043.1.2.100.5.7.0.47' # from RayStation
+    meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'  # modified
+    # meta.FileMetaInformationGroupLength =
+    # meta.FileMetaInformationVersion =
+
+    # dicom dataset
+    dcm_file = pydicom.dataset.FileDataset(outputFile, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
+    dcm_file.SOPInstanceUID = SOPInstanceUID
+    # dcm_file.ImplementationVersionName =
+    # dcm_file.SpecificCharacterSet =
+    # dcm_file.AccessionNumber =
+    # dcm_file.SoftwareVersion =
+
+    # patient information
+    patient = dose.patient
+    if not (patient is None):
+        dcm_file.PatientName = patient.name
+        dcm_file.PatientID = patient.id
+        dcm_file.PatientBirthDate = patient.birthDate
+        dcm_file.PatientSex = patient.sex
+
+    # content information
+    dt = datetime.datetime.now()
+    dcm_file.ContentDate = dt.strftime('%Y%m%d')
+    dcm_file.ContentTime = dt.strftime('%H%M%S.%f')
+    dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
+    dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
+    dcm_file.Modality = 'RTDOSE'
+    dcm_file.Manufacturer = 'OpenMCsquare'
+    dcm_file.ManufacturerModelName = 'OpenTPS'
+    dcm_file.SeriesDescription = dose.name
+    dcm_file.StudyInstanceUID = pydicom.uid.generate_uid()
+    #dcm_file.StudyID = self.StudyInfo.StudyID
+    #dcm_file.StudyDate = self.StudyInfo.StudyDate
+    #dcm_file.StudyTime = self.StudyInfo.StudyTime
+    dcm_file.SeriesInstanceUID = dose.seriesInstanceUID
+    dcm_file.SeriesNumber = 1
+    dcm_file.InstanceNumber = 1
+    dcm_file.PatientOrientation = ''
+    #dcm_file.FrameOfReferenceUID = self.FrameOfReferenceUID
+    dcm_file.DoseUnits = 'GY'
+    dcm_file.DoseType = 'PHYSICAL'  # or 'EFFECTIVE' for RBE dose (but RayStation exports physical dose even if 1.1 factor is already taken into account)
+    dcm_file.DoseSummationType = 'PLAN'
+    ReferencedPlan = pydicom.dataset.Dataset()
+    ReferencedPlan.ReferencedSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.8"  # ion plan
+    # if (plan_uid == []):
+    #     ReferencedPlan.ReferencedSOPInstanceUID = self.Plan_SOPInstanceUID
+    # else:
+    #     ReferencedPlan.ReferencedSOPInstanceUID = plan_uid
+    dcm_file.ReferencedRTPlanSequence = pydicom.sequence.Sequence([ReferencedPlan])
+    # dcm_file.ReferringPhysicianName
+    # dcm_file.OperatorName
+
+    # image information
+    dcm_file.Width = dose.gridSize[0]
+    dcm_file.Columns = dcm_file.Width
+    dcm_file.Height = dose.gridSize[1]
+    dcm_file.Rows = dcm_file.Height
+    dcm_file.NumberOfFrames = dose.gridSize[2]
+    dcm_file.SliceThickness = dose.spacing[2]
+    dcm_file.PixelSpacing = dose.spacing[0:2]
+    dcm_file.ColorType = 'grayscale'
+    dcm_file.ImagePositionPatient = dose.origin
+    dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
+                                        0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
+    dcm_file.SamplesPerPixel = 1
+    dcm_file.PhotometricInterpretation = 'MONOCHROME2'
+    dcm_file.FrameIncrementPointer = pydicom.tag.Tag((0x3004, 0x000c))
+    dcm_file.GridFrameOffsetVector = list(
+        np.arange(0, dose.gridSize[2] * dose.gridSize[2], dose.gridSize[2]))
+
+    # transfer syntax
+    dcm_file.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+    dcm_file.is_little_endian = True
+    dcm_file.is_implicit_VR = False
+
+    # image data
+    dcm_file.BitDepth = 16
+    dcm_file.BitsAllocated = 16
+    dcm_file.BitsStored = 16
+    dcm_file.HighBit = 15
+    dcm_file.PixelRepresentation = 0  # 0=unsigned, 1=signed
+    dcm_file.DoseGridScaling = dose.imageArray.max() / (2 ** dcm_file.BitDepth - 1)
+    dcm_file.PixelData = (dose.imageArray / dcm_file.DoseGridScaling).astype(np.uint16).transpose(2, 1, 0).tostring()
+
+    # print(dcm_file)
+
+    # save dicom file
+    print("Export dicom RTDOSE: " + outputFile)
+    dcm_file.save_as(outputFile)
