@@ -31,7 +31,7 @@ if __name__ == '__main__':
     resultFolder = '/test10/'
     resultDataFolder = 'data/'
 
-    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'#'/dynModAndROIs_bodyCropped.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
     # parameters selection ------------------------------------
@@ -76,27 +76,27 @@ if __name__ == '__main__':
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
         print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
-        dynMod, GTVMask = applyBaselineShift(dynMod, GTVMask, baselineShift)
+        dynModCopy, GTVMaskCopy = applyBaselineShift(dynModCopy, GTVMaskCopy, baselineShift)
     else:
         print('Not implemented in this script --> must use the get contour by name function')
 
     print('-' * 50)
-    translateData(dynMod, translationInMM=translation)
-    translateData(GTVMask, translationInMM=translation)
+    translateData(dynModCopy, translationInMM=translation)
+    translateData(GTVMaskCopy, translationInMM=translation)
 
     print('-'*50)
-    rotateData(dynMod, rotationInDeg=rotation)
-    rotateData(GTVMask, rotationInDeg=rotation)
+    rotateData(dynModCopy, rotationInDeg=rotation)
+    rotateData(GTVMaskCopy, rotationInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask, newMask3DCOM = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
-    shrinkedDynMod.name = 'MidP_ShrinkedGTV'
+    dynModCopy, GTVMaskCopy, newMask3DCOM = shrinkOrgan(dynModCopy, GTVMaskCopy, shrinkSize=shrinkSize)
+    #shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     print('-' * 50)
 
     stopTime = time.time()
     print('time:', stopTime-startTime)
-   
+    """
     patient.appendPatientData(shrinkedDynMod)
     patient.appendPatientData(shrinkedOrganMask)
 
@@ -113,6 +113,6 @@ if __name__ == '__main__':
     ax[3].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :])
     ax[3].set_title('mask difference')
     plt.show()
-
+    """
     ## to save the model with inter fraction changes applied
     # saveSerializedObjects(patient, savingPath + 'interFracChanged_ModelAndROIs')

@@ -39,6 +39,11 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
 
         ## get the shrink size in voxels
         print('Shrink size in mm:', shrinkSize)
+        for i in range(3):
+            if shrinkSize[i] < 0:
+                shrinkSize[i] = 0
+                print("Shrink size negative is not already implemented. The new vector in mm is: ", shrinkSize)
+              
         shrinkSizeInVoxels = np.round(shrinkSize / model.midp.spacing).astype(np.uint8)
 
         # print('Shrink in a direction but not in another not implemented yet, minimum values in voxels is [1, 1, 1]')
@@ -200,7 +205,7 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
             print('Rotate the Dynamic3DModel of', rotationInDeg, 'degrees')
             print('Rotate dynamic 3D model - midp image')
             rotateData(data.midp, rotationInDeg=rotationInDeg)
-
+            
             for field in data.deformationList:
                 if field.velocity != None:
                     print('Rotate dynamic 3D model - velocity field')
@@ -248,7 +253,6 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
                 for i in range(3):
                     if rotationInDeg[i] != 0:
                         rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i)
-
 
 ## --------------------------------------------------------------------------------------
 def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
