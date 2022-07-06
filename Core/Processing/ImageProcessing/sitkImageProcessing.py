@@ -1,7 +1,7 @@
 
 import time
 from typing import Optional, Sequence, Union
-
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from Core.Data.Images.vectorField3D import VectorField3D
@@ -147,14 +147,14 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray,
 def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
     centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     imgType = image.imageArray.dtype
-
+    
     img = image3DToSITK(image)
     if tform.shape[1] == 4:
         translation = tform[0:-1, -1]
         tform = tform[0:-1, 0:-1]
-
+    
     dimension = img.GetDimension()
-
+    
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
@@ -187,16 +187,12 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     reference_image.SetOrigin(output_origin)
     reference_image.SetSpacing(image.spacing.tolist())
     reference_image.SetDirection(img.GetDirection())
-
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
-
     outData = np.array(sitk.GetArrayFromImage(outImg))
     if imgType == bool:
         outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
-
     outData = np.swapaxes(outData, 0, 2)
-
     image.imageArray = outData
     image.origin = output_origin
 
@@ -224,7 +220,6 @@ def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
 
     r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
-
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
 
 
