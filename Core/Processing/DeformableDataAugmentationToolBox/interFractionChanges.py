@@ -59,11 +59,12 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
             structuralElementDilationYZ = rectangle(3, 3)
             structuralElementDilationXYZ = np.stack([structuralElementDilationYZ for _ in range(3)])
 
-            print('Structural element shape:', structuralElementErosionXYZ.shape)
-            fig = plt.figure(figsize=(8, 8))
-            ax = fig.add_subplot(1, 1, 1, projection=Axes3D.name)
-            ax.voxels(structuralElementErosionXYZ)
-            plt.show()
+            ## to visualize the used structural element
+            # print('Structural element shape:', structuralElementErosionXYZ.shape)
+            # fig = plt.figure(figsize=(8, 8))
+            # ax = fig.add_subplot(1, 1, 1, projection=Axes3D.name)
+            # ax.voxels(structuralElementErosionXYZ)
+            # plt.show()
 
             ## apply an erosion and dilation using Cupy
             cupyOrganMask = cupy.asarray(organMask.imageArray)
@@ -75,26 +76,22 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
             organROIMaskCopy.imageArray = erodedOrganMask
             erodedMaskCOM = organROIMaskCopy.centerOfMass
 
+            ## get the eroded and dilated band masks
             erodedBand = organMask.imageArray ^ erodedOrganMask
             dilatedBand = dilatedOrganMask ^ organMask.imageArray
 
-            plt.figure()
-            plt.subplot(1, 2, 1)
-            plt.imshow(erodedBand[:, organCOMInVoxels[1], :])
-            plt.subplot(1, 2, 2)
-            plt.imshow(dilatedBand[:, organCOMInVoxels[1], :])
-            plt.show()
+            # ## to visualize the eroded and dilated band masks
+            # plt.figure()
+            # plt.subplot(1, 2, 1)
+            # plt.imshow(erodedBand[:, organCOMInVoxels[1], :])
+            # plt.subplot(1, 2, 2)
+            # plt.imshow(dilatedBand[:, organCOMInVoxels[1], :])
+            # plt.show()
 
+
+            ## to get the bands coordinates
             erodedBandPoints = np.argwhere(erodedBand == 1)
             dilatedBandPoints = np.argwhere(dilatedBand == 1)
-
-            # print(erodedBandPoints[:, 0])
-
-
-            # print(model.midp.gridSize)
-            # print(np.min(erodedBandPoints[:, 0]), np.max(erodedBandPoints[:, 0]))
-            # print(np.min(erodedBandPoints[:, 1]), np.max(erodedBandPoints[:, 1]))
-            # print(np.min(erodedBandPoints[:, 2]), np.max(erodedBandPoints[:, 2]))
 
             newArray = copy.deepcopy(model.midp.imageArray)
 
@@ -108,13 +105,9 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
                 ##
                 dilBandPointsAndDists = np.concatenate((dilatedBandPoints, distances), axis=1)
 
-                # print(dilBandPointsAndDists[:5])
-
                 ##
                 sortedPointAndDists = dilBandPointsAndDists[dilBandPointsAndDists[:, 3].argsort()]
 
-                # print(sortedPointAndDists.shape)
-                # print(sortedPointAndDists[:5])
 
                 ## take closest 10% of points
                 sortedPointAndDists = sortedPointAndDists[:int((2 / 100) * dilBandPointsAndDists.shape[0])]
