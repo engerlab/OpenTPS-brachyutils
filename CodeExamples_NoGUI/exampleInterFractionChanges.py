@@ -61,7 +61,7 @@ if __name__ == '__main__':
     baselineShift = [0, 0, 0]
     translation = [0, 0, 0]
     rotation = [0, 0, 0]
-    shrinkSize = [5, 5, 5]
+    shrinkSize = [2, 2, 2]
 
     # GPU used
     usedGPU = 0
@@ -131,25 +131,17 @@ if __name__ == '__main__':
     else:
         print('Not implemented in this script --> must use the get contour by name function')
 
-    print(dynMod.midp.gridSize)
-
     print('-' * 50)
     translateData(dynMod, translationInMM=translation)
     translateData(GTVMask, translationInMM=translation)
-
-    print(dynMod.midp.gridSize)
 
     print('-'*50)
     rotateData(dynMod, rotationInDeg=rotation)
     rotateData(GTVMask, rotationInDeg=rotation)
 
-    print(dynMod.midp.gridSize)
-
     print('-' * 50)
     shrinkedDynMod, shrinkedOrganMask, newMask3DCOM = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
-
-    print(dynMod.midp.gridSize)
 
     print('-' * 50)
 
@@ -172,6 +164,3 @@ if __name__ == '__main__':
     ax[3].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :])
     ax[3].set_title('mask difference')
     plt.show()
-
-    ## to save the model with inter fraction changes applied
-    # saveSerializedObjects(patient, savingPath + 'interFracChanged_ModelAndROIs')
