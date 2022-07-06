@@ -36,7 +36,7 @@ from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods imp
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_4'
+    patientFolder = 'Patient_12'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
@@ -44,15 +44,16 @@ if __name__ == '__main__':
 
     ## sequence duration, sampling and signal's regularity
     regularityIndex = 1
-    numberOfSequences = 5
+    numberOfSequences = 1
+    numberOfImages = 5
     sequenceDurationInSecs = 5#205
     samplingFrequency = 5
     #subSequenceSize = 20
     outputSize = [64, 64]
     GPUNumber = 0
     ## ROI choice and crop options 
-    bodyContourToUse = 'Body'#'patient'#'external'#'Body'
-    targetContourToUse = 'GTV T'#'gtv t'#'GTVp'#'GTV T'
+    bodyContourToUse = 'patient'#'external'#'Body'
+    targetContourToUse = 'gtv t'#'GTVp'#'GTV T'
     lungContourToUse = 'R lung'
     contourToAddShift = targetContourToUse
     """
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     #number of experience to generate
     #one experience corresponds to 5 sequences
     for idxExp in range(1,2):
-        resultFolder = regularityFolder + '/sim5k/InterFraction/Training/exp' + str(idxExp) + '/'
+        resultFolder = regularityFolder + '/sim5k/Test/Training/exp' + str(idxExp) + '/'
         resultDataFolder = 'data/'
     
         dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'#'/dynModAndROIs_bodyCropped.p'
@@ -160,191 +161,192 @@ if __name__ == '__main__':
         
         dynModCopy = copy.deepcopy(dynMod)
         GTVMaskCopy = copy.deepcopy(GTVMask)
-        
-        shrinkValue = unif(0,3)
-        # interfraction changes parameters
-        baselineShift = [-2, 0, 0]#[unif(-5,5), unif(-5,5), unif(-5,5)]
-        translation = [-20, 0, 10]#[unif(-3,3), unif(-3,3), unif(-3,3)]
-        rotation = [0,5,0]#[unif(-2,2), unif(-2,2), 0]
-        shrinkSize = [1,1,2]#[shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5)]
-        
-        dynModCopy = copy.deepcopy(dynMod)
-        GTVMaskCopy = copy.deepcopy(GTVMask)
-    
-        startTime = time.time()
-    
-        print('-' * 50)
-        if contourToAddShift == targetContourToUse:
-            print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
-            dynModCopy, GTVMaskCopy = applyBaselineShift(dynModCopy, GTVMaskCopy, baselineShift)
-        else:
-            print('Not implemented in this script --> must use the get contour by name function')
-    
-        print('-' * 50)
-        translateData(dynModCopy, translationInMM=translation)
-        translateData(GTVMaskCopy, translationInMM=translation)
-    
-        print('-'*50)
-        rotateData(dynModCopy, rotationInDeg=rotation)
-        rotateData(GTVMaskCopy, rotationInDeg=rotation)
-    
-        print('-' * 50)
-        dynModCopy, GTVMaskCopy, newMask3DCOM = shrinkOrgan(dynModCopy, GTVMaskCopy, shrinkSize=shrinkSize)
-        #shrinkedDynMod.name = 'MidP_ShrinkedGTV'
-    
-        print('-' * 50)
-    
-        stopTime = time.time()
-        print('time:', stopTime-startTime)
-        print('time:', stopTime-startTime)
-        #patient.appendPatientData(shrinkedDynMod)
-        #patient.appendPatientData(shrinkedOrganMask)
-        
-        if amplitude == 'model':
-            ## to get amplitude from model !!! it takes some time because 10 displacement fields must be computed just for this
-            modelValues = getAverageModelValuesAroundPosition(gtvCenterOfMass, dynModCopy, dimensionUsed='Z')
-            amplitude = np.max(modelValues) - np.min(modelValues)
-            valZ = modelValues
-            valX = getAverageModelValuesAroundPosition(gtvCenterOfMass, dynModCopy, dimensionUsed='X')
-            valY = getAverageModelValuesAroundPosition(gtvCenterOfMass, dynModCopy, dimensionUsed='Y')
-            print("Dim X",gtvCenterOfMass[0]+np.max(valX),gtvCenterOfMass[0]+np.min(valX))
-            print("Dim Y",gtvCenterOfMass[1]+np.max(valZ),gtvCenterOfMass[1]+np.min(valY))
-            print("Dim Z",gtvCenterOfMass[2]+np.max(valZ),gtvCenterOfMass[2]+np.min(valZ))
-            print('Amplitude of deformation at ROI center of mass', amplitude)
-        
-        for seqIdx in range(numberOfSequences):
+        for idxImg in range(numberOfImages):
+            shrinkValue = unif(0,3)
+            # interfraction changes parameters
+            baselineShift = [unif(-5,5), unif(-5,5), unif(-5,5)]
+            translation = [unif(-3,3), unif(-3,3), unif(-3,3)]
+            rotation = [unif(-2,2), unif(-2,2), 0]
+            shrinkSize = [shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5), shrinkValue+np.random.normal(0,0.5)]
             
-            ## Signal creation
-            if regularityIndex == 1:
-                varianceNoise = np.random.uniform(0.5,1.5)
-                coeffMin = 0.10
-                coeffMax = 0.15
-                meanEvent = 1/60
-                meanEventApnea = 0/120
-            elif regularityIndex == 2:
-                varianceNoise = np.random.uniform(1.5,2.5)
-                coeffMin = 0.10
-                coeffMax = 0.45
-                meanEvent = 1/30
-                meanEventApnea = 0/120
-            elif regularityIndex == 3:
-                varianceNoise = np.random.uniform(2.5,3.5)
-                coeffMin = 0.10
-                coeffMax = 0.45
-                meanEvent = 1/20
-                meanEventApnea = 1/120
-            else:
-                print("Regularity index error. Choose an index between 1 and 3.")
-                
-            newSignal = SyntheticBreathingSignal(amplitude=amplitude,
-                                                 breathingPeriod=breathingPeriod,
-                                                 meanNoise=meanNoise,
-                                                 varianceNoise=varianceNoise,
-                                                 samplingPeriod=samplingPeriod,
-                                                 simulationTime=sequenceDurationInSecs,
-                                                 coeffMin=coeffMin,
-                                                 coeffMax=coeffMax,
-                                                 meanEvent=meanEvent,
-                                                 meanEventApnea=meanEventApnea)
-        
-            newSignal.generate1DBreathingSignal()
-        
-            pointList = [gtvCenterOfMass]
-            pointVoxelList = [gtvCenterOfMassInVoxels]
-            signalList = [newSignal.breathingSignal]
-        
-            saveSerializedObjects([signalList, pointList], savingPath + 'ROIsAndSignalObjects')
-        
-            ## to show signals and ROIs
-            ## -------------------------------------------------------------
-            prop_cycle = plt.rcParams['axes.prop_cycle']
-            colors = prop_cycle.by_key()['color']
-            plt.figure(figsize=(12, 6))
-            signalAx = plt.subplot(2, 1, 2)
-        
-            for pointIndex, point in enumerate(pointList):
-                ax = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 1)
-                ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
-                ax.imshow(np.rot90(dynModCopy.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
-                ax.imshow(np.rot90(GTVMaskCopy.imageArray[:, pointVoxelList[pointIndex][1], :]), alpha=0.3)
-                ax.scatter([pointVoxelList[pointIndex][0]], [dynModCopy.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
-                           c=colors[pointIndex], marker="x", s=100)
-                ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
-                ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
-                ax2.imshow(np.rot90(dynModCopy.midp.imageArray[:, :, pointVoxelList[pointIndex][2]], 3))
-                ax2.imshow(np.rot90(GTVMaskCopy.imageArray[:, :, pointVoxelList[pointIndex][2]], 3), alpha=0.3)
-                ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]],
-                           c=colors[pointIndex], marker="x", s=100)
-                signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
-        
-            signalAx.set_xlabel('Time (s)')
-            signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
-            plt.savefig(savingPath + 'ROI_And_Signals_fig.pdf', dpi=300)
-            plt.show()
-        
-            ## -------------------------------------------------------------
-        
-            sequenceSize = newSignal.breathingSignal.shape[0]
-            print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', maxMultiProcUse)
-        
-            subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
-            subSequencesIndexes.append(sequenceSize)
-            print('Sub sequences indexes', subSequencesIndexes)
-        
-            resultList = []
-        
-            if subSequenceSize > maxMultiProcUse:  ## re-adjust the subSequenceSize since this will be done in multi processing
-                subSequenceSize = maxMultiProcUse
-                print('SubSequenceSize put to', maxMultiProcUse, 'for multiprocessing.')
-                print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', maxMultiProcUse)
-                subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
-                subSequencesIndexes.append(sequenceSize)
+            dynModCopy = copy.deepcopy(dynMod)
+            GTVMaskCopy = copy.deepcopy(GTVMask)
         
             startTime = time.time()
-            for i in range(len(subSequencesIndexes) - 1):
-                print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
         
-                deformationList = generateDeformationListFromBreathingSignalsAndModel(dynModCopy,
-                                                                                        signalList,
-                                                                                        pointList,
-                                                                                        signalIdxUsed=[subSequencesIndexes[i],
-                                                                                                        subSequencesIndexes[
-                                                                                                            i + 1]],
-                                                                                        dimensionUsed='Z',
-                                                                                        outputType=np.float32)
+            print('-' * 50)
+            if contourToAddShift == targetContourToUse:
+                print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
+                dynModCopy, GTVMaskCopy = applyBaselineShift(dynModCopy, GTVMaskCopy, baselineShift)
+            else:
+                print('Not implemented in this script --> must use the get contour by name function')
         
+            print('-' * 50)
+            translateData(dynModCopy, translationInMM=translation)
+            translateData(GTVMaskCopy, translationInMM=translation)
         
-                print('Start multi process deformation with', len(deformationList), 'deformations')
-                deformedImgMaskAnd3DCOMList = multiProcDeform(deformationList, dynModCopy, GTVMaskCopy)
-                
-                if i == 0:
-                    plt.figure()
-                    plt.imshow(deformedImgMaskAnd3DCOMList[-1][0].imageArray[:,:,50])
-                    plt.imshow(deformedImgMaskAnd3DCOMList[-1][1].imageArray[:,:,50], alpha=0.5)
-                    plt.savefig(savingPath + 'resultDeform.pdf', dpi=300)
+            print('-'*50)
+            rotateData(dynModCopy, rotationInDeg=rotation)
+            rotateData(GTVMaskCopy, rotationInDeg=rotation)
         
-                print('Start multi process DRRs with', len(deformationList), 'pairs of image-mask')
-                projectionResults = []
-                projectionResults += multiProcDRRs(deformedImgMaskAnd3DCOMList, projAngle, projAxis, outputSize)
+            print('-' * 50)
+            dynModCopy, GTVMaskCopy, newMask3DCOM = shrinkOrgan(dynModCopy, GTVMaskCopy, shrinkSize=shrinkSize)
+            #shrinkedDynMod.name = 'MidP_ShrinkedGTV'
         
-                if i == 0:
-                    plt.figure()
-                    plt.imshow(projectionResults[-1][0])
-                    plt.imshow(projectionResults[-1][1], alpha=0.5)
-                    plt.savefig(savingPath + 'resultDRR.pdf', dpi=300)
-                    plt.show()
-        
-                ## add 3D center of mass in scanner coordinates to the result lists
-                for imgIndex in range(len(projectionResults)):
-                    projectionResults[imgIndex].append(deformedImgMaskAnd3DCOMList[imgIndex][2])
-        
-                resultList += projectionResults
-                print('ResultList lenght', len(resultList))
+            print('-' * 50)
         
             stopTime = time.time()
-        
-            print('Script with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
-            print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
-        
-            serieSavingPath = savingPath + resultDataFolder + patientFolder + f'_{sequenceSize}_DRRMasksAndCOM_serie_{seqIdx}'
-            saveSerializedObjects(resultList, serieSavingPath)
+            print('time for data augmentation: ', stopTime-startTime)
+            
+            #patient.appendPatientData(shrinkedDynMod)
+            #patient.appendPatientData(shrinkedOrganMask)
+            
+            if amplitude == 'model':
+                ## to get amplitude from model !!! it takes some time because 10 displacement fields must be computed just for this
+                modelValues = getAverageModelValuesAroundPosition(gtvCenterOfMass, dynModCopy, dimensionUsed='Z')
+                amplitude = np.max(modelValues) - np.min(modelValues)
+                valZ = modelValues
+                valX = getAverageModelValuesAroundPosition(gtvCenterOfMass, dynModCopy, dimensionUsed='X')
+                valY = getAverageModelValuesAroundPosition(gtvCenterOfMass, dynModCopy, dimensionUsed='Y')
+                print("Dim X",gtvCenterOfMass[0]+np.max(valX),gtvCenterOfMass[0]+np.min(valX))
+                print("Dim Y",gtvCenterOfMass[1]+np.max(valZ),gtvCenterOfMass[1]+np.min(valY))
+                print("Dim Z",gtvCenterOfMass[2]+np.max(valZ),gtvCenterOfMass[2]+np.min(valZ))
+                print('Amplitude of deformation at ROI center of mass', amplitude)
+            
+            for seqIdx in range(numberOfSequences):
+                
+                ## Signal creation
+                if regularityIndex == 1:
+                    varianceNoise = np.random.uniform(0.5,1.5)
+                    coeffMin = 0.10
+                    coeffMax = 0.15
+                    meanEvent = 1/60
+                    meanEventApnea = 0/120
+                elif regularityIndex == 2:
+                    varianceNoise = np.random.uniform(1.5,2.5)
+                    coeffMin = 0.10
+                    coeffMax = 0.45
+                    meanEvent = 1/30
+                    meanEventApnea = 0/120
+                elif regularityIndex == 3:
+                    varianceNoise = np.random.uniform(2.5,3.5)
+                    coeffMin = 0.10
+                    coeffMax = 0.45
+                    meanEvent = 1/20
+                    meanEventApnea = 1/120
+                else:
+                    print("Regularity index error. Choose an index between 1 and 3.")
+                    
+                newSignal = SyntheticBreathingSignal(amplitude=amplitude,
+                                                     breathingPeriod=breathingPeriod,
+                                                     meanNoise=meanNoise,
+                                                     varianceNoise=varianceNoise,
+                                                     samplingPeriod=samplingPeriod,
+                                                     simulationTime=sequenceDurationInSecs,
+                                                     coeffMin=coeffMin,
+                                                     coeffMax=coeffMax,
+                                                     meanEvent=meanEvent,
+                                                     meanEventApnea=meanEventApnea)
+            
+                newSignal.generate1DBreathingSignal()
+            
+                pointList = [gtvCenterOfMass]
+                pointVoxelList = [gtvCenterOfMassInVoxels]
+                signalList = [newSignal.breathingSignal]
+            
+                saveSerializedObjects([signalList, pointList], savingPath + 'ROIsAndSignalObjects')
+            
+                ## to show signals and ROIs
+                ## -------------------------------------------------------------
+                prop_cycle = plt.rcParams['axes.prop_cycle']
+                colors = prop_cycle.by_key()['color']
+                plt.figure(figsize=(12, 6))
+                signalAx = plt.subplot(2, 1, 2)
+            
+                for pointIndex, point in enumerate(pointList):
+                    ax = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 1)
+                    ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
+                    ax.imshow(np.rot90(dynModCopy.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
+                    ax.imshow(np.rot90(GTVMaskCopy.imageArray[:, pointVoxelList[pointIndex][1], :]), alpha=0.3)
+                    ax.scatter([pointVoxelList[pointIndex][0]], [dynModCopy.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
+                               c=colors[pointIndex], marker="x", s=100)
+                    ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
+                    ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
+                    ax2.imshow(np.rot90(dynModCopy.midp.imageArray[:, :, pointVoxelList[pointIndex][2]], 3))
+                    ax2.imshow(np.rot90(GTVMaskCopy.imageArray[:, :, pointVoxelList[pointIndex][2]], 3), alpha=0.3)
+                    ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]],
+                               c=colors[pointIndex], marker="x", s=100)
+                    signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
+            
+                signalAx.set_xlabel('Time (s)')
+                signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
+                plt.savefig(savingPath + 'ROI_And_Signals_fig.pdf', dpi=300)
+                plt.show()
+            
+                ## -------------------------------------------------------------
+            
+                sequenceSize = newSignal.breathingSignal.shape[0]
+                print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', maxMultiProcUse)
+            
+                subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
+                subSequencesIndexes.append(sequenceSize)
+                print('Sub sequences indexes', subSequencesIndexes)
+            
+                resultList = []
+            
+                if subSequenceSize > maxMultiProcUse:  ## re-adjust the subSequenceSize since this will be done in multi processing
+                    subSequenceSize = maxMultiProcUse
+                    print('SubSequenceSize put to', maxMultiProcUse, 'for multiprocessing.')
+                    print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize, '. Multiprocessing =', maxMultiProcUse)
+                    subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize / subSequenceSize))]
+                    subSequencesIndexes.append(sequenceSize)
+            
+                startTime = time.time()
+                for i in range(len(subSequencesIndexes) - 1):
+                    print('Creating deformations for images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
+            
+                    deformationList = generateDeformationListFromBreathingSignalsAndModel(dynModCopy,
+                                                                                            signalList,
+                                                                                            pointList,
+                                                                                            signalIdxUsed=[subSequencesIndexes[i],
+                                                                                                            subSequencesIndexes[
+                                                                                                                i + 1]],
+                                                                                            dimensionUsed='Z',
+                                                                                            outputType=np.float32)
+            
+            
+                    print('Start multi process deformation with', len(deformationList), 'deformations')
+                    deformedImgMaskAnd3DCOMList = multiProcDeform(deformationList, dynModCopy, GTVMaskCopy)
+                    
+                    if i == 0:
+                        plt.figure()
+                        plt.imshow(deformedImgMaskAnd3DCOMList[-1][0].imageArray[:,:,50])
+                        plt.imshow(deformedImgMaskAnd3DCOMList[-1][1].imageArray[:,:,50], alpha=0.5)
+                        plt.savefig(savingPath + 'resultDeform.pdf', dpi=300)
+            
+                    print('Start multi process DRRs with', len(deformationList), 'pairs of image-mask')
+                    projectionResults = []
+                    projectionResults += multiProcDRRs(deformedImgMaskAnd3DCOMList, projAngle, projAxis, outputSize)
+            
+                    if i == 0:
+                        plt.figure()
+                        plt.imshow(projectionResults[-1][0])
+                        plt.imshow(projectionResults[-1][1], alpha=0.5)
+                        plt.savefig(savingPath + 'resultDRR.pdf', dpi=300)
+                        plt.show()
+            
+                    ## add 3D center of mass in scanner coordinates to the result lists
+                    for imgIndex in range(len(projectionResults)):
+                        projectionResults[imgIndex].append(deformedImgMaskAnd3DCOMList[imgIndex][2])
+            
+                    resultList += projectionResults
+                    print('ResultList lenght', len(resultList))
+            
+                stopTime = time.time()
+            
+                print('Script with multiprocessing. Sub-sequence size:', str(subSequenceSize), 'and total sequence size:', len(resultList), 'finished in', np.round(stopTime - startTime, 2) / 60, 'minutes')
+                print(np.round((stopTime - startTime) / len(resultList), 2), 'sec per sample')
+                
+                #serieSavingPath = savingPath + resultDataFolder + patientFolder + f'_{sequenceSize}_DRRMasksAndCOM_serie_{seqIdx}'
+                serieSavingPath = savingPath + resultDataFolder + patientFolder + f'_{sequenceSize}_DRRMasksAndCOM_serie_{idxImg}'
+                saveSerializedObjects(resultList, serieSavingPath)
