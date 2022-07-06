@@ -26,7 +26,7 @@ from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
 if __name__ == '__main__':
 
     ## paths selection ------------------------------------
-    basePath = 'D:/ImageData/lung/Patient_4/1/FDG1/'
+    basePath = 'D:/ImageData/lung/Patient_12/1/FDG1/'
     dataPath = basePath + 'dynModAndROIs_bodyCropped.p'
     savingPath = basePath
 
@@ -44,19 +44,24 @@ if __name__ == '__main__':
 
 
     # parameters selection ------------------------------------
-    bodyContourToUse = 'Body'
-    targetContourToUse = 'GTV T'
-    lungContourToUse = 'R lung'
+    bodyContourToUse = 'patient'
+    targetContourToUse = 'gtv t'
+    lungContourToUse = 'r lung'
+
+    # bodyContourToUse = 'Body'
+    # targetContourToUse = 'GTV T'
+    # lungContourToUse = 'R lung'
+
     contourToAddShift = targetContourToUse
 
     croppingContoursUsedXYZ = [targetContourToUse, bodyContourToUse, targetContourToUse]
     marginInMM = [50, 0, 100]
 
     # interfraction changes parameters
-    baselineShift = [-2, 0, 0]
-    translation = [-20, 0, -10]
-    rotation = [0, 5, 3]
-    shrinkSize = [3, 0, 0]
+    baselineShift = [0, 0, 0]
+    translation = [0, 0, 0]
+    rotation = [0, 0, 0]
+    shrinkSize = [5, 5, 5]
 
     # GPU used
     usedGPU = 0
@@ -104,15 +109,15 @@ if __name__ == '__main__':
     GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize,
                                        spacing=dynMod.midp.spacing)
 
-    fig, ax = plt.subplots(1, 3)
-    fig.suptitle('Example of baseline shift, translate, rotate and shrink')
-    ax[0].imshow(dynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    ax[0].imshow(GTVMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
-    ax[1].imshow(dynMod.midp.imageArray[GTVCenterOfMassInVoxels[0], :, :])
-    ax[1].imshow(GTVMask.imageArray[GTVCenterOfMassInVoxels[0], :, :], alpha=0.5)
-    ax[2].imshow(dynMod.midp.imageArray[:, :, GTVCenterOfMassInVoxels[2]])
-    ax[2].imshow(GTVMask.imageArray[:, :, GTVCenterOfMassInVoxels[2]], alpha=0.5)
-    plt.show()
+    # fig, ax = plt.subplots(1, 3)
+    # fig.suptitle('Example of baseline shift, translate, rotate and shrink')
+    # ax[0].imshow(dynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    # ax[0].imshow(GTVMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
+    # ax[1].imshow(dynMod.midp.imageArray[GTVCenterOfMassInVoxels[0], :, :])
+    # ax[1].imshow(GTVMask.imageArray[GTVCenterOfMassInVoxels[0], :, :], alpha=0.5)
+    # ax[2].imshow(dynMod.midp.imageArray[:, :, GTVCenterOfMassInVoxels[2]])
+    # ax[2].imshow(GTVMask.imageArray[:, :, GTVCenterOfMassInVoxels[2]], alpha=0.5)
+    # plt.show()
 
     dynModCopy = copy.deepcopy(dynMod)
     GTVMaskCopy = copy.deepcopy(GTVMask)
@@ -157,10 +162,10 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(1, 4)
     fig.suptitle('Example of baseline shift, translate, rotate and shrink')
     ax[0].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    ax[0].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
+    # ax[0].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
     ax[0].set_title('Initial image and target mask')
     ax[1].imshow(shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    ax[1].imshow(shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
+    # ax[1].imshow(shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
     ax[1].set_title('after inter fraction changes')
     ax[2].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
     ax[2].set_title('image difference')
