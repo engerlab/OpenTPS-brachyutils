@@ -1,14 +1,14 @@
 import os
 from matplotlib import pyplot as plt
 
-from Core.Data.dvh import DVH
+
 from Core.IO import mcsquareIO
 from Core.IO.dataLoader import loadAllData
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets
 from Core.Data.Plan.objectivesList import ObjectivesList
-
+from Core.Data.dvh import DVH
 # CT path
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 
@@ -29,7 +29,7 @@ mc2 = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 mc2.beamModel = beamModel
 # small number of primaries for beamlet calculation
-mc2.nbPrimaries = 1e6
+mc2.nbPrimaries = 1e7
 
 scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
 calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
@@ -47,7 +47,7 @@ brainStem = contours.getContourByName('Brain Stem')
 plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
-    print('Blan loaded')
+    print('Plan loaded')
     beamletPath = os.path.join(output_path,
                                "BeamletMatrix_1.2.826.0.1.3680043.8.498.69745754105946645553673858433070834612.1.blm")
     plan.beamlets = loadBeamlets(beamletPath)
@@ -76,6 +76,8 @@ stem_DVH = DVH(ct, brainStem, doseImage)
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')
 print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
+print("Dmax",target_DVH._Dmax)
+print("Dmin",target_DVH._Dmin)
 
 # center of mass
 COM_coord = targetMask.centerOfMass
@@ -85,8 +87,8 @@ Z_coord = COM_index[2]
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
 contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
-img_dose = resampleImage3DOnImage3D(doseImage, ct)
-img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
+#img_dose = resampleImage3DOnImage3D(doseImage, ct)
+img_dose = doseImage.imageArray[:, :, Z_coord].transpose(1, 0)
 
 # Display dose
 fig, ax = plt.subplots(1, 2, figsize=(12, 5))

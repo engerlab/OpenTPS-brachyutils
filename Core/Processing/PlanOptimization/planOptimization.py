@@ -23,6 +23,7 @@ class PlanOptimizer:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
         self.plan = planPreprocessing.extendPlanLayers(plan)
+        self.initPlan = plan
         self.opti_params = kwargs
         self.functions = functions
         self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
@@ -68,13 +69,13 @@ class PlanOptimizer:
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.plan.spotMUs = np.square(weights).astype(np.float32)
-            self.plan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
+            self.initPlan.spotMUs = np.square(weights).astype(np.float32)
+            self.initPlan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
         else:
-            self.plan.spotMUs = weights.astype(np.float32)
-            self.plan.beamlets.beamletWeights = weights.astype(np.float32)
+            self.initPlan.spotMUs = weights.astype(np.float32)
+            self.initPlan.beamlets.beamletWeights = weights.astype(np.float32)
 
-        totalDose = self.plan.beamlets.toDoseImage()
+        totalDose = self.initPlan.beamlets.toDoseImage()
 
         return weights, totalDose, cost
 
