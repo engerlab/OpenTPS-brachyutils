@@ -32,7 +32,7 @@ class RTPlan(PatientData):
         # self.DcmFile = ""
         self.modality = ""
         self.radiationType = ""
-        self.scanMode = ""
+        self.scanMode = "MODULATED"
         self.treatmentMachineName = ""
         self.objectives = ObjectivesList()
         self.planName = ""
