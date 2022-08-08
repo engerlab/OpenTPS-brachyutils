@@ -209,9 +209,9 @@ plan.beamlets.beamletWeights = np.square(w).astype(np.float32)
 doseImage = plan.beamlets.toDoseImage()
 
 # Compute DVH
-target_DVH = DVH(ct, target, doseImage)
-chiasm_DVH = DVH(ct, opticChiasm, doseImage)
-stem_DVH = DVH(ct, brainStem, doseImage)
+target_DVH = DVH(target, doseImage)
+chiasm_DVH = DVH(opticChiasm, doseImage)
+stem_DVH = DVH(brainStem, doseImage)
 
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')

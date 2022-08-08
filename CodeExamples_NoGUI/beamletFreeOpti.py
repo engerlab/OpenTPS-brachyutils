@@ -69,9 +69,9 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 doseImage = mc2.optimizeBeamletFree(ct, plan, [target])
 
 # Compute DVH
-target_DVH = DVH(ct, target, doseImage)
-chiasm_DVH = DVH(ct, opticChiasm, doseImage)
-stem_DVH = DVH(ct, brainStem, doseImage)
+target_DVH = DVH(target, doseImage)
+chiasm_DVH = DVH(opticChiasm, doseImage)
+stem_DVH = DVH(brainStem, doseImage)
 
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')
