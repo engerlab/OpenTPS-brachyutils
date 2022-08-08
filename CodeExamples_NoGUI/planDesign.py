@@ -42,6 +42,8 @@ mc2.ctCalibration = calibration
 # ROIs
 target = contours.getContourByName('CTV')
 targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
+opticChiasm = contours.getContourByName('Optic Chiasm')
+brainStem = contours.getContourByName('Brain Stem')
 body = contours.getContourByName('BODY')
 
 L = []
@@ -61,11 +63,11 @@ for i in range(len(ROI)):
 
 # Beam configuration
 beamNames = ["Beam1", "Beam2"]
-gantryAngles = [0., 45.]
+gantryAngles = [100., 280.]
 couchAngles = [0., 0.]
 
 # Generate new plan
-plan_file = os.path.join(output_path, "test.tps")
+plan_file = os.path.join(output_path, "brain_100_280.tps")
 planInit = PlanStructure()
 planInit.ct = ct
 planInit.targetMask = targetMask
