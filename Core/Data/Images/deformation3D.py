@@ -136,7 +136,7 @@ class Deformation3D(Image3D):
         self.angles = field._angles
         self.patientInfo = field.patientInfo
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
+    def resample(self, spacing, gridSize, origin, fillValue=0, outputType=None, tryGPU=True):
         """Resample deformation (velocity and/or displacement field) according to new voxel grid using linear interpolation.
 
             Parameters
@@ -154,9 +154,9 @@ class Deformation3D(Image3D):
             """
 
         if not(self.velocity is None):
-            self.velocity.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            self.velocity.resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         if not(self.displacement is None):
-            self.displacement.resample(gridSize, origin, spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            self.displacement.resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         self.origin = list(origin)
         self.spacing = list(spacing)
 
@@ -184,7 +184,7 @@ class Deformation3D(Image3D):
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
             logger.info("Image and field dimensions do not match. Resample displacement field to image grid before deformation.")
             # print('in deformation3D deformImage before resample', image.gridSize, field.gridSize)
-            field.resample(image.gridSize, image.origin, image.spacing, tryGPU=tryGPU)
+            field.resample(image.spacing, image.gridSize, image.origin, tryGPU=tryGPU)
             # print('in deformation3D deformImage after resample', image.gridSize, field.gridSize)
 
         image = image.copy()
