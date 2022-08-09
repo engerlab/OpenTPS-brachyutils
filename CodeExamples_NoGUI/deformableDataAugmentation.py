@@ -29,16 +29,26 @@ if __name__ == '__main__':
     amplitude = 10
 
     newSignal = SyntheticBreathingSignal(amplitude=amplitude,
-                                         variationAmplitude=0,
                                          breathingPeriod=4,
-                                         variationFrequency=0,
-                                         shift=0,
                                          meanNoise=0,
                                          varianceNoise=0,
                                          samplingPeriod=0.2,
-                                         meanEvent=0/30,
                                          simulationTime=simulationTime,
-                                         )
+                                         coeffMin=0,
+                                         coeffMax=0,
+                                         meanEvent=0/30,
+                                         meanEventApnea=0)
+    # newSignal = SyntheticBreathingSignal(amplitude=amplitude,
+    #                                      variationAmplitude=0,
+    #                                      breathingPeriod=4,
+    #                                      variationFrequency=0,
+    #                                      shift=0,
+    #                                      meanNoise=0,
+    #                                      varianceNoise=0,
+    #                                      samplingPeriod=0.2,
+    #                                      meanEvent=0/30,
+    #                                      simulationTime=simulationTime,
+    #                                      )
 
     newSignal.generate1DBreathingSignal()
     linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
@@ -46,15 +56,15 @@ if __name__ == '__main__':
     newSignal.breathingSignal = newSignal.breathingSignal * linearIncrease
 
     newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
-                                         variationAmplitude=0,
                                          breathingPeriod=4,
-                                         variationFrequency=0,
-                                         shift=0,
                                          meanNoise=0,
                                          varianceNoise=0,
                                          samplingPeriod=0.2,
                                          simulationTime=simulationTime,
-                                         meanEvent=0/30)
+                                         coeffMin=0,
+                                         coeffMax=0,
+                                         meanEvent=0/30,
+                                         meanEventApnea=0)
 
     newSignal2.breathingSignal = -newSignal.breathingSignal
 

@@ -4,7 +4,7 @@ import numpy as np
 import logging
 
 import Core.Processing.ImageProcessing.filter3D as imageFilter3D
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.Images.image3D import Image3D
 from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
@@ -32,6 +32,9 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
     -------
 
     """
+
+    from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+
     if isinstance(data, Image3D):
         return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
                                outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)

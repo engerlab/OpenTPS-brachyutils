@@ -22,6 +22,18 @@ if __name__ == "__main__":
     moving_img[30:75,35:75,40:75] = 0
     moving = CTImage(imageArray=moving_img, name='fixed', origin=[0,0,0], spacing=[1,1,1])
 
+    z_slice = round(fixed.imageArray.shape[2]/2)-1
+
+    ## SHOW DATA
+    plt.figure()
+    plt.subplot(1, 3, 1)
+    plt.imshow(fixed_img[:, :, z_slice])
+    plt.subplot(1, 3, 2)
+    plt.imshow(moving_img[:, :, z_slice])
+    plt.subplot(1, 3, 3)
+    plt.imshow(fixed_img[:, :, z_slice] - moving_img[:, :, z_slice])
+    plt.show()
+
     # PERFORM REGISTRATION
     reg = RegistrationMorphons(fixed, moving, baseResolution=2.0, nbProcesses=1)
     df = reg.compute()
