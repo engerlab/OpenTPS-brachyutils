@@ -14,14 +14,16 @@ from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
-from Core.Data.Plan.planIonSpot import PlanIonSpot
+from Core.Data.patientData import PatientData
 from Core.Processing.RangeEnergy import rangeToEnergy
 
 logger = logging.getLogger(__name__)
 
 
-class PlanStructure:
+class PlanStructure(PatientData):
     def __init__(self):
+        super().__init__()
+
         self.spotSpacing = 5.0
         self.layerSpacing = 5.0
         self.targetMargin = 5.0

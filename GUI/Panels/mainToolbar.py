@@ -9,7 +9,8 @@ from Core.event import Event
 from GUI.Panels.doseComparisonPanel import DoseComparisonPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
 from GUI.Panels.patientDataPanel import PatientDataPanel
-from GUI.Panels.planOptiPanel import PlanOptiPanel
+from GUI.Panels.planDesignPanel import PlanDesignPanel
+from GUI.Panels.planOptiPanel.planOptiPanel import PlanOptiPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.Panels.breathingSignalPanel import BreathingSignalPanel
@@ -49,13 +50,17 @@ class MainToolbar(QToolBox):
 
         self._viewController = viewController
         self._items = []
+        self._maxWidth = 270
 
         self.setStyleSheet("QToolBox::tab {font: bold; color: #000000; font-size: 16px;}")
 
         # initialize toolbox panels
         patientDataPanel = PatientDataPanel(self._viewController)
         roiPanel = ROIPanel(self._viewController)
+        planDesignPanel = PlanDesignPanel(self._viewController)
+        planDesignPanel.setMaximumWidth(self._maxWidth)
         planOptiPanel = PlanOptiPanel(self._viewController)
+        planOptiPanel.setMaximumWidth(self._maxWidth)
         dosePanel = DoseComputationPanel(self._viewController)
         doseComparisonPanel = DoseComparisonPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
@@ -65,6 +70,8 @@ class MainToolbar(QToolBox):
         item = self.ToolbarItem(patientDataPanel, 'Patient data')
         self.showItem(item)
         item = self.ToolbarItem(roiPanel, 'ROI')
+        self.showItem(item)
+        item = self.ToolbarItem(planDesignPanel, 'Plan design')
         self.showItem(item)
         item = self.ToolbarItem(planOptiPanel, 'Plan optimization')
         self.showItem(item)
