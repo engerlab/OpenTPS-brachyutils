@@ -21,7 +21,7 @@ class DoseComparisonDataViewer(DataViewer):
     def _initializeControl(self):
         super()._initializeControl()
 
-        self._doseComparisonImageActions = DoseComparisonImageActions(self._staticImageViewer, self)
+        self._doseComparisonImageActions = DoseComparisonImageActions(self._staticImage3DViewer, self)
         self._doseComparisonImageActions.addToToolbar(self._toolbar)
 
         self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)

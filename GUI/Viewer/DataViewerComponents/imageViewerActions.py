@@ -2,11 +2,11 @@
 from PyQt5.QtWidgets import QComboBox, QWidgetAction, QPushButton
 
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
-from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
+from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
 
 
 class ImageViewerActions:
-    def __init__(self, imageViewer:ImageViewer):
+    def __init__(self, imageViewer:Image3DViewer):
         self._imageViewer = imageViewer
 
         self._viewTypeToStr = {self._imageViewer.ViewerTypes.AXIAL: 'Axial',

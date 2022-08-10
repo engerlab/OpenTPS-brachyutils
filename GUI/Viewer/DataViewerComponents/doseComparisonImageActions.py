@@ -8,11 +8,11 @@ from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.DataViewerComponents.doseComparisonImageProvider import DoseComparisonImageProvider
 from GUI.Viewer.DataViewerComponents.imageFusionPropEditor import ImageFusionPropEditor
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
-from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
+from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
 
 
 class DoseComparisonImageActions:
-    def __init__(self, imageViewer:ImageViewer, dataViewer):
+    def __init__(self, imageViewer:Image3DViewer, dataViewer):
         self._dataViewer = dataViewer
         self._imageViewer = imageViewer
         self._image = imageViewer.secondaryImageLayer.image
