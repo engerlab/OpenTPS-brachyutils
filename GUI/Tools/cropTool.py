@@ -10,7 +10,7 @@ from Core.Data.Images.image3D import Image3D
 from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
 from Core.event import Event
 from GUI.Panels.patientDataPanel import PatientComboBox, PatientDataTree
-from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
+from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
 from GUI.Viewer.dataViewer import DroppedObject
 
 
@@ -93,13 +93,13 @@ class ThreeViewsGrid(QWidget):
         self._mainLayout = QHBoxLayout(self)
         self.setLayout(self._mainLayout)
 
-        self._viewer0 = ImageViewer(viewController)
-        self._viewer1 = ImageViewer(viewController)
-        self._viewer2 = ImageViewer(viewController)
+        self._viewer0 = Image3DViewer(viewController)
+        self._viewer1 = Image3DViewer(viewController)
+        self._viewer2 = Image3DViewer(viewController)
 
-        self._viewer0.viewType = ImageViewer.ViewerTypes.CORONAL
-        self._viewer1.viewType = ImageViewer.ViewerTypes.AXIAL
-        self._viewer2.viewType = ImageViewer.ViewerTypes.SAGITTAL
+        self._viewer0.viewType = Image3DViewer.ViewerTypes.CORONAL
+        self._viewer1.viewType = Image3DViewer.ViewerTypes.AXIAL
+        self._viewer2.viewType = Image3DViewer.ViewerTypes.SAGITTAL
 
         self._viewer0.crossHairEnabled = True
         self._viewer1.crossHairEnabled = True
@@ -200,11 +200,11 @@ class ThreeViewsGrid(QWidget):
         self._viewer0._renderWindow.Render()
         self._viewer1._renderWindow.Render()
 
-    def _2DboundsFromViewerToViewer(self, viewer0:ImageViewer, boxRep0, viewer1:ImageViewer, boxRep1) -> Sequence[float]:
+    def _2DboundsFromViewerToViewer(self, viewer0:Image3DViewer, boxRep0, viewer1:Image3DViewer, boxRep1) -> Sequence[float]:
         bounds = self._boundsFromViewerToViewer(viewer0, boxRep0, viewer1, boxRep1)
         return [bounds[0], bounds[1], bounds[2], bounds[3], 0, 0]
 
-    def _boundsFromViewerToViewer(self, viewer0:ImageViewer, boxRep0, viewer1:ImageViewer, boxRep1) -> Sequence[float]:
+    def _boundsFromViewerToViewer(self, viewer0:Image3DViewer, boxRep0, viewer1:Image3DViewer, boxRep1) -> Sequence[float]:
         bounds0 = boxRep0.GetBounds()
         bounds1 = boxRep1.GetBounds()
 

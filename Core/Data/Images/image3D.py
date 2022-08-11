@@ -44,7 +44,8 @@ class Image3D(PatientData):
 
     @property
     def imageArray(self) -> np.ndarray:
-        return np.array(self._imageArray)
+        #return np.array(self._imageArray)
+        return self._imageArray
 
     @imageArray.setter
     def imageArray(self, array):
@@ -125,7 +126,7 @@ class Image3D(PatientData):
     def numberOfVoxels(self):
         return self.gridSize[0] * self.gridSize[1] * self.gridSize[2]
 
-    def resample(self, gridSize, origin, spacing, fillValue=0, outputType=None, tryGPU=True):
+    def resample(self, spacing, gridSize, origin, fillValue=0, outputType=None, tryGPU=True):
         """Resample image according to new voxel grid using linear interpolation.
 
             Parameters
@@ -148,8 +149,8 @@ class Image3D(PatientData):
             from Core.Processing.ImageProcessing.resampler3D import resampleOpenMP
             self.imageArray = resampleOpenMP(self.imageArray, self.origin, self.spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         else:
-            from Core.Processing.ImageProcessing import imageTransform3D
-            imageTransform3D.resampleImage3D(self, spacing, origin, gridSize, fillValue=fillValue)
+            from Core.Processing.ImageProcessing.resampler3D import resampleImage3D
+            resampleImage3D(self, spacing, gridSize, origin, fillValue=fillValue)
 
         # from Core.Processing.ImageProcessing import imageTransform3D
         # imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)

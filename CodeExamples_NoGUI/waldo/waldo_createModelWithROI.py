@@ -30,17 +30,18 @@ from Core.Data.patient import Patient
 
 # chose the patient folder, which will be used as the patient name
 organ = 'lung'
-patientName = 'Patient_10'
+study = 'CPAP_study/'
+patientName = 'Patient_8'
 patientComplement = '/2/FDG2'
 basePath = '/data/public/'
 
 
 # chose the 4DCT data folder
-data4DPath = basePath + organ + '/' + patientName + patientComplement + '/4DCT'
+data4DPath = basePath + organ + '/' + study + patientName + patientComplement + '/4DCT'
 # chose the dicom rtStruct file
-dataStructPath = basePath + organ + '/' + patientName + patientComplement + '/contours/MidP_CT_rtstruct.dcm'
+dataStructPath = basePath + organ + '/' + study + patientName + patientComplement + '/contours/MidP_CT_rtstruct.dcm'
 # chose a path to save the results
-savingPath = '/DATA2/public/' + organ + '/' + patientName + patientComplement
+savingPath = '/DATA2/public/' + organ + '/' + study + patientName + patientComplement
 
 if not os.path.exists(savingPath):
     os.umask(0)

@@ -13,6 +13,7 @@ import Core.IO.dataLoader as dataLoader
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.image2D import Image2D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
@@ -246,7 +247,7 @@ class PatientDataTree(QTreeView):
     def _handleDoubleClick(self, selection):
         selectedData = self.model().itemFromIndex(selection).data
 
-        if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence) or isinstance(selectedData, Dynamic2DSequence):
+        if isinstance(selectedData, CTImage) or isinstance(selectedData, Dynamic3DSequence) or isinstance(selectedData, Dynamic2DSequence) or isinstance(selectedData, Image2D):
             self._viewController.mainImage = selectedData
         if isinstance(selectedData, RTPlan):
             self._viewController.plan = selectedData

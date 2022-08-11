@@ -10,11 +10,11 @@ from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.image2D import Image2D
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.event import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
-from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
+from GUI.Viewer.DataForViewer.image2DForViewer import Image2DForViewer
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.rtPlanLayer import RTPlanLayer
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
@@ -25,7 +25,7 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImageLayer i
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.textLayer import TextLayer
 
 
-class ImageViewer(QWidget):
+class Image2DViewer(QWidget):
     class ViewerTypes(Enum):
         AXIAL = 'axial'
         CORONAL = 'coronal'
@@ -123,13 +123,13 @@ class ImageViewer(QWidget):
             self._rtPlanLayer.setPlan(plan, self.primaryImage)
 
     @property
-    def primaryImage(self) -> Image3D:
+    def primaryImage(self) -> Image2D:
         if self._primaryImageLayer.image is None:
             return None
         return self._primaryImageLayer.image.data
 
     @primaryImage.setter
-    def primaryImage(self, image: Image3D):
+    def primaryImage(self, image: Image2D):
         imageAlreadyDisplayed = image==self._primaryImageLayer.image or (not (self._primaryImageLayer.image is None) and image==self._primaryImageLayer.image.data)
         if imageAlreadyDisplayed:
             return
@@ -218,13 +218,13 @@ class ImageViewer(QWidget):
         self.profileWidgetEnabled = enabled
 
     @property
-    def secondaryImage(self) -> typing.Optional[Image3D]:
+    def secondaryImage(self) -> typing.Optional[Image2D]:
         if self._secondaryImageLayer.image is None:
             return None
         return self._secondaryImageLayer.image.data
 
     @secondaryImage.setter
-    def secondaryImage(self, image: Image3D):
+    def secondaryImage(self, image: Image2D):
         if self.primaryImage is None:
             return
 
@@ -232,7 +232,7 @@ class ImageViewer(QWidget):
         if imageAlreadyDisplayed:
             return
 
-        self._secondaryImageLayer.image = Image3DForViewer(image)
+        self._secondaryImageLayer.image = Image2DForViewer(image)
 
         if image is None:
             self._secondaryImageLayer.image = None
@@ -408,7 +408,7 @@ class ImageViewer(QWidget):
 
         point = (0., 0., 0., 0.)
         if self._crossHairEnabled:
-            worldPos = Image3DForViewer(self.primaryImage).selectedPosition
+            worldPos = Image2DForViewer(self.primaryImage).selectedPosition
             if worldPos is None:
                 return
 
@@ -425,7 +425,7 @@ class ImageViewer(QWidget):
 
         if self._crossHairEnabled:
             point = self._viewMatrix.MultiplyPoint((point[0], point[1], point[2], 1))
-            Image3DForViewer(self.primaryImage).selectedPosition = point
+            Image2DForViewer(self.primaryImage).selectedPosition = point
 
         self._renderWindow.Render()
 

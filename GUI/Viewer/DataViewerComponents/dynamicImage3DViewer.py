@@ -1,11 +1,11 @@
 
 from vtkmodules.vtkCommonCore import vtkCommand
 
-from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
+from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
 from GUI.Viewer.DataForViewer.dyn3DSeqForViewer import Dyn3DSeqForViewer
 
 
-class DynamicImageViewer(ImageViewer):
+class DynamicImage3DViewer(Image3DViewer):
     def __init__(self, viewController):
         super().__init__(viewController)
 

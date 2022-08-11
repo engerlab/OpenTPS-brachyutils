@@ -5,14 +5,17 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.image2D import Image2D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.dvhViewerActions import DVHViewerActions
-from GUI.Viewer.DataViewerComponents.imageViewer import ImageViewer
-from GUI.Viewer.DataViewerComponents.dynamicImageViewer import DynamicImageViewer
+from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
+from GUI.Viewer.DataViewerComponents.dynamicImage3DViewer import DynamicImage3DViewer
+from GUI.Viewer.DataViewerComponents.image2DViewer import Image2DViewer
+from GUI.Viewer.DataViewerComponents.dynamicImage2DViewer import DynamicImage2DViewer
 from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerActions
 from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
@@ -97,16 +100,21 @@ class DataViewer(QWidget):
 
         # For responsiveness, we instantiate all possible viewers and hide them == cached viewers:
         self._dvhViewer = DVHViewer(self)
-        self._dynImageViewer = DynamicImageViewer(viewController)
         self._noneViewer = BlackEmptyPlot()
         self._staticProfileviewer = ProfileViewer(viewController)
-        self._staticImageViewer = ImageViewer(viewController)
+
+        self._staticImage3DViewer = Image3DViewer(viewController)
+        self._staticImage2DViewer = Image2DViewer(viewController)
+
+        ## dynamic stuff
+        self._dynImage3DViewer = DynamicImage3DViewer(viewController)
+        self._dynImage2DViewer = DynamicImage2DViewer(viewController)
 
         self._staticProfileviewer.hide()
         self._noneViewer.hide()
         self._dvhViewer.hide()
-        self._dynImageViewer.hide()
-        self._staticImageViewer.hide()
+        self._dynImage3DViewer.hide()
+        self._staticImage3DViewer.hide()
 
         self._addViewersToLayout()
 
@@ -117,20 +125,20 @@ class DataViewer(QWidget):
 
     def _addViewersToLayout(self):
         self._mainLayout.addWidget(self._toolbar)
-        self._mainLayout.addWidget(self._dynImageViewer)
-        self._mainLayout.addWidget(self._staticImageViewer)
+        self._mainLayout.addWidget(self._dynImage3DViewer)
+        self._mainLayout.addWidget(self._staticImage3DViewer)
         self._mainLayout.addWidget(self._staticProfileviewer)
         self._mainLayout.addWidget(self._noneViewer)
         self._mainLayout.addWidget(self._dvhViewer)
 
     @property
-    def cachedDynamicImageViewer(self) -> DynamicImageViewer:
+    def cachedDynamicImageViewer(self) -> DynamicImage3DViewer:
         """
             The dynamic image viewer currently in cache (read-only)
 
             :type: DynamicImageViewer
         """
-        return self._dynImageViewer
+        return self._dynImage3DViewer
 
     @property
     def cachedStaticDVHViewer(self) -> DVHViewer:
@@ -140,13 +148,22 @@ class DataViewer(QWidget):
         return self._dvhViewer
 
     @property
-    def cachedStaticImageViewer(self) -> ImageViewer:
+    def cachedStaticImage3DViewer(self) -> Image3DViewer:
         """
-            The static image viewer currently in cache (read-only)
+            The static image 3D viewer currently in cache (read-only)
 
-            :type: ImageViewer
+            :type: Image3DViewer
         """
-        return self._staticImageViewer
+        return self._staticImage3DViewer
+
+    @property
+    def cachedStaticImage2DViewer(self) -> Image2DViewer:
+        """
+            The static image 2D viewer currently in cache (read-only)
+
+            :type: Image2DViewer
+        """
+        return self._staticImage2DViewer
 
     @property
     def cachedStaticProfileViewer(self) -> ProfileViewer:
@@ -158,7 +175,7 @@ class DataViewer(QWidget):
         return self._staticProfileviewer
 
     @property
-    def currentViewer(self) -> Optional[Union[DVHViewer, ProfileViewer, ImageViewer]]:
+    def currentViewer(self) -> Optional[Union[DVHViewer, ProfileViewer, Image3DViewer]]:
         """
         The viewer currently displayed (read-only)viewerTypes
 
@@ -268,34 +285,34 @@ class DataViewer(QWidget):
         self._currentViewer.show()
 
     def _setCurrentViewerToDynamicImageViewer(self):
-        self._currentViewer = self._dynImageViewer
+        self._currentViewer = self._dynImage3DViewer
         self.dropEnabled = self._dropEnabled
 
-        self._viewController.crossHairEnabledSignal.disconnect(self._staticImageViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImageViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.disconnect(self._staticImageViewer._contourLayer.setNewContour)
+        self._viewController.crossHairEnabledSignal.disconnect(self._staticImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.disconnect(self._staticImage3DViewer._contourLayer.setNewContour)
         self._viewController.showContourSignal.disconnect(self._dvhViewer.appendROI)
-        self._viewController.windowLevelEnabledSignal.disconnect(self._staticImageViewer.setWWLEnabled)
+        self._viewController.windowLevelEnabledSignal.disconnect(self._staticImage3DViewer.setWWLEnabled)
 
-        self._viewController.crossHairEnabledSignal.connect(self._dynImageViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.connect(self._dynImageViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.connect(self._dynImageViewer._contourLayer.setNewContour)
-        self._viewController.windowLevelEnabledSignal.connect(self._dynImageViewer.setWWLEnabled)
+        self._viewController.crossHairEnabledSignal.connect(self._dynImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connect(self._dynImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connect(self._dynImage3DViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.connect(self._dynImage3DViewer.setWWLEnabled)
 
     def _setCurrentViewerToStaticImageViewer(self):
-        self._currentViewer = self._staticImageViewer
+        self._currentViewer = self._staticImage3DViewer
         self.dropEnabled = self._dropEnabled
 
-        self._viewController.crossHairEnabledSignal.disconnect(self._dynImageViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImageViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.disconnect(self._dynImageViewer._contourLayer.setNewContour)
-        self._viewController.windowLevelEnabledSignal.disconnect(self._dynImageViewer.setWWLEnabled)
+        self._viewController.crossHairEnabledSignal.disconnect(self._dynImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.disconnect(self._dynImage3DViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage3DViewer.setWWLEnabled)
 
-        self._viewController.crossHairEnabledSignal.connect(self._staticImageViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.connect(self._staticImageViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.connect(self._staticImageViewer._contourLayer.setNewContour)
+        self._viewController.crossHairEnabledSignal.connect(self._staticImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connect(self._staticImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connect(self._staticImage3DViewer._contourLayer.setNewContour)
         self._viewController.showContourSignal.connect(self._dvhViewer.appendROI)
-        self._viewController.windowLevelEnabledSignal.connect(self._staticImageViewer.setWWLEnabled)
+        self._viewController.windowLevelEnabledSignal.connect(self._staticImage3DViewer.setWWLEnabled)
 
     @property
     def dropEnabled(self) -> bool:
@@ -341,8 +358,8 @@ class DataViewer(QWidget):
     ####################################################################################################################
     # This is the logical part of the viewer. Should we migrate this to a dedicated controller?
     def _initializeControl(self):
-        self._secondaryImageActions = SecondaryImageActions(self._staticImageViewer.secondaryImageLayer)
-        self._imageViewerActions = ImageViewerActions(self._staticImageViewer)
+        self._secondaryImageActions = SecondaryImageActions(self._staticImage3DViewer.secondaryImageLayer)
+        self._imageViewerActions = ImageViewerActions(self._staticImage3DViewer)
         self._dvhViewerActions = DVHViewerActions(self._dvhViewer)
 
         self._secondaryImageActions.addToToolbar(self._toolbar)
@@ -406,7 +423,7 @@ class DataViewer(QWidget):
         """
             Switch display mode according to image type and then display image
         """
-        if isinstance(image, Image3D) or isinstance(image, Dynamic3DModel):
+        if isinstance(image, Image3D) or isinstance(image, Dynamic3DModel) or isinstance(image, Image2D):
             self.displayMode = self.DisplayModes.STATIC
         elif isinstance(image, Dynamic3DSequence) or isinstance(image, Dynamic2DSequence):
             self.displayMode = self.DisplayModes.DYNAMIC
@@ -423,11 +440,15 @@ class DataViewer(QWidget):
         Does not affect viewer visibility.
         """
         if isinstance(image, Image3D):
-            self.cachedStaticImageViewer.primaryImage = image
-        elif isinstance(image, Dynamic3DSequence) or isinstance(image, Dynamic2DSequence):
-            self.cachedDynamicImageViewer.primaryImage = image
+            self.cachedStaticImage3DViewer.primaryImage = image
+        elif isinstance(image, Image2D):
+            self.cachedStaticImage2DViewer.primaryImage = image
+        elif isinstance(image, Dynamic3DSequence):
+            self.cachedDynamicImage3DViewer.primaryImage = image
+        elif isinstance(image, Dynamic2DSequence):
+            self.cachedDynamicImage2DViewer.primaryImage = image
         elif isinstance(image, Dynamic3DModel):
-            self.cachedStaticImageViewer.primaryImage = image.midp
+            self.cachedStaticImage3DViewer.primaryImage = image.midp
         elif image is None:
             pass
         else:
@@ -443,17 +464,17 @@ class DataViewer(QWidget):
         """
 
         if image is None:
-            oldImage = self.cachedStaticImageViewer.secondaryImage
+            oldImage = self.cachedStaticImage3DViewer.secondaryImage
             if oldImage is None:
                 return
         elif not (image.patient is None):
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
-        self.cachedStaticImageViewer.secondaryImage = image
+        self.cachedStaticImage3DViewer.secondaryImage = image
         self._setDVHDose(image)
 
     def _setPlan(self, plan:Optional[RTPlan]):
-        self.cachedStaticImageViewer.rtPlan = plan
+        self.cachedStaticImage3DViewer.rtPlan = plan
 
     def _setDVHDose(self, image:Optional[DoseImage]):
         if image is None:
@@ -466,7 +487,7 @@ class DataViewer(QWidget):
         Remove image from all cached viewers.
         """
         ""
-        if self.cachedStaticImageViewer.primaryImage == image:
+        if self.cachedStaticImage3DViewer.primaryImage == image:
             self._setMainImage(None)
 
         if self.cachedDynamicImageViewer.secondaryImage == image:

@@ -83,22 +83,22 @@ class GridFourElements(Grid):
     def _initializeViewers(self):
         # Fill grid elements with data viewers
         gridElement = DoseComparisonDataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.AXIAL
+        gridElement.cachedStaticImage3DViewer.viewType = gridElement.cachedStaticImage3DViewer.ViewerTypes.AXIAL
         gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.AXIAL
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = DoseComparisonDataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.CORONAL
+        gridElement.cachedStaticImage3DViewer.viewType = gridElement.cachedStaticImage3DViewer.ViewerTypes.CORONAL
         gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.CORONAL
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
         gridElement = DoseComparisonDataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.SAGITTAL
+        gridElement.cachedStaticImage3DViewer.viewType = gridElement.cachedStaticImage3DViewer.ViewerTypes.SAGITTAL
         gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
         gridElement = DoseComparisonDataViewer(self._viewController)
-        gridElement.cachedStaticImageViewer.viewType = gridElement.cachedStaticImageViewer.ViewerTypes.SAGITTAL
+        gridElement.cachedStaticImage3DViewer.viewType = gridElement.cachedStaticImage3DViewer.ViewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botRightLayout.addWidget(gridElement)
 
