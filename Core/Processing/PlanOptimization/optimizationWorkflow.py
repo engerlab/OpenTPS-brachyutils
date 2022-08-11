@@ -15,6 +15,7 @@ from Core.Processing.ImageProcessing import resampler3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planInitializer import PlanInitializer
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
+from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
 from programSettings import ProgramSettings
 
 
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 # beamlets is used in planOptimization.py
 # To me, beamlets should be given to planOptimization.py and removed from plan and objectives and objectives should be placed in planStructure.
 # The definition of planStructure would be everything needed to build/optimize the plan.
-
+# Si on fait comme ça, on peut sauver la planStructure et la reloader!
 
 def optimize(plan:RTPlan, planStructure:PlanStructure):
     plan.objectives.setScoringParameters(planStructure.ct)
@@ -97,6 +98,7 @@ def _initializeBeams(plan:RTPlan, planStructure:PlanStructure):
 
 def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
     programSettings = ProgramSettings()
+    optimizationSettings = PlanOptimizationSettings()
 
     bdl = mcsquareIO.readBDL(programSettings.bdlFile)
     ctCalibration = scannerReader.readScanner(programSettings.scannerFolder)
@@ -104,7 +106,7 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
     mc2 = MCsquareDoseCalculator()
     mc2.ctCalibration = ctCalibration
     mc2.beamModel = bdl
-    mc2.nbPrimaries = 1e4
+    mc2.nbPrimaries = optimizationSettings.beamletPrimaries
 
     beamlets = mc2.computeBeamlets(planStructure.ct, plan)
     return beamlets

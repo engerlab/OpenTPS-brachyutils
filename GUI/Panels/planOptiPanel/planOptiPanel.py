@@ -1,4 +1,4 @@
-
+import subprocess
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow
 
@@ -8,6 +8,7 @@ from Core.Data.Plan.planStructure import PlanStructure
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patient import Patient
 from Core.Processing.PlanOptimization import optimizationWorkflow
+from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
 from GUI.Panels.planOptiPanel.objectivesWindow import ROITable
 
 
@@ -39,6 +40,10 @@ class PlanOptiPanel(QWidget):
 
         self._objectivesWidget = ObjectivesWidget(self._viewController)
         self.layout.addWidget(self._objectivesWidget)
+
+        self._configButton = QPushButton('Open configuration')
+        self._configButton.clicked.connect(self._openConfig)
+        self.layout.addWidget(self._configButton)
 
         self._runButton = QPushButton('Run')
         self._runButton.clicked.connect(self._run)
@@ -151,6 +156,9 @@ class PlanOptiPanel(QWidget):
             self._updatePlanStructureComboBox()
     def _handlePlanStructureChanged(self, ct):
         self._updatePlanStructureComboBox()
+
+    def _openConfig(self):
+        subprocess.run(['xdg-open', PlanOptimizationSettings().configFile], check=True)
 
     def _run(self):
         self._selectedPlanStructure.ct = self._selectedCT
