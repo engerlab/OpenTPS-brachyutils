@@ -3,8 +3,11 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow
 
 from Core.Data.Images.ctImage import CTImage
+from Core.Data.Plan.objectivesList import ObjectivesList
 from Core.Data.Plan.planStructure import PlanStructure
+from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patient import Patient
+from Core.Processing.PlanOptimization import optimizationWorkflow
 from GUI.Panels.planOptiPanel.objectivesWindow import ROITable
 
 
@@ -151,6 +154,17 @@ class PlanOptiPanel(QWidget):
 
     def _run(self):
         self._selectedPlanStructure.ct = self._selectedCT
+        plan = RTPlan()
+        plan.name = self._selectedPlanStructure.name
+        plan.patient = self._selectedPlanStructure.patient
+
+        objectiveList = ObjectivesList()
+        for obj in self._objectivesWidget.objectives:
+            objectiveList.append(obj)
+
+        plan.objectives = objectiveList
+
+        optimizationWorkflow.optimize(plan, self._selectedPlanStructure)
 
 class ObjectivesWidget(QWidget):
     DEFAULT_OBJECTIVES_TEXT = 'No objective defined yet'
@@ -177,13 +191,17 @@ class ObjectivesWidget(QWidget):
 
         self._roitTable.objectivesModifiedEvent.connect(self._showObjectives)
 
+    @property
+    def objectives(self):
+        return self._roitTable.getObjectiveTerms()
+
     def setPatient(self, p:Patient):
         self._roitTable.patient = p
 
     def _showObjectives(self):
         objStr = self.DEFAULT_OBJECTIVES_TEXT
 
-        objectives = self._roitTable.getObjectiveTerms()
+        objectives = self.objectives
 
         if len(objectives)<=0:
             return

@@ -4,7 +4,7 @@ import logging
 
 from Core.Data.patientData import PatientData
 from Core.Data.Images.roiMask import ROIMask
-from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
+from Core.Processing.ImageProcessing import resampler3D
 from Core.event import Event
 
 

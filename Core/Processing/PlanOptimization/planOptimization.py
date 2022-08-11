@@ -25,19 +25,15 @@ class PlanOptimizer:
         self.plan = planPreprocessing.extendPlanLayers(plan)
         self.opti_params = kwargs
         self.functions = functions
-        self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
         self.xSquared = True
 
     def initializeWeights(self):
         # Total Dose calculation
         weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
 
-        if use_MKL == 1:
-            TotalDose = sparse_dot_mkl.dot_product_mkl(self.beamletMatrix, weights)
-        else:
-            TotalDose = sp.csc_matrix.dot(self.beamletMatrix, weights)
+        totalDose = self.plan.beamlets.toDoseImage().imageArray
 
-        maxDose = np.max(TotalDose)
+        maxDose = np.max(totalDose)
         try:
             x0 = self.opti_params['init_weights']
         except KeyError:
@@ -57,6 +53,10 @@ class PlanOptimizer:
         niter = result['niter']
         time = result['time']
         cost = result['objective']
+
+        if niter<=0:
+            niter = 1
+
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
                 .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))

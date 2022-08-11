@@ -1,11 +1,10 @@
 from enum import Enum
 
 import numpy as np
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.roiMask import ROIMask
-from Core.Data.roiContour import ROIContour
 from Core.Processing.ImageProcessing import resampler3D
 
 
@@ -35,6 +34,14 @@ class ObjectivesList:
     def setTarget(self, roiName, prescription):
         self.targetName = roiName
         self.targetPrescription = prescription
+
+    def append(self, objective):
+        if isinstance(objective, FidObjective):
+            self.fidObjList.append(objective)
+        elif isinstance(objective, ExoticObjective):
+            self.exoticObjList.append(objective)
+        else:
+            raise ValueError(objective.__class__.__name__ + ' is not a valid type for objective')
 
     def addFidObjective(self, roi, metric, limitValue, weight, kind="Soft", robust=False):
         objective = FidObjective(roi=roi, metric=metric, limitValue=limitValue, weight=weight)
@@ -131,6 +138,8 @@ class FidObjective:
         self._updateMaskVec()
 
     def _updateMaskVec(self):
+        from Core.Data.roiContour import ROIContour
+
         if self.scoringGridSize is None:
             raise Exception("scoringGridSize not set")
 

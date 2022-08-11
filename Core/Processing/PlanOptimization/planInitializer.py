@@ -139,18 +139,18 @@ class BeamInitializerBEV:
 
 class PlanInitializer:
     def __init__(self):
-        self.calibration:AbstractCTCalibration=None
+        self.ctCalibration:AbstractCTCalibration=None
         self.ct:CTImage=None
         self.plan:RTPlan=None
         self.targetMask:ROIMask=None
 
         self._beamInitializer = BeamInitializerBEV()
 
-    def intializePlan(self, spotSpacing:float, layerSpacing:float, targetMargin:float=0.):
+    def initializePlan(self, spotSpacing:float, layerSpacing:float, targetMargin:float=0.):
         #TODO Range shifter
 
 
-        self._beamInitializer.calibration = self.calibration
+        self._beamInitializer.calibration = self.ctCalibration
         self._beamInitializer.spotSpacing = spotSpacing
         self._beamInitializer.layerSpacing = layerSpacing
         self._beamInitializer.targetMargin = targetMargin

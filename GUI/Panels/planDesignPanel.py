@@ -50,6 +50,12 @@ class PlanDesignPanel(QWidget):
         self._marginSpin.setSuffix(" mm")
         self.layout.addWidget(self._marginSpin)
 
+        self._anglesLabel = QLabel('Gantry angles:')
+        self.layout.addWidget(self._anglesLabel)
+        self._anglesEdit = QLineEdit(self)
+        self._anglesEdit.setPlaceholderText('0;45')
+        self.layout.addWidget(self._anglesEdit)
+
         self._runButton = QPushButton('Create')
         self._runButton.clicked.connect(self._create)
         self.layout.addWidget(self._runButton)
@@ -68,5 +74,14 @@ class PlanDesignPanel(QWidget):
         planStructure.layerSpacing = self._layerSpin.value()
         planStructure.targetMargin = self._marginSpin.value()
 
-        planStructure.patient = self._patient
+        gantryAnglesStr = self._anglesEdit.text().split(";")
+        gantryAngles = [float(angle) for angle in gantryAnglesStr]
+
+        planStructure.gantryAngles = gantryAngles
+
+        couchAngles = [0 for angle in gantryAngles] # TODO
+        planStructure.couchAngles = couchAngles
+
         planStructure.name = self._planNameEdit.text()
+
+        planStructure.patient = self._patient

@@ -2,6 +2,7 @@ import logging
 import time
 import numpy as np
 import scipy.optimize
+from scipy.optimize import Bounds
 
 from Core.Processing.PlanOptimization.Acceleration.linesearch import LineSearch
 from Core.Processing.PlanOptimization.Solvers.gradientDescent import GradientDescent
@@ -27,7 +28,8 @@ class ScipyOpt:
         if 'GRAD' not in func[0].cap(x0):
             logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
         res = scipy.optimize.minimize(func[0].eval, x0, method=self.meth, jac=func[0].grad, callback=callbackF,
-                                      options={'maxiter': self.params.get('maxit', 100)})
+                                      options={'disp': True, 'iprint': -1, 'maxiter': self.params.get('maxit', 100)},
+                                      bounds=Bounds(0., 9999.))
 
         result = {'sol': res.x, 'crit': res.message, 'niter': res.nit, 'time': time.time() - startTime,
                   'objective': res.fun}
