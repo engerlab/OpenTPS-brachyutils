@@ -85,7 +85,7 @@ class PlanDesignPanel(QWidget):
 
         planStructure.gantryAngles = gantryAngles
 
-        couchAnglesStr = self._anglesEdit.text().split(";")
+        couchAnglesStr = self._couchAnglesEdit.text().split(";")
         couchAngles = [float(angle) for angle in couchAnglesStr]
 
         if len(couchAngles)==1 and couchAngles==0.:
