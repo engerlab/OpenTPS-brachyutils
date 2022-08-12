@@ -1,81 +1,30 @@
-import configparser
-import os
+import logging
 
-from programSettings import Singleton, ProgramSettings
-from pathlib import Path
+from Core.Utils.applicationConfig import AbstractApplicationConfig
 
-import config as configModule
 
-class PlanOptimizationSettings(metaclass=Singleton):
+logger = logging.getLogger(__name__)
+
+
+class PlanOptimizationSettings(AbstractApplicationConfig):
     def __init__(self):
-        programSettings = ProgramSettings()
+        super().__init__()
 
-        self._config_dir = programSettings.workspace
-        self.configFile = os.path.join(self._config_dir, "planOptimizationSettings.cfg")
-
-        if not Path(self.configFile).exists():
-            with open(self.configFile, 'w') as file:
-                self._defaultConfig.write(file)
-
-            self._config = configparser.ConfigParser()
-            self._config.read(self.configFile)
-            self.workspace = str(Path.home() / "openTPS_workspace")  # Will also write config
-
-        self._config = configparser.ConfigParser()
-        self._config.read(self.configFile)
-
-    def _createFolderIfNotExists(self, folder):
-        folder = Path(folder)
-
-        if not folder.is_dir():
-            os.mkdir(folder)
-
-    @property
-    def _defaultConfig(self):
-        configTemplate = configparser.ConfigParser()
-        configTemplate.read(Path(str(configModule.__path__[0])) / "planOptimizationConfig_template.cfg")
-
-        return configTemplate
+        a = self.beamletPrimaries
+        a = self.finalDosePrimaries
 
     @property
     def beamletPrimaries(self) -> int:
-        try:
-            output = self._config["MCsquare"]["beamletPrimaries"]
-            if not (output is None):
-                return int(output)
-        except:
-            pass
-
-        self._config["MCsquare"].update({"beamletPrimaries": str(1e5)})
-        self.writeConfig()
-        return int(self._config["MCsquare"]["MCsquare"])
+        return int(self.getConfigField("MCsquare", "beamletPrimaries", int(1e6)))
 
     @beamletPrimaries.setter
     def beamletPrimaries(self, primaries:int):
-        self._config["MCsquare"]["beamletPrimaries"] = str(primaries)
-
-        self.writeConfig()
+        self.setConfigField("MCsquare", "beamletPrimaries", int(primaries))
 
     @property
     def finalDosePrimaries(self) -> int:
-        try:
-            output = self._config["MCsquare"]["finalDosePrimaries"]
-            if not (output is None):
-                return int(output)
-        except:
-            pass
+        return int(self.getConfigField("MCsquare", "finalDosePrimaries", int(1e8)))
 
-        self._config["MCsquare"].update({"finalDosePrimaries": str(1e8)})
-        self.writeConfig()
-        return int(self._config["MCsquare"]["MCsquare"])
-
-    @beamletPrimaries.setter
-    def beamletPrimaries(self, primaries: int):
-        self._config["MCsquare"]["finalDosePrimaries"] = str(primaries)
-
-    def writeConfig(self):
-        with open(self.configFile, 'w') as file:
-            self._config.write(file)
-
-if __name__ == "__main__":
-    PlanOptimizationSettings()
+    @finalDosePrimaries.setter
+    def finalDosePrimaries(self, primaries: int):
+        self.setConfigField("MCsquare", "finalDosePrimaries", int(primaries))
