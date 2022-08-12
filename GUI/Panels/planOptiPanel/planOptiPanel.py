@@ -190,12 +190,12 @@ class ObjectivesWidget(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self._objectivesLabels = QLabel(self.DEFAULT_OBJECTIVES_TEXT)
-        self.layout.addWidget(self._objectivesLabels)
-
         self._objectiveButton = QPushButton('Open objectives panel')
         self._objectiveButton.clicked.connect(self._openObjectivePanel)
         self.layout.addWidget(self._objectiveButton)
+
+        self._objectivesLabels = QLabel(self.DEFAULT_OBJECTIVES_TEXT)
+        self.layout.addWidget(self._objectivesLabels)
 
         self._roitTable.objectivesModifiedEvent.connect(self._showObjectives)
 
@@ -207,11 +207,10 @@ class ObjectivesWidget(QWidget):
         self._roitTable.patient = p
 
     def _showObjectives(self):
-        objStr = self.DEFAULT_OBJECTIVES_TEXT
-
         objectives = self.objectives
 
         if len(objectives)<=0:
+            self._objectivesLabels.setText(self.DEFAULT_OBJECTIVES_TEXT)
             return
 
         objStr = ''
