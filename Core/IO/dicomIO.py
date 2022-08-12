@@ -561,7 +561,7 @@ def writeRTPlan(plan: RTPlan, filePath):
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]
             dcm_layer.GantryAngle = beam.gantryAngle
-            dcm_layer.PatientSupportAngle = beam.patientSupportAngle
+            dcm_layer.PatientSupportAngle = beam.couchAngle
 
             dcm_layer.RangeShifterSettingsSequence = []
             dcm_rsSettings = pydicom.dataset.Dataset()

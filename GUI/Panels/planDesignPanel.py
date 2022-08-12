@@ -56,6 +56,12 @@ class PlanDesignPanel(QWidget):
         self._anglesEdit.setPlaceholderText('0;45')
         self.layout.addWidget(self._anglesEdit)
 
+        self._couchAnglesLabel = QLabel('Couch angles:')
+        self.layout.addWidget(self._couchAnglesLabel)
+        self._couchAnglesEdit = QLineEdit(self)
+        self._couchAnglesEdit.setText('0')
+        self.layout.addWidget(self._couchAnglesEdit)
+
         self._runButton = QPushButton('Create')
         self._runButton.clicked.connect(self._create)
         self.layout.addWidget(self._runButton)
@@ -79,7 +85,15 @@ class PlanDesignPanel(QWidget):
 
         planStructure.gantryAngles = gantryAngles
 
-        couchAngles = [0 for angle in gantryAngles] # TODO
+        couchAnglesStr = self._anglesEdit.text().split(";")
+        couchAngles = [float(angle) for angle in couchAnglesStr]
+
+        if len(couchAngles)==1 and couchAngles==0.:
+            couchAngles = [0 for angle in couchAngles]
+
+        if len(gantryAngles) != len(couchAngles):
+            raise Exception("The number of gantry angles must be equal to the number of couch angles")
+
         planStructure.couchAngles = couchAngles
 
         planStructure.name = self._planNameEdit.text()

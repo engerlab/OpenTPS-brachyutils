@@ -86,12 +86,6 @@ def loadSerializedObject(filePath):
 
 
 def saveRTPlan(plan , file_path):
-    if plan.beamlets != []:
-        plan.beamlets.unload()
-
-    for scenario in plan.scenarios:
-        scenario.unload()
-        
     # dcm = plan.OriginalDicomDataset
     # plan.OriginalDicomDataset = []
 

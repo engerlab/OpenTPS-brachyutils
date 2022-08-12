@@ -17,7 +17,6 @@ class PlanIonBeam:
         self.gantryAngle = 0.0
         self.couchAngle = 0.0
         self.id = 0
-        self.patientSupportAngle = 0.0
         self.rangeShifter: Optional[RangeShifter] = None
         self.seriesInstanceUID = ""
 
@@ -52,7 +51,6 @@ class PlanIonBeam:
         self.gantryAngle = otherBeam.gantryAngle
         self.couchAngle = otherBeam.couchAngle
         self.id = otherBeam.id
-        self.patientSupportAngle = otherBeam.patientSupportAngle
         self.rangeShifter = copy.deepcopy(otherBeam.rangeShifter, memodict)
         self.seriesInstanceUID = otherBeam.seriesInstanceUID
 

@@ -7,7 +7,7 @@ from Core.Data.Plan.objectivesList import ObjectivesList
 from Core.Data.Plan.planStructure import PlanStructure
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patient import Patient
-from Core.Processing.PlanOptimization import optimizationWorkflow
+from Core.Processing.PlanOptimization import optimizationWorkflows
 from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
 from GUI.Panels.planOptiPanel.objectivesWindow import ROITable
 
@@ -170,9 +170,9 @@ class PlanOptiPanel(QWidget):
         for obj in self._objectivesWidget.objectives:
             objectiveList.append(obj)
 
-        plan.objectives = objectiveList
+        self._selectedPlanStructure.objectives = objectiveList
 
-        optimizationWorkflow.optimizeIMPT(plan, self._selectedPlanStructure)
+        optimizationWorkflows.optimizeIMPT(plan, self._selectedPlanStructure)
 
 class ObjectivesWidget(QWidget):
     DEFAULT_OBJECTIVES_TEXT = 'No objective defined yet'

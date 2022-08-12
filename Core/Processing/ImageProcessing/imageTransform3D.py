@@ -141,7 +141,7 @@ def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Seq
 def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
     isocenter = beam.isocenterPosition
     gantryAngle = beam.gantryAngle
-    patientSupportAngle = beam.patientSupportAngle
+    patientSupportAngle = beam.couchAngle
 
     orig = np.array(isocenter)
 

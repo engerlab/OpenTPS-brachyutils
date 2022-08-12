@@ -7,7 +7,6 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planStructure import PlanStructure
 from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO import mcsquareIO, scannerReader
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
@@ -20,36 +19,29 @@ from programSettings import ProgramSettings
 
 logger = logging.getLogger(__name__)
 
-
-#TODO Do we really need objectives, beamlets and planStructure in plan
-# Makes no sense that targetMask is defined in planStructure and objectives on targets are in plan
-# Are planStructure and targetMask used outside this function?
-# beamlets is used in planOptimization.py
-# To me, beamlets should be given to planOptimization.py and removed from plan and objectives and objectives should be placed in planStructure.
-# The definition of planStructure would be everything needed to build/optimize the plan.
-# Si on fait comme ça, on peut sauver la planStructure et la reloader!
-
 def optimizeIMPT(plan:RTPlan, planStructure:PlanStructure):
-    plan.objectives.setScoringParameters(planStructure.ct)
+    plan.planDesign = planStructure
 
-    _defineTargetMaskAndPrescription(plan, planStructure)
+    planStructure.objectives.setScoringParameters(planStructure.ct)
+
+    _defineTargetMaskAndPrescription(planStructure)
     _createBeams(plan, planStructure)
     _initializeBeams(plan, planStructure)
-    beamlets = _computeBeamlets(plan, planStructure)
-    _optimizePlan(plan, beamlets)
+    _computeBeamlets(plan, planStructure)
+    _optimizePlan(plan, planStructure)
 
-    finalDose = _computeFinalDose(plan, beamlets, planStructure)
+    finalDose = _computeFinalDose(plan, planStructure)
     finalDose.patient = plan.patient
 
-def _defineTargetMaskAndPrescription(plan:RTPlan, planStructure:PlanStructure):
+def _defineTargetMaskAndPrescription(planStructure:PlanStructure):
     from Core.Data.roiContour import ROIContour
 
     targetMask = None
-    for objective in plan.objectives.fidObjList:
+    for objective in planStructure.objectives.fidObjList:
         if objective.metric == objective.Metrics.DMIN:
             roi = objective.roi
 
-            plan.objectives.targetPrescription = objective.limitValue # TODO: User should enter this value
+            planStructure.objectives.targetPrescription = objective.limitValue # TODO: User should enter this value
 
             if isinstance(roi, ROIContour):
                 mask = roi.getBinaryMask(origin=objective.scoringOrigin, gridSize=objective.scoringGridSize,
@@ -107,18 +99,15 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
     mc2.beamModel = bdl
     mc2.nbPrimaries = optimizationSettings.beamletPrimaries
 
-    beamlets = mc2.computeBeamlets(planStructure.ct, plan)
-    return beamlets
+    planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
-def _optimizePlan(plan:RTPlan, beamlets:SparseBeamlets):
+def _optimizePlan(plan:RTPlan, planStructure:PlanStructure):
     optimizationSettings = PlanOptimizationSettings()
 
-    plan.beamlets = beamlets
+    beamletMatrix = planStructure.beamlets.toSparseMatrix()
 
-    beamletMatrix = beamlets.toSparseMatrix()
-
-    objectiveFunction = DoseFidelity(plan.objectives.fidObjList, beamletMatrix, formatArray=32, xSquare=False, scenariosBL=None, returnWorstCase=False)
-    solver = IMPTPlanOptimizer(method=optimizationSettings.imptSolver, plan=plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
+    objectiveFunction = DoseFidelity(planStructure.objectives.fidObjList, beamletMatrix, formatArray=32, xSquare=False, scenariosBL=None, returnWorstCase=False)
+    solver = IMPTPlanOptimizer(optimizationSettings.imptSolver, plan, planStructure, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
 
     solver.xSquared = False
 
@@ -126,6 +115,6 @@ def _optimizePlan(plan:RTPlan, beamlets:SparseBeamlets):
 
     plan.spotMUs = w
 
-def _computeFinalDose(plan:RTPlan, beamlets:SparseBeamlets, planStructure) -> DoseImage:
-    beamlets.beamletWeights = plan.spotMUs
-    return beamlets.toDoseImage()
+def _computeFinalDose(plan:RTPlan, planStructure) -> DoseImage:
+    planStructure.beamlets.beamletWeights = plan.spotMUs
+    return planStructure.beamlets.toDoseImage()
