@@ -10,12 +10,17 @@ class PlanOptimizationSettings(AbstractApplicationConfig):
     def __init__(self):
         super().__init__()
 
-        a = self.beamletPrimaries
-        a = self.finalDosePrimaries
+        self._writeAllFieldsIfNotAlready()
+
+    def _writeAllFieldsIfNotAlready(self):
+        self.beamletPrimaries
+        self.finalDosePrimaries
+        self.imptSolver
+        self.imptMaxIter
 
     @property
     def beamletPrimaries(self) -> int:
-        return int(self.getConfigField("MCsquare", "beamletPrimaries", int(1e6)))
+        return int(self.getConfigField("MCsquare", "beamletPrimaries", int(1e4)))
 
     @beamletPrimaries.setter
     def beamletPrimaries(self, primaries:int):
@@ -28,3 +33,19 @@ class PlanOptimizationSettings(AbstractApplicationConfig):
     @finalDosePrimaries.setter
     def finalDosePrimaries(self, primaries: int):
         self.setConfigField("MCsquare", "finalDosePrimaries", int(primaries))
+
+    @property
+    def imptSolver(self) -> str:
+        return self.getConfigField("Solvers", "IMPT", 'Scipy-LBFGS')
+
+    @imptSolver.setter
+    def imptSolver(self, solver:str):
+        self.setConfigField("Solvers", "IMPT", solver)
+
+    @property
+    def imptMaxIter(self) -> int:
+        return int(self.getConfigField("IMPT", "maxIter", int(100)))
+
+    @imptMaxIter.setter
+    def imptMaxIter(self, maxIter:int):
+        self.setConfigField("IMPT", "maxIter", maxIter)

@@ -39,7 +39,7 @@ class AbstractApplicationConfig(metaclass=Singleton):
         try:
             output = self._config[section][field]
             if not (output is None):
-                return int(output)
+                return output
         except:
             pass
 

@@ -172,7 +172,7 @@ class PlanOptiPanel(QWidget):
 
         plan.objectives = objectiveList
 
-        optimizationWorkflow.optimize(plan, self._selectedPlanStructure)
+        optimizationWorkflow.optimizeIMPT(plan, self._selectedPlanStructure)
 
 class ObjectivesWidget(QWidget):
     DEFAULT_OBJECTIVES_TEXT = 'No objective defined yet'

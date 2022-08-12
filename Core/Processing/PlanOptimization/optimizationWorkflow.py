@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 # The definition of planStructure would be everything needed to build/optimize the plan.
 # Si on fait comme ça, on peut sauver la planStructure et la reloader!
 
-def optimize(plan:RTPlan, planStructure:PlanStructure):
+def optimizeIMPT(plan:RTPlan, planStructure:PlanStructure):
     plan.objectives.setScoringParameters(planStructure.ct)
 
     _defineTargetMaskAndPrescription(plan, planStructure)
@@ -112,13 +112,15 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
     return beamlets
 
 def _optimizePlan(plan:RTPlan, beamlets:SparseBeamlets):
+    optimizationSettings = PlanOptimizationSettings()
+
     plan.beamlets = beamlets
 
     beamletMatrix = beamlets.toSparseMatrix()
     beamletMatrix = sp.csc_matrix.dot(beamletMatrix, sp.csc_matrix(np.diag(beamlets.beamletRescaling)))
 
     objectiveFunction = DoseFidelity(plan.objectives.fidObjList, beamletMatrix, formatArray=32, xSquare=False, scenariosBL=None, returnWorstCase=False)
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=100)
+    solver = IMPTPlanOptimizer(method=optimizationSettings.imptSolver, plan=plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
 
     solver.xSquared = False
 
