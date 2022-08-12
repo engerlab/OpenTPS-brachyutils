@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import scipy.sparse as sp
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.roiMask import ROIMask
@@ -117,7 +116,6 @@ def _optimizePlan(plan:RTPlan, beamlets:SparseBeamlets):
     plan.beamlets = beamlets
 
     beamletMatrix = beamlets.toSparseMatrix()
-    beamletMatrix = sp.csc_matrix.dot(beamletMatrix, sp.csc_matrix(np.diag(beamlets.beamletRescaling)))
 
     objectiveFunction = DoseFidelity(plan.objectives.fidObjList, beamletMatrix, formatArray=32, xSquare=False, scenariosBL=None, returnWorstCase=False)
     solver = IMPTPlanOptimizer(method=optimizationSettings.imptSolver, plan=plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)

@@ -98,7 +98,7 @@ class SparseBeamlets(PatientData):
         return doseImage
 
     def toSparseMatrix(self) -> csc_matrix:
-        return self._sparseBeamlets
+        return csc_matrix.dot(self._sparseBeamlets, csc_matrix(np.diag(self._beamletRescaling)))
 
     def cropFromROI(self, roi):
         raise NotImplementedError()
