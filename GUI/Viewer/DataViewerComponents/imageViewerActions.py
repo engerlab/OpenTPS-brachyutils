@@ -1,8 +1,10 @@
 import functools
+from typing import Sequence
 
 import matplotlib
 from PyQt5.QtWidgets import QComboBox, QWidgetAction, QMenu, QAction
 
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.doseComparisonImageProvider import DoseComparisonImageProvider
 from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
@@ -27,8 +29,8 @@ class ImageViewerActions:
         self._viewTypeAction = QWidgetAction(None)
         self._viewTypeAction.setDefaultWidget(self._viewTypeCombo)
 
+        self._primaryImageMenu = PrimaryImageMenu(self._imageViewer)
         self._secondaryImageMenu = SecondaryImageMenu(self._imageViewer)
-        self._primaryImageMenu = PrimaryImageMenu()
         self._doseComparisonMenu = DoseComparisonMenu(self._imageViewer)
 
         self.hide()
@@ -77,11 +79,28 @@ class ImageViewerActions:
 
 
 class PrimaryImageMenu(QMenu):
-    def __init__(self):
+    def __init__(self, imageViewer:Image3DViewer):
         super().__init__("Primary image")
 
-        self._wwlAction = QAction("Window level", self)
-        self.addAction(self._wwlAction)
+        self._imageViewer = imageViewer
+
+        self._wwlMenu = QMenu("Window level/width", self)
+        self.addMenu(self._wwlMenu)
+
+        self._presetMenu = QMenu("Presets", self)
+        self._wwlMenu.addMenu(self._presetMenu)
+
+        self._wwlActions = []
+        for ps in presets():
+            wwlAction = QAction(ps.name + ' ' + str((ps.wwl[1], ps.wwl[0])), self)
+            wwlAction.triggered.connect(functools.partial(self._setPreset, ps))
+
+            self._wwlActions.append(wwlAction)
+
+            self._presetMenu.addAction(wwlAction)
+
+    def _setPreset(self, ps):
+        Image3DForViewer(self._imageViewer.primaryImage).wwlValue = (ps.wwl[1], ps.wwl[0])
 
 class SecondaryImageMenu(QMenu):
     def __init__(self, imageViewer:Image3DViewer):
@@ -110,7 +129,7 @@ class SecondaryImageMenu(QMenu):
         self._colorbarAction.triggered.connect(self._setColorbarOnOff)
         self.addAction(self._colorbarAction)
 
-        self._wwlAction = QAction("Window level", self)
+        self._wwlAction = QAction("Window level/width", self)
         self._wwlAction.triggered.connect(self._showImageProperties)
         self.addAction(self._wwlAction)
 
@@ -185,3 +204,39 @@ class DoseComparisonMenu(QMenu):
 
     def setFusion(self, name:str):
         self._imageViewer.secondaryImageLayer.lookupTableName = name
+
+
+class WWLPreset:
+    def __init__(self, name:str, wwl:Sequence[float]):
+        self.name:str = name
+        self.wwl:Sequence[float] = wwl
+
+def presets() -> Sequence[WWLPreset]:
+    presets = []
+
+    ps = WWLPreset("Bone", (450, 1600))
+    presets.append(ps)
+    ps = WWLPreset("Brain", (35, 100))
+    presets.append(ps)
+    ps = WWLPreset("Dental", (400, 2000))
+    presets.append(ps)
+    ps = WWLPreset("Inner ear", (700, 4000))
+    presets.append(ps)
+    ps = WWLPreset("Larynx", (40, 250))
+    presets.append(ps)
+    ps = WWLPreset("Liver", (50, 350))
+    presets.append(ps)
+    ps = WWLPreset("Lung", (-600, 1600))
+    presets.append(ps)
+    ps = WWLPreset("Mediastinum", (40, 400))
+    presets.append(ps)
+    ps = WWLPreset("Pelvis", (250, 1000))
+    presets.append(ps)
+    ps = WWLPreset("Soft tissue", (40, 350))
+    presets.append(ps)
+    ps = WWLPreset("Spine", (35, 300))
+    presets.append(ps)
+    ps = WWLPreset("Vertebrae", (350, 2000))
+    presets.append(ps)
+
+    return presets
