@@ -31,11 +31,17 @@ def fusionLT(range:Sequence[float], opacity:float, colormap:str):
 
     return table
 def grayLT(range):
+    print(range)
+
     table = vtkCommonCore.vtkLookupTable()
     table.SetRange(range[0], range[1])  # image intensity range
     table.SetValueRange(0.0, 1.0)  # from black to white
     table.SetSaturationRange(0.0, 0.0)  # no color saturation
     table.SetRampToLinear()
+    table.SetAlpha(1.)
+    table.SetAboveRangeColor(1., 1., 1., 1.)
+    table.SetBelowRangeColor(0., 0., 0., 0.)
+    table.SetNumberOfTableValues(100)
     table.Build()
 
     return table

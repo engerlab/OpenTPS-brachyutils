@@ -22,7 +22,7 @@ class GenericImageForViewer(DataMultiton):
 
         self._range = (0, 100)
         self._wwlValue = (self._range[1]-self._range[0], (self._range[1]+self._range[0])/2.)
-        self._lookupTableName = 'jet'
+        self._lookupTableName = 'gray'
         self._opacity = 0.5
         self._selectedPosition = (0, 0, 0)
         self._vtkOutputPort = None
@@ -68,7 +68,10 @@ class GenericImageForViewer(DataMultiton):
         self._updateLT()
 
     def _updateLT(self):
-        self._lookupTable = lookupTables.fusionLT(self._range, self._opacity, self._lookupTableName)
+        if self._lookupTableName == 'gray':
+            self._lookupTable = lookupTables.grayLT(self._range)
+        else:
+            self._lookupTable = lookupTables.fusionLT(self._range, self._opacity, self._lookupTableName)
         self.lookupTableChangedSignal.emit(self._lookupTable)
 
     @property

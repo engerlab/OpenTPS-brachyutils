@@ -100,7 +100,7 @@ class PrimaryImageMenu(QMenu):
             self._presetMenu.addAction(wwlAction)
 
     def _setPreset(self, ps):
-        Image3DForViewer(self._imageViewer.primaryImage).wwlValue = (ps.wwl[1], ps.wwl[0])
+        Image3DForViewer(self._imageViewer.primaryImage).wwlValue = ps.wwl
 
 class SecondaryImageMenu(QMenu):
     def __init__(self, imageViewer:Image3DViewer):
@@ -184,7 +184,7 @@ class DoseComparisonMenu(QMenu):
         self._colorbarAction.triggered.connect(self._setColorbarOnOff)
         self.addAction(self._colorbarAction)
 
-        self._wwlAction = QAction("Window level", self)
+        self._wwlAction = QAction("Window level/width", self)
         self._wwlAction.triggered.connect(self._showImageProperties)
         self.addAction(self._wwlAction)
 
@@ -214,29 +214,29 @@ class WWLPreset:
 def presets() -> Sequence[WWLPreset]:
     presets = []
 
-    ps = WWLPreset("Bone", (450, 1600))
+    ps = WWLPreset("Bone", (1600, 450))
     presets.append(ps)
-    ps = WWLPreset("Brain", (35, 100))
+    ps = WWLPreset("Brain", (100, 35))
     presets.append(ps)
-    ps = WWLPreset("Dental", (400, 2000))
+    ps = WWLPreset("Dental", (2000, 400))
     presets.append(ps)
-    ps = WWLPreset("Inner ear", (700, 4000))
+    ps = WWLPreset("Inner ear", (4000, 700))
     presets.append(ps)
-    ps = WWLPreset("Larynx", (40, 250))
+    ps = WWLPreset("Larynx", (250, 40))
     presets.append(ps)
-    ps = WWLPreset("Liver", (50, 350))
+    ps = WWLPreset("Liver", (350, 50))
     presets.append(ps)
-    ps = WWLPreset("Lung", (-600, 1600))
+    ps = WWLPreset("Lung", (1600, -600))
     presets.append(ps)
-    ps = WWLPreset("Mediastinum", (40, 400))
+    ps = WWLPreset("Mediastinum", (400, 40))
     presets.append(ps)
-    ps = WWLPreset("Pelvis", (250, 1000))
+    ps = WWLPreset("Pelvis", (1000, 250))
     presets.append(ps)
-    ps = WWLPreset("Soft tissue", (40, 350))
+    ps = WWLPreset("Soft tissue", (350, 40))
     presets.append(ps)
-    ps = WWLPreset("Spine", (35, 300))
+    ps = WWLPreset("Spine", (300, 35))
     presets.append(ps)
-    ps = WWLPreset("Vertebrae", (350, 2000))
+    ps = WWLPreset("Vertebrae", (2000, 350))
     presets.append(ps)
 
     return presets

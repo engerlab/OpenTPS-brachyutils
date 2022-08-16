@@ -3,9 +3,9 @@ from typing import Optional, Sequence
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
-import vtkmodules.vtkCommonCore as vtkCommonCore
 from vtkmodules import vtkImagingCore, vtkCommonMath
 from vtkmodules.vtkCommonColor import vtkNamedColors
+from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkInteractionWidgets import vtkOrientationMarkerWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
@@ -85,32 +85,37 @@ class PrimaryImageLayer:
         if not (self._image is None):
             self._reslice.SetInputConnection(self._image.vtkOutputPort)
 
-            self._setInitialGrayRange(self._image.range)
-            self._setWWL(self._image.wwlValue)
+            self._renderer.AddActor(self._mainActor)
+
+            self._image.lookupTableName = 'gray'
+            self._setLookupTable()
 
             self._connectAll()
-
-            self._renderer.AddActor(self._mainActor)
 
         self.imageChangedSignal.emit(self._image)
 
         self._renderWindow.Render()
 
-    def _setInitialGrayRange(self, range:tuple):
-        """
-        Set grayscale range
-        Parameters
-        ----------
-        range(tuple): range
-        """
-        table = vtkCommonCore.vtkLookupTable()
-        table.SetRange(range[0], range[1])  # image intensity range
-        table.SetValueRange(0.0, 1.0)  # from black to white
-        table.SetSaturationRange(0.0, 0.0)  # no color saturation
-        table.SetRampToLinear()
-        table.Build()
+    def _setLookupTable(self):
+        self._colorMapper.SetLookupTable(self._image.lookupTable)
 
-        self._colorMapper.SetLookupTable(table)
+        # Trick to instantiate image property in iStyle
+        self._iStyle.EndWindowLevel()
+        self._iStyle.OnLeftButtonDown()
+        self._iStyle.WindowLevel()
+        self._renderWindow.GetInteractor().SetEventPosition(400, 0)
+        self._iStyle.InvokeEvent(vtkCommand.StartWindowLevelEvent)
+        self._iStyle.OnLeftButtonUp()
+        self._iStyle.EndWindowLevel()
+
+        imageProperty = self._iStyle.GetCurrentImageProperty()
+        imageProperty.UseLookupTableScalarRangeOn()
+        imageProperty.SetLookupTable(self._image.lookupTable)
+
+        self._colorMapper.SetLookupTable(self._image.lookupTable)
+    def updateLookupTable(self, lt):
+        self._colorMapper.SetLookupTable(lt)
+        self._renderWindow.Render()
 
     @property
     def resliceAxes(self):
@@ -125,27 +130,13 @@ class PrimaryImageLayer:
         self._orientationActor.PokeMatrix(resliceAxes)
 
     def _connectAll(self):
-        self._image.wwlChangedSignal.connect(self._setWWL)
+        self._image.lookupTableChangedSignal.connect(self.updateLookupTable)
 
     def _disconnectAll(self):
         if self._image is None:
             return
 
-        self._image.wwlChangedSignal.disconnect(self._setWWL)
-
-    def _setWWL(self, wwl: Sequence):
-        """
-            Set window level
-            Parameters
-             ----------
-            range(Sequence): (window width, window level)
-        """
-        imageProperty = self._iStyle.GetCurrentImageProperty()
-        if not (imageProperty is None):
-            imageProperty.SetColorWindow(wwl[0])
-            imageProperty.SetColorLevel(wwl[1])
-
-            self._renderWindow.Render()
+        self._image.lookupTableChangedSignal.disconnect(self.updateLookupTable)
 
     def resliceDataFromPhysicalPoint(self, point):
         imageData = self._reslice.GetInput(0)

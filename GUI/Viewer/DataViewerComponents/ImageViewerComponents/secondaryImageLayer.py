@@ -41,7 +41,6 @@ class SecondaryImageLayer(PrimaryImageLayer):
         if image is None:
             self.colorbarOn = False
         else:
-            self._setLookupTable(self._image.lookupTable)
             self.colorbarOn = True # TODO: Get this from parent
 
         self._renderWindow.Render()
@@ -73,20 +72,20 @@ class SecondaryImageLayer(PrimaryImageLayer):
     def _connectAll(self):
         super()._connectAll()
 
-        self._image.lookupTableChangedSignal.connect(self._setLookupTable)
-
     def _disconnectAll(self):
         super()._disconnectAll()
 
         if self._image is None:
             return
 
-        self._image.lookupTableChangedSignal.disconnect(self._setLookupTable)
+    def _setLookupTable(self):
+        self._image.lookupTableName = 'jet'
+        self._colorbarActor.SetLookupTable(self._image.lookupTable)
 
-    def _setLookupTable(self, lookupTable):
-        self._colorMapper.SetLookupTable(lookupTable)
-        self._colorbarActor.SetLookupTable(lookupTable)
-        self._renderWindow.Render()
+    def updateLookupTable(self, lt):
+        self._colorbarActor.SetLookupTable(lt)
+        super().updateLookupTable(lt)
+
 
     def _setWWL(self, wwl: Sequence):
         # WWL is changed via iStyle. It is only working on the primary image.
