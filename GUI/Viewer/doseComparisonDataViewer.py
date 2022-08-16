@@ -2,14 +2,12 @@ from typing import Optional
 
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image3D import Image3D
-from GUI.Viewer.DataViewerComponents.doseComparisonImageActions import DoseComparisonImageActions
 from GUI.Viewer.DataViewerComponents.doseComparisonImageProvider import DoseComparisonImageProvider
 from GUI.Viewer.dataViewer import DataViewer
 
 
 class DoseComparisonDataViewer(DataViewer):
     def __init__(self, viewController):
-        self._doseComparisonImageActions = None
         self._displayDoseComparison = False
         self._doseComparisonImageProvider = DoseComparisonImageProvider()
 
@@ -21,8 +19,7 @@ class DoseComparisonDataViewer(DataViewer):
     def _initializeControl(self):
         super()._initializeControl()
 
-        self._doseComparisonImageActions = DoseComparisonImageActions(self._staticImage3DViewer, self)
-        self._doseComparisonImageActions.addToToolbar(self._toolbar)
+        self._imageViewerActions.doseComparisonDataViewer = self
 
         self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
 
@@ -40,8 +37,7 @@ class DoseComparisonDataViewer(DataViewer):
     def _handleDisplayTypeChange(self, displayType):
         super()._handleDisplayTypeChange(displayType)
 
-        if not (self._doseComparisonImageActions is None) and not self._displayDoseComparison:
-            self._doseComparisonImageActions.hide()
+        if not self._displayDoseComparison:
             self._doseComparisonImageProvider.doseComparisonImageChangedSignal.disconnect(self._handleNewDoseComparisonImage)
 
     def _handleNewDoseComparisonImage(self, *ags):
@@ -50,15 +46,12 @@ class DoseComparisonDataViewer(DataViewer):
     def _setSecondaryImage(self, image:Optional[Image3D]):
         if image != self._doseComparisonImageProvider.doseComparisonImage:
             self._displayDoseComparison = False
-            self._doseComparisonImageActions.hide()
 
         super()._setSecondaryImage(image)
 
         if self._displayDoseComparison:
             self._imageViewerActions.setImageViewer(self._currentViewer)
             self._imageViewerActions.hide()
-            self._secondaryImageActions.hide()
-            self._doseComparisonImageActions.show()
 
     def _setDose1(self, image:Optional[DoseImage]):
         self._doseComparisonImageProvider.doseComparisonImageChangedSignal.disconnect(self._handleNewDoseComparisonImage)

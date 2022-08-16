@@ -17,7 +17,6 @@ from GUI.Viewer.DataViewerComponents.dynamicImage3DViewer import DynamicImage3DV
 from GUI.Viewer.DataViewerComponents.image2DViewer import Image2DViewer
 from GUI.Viewer.DataViewerComponents.dynamicImage2DViewer import DynamicImage2DViewer
 from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerActions
-from GUI.Viewer.DataViewerComponents.secondaryImageActions import SecondaryImageActions
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.dvhPlot import DVHViewer
@@ -358,11 +357,9 @@ class DataViewer(QWidget):
     ####################################################################################################################
     # This is the logical part of the viewer. Should we migrate this to a dedicated controller?
     def _initializeControl(self):
-        self._secondaryImageActions = SecondaryImageActions(self._staticImage3DViewer.secondaryImageLayer)
         self._imageViewerActions = ImageViewerActions(self._staticImage3DViewer)
         self._dvhViewerActions = DVHViewerActions(self._dvhViewer)
 
-        self._secondaryImageActions.addToToolbar(self._toolbar)
         self._imageViewerActions.addToToolbar(self._toolbar)
         self._dvhViewerActions.addToToolbar(self._toolbar)
 
@@ -381,13 +378,10 @@ class DataViewer(QWidget):
 
     def _handleDisplayTypeChange(self, displayType):
         self._imageViewerActions.hide()
-        self._secondaryImageActions.hide()
 
         if displayType==self.DisplayTypes.DISPLAY_IMAGE:
             self._imageViewerActions.setImageViewer(self._currentViewer)
             self._imageViewerActions.show()
-            self._secondaryImageActions.show()
-
 
     def enableDrop(self, enabled):
         self.dropEnabled = enabled
