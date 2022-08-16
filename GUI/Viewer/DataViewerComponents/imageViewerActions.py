@@ -1,4 +1,6 @@
+import functools
 
+import matplotlib
 from PyQt5.QtWidgets import QComboBox, QWidgetAction, QMenu, QAction
 
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
@@ -95,12 +97,14 @@ class SecondaryImageMenu(QMenu):
         self._colorMapMenu = QMenu("Colormap", self)
         self.addMenu(self._colorMapMenu)
 
-        self._jetAction = QAction("Jet", self._colorMapMenu)
-        self._colorMapMenu.addAction(self._jetAction)
-        self._parulaAction = QAction("Parula", self._colorMapMenu)
-        self._colorMapMenu.addAction(self._parulaAction)
-        self._hotAction = QAction("Hot", self._colorMapMenu)
-        self._colorMapMenu.addAction(self._hotAction)
+        self._colormapActions = []
+        cms = matplotlib.pyplot.colormaps()
+
+        for cm in cms:
+            cmAction = QAction(cm, self._colorMapMenu)
+            cmAction.triggered.connect(functools.partial(self.setFusion, cm))
+            self._colorMapMenu.addAction(cmAction)
+            self._colormapActions.append(cmAction)
 
         self._colorbarAction = QAction("Show/hide colorbar", self)
         self._colorbarAction.triggered.connect(self._setColorbarOnOff)
@@ -119,6 +123,9 @@ class SecondaryImageMenu(QMenu):
     def _showImageProperties(self):
         self._imageFusionProp = ImageFusionPropEditor(self._secondaryImageLayer.image.data)
         self._imageFusionProp.show()
+
+    def setFusion(self, name:str):
+        self._imageViewer.secondaryImageLayer.image.lookupTableName = name
 
 class DoseComparisonMenu(QMenu):
     def __init__(self, imageViewer:Image3DViewer):
@@ -145,12 +152,14 @@ class DoseComparisonMenu(QMenu):
         self._colorMapMenu = QMenu("Colormap", self)
         self.addMenu(self._colorMapMenu)
 
-        self._jetAction = QAction("Jet", self._colorMapMenu)
-        self._colorMapMenu.addAction(self._jetAction)
-        self._parulaAction = QAction("Parula", self._colorMapMenu)
-        self._colorMapMenu.addAction(self._parulaAction)
-        self._hotAction = QAction("Hot", self._colorMapMenu)
-        self._colorMapMenu.addAction(self._hotAction)
+        self._colormapActions = []
+        cms = matplotlib.pyplot.colormaps()
+
+        for cm in cms:
+            cmAction = QAction(cm, self._colorMapMenu)
+            cmAction.triggered.connect(functools.partial(self.setFusion, cm))
+            self._colorMapMenu.addAction(cmAction)
+            self._colormapActions.append(cmAction)
 
         self._colorbarAction = QAction("Show/hide colorbar", self)
         self._colorbarAction.triggered.connect(self._setColorbarOnOff)
@@ -173,3 +182,6 @@ class DoseComparisonMenu(QMenu):
         self.dataViewer.comparisonMetric = DoseComparisonImageProvider.Metric.ABSOLUTE_DIFFERENCE
     def _setGammaMetric(self):
         self.dataViewer.comparisonMetric = DoseComparisonImageProvider.Metric.GAMMA
+
+    def setFusion(self, name:str):
+        self._imageViewer.secondaryImageLayer.lookupTableName = name

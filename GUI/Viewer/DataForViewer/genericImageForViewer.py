@@ -5,7 +5,7 @@ from math import isclose
 from Core.event import Event
 
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables import LookupTables
+import GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables as lookupTables
 
 
 class GenericImageForViewer(DataMultiton):
@@ -22,9 +22,9 @@ class GenericImageForViewer(DataMultiton):
 
         self._range = (0, 100)
         self._wwlValue = (self._range[1]-self._range[0], (self._range[1]+self._range[0])/2.)
-        self._lookupTableName = 'fusion'
+        self._lookupTableName = 'jet'
         self._opacity = 0.5
-        self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
+        self._lookupTable = lookupTables.fusionLT(self._range, self._opacity, self._lookupTableName)
         self._selectedPosition = (0, 0, 0)
         self._vtkOutputPort = None
 
@@ -51,12 +51,20 @@ class GenericImageForViewer(DataMultiton):
         self.wwlChangedSignal.emit(self._wwlValue)
 
     @property
-    def lookupTable(self):
+    def lookupTable(self) :
         return self._lookupTable
 
-    @lookupTable.setter
-    def lookupTable(self, lookupTableName):
-        self._lookupTable = LookupTables()[lookupTableName](self.range, self.opacity)
+    @property
+    def lookupTableName(self) -> str:
+        return self._lookupTableName
+
+    @lookupTableName.setter
+    def lookupTableName(self, lookupTableName:str):
+        if self._lookupTableName == lookupTableName:
+            return
+
+        self._lookupTableName = lookupTableName
+        self._lookupTable = lookupTables.fusionLT(self._range, self._opacity, self._lookupTableName)
         self.lookupTableChangedSignal.emit(self._lookupTable)
 
     @property
@@ -71,7 +79,7 @@ class GenericImageForViewer(DataMultiton):
         self._range = (range[0], range[1])
         self.wwlValue = (range[1]-range[0], (range[1]+range[0])/2.)
 
-        self.lookupTable = self._lookupTableName
+        self.lookupTableName = self._lookupTableName
 
         self.rangeChangedSignal.emit(self._range)
 
@@ -82,7 +90,7 @@ class GenericImageForViewer(DataMultiton):
     @opacity.setter
     def opacity(self, opacity: float):
         self._opacity = opacity
-        self.lookupTable = self._lookupTableName
+        self.lookupTableName = self._lookupTableName
 
     @property
     def vtkOutputPort(self):
