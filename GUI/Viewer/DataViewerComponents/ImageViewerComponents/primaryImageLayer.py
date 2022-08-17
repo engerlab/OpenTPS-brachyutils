@@ -21,7 +21,6 @@ class PrimaryImageLayer:
 
         colors = vtkNamedColors()
 
-        self._colorMapper = vtkImagingCore.vtkImageMapToColors()
         self._image = None
         self._iStyle = iStyle
         self._mainActor = vtkRenderingCore.vtkImageActor()
@@ -48,8 +47,10 @@ class PrimaryImageLayer:
         self._reslice.SetOutputDimensionality(2)
         self._reslice.SetInterpolationModeToNearestNeighbor()
 
-        self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
-        self._mainMapper.SetInputConnection(self._colorMapper.GetOutputPort())
+        self._setMainMapperInputConnection()
+
+    def _setMainMapperInputConnection(self):
+        self._mainMapper.SetInputConnection(self._reslice.GetOutputPort())
 
     def close(self):
         self._disconnectAll()
@@ -97,24 +98,14 @@ class PrimaryImageLayer:
         self._renderWindow.Render()
 
     def _setLookupTable(self):
-        self._colorMapper.SetLookupTable(self._image.lookupTable)
-
-        # Trick to instantiate image property in iStyle
-        self._iStyle.EndWindowLevel()
-        self._iStyle.OnLeftButtonDown()
-        self._iStyle.WindowLevel()
-        self._renderWindow.GetInteractor().SetEventPosition(400, 0)
-        self._iStyle.InvokeEvent(vtkCommand.StartWindowLevelEvent)
-        self._iStyle.OnLeftButtonUp()
-        self._iStyle.EndWindowLevel()
-
-        imageProperty = self._iStyle.GetCurrentImageProperty()
+        imageProperty = self._mainActor.GetProperty()
+        imageProperty.SetLookupTable(self._image.lookupTable)
         imageProperty.UseLookupTableScalarRangeOn()
+
+    def _updateLookupTable(self, lt):
+        imageProperty = self._mainActor.GetProperty()
         imageProperty.SetLookupTable(self._image.lookupTable)
 
-        self._colorMapper.SetLookupTable(self._image.lookupTable)
-    def updateLookupTable(self, lt):
-        self._colorMapper.SetLookupTable(lt)
         self._renderWindow.Render()
 
     @property
@@ -130,13 +121,18 @@ class PrimaryImageLayer:
         self._orientationActor.PokeMatrix(resliceAxes)
 
     def _connectAll(self):
-        self._image.lookupTableChangedSignal.connect(self.updateLookupTable)
+        self._image.lookupTableChangedSignal.connect(self._updateLookupTable)
+        self._image.rangeChangedSignal.connect(self._render)
 
     def _disconnectAll(self):
         if self._image is None:
             return
 
-        self._image.lookupTableChangedSignal.disconnect(self.updateLookupTable)
+        self._image.lookupTableChangedSignal.disconnect(self._updateLookupTable)
+        self._image.rangeChangedSignal.connect(self._render)
+
+    def _render(self, *args):
+        self._renderWindow.Render()
 
     def resliceDataFromPhysicalPoint(self, point):
         imageData = self._reslice.GetInput(0)

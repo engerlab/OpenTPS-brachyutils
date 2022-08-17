@@ -2,6 +2,7 @@ from typing import Optional, Sequence
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
+from vtkmodules import vtkImagingCore
 from vtkmodules.vtkInteractionWidgets import vtkScalarBarWidget
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
@@ -12,6 +13,8 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImageLayer imp
 
 class SecondaryImageLayer(PrimaryImageLayer):
     def __init__(self, renderer, renderWindow, iStyle):
+        self._colorMapper = vtkImagingCore.vtkImageMapToColors()
+
         super().__init__(renderer, renderWindow, iStyle)
 
         self.colorbarVisibilitySignal = Event(bool)
@@ -28,6 +31,10 @@ class SecondaryImageLayer(PrimaryImageLayer):
 
         self._colorbarWidget.SetInteractor(self._renderWindow.GetInteractor())
         self._colorbarWidget.SetScalarBarActor(self._colorbarActor)
+
+    def _setMainMapperInputConnection(self):
+        self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
+        self._mainMapper.SetInputConnection(self._colorMapper.GetOutputPort())
 
     def close(self):
         super().close()
@@ -80,12 +87,14 @@ class SecondaryImageLayer(PrimaryImageLayer):
 
     def _setLookupTable(self):
         self._image.lookupTableName = 'jet'
+        self._colorMapper.SetLookupTable(self._image.lookupTable)
         self._colorbarActor.SetLookupTable(self._image.lookupTable)
 
-    def updateLookupTable(self, lt):
+    def _updateLookupTable(self, lt):
+        self._colorMapper.SetLookupTable(lt)
         self._colorbarActor.SetLookupTable(lt)
-        super().updateLookupTable(lt)
 
+        self._renderWindow.Render()
 
     def _setWWL(self, wwl: Sequence):
         # WWL is changed via iStyle. It is only working on the primary image.

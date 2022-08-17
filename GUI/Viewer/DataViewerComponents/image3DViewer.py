@@ -178,16 +178,6 @@ class Image3DViewer(QWidget):
         # Start interaction
         self._renderWindow.GetInteractor().Start()
 
-        # Trick to instantiate image property in iStyle
-        if self._iStyle.GetCurrentImageProperty() is None:
-            self._iStyle.EndWindowLevel()
-            self._iStyle.OnLeftButtonDown()
-            self._iStyle.WindowLevel()
-            self._renderWindow.GetInteractor().SetEventPosition(400, 0)
-            self._iStyle.InvokeEvent(vtkCommand.StartWindowLevelEvent)
-            self._iStyle.OnLeftButtonUp()
-            self._iStyle.EndWindowLevel()
-
         if self._wwlEnabled:
             self._iStyle.StartWindowLevel()
             self._iStyle.OnLeftButtonUp()

@@ -20,7 +20,7 @@ class GenericImageForViewer(DataMultiton):
         self.selectedPositionChangedSignal = Event(tuple)
         self.rangeChangedSignal = Event(tuple)
 
-        self._range = (0, 100)
+        self._range = (-500, 500)
         self._wwlValue = (self._range[1]-self._range[0], (self._range[1]+self._range[0])/2.)
         self._lookupTableName = 'gray'
         self._opacity = 0.5
@@ -86,7 +86,10 @@ class GenericImageForViewer(DataMultiton):
         self._range = (range[0], range[1])
         self.wwlValue = (range[1]-range[0], (range[1]+range[0])/2.)
 
-        self._updateLT()
+        if not (self._lookupTable is None) and self._lookupTableName=='gray':
+            self._lookupTable.SetRange(self._range[0], self._range[1])
+        else:
+            self._updateLT()
 
         self.rangeChangedSignal.emit(self._range)
 
