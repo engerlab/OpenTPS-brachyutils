@@ -44,10 +44,20 @@ class DoseComparisonDataViewer(DataViewer):
         self._setSecondaryImage(self._doseComparisonImageProvider.doseComparisonImage)
 
     def _setSecondaryImage(self, image:Optional[Image3D]):
+        if not self._displayDoseComparison:
+            super()._setSecondaryImage(image)
+
         if image != self._doseComparisonImageProvider.doseComparisonImage:
             self._displayDoseComparison = False
 
-        super()._setSecondaryImage(image)
+        if image is None:
+            oldImage = self.cachedStaticImage3DViewer.secondaryImage
+            if oldImage is None:
+                return
+        elif not (image.patient is None):
+            image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
+
+        self.cachedStaticImage3DViewer.secondaryImage = image
 
         if self._displayDoseComparison:
             self._imageViewerActions.setImageViewer(self._currentViewer)
@@ -76,3 +86,9 @@ class DoseComparisonDataViewer(DataViewer):
 
         self._doseComparisonImageProvider.dose2 = image
         self._dvhViewer.dose2 = image
+
+    def _setDVHDose(self, image:Optional[DoseImage]):
+        if not self._displayDoseComparison:
+            super()._setDVHDose(image)
+        else:
+            return
