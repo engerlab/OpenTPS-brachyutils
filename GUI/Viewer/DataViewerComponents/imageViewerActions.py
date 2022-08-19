@@ -32,6 +32,7 @@ class ImageViewerActions:
         self._primaryImageMenu = PrimaryImageMenu(self._imageViewer)
         self._secondaryImageMenu = SecondaryImageMenu(self._imageViewer)
         self._doseComparisonMenu = DoseComparisonMenu(self._imageViewer)
+        self._rtPlanMenu = RTPlanMenu(self._imageViewer)
 
         self.hide()
 
@@ -60,6 +61,7 @@ class ImageViewerActions:
         toolbar.toolsMenu.addMenu(self._primaryImageMenu)
         toolbar.toolsMenu.addMenu(self._secondaryImageMenu)
         toolbar.toolsMenu.addMenu(self._doseComparisonMenu)
+        toolbar.toolsMenu.addMenu(self._rtPlanMenu)
 
     def hide(self):
         if not self._separator is None:
@@ -205,6 +207,18 @@ class DoseComparisonMenu(QMenu):
     def setFusion(self, name:str):
         self._imageViewer.secondaryImageLayer.lookupTableName = name
 
+class RTPlanMenu(QMenu):
+    def __init__(self, imageViewer:Image3DViewer):
+        super().__init__("RT Plan")
+
+        self._imageViewer = imageViewer
+
+        self._resetAction = QAction("Reset", self)
+        self._resetAction.triggered.connect(self._resetPlan)
+        self.addAction(self._resetAction)
+
+    def _resetPlan(self):
+        self._imageViewer.rtPlan = None
 
 class WWLPreset:
     def __init__(self, name:str, wwl:Sequence[float]):
