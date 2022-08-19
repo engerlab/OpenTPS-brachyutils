@@ -141,7 +141,7 @@ class RTPlan(PatientData):
             cumulativeMetersetWeight = 0
             for layer in beam.layers:
                 cumulativeMetersetWeight += sum(layer.spotWeights)
-            v_finalCumulativeMetersetWeight = np.concatenate(v_finalCumulativeMetersetWeight, cumulativeMetersetWeight)
+            v_finalCumulativeMetersetWeight = np.concatenate((v_finalCumulativeMetersetWeight, np.array([cumulativeMetersetWeight])))
         return v_finalCumulativeMetersetWeight
 
     @property
@@ -151,7 +151,7 @@ class RTPlan(PatientData):
             beamMeterset = 0
             for layer in beam.layers:
                 beamMeterset += sum(layer.spotWeights)
-                v_cumulativeMeterset = np.concatenate(v_cumulativeMeterset, beamMeterset)
+                v_cumulativeMeterset = np.concatenate((v_cumulativeMeterset, np.array([beamMeterset])))
         return v_cumulativeMeterset
 
     @property
