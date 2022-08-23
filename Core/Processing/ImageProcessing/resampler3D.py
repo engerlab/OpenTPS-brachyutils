@@ -328,6 +328,8 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
             print('In crop3DDataAroundBox, negative margins not allowed')
             marginInMM[i] = 0
 
+    from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+
     if isinstance(data, Image3D):
         print('Before crop image 3D origin and grid size:', data.origin, data.gridSize)
 

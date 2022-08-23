@@ -150,7 +150,7 @@ class Image3D(PatientData):
             self.imageArray = resampleOpenMP(self.imageArray, self.origin, self.spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
         else:
             from Core.Processing.ImageProcessing.resampler3D import resampleImage3D
-            resampleImage3D(self, spacing, gridSize, origin, fillValue=fillValue)
+            resampleImage3D(self, spacing, gridSize, origin, fillValue=fillValue, )
 
         # from Core.Processing.ImageProcessing import imageTransform3D
         # imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)

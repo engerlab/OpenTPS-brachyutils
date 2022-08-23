@@ -137,7 +137,7 @@ class Image2DViewer(QWidget):
         if image is None:
             self._resetPrimaryImageLayer()
         else:
-            self._setPrimaryImageForViewer(Image3DForViewer(image))
+            self._setPrimaryImageForViewer(Image2DForViewer(image))
 
         self.primaryImageSignal.emit(self.primaryImage)
 
@@ -149,6 +149,9 @@ class Image2DViewer(QWidget):
         self._blackWidget.show()
 
     def _setPrimaryImageForViewer(self, image:GenericImageForViewer):
+
+        print('in image2DVIewer _setPrimaryImageForViewer', type(image))
+
         self._primaryImageLayer.image = image
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)

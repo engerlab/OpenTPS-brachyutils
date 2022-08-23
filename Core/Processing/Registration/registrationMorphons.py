@@ -123,9 +123,9 @@ class RegistrationMorphons(Registration):
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing, tryGPU=self.tryGPU)
+            fixedResampled.resample(newVoxelSpacing, newGridSize, self.fixed._origin, tryGPU=self.tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing, tryGPU=self.tryGPU)
+            movingResampled.resample(fixedResampled._spacing, fixedResampled.gridSize, fixedResampled._origin, tryGPU=self.tryGPU)
 
             if s != 0:
                 deformation.resample(fixedResampled._spacing, fixedResampled.gridSize, fixedResampled._origin, tryGPU=self.tryGPU)

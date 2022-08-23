@@ -76,6 +76,21 @@ class PrimaryImageLayer:
         if not (isinstance(image, GenericImageForViewer) or (image is None)):
             return
 
+        print('in primaryImageLayer, _setImage', type(image), image.gridSize)
+
+        if len(image.gridSize) == 2:#, image2DForViewer):
+            print('in if')
+            self._reslice.SetOutputDimensionality(1)
+        elif len(image.gridSize) == 3:
+            self._reslice.SetOutputDimensionality(2)
+        # elif isinstance(image, )
+        # import numpy as np
+        # import matplotlib.pyplot as plt
+        # print(np.min(image.imageArray), np.max(image.imageArray))
+        # plt.figure()
+        # plt.imshow(image.imageArray)
+        # plt.show()
+
         self._image = image
 
         self._disconnectAll()
@@ -85,6 +100,8 @@ class PrimaryImageLayer:
         if not (self._image is None):
             self._reslice.SetInputConnection(self._image.vtkOutputPort)
 
+
+            print('_image.range', self._image.range)
             self._setInitialGrayRange(self._image.range)
             self._setWWL(self._image.wwlValue)
 

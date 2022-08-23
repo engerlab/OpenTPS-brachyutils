@@ -12,15 +12,25 @@ class Projection(Image2D):
 
 
 class DRR(Projection):
-    def __init__(self, imageArray=None, name="2D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1), seriesInstanceUID="", projectionAngle=0, rotationAxis='Z', sourceImage=None):
+    def __init__(self, imageArray=None, name="2D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1), seriesInstanceUID="", projectionAngle=0, rotationAxis='Z', sourceImage=None, frameOfReferenceUID="", sliceLocation=[], sopInstanceUIDs=[]):
         super().__init__(patientInfo=patientInfo, imageArray=imageArray, name=name, origin=origin, spacing=spacing, seriesInstanceUID=seriesInstanceUID, projectionAngle=projectionAngle, rotationAxis=rotationAxis, sourceImage=sourceImage)
+
+        self.frameOfReferenceUID = frameOfReferenceUID
+        self.seriesInstanceUID = seriesInstanceUID
+        self.sliceLocation = sliceLocation
+        self.sopInstanceUIDs = sopInstanceUIDs
 
         ## other params specific to DRR ?
 
 
 class XRayImage(Projection):
-    def __init__(self, imageArray=None, name="2D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1), seriesInstanceUID="", projectionAngle=0, rotationAxis='Z', sourceImage=None):
-        super().__init__(patientInfo=patientInfo, imageArray=imageArray, name=name, origin=origin, spacing=spacing, seriesInstanceUID=seriesInstanceUID, projectionAngle=projectionAngle, rotationAxis=rotationAxis, sourceImage=sourceImage)
+    def __init__(self, imageArray=None, name="2D Image", patientInfo=None, origin=(0, 0, 0), spacing=(1, 1), seriesInstanceUID="", projectionAngle=0, rotationAxis='Z', sourceImage=None, frameOfReferenceUID="", sliceLocation=[], sopInstanceUIDs=[]):
+        super().__init__(seriesInstanceUID=seriesInstanceUID, patientInfo=patientInfo, imageArray=imageArray, name=name, origin=origin, spacing=spacing, projectionAngle=projectionAngle, rotationAxis=rotationAxis, sourceImage=sourceImage)
+
+        self.frameOfReferenceUID = frameOfReferenceUID
+        self.seriesInstanceUID = seriesInstanceUID
+        self.sliceLocation = sliceLocation
+        self.sopInstanceUIDs = sopInstanceUIDs
 
         ## other params specific to XRayImage ?
 
