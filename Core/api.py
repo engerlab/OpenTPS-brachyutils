@@ -1,13 +1,16 @@
 import functools
 import inspect
+import logging
 import os
 import sys
 import unittest
 from io import StringIO
 from typing import Callable
 
-import Script
 from programSettings import ProgramSettings
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileLogger():
@@ -257,6 +260,7 @@ class APIInterpreter:
             exec(code)
         except Exception as err:
             sys.stdout = old_stdout
+            logger.info(format(err))
             raise err from err
 
         sys.stdout = old_stdout
