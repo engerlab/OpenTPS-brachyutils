@@ -193,7 +193,7 @@ class ViewController():
     def secondaryImage(self, image):
         if self.independentViewsEnabled:
             # secondaryImage is only available when only one image can be shown
-            raise("secondaryImage is only available when only one image can be shown")
+            raise Exception("secondaryImage is only available when only one image can be shown")
 
         self._secondaryImage = image
         self.secondaryImageChangedSignal.emit(self._secondaryImage)
