@@ -99,17 +99,13 @@ class PrimaryImageLayer:
         if not (self._image is None):
             self._reslice.SetInputConnection(self._image.vtkOutputPort)
 
-<<<<<<< HEAD
-
             print('_image.range', self._image.range)
             self._setInitialGrayRange(self._image.range)
             self._setWWL(self._image.wwlValue)
-=======
             self._renderer.AddActor(self._mainActor)
 
             self._image.lookupTableName = 'gray'
             self._setLookupTable()
->>>>>>> refactor
 
             self._connectAll()
 
