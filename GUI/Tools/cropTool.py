@@ -52,7 +52,6 @@ class CropWidget(QMainWindow):
         box = [[xx.min(), xx.max()], [yy.min(), yy.max()], [zz.min(), zz.max()]]
 
         for data in selectedData:
-            print(data)
             crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0])
 
 class DataSelection(QWidget):

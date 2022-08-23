@@ -149,6 +149,10 @@ class Image3DViewer(QWidget):
         self._blackWidget.show()
 
     def _setPrimaryImageForViewer(self, image:GenericImageForViewer):
+        # If I do not reset secondary image, the interactor sets its colormap to gray???!!!
+        secondaryImage = self._secondaryImageLayer.image
+        self._secondaryImageLayer.image = None
+
         self._primaryImageLayer.image = image
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)
@@ -174,24 +178,18 @@ class Image3DViewer(QWidget):
         # Start interaction
         self._renderWindow.GetInteractor().Start()
 
-        # Trick to instantiate image property in iStyle
-        self._iStyle.EndWindowLevel()
-        self._iStyle.OnLeftButtonDown()
-        self._iStyle.WindowLevel()
-        self._renderWindow.GetInteractor().SetEventPosition(400, 0)
-        self._iStyle.InvokeEvent(vtkCommand.StartWindowLevelEvent)
-        self._iStyle.OnLeftButtonUp()
-        self._iStyle.EndWindowLevel()
-
         if self._wwlEnabled:
             self._iStyle.StartWindowLevel()
             self._iStyle.OnLeftButtonUp()
 
         self._iStyle.SetCurrentImageNumber(0)
 
-        self._renderer.ResetCamera()
+        self._secondaryImageLayer.image = secondaryImage
 
+        self._renderer.ResetCamera()
         self._renderWindow.Render()
+
+
 
     def _setPrimaryName(self, name):
         self._textLayer.setPrimaryTextLine(2, name)

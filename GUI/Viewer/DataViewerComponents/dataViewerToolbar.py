@@ -2,7 +2,7 @@ import os
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QToolBar, QAction
+from PyQt5.QtWidgets import QToolBar, QAction, QMenu, QWidgetAction, QPushButton
 
 
 class DataViewerToolbar(QToolBar):
@@ -34,7 +34,18 @@ class DataViewerToolbar(QToolBar):
         self.addAction(self._buttonProfile)
         self.addAction(self._buttonDVH)
 
+        self._menuButton = QPushButton("Tools", self)
+        self._menu = QMenu(self._menuButton)
+        self._menuButton.setMenu(self._menu)
+        self._menuAction = QWidgetAction(None)
+        self._menuAction.setDefaultWidget(self._menuButton)
+        self.addAction(self._menuAction)
+
         self._dataViewer.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
+
+    @property
+    def toolsMenu(self) -> QMenu:
+        return self._menu
 
     def _handleButtonDVH(self, pressed):
         if pressed:

@@ -153,7 +153,7 @@ class LP:
                             for k in range(self.solStruct.nSpots):
                                 self.xVars[k].Start = self.solStruct.x[k]
                     # optimize
-                    model.optimize()
+                    model.optimizeIMPT()
                     # model.optimize(mycallback)
                     status = model.Status
                     if status not in (GRB.INF_OR_UNBD, GRB.INFEASIBLE, GRB.UNBOUNDED):

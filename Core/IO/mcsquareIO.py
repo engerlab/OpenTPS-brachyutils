@@ -257,7 +257,7 @@ def readMCsquarePlan(ct: CTImage, file_path):
                 plan.beams[-1].gantryAngle = float(f.readline())
 
             elif line == "###PatientSupportAngle":
-                plan.beams[-1].patientSupportAngle = float(f.readline())
+                plan.beams[-1].couchAngle = float(f.readline())
 
             elif line == "###IsocenterPosition":
                 # read isocenter in MCsquare coordinates
@@ -541,7 +541,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
         fid.write("###GantryAngle\n")
         fid.write("%f\n" % beam.gantryAngle)
         fid.write("###PatientSupportAngle\n")
-        fid.write("%f\n" % beam.patientSupportAngle)
+        fid.write("%f\n" % beam.couchAngle)
         fid.write("###IsocenterPosition\n")
         fid.write(
             "%f\t %f\t %f\n" % _dicomIsocenterToMCsquare(beam.isocenterPosition, CT.origin, CT.spacing, CT.gridSize))

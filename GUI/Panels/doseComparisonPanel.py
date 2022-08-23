@@ -101,11 +101,12 @@ class DoseComparisonPanel(QWidget):
 
         if dose==self._selectedDose1:
             self._selectedDose1 = None
-            self._dose1ComboBox.removeItem(self._dose1ComboBox.findData(dose))
 
         if dose==self._selectedDose2:
             self._selectedDose2 = None
-            self._dose2ComboBox.removeItem(self._dose2ComboBox.findData(dose))
+
+        self._dose1ComboBox.removeItem(self._dose2ComboBox.findData(dose))
+        self._dose2ComboBox.removeItem(self._dose2ComboBox.findData(dose))
 
     def _handleImageAddedOrRemoved(self, image):
         self._updateDoseComboBoxes()

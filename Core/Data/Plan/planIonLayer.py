@@ -102,11 +102,11 @@ class PlanIonLayer:
 
     @property
     def meterset(self) -> float:
-        return np.sum(self._mu)
+        return np.sum(self.spotMUs)
 
     @property
     def numberOfSpots(self) -> int:
-        return len(self._mu)
+        return len(self.spotMUs)
 
     def addToSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
                   mu: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):

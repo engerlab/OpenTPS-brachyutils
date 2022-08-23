@@ -2,6 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 import pandas as pd
 
+from Core.Data.Plan import planStructure
 from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.planIonSpot import PlanIonSpot
@@ -21,11 +22,11 @@ class WeightStructure:
     but also functions computing ELST, sparsity of the plan, etc.
     """
 
-    def __init__(self, plan: RTPlan):
+    def __init__(self, plan:RTPlan):
 
         self.plan = plan
         # beamlets
-        self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
+        self.beamletMatrix = self.plan.planDesign.beamlets.toSparseMatrix()
         # weights
         self.x = self.plan.spotMUs
         # total number of spots

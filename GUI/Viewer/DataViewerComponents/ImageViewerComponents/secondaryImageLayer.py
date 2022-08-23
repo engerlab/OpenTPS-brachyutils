@@ -2,6 +2,7 @@ from typing import Optional, Sequence
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
+from vtkmodules import vtkImagingCore
 from vtkmodules.vtkInteractionWidgets import vtkScalarBarWidget
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
@@ -12,6 +13,8 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImageLayer imp
 
 class SecondaryImageLayer(PrimaryImageLayer):
     def __init__(self, renderer, renderWindow, iStyle):
+        self._colorMapper = vtkImagingCore.vtkImageMapToColors()
+
         super().__init__(renderer, renderWindow, iStyle)
 
         self.colorbarVisibilitySignal = Event(bool)
@@ -29,6 +32,10 @@ class SecondaryImageLayer(PrimaryImageLayer):
         self._colorbarWidget.SetInteractor(self._renderWindow.GetInteractor())
         self._colorbarWidget.SetScalarBarActor(self._colorbarActor)
 
+    def _setMainMapperInputConnection(self):
+        self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
+        self._mainMapper.SetInputConnection(self._colorMapper.GetOutputPort())
+
     def close(self):
         super().close()
 
@@ -41,7 +48,6 @@ class SecondaryImageLayer(PrimaryImageLayer):
         if image is None:
             self.colorbarOn = False
         else:
-            self._setLookupTable(self._image.lookupTable)
             self.colorbarOn = True # TODO: Get this from parent
 
         self._renderWindow.Render()
@@ -73,19 +79,21 @@ class SecondaryImageLayer(PrimaryImageLayer):
     def _connectAll(self):
         super()._connectAll()
 
-        self._image.lookupTableChangedSignal.connect(self._setLookupTable)
-
     def _disconnectAll(self):
         super()._disconnectAll()
 
         if self._image is None:
             return
 
-        self._image.lookupTableChangedSignal.disconnect(self._setLookupTable)
+    def _setLookupTable(self):
+        self._image.lookupTableName = 'jet'
+        self._colorMapper.SetLookupTable(self._image.lookupTable)
+        self._colorbarActor.SetLookupTable(self._image.lookupTable)
 
-    def _setLookupTable(self, lookupTable):
-        self._colorMapper.SetLookupTable(lookupTable)
-        self._colorbarActor.SetLookupTable(lookupTable)
+    def _updateLookupTable(self, lt):
+        self._colorMapper.SetLookupTable(lt)
+        self._colorbarActor.SetLookupTable(lt)
+
         self._renderWindow.Render()
 
     def _setWWL(self, wwl: Sequence):

@@ -10,7 +10,6 @@ from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.planIonSpot import PlanIonSpot
 from Core.Data.patientData import PatientData
-from Core.Data.Plan.objectivesList import ObjectivesList
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +33,9 @@ class RTPlan(PatientData):
         self.radiationType = ""
         self.scanMode = "MODULATED"
         self.treatmentMachineName = ""
-        self.objectives = ObjectivesList()
-        self.planName = ""
-        self.isLoaded = 0
-        self.beamlets = []
-        self.beamletsLET = []
+
         self.originalDicomDataset = []
-        self.robustOpti = {"Strategy": "Disabled", "syst_setup": [0.0, 0.0, 0.0], "rand_setup": [0.0, 0.0, 0.0],
-                           "syst_range": 0.0}
-        self.scenarios = []
-        self.numScenarios = 0
+
         self.planDesign = PlanStructure()
 
     def __getitem__(self, beamNb) -> PlanIonBeam:
@@ -149,7 +141,7 @@ class RTPlan(PatientData):
             cumulativeMetersetWeight = 0
             for layer in beam.layers:
                 cumulativeMetersetWeight += sum(layer.spotWeights)
-            v_finalCumulativeMetersetWeight = np.concatenate(v_finalCumulativeMetersetWeight, cumulativeMetersetWeight)
+            v_finalCumulativeMetersetWeight = np.concatenate((v_finalCumulativeMetersetWeight, np.array([cumulativeMetersetWeight])))
         return v_finalCumulativeMetersetWeight
 
     @property
@@ -159,7 +151,7 @@ class RTPlan(PatientData):
             beamMeterset = 0
             for layer in beam.layers:
                 beamMeterset += sum(layer.spotWeights)
-                v_cumulativeMeterset = np.concatenate(v_cumulativeMeterset, beamMeterset)
+                v_cumulativeMeterset = np.concatenate((v_cumulativeMeterset, np.array([beamMeterset])))
         return v_cumulativeMeterset
 
     @property
@@ -256,7 +248,6 @@ class RTPlan(PatientData):
     def createEmptyPlanWithSameMetaData(self):
         plan = self.copy()
         plan._beams = []
-        plan.beamlets = []
         return plan
 
 

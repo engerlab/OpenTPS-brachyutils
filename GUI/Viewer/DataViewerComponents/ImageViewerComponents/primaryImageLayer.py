@@ -3,9 +3,9 @@ from typing import Optional, Sequence
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
-import vtkmodules.vtkCommonCore as vtkCommonCore
 from vtkmodules import vtkImagingCore, vtkCommonMath
 from vtkmodules.vtkCommonColor import vtkNamedColors
+from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 from vtkmodules.vtkInteractionWidgets import vtkOrientationMarkerWidget
 from vtkmodules.vtkRenderingCore import vtkActor, vtkDataSetMapper
@@ -21,7 +21,6 @@ class PrimaryImageLayer:
 
         colors = vtkNamedColors()
 
-        self._colorMapper = vtkImagingCore.vtkImageMapToColors()
         self._image = None
         self._iStyle = iStyle
         self._mainActor = vtkRenderingCore.vtkImageActor()
@@ -79,7 +78,7 @@ class PrimaryImageLayer:
         print('in primaryImageLayer, _setImage', type(image), image.gridSize)
 
         if len(image.gridSize) == 2:#, image2DForViewer):
-            print('in if')
+            # print('in if')
             self._reslice.SetOutputDimensionality(1)
         elif len(image.gridSize) == 3:
             self._reslice.SetOutputDimensionality(2)
@@ -100,34 +99,34 @@ class PrimaryImageLayer:
         if not (self._image is None):
             self._reslice.SetInputConnection(self._image.vtkOutputPort)
 
+<<<<<<< HEAD
 
             print('_image.range', self._image.range)
             self._setInitialGrayRange(self._image.range)
             self._setWWL(self._image.wwlValue)
+=======
+            self._renderer.AddActor(self._mainActor)
+
+            self._image.lookupTableName = 'gray'
+            self._setLookupTable()
+>>>>>>> refactor
 
             self._connectAll()
-
-            self._renderer.AddActor(self._mainActor)
 
         self.imageChangedSignal.emit(self._image)
 
         self._renderWindow.Render()
 
-    def _setInitialGrayRange(self, range:tuple):
-        """
-        Set grayscale range
-        Parameters
-        ----------
-        range(tuple): range
-        """
-        table = vtkCommonCore.vtkLookupTable()
-        table.SetRange(range[0], range[1])  # image intensity range
-        table.SetValueRange(0.0, 1.0)  # from black to white
-        table.SetSaturationRange(0.0, 0.0)  # no color saturation
-        table.SetRampToLinear()
-        table.Build()
+    def _setLookupTable(self):
+        imageProperty = self._mainActor.GetProperty()
+        imageProperty.SetLookupTable(self._image.lookupTable)
+        imageProperty.UseLookupTableScalarRangeOn()
 
-        self._colorMapper.SetLookupTable(table)
+    def _updateLookupTable(self, lt):
+        imageProperty = self._mainActor.GetProperty()
+        imageProperty.SetLookupTable(self._image.lookupTable)
+
+        self._renderWindow.Render()
 
     @property
     def resliceAxes(self):
@@ -142,27 +141,18 @@ class PrimaryImageLayer:
         self._orientationActor.PokeMatrix(resliceAxes)
 
     def _connectAll(self):
-        self._image.wwlChangedSignal.connect(self._setWWL)
+        self._image.lookupTableChangedSignal.connect(self._updateLookupTable)
+        self._image.rangeChangedSignal.connect(self._render)
 
     def _disconnectAll(self):
         if self._image is None:
             return
 
-        self._image.wwlChangedSignal.disconnect(self._setWWL)
+        self._image.lookupTableChangedSignal.disconnect(self._updateLookupTable)
+        self._image.rangeChangedSignal.connect(self._render)
 
-    def _setWWL(self, wwl: Sequence):
-        """
-            Set window level
-            Parameters
-             ----------
-            range(Sequence): (window width, window level)
-        """
-        imageProperty = self._iStyle.GetCurrentImageProperty()
-        if not (imageProperty is None):
-            imageProperty.SetColorWindow(wwl[0])
-            imageProperty.SetColorLevel(wwl[1])
-
-            self._renderWindow.Render()
+    def _render(self, *args):
+        self._renderWindow.Render()
 
     def resliceDataFromPhysicalPoint(self, point):
         imageData = self._reslice.GetInput(0)

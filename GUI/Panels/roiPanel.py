@@ -3,6 +3,7 @@ from PyQt5.QtGui import QColor, QPixmap, QIcon
 
 from Core.Data.Images.roiMask import ROIMask
 from Core.Data.patient import Patient
+from Core.Data.roiContour import ROIContour
 from Core.Data.rtStruct import RTStruct
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
@@ -19,6 +20,18 @@ class ROIPanel(QWidget):
 
     self.setLayout(self.layout)
 
+    self._filterEdit = QLineEdit(self)
+    self._filterEdit.setPlaceholderText('Filter')
+    self._filterEdit.textEdited.connect(self._setFilteredROIs)
+    self.layout.addWidget(self._filterEdit)
+
+    self._listFrame = QFrame(self)
+    self.layout.addWidget(self._listFrame)
+    self._listLayout = QVBoxLayout()
+    self._listFrame.setLayout(self._listLayout)
+
+    self.layout.addStretch()
+
     self.setCurrentPatient(self._viewController.currentPatient)
     self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
 
@@ -26,60 +39,71 @@ class ROIPanel(QWidget):
     if patient==self._patient:
       return
     elif not self._patient is None:
-      self._patient.rtStructAddedSignal.disconnect(self.addRTStruct)
-      self._patient.rtStructRemovedSignal.disconnect(self.removeRTStruct)
-      self._patient.roiMaskAddedSignal.disconnect(self.addROIMask)
-      self._patient.roiMaskRemovedSignal.disconnect(self.removeROIMask)
+      self._patient.rtStructAddedSignal.disconnect(self._setFilteredROIs)
+      self._patient.rtStructRemovedSignal.disconnect(self._setFilteredROIs)
+      self._patient.roiMaskAddedSignal.disconnect(self._setFilteredROIs)
+      self._patient.roiMaskRemovedSignal.disconnect(self._setFilteredROIs)
 
       self._resetList()
 
     self._patient = patient
-    for rtStruct in self._patient.rtStructs:
-      self.addRTStruct(rtStruct)
 
-    for roiMask in self._patient.roiMasks:
-      self.addROIMask(roiMask)
+    self._setFilteredROIs()
 
-    self._patient.rtStructAddedSignal.connect(self.addRTStruct)
-    self._patient.rtStructRemovedSignal.connect(self.removeRTStruct)
-    self._patient.roiMaskAddedSignal.connect(self.addROIMask)
-    self._patient.roiMaskRemovedSignal.connect(self.removeROIMask)
+    self._patient.rtStructAddedSignal.connect(self._setFilteredROIs)
+    self._patient.rtStructRemovedSignal.connect(self._setFilteredROIs)
+    self._patient.roiMaskAddedSignal.connect(self._setFilteredROIs)
+    self._patient.roiMaskRemovedSignal.connect(self._setFilteredROIs)
 
   def _resetList(self):
     for widget in self.items:
       if isinstance(widget, ROIItem):
         widget.setVisible(False)
-        self.layout.removeWidget(widget)
+        self._listLayout.removeWidget(widget)
     self.items = []
 
-  def addRTStruct(self, rtStruct:RTStruct):
-    for contour in rtStruct.contours:
+  def _setFilteredROIs(self, *args):
+    if self._patient is None:
+      return
+
+    enteredText = self._filterEdit.text().lower()
+    print(enteredText)
+
+    self._resetList()
+
+    for rtStruct in self._patient.rtStructs:
+      for contour in rtStruct.contours:
+        if enteredText in contour.name.lower() or enteredText=='':
+          self.addROIContour(contour)
+
+    for roiMask in self._patient.roiMasks:
+      if enteredText in roiMask.name.lower() or enteredText=='':
+        self.addROIMask(roiMask)
+
+  def addROIContour(self, contour:ROIContour):
       checkbox = ROIItem(ROIContourForViewer(contour), self._viewController)
 
-      self.layout.addWidget(checkbox)
+      self._listLayout.addWidget(checkbox)
       self.items.append(checkbox)
-
-    self.layout.addStretch()
 
   def addROIMask(self, roiMask:ROIMask):
     checkbox = ROIItem(ROIMaskForViewer(roiMask), self._viewController)
 
-    self.layout.addWidget(checkbox)
+    self._listLayout.addWidget(checkbox)
     self.items.append(checkbox)
-    self.layout.addStretch()
 
   def removeRTStruct(self, rtStruct:RTStruct):
     for contour in rtStruct.contours:
       for item in self.items:
         if item._contour == contour:
-          self.layout.removeWidget(item)
+          self._listLayout.removeWidget(item)
           item.setParent(None)
           return
 
   def removeROIMask(self, roiMask:ROIMask):
     for item in self.items:
         if item._contour == roiMask:
-          self.layout.removeWidget(item)
+          self._listLayout.removeWidget(item)
           item.setParent(None)
           return
 

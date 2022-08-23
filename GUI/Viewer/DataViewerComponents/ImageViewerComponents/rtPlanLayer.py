@@ -120,6 +120,8 @@ class RTPlanLayer:
 
         self._beamLayers = []
 
+        self._renderWindow.Render()
+
     @property
     def resliceAxes(self):
         return self._resliceAxes

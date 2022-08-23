@@ -17,13 +17,6 @@ class DoseImage(Image3D):
     @classmethod
     def fromImage3D(cls, image: Image3D):
         return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
-
-    def __str__(self):
-        """
-        Overload __str__ function that is called when one print the object.
-        """
-
-        pass
     
     
     @classmethod

@@ -51,7 +51,6 @@ class ExtendedBeam(PlanIonBeam):
         newBeam.isocenterPosition = beam.isocenterPosition
         newBeam.gantryAngle = beam.gantryAngle
         newBeam.couchAngle = beam.couchAngle
-        newBeam.patientSupportAngle = beam.patientSupportAngle
         newBeam.rangeShifter = beam.rangeShifter
         newBeam.seriesInstanceUID = beam.seriesInstanceUID
 
