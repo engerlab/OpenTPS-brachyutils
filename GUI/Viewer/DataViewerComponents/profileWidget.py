@@ -7,6 +7,7 @@ from vtkmodules.vtkInteractionWidgets import vtkLineWidget2
 
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImage3DLayer import PrimaryImage3DLayer
 
 
 class ProfileWidget:
@@ -93,10 +94,11 @@ class ProfileWidget:
     def primaryLayer(self, layer):
         self._primaryLayer = layer
 
-        if not self._primaryLayer.image is None:
-            self._primaryLayer._reslice.RemoveObserver(self._endEventObserver)
+        if isinstance(self._primaryLayer, PrimaryImage3DLayer):
+            if not self._primaryLayer.image is None:
+                self._primaryLayer._reslice.RemoveObserver(self._endEventObserver)
 
-        self._endEventObserver = self._primaryLayer._reslice.AddObserver("EndEvent", self.onProfileWidgetInteraction)
+            self._endEventObserver = self._primaryLayer._reslice.AddObserver("EndEvent", self.onProfileWidgetInteraction)
 
     @property
     def secondaryLayer(self):

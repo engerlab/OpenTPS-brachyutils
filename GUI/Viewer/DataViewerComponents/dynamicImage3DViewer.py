@@ -30,7 +30,6 @@ class DynamicImage3DViewer(Image3DViewer):
     @property
     def primaryImage(self):
         if self._primaryImageLayer.image is None:
-            print('in DynamicImage3DViewer, primaryImage if')
             return None
         return self.dynPrimaryImgSeqForViewer
 

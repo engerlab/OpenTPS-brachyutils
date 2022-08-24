@@ -19,9 +19,9 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.rtPlanLayer import RT
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.contourLayer import ContourLayer
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.crossHairLayer import CrossHairLayer
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImageLayer import PrimaryImageLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImage2DLayer import PrimaryImage2DLayer
 from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImageLayer import SecondaryImageLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImage2DLayer import SecondaryImage2DLayer
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.textLayer import TextLayer
 
 
@@ -63,8 +63,8 @@ class Image2DViewer(QWidget):
         self._renderWindow = self._vtkWidget.GetRenderWindow()
 
         self._crossHairLayer = CrossHairLayer(self._renderer, self._renderWindow)
-        self._primaryImageLayer = PrimaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
-        self._secondaryImageLayer = SecondaryImageLayer(self._renderer, self._renderWindow, self._iStyle)
+        self._primaryImageLayer = PrimaryImage2DLayer(self._renderer, self._renderWindow, self._iStyle)
+        self._secondaryImageLayer = SecondaryImage2DLayer(self._renderer, self._renderWindow, self._iStyle)
         self._profileWidget = ProfileWidget(self._renderer, self._renderWindow)
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)

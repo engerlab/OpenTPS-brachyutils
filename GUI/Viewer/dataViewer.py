@@ -232,9 +232,9 @@ class DataViewer(QWidget):
         # Notify dynamicDisplayController - we have a problem of multiple responsibilities here
         previousModeWasStatic = self.displayMode == self.DisplayModes.STATIC
         if previousModeWasStatic:
-            self._viewController.dynamicDisplayController.addDynamicViewer(self.cachedDynamicImageViewer)
+            self._viewController.dynamicDisplayController.addDynamicViewer(self.cachedDynamicImage3DViewer)
         else:
-            self._viewController.dynamicDisplayController.removeDynamicViewer(self.cachedDynamicImageViewer)
+            self._viewController.dynamicDisplayController.removeDynamicViewer(self.cachedDynamicImage3DViewer)
 
         self._displayMode = mode
 

@@ -15,40 +15,42 @@ from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 
 
-class PrimaryImageLayer:
+class PrimaryImage2DLayer:
     def __init__(self, renderer, renderWindow, iStyle):
         self.imageChangedSignal = Event(object)
 
         colors = vtkNamedColors()
 
         self._image = None
-        self._iStyle = iStyle
-        self._mainActor = vtkRenderingCore.vtkImageActor()
-        self._mainMapper = self._mainActor.GetMapper()
-        self._orientationActor = vtkActor()
-        self._orientationMapper = vtkDataSetMapper()
-        self._orientationWidget = vtkOrientationMarkerWidget()
-        self._renderer = renderer
-        self._renderWindow = renderWindow
-        self._reslice = vtkImagingCore.vtkImageReslice()
-        self._stlReader = vtkSTLReader()
-        self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
+        # self._iStyle = iStyle
+        # self._mainActor = vtkRenderingCore.vtkActor2D()
+        # self._mainMapper = self._mainActor.GetMapper()
+        # self._orientationActor = vtkActor()
+        # self._orientationMapper = vtkDataSetMapper()
+        # self._orientationWidget = vtkOrientationMarkerWidget()
+        # self._renderer = renderer
+        # self._renderWindow = renderWindow
+        # # self._reslice = vtkImagingCore.vtkImageReslice()
+        # self._stlReader = vtkSTLReader()
+        # self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
+        #
+        # # self._mainMapper.SetSliceAtFocalPoint(True)
+        #
+        # self._orientationActor.SetMapper(self._orientationMapper)
+        # self._orientationActor.GetProperty().SetColor(colors.GetColor3d("Silver"))
+        # self._orientationMapper.SetInputConnection(self._stlReader.GetOutputPort())
+        # self._orientationWidget.SetViewport(0.8, 0.0, 1.0, 0.2)
+        # self._orientationWidget.SetCurrentRenderer(self._renderer)
+        # self._orientationWidget.SetInteractor(self._renderWindow.GetInteractor())
+        # self._orientationWidget.SetOrientationMarker(self._orientationActor)
+        #
+        # # self._reslice.SetOutputDimensionality(2)
+        # # self._reslice.SetInterpolationModeToNearestNeighbor()
+        #
+        # self._setMainMapperInputConnection()
 
-        self._mainMapper.SetSliceAtFocalPoint(True)
-
-        self._orientationActor.SetMapper(self._orientationMapper)
-        self._orientationActor.GetProperty().SetColor(colors.GetColor3d("Silver"))
-        self._orientationMapper.SetInputConnection(self._stlReader.GetOutputPort())
-        self._orientationWidget.SetViewport(0.8, 0.0, 1.0, 0.2)
-        self._orientationWidget.SetCurrentRenderer(self._renderer)
-        self._orientationWidget.SetInteractor(self._renderWindow.GetInteractor())
-        self._orientationWidget.SetOrientationMarker(self._orientationActor)
-
-        self._reslice.SetOutputDimensionality(2)
-        self._reslice.SetInterpolationModeToNearestNeighbor()
-
-        self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
-        self._mainMapper.SetInputConnection(self._colorMapper.GetOutputPort())
+    def _setMainMapperInputConnection(self):
+        self._mainMapper.SetInputConnection(self._reslice.GetOutputPort())
 
     def close(self):
         self._disconnectAll()
@@ -75,21 +77,6 @@ class PrimaryImageLayer:
         if not (isinstance(image, GenericImageForViewer) or (image is None)):
             return
 
-        print('in primaryImageLayer, _setImage', type(image), image.gridSize)
-
-        if len(image.gridSize) == 2:#, image2DForViewer):
-            # print('in if')
-            self._reslice.SetOutputDimensionality(1)
-        elif len(image.gridSize) == 3:
-            self._reslice.SetOutputDimensionality(2)
-        # elif isinstance(image, )
-        # import numpy as np
-        # import matplotlib.pyplot as plt
-        # print(np.min(image.imageArray), np.max(image.imageArray))
-        # plt.figure()
-        # plt.imshow(image.imageArray)
-        # plt.show()
-
         self._image = image
 
         self._disconnectAll()
@@ -99,9 +86,6 @@ class PrimaryImageLayer:
         if not (self._image is None):
             self._reslice.SetInputConnection(self._image.vtkOutputPort)
 
-            print('_image.range', self._image.range)
-            self._setInitialGrayRange(self._image.range)
-            self._setWWL(self._image.wwlValue)
             self._renderer.AddActor(self._mainActor)
 
             self._image.lookupTableName = 'gray'
