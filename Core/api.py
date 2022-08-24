@@ -204,7 +204,7 @@ class APILogger:
 
         ind = _API._staticVars["patientList"].getIndex(patient)
         if ind < 0:
-            argStr = 'Error: Image or patient not found in patient'
+            argStr = 'Error: patient ' + patient.name + ' not found in patient'
         else:
             argStr = 'API.patientList[' \
                      + str(ind) + ']'
@@ -215,14 +215,13 @@ class APILogger:
     def _patientDataToString(image):
         argStr = ''
 
-        for patient in _API._staticVars["patientList"]:
-            if image in patient.images:
-                argStr = 'API.patientList[' \
-                         + str(_API._staticVars["patientList"].getIndex(patient)) + ']' \
-                         + '.patientData[' \
-                         + str(APILogger.getPatientDataIndex(patient, image)) + ']'
+        if not (image.patient is None):
+            argStr = APILogger._patientToString(image.patient) \
+                     + '.patientData[' \
+                     + str(APILogger.getPatientDataIndex(image.patient, image)) + ']'
+
         if argStr == '':
-            argStr = 'Error: Image or patient not found in patient or patient list'
+            argStr = 'Error: Data ' + image.name + ' not found in patient'
 
         return argStr
 

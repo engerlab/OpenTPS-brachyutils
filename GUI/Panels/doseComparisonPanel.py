@@ -54,14 +54,15 @@ class DoseComparisonPanel(QWidget):
         if self._patient is None:
             self._removeAllDoses()
         else:
-            self._updateDoseComboBoxes()
-
             self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
             self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
+
+            self._updateDoseComboBoxes()
 
     def _updateDoseComboBoxes(self):
         self._removeAllDoses()
 
+        print([dose.name for dose in self._patient.getPatientDataOfType(DoseImage)])
         self._doseImages = [dose for dose in self._patient.getPatientDataOfType(DoseImage)]
 
         for dose in self._doseImages:

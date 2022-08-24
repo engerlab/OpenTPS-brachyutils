@@ -85,9 +85,6 @@ class DoseComputationPanel(QWidget):
         if self._patient is None:
             self._removeAllCTs()
         else:
-            self._updateCTComboBox()
-            self._updatePlanComboBox()
-
             self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
             self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
 
@@ -96,6 +93,9 @@ class DoseComputationPanel(QWidget):
 
             self._patient.rtStructAddedSignal.connect(self._handleROIAddedOrRemoved)
             self._patient.rtStructRemovedSignal.connect(self._handleROIAddedOrRemoved)
+
+            self._updateCTComboBox()
+            self._updatePlanComboBox()
 
     def _updateCTComboBox(self):
         self._removeAllCTs()
