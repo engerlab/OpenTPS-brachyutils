@@ -62,7 +62,6 @@ class DoseComparisonPanel(QWidget):
     def _updateDoseComboBoxes(self):
         self._removeAllDoses()
 
-        print([dose.name for dose in self._patient.getPatientDataOfType(DoseImage)])
         self._doseImages = [dose for dose in self._patient.getPatientDataOfType(DoseImage)]
 
         for dose in self._doseImages:
