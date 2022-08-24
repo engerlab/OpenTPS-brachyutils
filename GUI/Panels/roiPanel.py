@@ -67,7 +67,6 @@ class ROIPanel(QWidget):
       return
 
     enteredText = self._filterEdit.text().lower()
-    print(enteredText)
 
     self._resetList()
 
