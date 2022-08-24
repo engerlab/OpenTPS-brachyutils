@@ -276,12 +276,12 @@ class PatientDataTree(QTreeView):
         if (len(selected) > 0):
             self.context_menu = QMenu()
             if not dataClass == 'mixed':
+                self.rename_action = QAction("Rename")
+                self.rename_action.triggered.connect(lambda checked: openRenameDataDialog(self, selectedData[0]))
+                self.context_menu.addAction(self.rename_action)
+
                 # actions for 3D images
                 if (dataClass == Image3D or issubclass(dataClass, Image3D)) and len(selected) == 1:
-                    self.rename_action = QAction("Rename")
-                    self.rename_action.triggered.connect(lambda checked: openRenameDataDialog(self, selectedData[0]))
-                    self.context_menu.addAction(self.rename_action)
-
                     # self.export_action = QAction("Export")
                     # self.export_action.triggered.connect(lambda checked, data_type=dataClass, UIDs=UIDs: self.export_item(dataClass, UIDs))
                     # self.context_menu.addAction(self.export_action)
