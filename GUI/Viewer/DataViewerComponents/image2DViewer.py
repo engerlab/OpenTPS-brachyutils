@@ -63,14 +63,14 @@ class Image2DViewer(QWidget):
         self._renderWindow = self._vtkWidget.GetRenderWindow()
 
         self._crossHairLayer = CrossHairLayer(self._renderer, self._renderWindow)
-        self._primaryImageLayer = PrimaryImage2DLayer(self._renderer, self._renderWindow, self._iStyle)
+        self._primaryImage2DLayer = PrimaryImage2DLayer(self._renderer, self._renderWindow, self._iStyle)
         self._secondaryImageLayer = SecondaryImage2DLayer(self._renderer, self._renderWindow, self._iStyle)
         self._profileWidget = ProfileWidget(self._renderer, self._renderWindow)
         self._textLayer = TextLayer(self._renderer, self._renderWindow)
         self._contourLayer = ContourLayer(self._renderer, self._renderWindow)
         self._rtPlanLayer = RTPlanLayer(self._renderer, self._renderWindow)
 
-        self._profileWidget.primaryLayer = self._primaryImageLayer
+        self._profileWidget.primaryLayer = self._primaryImage2DLayer
         self._profileWidget.secondaryLayer = self._secondaryImageLayer
         self._profileWidget.contourLayer = self._contourLayer
 
@@ -99,14 +99,14 @@ class Image2DViewer(QWidget):
         self._renderWindow.AddRenderer(self._renderer)
 
     def close(self):
-        if not (self._primaryImageLayer.image is None):
-            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
-            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
+        if not (self._primaryImage2DLayer.image is None):
+            self._primaryImage2DLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
+            self._primaryImage2DLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
 
         if not (self._secondaryImageLayer.image is None):
             self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
 
-        self._primaryImageLayer.close()
+        self._primaryImage2DLayer.close()
         self._secondaryImageLayer.close()
         self._textLayer.close()
         self._contourLayer.close()
@@ -124,13 +124,13 @@ class Image2DViewer(QWidget):
 
     @property
     def primaryImage(self) -> Image2D:
-        if self._primaryImageLayer.image is None:
+        if self._primaryImage2DLayer.image is None:
             return None
-        return self._primaryImageLayer.image.data
+        return self._primaryImage2DLayer.image.data
 
     @primaryImage.setter
     def primaryImage(self, image: Image2D):
-        imageAlreadyDisplayed = image==self._primaryImageLayer.image or (not (self._primaryImageLayer.image is None) and image==self._primaryImageLayer.image.data)
+        imageAlreadyDisplayed = image == self._primaryImage2DLayer.image or (not (self._primaryImage2DLayer.image is None) and image == self._primaryImage2DLayer.image.data)
         if imageAlreadyDisplayed:
             return
 
@@ -142,7 +142,7 @@ class Image2DViewer(QWidget):
         self.primaryImageSignal.emit(self.primaryImage)
 
     def _resetPrimaryImageLayer(self):
-        self._primaryImageLayer.image = None
+        self._primaryImage2DLayer.image = None
         self._mainLayout.removeWidget(self._vtkWidget)
         self._vtkWidget.hide()
         self._mainLayout.addWidget(self._blackWidget)
@@ -152,20 +152,20 @@ class Image2DViewer(QWidget):
 
         print('in image2DVIewer _setPrimaryImageForViewer', type(image))
 
-        self._primaryImageLayer.image = image
+        self._primaryImage2DLayer.image = image
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)
 
-        self._handlePosition(self._primaryImageLayer.image.selectedPosition)
+        self._handlePosition(self._primaryImage2DLayer.image.selectedPosition)
 
-        if not (self._primaryImageLayer.image is None):
-            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
-            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
+        if not (self._primaryImage2DLayer.image is None):
+            self._primaryImage2DLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
+            self._primaryImage2DLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
 
-        self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
-        self._primaryImageLayer.image.nameChangedSignal.connect(self._setPrimaryName)
+        self._primaryImage2DLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
+        self._primaryImage2DLayer.image.nameChangedSignal.connect(self._setPrimaryName)
 
-        self._primaryImageLayer.resliceAxes = self._viewMatrix
+        # self._primaryImage2DLayer.resliceAxes = self._viewMatrix
         self._contourLayer.resliceAxes = self._viewMatrix
         self._rtPlanLayer.resliceAxes = self._viewMatrix
 
@@ -304,7 +304,7 @@ class Image2DViewer(QWidget):
             ValueError('Invalid viewType')
 
         if not self.primaryImage is None:
-            self._primaryImageLayer.resliceAxes = self._viewMatrix
+            self._primaryImage2DLayer.resliceAxes = self._viewMatrix
             self._contourLayer.resliceAxes = self._viewMatrix
             self._rtPlanLayer.resliceAxes = self._viewMatrix
         if not self.secondaryImage is None:
@@ -388,20 +388,20 @@ class Image2DViewer(QWidget):
             return
 
         if self._crossHairEnabled and self._leftButtonPress:
-            self._primaryImageLayer.image.selectedPosition = (point[0], point[1], point[2])
+            self._primaryImage2DLayer.image.selectedPosition = (point[0], point[1], point[2])
 
         if self._leftButtonPress and self._wwlEnabled:
             self._iStyle.OnMouseMove()
             self.__sendingWWL = True
             imageProperty = self._iStyle.GetCurrentImageProperty()
-            self._primaryImageLayer.image.wwlValue = (imageProperty.GetColorWindow(), imageProperty.GetColorLevel())
+            self._primaryImage2DLayer.image.wwlValue = (imageProperty.GetColorWindow(), imageProperty.GetColorLevel())
             self.__sendingWWL = False
 
         if not self._leftButtonPress:
             self._iStyle.OnMouseMove()
 
     def onScroll(self, obj=None, event='Forward'):
-        sliceSpacing = self._primaryImageLayer._reslice.GetOutput().GetSpacing()[2]
+        sliceSpacing = self._primaryImage2DLayer._reslice.GetOutput().GetSpacing()[2]
 
         deltaY = 0.
         if 'Forward' in event:
@@ -456,7 +456,7 @@ class Image2DViewer(QWidget):
             self._crossHairLayer.position = (posAfterInverse[0], posAfterInverse[1])
 
         try:
-            data = self._primaryImageLayer.image.getDataAtPosition(position)
+            data = self._primaryImage2DLayer.image.getDataAtPosition(position)
 
             self._textLayer.setPrimaryTextLine(0, 'Value: ' + "{:.2f}".format(data))
             # self._textLayer.setPrimaryTextLine(0, 'ValueNumpy: ' + "{:.2f}".format(dataNumpy))
