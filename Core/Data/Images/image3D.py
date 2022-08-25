@@ -126,6 +126,23 @@ class Image3D(PatientData):
     def numberOfVoxels(self):
         return self.gridSize[0] * self.gridSize[1] * self.gridSize[2]
 
+    def resampleOn(self, otherImage, fillValue=0, outputType=None, tryGPU=True):
+        """Resample image using the voxel grid of another image given as input, using linear interpolation.
+
+            Parameters
+            ----------
+            otherImage : numpy array
+                image from which the voxel grid is copied.
+            fillValue : scalar
+                interpolation value for locations outside the input voxel grid.
+            outputType : numpy data type
+                type of the output.
+            """
+
+        if (not otherImage.hasSameGrid(self)):
+            logger.info('Resample to image grid.')
+            self.resample(otherImage.spacing, otherImage.gridSize, otherImage.origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
     def resample(self, spacing, gridSize, origin, fillValue=0, outputType=None, tryGPU=True):
         """Resample image according to new voxel grid using linear interpolation.
 
@@ -143,17 +160,8 @@ class Image3D(PatientData):
                 type of the output.
             """
 
-        # print('in image3D resample ----------------', type(self))
-        from Core.Data.Images.vectorField3D import VectorField3D
-        if isinstance(self, VectorField3D):
-            from Core.Processing.ImageProcessing.resampler3D import resampleOpenMP
-            self.imageArray = resampleOpenMP(self.imageArray, self.origin, self.spacing, self.gridSize, origin, spacing, gridSize, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
-        else:
-            from Core.Processing.ImageProcessing.resampler3D import resampleImage3D
-            resampleImage3D(self, spacing, gridSize, origin, fillValue=fillValue)
-
-        # from Core.Processing.ImageProcessing import imageTransform3D
-        # imageTransform3D.resampleImage(self, spacing, origin, gridSize, fillValue=fillValue)
+        from Core.Processing.ImageProcessing.resampler3D import resampleImage3D
+        resampleImage3D(self, spacing, gridSize, origin, fillValue=fillValue, tryGPU=tryGPU, inPlace=True)
 
     def getDataAtPosition(self, position: Sequence):
         voxelIndex = self.getVoxelIndexFromPosition(position)

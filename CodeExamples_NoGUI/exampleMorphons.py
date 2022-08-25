@@ -2,17 +2,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
-
-from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
+import time
+import logging
+from logConfigParser import parseArgs
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
+os.chdir(currentWorkingDir)
 
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
 from Core.Data.Images.ctImage import CTImage
 
+logger = logging.getLogger(__name__)
+
 if __name__ == "__main__":
+
+    options = parseArgs(sys.argv[1:])
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed_img = np.full((100, 100, 100), -1000)
@@ -22,24 +28,15 @@ if __name__ == "__main__":
     moving_img[30:75,35:75,40:75] = 0
     moving = CTImage(imageArray=moving_img, name='fixed', origin=[0,0,0], spacing=[1,1,1])
 
-    z_slice = round(fixed.imageArray.shape[2]/2)-1
-
-    ## SHOW DATA
-    plt.figure()
-    plt.subplot(1, 3, 1)
-    plt.imshow(fixed_img[:, :, z_slice])
-    plt.subplot(1, 3, 2)
-    plt.imshow(moving_img[:, :, z_slice])
-    plt.subplot(1, 3, 3)
-    plt.imshow(fixed_img[:, :, z_slice] - moving_img[:, :, z_slice])
-    plt.show()
-
     # PERFORM REGISTRATION
+    start_time = time.time()
     reg = RegistrationMorphons(fixed, moving, baseResolution=2.0, nbProcesses=1)
     df = reg.compute()
+    processing_time = time.time() - start_time
+    print('Registration processing time was', processing_time, '\n')
 
     # DISPLAY RESULTS
-    resampler3D.resampleImage3DOnImage3D(df, moving, inPlace=True, fillValue=-1024.)
+    df.resampleOn(moving, fillValue=-1024.)
     diff_before = fixed.copy()
     diff_before._imageArray = moving.imageArray - fixed.imageArray
     diff_after = fixed.copy()
