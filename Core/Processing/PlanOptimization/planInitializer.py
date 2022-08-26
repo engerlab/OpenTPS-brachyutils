@@ -12,7 +12,7 @@ from Core.Data.Plan.planIonBeam import PlanIonBeam
 from Core.Data.Plan.planIonLayer import PlanIonLayer
 from Core.Data.Plan.rtPlan import RTPlan
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
-from Core.Processing.rangeEnergy2 import rangeToEnergy
+from Core.Processing.rangeEnergy import rangeToEnergy
 
 
 class BeamInitializerBEV:
