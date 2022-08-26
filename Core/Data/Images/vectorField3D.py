@@ -45,7 +45,7 @@ class VectorField3D(Image3D):
         self.origin = image._origin
         self.spacing = image._spacing
 
-    def warp(self, data, fillValue=0, outputType=np.float32, tryGPU=True):
+    def warp(self, data, fillValue='closest', outputType=np.float32, tryGPU=True):
         """Warp 3D data using linear interpolation.
 
         Parameters
