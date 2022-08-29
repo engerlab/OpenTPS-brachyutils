@@ -29,7 +29,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.IO import mhdIO
 from Core.IO.mhdIO import exportImageMHD, importImageMHD
-from Core.Processing.ImageProcessing import segmentation3D
+from Core.Processing.Segmentation import segmentation3D
 
 logger = logging.getLogger(__name__)
 
