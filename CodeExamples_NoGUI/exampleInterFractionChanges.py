@@ -20,7 +20,7 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
 from Core.Processing.DeformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
 from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineShift
-from Core.Processing.ImageProcessing.segmentation3D import *
+from Core.Processing.Segmentation.segmentation3D import *
 from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
 
 if __name__ == '__main__':

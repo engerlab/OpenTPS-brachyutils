@@ -66,7 +66,7 @@ class DataViewerToolbar(QToolBar):
             self._buttonDVH.setChecked(True)
         elif displayType == self._dataViewer.DisplayTypes.DISPLAY_PROFILE:
             self._buttonProfile.setChecked(True)
-        elif displayType == self._dataViewer.DisplayTypes.DISPLAY_IMAGE:
+        elif displayType == self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D:
             self._buttonViewer.setChecked(True)
 
     def _uncheckAllDisplayButton(self):
