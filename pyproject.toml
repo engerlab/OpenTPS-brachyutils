@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opentps"
+version = "v0.1"
+authors = [
+    {name="Damien Dasnoy", email="damien.dasnoy@uclouvain.be" },
+    { name="Sylvain Deffet", email="sylvain.deffet@uclouvain.be" },
+    {name="Guillaume Janssens", email="guillaume.janssens@iba-group.com" },
+    {name="Kevin Souris", email="kevin.souris@iba-group.com" },
+    {name="Sophie Wuyckens", email="sophie.wuyckens@uclouvain.be" },
+]
+description = "Open source TPS for advanced proton therapy"
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache License, Version 2.0 (Apache-2.0)",
+    "Operating System :: Linux",
+]
+
+[project.urls]
+"Homepage" = "http://www.opentps.org/"
