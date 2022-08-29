@@ -160,7 +160,7 @@ class Deformation3D(Image3D):
         self.origin = list(origin)
         self.spacing = list(spacing)
 
-    def deformImage(self, image, fillValue=-1000, outputType=np.float32, tryGPU=True):
+    def deformImage(self, image, fillValue='closest', outputType=np.float32, tryGPU=True):
         """Deform 3D image using linear interpolation.
 
             Parameters

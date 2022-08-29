@@ -8,10 +8,10 @@ from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
 from Core.event import Event
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImageLayer import PrimaryImageLayer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImage3DLayer import PrimaryImage3DLayer
 
 
-class SecondaryImageLayer(PrimaryImageLayer):
+class SecondaryImage3DLayer(PrimaryImage3DLayer):
     def __init__(self, renderer, renderWindow, iStyle):
         self._colorMapper = vtkImagingCore.vtkImageMapToColors()
 

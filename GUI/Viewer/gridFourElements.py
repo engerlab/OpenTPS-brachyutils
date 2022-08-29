@@ -84,17 +84,23 @@ class GridFourElements(Grid):
         # Fill grid elements with data viewers
         gridElement = DoseComparisonDataViewer(self._viewController)
         gridElement.cachedStaticImage3DViewer.viewType = gridElement.cachedStaticImage3DViewer.ViewerTypes.AXIAL
-        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.AXIAL
+        gridElement.cachedStaticImage2DViewer.viewType = gridElement.cachedStaticImage2DViewer.ViewerTypes.AXIAL
+        gridElement.cachedDynamicImage3DViewer.viewType = gridElement.cachedDynamicImage3DViewer.ViewerTypes.AXIAL
+        gridElement.cachedDynamicImage2DViewer.viewType = gridElement.cachedDynamicImage2DViewer.ViewerTypes.AXIAL
         self.appendGridElement(gridElement)
         self._topLeftLayout.addWidget(gridElement)
         gridElement = DoseComparisonDataViewer(self._viewController)
         gridElement.cachedStaticImage3DViewer.viewType = gridElement.cachedStaticImage3DViewer.ViewerTypes.CORONAL
-        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.CORONAL
+        gridElement.cachedStaticImage2DViewer.viewType = gridElement.cachedStaticImage2DViewer.ViewerTypes.CORONAL
+        gridElement.cachedDynamicImage3DViewer.viewType = gridElement.cachedDynamicImage3DViewer.ViewerTypes.CORONAL
+        gridElement.cachedDynamicImage2DViewer.viewType = gridElement.cachedDynamicImage2DViewer.ViewerTypes.CORONAL
         self.appendGridElement(gridElement)
         self._topRightLayout.addWidget(gridElement)
         gridElement = DoseComparisonDataViewer(self._viewController)
         gridElement.cachedStaticImage3DViewer.viewType = gridElement.cachedStaticImage3DViewer.ViewerTypes.SAGITTAL
-        gridElement.cachedDynamicImageViewer.viewType = gridElement.cachedDynamicImageViewer.ViewerTypes.SAGITTAL
+        gridElement.cachedStaticImage2DViewer.viewType = gridElement.cachedStaticImage2DViewer.ViewerTypes.SAGITTAL
+        gridElement.cachedDynamicImage3DViewer.viewType = gridElement.cachedDynamicImage3DViewer.ViewerTypes.SAGITTAL
+        gridElement.cachedDynamicImage2DViewer.viewType = gridElement.cachedDynamicImage2DViewer.ViewerTypes.SAGITTAL
         self.appendGridElement(gridElement)
         self._botLeftLayout.addWidget(gridElement)
         gridElement = DoseComparisonDataViewer(self._viewController)

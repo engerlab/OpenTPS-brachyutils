@@ -112,24 +112,24 @@ class RegistrationMorphons(Registration):
         for s in range(len(scales)):
 
             # Compute grid for new scale
-            newGridSize = [round(self.fixed._spacing[1] / scales[s] * self.fixed.gridSize[0]),
-                           round(self.fixed._spacing[0] / scales[s] * self.fixed.gridSize[1]),
-                           round(self.fixed._spacing[2] / scales[s] * self.fixed.gridSize[2])]
-            newVoxelSpacing = [self.fixed._spacing[0] * (self.fixed.gridSize[1] - 1) / (newGridSize[1] - 1),
-                               self.fixed._spacing[1] * (self.fixed.gridSize[0] - 1) / (newGridSize[0] - 1),
-                               self.fixed._spacing[2] * (self.fixed.gridSize[2] - 1) / (newGridSize[2] - 1)]
+            newGridSize = np.array([round(self.fixed.spacing[1] / scales[s] * self.fixed.gridSize[0]),
+                           round(self.fixed.spacing[0] / scales[s] * self.fixed.gridSize[1]),
+                           round(self.fixed.spacing[2] / scales[s] * self.fixed.gridSize[2])])
+            newVoxelSpacing = np.array([self.fixed.spacing[0] * (self.fixed.gridSize[1] - 1) / (newGridSize[1] - 1),
+                               self.fixed.spacing[1] * (self.fixed.gridSize[0] - 1) / (newGridSize[0] - 1),
+                               self.fixed.spacing[2] * (self.fixed.gridSize[2] - 1) / (newGridSize[2] - 1)])
 
             logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed._origin, newVoxelSpacing, tryGPU=self.tryGPU)
+            fixedResampled.resample(newVoxelSpacing, newGridSize, self.fixed.origin, tryGPU=self.tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize, fixedResampled._origin, fixedResampled._spacing, tryGPU=self.tryGPU)
+            movingResampled.resample(fixedResampled.spacing, fixedResampled.gridSize, fixedResampled.origin, tryGPU=self.tryGPU)
 
             if s != 0:
-                deformation.resample(fixedResampled._spacing, fixedResampled.gridSize, fixedResampled._origin, tryGPU=self.tryGPU)
-                certainty.resample(fixedResampled._spacing, fixedResampled.gridSize, fixedResampled._origin, fillValue=0, tryGPU=self.tryGPU)
+                deformation.resample(fixedResampled.spacing, fixedResampled.gridSize, fixedResampled.origin, tryGPU=self.tryGPU)
+                certainty.resample(fixedResampled.spacing, fixedResampled.gridSize, fixedResampled.origin, fillValue=0, tryGPU=self.tryGPU)
             else:
                 deformation.initFromImage(fixedResampled)
                 certainty = fixedResampled.copy()
@@ -212,7 +212,7 @@ class RegistrationMorphons(Registration):
                 fieldUpdate[:, :, :, 1] = deformation.velocity.imageArray[:, :, :, 1] + np.multiply(fieldUpdate[:, :, :, 1], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
                 fieldUpdate[:, :, :, 2] = deformation.velocity.imageArray[:, :, :, 2] + np.multiply(fieldUpdate[:, :, :, 2], np.divide(certaintyUpdate, certainty.imageArray + certaintyUpdate + eps))
                 deformation.setVelocityArray(fieldUpdate)
-                certainty.imageArray = np.divide(np.power(certainty.imageArray, 2) + np.power(certaintyUpdate, 2), certainty.imageArray + certaintyUpdate + eps)
+                certainty._imageArray = np.divide(np.power(certainty.imageArray, 2) + np.power(certaintyUpdate, 2), certainty.imageArray + certaintyUpdate + eps)
 
                 # Regularize velocity deformation and certainty
                 self.regularizeField(deformation, filterType="NormalizedGaussian", sigma=1.25, cert=certainty.imageArray, tryGPU=self.tryGPU)

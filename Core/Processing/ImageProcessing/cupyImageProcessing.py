@@ -143,3 +143,14 @@ def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
     # print(voxelCoordsAroundCenterOfImageX)
 
     cupyArray = cupy.asarray(img.imageArray)
+
+
+def resampleCupy():
+    """
+    TODO
+    Returns
+    -------
+
+    """
+
+    return NotImplementedError

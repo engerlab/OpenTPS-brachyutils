@@ -131,13 +131,22 @@ class DataViewer(QWidget):
         self._mainLayout.addWidget(self._dvhViewer)
 
     @property
-    def cachedDynamicImageViewer(self) -> DynamicImage3DViewer:
+    def cachedDynamicImage3DViewer(self) -> DynamicImage3DViewer:
         """
-            The dynamic image viewer currently in cache (read-only)
+            The dynamic 3D image viewer currently in cache (read-only)
 
-            :type: DynamicImageViewer
+            :type: Dynamic3DImageViewer
         """
         return self._dynImage3DViewer
+
+    @property
+    def cachedDynamicImage2DViewer(self) -> DynamicImage2DViewer:
+        """
+            The dynamic 2D image viewer currently in cache (read-only)
+
+            :type: Dynamic2DImageViewer
+        """
+        return self._dynImage2DViewer
 
     @property
     def cachedStaticDVHViewer(self) -> DVHViewer:
@@ -223,9 +232,9 @@ class DataViewer(QWidget):
         # Notify dynamicDisplayController - we have a problem of multiple responsibilities here
         previousModeWasStatic = self.displayMode == self.DisplayModes.STATIC
         if previousModeWasStatic:
-            self._viewController.dynamicDisplayController.addDynamicViewer(self.cachedDynamicImageViewer)
+            self._viewController.dynamicDisplayController.addDynamicViewer(self.cachedDynamicImage3DViewer)
         else:
-            self._viewController.dynamicDisplayController.removeDynamicViewer(self.cachedDynamicImageViewer)
+            self._viewController.dynamicDisplayController.removeDynamicViewer(self.cachedDynamicImage3DViewer)
 
         self._displayMode = mode
 

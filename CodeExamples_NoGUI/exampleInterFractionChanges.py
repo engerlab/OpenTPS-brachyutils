@@ -58,10 +58,10 @@ if __name__ == '__main__':
     marginInMM = [50, 0, 100]
 
     # interfraction changes parameters
-    baselineShift = [0, 0, 0]
+    baselineShift = [-5, 0, 30]
     translation = [0, 0, 0]
     rotation = [0, 0, 0]
-    shrinkSize = [2, 2, 2]
+    shrinkSize = [0, 0, 0]
 
     # GPU used
     usedGPU = 0

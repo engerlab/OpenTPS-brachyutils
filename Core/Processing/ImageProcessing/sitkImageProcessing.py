@@ -4,7 +4,6 @@ from typing import Optional, Sequence, Union
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from Core.Data.Images.vectorField3D import VectorField3D
 
 try:
     import SimpleITK as sitk
@@ -56,38 +55,17 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
 
     imgType = image.imageArray.dtype
     img = image3DToSITK(image)
-    if isinstance(image, VectorField3D):
-        dimension = img[0].GetDimension()
-        reference_image = sitk.Image(newShape.tolist(), img[0].GetPixelIDValue())
-        reference_image.SetDirection(img[0].GetDirection())
-    else:
-        dimension = img.GetDimension()
-        reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
-        reference_image.SetDirection(img.GetDirection())
-    # print('in sitkImageProcessing resize', dimension)
-    # reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
+    dimension = img.GetDimension()
+    reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
+    reference_image.SetDirection(img.GetDirection())
     reference_image.SetOrigin(newOrigin.tolist())
     reference_image.SetSpacing(newSpacing.tolist())
-    
 
     transform = sitk.AffineTransform(dimension)
-    if isinstance(image, VectorField3D):
-        transform.SetMatrix(img[0].GetDirection())
-    else:
-        transform.SetMatrix(img.GetDirection())
+    transform.SetMatrix(img.GetDirection())
 
-    if isinstance(image, VectorField3D):
-        outImg1 = sitk.Resample(img[0], reference_image, transform, sitk.sitkLinear, fillValue)
-        outImg2 = sitk.Resample(img[1], reference_image, transform, sitk.sitkLinear, fillValue)
-        outImg3 = sitk.Resample(img[2], reference_image, transform, sitk.sitkLinear, fillValue)
-        outData1 = np.array(sitk.GetArrayFromImage(outImg1))
-        outData2 = np.array(sitk.GetArrayFromImage(outImg2))
-        outData3 = np.array(sitk.GetArrayFromImage(outImg3))
-        outData = np.stack((outData1, outData2, outData3),  axis=3)
-        # np.stack(arrays, axis=0)
-    else:  
-        outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
-        outData = np.array(sitk.GetArrayFromImage(outImg))
+    outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
+    outData = np.array(sitk.GetArrayFromImage(outImg))
 
     if imgType==bool:
         outData[outData<0.5] = 0
