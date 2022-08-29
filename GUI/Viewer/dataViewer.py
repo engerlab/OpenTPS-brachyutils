@@ -276,9 +276,13 @@ class DataViewer(QWidget):
 
         self._displayType = displayType
 
+        print(self.DisplayTypes.DISPLAY_IMAGE3D)
+        print(self._displayType)
+        print(displayType)
+
         if self._displayType == self.DisplayTypes.DISPLAY_IMAGE3D:
             self._setCurrentViewerToDynamicImage3DViewer()
-        if self._displayType == self.DisplayTypes.DISPLAY_IMAGE2D:
+        elif self._displayType == self.DisplayTypes.DISPLAY_IMAGE2D:
             self._setCurrentViewerToDynamicImage2DViewer()
         elif self._displayType == self.DisplayTypes.DISPLAY_PROFILE:
             self._currentViewer = self._staticProfileviewer
