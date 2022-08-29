@@ -125,8 +125,8 @@ class BeamInitializerBEV:
         origin = imageBEV.origin
         end = imageBEV.origin + imageBEV.spacing * imageBEV.imageArray.shape
 
-        x = np.arange(origin[0], end[0], imageBEV.spacing[0])
-        y = np.arange(origin[1], end[1], imageBEV.spacing[1])
+        x = np.linspace(origin[0], end[0]-imageBEV.spacing[0], imageBEV.gridSize[0])
+        y = np.linspace(origin[1], end[1]-imageBEV.spacing[1], imageBEV.gridSize[1])
         [coordGridX, coordGridY] = np.meshgrid(x, y)
         coordGridX = np.transpose(coordGridX)
         coordGridY = np.transpose(coordGridY)
