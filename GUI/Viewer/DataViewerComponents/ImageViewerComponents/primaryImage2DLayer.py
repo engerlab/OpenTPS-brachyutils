@@ -28,7 +28,7 @@ class PrimaryImage2DLayer:
         self._mainActor = vtkRenderingCore.vtkActor2D()
         self._mainActor.SetMapper(self._mainMapper)
         # self._mainMapper = self._mainActor.GetMapper()
-        print('in PrimaryImage2DLayer init', self._mainMapper)
+        # print('in PrimaryImage2DLayer init', self._mainMapper)
         self._orientationActor = vtkActor()
         self._orientationMapper = vtkDataSetMapper()
         self._orientationWidget = vtkOrientationMarkerWidget()
@@ -55,6 +55,8 @@ class PrimaryImage2DLayer:
 
     def _setMainMapperInputConnection(self):
         self._mainMapper.SetInputConnection(self._image)
+        print('in primaryImage2DLayer, setMainMapperInputCOnnection')
+        print(type(self._image))
 
     def close(self):
         self._disconnectAll()

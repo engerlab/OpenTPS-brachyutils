@@ -54,25 +54,29 @@ class DataViewer(QWidget):
         """
             Viewer types
         """
-        DEFAULT = 'DISPLAY_IMAGE'
         NONE = None
         DISPLAY_DVH = 'DISPLAY_DVH'
         DISPLAY_PROFILE = 'DISPLAY_PROFILE'
-        DISPLAY_IMAGE = 'DISPLAY_IMAGE'
+        DISPLAY_IMAGE3D = 'DISPLAY_IMAGE3D'
+        DISPLAY_IMAGE2D = 'DISPLAY_IMAGE2D'
+
+        DEFAULT = DISPLAY_IMAGE3D
 
     class DisplayModes(Enum):
         """
             Viewer modes
         """
-        DEFAULT = 'STATIC'
         STATIC = 'STATIC'
         DYNAMIC = 'DYNAMIC'
+
+        DEFAULT = STATIC
 
     class DropModes(Enum):
         AUTO = 'auto'
         PRIMARY = 'primary'
         SECONDARY = 'secondary'
-        DEFAULT = 'auto'
+
+        DEFAULT = AUTO
 
     def __init__(self, viewController):
         QWidget.__init__(self)
@@ -217,6 +221,12 @@ class DataViewer(QWidget):
 
         self.displayTypeChangedSignal.emit(displayType)
 
+    def setDisplayTypeAndMode(self, args):
+
+        print(args)
+
+        return
+
     @property
     def displayMode(self):
         """
@@ -240,7 +250,9 @@ class DataViewer(QWidget):
 
         # Reset display
         isModeDynamic = self._displayMode == self.DisplayModes.DYNAMIC
-        
+
+        print('in dataViewer displayMode setter self._displayType', self._displayType)
+
         if isModeDynamic:
             self._setDisplayInDynamicMode(self._displayType)
         else:
@@ -260,10 +272,14 @@ class DataViewer(QWidget):
         if not (self._currentViewer is None):
             self._currentViewer.hide()
 
+        print('in dataViewer _setDisplayInDynamicMode', displayType)
+
         self._displayType = displayType
 
-        if self._displayType == self.DisplayTypes.DISPLAY_IMAGE:
-            self._setCurrentViewerToDynamicImageViewer()
+        if self._displayType == self.DisplayTypes.DISPLAY_IMAGE3D:
+            self._setCurrentViewerToDynamicImage3DViewer()
+        if self._displayType == self.DisplayTypes.DISPLAY_IMAGE2D:
+            self._setCurrentViewerToDynamicImage2DViewer()
         elif self._displayType == self.DisplayTypes.DISPLAY_PROFILE:
             self._currentViewer = self._staticProfileviewer
         elif self._displayType == self.DisplayTypes.NONE:
@@ -285,14 +301,16 @@ class DataViewer(QWidget):
             self._currentViewer = self._noneViewer
         elif self._displayType == self.DisplayTypes.DISPLAY_PROFILE:
             self._currentViewer = self._staticProfileviewer
-        elif self._displayType == self.DisplayTypes.DISPLAY_IMAGE:
-            self._setCurrentViewerToStaticImageViewer()
+        elif self._displayType == self.DisplayTypes.DISPLAY_IMAGE3D:
+            self._setCurrentViewerToStaticImage3DViewer()
+        elif self._displayType == self.DisplayTypes.DISPLAY_IMAGE2D:
+            self._setCurrentViewerToStaticImage2DViewer()
         else:
             raise ValueError('Invalid display type: ' + str(self._displayType))
 
         self._currentViewer.show()
 
-    def _setCurrentViewerToDynamicImageViewer(self):
+    def _setCurrentViewerToDynamicImage3DViewer(self):
         self._currentViewer = self._dynImage3DViewer
         self.dropEnabled = self._dropEnabled
 
@@ -307,7 +325,37 @@ class DataViewer(QWidget):
         self._viewController.showContourSignal.connect(self._dynImage3DViewer._contourLayer.setNewContour)
         self._viewController.windowLevelEnabledSignal.connect(self._dynImage3DViewer.setWWLEnabled)
 
-    def _setCurrentViewerToStaticImageViewer(self):
+    def _setCurrentViewerToDynamicImage2DViewer(self):
+        self._currentViewer = self._dynImage3DViewer
+        self.dropEnabled = self._dropEnabled
+
+        self._viewController.crossHairEnabledSignal.disconnect(self._staticImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.disconnect(self._staticImage3DViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.disconnect(self._dvhViewer.appendROI)
+        self._viewController.windowLevelEnabledSignal.disconnect(self._staticImage3DViewer.setWWLEnabled)
+
+        self._viewController.crossHairEnabledSignal.connect(self._dynImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connect(self._dynImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connect(self._dynImage3DViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.connect(self._dynImage3DViewer.setWWLEnabled)
+
+    def _setCurrentViewerToStaticImage3DViewer(self):
+        self._currentViewer = self._staticImage3DViewer
+        self.dropEnabled = self._dropEnabled
+
+        self._viewController.crossHairEnabledSignal.disconnect(self._dynImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.disconnect(self._dynImage3DViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage3DViewer.setWWLEnabled)
+
+        self._viewController.crossHairEnabledSignal.connect(self._staticImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connect(self._staticImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connect(self._staticImage3DViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.connect(self._dvhViewer.appendROI)
+        self._viewController.windowLevelEnabledSignal.connect(self._staticImage3DViewer.setWWLEnabled)
+
+    def _setCurrentViewerToStaticImage2DViewer(self):
         self._currentViewer = self._staticImage3DViewer
         self.dropEnabled = self._dropEnabled
 
@@ -375,7 +423,7 @@ class DataViewer(QWidget):
         self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
 
         self._viewController.independentViewsEnabledSignal.connect(self.enableDrop)
-        self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplaydMode)
+        self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplayModeAndType)
         self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
         self._viewController.planChangedSignal.connect(self._setPlan)
         self._viewController.dropModeSignal.connect(self._setDropMode)
@@ -388,7 +436,7 @@ class DataViewer(QWidget):
     def _handleDisplayTypeChange(self, displayType):
         self._imageViewerActions.hide()
 
-        if displayType==self.DisplayTypes.DISPLAY_IMAGE:
+        if displayType==self.DisplayTypes.DISPLAY_IMAGE3D:
             self._imageViewerActions.setImageViewer(self._currentViewer)
             self._imageViewerActions.show()
 
@@ -413,23 +461,31 @@ class DataViewer(QWidget):
             return
 
         if self._dropMode==self.DropModes.PRIMARY:
-            self._setMainImageAnSwitchDisplaydMode(data)
+            self._setMainImageAnSwitchDisplayModeAndType(data)
         if self._dropMode==self.DropModes.SECONDARY:
             self._setSecondaryImage(data)
         if self._dropMode==self.DropModes.AUTO:
             if isinstance(data, DoseImage):
                 self._setSecondaryImage(data)
             else:
-                self._setMainImageAnSwitchDisplaydMode(data)
+                self._setMainImageAnSwitchDisplayModeAndType(data)
 
-    def _setMainImageAnSwitchDisplaydMode(self, image):
+    def _setMainImageAnSwitchDisplayModeAndType(self, image):
         """
             Switch display mode according to image type and then display image
         """
-        if isinstance(image, Image3D) or isinstance(image, Dynamic3DModel) or isinstance(image, Image2D):
+        if isinstance(image, Image3D) or isinstance(image, Dynamic3DModel):
             self.displayMode = self.DisplayModes.STATIC
-        elif isinstance(image, Dynamic3DSequence) or isinstance(image, Dynamic2DSequence):
+            self.displayType = self.DisplayTypes.DISPLAY_IMAGE3D
+        elif isinstance(image, Image2D):
+            self.displayMode = self.DisplayModes.STATIC
+            self.displayType = self.DisplayTypes.DISPLAY_IMAGE2D
+        elif isinstance(image, Dynamic3DSequence):
             self.displayMode = self.DisplayModes.DYNAMIC
+            self.displayType = self.DisplayTypes.DISPLAY_IMAGE3D
+        elif isinstance(image, Dynamic2DSequence):
+            self.displayMode = self.DisplayModes.DYNAMIC
+            self.displayType = self.DisplayTypes.DISPLAY_IMAGE2D
         elif image is None:
             pass
         else:
