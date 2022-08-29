@@ -4,7 +4,7 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFrame, QMessageBox, QFileDialog, QLabel, QHBoxLayout
 
 from Core.api import API
-from GUI.Panels.scriptingPanel.scriptingWindow import ScriptingWindow
+from GUI.Panels.ScriptingPanel.scriptingWindow import ScriptingWindow
 
 
 class ScriptingPanel(QWidget):
