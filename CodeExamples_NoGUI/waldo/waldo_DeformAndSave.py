@@ -26,7 +26,7 @@ from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
 from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.ImageProcessing.segmentation3D import *
+from Core.Processing.Segmentation.segmentation3D import *
 from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods import multiProcDeform
 
 if __name__ == '__main__':

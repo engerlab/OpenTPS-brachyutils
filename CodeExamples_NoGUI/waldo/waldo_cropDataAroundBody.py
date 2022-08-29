@@ -17,7 +17,7 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.Processing.ImageProcessing.segmentation3D import *
+from Core.Processing.Segmentation.segmentation3D import *
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 
 if __name__ == '__main__':
