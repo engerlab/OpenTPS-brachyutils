@@ -215,7 +215,7 @@ class APILogger:
     def _patientDataToString(image):
         argStr = ''
 
-        if not (image.patient is None):
+        if not (image.patient is None) and image in image.patient.patientData:
             argStr = APILogger._patientToString(image.patient) \
                      + '.patientData[' \
                      + str(APILogger.getPatientDataIndex(image.patient, image)) + ']'
