@@ -21,7 +21,7 @@ QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid displ
 
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
+def main():
     mainConfig = ProgramSettings()
 
     options = parseArgs(sys.argv[1:])
@@ -57,3 +57,6 @@ if __name__ == '__main__':
         print(output)
 
     app.exec_()
+
+if __name__ == '__main__':
+    main()
