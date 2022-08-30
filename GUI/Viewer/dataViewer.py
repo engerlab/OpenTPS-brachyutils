@@ -113,11 +113,16 @@ class DataViewer(QWidget):
         self._dynImage3DViewer = DynamicImage3DViewer(viewController)
         self._dynImage2DViewer = DynamicImage2DViewer(viewController)
 
-        self._staticProfileviewer.hide()
-        self._noneViewer.hide()
+        ## hide everything
         self._dvhViewer.hide()
-        self._dynImage3DViewer.hide()
+        self._noneViewer.hide()
+        self._staticProfileviewer.hide()
+
         self._staticImage3DViewer.hide()
+        self._staticImage2DViewer.hide()
+
+        self._dynImage3DViewer.hide()
+        self._dynImage2DViewer.hide()
 
         self._addViewersToLayout()
 
@@ -129,7 +134,9 @@ class DataViewer(QWidget):
     def _addViewersToLayout(self):
         self._mainLayout.addWidget(self._toolbar)
         self._mainLayout.addWidget(self._dynImage3DViewer)
+        self._mainLayout.addWidget(self._dynImage2DViewer)
         self._mainLayout.addWidget(self._staticImage3DViewer)
+        self._mainLayout.addWidget(self._staticImage2DViewer)
         self._mainLayout.addWidget(self._staticProfileviewer)
         self._mainLayout.addWidget(self._noneViewer)
         self._mainLayout.addWidget(self._dvhViewer)
@@ -222,8 +229,18 @@ class DataViewer(QWidget):
         self.displayTypeChangedSignal.emit(displayType)
 
     def setDisplayTypeAndMode(self, args):
+        """
+        This should be used instead of the displayType and displayMode setters when the type and mode change simultaneously, for example when passing from a 3D dynamic image to a 2D static image or DVH plot
 
-        print(args)
+        Parameters
+        ----------
+        args
+
+        Returns
+        -------
+
+        """
+        print(NotImplementedError)
 
         return
 
@@ -537,15 +554,29 @@ class DataViewer(QWidget):
         else:
             self.cachedStaticDVHViewer.dose = image
 
-    def _removeImageFromViewers(self, image: Image3D):
+    def _removeImageFromViewers(self, image: Union[Image3D, ]):
         """
-        Remove image from all cached viewers.
+        Remove image from all cached viewers --> does not work ?
         """
-        ""
+
         if self.cachedStaticImage3DViewer.primaryImage == image:
             self._setMainImage(None)
+        if self.cachedStaticImage3DViewer.secondaryImage == image:
+            self._setSecondaryImage(None)
 
-        if self.cachedDynamicImageViewer.secondaryImage == image:
+        if self.cachedDynamicImage3DViewer.primaryImage == image:
+            self._setMainImage(None)
+        if self.cachedDynamicImage3DViewer.secondaryImage == image:
+            self._setSecondaryImage(None)
+
+        if self.cachedStaticImage2DViewer.primaryImage == image:
+            self._setMainImage(None)
+        if self.cachedStaticImage2DViewer.secondaryImage == image:
+            self._setSecondaryImage(None)
+
+        if self.cachedDynamicImage2DViewer.primaryImage == image:
+            self._setMainImage(None)
+        if self.cachedDynamicImage2DViewer.secondaryImage == image:
             self._setSecondaryImage(None)
 
         if self.cachedStaticDVHViewer.dose == image:
