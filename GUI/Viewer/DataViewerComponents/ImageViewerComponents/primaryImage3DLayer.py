@@ -121,6 +121,7 @@ class PrimaryImage3DLayer:
         self._orientationActor.PokeMatrix(resliceAxes)
 
     def _connectAll(self):
+        self._image.dataChangedSignal.connect(self._render)
         self._image.lookupTableChangedSignal.connect(self._updateLookupTable)
         self._image.rangeChangedSignal.connect(self._render)
 
@@ -128,6 +129,7 @@ class PrimaryImage3DLayer:
         if self._image is None:
             return
 
+        self._image.dataChangedSignal.disconnect(self._render)
         self._image.lookupTableChangedSignal.disconnect(self._updateLookupTable)
         self._image.rangeChangedSignal.connect(self._render)
 
