@@ -522,7 +522,15 @@ class DataViewer(QWidget):
         elif isinstance(image, Dynamic3DModel):
             self.cachedStaticImage3DViewer.primaryImage = image.midp
         elif image is None:
-            pass
+            if self.displayMode == self.DisplayModes.STATIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE3D:
+                self.cachedStaticImage3DViewer.primaryImage = None
+            elif self.displayMode == self.DisplayModes.STATIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE2D:
+                self.cachedStaticImage2DViewer.primaryImage = None
+            elif self.displayMode == self.DisplayModes.DYNAMIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE3D:
+                self.cachedDynamicImage3DViewer.primaryImage = None
+            elif self.displayMode == self.DisplayModes.DYNAMIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE2D:
+                self.cachedDynamicImage2DViewer.primaryImage = None
+
         else:
             raise ValueError('Image type not supported')
 
@@ -560,24 +568,20 @@ class DataViewer(QWidget):
         """
 
         if self.cachedStaticImage3DViewer.primaryImage == image:
-            self._setMainImage(None)
+            self.cachedStaticImage3DViewer.primaryImage = None
         if self.cachedStaticImage3DViewer.secondaryImage == image:
             self._setSecondaryImage(None)
 
         if self.cachedDynamicImage3DViewer.primaryImage == image:
-            self._setMainImage(None)
-        if self.cachedDynamicImage3DViewer.secondaryImage == image:
-            self._setSecondaryImage(None)
+            self.cachedStaticImage3DViewer.primaryImage = image
 
         if self.cachedStaticImage2DViewer.primaryImage == image:
-            self._setMainImage(None)
-        if self.cachedStaticImage2DViewer.secondaryImage == image:
-            self._setSecondaryImage(None)
+            self.cachedStaticImage2DViewer.primaryImage = image
 
         if self.cachedDynamicImage2DViewer.primaryImage == image:
-            self._setMainImage(None)
-        if self.cachedDynamicImage2DViewer.secondaryImage == image:
-            self._setSecondaryImage(None)
+            self.cachedDynamicImage2DViewer.primaryImage = None
 
         if self.cachedStaticDVHViewer.dose == image:
             self._setDVHDose(None)
+
+        #image.patient.imageRemovedSignal.disconnect(self._removeImageFromViewers)
