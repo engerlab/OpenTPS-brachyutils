@@ -3,8 +3,8 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel
 
 
 class BlackEmptyPlot(QWidget):
-    def __init__(self):
-        QWidget.__init__(self)
+    def __init__(self, parent):
+        super().__init__(parent)
 
         self._layout = QHBoxLayout()
         self.setLayout(self._layout)

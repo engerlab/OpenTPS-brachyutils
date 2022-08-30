@@ -22,8 +22,8 @@ class ViewerToolbar(QToolBar):
     PLAY_STATUS = 1
     PAUSE_STATUS = 0
 
-    def __init__(self, viewController):
-        QToolBar.__init__(self)
+    def __init__(self, viewController, parent=None):
+        super().__init__(parent)
 
         self._viewController = viewController
         self.setIconSize(QSize(16, 16))

@@ -103,7 +103,7 @@ class DataViewer(QWidget):
 
         # For responsiveness, we instantiate all possible viewers and hide them == cached viewers:
         self._dvhViewer = DVHViewer(self)
-        self._noneViewer = BlackEmptyPlot()
+        self._noneViewer = BlackEmptyPlot(self)
         self._staticProfileviewer = ProfileViewer(viewController)
 
         self._staticImage3DViewer = Image3DViewer(viewController)

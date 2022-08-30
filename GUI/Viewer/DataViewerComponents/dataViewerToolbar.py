@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QToolBar, QAction, QMenu, QWidgetAction, QPushButton
 
 class DataViewerToolbar(QToolBar):
     def __init__(self, dataViewer):
-        QToolBar.__init__(self)
+        super().__init__(dataViewer)
 
         self._dataViewer = dataViewer
 

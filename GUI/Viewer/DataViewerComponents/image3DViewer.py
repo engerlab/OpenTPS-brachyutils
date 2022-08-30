@@ -46,7 +46,7 @@ class Image3DViewer(QWidget):
         self.primaryImageSignal = Event(object)
         self.secondaryImageSignal = Event(object)
 
-        self._blackWidget = BlackEmptyPlot()
+        self._blackWidget = BlackEmptyPlot(self)
         self._crossHairEnabled = False
         self._iStyle = vtkInteractionStyle.vtkInteractorStyleImage()
         self._leftButtonPress = False

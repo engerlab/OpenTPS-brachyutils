@@ -2,8 +2,8 @@ from PyQt5.QtWidgets import QWidget
 
 
 class Grid(QWidget):
-    def __init__(self, viewController):
-        QWidget.__init__(self)
+    def __init__(self, viewController, parent):
+        super().__init__(parent)
 
         self._gridElements = []
         self._viewController = viewController

@@ -127,8 +127,6 @@ class MainToolbar(QToolBox):
 
         for extensionFile in extensionFiles:
             try:
-                p = None
-
                 extensionName = os.path.splitext(os.path.basename(extensionFile))[0]
 
                 strToEval = 'from Extensions.'
