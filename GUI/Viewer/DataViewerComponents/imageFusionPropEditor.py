@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.widgets import RangeSlider
 
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
+from GUI.Viewer.DataViewerComponents.patientDataPropertyEditor import PatientDataPropertyEditor
 
 
 class ImageFusionPropEditor(QMainWindow):
@@ -24,7 +24,7 @@ class ImageFusionPropEditor(QMainWindow):
         self._layout.addWidget(self._imageInfoGroup)
         vbox = QVBoxLayout()
         self._imageInfoGroup.setLayout(vbox)
-        vbox.addWidget(ImagePropEditor(image, parent=self))
+        vbox.addWidget(PatientDataPropertyEditor(image, parent=self))
 
         self._imageProperties = QGroupBox(title='Image properties')
         self._layout.addWidget(self._imageProperties)

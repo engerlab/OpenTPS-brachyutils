@@ -13,13 +13,13 @@ from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.patientData import PatientData
 from Core.IO.serializedObjectIO import saveSerializedObjects
-from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
+from GUI.Viewer.DataViewerComponents.patientDataPropertyEditor import PatientDataPropertyEditor
 
 
 class PatientDataMenu:
-    def __init__(self, viewController):
+    def __init__(self, viewController, parent=None):
         self._actions = []
-        self._contextMenu = QMenu()
+        self._contextMenu = QMenu(parent)
         self._selectedData = None
         self._viewController = viewController
 
@@ -137,10 +137,10 @@ class PatientDataMenu:
                 dataItem.patient.removePatientData(dataItem)
 
     def _showImageInfo(self, image):
-        w = QMainWindow(None)
+        w = QMainWindow(self._contextMenu.parent())
         w.setWindowTitle('Image info')
         w.resize(400, 400)
-        w.setCentralWidget(ImagePropEditor(image, None))
+        w.setCentralWidget(PatientDataPropertyEditor(image, self._contextMenu.parent()))
         w.show()
 
     def _exportSerializedData(self, selectedData):

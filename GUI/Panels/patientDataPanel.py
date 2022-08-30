@@ -259,7 +259,7 @@ class PatientDataTree(QTreeView):
         selected = self.selectedIndexes()
         selectedData = [self.model().itemFromIndex(selectedData).data for selectedData in selected]
 
-        dataMenu = PatientDataMenu(self._viewController)
+        dataMenu = PatientDataMenu(self._viewController, self)
         dataMenu.selectedData = selectedData
         dataMenu.asContextMenu().popup(pos)
 
