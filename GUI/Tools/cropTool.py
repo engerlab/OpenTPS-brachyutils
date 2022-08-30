@@ -1,7 +1,7 @@
 from typing import Optional, Sequence
 
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QMainWindow, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QMainWindow, QVBoxLayout, QPushButton, QLabel
 from vtkmodules import vtkCommonMath
 from vtkmodules.vtkInteractionWidgets import vtkBoxWidget2, vtkBoxRepresentation
 from vtkmodules.vtkRenderingCore import vtkCoordinate
@@ -66,13 +66,19 @@ class DataSelection(QWidget):
         self.setLayout(self._mainLayout)
 
         self.patientBox = PatientComboBox(self._viewController)
-        self._mainLayout.addWidget(self.patientBox)
 
         self.patientDataTree = PatientDataTree(self._viewController, self)
-        self._mainLayout.addWidget(self.patientDataTree)
 
         cropDataButton = QPushButton('Crop all selected Data')
         cropDataButton.clicked.connect(self.cropData)
+
+        self._dragLabel = QLabel("Select as many images as you want to crop.\nDrop the image needed to create a box.",
+                                 self)
+        self._dragLabel.setWordWrap(True)
+
+        self._mainLayout.addWidget(self._dragLabel)
+        self._mainLayout.addWidget(self.patientBox)
+        self._mainLayout.addWidget(self.patientDataTree)
         self._mainLayout.addWidget(cropDataButton)
 
     def cropData(self):
