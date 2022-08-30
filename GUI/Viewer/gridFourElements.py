@@ -133,8 +133,8 @@ class VerticalSplitter(QSplitter):
 
         self.botGridElementContainer = QFrame(self)
         self.topGridElementContainer = QFrame(self)
-        self.addWidget(self.botGridElementContainer)
         self.addWidget(self.topGridElementContainer)
+        self.addWidget(self.botGridElementContainer)
         self.setStretchFactor(1, 1)
 
         self.botGridElementContainer.setFrameShape(QFrame.StyledPanel)
