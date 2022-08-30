@@ -57,7 +57,7 @@ class DataViewerToolbar(QToolBar):
 
     def _handleButtonViewer(self, pressed):
         if pressed:
-            self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_IMAGE
+            self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D
 
     def _handleDisplayTypeChange(self, displayType):
         self._uncheckAllDisplayButton()

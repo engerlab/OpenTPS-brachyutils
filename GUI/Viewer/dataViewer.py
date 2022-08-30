@@ -251,8 +251,6 @@ class DataViewer(QWidget):
         # Reset display
         isModeDynamic = self._displayMode == self.DisplayModes.DYNAMIC
 
-        print('in dataViewer displayMode setter self._displayType', self._displayType)
-
         if isModeDynamic:
             self._setDisplayInDynamicMode(self._displayType)
         else:
@@ -272,13 +270,7 @@ class DataViewer(QWidget):
         if not (self._currentViewer is None):
             self._currentViewer.hide()
 
-        print('in dataViewer _setDisplayInDynamicMode', displayType)
-
         self._displayType = displayType
-
-        print(self.DisplayTypes.DISPLAY_IMAGE3D)
-        print(self._displayType)
-        print(displayType)
 
         if self._displayType == self.DisplayTypes.DISPLAY_IMAGE3D:
             self._setCurrentViewerToDynamicImage3DViewer()
