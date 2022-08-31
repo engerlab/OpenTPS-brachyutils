@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton
 
 from Core.Data.Plan.planStructure import PlanStructure
 from Core.Data.patient import Patient
+from GUI.Panels.PlanDesignPanel.robustnessSettings import RobustnessSettings
+
 
 class PlanDesignPanel(QWidget):
     def __init__(self, viewController):
@@ -62,6 +64,13 @@ class PlanDesignPanel(QWidget):
         self._couchAnglesEdit.setText('0')
         self.layout.addWidget(self._couchAnglesEdit)
 
+        self._robustnessSettingsButton = QPushButton('Modify robustness settings')
+        self._robustnessSettingsButton.clicked.connect(self._openRobustnessSettings)
+        self.layout.addWidget(self._robustnessSettingsButton)
+
+        self._robustSettingsLabel = QLabel('')
+        self.layout.addWidget(self._robustSettingsLabel)
+
         self._runButton = QPushButton('Create')
         self._runButton.clicked.connect(self._create)
         self.layout.addWidget(self._runButton)
@@ -99,3 +108,21 @@ class PlanDesignPanel(QWidget):
         planStructure.name = self._planNameEdit.text()
 
         planStructure.patient = self._patient
+
+    def _openRobustnessSettings(self):
+        dialog = RobustnessSettings(planEvaluation=False)
+        if (dialog.exec()):
+            self._robustParam = dialog.robustParam
+
+        self._updateRobustSettings()
+
+    def _updateRobustSettings(self):
+        if (self._robustParam.strategy == self._robustParam.Strategies.DISABLED):
+            self._robustParam.setText('Disabled')
+        else:
+            RobustSettings = ''
+            RobustSettings += 'Selection: error space<br>'
+            RobustSettings += 'Syst. setup: E<sub>S</sub> = ' + str(self._robustParam.systSetup) + ' mm<br>'
+            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.randSetup) + ' mm<br>'
+            RobustSettings += 'Syst. range: E<sub>R</sub> = ' + str(self._robustParam.systRange) + ' %'
+            self._robustSettingsLabel.setText(RobustSettings)

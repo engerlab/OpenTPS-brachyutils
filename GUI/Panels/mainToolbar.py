@@ -9,7 +9,7 @@ from Core.event import Event
 from GUI.Panels.doseComparisonPanel import DoseComparisonPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
 from GUI.Panels.patientDataPanel import PatientDataPanel
-from GUI.Panels.planDesignPanel import PlanDesignPanel
+from GUI.Panels.PlanDesignPanel.planDesignPanel import PlanDesignPanel
 from GUI.Panels.PlanOptimizationPanel.planOptiPanel import PlanOptiPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.ScriptingPanel.scriptingPanel import ScriptingPanel
