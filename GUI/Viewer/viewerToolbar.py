@@ -9,9 +9,9 @@ from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, 
 
 from Core.IO import dataLoader
 from Core.event import Event
-from GUI.Tools.cropTool import CropWidget
 from GUI.Viewer.dataViewer import DataViewer
 from GUI.Viewer.exportWindow import ExportWindow
+from GUI._Tools._cropTool import CropWidget
 from GUI.programSettingEditor import ProgramSettingEditor
 
 import GUI.res.icons as IconModule

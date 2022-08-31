@@ -9,7 +9,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patient import Patient
 from Core.Processing.PlanOptimization import optimizationWorkflows
 from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
-from GUI.Panels.PlanOptiPanel.objectivesWindow import ROITable
+from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ROITable
 
 
 class PlanOptiPanel(QWidget):

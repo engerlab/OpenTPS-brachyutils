@@ -1,15 +1,13 @@
 from typing import Optional, Sequence
 
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QMainWindow, QVBoxLayout, QPushButton, QLabel
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QMainWindow, QVBoxLayout, QPushButton, QLabel, QFrame
 from vtkmodules import vtkCommonMath
 from vtkmodules.vtkInteractionWidgets import vtkBoxWidget2, vtkBoxRepresentation
-from vtkmodules.vtkRenderingCore import vtkCoordinate
 
 from Core.Data.Images.image3D import Image3D
 from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
-from Core.event import Event
-from GUI.Panels.patientDataPanel import PatientComboBox, PatientDataTree
+from GUI.Panels.PatientDataPanel.patientDataSelection import PatientDataSelection
 from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
 from GUI.Viewer.dataViewer import DroppedObject
 
@@ -29,20 +27,33 @@ class CropWidget(QMainWindow):
         centralWidget.setLayout(self._mainLayout)
 
         self._viewers = ThreeViewsGrid(self._viewController)
-        self._dataSelection = DataSelection((self._viewController))
 
-        self._dataSelection.setFixedWidth(200)
+        self._dragLabel = QLabel("Select as many images as you want to crop.\nDrop the image needed to create a box.", self)
+        self._dragLabel.setWordWrap(True)
 
-        self._mainLayout.addWidget(self._dataSelection)
+        self._cropDataButton = QPushButton('Crop all selected Data')
+        self._cropDataButton.clicked.connect(self._cropData)
+
+        self._dataSelection = PatientDataSelection((self._viewController))
+
+        self._menuFrame = QFrame(self)
+        self._menuFrame.setFixedWidth(200)
+        self._menuLayout = QVBoxLayout(self._menuFrame)
+        self._menuFrame.setLayout(self._menuLayout)
+
+        self._mainLayout.addWidget(self._menuFrame)
+        self._menuLayout.addWidget(self._dragLabel)
+        self._menuLayout.addWidget(self._dataSelection)
+        self._menuLayout.addWidget(self._cropDataButton)
         self._mainLayout.addWidget(self._viewers)
-
-        self._dataSelection.dataToCropEvent.connect(self.cropData)
 
     def closeEvent(self, event):
         self._viewers.close()
         super().closeEvent(event)
 
-    def cropData(self, selectedData:Sequence[Image3D]):
+    def _cropData(self):
+        selectedData = self._dataSelection.selectedData
+
         box = self._viewers.getBoundingBox()
 
         xx = np.array([box[0], box[1]])
@@ -53,40 +64,6 @@ class CropWidget(QMainWindow):
 
         for data in selectedData:
             crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0])
-
-class DataSelection(QWidget):
-    def __init__(self, viewController):
-        super().__init__()
-
-        self.dataToCropEvent = Event(object)
-
-        self._viewController = viewController
-
-        self._mainLayout = QVBoxLayout(self)
-        self.setLayout(self._mainLayout)
-
-        self.patientBox = PatientComboBox(self._viewController)
-
-        self.patientDataTree = PatientDataTree(self._viewController, self)
-
-        cropDataButton = QPushButton('Crop all selected Data')
-        cropDataButton.clicked.connect(self.cropData)
-
-        self._dragLabel = QLabel("Select as many images as you want to crop.\nDrop the image needed to create a box.",
-                                 self)
-        self._dragLabel.setWordWrap(True)
-
-        self._mainLayout.addWidget(self._dragLabel)
-        self._mainLayout.addWidget(self.patientBox)
-        self._mainLayout.addWidget(self.patientDataTree)
-        self._mainLayout.addWidget(cropDataButton)
-
-    def cropData(self):
-        selected = self.patientDataTree .selectedIndexes()
-        selectedData = [self.patientDataTree.model().itemFromIndex(selectedData).data for selectedData in selected]
-
-        self.dataToCropEvent.emit(selectedData)
-
 
 
 class ThreeViewsGrid(QWidget):

@@ -10,7 +10,7 @@ from GUI.Panels.doseComparisonPanel import DoseComparisonPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
 from GUI.Panels.patientDataPanel import PatientDataPanel
 from GUI.Panels.planDesignPanel import PlanDesignPanel
-from GUI.Panels.PlanOptiPanel.planOptiPanel import PlanOptiPanel
+from GUI.Panels.PlanOptimizationPanel.planOptiPanel import PlanOptiPanel
 from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.ScriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.Panels.breathingSignalPanel import BreathingSignalPanel

@@ -34,7 +34,7 @@ class DataViewerToolbar(QToolBar):
         self.addAction(self._buttonProfile)
         self.addAction(self._buttonDVH)
 
-        self._menuButton = QPushButton("Tools", self)
+        self._menuButton = QPushButton("_Tools", self)
         self._menu = QMenu(self._menuButton)
         self._menuButton.setMenu(self._menu)
         self._menuAction = QWidgetAction(None)
