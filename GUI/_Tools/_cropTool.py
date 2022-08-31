@@ -34,7 +34,7 @@ class CropWidget(QMainWindow):
         self._cropDataButton = QPushButton('Crop all selected Data')
         self._cropDataButton.clicked.connect(self._cropData)
 
-        self._dataSelection = PatientDataSelection((self._viewController))
+        self._dataSelection = PatientDataSelection(self._viewController)
 
         self._menuFrame = QFrame(self)
         self._menuFrame.setFixedWidth(200)

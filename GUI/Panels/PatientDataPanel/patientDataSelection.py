@@ -49,11 +49,15 @@ class PatientComboBox(QComboBox):
 
         self._viewController.patientAddedSignal.connect(self._addPatient)
         self._viewController.patientRemovedSignal.connect(self._removePatient)
+        self._viewController.currentPatientChangedSignal.connect(self._setCurrentPatient)
 
-        if not (self._viewController.currentPatient is None):
-            self._addPatient(self._viewController.currentPatient)
+        self.currentIndexChanged.connect(self._setCurrentPatientInVC)
 
-        self.currentIndexChanged.connect(self._setCurrentPatient)
+        self._initialize()
+
+    def _initialize(self):
+        for patient in self._viewController.patientList:
+            self._addPatient(patient)
 
     def _addPatient(self, patient):
         name = patient.name
@@ -67,7 +71,14 @@ class PatientComboBox(QComboBox):
     def _removePatient(self, patient):
         self.removeItem(self.findData(patient))
 
-    def _setCurrentPatient(self, index):
+    def _setCurrentPatient(self, patient):
+        if patient == self.currentData():
+            return
+
+        self.setCurrentIndex(self.findData(patient))
+
+
+    def _setCurrentPatientInVC(self, index):
         self._viewController.currentPatient = self.currentData()
 
 
