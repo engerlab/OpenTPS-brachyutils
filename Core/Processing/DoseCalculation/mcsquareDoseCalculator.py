@@ -214,11 +214,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._roiMasks)
-        beamletDose.beamletRescaling = self._beamletRescaling()
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roiMasks)
         return beamletDose
 
-    def _beamletRescaling(self):
+    def _beamletRescaling(self) -> Sequence[float]:
         beamletRescaling = []
         for beam in self._plan:
             for layer in beam:

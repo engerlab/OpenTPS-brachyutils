@@ -33,7 +33,7 @@ from Core.Processing.Segmentation import segmentation3D
 
 logger = logging.getLogger(__name__)
 
-def readBeamlets(file_path, roi: Optional[ROIMask] = None):
+def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIMask] = None):
     if (not file_path.endswith('.txt')):
         raise NameError('File ', file_path, ' is not a valid sparse matrix header')
 
@@ -49,7 +49,7 @@ def readBeamlets(file_path, roi: Optional[ROIMask] = None):
     sparseBeamlets = _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"], roi)
 
     beamletDose = SparseBeamlets()
-    beamletDose.setUnitaryBeamlets(sparseBeamlets)
+    beamletDose.setUnitaryBeamlets(csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(beamletRescaling))))
     beamletDose.beamletWeights = np.ones(header["NbrSpots"])
     beamletDose.doseOrigin = header["Offset"]
     beamletDose.doseSpacing = header["VoxelSpacing"]

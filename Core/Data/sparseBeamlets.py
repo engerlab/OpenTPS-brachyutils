@@ -13,7 +13,6 @@ class SparseBeamlets(PatientData):
         super().__init__()
 
         self._sparseBeamlets = None
-        self._beamletRescaling = None
         self._weights = None
         self._origin = (0, 0, 0)
         self._spacing = (1, 1, 1)
@@ -27,14 +26,6 @@ class SparseBeamlets(PatientData):
     @beamletWeights.setter
     def beamletWeights(self, weights:Sequence):
         self._weights = weights
-
-    @property
-    def beamletRescaling(self) -> Optional[Sequence]:
-        return self._beamletRescaling
-
-    @beamletRescaling.setter
-    def beamletRescaling(self, weights: Sequence):
-        self._beamletRescaling = weights
 
     @property
     def doseOrigin(self):
@@ -81,10 +72,7 @@ class SparseBeamlets(PatientData):
         self._sparseBeamlets = beamlets
 
     def toDoseImage(self) -> DoseImage:
-        if not self._beamletRescaling is None:
-            weights = np.array(self._beamletRescaling) * np.array(self._weights)
-        else:
-            weights = np.array(self._weights)
+        weights = np.array(self._weights)
 
         totalDose = csc_matrix.dot(self._sparseBeamlets, weights)
 
@@ -98,7 +86,7 @@ class SparseBeamlets(PatientData):
         return doseImage
 
     def toSparseMatrix(self) -> csc_matrix:
-        return csc_matrix.dot(self._sparseBeamlets, csc_matrix(np.diag(self._beamletRescaling)))
+        return self._sparseBeamlets
 
     def cropFromROI(self, roi):
         raise NotImplementedError()
