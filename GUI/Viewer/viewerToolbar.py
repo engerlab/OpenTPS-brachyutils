@@ -1,6 +1,5 @@
-import importlib
+
 import os
-import sys
 
 from PyQt5.QtCore import QSize, QDir
 from PyQt5.QtGui import QIcon
@@ -12,6 +11,7 @@ from Core.event import Event
 from GUI.Viewer.dataViewer import DataViewer
 from GUI.Viewer.exportWindow import ExportWindow
 from GUI._Tools._cropTool import CropWidget
+from GUI._Tools._resampleTool import ResampleWidget
 from GUI.programSettingEditor import ProgramSettingEditor
 
 import GUI.res.icons as IconModule
@@ -62,6 +62,11 @@ class ViewerToolbar(QToolBar):
         self._buttonCrop.triggered.connect(self._handleCrop)
         self._buttonCrop.setCheckable(False)
 
+        self._buttonResample = QAction(QIcon(self.iconPath + "resample.png"), "Resample", self)
+        self._buttonResample.setStatusTip("Resample")
+        self._buttonResample.triggered.connect(self._handleResample)
+        self._buttonResample.setCheckable(False)
+
         self._dropModeCombo = QComboBox()
         self._dropModeToStr = {DataViewer.DropModes.AUTO: 'Drop mode: auto',
                                DataViewer.DropModes.PRIMARY: 'Drop as primary image',
@@ -80,6 +85,7 @@ class ViewerToolbar(QToolBar):
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonWindowLevel)
         self.addAction(self._buttonCrop)
+        self.addAction(self._buttonResample)
         self.addAction(self._dropModeAction)
 
         self.addSeparator()
@@ -145,6 +151,10 @@ class ViewerToolbar(QToolBar):
     def _handleCrop(self):
         self._cropWidget = CropWidget(self._viewController)
         self._cropWidget.show()
+
+    def _handleResample(self):
+        self._resampleWidget = ResampleWidget(self._viewController)
+        self._resampleWidget.show()
 
     def _handleLoadData(self):
         filesOrFoldersList = self._getOpenFilesAndDirs(caption="Open patient data files or folders",
