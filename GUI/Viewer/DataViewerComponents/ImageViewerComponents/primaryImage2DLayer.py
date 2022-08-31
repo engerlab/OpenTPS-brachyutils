@@ -29,9 +29,9 @@ class PrimaryImage2DLayer:
         self._mainActor.SetMapper(self._mainMapper)
         # self._mainMapper = self._mainActor.GetMapper()
         # print('in PrimaryImage2DLayer init', self._mainMapper)
-        self._orientationActor = vtkActor()
-        self._orientationMapper = vtkDataSetMapper()
-        self._orientationWidget = vtkOrientationMarkerWidget()
+        # self._orientationActor = vtkActor()
+        # self._orientationMapper = vtkDataSetMapper()
+        # self._orientationWidget = vtkOrientationMarkerWidget()
         self._renderer = renderer
         self._renderWindow = renderWindow
         # self._reslice = vtkImagingCore.vtkImageReslice()
@@ -40,13 +40,13 @@ class PrimaryImage2DLayer:
 
         # self._mainMapper.SetSliceAtFocalPoint(True)
 
-        self._orientationActor.SetMapper(self._orientationMapper)
-        self._orientationActor.GetProperty().SetColor(colors.GetColor3d("Silver"))
-        self._orientationMapper.SetInputConnection(self._stlReader.GetOutputPort())
-        self._orientationWidget.SetViewport(0.8, 0.0, 1.0, 0.2)
-        self._orientationWidget.SetCurrentRenderer(self._renderer)
-        self._orientationWidget.SetInteractor(self._renderWindow.GetInteractor())
-        self._orientationWidget.SetOrientationMarker(self._orientationActor)
+        # self._orientationActor.SetMapper(self._orientationMapper)
+        # self._orientationActor.GetProperty().SetColor(colors.GetColor3d("Silver"))
+        # self._orientationMapper.SetInputConnection(self._stlReader.GetOutputPort())
+        # self._orientationWidget.SetViewport(0.8, 0.0, 1.0, 0.2)
+        # self._orientationWidget.SetCurrentRenderer(self._renderer)
+        # self._orientationWidget.SetInteractor(self._renderWindow.GetInteractor())
+        # self._orientationWidget.SetOrientationMarker(self._orientationActor)
 
         # self._reslice.SetOutputDimensionality(2)
         # self._reslice.SetInterpolationModeToNearestNeighbor()
@@ -55,8 +55,8 @@ class PrimaryImage2DLayer:
 
     def _setMainMapperInputConnection(self):
         self._mainMapper.SetInputConnection(self._image)
-        print('in primaryImage2DLayer, setMainMapperInputCOnnection')
-        print(type(self._image))
+        # print('in primaryImage2DLayer, setMainMapperInputCOnnection')
+        # print(type(self._image))
 
     def close(self):
         self._disconnectAll()
