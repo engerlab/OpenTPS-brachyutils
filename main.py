@@ -30,14 +30,16 @@ def main():
     if not app:
         app = QApplication([])
 
-    patientList = PatientList()
+    if API.patientList is None:
+        patientList = PatientList()
+        API.patientList = patientList
 
-    API.patientList = patientList
     API.logger.appendLoggingFunction(FileLogger().print)
     API.logger.appendLoggingFunction(logger.info)
     API.logger.enabled = True
 
     # instantiate the main GUI window
+    patientList = API.patientList
     viewController = ViewController(patientList)
     viewController.mainConfig = mainConfig
     viewController.mainWindow.show()

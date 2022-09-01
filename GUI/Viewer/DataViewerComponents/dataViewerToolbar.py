@@ -3,7 +3,7 @@ import os
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction, QMenu, QWidgetAction, QPushButton
-
+import GUI as GUIModule
 
 class DataViewerToolbar(QToolBar):
     def __init__(self, dataViewer):
@@ -13,7 +13,8 @@ class DataViewerToolbar(QToolBar):
 
         self.setIconSize(QSize(16, 16))
 
-        iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+        # TODO use full path from import GUI.res.icons as iconModule
+        iconPath = GUIModule.__path__[0] + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
 
         self._buttonDVH = QAction(QIcon(iconPath + "dvh.png"), "DVH", self)
         self._buttonDVH.setStatusTip("DVH")
