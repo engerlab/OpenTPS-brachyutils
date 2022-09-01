@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QToolBox, QWidget
 from Core.event import Event
 from GUI.Panels.doseComparisonPanel import DoseComparisonPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
-from GUI.Panels.patientDataPanel import PatientDataPanel
+from GUI.Panels.PatientDataPanel.patientDataPanel import PatientDataPanel
 from GUI.Panels.PlanDesignPanel.planDesignPanel import PlanDesignPanel
 from GUI.Panels.PlanOptimizationPanel.planOptiPanel import PlanOptiPanel
 from GUI.Panels.roiPanel import ROIPanel

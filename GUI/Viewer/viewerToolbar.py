@@ -26,6 +26,9 @@ class ViewerToolbar(QToolBar):
         super().__init__(parent)
 
         self._viewController = viewController
+        self._cropWidgets = []
+        self._resampleWidgets = []
+
         self.setIconSize(QSize(16, 16))
 
         self.iconPath = str(IconModule.__path__[0]) + os.path.sep
@@ -149,12 +152,17 @@ class ViewerToolbar(QToolBar):
         self._viewController.crossHairEnabled = pressed
 
     def _handleCrop(self):
-        self._cropWidget = CropWidget(self._viewController)
-        self._cropWidget.show()
+        cw = CropWidget(self._viewController)
+        # TODO
+        # I don't know why but we must keep the reference to any CropWidget created even if we close it
+        # This is an issue because _cropWidgets might become huge
+        self._cropWidgets.append(cw)
+        cw.show()
 
     def _handleResample(self):
-        self._resampleWidget = ResampleWidget(self._viewController)
-        self._resampleWidget.show()
+        rw = ResampleWidget(self._viewController)
+        self._resampleWidgets.append(rw)
+        rw.show()
 
     def _handleLoadData(self):
         filesOrFoldersList = self._getOpenFilesAndDirs(caption="Open patient data files or folders",

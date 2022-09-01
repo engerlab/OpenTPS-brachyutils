@@ -19,8 +19,8 @@ from GUI.Viewer.dataViewer import DroppedObject
 
 
 class PatientDataSelection(QWidget):
-    def __init__(self, viewController):
-        super().__init__()
+    def __init__(self, viewController, parent=None):
+        super().__init__(parent)
 
         self._viewController = viewController
 
@@ -54,6 +54,13 @@ class PatientComboBox(QComboBox):
         self.currentIndexChanged.connect(self._setCurrentPatientInVC)
 
         self._initialize()
+
+    def closeEvent(self, QCloseEvent):
+        self._viewController.patientAddedSignal.disconnect(self._addPatient)
+        self._viewController.patientRemovedSignal.disconnect(self._removePatient)
+        self._viewController.currentPatientChangedSignal.disconnect(self._setCurrentPatient)
+
+        super().closeEvent(QCloseEvent)
 
     def _initialize(self):
         for patient in self._viewController.patientList:
@@ -106,10 +113,15 @@ class PatientDataTree(QTreeView):
         self.buildDataTree(self._viewController.currentPatient)
         self._viewController.currentPatientChangedSignal.connect(self.buildDataTree)
 
-
         self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
+
+    def closeEvent(self, QCloseEvent):
+        self._disconnectCurrentPatientAndItems()
+        self._viewController.currentPatientChangedSignal.disconnect(self.buildDataTree)
+
+        super().closeEvent(QCloseEvent)
 
     def _appendData(self, data):
         if isinstance(data, Image3D) or isinstance(data, RTPlan) or isinstance(data, Dynamic3DSequence) or isinstance(data, Dynamic2DSequence):
@@ -150,16 +162,8 @@ class PatientDataTree(QTreeView):
         drag.exec_(QtCore.Qt.CopyAction)
 
     def buildDataTree(self, patient):
-        # Disconnect signals
-        if not(self._currentPatient is None):
-            self._currentPatient.patientDataAddedSignal.disconnect(self._appendData)
-            self._currentPatient.patientDataRemovedSignal.disconnect(self._removeData)
+        self._disconnectCurrentPatientAndItems()
 
-        # Do this explicitely to be sure signals are disconnected
-        for row in range(self.model().rowCount()):
-            item = self.model().itemFromIndex(self.model().index(row, 0))
-            if isinstance(item, PatientDataItem):
-                item.disconnectAll()
         self.treeModel.clear()
         self.rootNode = self.treeModel.invisibleRootItem()
         font_b = QFont()
@@ -200,6 +204,18 @@ class PatientDataTree(QTreeView):
                 item = PatientDataItem(field)
                 serieRoot.appendRow(item)
             self.rootNode.appendRow(serieRoot)
+
+    def _disconnectCurrentPatientAndItems(self):
+        # Disconnect signals
+        if not (self._currentPatient is None):
+            self._currentPatient.patientDataAddedSignal.disconnect(self._appendData)
+            self._currentPatient.patientDataRemovedSignal.disconnect(self._removeData)
+
+        # Do this explicitely to be sure signals are disconnected
+        for row in range(self.model().rowCount()):
+            item = self.model().itemFromIndex(self.model().index(row, 0))
+            if isinstance(item, PatientDataItem):
+                item.disconnectAll()
 
     def dragEnterEvent(self, event):
         selection = self.selectionModel().selectedIndexes()[0]

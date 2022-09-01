@@ -144,7 +144,7 @@ class PatientDataMenu:
         w.show()
 
     def _exportSerializedData(self, selectedData):
-        from GUI.Panels.patientDataPanel import SaveData_dialog
+        from GUI.Panels.PatientDataPanel.patientDataPanel import SaveData_dialog
         fileDialog = SaveData_dialog()
         savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
 
