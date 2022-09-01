@@ -20,6 +20,7 @@ from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.robustness import Robustness
 from Core.Data.roiContour import ROIContour
 from Core.Data.sparseBeamlets import SparseBeamlets
+from Core.IO.serializedObjectIO import saveBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
 from programSettings import ProgramSettings
@@ -133,7 +134,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare()
 
         # Import sparse beamlets
-        beamletDose = self._importBeamlets()
+        if self._robustnessStrategy == "Disabled":
+            beamletDose = self._importBeamlets()
+            outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
+            saveBeamlets(beamletDose)
+        else:
+            self._sparseDoseFilePath = os.path.join(self._outputDir, "Sparse_Dose_Nominal.txt")
         beamletDose.beamletWeights = np.array(plan.spotMUs)
 
         return beamletDose
