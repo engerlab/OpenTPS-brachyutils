@@ -13,4 +13,5 @@ scripts/
 tests/
 notebooks/
 *.txt
+version.py
 
