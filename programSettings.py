@@ -91,7 +91,8 @@ class ProgramSettings(metaclass=Singleton):
         except:
             pass
 
-        self._config["machine_param"].update({"scannerFolder": ScannerModule.__path__[0] + os.sep  + 'UCL_Toshiba'})
+        self._config.setdefault("machine_param", {})
+        self._config["machine_param"].setdefault("scannerFolder", ScannerModule.__path__[0] + os.sep  + 'UCL_Toshiba')
         self.writeConfig()
         return self._config["machine_param"]["scannerFolder"]
 
@@ -110,7 +111,8 @@ class ProgramSettings(metaclass=Singleton):
         except:
             pass
 
-        self._config["machine_param"].update({"bdlFile" : bdlModule.__path__[0] + os.sep  + 'UMCG_P1_v2_RangeShifter.txt'})
+        self._config.setdefault("machine_param", {})
+        self._config["machine_param"].setdefault("bdlFile", bdlModule.__path__[0] + os.sep  + 'BDL_default_DN_RangeShifter.txt')
         self.writeConfig()
         return self._config["machine_param"]["bdlFile"]
 
