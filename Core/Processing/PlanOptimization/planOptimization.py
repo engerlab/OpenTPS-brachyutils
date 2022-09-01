@@ -20,12 +20,12 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
-    def __init__(self, plan:RTPlan, planStructure:PlanStructure, functions=None, **kwargs):
+    def __init__(self, plan:RTPlan, functions=None, **kwargs):
         if functions is None:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
         self.plan = planPreprocessing.extendPlanLayers(plan)
-        self.planStructure = planStructure
+        self.planStructure = self.plan.planDesign
         self.initPlan = plan
         self.opti_params = kwargs
         self.functions = functions
@@ -84,8 +84,8 @@ class PlanOptimizer:
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan:RTPlan, planStructure:PlanStructure, functions=None, **kwargs):
-        super().__init__(plan, planStructure, functions, **kwargs)
+    def __init__(self, method, plan:RTPlan, functions=None, **kwargs):
+        super().__init__(plan, functions, **kwargs)
         if functions is None:
             logger.error('You must specify the function you want to optimize')
         if method == 'Scipy-BFGS':

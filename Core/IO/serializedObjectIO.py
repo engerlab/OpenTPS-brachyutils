@@ -88,6 +88,7 @@ def loadSerializedObject(filePath):
 def saveRTPlan(plan , file_path):
     # dcm = plan.OriginalDicomDataset
     # plan.OriginalDicomDataset = []
+    plan.planDesign.beamlets = []
 
     with open(file_path, 'wb') as fid:
         pickle.dump(plan.__dict__, fid)

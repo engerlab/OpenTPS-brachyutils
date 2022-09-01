@@ -6,7 +6,8 @@ import sparse_dot_mkl
 from matplotlib import pyplot as plt
 import logging.config
 import json
-
+import sys
+sys.path.append('..')
 from Core.Data.patientList import PatientList
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.dvh import DVH
@@ -23,7 +24,7 @@ from Core.Processing.PlanOptimization.Objectives.logBarrier import LogBarrier
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer, ARCPTPlanOptimizer
 from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking, FistaAccel
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
-from Core.Data.Plan.objectivesList import ObjectivesList
+from Core.Data.Plan.objectivesList import ObjectivesList, FidObjective
 from Core.Processing.PlanOptimization.tools import WeightStructure
 
 try:
@@ -116,21 +117,44 @@ else:
     saveRTPlan(plan, plan_file)
     plan.beamlets = beamlets'''
 
+planInit = PlanStructure()
+planInit.ct = ct
+planInit.targetMask = targetMask
+planInit.gantryAngles = gantryAngles
+planInit.beamNames = beamNames
+planInit.couchAngles = couchAngles
+planInit.calibration = calibration
+planInit.spotSpacing = 6.0
+planInit.layerSpacing = 4.0
+planInit.targetMargin = 6.0
+# Load Beamlets
+beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
+planInit.beamlets = loadBeamlets(beamletPath)
+
 # Load openTPS plan
 # plan = dataList[3]
 # Load Dicom plan
 plan = dataList[1]
+plan.planDesign = planInit
 # Load Beamlets
-beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
+#beamletPath = os.path.join(output_path, "beamlet_IMPT_test.blm")
 # beamletPath = os.path.join(output_path, "beamlet_arc_test.blm")
-plan.beamlets = loadBeamlets(beamletPath)
+#plan.beamlets = loadBeamlets(beamletPath)
+
+# Initialize contours + downsampling optional
+# scoring_spacing = np.array([5, 5, 5])
+scoring_spacing = np.array([2, 2, 2])
+scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
+#plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
+# plan.objectives.initializeContours(contours, ct, ct.gridSize, ct.spacing)
 
 # optimization objectives
-plan.objectives = ObjectivesList()
-plan.objectives.setTarget(target.name, 65.0)
-plan.objectives.fidObjList = []
-plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.)
-plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
+planInit.objectives = ObjectivesList()
+planInit.objectives.setTarget(target.name, 65.0)
+planInit.objectives.setScoringParameters(ct, scoring_grid_size, scoring_spacing)
+planInit.objectives.fidObjList = []
+planInit.objectives.addFidObjective(target, FidObjective.Metrics.DMAX, 65.0, 1.0)
+planInit.objectives.addFidObjective(target, FidObjective.Metrics.DMIN, 65.0, 1.0)
 # plan.objectives.addFidObjective(body.name, "Dmax", "<", 65.0, 0.1)
 # plan.objectives.addFidObjective(opticChiasm.name, "Dmax", "<", 60.0, 0.1)
 # plan.objectives.addFidObjective(opticChiasm.name, "Dmean", "<", 50.0, 0.1)
@@ -140,12 +164,7 @@ plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
 # plan.objectives.addFidObjective(rings[1].name, "Dmax", "<", 55.0, 1.0)
 # plan.objectives.addFidObjective(rings[2].name, "Dmax", "<", 45.0, 1.0)
 
-# Initialize contours + downsampling optional
-# scoring_spacing = np.array([5, 5, 5])
-scoring_spacing = np.array([2, 2, 2])
-scoring_grid_size = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoring_spacing, ct.spacing)]
-plan.objectives.initializeContours(contours, ct, scoring_grid_size, scoring_spacing)
-# plan.objectives.initializeContours(contours, ct, ct.gridSize, ct.spacing)
+
 
 # Crop beamlet to optimization ROI
 '''roiObjectives = np.zeros_like(plan.objectives.fidObjList[0].maskVec)
@@ -158,10 +177,10 @@ else:
     beamletMatrix = sp.csc_matrix.dot(sp.diags(roiObjectives.astype(np.float32), format='csc'),
                                       plan.beamlets.toSparseMatrix())'''
 
-beamletMatrix = plan.beamlets.toSparseMatrix()
+beamletMatrix = planInit.beamlets.toSparseMatrix()
 # Objective functions
 # objectiveFunction = DoseFidelity(plan.objectives.fidObjList, plan.beamlets.toSparseMatrix(), xSquare=False)
-objectiveFunction = DoseFidelity(plan.objectives.fidObjList, beamletMatrix, formatArray=64)
+objectiveFunction = DoseFidelity(planInit.objectives.fidObjList, beamletMatrix, formatArray=64)
 print('fidelity init done')
 spotSparsity = NormL1(lambda_=1)
 # energySeq = EnergySeq(plan, gamma=0.1)
@@ -182,7 +201,7 @@ accel = FistaBacktracking()
                            accel=accel,
                            maxit=100)'''
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=100)
-# solver.xSquared = False
+#solver.xSquared = False
 
 # Optimize treatment plan
 w, doseImage, ps = solver.optimize()
@@ -205,8 +224,8 @@ print("EL sparsity = {} %".format(layerSparsityPercentage))
 # Dose computation (beamlet_based or MCsquare)
 # plan.spotMUs = np.square(w).astype(np.float32)
 # doseImage = mc2.computeDose(ct, plan)
-plan.beamlets.beamletWeights = np.square(w).astype(np.float32)
-doseImage = plan.beamlets.toDoseImage()
+planInit.beamlets.beamletWeights = np.square(w).astype(np.float32)
+doseImage = planInit.beamlets.toDoseImage()
 
 # Compute DVH
 target_DVH = DVH(target, doseImage)
