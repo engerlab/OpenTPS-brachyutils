@@ -40,5 +40,5 @@ data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
-API.patientList = patientList # Give API to opentps
+API.patientList = patientList # Give patientList to opentps
 main()  # Launch opentps

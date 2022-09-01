@@ -107,7 +107,7 @@ def _optimizePlan(plan:RTPlan, planStructure:PlanStructure):
     beamletMatrix = planStructure.beamlets.toSparseMatrix()
 
     objectiveFunction = DoseFidelity(planStructure.objectives.fidObjList, beamletMatrix, formatArray=32, xSquare=False, scenariosBL=None, returnWorstCase=False)
-    solver = IMPTPlanOptimizer(optimizationSettings.imptSolver, plan, planStructure, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
+    solver = IMPTPlanOptimizer(optimizationSettings.imptSolver, plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
 
     solver.xSquared = False
 
