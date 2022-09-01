@@ -17,6 +17,7 @@ from Core.Data.Images.roiMask import ROIMask
 from Core.Data.MCsquare.bdl import BDL
 from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
 from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.robustness import Robustness
 from Core.Data.roiContour import ROIContour
 from Core.Data.sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
@@ -43,6 +44,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._independentScoringGrid = False
         self._scoringVoxelSpacing = [2.0, 2.0, 2.0]
         self._simulationDirectory = ProgramSettings().simulationFolder
+        # Robustness settings
+        self._robustnessStrategy = "Disabled"
+        self._setupSystematicError = [2.5, 2.5, 2.5]  # mm
+        self._setupRandomError = [1.0, 1.0, 1.0]  # mm
+        self._rangeSystematicError = 3.0  # %
 
         self._subprocess = None
         self._subprocessKilled = True
@@ -126,10 +132,31 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._outputDir)
         self._startMCsquare()
 
+        # Import sparse beamlets
         beamletDose = self._importBeamlets()
         beamletDose.beamletWeights = np.array(plan.spotMUs)
 
         return beamletDose
+
+    def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[ROIContour]]):
+        scenarios = Robustness(plan)
+        if self._robustnessStrategy == "DoseSpace":
+            scenarios.selectionStrategy = "Dosimetric"
+        else:
+            scenarios.selectionStrategy = "Error"
+        scenarios.setupSystematicError = self._setupSystematicError
+        scenarios.setupRandomError = self._setupRandomError
+        scenarios.rangeSystematicError = self._rangeSystematicError
+
+        self._ct = ct
+        self._plan = self._setPlanWeightsTo1(plan)
+        self._roi = roi
+        self._config = self._scenarioComputationConfig
+
+        self._writeFilesToSimuDir()
+        self._cleanDir(self._outputDir)
+
+        return scenarios
 
     def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[ROIContour]]) -> DoseImage:
         self._ct = ct
@@ -306,6 +333,25 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Beamlet_Parallelization"] = True
         config["Dose_MHD_Output"] = False
         config["Dose_Sparse_Output"] = True
+        config["Dose_Sparse_Threshold"] = 20000.0
+        # Robustness settings
+        if self._robustnessStrategy == "Disabled":
+            config["Robustness_Mode"] = False
+        else:
+            config["Robustness_Mode"] = True
+            config["Simulate_nominal_plan"] = True
+            config["Systematic_Setup_Error"] = [self._setupSystematicError[0] / 10,
+                                                self._setupSystematicError[1] / 10,
+                                                self._setupSystematicError[2] / 10]  # cm
+            config["Random_Setup_Error"] = [self._setupRandomError[0] / 10, self._setupRandomError[1] / 10,
+                                            self._setupRandomError[2] / 10]  # cm
+            config["Systematic_Range_Error"] = self._rangeSystematicError  # %
+            config[
+                "Scenario_selection"] = "ReducedSet"  # "All" (81 scenarios), or "ReducedSet" (21 scenarios as in RayStation)
+            if config["Scenario_selection"] == "All":
+                NumScenarios = 81
+            else:
+                NumScenarios = 21
 
         return config
 
