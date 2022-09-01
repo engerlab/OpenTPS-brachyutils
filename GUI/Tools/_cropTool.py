@@ -1,3 +1,7 @@
+
+__docformat__ = "restructuredtext en"
+__all__ = ['CropWidget']
+
 from typing import Optional, Sequence
 
 import numpy as np

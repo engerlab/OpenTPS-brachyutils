@@ -22,5 +22,4 @@ Contents
    :titlesonly:
 
    installation
-   Core
-   GUI
+   opentps

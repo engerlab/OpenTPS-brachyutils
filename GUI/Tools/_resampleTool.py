@@ -1,3 +1,7 @@
+
+__docformat__ = "restructuredtext en"
+__all__ = ['ResampleWidget']
+
 from typing import Sequence
 
 import numpy as np

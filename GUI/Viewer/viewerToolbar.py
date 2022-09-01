@@ -10,8 +10,8 @@ from Core.IO import dataLoader
 from Core.event import Event
 from GUI.Viewer.dataViewer import DataViewer
 from GUI.Viewer.exportWindow import ExportWindow
-from GUI._Tools._cropTool import CropWidget
-from GUI._Tools._resampleTool import ResampleWidget
+from GUI.Tools._cropTool import CropWidget
+from GUI.Tools._resampleTool import ResampleWidget
 from GUI.programSettingEditor import ProgramSettingEditor
 
 import GUI.res.icons as IconModule
