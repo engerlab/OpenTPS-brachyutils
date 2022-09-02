@@ -104,7 +104,7 @@ class ROIContour(PatientData):
             mask3D = np.zeros(gridSize).astype(bool)
             referenceImage = ROIMask(imageArray=mask3D, spacing=spacing, origin=origin)
 
-            mask = resampler3D. resampleImage3DOnImage3D(mask, referenceImage, inPlace=True, fillValue=0)
+            resampler3D.resampleImage3DOnImage3D(mask, referenceImage, inPlace=True, fillValue=0)
 
         return mask
 

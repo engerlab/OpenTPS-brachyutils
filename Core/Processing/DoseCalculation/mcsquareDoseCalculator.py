@@ -346,11 +346,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             #                              config["Scoring_voxel_spacing"][1] / 2.0
             config["Scoring_origin"][1] = self._ct.origin[1] - config["Scoring_voxel_spacing"][
                 1] / 2.0
-            self._roiMasks = []
-            for contour in self._roi:
-                resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
-                                                      spacing=self.scoringVoxelSpacing)
-                self._roiMasks.append(resampledMask)
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
 

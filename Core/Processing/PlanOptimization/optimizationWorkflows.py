@@ -44,11 +44,11 @@ def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
             planStructure.objectives.targetPrescription = objective.limitValue # TODO: User should enter this value
 
             if isinstance(roi, ROIContour):
-                mask = roi.getBinaryMask(origin=objective.scoringOrigin, gridSize=objective.scoringGridSize,
-                                              spacing=objective.scoringSpacing)
+                mask = roi.getBinaryMask(origin=planStructure.ct.origin, gridSize=planStructure.ct.gridSize,
+                                              spacing=planStructure.ct.spacing)
             elif isinstance(roi, ROIMask):
-                mask = resampler3D.resampleImage3D(roi, gridSize=objective.scoringGridSize, spacing=objective.scoringSpacing,
-                                                   origin=objective.scoringOrigin)
+                mask = resampler3D.resampleImage3D(roi, origin=planStructure.ct.origin, gridSize=planStructure.ct.gridSize,
+                                              spacing=planStructure.ct.spacing)
             else:
                 raise Exception(roi.__class__.__name__ + ' is not a supported class for roi')
 
@@ -98,6 +98,8 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
     mc2.ctCalibration = ctCalibration
     mc2.beamModel = bdl
     mc2.nbPrimaries = optimizationSettings.beamletPrimaries
+    mc2.independentScoringGrid = True
+    # TODO: specify scoring grid
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
