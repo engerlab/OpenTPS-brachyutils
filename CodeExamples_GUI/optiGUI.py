@@ -1,16 +1,15 @@
 import numpy as np
 
+import opentps
 from Core.Data.Images import CTImage
 from Core.Data.Images import ROIMask
 from Core.Data import Patient
 from Core.Data import PatientList
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
-from Core.api import API
-from main import main
 from programSettings import ProgramSettings
 
-patientList = PatientList()
+patientList = opentps.patientList
 
 ctCalibration = readScanner(ProgramSettings().scannerFolder)
 bdl = mcsquareIO.readBDL(ProgramSettings().bdlFile)
@@ -40,5 +39,4 @@ data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
-API.patientList = patientList # Give patientList to opentps
-main()  # Launch opentps
+opentps.run()  # Launch opentps
