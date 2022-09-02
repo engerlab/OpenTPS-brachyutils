@@ -4,11 +4,16 @@ __all__ = ['PlanDesign']
 
 import logging
 
+import numpy as np
+
 from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images._ctImage import CTImage
 from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Plan import PlanIonBeam
 from Core.Data.Plan._objectivesList import ObjectivesList
 from Core.Data._patientData import PatientData
+from Core.Processing.ImageProcessing import resampler3D
+from Core.Processing.PlanOptimization.planInitializer import PlanInitializer
 
 logger = logging.getLogger(__name__)
 
@@ -46,4 +51,60 @@ class PlanDesign(PatientData):
         self.numScenarios = 0
 
     def buildPlan(self):
-        raise NotImplementedError
+        # Spot placement
+        self.defineTargetMaskAndPrescription()
+        self.createBeams()
+        self.initializeBeams()
+        # return plan ?
+
+    def defineTargetMaskAndPrescription(self):
+        from Core.Data._roiContour import ROIContour
+
+        targetMask = None
+        for objective in self.objectives.fidObjList:
+            if objective.metric == objective.Metrics.DMIN:
+                roi = objective.roi
+
+                self.objectives.targetPrescription = objective.limitValue  # TODO: User should enter this value
+
+                if isinstance(roi, ROIContour):
+                    mask = roi.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
+                                             spacing=self.ct.spacing)
+                elif isinstance(roi, ROIMask):
+                    mask = resampler3D.resampleImage3D(roi, origin=self.ct.origin,
+                                                       gridSize=self.ct.gridSize,
+                                                       spacing=self.ct.spacing)
+                else:
+                    raise Exception(roi.__class__.__name__ + ' is not a supported class for roi')
+
+                if targetMask is None:
+                    targetMask = mask
+                else:
+                    targetMask.imageArray = np.logical_or(targetMask.imageArray, mask.imageArray)
+
+        if targetMask is None:
+            raise Exception('Could not find a target volume in dose fidelity objectives')
+
+        self.targetMask = targetMask
+
+    def createBeams(self):
+        for beam in self.plan:
+            self.plan.removeBeam(beam)
+
+        for i, gantryAngle in enumerate(self.gantryAngles):
+            beam = PlanIonBeam()
+            beam.gantryAngle = gantryAngle
+            beam.couchAngle = self.couchAngles[i]
+            beam.isocenterPosition = self.targetMask.centerOfMass
+            beam.id = i
+            beam.name = 'B' + str(i)
+
+            self.plan.appendBeam(beam)
+
+    def initializeBeams(self):
+        initializer = PlanInitializer()
+        initializer.ctCalibration = self.calibration
+        initializer.ct = self.ct
+        initializer.plan = self.plan
+        initializer.targetMask = self.targetMask
+        initializer.initializePlan(self.spotSpacing, self.layerSpacing, self.targetMargin)

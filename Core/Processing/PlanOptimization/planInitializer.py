@@ -7,7 +7,6 @@ from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibratio
 from Core.Data.Images._ctImage import CTImage
 from Core.Data.Images._image3D import Image3D
 from Core.Data.Images._roiMask import ROIMask
-from Core.Data.Images._rspImage import RSPImage
 from Core.Data.Plan._planIonBeam import PlanIonBeam
 from Core.Data.Plan._planIonLayer import PlanIonLayer
 from Core.Data.Plan._rtPlan import RTPlan
@@ -25,7 +24,7 @@ class BeamInitializerBEV:
 
     def intializeBeam(self, beam:PlanIonBeam, ctBEV:CTImage, targetMaskBEV:ROIMask):
         #TODO Range shifter
-
+        from Core.Data.Images._rspImage import RSPImage
         roiDilated = ROIMask.fromImage3D(targetMaskBEV)
         roiDilated.dilate(radius=self.targetMargin)
 
