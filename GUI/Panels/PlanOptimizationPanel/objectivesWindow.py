@@ -3,8 +3,8 @@ from typing import Sequence, Optional
 
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem
 
-from Core.Data.Plan.objectivesList import FidObjective
-from Core.Data.patient import Patient
+from Core.Data.Plan._objectivesList import FidObjective
+from Core.Data._patient import Patient
 from Core.event import Event
 
 class ROITable(QTableWidget):
@@ -23,6 +23,13 @@ class ROITable(QTableWidget):
         self._viewController = viewController
 
         self.cellChanged.connect(lambda *args: self.objectivesModifiedEvent.emit())
+
+    def closeEvent(self, QCloseEvent):
+        if not self._patient is None:
+            self._patient.rtStructAddedSignal.disconnect(self.updateTable)
+            self._patient.rtStructRemovedSignal.disconnect(self.updateTable)
+
+        super().closeEvent(QCloseEvent)
 
     @property
     def patient(self) -> Optional[Patient]:
@@ -87,6 +94,10 @@ class ROITable(QTableWidget):
         terms = []
 
         for i, roi in enumerate(self._rois):
+            # TODO How can this happen? It does happen when we load a new RTStruct for the same patient
+            if self.item(i, 2) is None:
+                return terms
+
             # Dmin
             dmin = float(self.item(i, 2).text())
             if dmin > self.DMIN_THRESH:

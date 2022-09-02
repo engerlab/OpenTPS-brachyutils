@@ -3,12 +3,12 @@ from matplotlib import pyplot as plt
 
 
 from Core.IO import mcsquareIO
-from Core.IO.dataLoader import loadAllData
+from Core.IO.dataLoader import reaData
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets
-from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Data.dvh import DVH
+from Core.Data.Plan._objectivesList import ObjectivesList
+from Core.Data._dvh import DVH
 # CT path
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 
@@ -17,7 +17,7 @@ ctImagePath = "/home/sophie/Documents/Protontherapy/OpenTPS/arc_dev/opentps/data
 output_path = os.path.join(ctImagePath, "OpenTPS")
 
 # Load patient data
-dataList = loadAllData(ctImagePath, maxDepth=0)
+dataList = reaData(ctImagePath, maxDepth=0)
 ct = dataList[7]
 contours = dataList[6]
 print('Available ROIs')

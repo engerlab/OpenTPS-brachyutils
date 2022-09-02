@@ -6,7 +6,7 @@ import logging
 import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 from Core.api import API
 

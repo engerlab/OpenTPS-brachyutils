@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from Core.Data.patientData import PatientData
+from Core.Data._patientData import PatientData
 import Core.Processing.Registration.midPosition as midPosition
 from concurrent.futures import ProcessPoolExecutor
 

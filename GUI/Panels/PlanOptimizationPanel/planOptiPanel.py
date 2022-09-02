@@ -2,11 +2,11 @@ import subprocess
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Data.Plan.planStructure import PlanStructure
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.patient import Patient
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Plan._objectivesList import ObjectivesList
+from Core.Data.Plan._planDesign import PlanDesign
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._patient import Patient
 from Core.Processing.PlanOptimization import optimizationWorkflows
 from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
 from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ROITable
@@ -117,7 +117,7 @@ class PlanOptiPanel(QWidget):
     def _updatePlanStructureComboBox(self):
         self._removeAllPlanStructures()
 
-        self._planStructures = [ps for ps in self._patient.getPatientDataOfType(PlanStructure)]
+        self._planStructures = [ps for ps in self._patient.getPatientDataOfType(PlanDesign)]
 
         for ps in self._planStructures:
             self._addPlanStructure(ps)
@@ -134,11 +134,11 @@ class PlanOptiPanel(QWidget):
         for ps in self._planStructures:
             self._removePlanStructure(ps)
 
-    def _addPlanStructure(self, ps:PlanStructure):
+    def _addPlanStructure(self, ps:PlanDesign):
         self._planStructureComboBox.addItem(ps.name, ps)
         ps.nameChangedSignal.connect(self._handlePlanStructureChanged)
 
-    def _removePlanStructure(self, ps:PlanStructure):
+    def _removePlanStructure(self, ps:PlanDesign):
         if ps==self._selectedPlanStructure:
             self._selectedPlanStructure = None
 
@@ -152,7 +152,7 @@ class PlanOptiPanel(QWidget):
         self._updateCTComboBox()
 
     def _handlePlanStructureAddedOrRemoved(self, data):
-        if isinstance(data, PlanStructure):
+        if isinstance(data, PlanDesign):
             self._updatePlanStructureComboBox()
     def _handlePlanStructureChanged(self, ct):
         self._updatePlanStructureComboBox()
@@ -199,6 +199,10 @@ class ObjectivesWidget(QWidget):
 
         self._roitTable.objectivesModifiedEvent.connect(self._showObjectives)
 
+    def closeEvent(self, QCloseEvent):
+        self._roitTable.objectivesModifiedEvent.disconnect(self._showObjectives)
+        super().closeEvent(QCloseEvent)
+
     @property
     def objectives(self):
         return self._roitTable.getObjectiveTerms()
@@ -207,7 +211,7 @@ class ObjectivesWidget(QWidget):
         self._roitTable.patient = p
 
     def _showObjectives(self):
-        objectives = self.objectives
+        objectives = self._roitTable.getObjectiveTerms()
 
         if len(objectives)<=0:
             self._objectivesLabels.setText(self.DEFAULT_OBJECTIVES_TEXT)

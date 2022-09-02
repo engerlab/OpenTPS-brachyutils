@@ -4,11 +4,11 @@ import typing
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMainWindow
 
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.Plan.planIonSpot import PlanIonSpot
-from Core.Data.Plan.rangeShifter import RangeShifter
-from Core.Data.patientData import PatientData
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planIonLayer import PlanIonLayer
+from Core.Data.Plan._planIonSpot import PlanIonSpot
+from Core.Data.Plan._rangeShifter import RangeShifter
+from Core.Data._patientData import PatientData
 from Core.event import Event
 
 class PatientDataPropertyEditor(QWidget):

@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images._doseImage import DoseImage
 from Core.event import Event
 from GUI.MainWindow import MainWindow
 from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget

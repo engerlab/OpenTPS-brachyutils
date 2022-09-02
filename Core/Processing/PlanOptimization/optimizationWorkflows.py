@@ -2,11 +2,11 @@ import logging
 
 import numpy as np
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planStructure import PlanStructure
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planDesign import PlanDesign
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.IO import mcsquareIO, scannerReader
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
@@ -19,7 +19,7 @@ from programSettings import ProgramSettings
 
 logger = logging.getLogger(__name__)
 
-def optimizeIMPT(plan:RTPlan, planStructure:PlanStructure):
+def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
     plan.planDesign = planStructure
 
     planStructure.objectives.setScoringParameters(planStructure.ct)
@@ -33,8 +33,8 @@ def optimizeIMPT(plan:RTPlan, planStructure:PlanStructure):
     finalDose = _computeFinalDose(plan, planStructure)
     finalDose.patient = plan.patient
 
-def _defineTargetMaskAndPrescription(planStructure:PlanStructure):
-    from Core.Data.roiContour import ROIContour
+def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
+    from Core.Data._roiContour import ROIContour
 
     targetMask = None
     for objective in planStructure.objectives.fidObjList:
@@ -44,11 +44,11 @@ def _defineTargetMaskAndPrescription(planStructure:PlanStructure):
             planStructure.objectives.targetPrescription = objective.limitValue # TODO: User should enter this value
 
             if isinstance(roi, ROIContour):
-                mask = roi.getBinaryMask(origin=objective.scoringOrigin, gridSize=objective.scoringGridSize,
-                                              spacing=objective.scoringSpacing)
+                mask = roi.getBinaryMask(origin=planStructure.ct.origin, gridSize=planStructure.ct.gridSize,
+                                              spacing=planStructure.ct.spacing)
             elif isinstance(roi, ROIMask):
-                mask = resampler3D.resampleImage3D(roi, gridSize=objective.scoringGridSize, spacing=objective.scoringSpacing,
-                                                   origin=objective.scoringOrigin)
+                mask = resampler3D.resampleImage3D(roi, origin=planStructure.ct.origin, gridSize=planStructure.ct.gridSize,
+                                              spacing=planStructure.ct.spacing)
             else:
                 raise Exception(roi.__class__.__name__ + ' is not a supported class for roi')
 
@@ -62,7 +62,7 @@ def _defineTargetMaskAndPrescription(planStructure:PlanStructure):
 
     planStructure.targetMask = targetMask
 
-def _createBeams(plan:RTPlan, planStructure:PlanStructure):
+def _createBeams(plan:RTPlan, planStructure:PlanDesign):
     for beam in plan:
         plan.removeBeam(beam)
 
@@ -76,7 +76,7 @@ def _createBeams(plan:RTPlan, planStructure:PlanStructure):
 
         plan.appendBeam(beam)
 
-def _initializeBeams(plan:RTPlan, planStructure:PlanStructure):
+def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
     programSettings = ProgramSettings()
     ctCalibration = scannerReader.readScanner(programSettings.scannerFolder)
 
@@ -87,7 +87,7 @@ def _initializeBeams(plan:RTPlan, planStructure:PlanStructure):
     initializer.targetMask = planStructure.targetMask
     initializer.initializePlan(planStructure.spotSpacing, planStructure.layerSpacing, planStructure.targetMargin)
 
-def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
+def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
     programSettings = ProgramSettings()
     optimizationSettings = PlanOptimizationSettings()
 
@@ -98,10 +98,12 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
     mc2.ctCalibration = ctCalibration
     mc2.beamModel = bdl
     mc2.nbPrimaries = optimizationSettings.beamletPrimaries
+    mc2.independentScoringGrid = True
+    # TODO: specify scoring grid
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
-def _optimizePlan(plan:RTPlan, planStructure:PlanStructure):
+def _optimizePlan(plan:RTPlan, planStructure:PlanDesign):
     optimizationSettings = PlanOptimizationSettings()
 
     beamletMatrix = planStructure.beamlets.toSparseMatrix()

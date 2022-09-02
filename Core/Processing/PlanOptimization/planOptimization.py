@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import scipy.sparse as sp
 
-from Core.Data.Plan.planStructure import PlanStructure
+from Core.Data.Plan._planDesign import PlanDesign
 
 try:
     import sparse_dot_mkl
@@ -11,7 +11,7 @@ try:
 except:
     use_MKL = 0
 
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.Processing.PlanOptimization.Solvers import gradientDescent, bfgs, fista, localSearch, mip, sparcling, \
     beamletFree, lp
 from Core.Processing.PlanOptimization import planPreprocessing

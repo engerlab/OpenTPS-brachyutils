@@ -11,7 +11,7 @@ while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os
 sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
 
-from Core.IO.dataLoader import loadAllData
+from Core.IO.dataLoader import reaData
 from Core.Processing.ImageProcessing.resampler3D import resample, resampleOnImage3D
 
 
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     ## load an image to use as example
     dataPath = testDataPath + "4DCTDicomLight/00"
-    img = loadAllData(dataPath)[0]
+    img = reaData(dataPath)[0]
     print('Image type =', type(img))
     zSlice = int(img.gridSize[2] / 2)
 

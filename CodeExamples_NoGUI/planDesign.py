@@ -1,9 +1,9 @@
 import os
-from Core.IO.dataLoader import loadAllData
+from Core.IO.dataLoader import reaData
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO import mcsquareIO
-from Core.Data.Plan.planStructure import PlanStructure
+from Core.Data.Plan._planDesign import PlanDesign
 from Core.IO.serializedObjectIO import saveRTPlan, saveBeamlets
 
 # CT path
@@ -16,7 +16,7 @@ if not os.path.isdir(output_path):
     os.mkdir(output_path)
 
 # Load patient data
-dataList = loadAllData(ctImagePath, maxDepth=0)
+dataList = reaData(ctImagePath, maxDepth=0)
 ct = dataList[7]
 contours = dataList[6]
 print('Available ROIs')
@@ -68,7 +68,7 @@ couchAngles = [0., 0.]
 
 # Generate new plan
 plan_file = os.path.join(output_path, "brain_100_280.tps")
-planInit = PlanStructure()
+planInit = PlanDesign()
 planInit.ct = ct
 planInit.targetMask = targetMask
 planInit.gantryAngles = gantryAngles

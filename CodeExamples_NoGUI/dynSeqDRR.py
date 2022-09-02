@@ -8,7 +8,7 @@ from pathlib import Path
 
 from Core.Processing.ImageSimulation.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
 from Core.IO.serializedObjectIO import loadDataStructure, saveSerializedObjects
-from Core.Data.patient import Patient
+from Core.Data._patient import Patient
 
 if __name__ == '__main__':
 

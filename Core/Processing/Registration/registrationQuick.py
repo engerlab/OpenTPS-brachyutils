@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 from Core.Processing.Registration.registration import Registration
 
 logger = logging.getLogger(__name__)

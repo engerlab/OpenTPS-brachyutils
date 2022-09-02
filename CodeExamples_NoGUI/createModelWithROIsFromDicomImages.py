@@ -18,11 +18,11 @@ from pydicom.uid import generate_uid
 import time
 import numpy as np
 
-from Core.IO.dataLoader import loadAllData
+from Core.IO.dataLoader import reaData
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.Data.patient import Patient
+from Core.Data._patient import Patient
 
 
 if __name__ == '__main__':
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     savingPath = basePath + organ + '/' + patientName + '/dynModAndROIs'
 
     # load the 4DCT data
-    data4DList = loadAllData(data4DPath)
+    data4DList = reaData(data4DPath)
     print(len(data4DList), 'images found in the folder')
     print('Image type =', type(data4DList[0]))
     print('Image 0 shape =', data4DList[0].gridSize)
@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
 
     # load the rtStruct data and print its content
-    structData = loadAllData(dataStructPath)[0]
+    structData = reaData(dataStructPath)[0]
     print('Available ROIs')
     structData.print_ROINames()
 

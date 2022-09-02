@@ -2,11 +2,11 @@ import numpy as np
 import scipy.sparse as sp
 import pandas as pd
 
-from Core.Data.Plan import planStructure
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.Plan.planIonSpot import PlanIonSpot
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan import _planDesign
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planIonLayer import PlanIonLayer
+from Core.Data.Plan._planIonSpot import PlanIonSpot
+from Core.Data.Plan._rtPlan import RTPlan
 
 import logging
 

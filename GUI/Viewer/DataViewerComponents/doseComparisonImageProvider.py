@@ -3,8 +3,8 @@ from enum import Enum
 
 import numpy as np
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._image3D import Image3D
 from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
 from Core.event import Event
 

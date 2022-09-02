@@ -6,15 +6,16 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Plan.objectivesList import ObjectivesList, FidObjective
-from Core.Data.Plan.planStructure import PlanStructure
-from Core.Data.roiContour import ROIContour
-from Core.Data.dvh import DVH
-from Core.Data.patient import Patient
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.patientList import PatientList
+from Core.Data.Images import CTImage
+from Core.Data.Images import ROIMask
+from Core.Data.Plan import ObjectivesList
+from Core.Data.Plan import PlanDesign
+from Core.Data import ROIContour
+from Core.Data import DVH
+from Core.Data import Patient
+from Core.Data.Plan import RTPlan
+from Core.Data import PatientList
+from Core.Data.Plan._objectivesList import FidObjective
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
 from Core.IO.serializedObjectIO import loadRTPlan, loadBeamlets, loadDataStructure
@@ -123,7 +124,7 @@ w, doseImage, ps = solver.optimize()'''
 
 # create & design plan
 plan = RTPlan()
-planInit = PlanStructure()
+planInit = PlanDesign()
 planInit.ct = ct
 planInit.targetMask = roiMask
 planInit.gantryAngles = gantryAngles
