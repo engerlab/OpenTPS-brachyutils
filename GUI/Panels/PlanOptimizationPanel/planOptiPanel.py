@@ -2,11 +2,11 @@ import subprocess
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Data.Plan.planStructure import PlanStructure
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.patient import Patient
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Plan._objectivesList import ObjectivesList
+from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._patient import Patient
 from Core.Processing.PlanOptimization import optimizationWorkflows
 from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
 from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ROITable
@@ -199,6 +199,10 @@ class ObjectivesWidget(QWidget):
 
         self._roitTable.objectivesModifiedEvent.connect(self._showObjectives)
 
+    def closeEvent(self, QCloseEvent):
+        self._roitTable.objectivesModifiedEvent.disconnect(self._showObjectives)
+        super().closeEvent(QCloseEvent)
+
     @property
     def objectives(self):
         return self._roitTable.getObjectiveTerms()
@@ -207,7 +211,7 @@ class ObjectivesWidget(QWidget):
         self._roitTable.patient = p
 
     def _showObjectives(self):
-        objectives = self.objectives
+        objectives = self._roitTable.getObjectiveTerms()
 
         if len(objectives)<=0:
             self._objectivesLabels.setText(self.DEFAULT_OBJECTIVES_TEXT)

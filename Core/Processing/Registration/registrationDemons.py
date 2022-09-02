@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.deformation3D import Deformation3D
+from Core.Data.Images._deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 
 logger = logging.getLogger(__name__)

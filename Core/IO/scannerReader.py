@@ -1,9 +1,9 @@
 import glob
 import os
 
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
-from Core.Data.CTCalibrations.RayStationCalibration.rayStationCTCalibration import RayStationCTCalibration
-from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.RayStationCalibration._rayStationCTCalibration import RayStationCTCalibration
+from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 
 
 def readScanner(scannerFolder) -> AbstractCTCalibration:

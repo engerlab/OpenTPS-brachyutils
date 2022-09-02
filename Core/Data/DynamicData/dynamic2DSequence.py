@@ -1,14 +1,14 @@
 import numpy as np
 
-from Core.Data.patientData import PatientData
+from Core.Data._patientData import PatientData
 
 class Dynamic2DSequence(PatientData):
 
     LOOPED_MODE = 'LOOP'
     ONESHOT_MODE = 'OS'
 
-    def __init__(self, dyn2DImageList = [], timingsList = [], name="2D Dyn Seq", repetitionMode='LOOP', patientInfo=None):
-        super().__init__(patientInfo=patientInfo, name=name)
+    def __init__(self, dyn2DImageList = [], timingsList = [], name="2D Dyn Seq", repetitionMode='LOOP'):
+        super().__init__(name=name)
 
         self.dyn2DImageList = dyn2DImageList
         self.timingsList = timingsList

@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QColor, QPixmap, QIcon
 
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.patient import Patient
-from Core.Data.roiContour import ROIContour
-from Core.Data.rtStruct import RTStruct
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data._patient import Patient
+from Core.Data._roiContour import ROIContour
+from Core.Data._rtStruct import RTStruct
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 

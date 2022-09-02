@@ -11,7 +11,7 @@ try:
 except:
     print('cupy not found.')
 
-from Core.Data.Images.deformation3D import Deformation3D
+from Core.Data.Images._deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 

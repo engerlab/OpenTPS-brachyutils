@@ -10,7 +10,7 @@ except ModuleNotFoundError:
 import numpy as np
 import time
 from random import choice
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.Processing.PlanOptimization.tools import WeightStructure
 
 

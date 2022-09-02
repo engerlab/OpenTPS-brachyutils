@@ -3,14 +3,14 @@ from typing import Sequence
 
 import numpy as np
 
-from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Images.rspImage import RSPImage
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Images._rspImage import RSPImage
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planIonLayer import PlanIonLayer
+from Core.Data.Plan._rtPlan import RTPlan
 import Core.Processing.ImageProcessing.imageTransform3D as imageTransform3D
 from Core.Processing.rangeEnergy import rangeToEnergy
 

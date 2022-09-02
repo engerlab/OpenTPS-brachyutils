@@ -6,10 +6,10 @@ from typing import Sequence, Optional, Union
 import numpy as np
 from numpy import linalg
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.roiContour import ROIContour
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data._roiContour import ROIContour
 from Core.Processing.Segmentation import segmentation3D
 
 logger = logging.getLogger(__name__)

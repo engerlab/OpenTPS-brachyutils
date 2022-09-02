@@ -1,9 +1,9 @@
 import numpy as np
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.patient import Patient
-from Core.Data.patientList import PatientList
+from Core.Data.Images import CTImage
+from Core.Data.Images import ROIMask
+from Core.Data import Patient
+from Core.Data import PatientList
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
 from Core.api import API

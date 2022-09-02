@@ -3,13 +3,13 @@ from typing import Union, Optional
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.image2D import Image2D
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._image2D import Image2D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.event import Event
 from GUI.Viewer.DataViewerComponents.dvhViewerActions import DVHViewerActions
 from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer

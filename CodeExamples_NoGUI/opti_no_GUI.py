@@ -8,14 +8,14 @@ import logging.config
 import json
 import sys
 sys.path.append('..')
-from Core.Data.patientList import PatientList
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.dvh import DVH
+from Core.Data._patientList import PatientList
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data._dvh import DVH
 from Core.IO import mcsquareIO
-from Core.IO.dataLoader import loadAllData, listAllFiles
+from Core.IO.dataLoader import reaData, listAllFiles
 from Core.IO.dicomIO import readDicomCT, readDicomPlan
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.Objectives.norms import NormL1, NormL21
@@ -24,7 +24,7 @@ from Core.Processing.PlanOptimization.Objectives.logBarrier import LogBarrier
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer, ARCPTPlanOptimizer
 from Core.Processing.PlanOptimization.Acceleration.fistaAccel import FistaBacktracking, FistaAccel
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets, saveBeamlets
-from Core.Data.Plan.objectivesList import ObjectivesList, FidObjective
+from Core.Data.Plan._objectivesList import ObjectivesList, FidObjective
 from Core.Processing.PlanOptimization.tools import WeightStructure
 
 try:
@@ -34,8 +34,8 @@ try:
 except:
     use_MKL = 0
 
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.Plan.planStructure import PlanStructure
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data.Plan._planStructure import PlanStructure
 
 with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
           'r') as log_fid:
@@ -51,7 +51,7 @@ if not os.path.isdir(output_path):
     os.mkdir(output_path)
 
 # Load patient data
-dataList = loadAllData(ctImagePath, maxDepth=0)
+dataList = reaData(ctImagePath, maxDepth=0)
 print(dataList)
 ct = dataList[7]
 contours = dataList[6]

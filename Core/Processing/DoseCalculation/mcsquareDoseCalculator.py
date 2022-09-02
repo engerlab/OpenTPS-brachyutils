@@ -9,16 +9,16 @@ from typing import Optional, Sequence
 
 import numpy as np
 
-from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.MCsquare.bdl import BDL
-from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.roiContour import ROIContour
-from Core.Data.sparseBeamlets import SparseBeamlets
+from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.MCsquare._bdl import BDL
+from Core.Data.MCsquare._mcsquareConfig import MCsquareConfig
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._roiContour import ROIContour
+from Core.Data._sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
 from programSettings import ProgramSettings

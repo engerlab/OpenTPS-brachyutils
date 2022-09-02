@@ -2,7 +2,7 @@ from typing import Sequence
 
 import numpy as np
 
-from Core.Data.Images.image2D import Image2D
+from Core.Data.Images._image2D import Image2D
 from Core.api import API
 
 

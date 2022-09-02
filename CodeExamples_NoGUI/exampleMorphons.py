@@ -7,7 +7,7 @@ import logging
 from logConfigParser import parseArgs
 
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
-from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images._ctImage import CTImage
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)

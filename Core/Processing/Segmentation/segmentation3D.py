@@ -2,9 +2,9 @@ from typing import Sequence
 import numpy as np
 import logging
 
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Images.image3D import Image3D
-from Core.Data.roiContour import ROIContour
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Images._image3D import Image3D
+from Core.Data._roiContour import ROIContour
 
 logger = logging.getLogger(__name__)
 

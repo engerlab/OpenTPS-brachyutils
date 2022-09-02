@@ -2,9 +2,9 @@ import os, sys
 import numpy as np
 import logging
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Images.vectorField3D import VectorField3D
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Images._vectorField3D import VectorField3D
 
 
 def importImageMHD(headerFile):

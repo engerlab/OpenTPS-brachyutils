@@ -175,9 +175,9 @@ class APILogger:
     @staticmethod
     def _LoggedArgToString(arg):
         # Do import here to avoid circular import at compilation time
-        from Core.Data.Images.image3D import Image3D
-        from Core.Data.patient import Patient
-        from Core.Data.patientList import PatientList
+        from Core.Data.Images._image3D import Image3D
+        from Core.Data._patient import Patient
+        from Core.Data._patientList import PatientList
 
         argStr = ''
 

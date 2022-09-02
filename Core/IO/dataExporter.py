@@ -3,9 +3,9 @@ import os
 from enum import Enum
 from typing import Sequence
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.patient import Patient
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._patient import Patient
 from Core.IO import dicomIO, mhdIO, mcsquareIO
 from Core.api import API
 

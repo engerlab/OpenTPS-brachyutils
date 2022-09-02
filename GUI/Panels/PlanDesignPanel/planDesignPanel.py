@@ -1,8 +1,8 @@
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox
 
-from Core.Data.Plan.planStructure import PlanStructure
-from Core.Data.patient import Patient
+from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data._patient import Patient
 from GUI.Panels.PlanDesignPanel.robustnessSettings import RobustnessSettings
 
 

@@ -2,11 +2,11 @@ import logging
 
 import numpy as np
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planStructure import PlanStructure
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.IO import mcsquareIO, scannerReader
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
@@ -34,7 +34,7 @@ def optimizeIMPT(plan:RTPlan, planStructure:PlanStructure):
     finalDose.patient = plan.patient
 
 def _defineTargetMaskAndPrescription(planStructure:PlanStructure):
-    from Core.Data.roiContour import ROIContour
+    from Core.Data._roiContour import ROIContour
 
     targetMask = None
     for objective in planStructure.objectives.fidObjList:
