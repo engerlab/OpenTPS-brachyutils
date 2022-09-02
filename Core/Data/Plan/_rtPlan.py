@@ -9,7 +9,6 @@ from typing import Sequence
 
 import numpy as np
 
-from Core.Data.Plan._planStructure import PlanStructure
 from Core.Data.Plan._planIonBeam import PlanIonBeam
 from Core.Data.Plan._planIonLayer import PlanIonLayer
 from Core.Data.Plan._planIonSpot import PlanIonSpot
@@ -37,7 +36,7 @@ class RTPlan(PatientData):
 
         self.originalDicomDataset = []
 
-        self.planDesign = PlanStructure()
+        self.planDesign = None
 
     def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]

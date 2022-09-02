@@ -49,7 +49,7 @@ def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIM
     sparseBeamlets = _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"], roi)
 
     beamletDose = SparseBeamlets()
-    beamletDose.setUnitaryBeamlets(csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(beamletRescaling))))
+    beamletDose.setUnitaryBeamlets(csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(beamletRescaling), dtype=np.float32)))
     beamletDose.beamletWeights = np.ones(header["NbrSpots"])
     beamletDose.doseOrigin = header["Offset"]
     beamletDose.doseSpacing = header["VoxelSpacing"]

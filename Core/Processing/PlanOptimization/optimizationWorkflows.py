@@ -5,7 +5,7 @@ import numpy as np
 from Core.Data.Images._doseImage import DoseImage
 from Core.Data.Images._roiMask import ROIMask
 from Core.Data.Plan._planIonBeam import PlanIonBeam
-from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data.Plan._planDesign import PlanDesign
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.IO import mcsquareIO, scannerReader
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
@@ -19,7 +19,7 @@ from programSettings import ProgramSettings
 
 logger = logging.getLogger(__name__)
 
-def optimizeIMPT(plan:RTPlan, planStructure:PlanStructure):
+def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
     plan.planDesign = planStructure
 
     planStructure.objectives.setScoringParameters(planStructure.ct)
@@ -33,7 +33,7 @@ def optimizeIMPT(plan:RTPlan, planStructure:PlanStructure):
     finalDose = _computeFinalDose(plan, planStructure)
     finalDose.patient = plan.patient
 
-def _defineTargetMaskAndPrescription(planStructure:PlanStructure):
+def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
     from Core.Data._roiContour import ROIContour
 
     targetMask = None
@@ -62,7 +62,7 @@ def _defineTargetMaskAndPrescription(planStructure:PlanStructure):
 
     planStructure.targetMask = targetMask
 
-def _createBeams(plan:RTPlan, planStructure:PlanStructure):
+def _createBeams(plan:RTPlan, planStructure:PlanDesign):
     for beam in plan:
         plan.removeBeam(beam)
 
@@ -76,7 +76,7 @@ def _createBeams(plan:RTPlan, planStructure:PlanStructure):
 
         plan.appendBeam(beam)
 
-def _initializeBeams(plan:RTPlan, planStructure:PlanStructure):
+def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
     programSettings = ProgramSettings()
     ctCalibration = scannerReader.readScanner(programSettings.scannerFolder)
 
@@ -87,7 +87,7 @@ def _initializeBeams(plan:RTPlan, planStructure:PlanStructure):
     initializer.targetMask = planStructure.targetMask
     initializer.initializePlan(planStructure.spotSpacing, planStructure.layerSpacing, planStructure.targetMargin)
 
-def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
+def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
     programSettings = ProgramSettings()
     optimizationSettings = PlanOptimizationSettings()
 
@@ -101,7 +101,7 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanStructure):
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
-def _optimizePlan(plan:RTPlan, planStructure:PlanStructure):
+def _optimizePlan(plan:RTPlan, planStructure:PlanDesign):
     optimizationSettings = PlanOptimizationSettings()
 
     beamletMatrix = planStructure.beamlets.toSparseMatrix()

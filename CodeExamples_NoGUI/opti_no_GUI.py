@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from Core.Data.Images import CTImage
 from Core.Data.Images import ROIMask
 from Core.Data.Plan import ObjectivesList
-from Core.Data.Plan import PlanStructure
+from Core.Data.Plan import PlanDesign
 from Core.Data import ROIContour
 from Core.Data import DVH
 from Core.Data import Patient
@@ -124,7 +124,7 @@ w, doseImage, ps = solver.optimize()'''
 
 # create & design plan
 plan = RTPlan()
-planInit = PlanStructure()
+planInit = PlanDesign()
 planInit.ct = ct
 planInit.targetMask = roiMask
 planInit.gantryAngles = gantryAngles

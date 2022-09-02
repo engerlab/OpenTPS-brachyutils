@@ -3,7 +3,7 @@ from Core.IO.dataLoader import reaData
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO import mcsquareIO
-from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data.Plan._planDesign import PlanDesign
 from Core.IO.serializedObjectIO import saveRTPlan, saveBeamlets
 
 # CT path
@@ -68,7 +68,7 @@ couchAngles = [0., 0.]
 
 # Generate new plan
 plan_file = os.path.join(output_path, "brain_100_280.tps")
-planInit = PlanStructure()
+planInit = PlanDesign()
 planInit.ct = ct
 planInit.targetMask = targetMask
 planInit.gantryAngles = gantryAngles

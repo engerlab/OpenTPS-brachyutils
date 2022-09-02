@@ -1,5 +1,5 @@
 
-__all__ = ['PlanStructure']
+__all__ = ['PlanDesign']
 
 
 import logging
@@ -13,9 +13,13 @@ from Core.Data._patientData import PatientData
 logger = logging.getLogger(__name__)
 
 
-class PlanStructure(PatientData):
+class PlanDesign(PatientData):
     def __init__(self):
         super().__init__()
+
+        from Core.Data.Plan import RTPlan
+        self.plan = RTPlan()
+        self.plan.planDesign = self
 
         self.spotSpacing = 5.0
         self.layerSpacing = 5.0
@@ -40,3 +44,6 @@ class PlanStructure(PatientData):
                            "syst_range": 0.0}
         self.scenarios = []
         self.numScenarios = 0
+
+    def buildPlan(self):
+        raise NotImplementedError

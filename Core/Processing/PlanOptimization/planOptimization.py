@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import scipy.sparse as sp
 
-from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data.Plan._planDesign import PlanDesign
 
 try:
     import sparse_dot_mkl

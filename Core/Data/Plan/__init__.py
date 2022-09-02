@@ -5,7 +5,7 @@ from Core.Data.Plan._planIonBeam import *
 from Core.Data.Plan._planIonBeam import *
 from Core.Data.Plan._planIonLayer import *
 from Core.Data.Plan._planIonSpot import *
-from Core.Data.Plan._planStructure import *
+from Core.Data.Plan._planDesign import *
 from Core.Data.Plan._rangeShifter import *
 from Core.Data.Plan._rtPlan import *
 

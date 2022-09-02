@@ -1,7 +1,7 @@
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox
 
-from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data.Plan._planDesign import PlanDesign
 from Core.Data._patient import Patient
 from GUI.Panels.PlanDesignPanel.robustnessSettings import RobustnessSettings
 
@@ -84,7 +84,7 @@ class PlanDesignPanel(QWidget):
         self._patient = patient
 
     def _create(self):
-        planStructure = PlanStructure()
+        planStructure = PlanDesign()
         planStructure.spotSpacing = self._spacingSpin.value()
         planStructure.layerSpacing = self._layerSpin.value()
         planStructure.targetMargin = self._marginSpin.value()

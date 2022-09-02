@@ -2,7 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 import pandas as pd
 
-from Core.Data.Plan import _planStructure
+from Core.Data.Plan import _planDesign
 from Core.Data.Plan._planIonBeam import PlanIonBeam
 from Core.Data.Plan._planIonLayer import PlanIonLayer
 from Core.Data.Plan._planIonSpot import PlanIonSpot

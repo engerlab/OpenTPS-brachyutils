@@ -5,7 +5,7 @@ from typing import Union, Sequence
 
 from Core.Data.Images._image3D import Image3D
 from Core.Data.Images._roiMask import ROIMask
-from Core.Data.Plan._planStructure import PlanStructure
+from Core.Data.Plan._planDesign import PlanDesign
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
@@ -46,8 +46,8 @@ class Patient:
         self.rtStructRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, RTStruct)
         self.planAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, RTPlan)
         self.planRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, RTPlan)
-        self.planStructureAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, PlanStructure)
-        self.planStructureRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, PlanStructure)
+        self.planStructureAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, PlanDesign)
+        self.planStructureRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, PlanDesign)
         self.dyn3DSeqAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DSequence)
         self.dyn3DSeqRemovedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataRemovedSignal, Dynamic3DSequence)
         self.dyn3DModAddedSignal = self.TypeConditionalEvent.fromEvent(self.patientDataAddedSignal, Dynamic3DModel)
