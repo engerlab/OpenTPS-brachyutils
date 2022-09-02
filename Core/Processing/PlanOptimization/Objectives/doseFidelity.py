@@ -12,8 +12,7 @@ from Core.Processing.PlanOptimization.Objectives.baseFunction import BaseFunc
 
 
 class DoseFidelity(BaseFunc):
-    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False,
-                 formatArray=32):
+    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False):
         super(DoseFidelity, self).__init__()
         if scenariosBL is None:
             scenariosBL = []
@@ -22,7 +21,6 @@ class DoseFidelity(BaseFunc):
         self.xSquare = xSquare
         self.scenariosBL = scenariosBL
         self.returnWorstCase = returnWorstCase
-        self.formatArray = formatArray
 
     def computeFidelityFunction(self, x):
         if self.xSquare:
@@ -184,9 +182,6 @@ class DoseFidelity(BaseFunc):
         else:
             dfTot = 2 * dfTot
         dfTot = np.squeeze(np.asarray(dfTot)).astype(np.float64)
-        # if scipy-lbfgs used, need to use float64
-        if self.formatArray == 64:
-            dfTot = np.array(dfTot, dtype="float64")
 
         return dfTot
 
