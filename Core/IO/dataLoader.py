@@ -59,7 +59,7 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
             continue
 
-def reaData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
+def readData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
     """
     Load all data found at the given input path.
 
