@@ -5,7 +5,7 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
@@ -21,6 +21,7 @@ from Core.Data._roiContour import ROIContour
 from Core.Data._sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
+from Core.Processing.ImageProcessing import resampler3D
 from programSettings import ProgramSettings
 
 import Core.IO.mcsquareIO as mcsquareIO
@@ -116,7 +117,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return doseImage
 
-    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> SparseBeamlets:
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan,
+                        roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
@@ -131,16 +133,19 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return beamletDose
 
-    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[ROIContour]]) -> DoseImage:
+    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> DoseImage:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         # Generate MCsquare configuration file
         self._config = self._beamletFreeOptiConfig
         # Export useful data
         self._writeFilesToSimuDir()
-        mcsquareIO.writeObjectives(self._plan.objectives, self._objFilePath)
+        mcsquareIO.writeObjectives(self._plan.planDesign.objectives, self._objFilePath)
         for contour in roi:
-            mask = contour.getBinaryMask(self._ct.origin, self._ct.gridSize, self._ct.spacing)
+            if isinstance(contour, ROIContour):
+                mask = contour.getBinaryMask(self._ct.origin, self._ct.gridSize, self._ct.spacing)
+            else:
+                mask = contour
             mcsquareIO.writeContours(mask, self._contourFolderPath)
         self._cleanDir(self._outputDir)
         # Start simulation
@@ -331,7 +336,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
-        if self._independentScoringGrid == True:
+        if self._independentScoringGrid:
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = self._scoringVoxelSpacing  # in mm
             config["Scoring_grid_size"] = [int(math.floor(i / j * k)) for i, j, k in
@@ -348,6 +353,18 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 1] / 2.0
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
+            self._roiMasks = []
+            for contour in self._roi:
+                if isinstance(contour, ROIContour):
+                    resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
+                                                          spacing=self.scoringVoxelSpacing)
+                elif isinstance(contour, ROIMask):
+                    resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
+                                                                gridSize=config["Scoring_grid_size"],
+                                                                spacing=self.scoringVoxelSpacing)
+                else:
+                    raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
+                self._roiMasks.append(resampledMask)
 
         # config["Stat_uncertainty"] = 2.
 

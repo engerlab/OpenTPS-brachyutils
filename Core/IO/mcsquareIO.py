@@ -90,7 +90,7 @@ def _read_sparse_header(file_path):
     return header
 
 
-def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] = None) -> csc_matrix:
+def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] = []) -> csc_matrix:
     BeamletMatrix = []
 
     fid = open(Binary_file, 'rb')
@@ -103,7 +103,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
     last_stacked_col = -1
     num_unstacked_col = 0
 
-    if not (roi is None):
+    if roi:
         masks = []
         for contour in roi:
             roiData = contour.imageArray
@@ -628,7 +628,18 @@ def writeObjectives(objectives: ObjectivesList, file_path):
         fid.write("Objective_parameters:\n")
         fid.write("ROIName = " + contourName + "\n")
         fid.write("Weight = " + str(objective.weight) + "\n")
-        fid.write(objective.metric + " " + objective.condition + " " + str(objective.limitValue) + "\n")
+        if objective.metric == objective.Metrics.DMIN:
+            metric = "Dmin"
+            condition = ">"
+        elif objective.metric == objective.Metrics.DMAX:
+            metric = "Dmax"
+            condition = "<"
+        elif objective.metric == objective.Metrics.DMEAN:
+            metric = "Dmean"
+            condition = "<"
+        else:
+            print("Error: objective metric " + metric + " is not supported.")
+        fid.write(metric + " " + condition + " " + str(objective.limitValue) + "\n")
         fid.write("\n")
 
     fid.close()
