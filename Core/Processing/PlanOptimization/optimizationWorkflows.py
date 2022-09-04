@@ -16,7 +16,6 @@ from Core.Processing.PlanOptimization.planInitializer import PlanInitializer
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimizationConfig
 
-
 logger = logging.getLogger(__name__)
 
 def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
@@ -98,8 +97,8 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
     mc2.ctCalibration = ctCalibration
     mc2.beamModel = bdl
     mc2.nbPrimaries = optimizationSettings.beamletPrimaries
-    #mc2.independentScoringGrid = True
     # TODO: specify scoring grid
+    #mc2.independentScoringGrid = True
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
