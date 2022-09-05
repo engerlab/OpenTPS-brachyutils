@@ -7,7 +7,7 @@ import unittest
 from io import StringIO
 from typing import Callable
 
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,10 @@
 import functools
 
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout, QCheckBox
+
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from GUI.Panels.mainToolbar import MainToolbar
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 
 class EditableSetting(QWidget):
@@ -47,7 +49,7 @@ class ProgramSettingEditor(QMainWindow):
         self._workspaceField = EditableSetting("Workspace", str(self.programSettings.workspace), self.setWorkspace)
         self._layout.addWidget(self._workspaceField)
 
-        self._machineParam = MachineParam(self.programSettings)
+        self._machineParam = MachineParam()
         self._layout.addWidget(self._machineParam)
 
         self._activeExtensions = ActiveExtensions(self.mainToolbar)
@@ -92,22 +94,22 @@ class ActiveExtensions(QWidget):
         item.visible = checked
 
 class MachineParam(QWidget):
-    def __init__(self, programSettings:ProgramSettings):
+    def __init__(self):
         super().__init__()
 
-        self._programSettings = programSettings
+        self._dcConfig = DoseCalculationConfig()
 
         self._layout = QVBoxLayout(self)
         self.setLayout(self._layout)
 
-        self._scannerField = EditableSetting("Scanner", str(programSettings.scannerFolder), self._setScanner)
+        self._scannerField = EditableSetting("Scanner", str(self._dcConfig.scannerFolder), self._setScanner)
         self._layout.addWidget(self._scannerField)
 
-        self._bdlField = EditableSetting("BDL", str(programSettings.bdlFile), self._setBDL)
+        self._bdlField = EditableSetting("BDL", str(self._dcConfig.bdlFile), self._setBDL)
         self._layout.addWidget(self._bdlField)
 
     def _setScanner(self, text):
-        self._programSettings.scannerFolder = text
+        self._dcConfig.scannerFolder = text
 
     def _setBDL(self, text):
-        self._programSettings.bdlFile = text
+        self._dcConfig.bdlFile = text

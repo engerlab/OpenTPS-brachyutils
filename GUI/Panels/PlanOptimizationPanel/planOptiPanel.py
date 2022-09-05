@@ -8,7 +8,7 @@ from Core.Data.Plan._planDesign import PlanDesign
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data._patient import Patient
 from Core.Processing.PlanOptimization import optimizationWorkflows
-from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
+from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimizationConfig
 from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ROITable
 
 
@@ -158,7 +158,7 @@ class PlanOptiPanel(QWidget):
         self._updatePlanStructureComboBox()
 
     def _openConfig(self):
-        subprocess.run(['xdg-open', PlanOptimizationSettings().configFile], check=True)
+        subprocess.run(['xdg-open', PlanOptimizationConfig().configFile], check=True)
 
     def _run(self):
         self._selectedPlanStructure.ct = self._selectedCT

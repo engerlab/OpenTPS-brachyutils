@@ -22,7 +22,7 @@ from Core.Data._sparseBeamlets import SparseBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 import Core.IO.mcsquareIO as mcsquareIO
 

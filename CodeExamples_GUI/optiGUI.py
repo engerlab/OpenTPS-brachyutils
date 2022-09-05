@@ -4,16 +4,15 @@ import opentps
 from Core.Data.Images import CTImage
 from Core.Data.Images import ROIMask
 from Core.Data import Patient
-from Core.Data import PatientList
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.ImageProcessing import resampler3D
-from programSettings import ProgramSettings
 
 patientList = opentps.patientList
 
-ctCalibration = readScanner(ProgramSettings().scannerFolder)
-bdl = mcsquareIO.readBDL(ProgramSettings().bdlFile)
+ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
+bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 patient = Patient()
 patient.name = 'Patient'

@@ -8,13 +8,13 @@ from Core.Data.Plan._planIonBeam import PlanIonBeam
 from Core.Data.Plan._planDesign import PlanDesign
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.IO import mcsquareIO, scannerReader
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planInitializer import PlanInitializer
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
-from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
-from programSettings import ProgramSettings
+from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimizationConfig
 
 
 logger = logging.getLogger(__name__)
@@ -77,8 +77,8 @@ def _createBeams(plan:RTPlan, planStructure:PlanDesign):
         plan.appendBeam(beam)
 
 def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
-    programSettings = ProgramSettings()
-    ctCalibration = scannerReader.readScanner(programSettings.scannerFolder)
+    dcConfig = DoseCalculationConfig()
+    ctCalibration = scannerReader.readScanner(dcConfig.scannerFolder)
 
     initializer = PlanInitializer()
     initializer.ctCalibration = ctCalibration
@@ -88,11 +88,11 @@ def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
     initializer.initializePlan(planStructure.spotSpacing, planStructure.layerSpacing, planStructure.targetMargin)
 
 def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
-    programSettings = ProgramSettings()
-    optimizationSettings = PlanOptimizationSettings()
+    dcConfig = DoseCalculationConfig()
+    optimizationSettings = PlanOptimizationConfig()
 
-    bdl = mcsquareIO.readBDL(programSettings.bdlFile)
-    ctCalibration = scannerReader.readScanner(programSettings.scannerFolder)
+    bdl = mcsquareIO.readBDL(dcConfig.bdlFile)
+    ctCalibration = scannerReader.readScanner(dcConfig.scannerFolder)
 
     mc2 = MCsquareDoseCalculator()
     mc2.ctCalibration = ctCalibration
@@ -104,7 +104,7 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
 def _optimizePlan(plan:RTPlan, planStructure:PlanDesign):
-    optimizationSettings = PlanOptimizationSettings()
+    optimizationSettings = PlanOptimizationConfig()
 
     beamletMatrix = planStructure.beamlets.toSparseMatrix()
 

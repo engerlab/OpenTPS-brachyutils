@@ -1,6 +1,5 @@
 import json
 import logging.config
-import math
 import os
 
 import numpy as np
@@ -16,14 +15,13 @@ from Core.Data import PatientList
 from Core.Data.Plan._objectivesList import FidObjective
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
-from Core.IO.serializedObjectIO import loadRTPlan, loadBeamlets, loadDataStructure
+from Core.IO.serializedObjectIO import loadDataStructure
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
-from Core.Processing.PlanOptimization.optimizationWorkflows import optimizeIMPT
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
           'r') as log_fid:

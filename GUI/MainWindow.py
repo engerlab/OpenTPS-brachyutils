@@ -7,7 +7,7 @@ from GUI.Panels.mainToolbar import MainToolbar
 from GUI.Viewer.viewerPanel import ViewerPanel
 from GUI.programSettingEditor import ProgramSettingEditor
 from GUI.statusBar import StatusBar
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 
 class MainWindow(QMainWindow):

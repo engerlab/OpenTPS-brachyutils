@@ -8,7 +8,7 @@ from Core.Data._rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 
 class DoseComputationPanel(QWidget):
