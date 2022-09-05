@@ -42,6 +42,7 @@ target = contours.getContourByName('CTV')
 targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 opticChiasm = contours.getContourByName('Optic Chiasm')
 brainStem = contours.getContourByName('Brain Stem')
+body = contours.getContourByName('BODY')
 
 L = []
 for i in range(len(contours)):
