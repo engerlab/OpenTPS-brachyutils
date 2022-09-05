@@ -6,7 +6,11 @@ import Core
 import GUI
 
 import main
+from Core import API
+from Core.Data import PatientList
 
+patientList = PatientList()
+API.patientList = patientList
 
 def run():
     main.main()

@@ -1,7 +1,7 @@
 from typing import Optional
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._image3D import Image3D
 from GUI.Viewer.DataViewerComponents.doseComparisonImageProvider import DoseComparisonImageProvider
 from GUI.Viewer.dataViewer import DataViewer
 

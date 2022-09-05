@@ -1,7 +1,7 @@
 import time
 
 from Core.Processing.PlanOptimization.Solvers.lp import LP
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 
 import logging
 import json

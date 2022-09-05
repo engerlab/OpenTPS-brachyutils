@@ -5,14 +5,14 @@ while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os
 sys.path.append(currentWorkingDir)
 
 from Core.IO.mhdIO import *
-from Core.IO.dataLoader import listAllFiles, loadAllData
+from Core.IO.dataLoader import listAllFiles, reaData
 from Core.IO.dicomIO import readDicomCT
 
 if __name__ == '__main__':
 
     # Load DICOM CT and struct
     inputPaths = "/mnt/c/Users/vhamaide/OneDrive - UCL/Bureau/UCL/ARIES/data/liver/patient_0/4DCT/p0"
-    dataList = loadAllData(inputPaths, maxDepth=0)
+    dataList = reaData(inputPaths, maxDepth=0)
     CT = dataList[1]
     rt_struct = dataList[0]
     print(type(CT))
@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     ### Velocity field
     def_input_path = "/mnt/c/Users/vhamaide/OneDrive - UCL/Bureau/UCL/ARIES/data/liver/patient_0/deformation_fields/p0"
-    dataList = loadAllData(def_input_path, maxDepth=0)
+    dataList = reaData(def_input_path, maxDepth=0)
     df = dataList[0]
     print(type(df))
 

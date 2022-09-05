@@ -1,9 +1,9 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.roiContour import ROIContour
-from Core.Data.Images.deformation3D import Deformation3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data._roiContour import ROIContour
+from Core.Data.Images._deformation3D import Deformation3D
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 from Core.Processing.ImageProcessing import imageTransform3D, resampler3D

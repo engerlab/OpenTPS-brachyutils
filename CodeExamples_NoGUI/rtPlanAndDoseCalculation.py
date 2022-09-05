@@ -2,16 +2,16 @@ import sys
 
 sys.path.append('..')
 
-from Core.Data.dvh import DVH
+from Core.Data._dvh import DVH
 import os
-from Core.IO.dataLoader import listAllFiles, loadAllData
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
+from Core.IO.dataLoader import listAllFiles, reaData
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.IO.mhdIO import exportImageMHD
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planIonLayer import PlanIonLayer
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planIonLayer import PlanIonLayer
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan
 from Core.IO.dicomIO import readDicomCT, readDicomPlan
 
@@ -56,7 +56,7 @@ calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Den
 doseCalculator.ctCalibration = calibration
 
 ctImagePath = '/data/vhamaide/liver/patient_0/MidP_CT/'
-dataList = loadAllData(ctImagePath, maxDepth=0)
+dataList = reaData(ctImagePath, maxDepth=0)
 ct = dataList[1]
 struct = dataList[0]
 

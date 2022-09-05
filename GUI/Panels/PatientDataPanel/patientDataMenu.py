@@ -7,11 +7,11 @@ from PyQt5.QtWidgets import QLineEdit, QMenu, QAction, QInputDialog, QMessageBox
 
 from pydicom.uid import generate_uid
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._image3D import Image3D
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.Data.patientData import PatientData
+from Core.Data._patientData import PatientData
 from Core.IO.serializedObjectIO import saveSerializedObjects
 from GUI.Viewer.DataViewerComponents.patientDataPropertyEditor import PatientDataPropertyEditor
 

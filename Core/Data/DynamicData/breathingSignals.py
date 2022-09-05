@@ -4,14 +4,14 @@ Created on Wed Feb 23 09:09:09 2022
 
 @author: grotsartdehe
 """
-from Core.Data.patientData import PatientData
+from Core.Data._patientData import PatientData
 from Core.Processing.DeformableDataAugmentationToolBox.BreathingSignalGeneration import signalGeneration, signal3DGeneration
 
 
 #real breathing data 
 class BreathingSignal(PatientData):
-    def __init__(self, name="Breathing Signal", patientInfo=None):
-        super().__init__(patientInfo=patientInfo, name=name)
+    def __init__(self, name="Breathing Signal"):
+        super().__init__(name=name)
         self.timestamps = None
         self.breathingSignal = None
         #to do
@@ -20,8 +20,8 @@ class BreathingSignal(PatientData):
 # synthetic breathing data
 class SyntheticBreathingSignal(BreathingSignal):
     def __init__(self, amplitude=10, breathingPeriod=4, meanNoise=0,
-                 varianceNoise=1, samplingPeriod=0.2, simulationTime=100, coeffMin = 0.10, coeffMax = 0.15, meanEvent = 1/60, meanEventApnea=0/120, patientInfo=None, name="Breathing Signal"):
-        super().__init__(patientInfo=patientInfo, name=name)
+                 varianceNoise=1, samplingPeriod=0.2, simulationTime=100, coeffMin = 0.10, coeffMax = 0.15, meanEvent = 1/60, meanEventApnea=0/120, name="Breathing Signal"):
+        super().__init__(name=name)
 
         self.amplitude = amplitude  # amplitude (mm)
         self.breathingPeriod = breathingPeriod  # periode respiratoire (s)

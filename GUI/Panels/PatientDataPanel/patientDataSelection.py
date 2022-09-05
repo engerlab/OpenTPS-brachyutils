@@ -8,13 +8,15 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QTreeView, QAbstrac
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image2D import Image2D
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.vectorField3D import VectorField3D
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.patientData import PatientData
+
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._image2D import Image2D
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._vectorField3D import VectorField3D
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._patientData import PatientData
+
 from GUI.Panels.PatientDataPanel.patientDataMenu import PatientDataMenu
 from GUI.Viewer.dataViewer import DroppedObject
 

@@ -1,7 +1,7 @@
 import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 from Core.event import Event
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
 

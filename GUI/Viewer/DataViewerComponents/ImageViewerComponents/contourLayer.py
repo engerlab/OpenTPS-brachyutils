@@ -7,9 +7,9 @@ from vtkmodules import vtkImagingCore, vtkCommonCore
 from vtkmodules.vtkFiltersCore import vtkContourFilter
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.roiContour import ROIContour
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data._roiContour import ROIContour
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
 

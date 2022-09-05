@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.patient import Patient
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data._patient import Patient
 
 
 class DoseComparisonPanel(QWidget):

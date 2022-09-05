@@ -6,8 +6,8 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._roiMask import ROIMask
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineShift

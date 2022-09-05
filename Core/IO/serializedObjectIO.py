@@ -5,11 +5,11 @@ import bz2
 import _pickle as cPickle
 import pickle
 import os
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 
 
 # ---------------------------------------------------------------------------------------------------
-from Core.Data.sparseBeamlets import SparseBeamlets
+from Core.Data._sparseBeamlets import SparseBeamlets
 
 
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
@@ -17,7 +17,7 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
     if splitPatientsBool:
         patientList = [[patient] for patient in patientList]
         for patient in patientList:
-            patientName = '_' + patient[0].patientInfo.name
+            patientName = '_' + patient[0].name
             saveSerializedObjects(patient, savingPath + patientName, compressedBool=compressedBool)
 
     else:

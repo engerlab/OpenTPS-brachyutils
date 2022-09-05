@@ -6,10 +6,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
 from pyqtgraph import PlotWidget, mkPen, PlotCurveItem, SignalProxy, TextItem, FillBetweenItem
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.dvh import DVH
-from Core.Data.roiContour import ROIContour
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data._dvh import DVH
+from Core.Data._roiContour import ROIContour
 from Core.event import Event
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer

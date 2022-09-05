@@ -10,8 +10,8 @@ from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkRenderingCore import vtkCoordinate
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.event import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer

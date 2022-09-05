@@ -1,10 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, QPushButton
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.patient import Patient
-from Core.Data.roiContour import ROIContour
-from Core.Data.rtStruct import RTStruct
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._patient import Patient
+from Core.Data._roiContour import ROIContour
+from Core.Data._rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator

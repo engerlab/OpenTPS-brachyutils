@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import getVoxelIndexFromPosition
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.vectorField3D import VectorField3D
-from Core.Data.Images.roiMask import ROIMask
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._vectorField3D import VectorField3D
+from Core.Data.Images._roiMask import ROIMask
 from Core.Processing.ImageProcessing.cupyImageProcessing import rotateCupy, translateCupy, affineTransformCupy, rotateUsingMapCoordinatesCupy
 from Core.Processing.ImageProcessing.sitkImageProcessing import rotateImage3DSitk
 

@@ -5,7 +5,7 @@ import sys
 import logging
 from logConfigParser import parseArgs
 
-from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images._ctImage import CTImage
 from Core.Processing.Segmentation.segmentation3D import applyThreshold
 from Core.Processing.Segmentation.segmentationCT import SegmentationCT
 

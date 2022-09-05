@@ -11,7 +11,7 @@ except:
     print('No module SimpleITK found')
 
 from Core.Processing.ImageProcessing import resampler3D
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 
 
 def image3DToSITK(image:Image3D, type=np.float32):

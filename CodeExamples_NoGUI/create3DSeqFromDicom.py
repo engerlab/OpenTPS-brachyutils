@@ -11,7 +11,7 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.IO.dataLoader import loadAllData
+from Core.IO.dataLoader import readData
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObjects
 
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     ## read a serialized dynamic sequence
     dataPath = testDataPath + "4DCTDicomLight"
     print(dataPath)
-    dataList = loadAllData(dataPath)
+    dataList = readData(dataPath)
     print(len(dataList), 'images found in the folder')
     print('Image type =', type(dataList[0]))
 

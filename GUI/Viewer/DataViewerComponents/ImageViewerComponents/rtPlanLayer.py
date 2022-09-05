@@ -8,9 +8,9 @@ from vtkmodules.vtkCommonDataModel import vtkPolyLine, vtkCellArray, vtkPolyData
 from vtkmodules.vtkFiltersSources import vtkSphereSource, vtkLineSource
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.Processing.ImageProcessing import imageTransform3D
 
 

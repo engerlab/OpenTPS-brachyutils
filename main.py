@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
 from Core.api import API, FileLogger
-from Core.Data.patientList import PatientList
+from Core.Data._patientList import PatientList
 from GUI.viewController import ViewController
 import Script
 

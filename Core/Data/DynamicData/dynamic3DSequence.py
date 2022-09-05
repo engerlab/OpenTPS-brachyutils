@@ -2,7 +2,7 @@ import numpy as np
 from pydicom.uid import generate_uid
 
 from Core.api import API
-from Core.Data.patientData import PatientData
+from Core.Data._patientData import PatientData
 
 
 class Dynamic3DSequence(PatientData):
@@ -10,8 +10,8 @@ class Dynamic3DSequence(PatientData):
     LOOPED_MODE = 'LOOP'
     ONESHOT_MODE = 'OS'
 
-    def __init__(self, dyn3DImageList = [], timingsList = [], name="3D Dyn Seq", repetitionMode='LOOP', patientInfo=None):
-        super().__init__(patientInfo=patientInfo, name=name)
+    def __init__(self, dyn3DImageList = [], timingsList = [], name="3D Dyn Seq", repetitionMode='LOOP'):
+        super().__init__(name=name)
 
         self.dyn3DImageList = self.sortImgsByName(dyn3DImageList)
 
@@ -32,7 +32,7 @@ class Dynamic3DSequence(PatientData):
     @staticmethod
     @API.loggedViaAPI
     def fromImagesInPatientList(selectedImages, newName):
-        newSeq = Dynamic3DSequence(dyn3DImageList=selectedImages, name=newName, patientInfo=selectedImages[0].patientInfo)
+        newSeq = Dynamic3DSequence(dyn3DImageList=selectedImages, name=newName)
 
         for image in selectedImages:
             patient = image.patient
@@ -68,6 +68,6 @@ class Dynamic3DSequence(PatientData):
 
     def dumpableCopy(self):
         dumpableImageCopiesList = [image.dumpableCopy() for image in self.dyn3DImageList]
-        dumpableSeq = Dynamic3DSequence(dyn3DImageList=dumpableImageCopiesList, timingsList=self.timingsList, name=self.name, patientInfo=self.patientInfo)
+        dumpableSeq = Dynamic3DSequence(dyn3DImageList=dumpableImageCopiesList, timingsList=self.timingsList, name=self.name)
         # dumpableSeq.patient = self.patient
         return dumpableSeq

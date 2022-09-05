@@ -1,16 +1,16 @@
 import numpy as np
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.patient import Patient
-from Core.Data.patientList import PatientList
+import opentps
+from Core.Data.Images import CTImage
+from Core.Data.Images import ROIMask
+from Core.Data import Patient
+from Core.Data import PatientList
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
-from Core.api import API
-from main import main
+from Core.Processing.ImageProcessing import resampler3D
 from programSettings import ProgramSettings
 
-patientList = PatientList()
+patientList = opentps.patientList
 
 ctCalibration = readScanner(ProgramSettings().scannerFolder)
 bdl = mcsquareIO.readBDL(ProgramSettings().bdlFile)
@@ -40,5 +40,9 @@ data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
-API.patientList = patientList # Give patientList to opentps
-main()  # Launch opentps
+ct2 = CTImage.fromImage3D(ct)
+ct2.spacing = np.array([0.8, 0.8, 0.8])
+ct2.imageArray = huAir * np.ones((ctSize-3, ctSize-3, ctSize-3))
+resampler3D.resampleImage3DOnImage3D(roi, ct2, inPlace=True, fillValue=0)
+
+opentps.run()  # Launch opentps

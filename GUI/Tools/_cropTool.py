@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QMainWindow, QVBoxLayout, QPus
 from vtkmodules import vtkCommonMath
 from vtkmodules.vtkInteractionWidgets import vtkBoxWidget2, vtkBoxRepresentation
 
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
 from GUI.Panels.PatientDataPanel.patientDataSelection import PatientDataSelection
 from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
