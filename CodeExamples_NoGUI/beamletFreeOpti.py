@@ -43,15 +43,26 @@ targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacin
 opticChiasm = contours.getContourByName('Optic Chiasm')
 brainStem = contours.getContourByName('Brain Stem')
 
+L = []
+for i in range(len(contours)):
+    L.append(contours[i].name)
+
+#ROI = [body.name]
+ROI = [target.name, opticChiasm.name, brainStem.name, body.name]
+
+# Crop Beamlets on ROI to save computation time ! not mandatory
+ROIforBL = []
+for i in range(len(ROI)):
+    index_value = L.index(ROI[i])
+    # add contour
+    ROIforBL.append(contours[index_value])
+
 # Load plan
-plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
+#plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
+plan_file = os.path.join(output_path, "plan_brain_0_45.tps")
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
     print('Plan loaded')
-    beamletPath = os.path.join(output_path,
-                               "BeamletMatrix_1.2.826.0.1.3680043.8.498.69745754105946645553673858433070834612.1.blm")
-    plan.beamlets = loadBeamlets(beamletPath)
-    print('Beamlets loaded')
 else:
     print('Path is wrong or plan does not exist')
 
@@ -66,7 +77,8 @@ plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # saveRTPlan(plan, plan_filepath)
 
 # MCsquare beamlet free optimization
-doseImage = mc2.optimizeBeamletFree(ct, plan, [target])
+#doseImage = mc2.optimizeBeamletFree(ct, plan, [target])
+doseImage = mc2.optimizeBeamletFree(ct, plan, ROIforBL)
 
 # Compute DVH
 target_DVH = DVH(target, doseImage)
