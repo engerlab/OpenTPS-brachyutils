@@ -31,7 +31,7 @@ if __name__ == '__main__':
     resultFolder = '/test10/'
     resultDataFolder = 'data/'
 
-    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    dataPath = basePath + organ  + '/' + patientFolder + patientComplement + '/dynModAndROIs.p'#'/dynModAndROIs_bodyCropped.p'
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
     # parameters selection ------------------------------------
@@ -76,43 +76,38 @@ if __name__ == '__main__':
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
         print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
-        dynMod, GTVMask = applyBaselineShift(dynMod, GTVMask, baselineShift)
+        dynModCopy, GTVMaskCopy = applyBaselineShift(dynModCopy, GTVMaskCopy, baselineShift)
     else:
         print('Not implemented in this script --> must use the get contour by name function')
 
     print('-' * 50)
-    translateData(dynMod, translationInMM=translation)
-    translateData(GTVMask, translationInMM=translation)
+    translateData(dynModCopy, translationInMM=translation)
+    translateData(GTVMaskCopy, translationInMM=translation)
 
     print('-'*50)
-    rotateData(dynMod, rotationInDeg=rotation)
-    rotateData(GTVMask, rotationInDeg=rotation)
+    rotateData(dynModCopy, rotationInDeg=rotation)
+    rotateData(GTVMaskCopy, rotationInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask, newMask3DCOM = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
-    shrinkedDynMod.name = 'MidP_ShrinkedGTV'
+    dynModCopy, GTVMaskCopy, newMask3DCOM = shrinkOrgan(dynModCopy, GTVMaskCopy, shrinkSize=shrinkSize)
+    #shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     print('-' * 50)
 
     stopTime = time.time()
     print('time:', stopTime-startTime)
-   
-    patient.appendPatientData(shrinkedDynMod)
-    patient.appendPatientData(shrinkedOrganMask)
+
 
     fig, ax = plt.subplots(1, 4)
     fig.suptitle('Example of baseline shift, translate, rotate and shrink')
-    ax[0].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    ax[0].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
+    ax[0].imshow(dynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[0].imshow(GTVMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
     ax[0].set_title('Initial image and target mask')
-    ax[1].imshow(shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    ax[1].imshow(shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
+    ax[1].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[1].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
     ax[1].set_title('after inter fraction changes')
-    ax[2].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[2].imshow(dynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
     ax[2].set_title('image difference')
-    ax[3].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[3].imshow(GTVMask.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :])
     ax[3].set_title('mask difference')
     plt.show()
-
-    ## to save the model with inter fraction changes applied
-    # saveSerializedObjects(patient, savingPath + 'interFracChanged_ModelAndROIs')

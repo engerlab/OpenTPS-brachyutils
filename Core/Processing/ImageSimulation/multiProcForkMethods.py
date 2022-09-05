@@ -59,12 +59,12 @@ def DRRsBinarizeAndCrop(image, mask, projectionAngle=0, projectionAxis='Z', outp
         DRR = np.delete(DRR, columnsToRemove, 1)
         DRRMask = np.delete(DRRMask, columnsToRemove, 1)
     
-    if outputSize:
+    #if outputSize:
         # print('Before resampling')
         # print(DRR.shape, np.min(DRR), np.max(DRR), np.mean(DRR))
-        ratio = [outputSize[0] / DRR.shape[0], outputSize[1] / DRR.shape[1]]
-        DRR = zoom(DRR, ratio)
-        DRRMask = zoom(DRRMask, ratio)
+        #ratio = [outputSize[0] / DRR.shape[0], outputSize[1] / DRR.shape[1]]
+        #DRR = zoom(DRR, ratio)
+        #DRRMask = zoom(DRRMask, ratio)
         # print('After resampling')
         # print(DRR.shape, np.min(DRR), np.max(DRR), np.mean(DRR))
 

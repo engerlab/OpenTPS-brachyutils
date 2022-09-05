@@ -10,14 +10,13 @@ from Core.event import Event
 
 
 class DVH:
-    def __init__(self, ct, roiMask=Union[ROIContour, ROIMask], dose:DoseImage=None, prescription=None):
+    def __init__(self, roiMask:Union[ROIContour, ROIMask], dose:DoseImage=None, prescription=None):
 
         self.dataUpdatedEvent = Event()
 
         self._roiMask = roiMask
         self._roiName = roiMask.name
         self._doseImage = dose
-        self.ct = ct
 
         self._dose = None
         self._volume = None
