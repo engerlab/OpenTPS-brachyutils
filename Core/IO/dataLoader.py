@@ -16,7 +16,7 @@ from Core.IO.serializedObjectIO import loadDataStructure
 def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):
     #TODO: implement ignoreExistingData
 
-    dataList = reaData(dataPath, maxDepth=maxDepth)
+    dataList = readData(dataPath, maxDepth=maxDepth)
 
     patient = None
 
