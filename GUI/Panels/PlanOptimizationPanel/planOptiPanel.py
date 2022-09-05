@@ -1,4 +1,6 @@
 import subprocess
+import os
+import platform
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow
 
@@ -158,7 +160,10 @@ class PlanOptiPanel(QWidget):
         self._updatePlanStructureComboBox()
 
     def _openConfig(self):
-        subprocess.run(['xdg-open', PlanOptimizationSettings().configFile], check=True)
+        if platform.system() == "Windows":
+            os.system("start " + PlanOptimizationSettings().configFile)
+        else:
+            subprocess.run(['xdg-open', PlanOptimizationSettings().configFile], check=True)
 
     def _run(self):
         self._selectedPlanStructure.ct = self._selectedCT
