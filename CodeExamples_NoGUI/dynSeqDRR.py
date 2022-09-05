@@ -6,8 +6,9 @@ sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from Core.Processing.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
+from Core.Processing.ImageSimulation.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
 from Core.IO.serializedObjectIO import loadDataStructure, saveSerializedObjects
+from Core.Data._patient import Patient
 
 if __name__ == '__main__':
 
@@ -22,19 +23,21 @@ if __name__ == '__main__':
     print(type(dynSeq.dyn3DImageList[0]))
 
     ## use the forward projection directly on an image with an angle of 0
-    img = dynSeq.dyn3DImageList[0]
-    DRR = forwardProjection(img, 90, axis='X')
-
-    plt.figure()
-    plt.imshow(DRR)
-    plt.show()
+    # img = dynSeq.dyn3DImageList[0]
+    # DRR = forwardProjection(img, 90, axis='X')
+    #
+    # plt.figure()
+    # plt.imshow(DRR)
+    # plt.show()
 
     print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 
     ## use it on a CTImage with 3 angles, then get back a list of DRR that can be added to a patient
-    anglesAndAxisList = [[0, 'Z'],
-                        [30, 'X'],
-                        [-10, 'Y']]
+    # anglesAndAxisList = [[0, 'Z'],
+    #                     [30, 'X'],
+    #                     [-10, 'Y']]
+
+    anglesAndAxisList = [[0, 'Z']]
 
     # DRRSet = computeDRRSet(dynSeq.dyn3DImageList[0], anglesAndAxisList)
     #
@@ -52,7 +55,7 @@ if __name__ == '__main__':
     #
     # print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     #
-    # ## use it on a CTImage with 2 angles, then get back a list of DRR that can be added to a patient
+    # ## use it on a sequence, then get back a list of DRR that can be added to a patient
     # DRRSequence = computeDRRSequence(dynSeq, anglesAndAxisList)
     #
     # for DRRSet in DRRSequence:
@@ -88,6 +91,13 @@ if __name__ == '__main__':
         for dyn2DSeq in dyn2DDRRSeqList:
             dynSeq.patient.appendDyn2DSeq(dyn2DSeq)
 
-    # # save resulting dynamic2DSequences in drive
-    # savingPath = 'C:/Users/damie/Desktop/' + 'dyn2DDRRSeqList'
-    # saveSerializedObjects(dyn2DDRRSeqList, savingPath)
+    patient = Patient()
+    patient.name = 'testPatient'
+    # Add the model and rtStruct to the patient
+    patient.appendPatientData(dynSeq)
+    for dyn2DSeq in dyn2DDRRSeqList:
+        patient.appendPatientData(dyn2DSeq)
+
+    # save resulting dynamic2DSequences with 3D dynamic sequence in drive
+    savingPath = 'C:/Users/damie/Desktop/' + 'dyn2DDRRSeqList'
+    saveSerializedObjects(patient, savingPath)

@@ -1,40 +1,61 @@
 import copy
+import logging
 from math import pi, cos, sin
 from typing import Sequence, Optional, Union
 
 import numpy as np
 from numpy import linalg
 
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.roiContour import ROIContour
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data._roiContour import ROIContour
+from Core.Processing.Segmentation import segmentation3D
+
+logger = logging.getLogger(__name__)
 
 try:
-    from Core.Processing.ImageProcessing import sitkImageProcessing, crop3D
-
-    resize = sitkImageProcessing.resize
+    from Core.Processing.ImageProcessing import sitkImageProcessing
 except:
-    print('No module SimpleITK found')
+    logger.warning('No module SimpleITK found')
 
 
-def add(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
-    raise NotImplementedError
+def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Sequence[Image3D]:
+    newOrigin = np.array([np.Inf, np.Inf, np.Inf])
+    newSpacing = np.array([np.Inf, np.Inf, np.Inf])
+    newEnd = np.array([-np.Inf, -np.Inf, -np.Inf])
 
-def subtract(image:Image3D, imageToSubtrat:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
-    raise NotImplementedError
+    for image in images:
+        o = image.origin
+        e = image.origin + image.gridSizeInWorldUnit
+        s = image.spacing
 
-def intersect(image:Image3D, fixedImage:Image3D, inPlace:bool=False, fillValue:float=0.) -> Optional[Image3D]:
-    if not inPlace:
-        image = image.__class__.fromImage3D(image)
+        for i in range(3):
+            if o[i]<newOrigin[i]:
+                newOrigin[i] = o[i]
+            if e[i]>newEnd[i]:
+                newEnd[i] = e[i]
+            if s[i]<newSpacing[i]:
+                newSpacing[i] = s[i]
 
-    resize(image, fixedImage.spacing, newOrigin=fixedImage.origin, newShape=fixedImage.gridSize.astype(int), fillValue=fillValue)
+    outImages = []
+    for image in images:
+        if not inPlace:
+            image = image.__class__.fromImage3D(image)
 
-    return image
+        sitkImageProcessing.resize(image, newSpacing, newOrigin=newOrigin, newShape=np.round((newEnd - newOrigin)/newSpacing).astype(int),
+               fillValue=fillValue)
+
+        outImages.append(image)
+
+    return outImages
+
 
 def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
-    tform = _forwardDicomToIECGantry(image, beam)
+    logger.info("Resampling image DICOM -> IEC Gantry")
+
+    tform = _forwardDicomToIECGantry(beam)
 
     tform = linalg.inv(tform)
 
@@ -47,11 +68,11 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
     return outImage
 
 def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
-    outputBox = None
+    outputBox = "keepAll"
 
     if not (cropROI is None):
         outputBox = sitkImageProcessing.extremePoints(cropROI)
-        roiBox = crop3D.getBoxAroundROI(cropROI)
+        roiBox = segmentation3D.getBoxAroundROI(cropROI)
         if cropDim0:
             outputBox[0] = roiBox[0][0]
             outputBox[1] = roiBox[0][1]
@@ -65,14 +86,14 @@ def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, crop
     return outputBox
 
 def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
-    outputBox = None
+    outputBox = 'keepAll'
 
     if not (cropROI is None):
         outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
         cropROIBEV = ROIMask.fromImage3D(cropROI)
         sitkImageProcessing.applyTransform(cropROIBEV, tform, fillValue=0)
         cropROIBEV.imageArray = cropROIBEV.imageArray.astype(bool)
-        roiBox = crop3D.getBoxAroundROI(cropROIBEV)
+        roiBox = segmentation3D.getBoxAroundROI(cropROIBEV)
         if cropDim0:
             outputBox[0] = roiBox[0][0]
             outputBox[1] = roiBox[0][1]
@@ -85,19 +106,21 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
 
     return outputBox
 
-def dicomCoordinate2iecGantry(image:Image3D, beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
+def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
     u = point[0]
     v = point[1]
     w = point[2]
 
-    tform = _forwardDicomToIECGantry(image, beam)
+    tform = _forwardDicomToIECGantry(beam)
     tform = linalg.inv(tform)
 
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
-    tform = _forwardDicomToIECGantry(image, beam)
+    logger.info("Resampling image IEC Gantry -> DICOM")
+
+    tform = _forwardDicomToIECGantry(beam)
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
 
@@ -106,21 +129,21 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     return outImage
 
-def iecGantryCoordinatetoDicom(image: Image3D, beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
+def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
     u = point[0]
     v = point[1]
     w = point[2]
 
-    tform = _forwardDicomToIECGantry(image, beam)
+    tform = _forwardDicomToIECGantry(beam)
 
     return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
 
-def _forwardDicomToIECGantry(image:Image3D, beam:PlanIonBeam) -> np.ndarray:
+def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
     isocenter = beam.isocenterPosition
     gantryAngle = beam.gantryAngle
-    patientSupportAngle = beam.patientSupportAngle
+    patientSupportAngle = beam.couchAngle
 
-    orig = np.array(isocenter) - np.array(image.origin)
+    orig = np.array(isocenter)
 
     M = _roll(-gantryAngle, [0, 0, 0]) @ \
         _rot(patientSupportAngle, [0, 0, 0]) @ \

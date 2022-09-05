@@ -5,7 +5,7 @@ from math import isclose
 from Core.event import Event
 
 from GUI.Viewer.DataForViewer.dataMultiton import DataMultiton
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables import LookupTables
+import GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables as lookupTables
 
 
 class GenericImageForViewer(DataMultiton):
@@ -20,13 +20,14 @@ class GenericImageForViewer(DataMultiton):
         self.selectedPositionChangedSignal = Event(tuple)
         self.rangeChangedSignal = Event(tuple)
 
-        self._range = (0, 100)
+        self._range = (-500, 500)
         self._wwlValue = (self._range[1]-self._range[0], (self._range[1]+self._range[0])/2.)
-        self._lookupTableName = 'fusion'
+        self._lookupTableName = 'gray'
         self._opacity = 0.5
-        self._lookupTable = LookupTables()[self._lookupTableName](self._range, self._opacity)
         self._selectedPosition = (0, 0, 0)
         self._vtkOutputPort = None
+
+        self._updateLT()
 
     @property
     def selectedPosition(self) -> tuple:
@@ -51,12 +52,26 @@ class GenericImageForViewer(DataMultiton):
         self.wwlChangedSignal.emit(self._wwlValue)
 
     @property
-    def lookupTable(self):
+    def lookupTable(self) :
         return self._lookupTable
 
-    @lookupTable.setter
-    def lookupTable(self, lookupTableName):
-        self._lookupTable = LookupTables()[lookupTableName](self.range, self.opacity)
+    @property
+    def lookupTableName(self) -> str:
+        return self._lookupTableName
+
+    @lookupTableName.setter
+    def lookupTableName(self, lookupTableName:str):
+        if self._lookupTableName == lookupTableName:
+            return
+
+        self._lookupTableName = lookupTableName
+        self._updateLT()
+
+    def _updateLT(self):
+        if self._lookupTableName == 'gray':
+            self._lookupTable = lookupTables.grayLT(self._range)
+        else:
+            self._lookupTable = lookupTables.fusionLT(self._range, self._opacity, self._lookupTableName)
         self.lookupTableChangedSignal.emit(self._lookupTable)
 
     @property
@@ -71,7 +86,10 @@ class GenericImageForViewer(DataMultiton):
         self._range = (range[0], range[1])
         self.wwlValue = (range[1]-range[0], (range[1]+range[0])/2.)
 
-        self.lookupTable = self._lookupTableName
+        if not (self._lookupTable is None) and self._lookupTableName=='gray':
+            self._lookupTable.SetRange(self._range[0], self._range[1])
+        else:
+            self._updateLT()
 
         self.rangeChangedSignal.emit(self._range)
 
@@ -82,7 +100,7 @@ class GenericImageForViewer(DataMultiton):
     @opacity.setter
     def opacity(self, opacity: float):
         self._opacity = opacity
-        self.lookupTable = self._lookupTableName
+        self._updateLT()
 
     @property
     def vtkOutputPort(self):

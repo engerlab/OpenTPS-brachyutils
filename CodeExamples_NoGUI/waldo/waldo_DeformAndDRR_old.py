@@ -11,6 +11,9 @@ This file contains an example on how to:
 import matplotlib.pyplot as plt
 import os
 import sys
+
+from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
+
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
@@ -29,7 +32,7 @@ from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesF
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
 from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
 from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
-from Core.Processing.ImageProcessing.crop3D import *
+from Core.Processing.Segmentation.segmentation3D import *
 
 if __name__ == '__main__':
 

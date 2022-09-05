@@ -5,7 +5,7 @@ from numpy import ndarray
 import numpy
 
 from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
-from Core.Data.Images.projections import DRR
+from Core.Data.Images._projections import DRR
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
 
@@ -116,7 +116,6 @@ def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList):
         dyn2DSeqList[imageInSetIndex].breathingPeriod = dynamic3DSequence.breathingPeriod
         dyn2DSeqList[imageInSetIndex].inhaleDuration = dynamic3DSequence.inhaleDuration
         dyn2DSeqList[imageInSetIndex].patient = dynamic3DSequence.patient
-        dyn2DSeqList[imageInSetIndex].patientInfo = dynamic3DSequence.patientInfo
         dyn2DSeqList[imageInSetIndex].timingsList = dynamic3DSequence.timingsList
         dyn2DSeqList[imageInSetIndex].dyn2DImageList = DRRList
 

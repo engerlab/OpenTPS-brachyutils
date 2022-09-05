@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
 
-
 try:
     import sparse_dot_mkl
 
@@ -11,8 +10,9 @@ except:
 
 from Core.Processing.PlanOptimization.Objectives.baseFunction import BaseFunc
 
+
 class DoseFidelity(BaseFunc):
-    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False, formatArray=32):
+    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False):
         super(DoseFidelity, self).__init__()
         if scenariosBL is None:
             scenariosBL = []
@@ -21,10 +21,8 @@ class DoseFidelity(BaseFunc):
         self.xSquare = xSquare
         self.scenariosBL = scenariosBL
         self.returnWorstCase = returnWorstCase
-        self.formatArray = formatArray
 
-
-    def _eval(self, x):
+    def computeFidelityFunction(self, x):
         if self.xSquare:
             weights = np.square(x).astype(np.float32)
         else:
@@ -39,15 +37,15 @@ class DoseFidelity(BaseFunc):
             doseTotal = sparse_dot_mkl.dot_product_mkl(self.beamlets, weights)
         else:
             doseTotal = sp.csc_matrix.dot(self.beamlets, weights)
-
         for objective in self.list:
-            if objective.metric == "Dmax" and objective.condition == "<":
+            if objective.metric == objective.Metrics.DMAX:
                 f = np.mean(np.maximum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
-            elif objective.metric == "Dmean" and objective.condition == "<":
+            elif objective.metric == objective.Metrics.DMEAN:
                 f = np.maximum(0, np.mean(doseTotal[objective.maskVec], dtype=np.float32) - objective.limitValue) ** 2
-            elif objective.metric == "Dmin" and objective.condition == ">":
+            elif objective.metric == objective.Metrics.DMIN:
                 f = np.mean(np.minimum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
-
+            else:
+                raise Exception(objective.metric + ' is not supported as an objective metric')
             if not objective.robust:
                 fTot += objective.weight * f
             else:
@@ -80,13 +78,15 @@ class DoseFidelity(BaseFunc):
                 if not objective.robust:
                     continue
 
-                if objective.metric == "Dmax" and objective.condition == "<":
+                if objective.metric == objective.Metrics.DMAX:
                     f = np.mean(np.maximum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
-                elif objective.metric == "Dmean" and objective.condition == "<":
+                elif objective.metric == objective.Metrics.DMEAN:
                     f = np.maximum(0,
                                    np.mean(doseTotal[objective.maskVec], dtype=np.float32) - objective.limitValue) ** 2
-                elif objective.metric == "Dmin" and objective.condition == ">":
+                elif objective.metric == objective.Metrics.DMIN:
                     f = np.mean(np.minimum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
+                else:
+                    raise Exception(objective.metric + ' is not supported as an objective metric')
 
                 fTotScenario += objective.weight * f
 
@@ -100,7 +100,7 @@ class DoseFidelity(BaseFunc):
             return fTot, scenarioList.index(
                 max(scenarioList)) - 1  # returns id of the worst case scenario (-1 for nominal)
 
-    def _grad(self, x):
+    def computeFidelityGradient(self, x):
         # get worst case scenario
         if self.scenariosBL:
             self.returnWorstCase = True
@@ -146,7 +146,7 @@ class DoseFidelity(BaseFunc):
                 doseTotal = doseNominal
                 doseBL = doseNominalBL
 
-            if objective.metric == "Dmax" and objective.condition == "<":
+            if objective.metric == objective.Metrics.DMAX:
                 f = np.maximum(0, doseTotal[objective.maskVec] - objective.limitValue)
                 if use_MKL == 1:
                     f = sp.diags(f.astype(np.float32), format='csc')
@@ -156,7 +156,7 @@ class DoseFidelity(BaseFunc):
                     df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
                     dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
 
-            elif objective.metric == "Dmean" and objective.condition == "<":
+            elif objective.metric == objective.Metrics.DMEAN:
                 f = np.maximum(0, np.mean(doseTotal[objective.maskVec], dtype=np.float32) - objective.limitValue)
                 if use_MKL == 1:
                     df = sp.csr_matrix.multiply(doseBL[objective.maskVec, :], f)
@@ -165,7 +165,7 @@ class DoseFidelity(BaseFunc):
                     df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
                     dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
 
-            elif objective.metric == "Dmin" and objective.condition == ">":
+            elif objective.metric == objective.Metrics.DMIN:
                 f = np.minimum(0, doseTotal[objective.maskVec] - objective.limitValue)
                 if use_MKL == 1:
                     f = sp.diags(f.astype(np.float32), format='csc')
@@ -174,16 +174,21 @@ class DoseFidelity(BaseFunc):
                 else:
                     df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
                     dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
+            else:
+                raise Exception(objective.metric + ' is not supported as an objective metric')
 
         if self.xSquare:
             dfTot = 4 * dfTot
         else:
             dfTot = 2 * dfTot
         dfTot = np.squeeze(np.asarray(dfTot)).astype(np.float64)
-        # if scipy-lbfgs used, need to use float64
-        if self.formatArray == 64:
-            dfTot = np.array(dfTot, dtype="float64")
 
         return dfTot
 
+    def _eval(self, x):
+        f = self.computeFidelityFunction(x)
+        return f
 
+    def _grad(self, x):
+        g = self.computeFidelityGradient(x)
+        return g

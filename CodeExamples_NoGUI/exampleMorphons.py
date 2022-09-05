@@ -2,14 +2,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+import time
+import logging
+from logConfigParser import parseArgs
+
+from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
+from Core.Data.Images._ctImage import CTImage
+
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
+os.chdir(currentWorkingDir)
 
-from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
-from Core.Data.Images.ctImage import CTImage
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
+
+    options = parseArgs(sys.argv[1:])
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed_img = np.full((100, 100, 100), -1000)
@@ -20,11 +29,14 @@ if __name__ == "__main__":
     moving = CTImage(imageArray=moving_img, name='fixed', origin=[0,0,0], spacing=[1,1,1])
 
     # PERFORM REGISTRATION
+    start_time = time.time()
     reg = RegistrationMorphons(fixed, moving, baseResolution=2.0, nbProcesses=1)
     df = reg.compute()
+    processing_time = time.time() - start_time
+    print('Registration processing time was', processing_time, '\n')
 
     # DISPLAY RESULTS
-    df.resampleToImageGrid(moving)
+    df.resampleOn(moving, fillValue=-1024.)
     diff_before = fixed.copy()
     diff_before._imageArray = moving.imageArray - fixed.imageArray
     diff_after = fixed.copy()

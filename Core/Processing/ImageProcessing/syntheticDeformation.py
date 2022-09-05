@@ -1,46 +1,67 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.roiContour import ROIContour
-from Core.Data.Images.deformation3D import Deformation3D
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data._roiContour import ROIContour
+from Core.Data.Images._deformation3D import Deformation3D
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
+from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
 from Core.Processing.Segmentation.segmentationCT import compute3DStructuralElement
 
 logger = logging.getLogger(__name__)
 
 
-def applyBaselineShift(image, ROI, shift, sigma=2):
+def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
 
-    if isinstance(ROI, ROIContour):
-        maskMoving = ROI.getBinaryMask()
-    elif isinstance(ROI, ROIMask):
-        maskMoving = ROI
+    if not np.array(shift == np.array([0, 0, 0])).all(): ## check if there is a shift to apply
 
-    maskMoving = maskMoving.copy()
-    maskMoving.dilate(filt=compute3DStructuralElement([sigma, sigma, sigma], spacing=maskMoving.spacing))
+        if isinstance(inputData, Dynamic3DModel):
+            model = inputData.copy()
+            image = inputData.midp
+        else:
+            image = inputData
 
-    maskFixed = maskMoving.copy()
-    for i in range(3):
-        maskFixed.origin[i] += shift[i]
-    maskFixed.resampleToImageGrid(image)
-    maskFixed._imageArray = np.logical_or(maskFixed.imageArray, maskMoving.imageArray)
+        if isinstance(ROI, ROIContour):
+            mask = ROI.getBinaryMask(origin=image.origin, gridSize=image.gridSize, spacing=image.spacing)
+        elif isinstance(ROI, ROIMask):
+            mask = ROI
 
-    deformation = Deformation3D()
-    deformation.initFromImage(image)
+        maskMoving = mask.copy()
+        maskMoving.dilate(filt=compute3DStructuralElement([sigma, sigma, sigma], spacing=maskMoving.spacing))
 
-    cert = maskFixed.copy()
-    cert._imageArray = maskFixed.imageArray.astype(np.float32)/1.1 + 0.1
-    cert._imageArray[image.imageArray > 200] = 100
+        maskFixed = maskMoving.copy()
+        for i in range(3):
+            maskFixed.origin[i] += shift[i]
+        resampler3D.resampleImage3DOnImage3D(maskFixed, image, inPlace=True, fillValue=0)
+        maskFixed._imageArray = np.logical_or(maskFixed.imageArray, maskMoving.imageArray)
 
-    for i in range(3):
-        deformation = forceShiftInMask(deformation, maskFixed, shift)
-        deformation.setVelocityArrayXYZ(
-            imageFilter3D.normGaussConv(deformation.velocity.imageArray[:, :, :, 0], cert.imageArray, sigma),
-            imageFilter3D.normGaussConv(deformation.velocity.imageArray[:, :, :, 1], cert.imageArray, sigma),
-            imageFilter3D.normGaussConv(deformation.velocity.imageArray[:, :, :, 2], cert.imageArray, sigma))
+        deformation = Deformation3D()
+        deformation.initFromImage(image)
 
-    return deformation.deformImage(image, fillValue='closest')
+        cert = maskFixed.copy()
+        cert._imageArray = maskFixed.imageArray.astype(np.float32)/1.1 + 0.1
+        cert._imageArray[image.imageArray > 200] = 100
+
+        for i in range(3):
+            deformation = forceShiftInMask(deformation, maskFixed, shift)
+            deformation.setVelocityArrayXYZ(
+                imageFilter3D.normGaussConv(deformation.velocity.imageArray[:, :, :, 0], cert.imageArray, sigma, tryGPU=tryGPU),
+                imageFilter3D.normGaussConv(deformation.velocity.imageArray[:, :, :, 1], cert.imageArray, sigma, tryGPU=tryGPU),
+                imageFilter3D.normGaussConv(deformation.velocity.imageArray[:, :, :, 2], cert.imageArray, sigma, tryGPU=tryGPU))
+
+        if isinstance(inputData, Dynamic3DModel):
+            for i in range(len(model.deformationList)):
+                model.deformationList[i].setVelocity(deformation.deformImage(inputData.deformationList[i].velocity, fillValue='closest', tryGPU=tryGPU))
+            model.midp = deformation.deformImage(image, fillValue='closest', tryGPU=tryGPU)
+            return model, deformation.deformImage(mask, fillValue='closest', tryGPU=tryGPU)
+        else:
+            return deformation.deformImage(image, fillValue='closest', tryGPU=tryGPU), deformation.deformImage(mask, fillValue='closest', tryGPU=tryGPU)
+    else:
+        if isinstance(inputData, Dynamic3DModel):
+            return inputData, ROI
+        else:
+            return ROI
 
 
 def forceShiftInMask(deformation,mask,shift):

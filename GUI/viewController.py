@@ -1,11 +1,15 @@
 
 import logging
+from typing import Optional
 
+from Core.Data.Images._doseImage import DoseImage
 from Core.event import Event
 from GUI.MainWindow import MainWindow
 from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget
 from GUI.Viewer.dataViewer import DataViewer
 from GUI.Viewer.dynamicDisplayController import DynamicDisplayController
+from GUI.Viewer.viewerPanel import ViewerPanel
+
 
 class ViewController():
     def __init__(self, patientList):
@@ -15,6 +19,8 @@ class ViewController():
         self.independentViewsEnabledSignal = Event(bool)
         self.profileWidgetEnabledSignal = Event(object)
         self.mainImageChangedSignal = Event(object)
+        self.dose1ChangedSignal = Event(object)
+        self.dose2ChangedSignal = Event(object)
         self.patientAddedSignal = Event(object)
         self.patientRemovedSignal = Event(object)
         self.secondaryImageChangedSignal = Event(object)
@@ -23,6 +29,7 @@ class ViewController():
         self.windowLevelEnabledSignal = Event(bool)
         self.dropModeSignal = Event(object)
         self.droppedDataSignal = Event(object)
+        self.displayLayoutTypeChangedSignal = Event(object)
         #self.dynamicViewerSwitchedOnSignal = Event(object)
 
         self.mainConfig = None
@@ -36,11 +43,14 @@ class ViewController():
         self.profileWidgetCallback = ProfileWidget.ProfileWidgetCallback()
         self._profileWidgetEnabled = False
         self._mainImage = None
+        self._dose1 = None
+        self._dose2 = None
         self.multipleActivePatientsEnabled = False #TODO
         self._patientList = patientList
         self._plan = None
         self._selectedImage = None
         self._windowLevelEnabled = None
+        self._displayLayout = ViewerPanel.LayoutTypes.DEFAULT
 
         self.dynamicDisplayController = DynamicDisplayController(self)
         self.mainWindow = MainWindow(self)
@@ -54,6 +64,18 @@ class ViewController():
         self._patientList.patientRemovedSignal.connect(self.appendActivePatient)
 
         self.shownDataUIDsList = [] #this is to keep track of which data is currently shown, but not used yet
+
+    @property
+    def displayLayoutType(self):
+        return self._displayLayout
+
+    @displayLayoutType.setter
+    def displayLayoutType(self, layout):
+        if layout == self._displayLayout:
+            return
+
+        self._displayLayout = layout
+        self.displayLayoutTypeChangedSignal.emit(self._displayLayout)
 
     @property
     def patientList(self):
@@ -171,10 +193,34 @@ class ViewController():
     def secondaryImage(self, image):
         if self.independentViewsEnabled:
             # secondaryImage is only available when only one image can be shown
-            raise("secondaryImage is only available when only one image can be shown")
+            raise Exception("secondaryImage is only available when only one image can be shown")
 
         self._secondaryImage = image
         self.secondaryImageChangedSignal.emit(self._secondaryImage)
+
+    @property
+    def dose1(self) -> Optional[DoseImage]:
+        return self._dose1
+
+    @dose1.setter
+    def dose1(self, image:Optional[DoseImage]):
+        if image == self._dose1:
+            return
+
+        self._dose1 = image
+        self.dose1ChangedSignal.emit(self._dose1)
+
+    @property
+    def dose2(self) -> Optional[DoseImage]:
+        return self._dose2
+
+    @dose2.setter
+    def dose2(self, image: Optional[DoseImage]):
+        if image == self._dose2:
+            return
+
+        self._dose2 = image
+        self.dose2ChangedSignal.emit(self._dose2)
 
     @property
     def plan(self):

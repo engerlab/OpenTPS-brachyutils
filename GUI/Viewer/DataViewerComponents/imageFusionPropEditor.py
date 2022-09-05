@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.widgets import RangeSlider
 
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.DataViewerComponents.imagePropEditor import ImagePropEditor
+from GUI.Viewer.DataViewerComponents.patientDataPropertyEditor import PatientDataPropertyEditor
 
 
 class ImageFusionPropEditor(QMainWindow):
@@ -24,7 +24,7 @@ class ImageFusionPropEditor(QMainWindow):
         self._layout.addWidget(self._imageInfoGroup)
         vbox = QVBoxLayout()
         self._imageInfoGroup.setLayout(vbox)
-        vbox.addWidget(ImagePropEditor(image, parent=self))
+        vbox.addWidget(PatientDataPropertyEditor(image, parent=self))
 
         self._imageProperties = QGroupBox(title='Image properties')
         self._layout.addWidget(self._imageProperties)
@@ -45,7 +45,7 @@ class ImageFusionPropEditor(QMainWindow):
         self._slider_ax = plt.axes([0.20, 0.1, 0.60, 0.03])
         self.slider = RangeSlider(self._slider_ax, "Range", bins[0], bins[-1], valinit=image.range, dragging=True)
 
-        self.cm = plt.cm.get_cmap('jet')
+        self.cm = plt.cm.get_cmap(image.lookupTableName)
 
         bin_centers = 0.5 * (bins[:-1] + bins[1:])
         col = (bin_centers - image.range[0]) / (image.range[1] - image.range[0])

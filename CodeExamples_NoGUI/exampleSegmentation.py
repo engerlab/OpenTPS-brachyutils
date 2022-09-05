@@ -2,15 +2,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
+import logging
+from logConfigParser import parseArgs
+
+from Core.Data.Images._ctImage import CTImage
+from Core.Processing.Segmentation.segmentation3D import applyThreshold
+from Core.Processing.Segmentation.segmentationCT import SegmentationCT
+
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
+os.chdir(currentWorkingDir)
 
-from Core.Data.Images.ctImage import CTImage
-import Core.Processing.Segmentation.segmentation as segmentation
-from Core.Processing.Segmentation.segmentationCT import SegmentationCT
+logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
+
+    options = parseArgs(sys.argv[1:])
 
     # GENERATE SYNTHETIC CT IMAGE
     im = np.full((170, 170, 100), -1000)
@@ -23,7 +31,7 @@ if __name__ == '__main__':
     ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=[1, 2, 3])
 
     # APPLY THRESHOLD SEGMENTATION
-    mask = segmentation.applyThreshold(ct, -750)
+    mask = applyThreshold(ct, -750)
 
     # APPLY CT BODY SEGMENTATION
     seg = SegmentationCT(ct)

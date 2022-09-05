@@ -1,6 +1,6 @@
 import numpy as np
 from numpy import matlib as mb
-from Core.Processing.PlanOptimization import tools
+from Core.Processing.PlanOptimization.tools import WeightStructure
 from Core.Processing.PlanOptimization.Objectives.baseFunction import BaseFunc
 
 
@@ -15,7 +15,7 @@ class LogBarrier(BaseFunc):
 
     def __init__(self, plan, beta, **kwargs):
         self.beta = beta
-        self.struct = tools.weightStructure(plan)
+        self.struct = WeightStructure(plan)
         super(LogBarrier, self).__init__(**kwargs)
 
     def logCols(self, x):
@@ -27,12 +27,12 @@ class LogBarrier(BaseFunc):
         return np.log(np.where(res > 0., res, 1e-300))
 
     def _eval(self, x):
-        beamLayerStruct = self.struct.beamStructure(x)
+        beamLayerStruct = self.struct.getBeamStructure(x)
         res = - self.beta * np.sum(self.logCols(beamLayerStruct))
         return res
 
     def _grad(self, x):
-        beamLayerStruct = self.struct.beamStructure(x)
+        beamLayerStruct = self.struct.getBeamStructure(x)
         res = -self.beta * self.dlogCols(beamLayerStruct)
         return res
 

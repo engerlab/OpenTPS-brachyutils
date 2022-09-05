@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from Core.Data.patientData import PatientData
+from Core.Data._patientData import PatientData
 import Core.Processing.Registration.midPosition as midPosition
 from concurrent.futures import ProcessPoolExecutor
 
@@ -15,6 +15,9 @@ class Dynamic3DModel(PatientData):
         self.name = name
         self.midp = midp
         self.deformationList = deformationList
+
+    def copy(self):
+        return Dynamic3DModel(midp=self.midp, deformationList=self.deformationList)
 
     def computeMidPositionImage(self, CT4D, refIndex=0, baseResolution=2.5, nbProcesses=1, tryGPU=True):
         """Compute the mid-position image from the 4DCT by means of deformable registration between breathing phases.

@@ -1,9 +1,9 @@
 import sys
 sys.path.append('..')
 
-from Core.Data.Plan import rtPlan
-from Core.Data.Plan.beamDeliveryTimings import BDT
-from Core.IO.dicomReader import readDicomPlan
+from Core.Data.Plan import _rtPlan
+from Core.Data.Plan._beamDeliveryTimings import BDT
+from Core.IO.dicomIO import readDicomPlan
 
 
 # load OpenTPS plan

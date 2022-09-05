@@ -35,7 +35,7 @@ class MainWindow(QMainWindow):
         ProgramSettingEditor.setMainToolbar(self.mainToolbar)
 
         # create and add the viewer panel
-        self.viewerPanel = ViewerPanel(self._viewControler)
+        self.viewerPanel = ViewerPanel(self._viewControler, self)
         self.mainLayout.addWidget(self.viewerPanel)
 
         self.statusBar = StatusBar()

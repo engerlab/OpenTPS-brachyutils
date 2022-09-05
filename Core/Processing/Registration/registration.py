@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-import Core.Processing.ImageProcessing.imageFilter3D as imageFilter3D
+import Core.Processing.ImageProcessing.filter3D as imageFilter3D
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,13 @@ class Registration:
         self.roiBox = box
 
     def translateOrigin(self, Image, translation):
-        Image._origin[0] += translation[0]
-        Image._origin[1] += translation[1]
-        Image._origin[2] += translation[2]
+        Image.origin[0] += translation[0]
+        Image.origin[1] += translation[1]
+        Image.origin[2] += translation[2]
 
-        Image.VoxelX = Image._origin[0] + np.arange(Image.gridSize()[0]) * Image._spacing[0]
-        Image.VoxelY = Image._origin[1] + np.arange(Image.gridSize()[1]) * Image._spacing[1]
-        Image.VoxelZ = Image._origin[2] + np.arange(Image.gridSize()[2]) * Image._spacing[2]
+        Image.VoxelX = Image.origin[0] + np.arange(Image.gridSize[0]) * Image.spacing[0]
+        Image.VoxelY = Image.origin[1] + np.arange(Image.gridSize[1]) * Image.spacing[1]
+        Image.VoxelZ = Image.origin[2] + np.arange(Image.gridSize[2]) * Image.spacing[2]
 
     def translateAndComputeSSD(self, translation=None, tryGPU=True):
 
@@ -83,16 +83,16 @@ class Registration:
 
         # crop fixed image to ROI box
         if (self.roiBox == []):
-            fixed = self.fixed._imageArray
-            origin = self.fixed._origin
-            gridSize = self.fixed.gridSize()
+            fixed = self.fixed.imageArray
+            origin = self.fixed.origin
+            gridSize = self.fixed.gridSize
         else:
             start = self.roiBox[0]
             stop = self.roiBox[1]
-            fixed = self.fixed._imageArray[start[0]:stop[0], start[1]:stop[1], start[2]:stop[2]]
-            origin = self.fixed._origin + np.array(
-                [start[1] * self.fixed._spacing[0], start[0] * self.fixed._spacing[1],
-                 start[2] * self.fixed._spacing[2]])
+            fixed = self.fixed.imageArray[start[0]:stop[0], start[1]:stop[1], start[2]:stop[2]]
+            origin = self.fixed.origin + np.array(
+                [start[1] * self.fixed.spacing[0], start[0] * self.fixed.spacing[1],
+                 start[2] * self.fixed.spacing[2]])
             gridSize = list(fixed.shape)
 
         logger.info("Translation: " + str(translation))
@@ -100,10 +100,10 @@ class Registration:
         # deform moving image
         self.deformed = self.moving.copy()
         self.translateOrigin(self.deformed, translation)
-        self.deformed.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
+        self.deformed.resample(self.fixed.spacing, gridSize, origin, tryGPU=tryGPU)
 
         # compute metric
-        ssd = self.computeSSD(fixed, self.deformed._imageArray)
+        ssd = self.computeSSD(fixed, self.deformed.imageArray)
         return ssd
 
     def computeSSD(self, fixed, deformed):
@@ -119,7 +119,7 @@ class Registration:
         if keepFixedShape == True:
             resampled = self.moving.copy()
             print('in registration resampleMovingImage')
-            resampled.resample(self.fixed.gridSize(), self.fixed._origin, self.fixed._spacing)
+            resampled.resampleOpenMP(self.fixed.gridSize(), self.fixed._origin, self.fixed._spacing)
 
         else:
             X_min = min(self.fixed._origin[0], self.moving._origin[0])
@@ -137,7 +137,7 @@ class Registration:
             gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
             resampled = self.moving.copy()
-            resampled.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
+            resampled.resampleOpenMP(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         return resampled
 
@@ -162,7 +162,7 @@ class Registration:
         gridSize = [gridSizeX, gridSizeY, gridSizeZ]
 
         resampled = self.fixed.copy()
-        resampled.resample(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
+        resampled.resampleOpenMP(gridSize, origin, self.fixed._spacing, tryGPU=tryGPU)
 
         return resampled
 

@@ -22,5 +22,5 @@ Contents
    :titlesonly:
 
    installation
-   Core
-   GUI
+   opentps.Core
+   opentps.GUI

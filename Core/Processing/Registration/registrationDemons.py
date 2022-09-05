@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from Core.Data.Images.deformation3D import Deformation3D
+from Core.Data.Images._deformation3D import Deformation3D
 from Core.Processing.Registration.registration import Registration
 
 logger = logging.getLogger(__name__)
@@ -9,12 +9,13 @@ logger = logging.getLogger(__name__)
 
 class RegistrationDemons(Registration):
 
-    def __init__(self, fixed, moving, baseResolution=2.5):
+    def __init__(self, fixed, moving, baseResolution=2.5, tryGPU=True):
 
         Registration.__init__(self, fixed, moving)
         self.baseResolution = baseResolution
+        self.tryGPU = tryGPU
 
-    def compute(self, tryGPU=True):
+    def compute(self):
 
         """Perform registration between fixed and moving images.
 
@@ -32,24 +33,25 @@ class RegistrationDemons(Registration):
         for s in range(len(scales)):
 
             # Compute grid for new scale
-            newGridSize = [round(self.fixed.spacing[1] / scales[s] * self.fixed.gridSize()[0]),
-                           round(self.fixed.spacing[0] / scales[s] * self.fixed.gridSize()[1]),
-                           round(self.fixed.spacing[2] / scales[s] * self.fixed.gridSize()[2])]
-            newVoxelSpacing = [self.fixed.spacing[0] * (self.fixed.gridSize()[1] - 1) / (newGridSize[1] - 1),
-                               self.fixed.spacing[1] * (self.fixed.gridSize()[0] - 1) / (newGridSize[0] - 1),
-                               self.fixed.spacing[2] * (self.fixed.gridSize()[2] - 1) / (newGridSize[2] - 1)]
+            newGridSize = np.array([round(self.fixed.spacing[1] / scales[s] * self.fixed.gridSize[0]),
+                                    round(self.fixed.spacing[0] / scales[s] * self.fixed.gridSize[1]),
+                                    round(self.fixed.spacing[2] / scales[s] * self.fixed.gridSize[2])])
+            newVoxelSpacing = np.array([self.fixed.spacing[0] * (self.fixed.gridSize[1] - 1) / (newGridSize[1] - 1),
+                                        self.fixed.spacing[1] * (self.fixed.gridSize[0] - 1) / (newGridSize[0] - 1),
+                                        self.fixed.spacing[2] * (self.fixed.gridSize[2] - 1) / (newGridSize[2] - 1)])
 
             logger.info('Demons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
+            # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
             fixedResampled = self.fixed.copy()
-            fixedResampled.resample(newGridSize, self.fixed.origin, newVoxelSpacing, tryGPU=tryGPU)
+            fixedResampled.resample(newVoxelSpacing, newGridSize, self.fixed.origin, tryGPU=self.tryGPU)
             movingResampled = self.moving.copy()
-            movingResampled.resample(fixedResampled.gridSize(), fixedResampled.origin, fixedResampled.spacing, tryGPU=tryGPU)
+            movingResampled.resample(fixedResampled.spacing, fixedResampled.gridSize, fixedResampled.origin, tryGPU=self.tryGPU)
             gradFixed = np.gradient(fixedResampled.imageArray)
 
             if s != 0:
-                deformation.resampleToImageGrid(fixedResampled)
+                deformation.resample(fixedResampled.spacing, fixedResampled.gridSize, fixedResampled.origin, tryGPU=self.tryGPU)
             else:
                 deformation.initFromImage(fixedResampled)
 
@@ -73,7 +75,7 @@ class RegistrationDemons(Registration):
                     deformation.velocity.imageArray[:, :, :, 2] + 2 * (fixedResampled.imageArray - deformed.imageArray) * (gradFixed[2] + gradMoving[2]) / ( squaredDiff + squaredNormGrad + 1e-5) * deformation.velocity.spacing[0])
 
                 # Regularize velocity deformation and certainty
-                self.regularizeField(deformation, filterType="Gaussian", sigma=1.25, tryGPU=tryGPU)
+                self.regularizeField(deformation, filterType="Gaussian", sigma=1.25, tryGPU=self.tryGPU)
 
         self.deformed = deformation.deformImage(self.moving, fillValue='closest')
 

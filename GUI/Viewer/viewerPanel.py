@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 
 from GUI.Viewer.dataViewer import DroppedObject
 from GUI.Viewer.gridFourElements import GridFourElements
-import GUI.Viewer.viewerToolbar
 from GUI.Viewer.viewerToolbar import ViewerToolbar
 
 class ViewerPanel(QWidget):
@@ -12,8 +11,8 @@ class ViewerPanel(QWidget):
         DEFAULT = 'GRID_2BY2'
         GRID_2BY2 = 'GRID_2BY2'
 
-    def __init__(self, viewController):
-        QWidget.__init__(self)
+    def __init__(self, viewController, parent):
+        super().__init__(parent)
 
         self._layoutType = None
         self._viewerGrid = None
@@ -25,7 +24,7 @@ class ViewerPanel(QWidget):
 
         self._layout = QVBoxLayout(self)
 
-        self._viewToolbar = ViewerToolbar(viewController)
+        self._viewToolbar = ViewerToolbar(viewController, parent=self)
         self._layout.addWidget(self._viewToolbar)
 
         self._setLayoutType(self.LayoutTypes.DEFAULT)
@@ -94,7 +93,7 @@ class ViewerPanel(QWidget):
             self._layoutType.removeWidget(self._viewerGrid)
 
         if self._layoutType == self.LayoutTypes.GRID_2BY2:
-            self._viewerGrid = GridFourElements(self._viewController)
+            self._viewerGrid = GridFourElements(self._viewController, self)
             self._viewerGrid.setEqualSize()
         elif self._viewerGrid==None:
             return

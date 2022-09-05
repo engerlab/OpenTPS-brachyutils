@@ -30,6 +30,12 @@ def forwardProjectionTigre(ct, angles, axis='Z', ctIsocenter=None, SAD=1000, SID
     if ctIsocenter is None:
         ctIsocenter = ctCenter.copy()
 
+    # For binary data
+    if ct.imageArray.dtype == 'bool':
+        ct._imageArray = ct.imageArray.astype(np.float32)
+        ct._imageArray[ct.imageArray < 0.5] = -1000
+        ct._imageArray[ct.imageArray >= 0.5] = 1000
+
     # Convert CT to attenuation in specified axis
     mu_water = 0.0215
     if axis == 'Z':

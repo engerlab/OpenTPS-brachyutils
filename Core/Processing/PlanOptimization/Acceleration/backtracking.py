@@ -1,3 +1,13 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
+import copy
+import logging
+
+import numpy as np
+
+from Core.Processing.PlanOptimization.Acceleration.baseAccel import Dummy
+logger = logging.getLogger(__name__)
+
 class Backtracking(Dummy):
     """
     Backtracking based on a local quadratic approximation of the smooth
@@ -12,7 +22,7 @@ class Backtracking(Dummy):
         if (eta > 1) or (eta <= 0):
             logger.error("eta must be between 0 and 1.")
         self.eta = eta
-        super(backtracking, self).__init__(**kwargs)
+        super(Backtracking, self).__init__(**kwargs)
 
     def _update_step(self, solver, objective, niter):
         # Save current state of the solver
@@ -22,13 +32,13 @@ class Backtracking(Dummy):
         # Initialize some useful variables
         fn = 0
         grad = np.zeros_like(properties['sol'])
-        for f in solver.smooth_funs:
+        for f in solver.smoothFuns:
             fn += f.eval(properties['sol'])
             grad += f.grad(properties['sol'])
         step = properties['step']
 
         logger.debug('fn = {}'.format(fn))
-
+        n = 0
         while True:
             # Run the solver with the current stepsize
             solver.step = step
@@ -38,7 +48,7 @@ class Backtracking(Dummy):
                 '(During) solver properties: {}'.format(vars(solver)))
 
             # Record results
-            fp = np.sum([f.eval(solver.sol) for f in solver.smooth_funs])
+            fp = np.sum([f.eval(solver.sol) for f in solver.smoothFuns])
             logger.debug('fp = {}'.format(fp))
 
             dot_prod = np.dot(solver.sol - properties['sol'], grad)
@@ -52,11 +62,13 @@ class Backtracking(Dummy):
                 setattr(solver, key, copy.copy(val))
             logger.debug('(Reset) solver properties: {}'.format(vars(solver)))
 
-            if (2. * step * (fp - fn - dot_prod) <= norm_diff):
+            if \
+                    (2. * step * (fp - fn - dot_prod) <= norm_diff) or n > 10:
                 logger.debug('Break condition reached')
                 break
             else:
                 logger.debug('Decreasing step')
                 step *= self.eta
+                n += 1
 
         return step

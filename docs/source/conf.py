@@ -22,7 +22,9 @@ copyright = '2021, Kevin Souris, Guillaume Janssens, Sophie Wuyckens, Margerie H
 author = 'Kevin Souris, Guillaume Janssens, Sophie Wuyckens, Margerie Huet, Damien Dasnoy, Sylvain Deffet, Valentin Hamaide'
 
 # The full version, including alpha/beta/rc tags
-release = '1.0'
+import opentps
+#TODO
+#release = opentps.version
 
 
 # -- General configuration ---------------------------------------------------
@@ -46,6 +48,12 @@ add_module_names = False # Remove namespaces from class/method signatures
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
+# The suffix of source filenames.
+source_suffix = '.rst'
+
+# The main toctree document.
+master_doc = 'index'
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
@@ -62,4 +70,4 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []

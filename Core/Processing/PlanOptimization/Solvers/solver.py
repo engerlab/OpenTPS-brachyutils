@@ -1,3 +1,5 @@
+# Copyright (c) 2014, EPFL LTS2
+# All rights reserved.
 import logging
 import time
 
@@ -8,23 +10,19 @@ import Core.Processing.PlanOptimization.Acceleration.baseAccel as baseAccel
 logger = logging.getLogger(__name__)
 
 
-class ConvexSolver:
-    """
-    Solver object interface.
-    The instanced objects are meant to be passed
-    to the "pyOpti.solvers.solve` solving function
-    """
+class ConvexSolver(object):
 
-    def __init__(self, step=1., accel=None):
-        self.nonSmoothFuns = None
-        self.smoothFuns = None
+    def __init__(self, step=0.1, accel=None, **kwargs):
+        self.nonSmoothFuns = []
+        self.smoothFuns = []
         self.sol = None
         if step < 0:
             logger.error('Step should be a positive number.')
         self.step = step
         self.accel = baseAccel.Dummy() if accel is None else accel
+        self.params = kwargs
 
-    def solve(self, functions, x0, **kwargs):
+    def solve(self, functions, x0):
         """
         Solve an optimization problem whose objective function is the sum of some
         convex functions.
@@ -35,7 +33,6 @@ class ConvexSolver:
         - solver: solver class instance.If no solver object are provided, a standard one will be chosen
           given the number of convex function objects and their implemented methods.
         """
-        params = kwargs
 
         # Add a second dummy convex function if only one function is provided.
         if len(functions) < 1:
@@ -63,7 +60,7 @@ class ConvexSolver:
 
             niter += 1
 
-            if 'xtol' in params:
+            if 'xtol' in self.params:
                 last_sol = np.array(self.sol, copy=True)
 
             logger.info('Iteration {} of {}:'.format(niter, self.__class__.__name__))
@@ -83,13 +80,13 @@ class ConvexSolver:
                 bestWeights = self.sol
 
             # Verify stopping criteria.
-            if 'atol' in params and (not (params['atol'] is None)):
-                if current < params['atol']:
+            if 'atol' in self.params and (not (self.params['atol'] is None)):
+                if current < self.params['atol']:
                     crit = 'ATOL'
-            if 'dtol' in params and (not (params['dtol'] is None)):
-                if np.abs(current - last) < params['dtol']:
+            if 'dtol' in self.params and (not (self.params['dtol'] is None)):
+                if np.abs(current - last) < self.params['dtol']:
                     crit = 'DTOL'
-            if 'ftol' in params and (not (params['ftol'] is None)):
+            if 'ftol' in self.params and (not (self.params['ftol'] is None)):
                 div = current  # Prevent division by 0.
                 if div == 0:
                     logger.warning('WARNING: (ftol) objective function is equal to 0 !')
@@ -100,15 +97,15 @@ class ConvexSolver:
                 else:
                     ftol_only_zeros = False
                 relative = np.abs((current - last) / div)
-                if relative < params['ftol'] and not ftol_only_zeros:
+                if relative < self.params['ftol'] and not ftol_only_zeros:
                     crit = 'FTOL'
-            if 'xtol' in params and (not (params['xtol'] is None)):
+            if 'xtol' in self.params and (not (self.params['xtol'] is None)):
                 err = np.linalg.norm(self.sol - last_sol)
                 err /= np.sqrt(last_sol.size)
-                if err < params['xtol']:
+                if err < self.params['xtol']:
                     crit = 'XTOL'
-            if 'maxit' in params:
-                if niter >= params['maxit']:
+            if 'maxit' in self.params:
+                if niter >= self.params['maxit']:
                     crit = 'MAXIT'
 
             logger.info('    objective = {:.2e}'.format(current))
@@ -135,8 +132,8 @@ class ConvexSolver:
         """
         Solver-specific pre-processing;
         functions split in two lists:
-        - self.smooth_funs : functions involved in gradient steps
-        - self.non_smooth_funs : functions involved in proximal steps
+        - self.smoothFuns : functions involved in gradient steps
+        - self.nonSmoothFuns : functions involved in proximal steps
         """
         self.sol = np.asarray(x0)
         self.smoothFuns = []
@@ -154,6 +151,7 @@ class ConvexSolver:
         """
         self.sol[:] = self.accel.update_sol(self, objective, niter)
         self.step = self.accel.update_step(self, objective, niter)
+        print(self.step)
         self._algo()
 
     def _algo(self):
@@ -171,3 +169,15 @@ class ConvexSolver:
 
     def _post(self):
         logging.error("Class user should define this method.")
+
+    def objective(self, x):
+        """
+        Return the objective function at x.
+        Necessitate `solver._pre(...)` to be run first.
+        """
+        return self._objective(x)
+
+    def _objective(self, x):
+        objSmooth = [f.eval(x) for f in self.smoothFuns]
+        objNonsmooth = [f.eval(x) for f in self.nonSmoothFuns]
+        return objNonsmooth + objSmooth

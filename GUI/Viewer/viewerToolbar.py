@@ -1,6 +1,5 @@
-import importlib
+
 import os
-import sys
 
 from PyQt5.QtCore import QSize, QDir
 from PyQt5.QtGui import QIcon
@@ -9,8 +8,10 @@ from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, 
 
 from Core.IO import dataLoader
 from Core.event import Event
-from GUI.Tools.cropTool import CropWidget
 from GUI.Viewer.dataViewer import DataViewer
+from GUI.Viewer.exportWindow import ExportWindow
+from GUI.Tools._cropTool import CropWidget
+from GUI.Tools._resampleTool import ResampleWidget
 from GUI.programSettingEditor import ProgramSettingEditor
 
 import GUI.res.icons as IconModule
@@ -21,10 +22,13 @@ class ViewerToolbar(QToolBar):
     PLAY_STATUS = 1
     PAUSE_STATUS = 0
 
-    def __init__(self, viewController):
-        QToolBar.__init__(self)
+    def __init__(self, viewController, parent=None):
+        super().__init__(parent)
 
         self._viewController = viewController
+        self._cropWidgets = []
+        self._resampleWidgets = []
+
         self.setIconSize(QSize(16, 16))
 
         self.iconPath = str(IconModule.__path__[0]) + os.path.sep
@@ -32,15 +36,15 @@ class ViewerToolbar(QToolBar):
         self._buttonSettings = QAction(QIcon(self.iconPath + "settings-5-line.png"), "Settings", self)
         self._buttonSettings.triggered.connect(self._openSettings)
 
-        self._buttonReloadModules = QAction(QIcon(self.iconPath + "reload.png"), "Reload python modules", self)
-        self._buttonReloadModules.triggered.connect(self._reloadModules)
-
         self._buttonOpen = QAction(QIcon(self.iconPath + "folder-open.png"), "Open files or folder", self)
         self._buttonOpen.setStatusTip("Open files or folder")
         self._buttonOpen.triggered.connect(self._handleLoadData)
         self._buttonOpen.setCheckable(False)
 
-        self._buttonIndependentViews = QAction(QIcon(self.iconPath + "chain-unchain.png"), "Independent views", self)
+        self._buttonSave = QAction(QIcon(self.iconPath + "save.png"), "Export", self)
+        self._buttonSave.triggered.connect(self._handleExportData)
+
+        self._buttonIndependentViews = QAction(QIcon(self.iconPath + "independent_views.png"), "Independent views", self)
         self._buttonIndependentViews.setStatusTip("Independent views")
         self._buttonIndependentViews.triggered.connect(self._handleButtonIndependentViews)
         self._buttonIndependentViews.setCheckable(True)
@@ -61,6 +65,11 @@ class ViewerToolbar(QToolBar):
         self._buttonCrop.triggered.connect(self._handleCrop)
         self._buttonCrop.setCheckable(False)
 
+        self._buttonResample = QAction(QIcon(self.iconPath + "resample.png"), "Resample", self)
+        self._buttonResample.setStatusTip("Resample")
+        self._buttonResample.triggered.connect(self._handleResample)
+        self._buttonResample.setCheckable(False)
+
         self._dropModeCombo = QComboBox()
         self._dropModeToStr = {DataViewer.DropModes.AUTO: 'Drop mode: auto',
                                DataViewer.DropModes.PRIMARY: 'Drop as primary image',
@@ -73,12 +82,13 @@ class ViewerToolbar(QToolBar):
         self._dropModeAction.setDefaultWidget(self._dropModeCombo)
 
         self.addAction(self._buttonSettings)
-        self.addAction(self._buttonReloadModules)
         self.addAction(self._buttonOpen)
+        self.addAction(self._buttonSave)
         self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonWindowLevel)
         self.addAction(self._buttonCrop)
+        self.addAction(self._buttonResample)
         self.addAction(self._dropModeAction)
 
         self.addSeparator()
@@ -112,15 +122,6 @@ class ViewerToolbar(QToolBar):
         self._viewController.windowLevelEnabledSignal.connect(self._handleWindowLevel)
         self._viewController.crossHairEnabledSignal.connect(self._handleCrossHair)
 
-    def _reloadModules(self):
-        # Does not seem to reload the modules
-        modules = [module for module in sys.modules.values()]
-        for module in modules:
-            try:
-                importlib.reload(module)
-            except Exception as e:
-                pass
-
     def _dropModeToIndex(self, dropMode):
         return list(self._dropModeToStr.keys()).index(dropMode)
 
@@ -131,8 +132,8 @@ class ViewerToolbar(QToolBar):
         self._viewController.dropMode = self._indexToDropMode(selectionIndex)
 
     def _openSettings(self, pressed):
-        self._imageFusionProp = ProgramSettingEditor()
-        self._imageFusionProp.show()
+        self._settingEditor = ProgramSettingEditor()
+        self._settingEditor.show()
 
     def _handleButtonIndependentViews(self, pressed):
         # This is useful if controller emit a signal:
@@ -151,8 +152,17 @@ class ViewerToolbar(QToolBar):
         self._viewController.crossHairEnabled = pressed
 
     def _handleCrop(self):
-        self._cropWidget = CropWidget(self._viewController)
-        self._cropWidget.show()
+        cw = CropWidget(self._viewController)
+        # TODO
+        # I don't know why but we must keep the reference to any CropWidget created even if we close it
+        # This is an issue because _cropWidgets might become huge
+        self._cropWidgets.append(cw)
+        cw.show()
+
+    def _handleResample(self):
+        rw = ResampleWidget(self._viewController)
+        self._resampleWidgets.append(rw)
+        rw.show()
 
     def _handleLoadData(self):
         filesOrFoldersList = self._getOpenFilesAndDirs(caption="Open patient data files or folders",
@@ -167,6 +177,10 @@ class ViewerToolbar(QToolBar):
         self.dataPath = withoutLastElementPath
 
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
+
+    def _handleExportData(self):
+        self._exportWindow = ExportWindow(self._viewController)
+        self._exportWindow.show()
 
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:

@@ -13,8 +13,8 @@ sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from Core.IO.dicomReader import readDicomCT
-from Core.IO.dataLoader import listAllFiles, loadAllData
+from Core.IO.dicomIO import readDicomCT
+from Core.IO.dataLoader import listAllFiles, reaData
 from Core.IO.serializedObjectIO import saveSerializedObjects
 
 if __name__ == '__main__':
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     print(type(image1))
 
     ## option 2 general
-    dataList = loadAllData(ctImagePath)
+    dataList = reaData(ctImagePath)
     img2 = dataList[0]
     print(type(img2))
 

@@ -1,16 +1,25 @@
 import functools
+import glob
+import logging
+import os
 
 from PyQt5.QtWidgets import QToolBox, QWidget
 
 from Core.event import Event
-from Extensions.FLASH.flashPanel import FlashPanel
+from GUI.Panels.doseComparisonPanel import DoseComparisonPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
-from GUI.Panels.patientDataPanel import PatientDataPanel
+from GUI.Panels.PatientDataPanel.patientDataPanel import PatientDataPanel
+from GUI.Panels.PlanDesignPanel.planDesignPanel import PlanDesignPanel
+from GUI.Panels.PlanOptimizationPanel.planOptiPanel import PlanOptiPanel
 from GUI.Panels.roiPanel import ROIPanel
-from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
+from GUI.Panels.ScriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.Panels.breathingSignalPanel import BreathingSignalPanel
 from GUI.Panels.drrPanel import DRRPanel
 
+import Extensions as extensionModule
+
+
+logger = logging.getLogger(__name__)
 
 
 class MainToolbar(QToolBox):
@@ -41,13 +50,19 @@ class MainToolbar(QToolBox):
 
         self._viewController = viewController
         self._items = []
+        self._maxWidth = 270
 
         self.setStyleSheet("QToolBox::tab {font: bold; color: #000000; font-size: 16px;}")
 
         # initialize toolbox panels
         patientDataPanel = PatientDataPanel(self._viewController)
         roiPanel = ROIPanel(self._viewController)
+        planDesignPanel = PlanDesignPanel(self._viewController)
+        planDesignPanel.setMaximumWidth(self._maxWidth)
+        planOptiPanel = PlanOptiPanel(self._viewController)
+        planOptiPanel.setMaximumWidth(self._maxWidth)
         dosePanel = DoseComputationPanel(self._viewController)
+        doseComparisonPanel = DoseComparisonPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
         breathingSignalPanel = BreathingSignalPanel(self._viewController)
         xRayProjPanel = DRRPanel(self._viewController)
@@ -56,7 +71,13 @@ class MainToolbar(QToolBox):
         self.showItem(item)
         item = self.ToolbarItem(roiPanel, 'ROI')
         self.showItem(item)
+        item = self.ToolbarItem(planDesignPanel, 'Plan design')
+        self.showItem(item)
+        item = self.ToolbarItem(planOptiPanel, 'Plan optimization')
+        self.showItem(item)
         item = self.ToolbarItem(dosePanel, 'Dose computation')
+        self.showItem(item)
+        item = self.ToolbarItem(doseComparisonPanel, 'Dose comparison')
         self.showItem(item)
         item = self.ToolbarItem(scriptingPanel, 'Scripting')
         self.showItem(item)
@@ -65,11 +86,7 @@ class MainToolbar(QToolBox):
         item = self.ToolbarItem(xRayProjPanel, 'DRR')
         self.showItem(item)
 
-        # Extensions
-        flashPanel = FlashPanel(self._viewController)
-        item = self.ToolbarItem(flashPanel, 'FLASH')
-        self.showItem(item)
-
+        self._addExtenstions()
 
         self._addVisibilityListenerToAllItems()
 
@@ -97,7 +114,39 @@ class MainToolbar(QToolBox):
         self.removeItem(self._items.index(item))
         self._items.remove(item)
 
-
     @property
     def items(self):
         return [item for item in self._items]
+
+    def _addExtenstions(self):
+        extensionFilesFromDir = lambda d:[f for f in glob.glob(os.path.join(d, "*.py")) if "extension" in f or "Extension"]
+        extensionFiles = extensionFilesFromDir(extensionModule.__path__[0])
+        subdirs = glob.glob(os.path.join(extensionModule.__path__[0], '*/'), recursive=False)
+        for subdir in subdirs:
+            extensionFiles.extend(extensionFilesFromDir(subdir))
+
+        for extensionFile in extensionFiles:
+            try:
+                extensionName = os.path.splitext(os.path.basename(extensionFile))[0]
+
+                strToEval = 'from Extensions.'
+                extensionsFound = False
+                for dirElem in extensionFile.split(os.path.sep):
+                    if extensionsFound:
+                        if os.path.splitext(dirElem)[0]==extensionName:
+                            break
+                        else:
+                            strToEval += dirElem + '.'
+                    else:
+                        if dirElem=='Extensions':
+                            extensionsFound = True
+
+
+                strToEval +=  extensionName + ' import Panel\n'
+                strToEval += 'p = Panel(self._viewController)\n'
+                strToEval += 'item = self.ToolbarItem(p, \'' + extensionName + '\')\n'
+                strToEval += 'self.showItem(item)'
+                exec(strToEval)
+            except Exception as e:
+                logger.error(str(e))
+
