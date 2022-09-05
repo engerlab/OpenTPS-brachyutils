@@ -478,8 +478,6 @@ class DataViewer(QWidget):
     def _handleDisplayTypeChange(self, displayType):
         self._imageViewerActions.hide()
 
-        print('in dataViewer, _handleDisplayTypeChange', displayType)
-
         if displayType == self.DisplayTypes.DISPLAY_IMAGE3D:
             self._imageViewerActions.setImageViewer(self._currentViewer)
             self._imageViewerActions.show()

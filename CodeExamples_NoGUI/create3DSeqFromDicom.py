@@ -22,6 +22,7 @@ if __name__ == '__main__':
 
     ## read a serialized dynamic sequence
     dataPath = testDataPath + "4DCTDicomLight"
+    print(dataPath)
     dataList = loadAllData(dataPath)
     print(len(dataList), 'images found in the folder')
     print('Image type =', type(dataList[0]))

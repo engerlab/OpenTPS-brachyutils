@@ -12,6 +12,7 @@ from Core.Data.Images.ctImage import CTImage
 from Core.Data.Images.doseImage import DoseImage
 from Core.Data.Images.image2D import Image2D
 from Core.Data.Images.image3D import Image3D
+from Core.Data.Images.vectorField3D import VectorField3D
 from Core.Data.Plan.rtPlan import RTPlan
 from Core.Data.patientData import PatientData
 from GUI.Panels.PatientDataPanel.patientDataMenu import PatientDataMenu
@@ -247,16 +248,51 @@ class PatientDataTree(QTreeView):
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):
-    def __init__(self, data, txt="", type="", color=QColor(125, 125, 125)):
+    def __init__(self, data, txt="", dataType="", color=QColor(125, 125, 125)):
         QStandardItem.__init__(self)
 
+
+        print('in patientDataSelection.py, PatientDataItem init', type(data), data.getTypeAsString())
         self.data = data
         self.data.nameChangedSignal.connect(self.setName)
 
-        self.setName(self.data.name)
-
         self.setEditable(False)
-        # self.setForeground(color)
+
+        defaultColor = color
+        dynSeqColor = QColor(109, 119, 125)
+        planColor = QColor(56, 130, 176)
+        doseColor = QColor(166, 63, 104)
+        modelColor = QColor(194, 130, 35)
+        vectorFieldColor = QColor(201, 111, 50)
+
+        if isinstance(data, CTImage):
+            self.setName('CT' + ' - ' + self.data.name)
+            self.setForeground(defaultColor)
+        elif isinstance(data, Dynamic3DSequence):
+            self.setName('3D Seq' + ' - ' + self.data.name)
+            self.setForeground(dynSeqColor)
+        elif isinstance(data, Dynamic2DSequence):
+            self.setName('2D Seq' + ' - ' + self.data.name)
+            self.setForeground(dynSeqColor)
+        elif isinstance(data, Image2D):
+            self.setName('2D Img' + ' - ' + self.data.name)
+            self.setForeground(defaultColor)
+        elif isinstance(data, RTPlan):
+            self.setName('Plan' + ' - ' + self.data.name)
+            self.setForeground(planColor)
+        elif isinstance(data, Dynamic3DModel):
+            self.setName('DynMod' + ' - ' + self.data.name)
+            self.setForeground(modelColor)
+        elif isinstance(data, VectorField3D):
+            self.setName('Vec Field' + ' - ' + self.data.name)
+            self.setForeground(vectorFieldColor)
+        elif isinstance(data, DoseImage):
+            self.setName('Dose' + ' - ' + self.data.name)
+            self.setForeground(doseColor)
+        else:
+            self.setName(data.getTypeAsString() + ' - ' + self.data.name)
+            self.setForeground(defaultColor)
+
         # self.setText(txt)
         # self.setWhatsThis(type)
 
