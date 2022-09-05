@@ -180,6 +180,8 @@ class RTPlan(PatientData):
                 layer.reorderSpots(order_spots)
 
     def removeZeroMUSpots(self):
+        # TODO : already implemented in simplify!
+        # TODO: Access of private property is not safe
         for beam in self._beams:
             for layer in beam._layers:
                 index_to_keep = np.flatnonzero(np.array(layer._mu) > 0.)
