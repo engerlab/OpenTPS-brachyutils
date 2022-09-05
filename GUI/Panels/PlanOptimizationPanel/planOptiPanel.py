@@ -47,6 +47,10 @@ class PlanOptiPanel(QWidget):
         self._configButton.clicked.connect(self._openConfig)
         self.layout.addWidget(self._configButton)
 
+        from GUI.programSettingEditor import MCsquareConfigEditor
+        self._mcsquareConfigWidget = MCsquareConfigEditor(self)
+        self.layout.addWidget(self._mcsquareConfigWidget)
+
         self._runButton = QPushButton('Run')
         self._runButton.clicked.connect(self._run)
         self.layout.addWidget(self._runButton)

@@ -62,6 +62,7 @@ class MainToolbar(QToolBox):
         planOptiPanel = PlanOptiPanel(self._viewController)
         planOptiPanel.setMaximumWidth(self._maxWidth)
         dosePanel = DoseComputationPanel(self._viewController)
+        dosePanel.setMaximumWidth(self._maxWidth)
         doseComparisonPanel = DoseComparisonPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
         breathingSignalPanel = BreathingSignalPanel(self._viewController)
