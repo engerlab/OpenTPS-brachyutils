@@ -11,7 +11,7 @@ from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data._patient import Patient
 from Core.Processing.PlanOptimization import optimizationWorkflows
 from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimizationConfig
-from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ROITable
+from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ObjectivesWindow
 
 
 class PlanOptiPanel(QWidget):
@@ -189,12 +189,10 @@ class ObjectivesWidget(QWidget):
     def __init__(self, viewController):
         QWidget.__init__(self)
 
-        self._roiWindow = QMainWindow(self)
+        self._roiWindow = ObjectivesWindow(viewController, self)
         self._roiWindow.setMinimumWidth(400)
         self._roiWindow.setMinimumHeight(400)
         self._roiWindow.hide()
-        self._roitTable = ROITable(viewController, self._roiWindow)
-        self._roiWindow.setCentralWidget(self._roitTable)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -206,7 +204,7 @@ class ObjectivesWidget(QWidget):
         self._objectivesLabels = QLabel(self.DEFAULT_OBJECTIVES_TEXT)
         self.layout.addWidget(self._objectivesLabels)
 
-        self._roitTable.objectivesModifiedEvent.connect(self._showObjectives)
+        self._roiWindow.objectivesModifiedEvent.connect(self._showObjectives)
 
     def closeEvent(self, QCloseEvent):
         self._roitTable.objectivesModifiedEvent.disconnect(self._showObjectives)
@@ -214,13 +212,13 @@ class ObjectivesWidget(QWidget):
 
     @property
     def objectives(self):
-        return self._roitTable.getObjectiveTerms()
+        return self._roiWindow.getObjectiveTerms()
 
     def setPatient(self, p:Patient):
-        self._roitTable.patient = p
+        self._roiWindow.patient = p
 
     def _showObjectives(self):
-        objectives = self._roitTable.getObjectiveTerms()
+        objectives = self._roiWindow.getObjectiveTerms()
 
         if len(objectives)<=0:
             self._objectivesLabels.setText(self.DEFAULT_OBJECTIVES_TEXT)
