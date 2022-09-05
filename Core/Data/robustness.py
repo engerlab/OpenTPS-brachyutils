@@ -2,7 +2,8 @@ import logging
 
 import numpy as np
 
-from Core.Data.dvh import DVH, DVHBand
+from Core.Data.dvh import DVH
+from Core.Data.dvhBand import DVHBand
 
 logger = logging.getLogger(__name__)
 
