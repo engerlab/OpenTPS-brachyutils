@@ -98,7 +98,7 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
     mc2.ctCalibration = ctCalibration
     mc2.beamModel = bdl
     mc2.nbPrimaries = optimizationSettings.beamletPrimaries
-    mc2.independentScoringGrid = True
+    #mc2.independentScoringGrid = True
     # TODO: specify scoring grid
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
@@ -108,7 +108,7 @@ def _optimizePlan(plan:RTPlan, planStructure:PlanDesign):
 
     beamletMatrix = planStructure.beamlets.toSparseMatrix()
 
-    objectiveFunction = DoseFidelity(planStructure.objectives.fidObjList, beamletMatrix, formatArray=32, xSquare=False, scenariosBL=None, returnWorstCase=False)
+    objectiveFunction = DoseFidelity(planStructure.objectives.fidObjList, beamletMatrix, xSquare=False, scenariosBL=None, returnWorstCase=False)
     solver = IMPTPlanOptimizer(optimizationSettings.imptSolver, plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
 
     solver.xSquared = False

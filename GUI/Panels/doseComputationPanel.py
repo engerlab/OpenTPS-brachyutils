@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, QPushButton
 
 from Core.Data.Images._ctImage import CTImage
+from Core.Data.MCsquare import MCsquareConfig
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data._patient import Patient
 from Core.Data._roiContour import ROIContour
@@ -218,7 +219,7 @@ class DoseComputationPanel(QWidget):
         self._updateROIComboBox()
 
     def _run(self):
-        settings = ProgramSettings()
+        settings = MCsquareConfig()
 
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)
