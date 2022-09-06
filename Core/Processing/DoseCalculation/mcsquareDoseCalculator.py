@@ -4,6 +4,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
@@ -198,9 +199,18 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             # os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
         elif (platform.system() == "Windows"):
             if not opti:
-                os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
+                self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir,"MCsquare_win.bat"), cwd=self._mcsquareSimuDir)
             else:
-                os.system("cd " + self._mcsquareSimuDir + " && MCsquare_opti_win.bat")
+                raise Exception('MCsquare opti not available on Windows.')
+            self._subprocess.wait()
+            if self._subprocessKilled:
+                self._subprocessKilled = False
+                raise Exception('MCsquare subprocess killed by caller.')
+            self._subprocess = None
+            # if not opti:
+            #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
+            # else:
+            #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_opti_win.bat")
 
     def _importDose(self) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
