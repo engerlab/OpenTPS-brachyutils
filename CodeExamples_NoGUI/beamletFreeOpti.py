@@ -1,13 +1,13 @@
 import os
 from matplotlib import pyplot as plt
 
-
+from Core.Data.Plan import PlanDesign
 from Core.IO import mcsquareIO
-from Core.IO.dataLoader import reaData
+from Core.IO.dataLoader import readData
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets
-from Core.Data.Plan._objectivesList import ObjectivesList
+from Core.Data.Plan._objectivesList import ObjectivesList, FidObjective
 from Core.Data._dvh import DVH
 # CT path
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
@@ -17,11 +17,13 @@ ctImagePath = "/home/sophie/Documents/Protontherapy/OpenTPS/arc_dev/opentps/data
 output_path = os.path.join(ctImagePath, "OpenTPS")
 
 # Load patient data
-dataList = reaData(ctImagePath, maxDepth=0)
+dataList = readData(ctImagePath, maxDepth=0)
 ct = dataList[7]
 contours = dataList[6]
 print('Available ROIs')
 contours.print_ROINames()
+
+
 
 # Configure MCsquare
 MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
@@ -42,31 +44,66 @@ target = contours.getContourByName('CTV')
 targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
 opticChiasm = contours.getContourByName('Optic Chiasm')
 brainStem = contours.getContourByName('Brain Stem')
+body = contours.getContourByName('BODY')
+
+L = []
+for i in range(len(contours)):
+    L.append(contours[i].name)
+
+#ROI = [body.name]
+ROI = [target.name, opticChiasm.name, brainStem.name, body.name]
+
+# Crop Beamlets on ROI to save computation time ! not mandatory
+ROIforBL = []
+for i in range(len(ROI)):
+    index_value = L.index(ROI[i])
+    # add contour
+    ROIforBL.append(contours[index_value])
+
+
+# Create plan
+beamNames = ["Beam1", "Beam2"]
+gantryAngles = [0.,45.]
+couchAngles = [0., 0.]
+
 
 # Load plan
-plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
+plan_file = os.path.join(output_path, "Plan_brain_0_45_master6.tps")
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
+    planInit = plan.planDesign
     print('Plan loaded')
-    beamletPath = os.path.join(output_path,
-                               "BeamletMatrix_1.2.826.0.1.3680043.8.498.69745754105946645553673858433070834612.1.blm")
-    plan.beamlets = loadBeamlets(beamletPath)
-    print('Beamlets loaded')
 else:
-    print('Path is wrong or plan does not exist')
+    planInit = PlanDesign()
+    planInit.ct = ct
+    planInit.targetMask = targetMask
+    planInit.gantryAngles = gantryAngles
+    planInit.beamNames = beamNames
+    planInit.couchAngles = couchAngles
+    planInit.calibration = calibration
+    planInit.spotSpacing = 5.0
+    planInit.layerSpacing = 5.0
+    planInit.targetMargin = 10.0
+    plan = planInit.buildPlan()  # Spot placement
+    plan.PlanName = "NewPlan"
+    saveRTPlan(plan, plan_file)
+    print(plan._beams)
+    print('New plan is built')
+    quit()
 
 # optimization objectives
-plan.objectives = ObjectivesList()
-plan.objectives.setTarget(target.name, 65.0)
-plan.objectives.fidObjList = []
-plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.)
-plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
-
-plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
+plan.planDesign.objectives = ObjectivesList()
+plan.planDesign.objectives.setTarget(targetMask.name, 65.0)
+plan.planDesign.objectives.setScoringParameters(ct)
+plan.planDesign.objectives.fidObjList = []
+plan.planDesign.objectives.addFidObjective(target, FidObjective.Metrics.DMAX, 65.0, 1.)
+plan.planDesign.objectives.addFidObjective(target, FidObjective.Metrics.DMIN, 65.0, 1.0)
+plan.planDesign.defineTargetMaskAndPrescription()
+plan.plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
 # saveRTPlan(plan, plan_filepath)
 
 # MCsquare beamlet free optimization
-doseImage = mc2.optimizeBeamletFree(ct, plan, [target])
+doseImage = mc2.optimizeBeamletFree(ct, plan, ROIforBL)
 
 # Compute DVH
 target_DVH = DVH(target, doseImage)

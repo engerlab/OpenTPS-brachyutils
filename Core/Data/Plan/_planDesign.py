@@ -22,9 +22,7 @@ class PlanDesign(PatientData):
     def __init__(self):
         super().__init__()
 
-        from Core.Data.Plan import RTPlan
-        self.plan = RTPlan()
-        self.plan.planDesign = self
+
 
         self.spotSpacing = 5.0
         self.layerSpacing = 5.0
@@ -52,10 +50,15 @@ class PlanDesign(PatientData):
 
     def buildPlan(self):
         # Spot placement
+        #self.defineTargetMaskAndPrescription()
+        from Core.Data.Plan import RTPlan
+        plan = RTPlan()
+        # decommenter pour que opti_no_gui tourne car roi = 0.8 cm spacing
         self.defineTargetMaskAndPrescription()
-        self.createBeams()
-        self.initializeBeams()
-        # return plan ?
+        self.createBeams(plan)
+        self.initializeBeams(plan)
+        plan.planDesign = self
+        return plan
 
     def defineTargetMaskAndPrescription(self):
         from Core.Data._roiContour import ROIContour
@@ -87,9 +90,9 @@ class PlanDesign(PatientData):
 
         self.targetMask = targetMask
 
-    def createBeams(self):
-        for beam in self.plan:
-            self.plan.removeBeam(beam)
+    def createBeams(self, plan):
+        for beam in plan:
+            plan.removeBeam(beam)
 
         for i, gantryAngle in enumerate(self.gantryAngles):
             beam = PlanIonBeam()
@@ -99,12 +102,12 @@ class PlanDesign(PatientData):
             beam.id = i
             beam.name = 'B' + str(i)
 
-            self.plan.appendBeam(beam)
+            plan.appendBeam(beam)
 
-    def initializeBeams(self):
+    def initializeBeams(self, plan):
         initializer = PlanInitializer()
         initializer.ctCalibration = self.calibration
         initializer.ct = self.ct
-        initializer.plan = self.plan
+        initializer.plan = plan
         initializer.targetMask = self.targetMask
         initializer.initializePlan(self.spotSpacing, self.layerSpacing, self.targetMargin)

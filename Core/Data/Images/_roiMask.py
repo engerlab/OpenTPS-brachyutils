@@ -148,7 +148,7 @@ class ROIMask(Image3D):
         dilatedROI = ROIMask.fromImage3D(self)
         dilatedROI.imageArray = np.array(dilatedROI.imageArray)
         # Quid des ct non isotropique?
-        dilatedROI.dilate(radius=dilatedROI.spacing[0])
+        dilatedROI.dilate(radius=dilatedROI.spacing)
         imageArray = np.logical_xor(dilatedROI.imageArray, self.imageArray)
 
         dilatedROI.imageArray = imageArray

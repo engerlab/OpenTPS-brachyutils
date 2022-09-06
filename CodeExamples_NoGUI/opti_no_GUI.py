@@ -51,20 +51,18 @@ data = huAir * np.ones((ctSize, ctSize, ctSize))
 data[:, 50:, :] = huWater
 ct.imageArray = data
 
-roi = ROIContour(patient, 'TV', (255, 0, 0))
+roi = ROIMask()
+roi.patient = patient
+roi.name = 'TV'
+roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
-
-roiMask = ROIMask()
-roiMask.patient = patient
-roiMask.name = 'TV'
-roiMask.color = (255, 0, 0)  # red
-
 data[100:120, 100:120, 100:120] = True
-roiMask.imageArray = data
+roi.imageArray = data
+
 ct2 = CTImage.fromImage3D(ct)
 ct2.spacing = np.array([0.8, 0.8, 0.8])
 ct2.imageArray = huAir * np.ones((ctSize - 3, ctSize - 3, ctSize - 3))
-resampler3D.resampleImage3DOnImage3D(roiMask, ct2, inPlace=True, fillValue=0)
+resampler3D.resampleImage3DOnImage3D(roi, ct2, inPlace=True, fillValue=0)
 
 examplePath = "/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/testData"
 
@@ -101,7 +99,7 @@ if os.path.isfile(plan_file):
 else:
     planInit = PlanDesign()
     planInit.ct = ct
-    planInit.targetMask = roiMask
+    planInit.targetMask = roi
     planInit.gantryAngles = gantryAngles
     planInit.beamNames = beamNames
     planInit.couchAngles = couchAngles
@@ -110,22 +108,22 @@ else:
     planInit.layerSpacing = 5.0
     planInit.targetMargin = 5.0
     planInit.objectives = ObjectivesList()
-    planInit.objectives.setTarget(roiMask.name, 20.0)
+    planInit.objectives.setTarget(roi.name, 20.0)
     planInit.objectives.setScoringParameters(ct)
     #scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
     #planInit.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
     planInit.objectives.fidObjList = []
-    planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMAX, 20.0, 1.0)
-    planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMIN, 20.0, 1.0)
-    planInit.buildPlan()  # Spot placement
-    planInit.plan.PlanName = "NewPlan"
-    plan = planInit.plan
-    #beamlets = mc2.computeBeamlets(ct, plan, roi=[roiMask])
-    beamlets = mc2.computeBeamlets(ct, plan)
-    planInit.beamlets = beamlets
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + planInit.plan.seriesInstanceUID + ".blm")
+    planInit.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
+    planInit.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
+    plan = planInit.buildPlan()  # Spot placement
+    plan.PlanName = "NewPlan"
 
-    beamletMatrix = planInit.beamlets.toSparseMatrix()
+    beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
+    #beamlets = mc2.computeBeamlets(ct, plan)
+    plan.planDesign.beamlets = beamlets
+    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
+
+    beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 
 objectiveFunction = DoseFidelity(plan.planDesign.objectives.fidObjList, beamletMatrix)
 print('fidelity init done')
@@ -166,18 +164,19 @@ plan.planDesign.beamlets.beamletWeights = plan.spotMUs
 doseImage = plan.planDesign.beamlets.toDoseImage()'''
 
 # Compute DVH
-target_DVH = DVH(roiMask, doseImage)
+target_DVH = DVH(roi, doseImage)
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')
 print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
 
 # center of mass
-COM_coord = roiMask.centerOfMass
-COM_index = roiMask.getVoxelIndexFromPosition(COM_coord)
+roi = resampleImage3DOnImage3D(roi, ct)
+COM_coord = roi.centerOfMass
+COM_index = roi.getVoxelIndexFromPosition(COM_coord)
 Z_coord = COM_index[2]
 
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
-contourTargetMask = roiMask.getBinaryContourMask()
+contourTargetMask = roi.getBinaryContourMask()
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
 img_dose = resampleImage3DOnImage3D(doseImage, ct)
 img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
