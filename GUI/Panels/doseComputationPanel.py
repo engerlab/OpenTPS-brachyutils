@@ -8,6 +8,7 @@ from Core.Data._roiContour import ROIContour
 from Core.Data._rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Utils.programSettings import ProgramSettings
 
@@ -219,7 +220,7 @@ class DoseComputationPanel(QWidget):
         self._updateROIComboBox()
 
     def _run(self):
-        settings = MCsquareConfig()
+        settings = DoseCalculationConfig()
 
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)
