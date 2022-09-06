@@ -110,9 +110,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._subprocess.kill()
             self._subprocess = None
 
-    def computeDose(self, ct: CTImage, plan: RTPlan) -> DoseImage:
+    def computeDose(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> DoseImage:
         self._ct = ct
         self._plan = plan
+        self._roi = roi
         self._config = self._doseComputationConfig
 
         self._writeFilesToSimuDir()
