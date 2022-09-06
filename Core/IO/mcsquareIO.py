@@ -128,6 +128,7 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
         [LayerID] = struct.unpack('I', fid.read(4))
         [xcoord] = struct.unpack('<f', fid.read(4))
         [ycoord] = struct.unpack('<f', fid.read(4))
+        logger.info("Spot {}: BeamID={} LayerID={} Position=({};{}) NonZeroVoxels={}".format(spot, BeamID, LayerID, xcoord, ycoord, NonZeroVoxels))
 
         if (NonZeroVoxels == 0):
             num_unstacked_col += 1

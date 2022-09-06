@@ -1,4 +1,5 @@
 import logging
+import time
 
 import numpy as np
 
@@ -20,13 +21,17 @@ from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimiza
 logger = logging.getLogger(__name__)
 
 def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
+    start = time.time()
     plan.planDesign = planStructure
-
     planStructure.objectives.setScoringParameters(planStructure.ct)
 
     _defineTargetMaskAndPrescription(planStructure)
     _createBeams(plan, planStructure)
     _initializeBeams(plan, planStructure)
+
+    logger.info("New plan created in {} sec".format(time.time() - start))
+    logger.info("Number of spots: {}".format(plan.numberOfSpots))
+
     _computeBeamlets(plan, planStructure)
     _optimizePlan(plan, planStructure)
 
