@@ -9,15 +9,17 @@ from Core.IO.scannerReader import readScanner
 from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.ImageProcessing import resampler3D
 
-patientList = opentps.patientList
 
-ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
-bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
+patientList = opentps.patientList
 
 patient = Patient()
 patient.name = 'Patient'
 
 patientList.append(patient)
+
+
+ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
+bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 ctSize = 150
 
