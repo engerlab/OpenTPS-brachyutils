@@ -5,7 +5,6 @@
 import Core
 import GUI
 
-import main
 from Core import API
 from Core.Data import PatientList
 
@@ -13,6 +12,8 @@ patientList = PatientList()
 API.patientList = patientList
 
 def run():
+    # import main in run so that GUI classes are not imported if user does not launch it
+    import main
     main.main()
 
 
