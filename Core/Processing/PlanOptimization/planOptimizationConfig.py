@@ -6,7 +6,7 @@ from Core.Utils.applicationConfig import AbstractApplicationConfig
 logger = logging.getLogger(__name__)
 
 
-class PlanOptimizationSettings(AbstractApplicationConfig):
+class PlanOptimizationConfig(AbstractApplicationConfig):
     def __init__(self):
         super().__init__()
 

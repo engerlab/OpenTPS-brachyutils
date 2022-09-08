@@ -1,13 +1,12 @@
 import configparser
-import os
+
 from os import mkdir, makedirs
 from pathlib import Path
 
 from pip._internal.utils import appdirs
 
 import config as configModule
-import Core.Processing.DoseCalculation.MCsquare.Scanners as ScannerModule
-import Core.Processing.DoseCalculation.MCsquare.BDL as bdlModule
+
 
 class Singleton(type):
     _instances = {}
@@ -81,46 +80,6 @@ class ProgramSettings(metaclass=Singleton):
         folder = self._config["dir"]["exampleFolder"]
         self._createFolderIfNotExists(folder)
         return folder
-
-    @property
-    def scannerFolder(self):
-        try:
-            output = self._config["machine_param"]["scannerFolder"]
-            if not (output is None):
-                return output
-        except:
-            pass
-
-        self._config.setdefault("machine_param", {})
-        self._config["machine_param"].setdefault("scannerFolder", ScannerModule.__path__[0] + os.sep  + 'UCL_Toshiba')
-        self.writeConfig()
-        return self._config["machine_param"]["scannerFolder"]
-
-    @scannerFolder.setter
-    def scannerFolder(self, path):
-        self._config["machine_param"]["scannerFolder"] = path
-
-        self.writeConfig()
-
-    @property
-    def bdlFile(self):
-        try:
-            output = self._config["machine_param"]["bdlFile"]
-            if not (output is None):
-                return output
-        except:
-            pass
-
-        self._config.setdefault("machine_param", {})
-        self._config["machine_param"].setdefault("bdlFile", bdlModule.__path__[0] + os.sep  + 'BDL_default_DN_RangeShifter.txt')
-        self.writeConfig()
-        return self._config["machine_param"]["bdlFile"]
-
-    @bdlFile.setter
-    def bdlFile(self, path):
-        self._config["machine_param"]["bdlFile"] = path
-
-        self.writeConfig()
 
     def writeConfig(self):
         with open(self._configFile, 'w') as file:

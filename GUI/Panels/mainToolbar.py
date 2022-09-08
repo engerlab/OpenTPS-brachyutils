@@ -62,10 +62,11 @@ class MainToolbar(QToolBox):
         planOptiPanel = PlanOptiPanel(self._viewController)
         planOptiPanel.setMaximumWidth(self._maxWidth)
         dosePanel = DoseComputationPanel(self._viewController)
+        dosePanel.setMaximumWidth(self._maxWidth)
         doseComparisonPanel = DoseComparisonPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
-        breathingSignalPanel = BreathingSignalPanel(self._viewController)
-        xRayProjPanel = DRRPanel(self._viewController)
+        #breathingSignalPanel = BreathingSignalPanel(self._viewController)
+        #xRayProjPanel = DRRPanel(self._viewController)
 
         item = self.ToolbarItem(patientDataPanel, 'Patient data')
         self.showItem(item)
@@ -81,10 +82,10 @@ class MainToolbar(QToolBox):
         self.showItem(item)
         item = self.ToolbarItem(scriptingPanel, 'Scripting')
         self.showItem(item)
-        item = self.ToolbarItem(breathingSignalPanel, 'Breathing signal generation')
-        self.showItem(item)
-        item = self.ToolbarItem(xRayProjPanel, 'DRR')
-        self.showItem(item)
+        #item = self.ToolbarItem(breathingSignalPanel, 'Breathing signal generation')
+        #self.showItem(item)
+        #item = self.ToolbarItem(xRayProjPanel, 'DRR')
+        #self.showItem(item)
 
         self._addExtenstions()
 

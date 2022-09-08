@@ -1,11 +1,75 @@
-
+import copy
+import os
+import pickle
 from typing import Sequence, Optional
 
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QMainWindow, QAction, QFileDialog, QToolBar
 
+from Core.Data.Images import ROIMask
 from Core.Data.Plan._objectivesList import FidObjective
 from Core.Data._patient import Patient
 from Core.event import Event
+
+import GUI.res.icons as IconModule
+
+
+class ObjectivesWindow(QMainWindow):
+    def __init__(self, viewController, parent=None):
+
+        super().__init__(parent)
+
+        self.objectivesModifiedEvent = Event()
+
+        self._viewController = viewController
+
+        self._roitTable = ROITable(self._viewController, self)
+        self._roitTable.objectivesModifiedEvent.connect(self.objectivesModifiedEvent.emit)
+        self.setCentralWidget(self._roitTable)
+
+        self._menuBar = QToolBar(self)
+        self.addToolBar(self._menuBar)
+
+        iconPath = IconModule.__path__[0] + os.path.sep
+
+        self._openAction = QAction(QIcon(iconPath + 'folder-open.png'), "&Open template file", self)
+        self._openAction.triggered.connect(self._handleOpen)
+        self._menuBar.addAction(self._openAction)
+
+        self._saveAction = QAction(QIcon(iconPath + 'disk.png'), "&Save template", self)
+        self._saveAction.triggered.connect(self._handleSave)
+        self._menuBar.addAction(self._saveAction)
+
+    @property
+    def patient(self):
+        return self._roitTable.patient
+
+    @patient.setter
+    def patient(self, p:Patient):
+        self._roitTable.patient = p
+
+    def getObjectiveTerms(self) -> Sequence[FidObjective]:
+        return self._roitTable.getObjectiveTerms()
+
+    def _handleOpen(self):
+        fname, _ = QFileDialog.getOpenFileName(self, 'Open file','c:\\', "Objective template")
+        template = self._loadTemplate(fname)
+        self._roitTable.applyTemplate(template)
+
+    def _handleSave(self):
+        fname, _ = QFileDialog.getSaveFileName(self, 'Save file','c:\\', "Objective template")
+        self._saveTemplate(self._roitTable.getTemplate(), fname)
+
+    def _saveTemplate(self, objectives:Sequence[FidObjective], filePath:str):
+        with open(filePath, 'wb') as f:
+            pickle.dump(objectives, f)
+
+    def _loadTemplate(self, filePath:str) -> Sequence[FidObjective]:
+        with open(filePath, 'rb') as f:
+            res = pickle.load(f)
+
+        return res
+
 
 class ROITable(QTableWidget):
     DMIN_THRESH = 0.
@@ -89,6 +153,40 @@ class ROITable(QTableWidget):
             i += 1
 
         self.setHorizontalHeaderLabels(['ROI', 'W', 'Dmin', 'W', 'Dmax'])
+
+    def applyTemplate(self, template:Sequence[FidObjective]):
+        roiNames = [roi.name for roi in self._rois]
+
+        for obj in template:
+            roiInd = roiNames.index(obj.roi.name)
+
+            if obj.roi.name in roiNames:
+                if obj.metric == FidObjective.Metrics.DMIN:
+                    self.item(roiInd, 1).setText(str(obj.weight))
+                    self.item(roiInd, 2).setText(str(obj.limitValue))
+                elif obj.metric == FidObjective.Metrics.DMAX:
+                    self.item(roiInd, 3).setText(str(obj.weight))
+                    self.item(roiInd, 4).setText(str(obj.limitValue))
+                else:
+                    pass
+                    #TODO: metrics not supported
+            else:
+                self.item(roiInd, 1).setText(str(1))
+                self.item(roiInd, 2).setText(str(self.DMIN_THRESH))
+                self.item(roiInd, 3).setText(str(1))
+                self.item(roiInd, 4).setText(str(self.DMAX_THRESH))
+
+    def getTemplate(self) -> Sequence[FidObjective]:
+        objctivesToSave = []
+        for objective in self.getObjectiveTerms():
+            roi = objective.roi
+            objective.roi = None
+            objectiveCopy = copy.deepcopy(objective)
+            objectiveCopy.roi = ROIMask(name=roi.name)
+            objective.roi = roi
+            objctivesToSave.append(objectiveCopy)
+
+        return objctivesToSave
 
     def getObjectiveTerms(self) -> Sequence[FidObjective]:
         terms = []

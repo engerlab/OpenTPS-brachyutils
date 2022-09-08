@@ -1,6 +1,7 @@
 import numpy as np
 from vtkmodules.vtkImagingGeneral import vtkSimpleImageFilterExample
 
+from Core import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 
@@ -11,6 +12,8 @@ class Dyn3DSeqForViewer(GenericImageForViewer):
 
         if hasattr(self, '_image3DForViewerList'):
             return
+
+        self.dataChangedSignal = Event() # Not implemented in data class but required by GUI
 
         dyn3DSeq = self.data
         self._selectedPosition = np.array(dyn3DSeq.dyn3DImageList[0].origin) + np.array(dyn3DSeq.dyn3DImageList[0].gridSize) * np.array(dyn3DSeq.dyn3DImageList[0].spacing) / 2.0
