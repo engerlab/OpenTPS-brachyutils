@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QFil
 from pyqtgraph import PlotWidget, PlotCurveItem, mkPen
 from pyqtgraph.exporters import ImageExporter
 
+import GUI.res.icons as IconModule
+
 
 class ProfileViewer(QWidget):
     def __init__(self, viewController, nbProfiles=10):
@@ -106,7 +108,7 @@ class _ProfileToolbar(QWidget):
 
         self.setLayout(self._layout)
 
-        iconPath = 'GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+        iconPath = IconModule.__path__[0] + os.path.sep
 
         icon = QIcon(iconPath+"pencil--plus.png")
         self._buttonNewProfile = QPushButton()
