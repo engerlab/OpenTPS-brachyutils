@@ -172,6 +172,9 @@ class RTPlan(PatientData):
         self._fusionDuplicates()
         for beam in self._beams:
             beam.simplify(threshold=threshold)
+        
+        # Remove empty beams
+        self._beams = [beam for beam in self._beams if len(beam._layers) > 0]
 
     def reorderPlan(self, order_layers="decreasing", order_spots="scanAlgo"):
         for beam in self._beams:
@@ -179,26 +182,32 @@ class RTPlan(PatientData):
             for layer in beam._layers:
                 layer.reorderSpots(order_spots)
 
-    def removeZeroMUSpots(self):
-        # TODO : already implemented in simplify!
-        # TODO: Access of private property is not safe
-        for beam in self._beams:
-            for layer in beam._layers:
-                index_to_keep = np.flatnonzero(np.array(layer._mu) > 0.)
-                layer._mu = np.array([layer._mu[i] for i in range(len(layer._mu)) if i in index_to_keep])
-                layer._x = np.array([layer._x[i] for i in range(len(layer._x)) if i in index_to_keep])
-                layer._y = np.array([layer._y[i] for i in range(len(layer._y)) if i in index_to_keep])
-
-        # Remove empty layers
-        for beam in self._beams:
-            beam._layers = [layer for layer in beam._layers if len(layer._mu) > 0]
-
     def copy(self):
         return copy.deepcopy(self)  # recursive copy
 
     def _fusionDuplicates(self):
-        # TODO
-        raise NotImplementedError()
+        if len(self) > 1:
+            # if same gantry angle and couch angle
+            unique_angles = [(self._beams[0].gantryAngle, self._beams[0].couchAngle)]
+            ind = 1
+            while ind < len(self._beams):
+                current_angle = (self._beams[ind].gantryAngle, self._beams[ind].couchAngle)
+                if current_angle in unique_angles:
+                    #fusion
+                    match_ind = unique_angles.index(current_angle) # find index in unique angle
+                    if self._beams[ind].isocenterPosition != self._beams[match_ind].isocenterPosition:
+                        print(f"Warning: Isocenter positions different in beams with same gantry and couch angles. Choosing the Isocenter position {self._beams[match_ind].isocenterPosition}")
+                    if self._beams[ind].mcsquareIsocenter != self._beams[match_ind].mcsquareIsocenter:
+                        print(f"Warning: MCsquare Isocenter positions different in beams with same gantry and couch angles. Choosing the Isocenter position {self._beams[match_ind].mcsquareIsocenter}")
+                    if self._beams[ind].rangeShifter != self._beams[match_ind].rangeShifter:
+                        print(f"Warning: Range shifter different in beams with same gantry and couch angles. Choosing Range shifter {self._beams[match_ind].rangeShifter}")
+                                
+                    self._beams[match_ind]._layers.extend(self._beams[ind]._layers) # merge layers
+                    self.removeBeam(self._beams[ind])
+                else:
+                    unique_angles.append(current_angle)
+                    ind += 1
+
 
     def appendSpot(self, beam: PlanIonBeam, layer: PlanIonLayer, spot_index: int):
         """
@@ -307,13 +316,86 @@ class PlanIonLayerTestCase(unittest.TestCase):
         self.assertEqual(layer0.nominalEnergy, 120.)
         self.assertEqual(layer1.nominalEnergy, 100.)
 
-        np.testing.assert_array_equal(layer1.spotX, [3, 0, 1, 2])
-        np.testing.assert_array_equal(layer1.spotY, [0, 1, 2, 2])
-        np.testing.assert_array_equal(layer1.spotMUs, np.array([0.1, 0.2, 0.3, 0.5]))
+        np.testing.assert_array_equal(layer1.spotX, np.array([3, 0, 1, 2]))
+        np.testing.assert_array_equal(layer1.spotY, np.array([0, 1, 2, 2]))
+        np.testing.assert_array_almost_equal(layer1.spotMUs, np.array([0.1, 0.2, 0.3, 0.5]))
 
-        np.testing.assert_array_equal(layer0.spotX, [3, 0, 2, 1])
-        np.testing.assert_array_equal(layer0.spotY, [0, 3, 3, 5])
-        np.testing.assert_array_equal(layer0.spotMUs, np.array([0.1, 0.2, 0.5, 0.3]))
+        np.testing.assert_array_equal(layer0.spotX, np.array([3, 0, 2, 1]))
+        np.testing.assert_array_equal(layer0.spotY, np.array([0, 3, 3, 5]))
+        np.testing.assert_array_almost_equal(layer0.spotMUs, np.array([0.1, 0.2, 0.5, 0.3]))
+
+    def testFusionDuplicates(self):
+        plan = RTPlan()
+        beam1 = PlanIonBeam()
+        beam1.gantryAngle = 0
+        beam1.couchAngle = 0
+        layer = PlanIonLayer(nominalEnergy=100.)
+        x = [0, 2, 1, 3]
+        y = [1, 2, 2, 0]
+        mu = [0.2, 0.5, 0.3, 0.1]
+        layer.appendSpot(x, y, mu)
+        beam1.appendLayer(layer)
+        plan.appendBeam(beam1)
+
+        beam2 = PlanIonBeam()
+        beam2.gantryAngle = 90
+        beam2.couchAngle = 45
+        plan.appendBeam(beam2)
+        beam3 = PlanIonBeam()
+        beam3.gantryAngle = 0
+        beam3.couchAngle = 0
+        layer3 = PlanIonLayer(nominalEnergy=100.)
+        x = [1, 3, 2, 4]
+        y = [2, 3, 3, 1]
+        mu = [0.3, 0.6, 0.4, 0.2]
+        layer3.appendSpot(x, y, mu)
+        beam3.appendLayer(layer3)
+        plan.appendBeam(beam3)
+
+        plan._fusionDuplicates()
+        self.assertEqual(len(plan._beams),2)
+        self.assertEqual(len(plan._beams[0]._layers),2)
+        np.testing.assert_array_equal(plan._beams[0]._layers[0].spotX, np.array([0, 2, 1, 3]))
+        np.testing.assert_array_equal(plan._beams[0]._layers[1].spotX, np.array([1, 3, 2, 4]))
+        np.testing.assert_array_equal(plan._beams[0]._layers[0].spotY, np.array([1, 2, 2, 0]))
+        np.testing.assert_array_equal(plan._beams[0]._layers[1].spotY, np.array([2, 3, 3, 1]))
+        np.testing.assert_array_almost_equal(plan._beams[0]._layers[0].spotMUs, np.array([0.2, 0.5, 0.3, 0.1]))
+        np.testing.assert_array_almost_equal(plan._beams[0]._layers[1].spotMUs, np.array([0.3, 0.6, 0.4, 0.2]))
+
+    def testSimplify(self):
+        plan = RTPlan()
+        beam1 = PlanIonBeam()
+        beam1.gantryAngle = 0
+        beam1.couchAngle = 0
+        layer = PlanIonLayer(nominalEnergy=100.)
+        x = [0, 2, 1, 3]
+        y = [1, 2, 2, 0]
+        mu = [0.2, 0.5, 0.3, 0.1]
+        layer.appendSpot(x, y, mu)
+        beam1.appendLayer(layer)
+        plan.appendBeam(beam1)
+
+        beam2 = PlanIonBeam()
+        beam2.gantryAngle = 90
+        beam2.couchAngle = 45
+        plan.appendBeam(beam2) #empty beam
+        beam3 = PlanIonBeam()
+        beam3.gantryAngle = 0
+        beam3.couchAngle = 0
+        layer3 = PlanIonLayer(nominalEnergy=99.97)
+        x = [1, 3, 2, 3, 10]
+        y = [2, 3, 3, 0, 10]
+        mu = [0.3, 0.6, 0.4, 0.2, 0.]
+        layer3.appendSpot(x, y, mu)
+        beam3.appendLayer(layer3)
+        plan.appendBeam(beam3)
+
+        plan.simplify()
+        self.assertEqual(len(plan._beams),1)
+        self.assertEqual(len(plan._beams[0]._layers),1)
+        np.testing.assert_array_equal(plan._beams[0]._layers[0].spotX, np.array([0, 2, 1, 3, 3, 2]))
+        np.testing.assert_array_equal(plan._beams[0]._layers[0].spotY, np.array([1, 2, 2, 0, 3, 3]))
+        np.testing.assert_array_almost_equal(plan._beams[0]._layers[0].spotMUs, np.array([0.2, 0.5, 0.6, 0.3, 0.6, 0.4]))
 
 
 if __name__ == '__main__':
