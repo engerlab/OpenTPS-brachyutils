@@ -133,7 +133,7 @@ class PlanIonLayer:
         if not isinstance(x, Iterable): x = [x]
         if not isinstance(y, Iterable): y = [y]
         if not isinstance(mu, Iterable): mu = [mu]
-        if timing != None and not isinstance(timing, Iterable): timing = [timing]
+        if timing is not None and not isinstance(timing, Iterable): timing = [timing]
 
         for i, xElem in enumerate(x):
             t = timing if timing is None else timing[i]

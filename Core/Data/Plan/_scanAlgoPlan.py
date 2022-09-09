@@ -1,8 +1,8 @@
 import json
-from Core.Data.Plan import _rtPlan
+from Core.Data.Plan._rtPlan import RTPlan
 
-class JSONPlan:
-    def __init__(self, plan: rtPlan, Gantry = "PPlus", beamID = 0, sort_spots="true"):
+class ScanAlgoPlan:
+    def __init__(self, plan: RTPlan, Gantry = "PPlus", beamID = 0, sort_spots="true"):
         beam = plan._beams[beamID]
         if Gantry == "PPlus":
             self.bsp = "GTR1-PBS"

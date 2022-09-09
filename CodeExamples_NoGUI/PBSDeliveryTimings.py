@@ -1,7 +1,7 @@
 import sys
 sys.path.append('..')
 
-from Core.Data.Plan import _rtPlan
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data.Plan._beamDeliveryTimings import BDT
 from Core.IO.dicomIO import readDicomPlan
 
@@ -15,3 +15,6 @@ plan = readDicomPlan(plan_path)
 congig_path = '../config/config_scanAlgo.txt'
 bdt = BDT(plan, congig_path)
 plan_with_timings = bdt.getPBSTimings(sort_spots="true")
+
+# print plan
+print(plan_with_timings._beams[0]._layers[0].__dict__)
