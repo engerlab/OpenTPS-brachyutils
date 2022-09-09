@@ -4,30 +4,6 @@ from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data.Plan._scanAlgoPlan import ScanAlgoPlan
 
 
-'''
-Class to 1) convert openTPS plan into json plan (input for scanAlgo)
-         2) Compute Beam Delivery Time (BDT) based on scanAlgo output
-
-Usage:
-
-from Process.ScanAlgoPlan import *
-
-# load OpenTPS plan
-file_path = "Plan_OpenTPS.tps"
-plan = RTPlan()
-plan.load(file_path)
-
-#### Conventional PT usage.Gantry
-# Add PBS timings into a plan
-BDT = BDT(plan, config_file)
-plan_with_timings = BDT.getPBSTimings(sort_spots="true")
-
-#### Config file: text file config.txt with 2 lines
-Gantry, <TYPE OF GANTRY>
-Gateway, <URL>
-'''
-
-
 class BDT:
     def __init__(self, plan: RTPlan, config_file: str):
         self.plan = plan

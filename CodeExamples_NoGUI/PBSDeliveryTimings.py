@@ -5,6 +5,11 @@ from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data.Plan._beamDeliveryTimings import BDT
 from Core.IO.dicomIO import readDicomPlan
 
+"""
+#### Config file: text file config.txt with 2 lines
+Gantry, <TYPE OF GANTRY>
+Gateway, <URL>
+"""
 
 # load OpenTPS plan
 plan_path = '/data/vhamaide/liver/patient_0/MidP_CT/Raystation/plan_4D_robust.dcm'
