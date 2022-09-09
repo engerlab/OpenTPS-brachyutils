@@ -57,6 +57,9 @@ class PiecewiseHU2Density:
         HU_ref = np.arange(self.__hu[0], self.__hu[-1], 1)
         density_ref = self.convertHU2MassDensity(HU_ref)
 
+        density_ref, ind = np.unique(density_ref, return_index=True)
+        HU_ref = HU_ref[ind]
+
         while not np.all(np.diff(density_ref) >= 0):
             d_diff = np.concatenate((np.array([1.0]), np.diff(density_ref)))
 
