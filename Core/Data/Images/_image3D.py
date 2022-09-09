@@ -182,3 +182,9 @@ class Image3D(PatientData):
 
     def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
         return self.origin + np.array(index).astype(dtype=float)*self.spacing
+
+    def min(self):
+        return self._imageArray.min()
+
+    def max(self):
+        return self._imageArray.max()

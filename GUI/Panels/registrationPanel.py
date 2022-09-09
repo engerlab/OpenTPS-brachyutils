@@ -4,6 +4,7 @@ from Core.Data.Images._ctImage import CTImage
 from Core.Data._patient import Patient
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
 from Core.Processing.Registration.registrationDemons import RegistrationDemons
+from Core.Processing.Registration.registrationRigid import RegistrationRigid
 
 class RegistrationPanel(QWidget):
     def __init__(self, viewController):
@@ -31,7 +32,7 @@ class RegistrationPanel(QWidget):
         self.layout.addWidget(self._movingComboBox)
 
         self._regLabel = QLabel('Registration method:')
-        self._methods = ['Morphons', 'Demons']
+        self._methods = ['Morphons', 'Demons', 'Rigid']
         self.layout.addWidget(self._regLabel)
         self._regComboBox = QComboBox(self)
         self._regComboBox.currentIndexChanged.connect(self._handleRegIndex)
@@ -140,6 +141,8 @@ class RegistrationPanel(QWidget):
             reg = RegistrationMorphons(self._selectedFixed, self._selectedMoving)
         elif self._selectedReg == 'Demons':
             reg = RegistrationDemons(self._selectedFixed, self._selectedMoving)
+        elif self._selectedReg == 'Rigid':
+            reg = RegistrationRigid(self._selectedFixed, self._selectedMoving)
         else:
             print('Not yet implemented')
         reg.compute()

@@ -1,7 +1,7 @@
 import numpy as np
 import logging
 
-from Core.Data.Images._image3D import Image3D
+from Core.Data._transform3D import Transform3D
 from Core.Processing.Registration.registration import Registration
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class RegistrationQuick(Registration):
 
             Returns
             -------
-            list
+            Transform3D
                 Translation from moving to fixed images.
             """
 
@@ -78,4 +78,8 @@ class RegistrationQuick(Registration):
 
         self.translateOrigin(self.deformed, translation)
 
-        return translation
+        tform = np.zeros((4, 4))
+        tform[0:-1, -1] = translation
+        tform[0:-1, 0:-1] = np.eye(3)
+
+        return Transform3D(tform=tform)

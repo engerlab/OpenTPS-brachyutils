@@ -160,14 +160,13 @@ class Deformation3D(Image3D):
 
             Parameters
             ----------
-            image : numpy array
+            image :
                 image to be deformed.
             fillValue : scalar
                 interpolation value for locations outside the input voxel grid.
 
             Returns
             -------
-            numpy array
                 Deformed image.
             """
     

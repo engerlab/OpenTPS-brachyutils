@@ -17,7 +17,7 @@ class RegistrationDemons(Registration):
 
     def compute(self):
 
-        """Perform registration between fixed and moving images.
+        """Perform Demon registration between fixed and moving images.
 
             Returns
             -------
