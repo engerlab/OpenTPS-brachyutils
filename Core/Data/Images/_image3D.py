@@ -58,6 +58,9 @@ class Image3D(PatientData):
         self._imageArray = array
         self.dataChangedSignal.emit()
 
+    def update(self):
+        self.dataChangedSignal.emit()
+
     @property
     def origin(self) -> np.ndarray:
         return self._origin
