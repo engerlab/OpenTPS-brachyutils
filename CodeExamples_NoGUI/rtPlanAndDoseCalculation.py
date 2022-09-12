@@ -4,7 +4,7 @@ sys.path.append('..')
 
 from Core.Data._dvh import DVH
 import os
-from Core.IO.dataLoader import listAllFiles, reaData
+from Core.IO.dataLoader import listAllFiles, readData
 from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
@@ -56,7 +56,7 @@ calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Den
 doseCalculator.ctCalibration = calibration
 
 ctImagePath = '/data/vhamaide/liver/patient_0/MidP_CT/'
-dataList = reaData(ctImagePath, maxDepth=0)
+dataList = readData(ctImagePath, maxDepth=0)
 ct = dataList[1]
 struct = dataList[0]
 

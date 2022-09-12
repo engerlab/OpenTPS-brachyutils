@@ -7,30 +7,41 @@ This file contains an example on how to:
 
 import os
 import sys
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
 from pathlib import Path
 from pydicom.uid import generate_uid
 import time
 import numpy as np
+import logging
+from logConfigParser import parseArgs
 
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.IO.serializedObjectIO import loadDataStructure
 
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+os.chdir(currentWorkingDir)
+
+logger = logging.getLogger(__name__)
+
 if __name__ == '__main__':
 
+    options = parseArgs(sys.argv[1:])
+
     # Get the current working directory, its parent, then add the testData folder at the end of it
-    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+    testDataPath = os.path.join(currentWorkingDir, 'testData/')
 
     ## read a serialized dynamic sequence
     dataPath = testDataPath + "lightDynSeq.p"
     dynSeq = loadDataStructure(dataPath)[0]
+    dynSeq.dyn3DImageList = dynSeq.dyn3DImageList[::2]
 
     print(type(dynSeq))
     print(len(dynSeq.dyn3DImageList), 'images in the dynamic sequence')
+
+    # reduce resolution to speed up calculations
+    dynSeq.resample(np.array([5,5,5]), None, None)
 
     ## create Dynamic3DModel
     model3D = Dynamic3DModel()
@@ -48,6 +59,6 @@ if __name__ == '__main__':
 
     print('midP computed in ', np.round(stopTime-startTime))
 
-    # ## save it as a serialized object
-    # savingPath = testDataPath + 'Test_dynMod'
-    # saveSerializedObjects(model3D, savingPath)
+    ## save it as a serialized object
+    savingPath = testDataPath + 'Test_dynMod'
+    saveSerializedObjects(model3D, savingPath)
