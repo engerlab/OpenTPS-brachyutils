@@ -49,6 +49,9 @@ class Dynamic3DSequence(PatientData):
 
         return s
 
+    def __len__(self):
+        return len(self.dyn3DImageList)
+
 
     def print_dynSeries_info(self, prefix=""):
         print(prefix + "Dyn series: " + self.name)

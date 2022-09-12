@@ -21,18 +21,6 @@ class DoseImage(Image3D):
     @classmethod
     def fromImage3D(cls, image: Image3D):
         return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
-    
-    
-    @classmethod
-    def fromImage(cls, image:Image3D):
-        doseImage = cls()
-        doseImage.imageArray = np.array(image.imageArray)
-        doseImage.origin = np.array(image.origin)
-        doseImage.spacing = np.array(image.spacing)
-        doseImage.angles = np.array(image.angles)
-        doseImage.seriesInstanceUID = image.seriesInstanceUID
-    
-        return doseImage
 
 
     def copy(self):
@@ -46,3 +34,7 @@ class DoseImage(Image3D):
         dumpableDose = DoseImage(imageArray=self.imageArray, name=self.name, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, frameOfReferenceUID=self.frameOfReferenceUID, sopInstanceUID=self.sopInstanceUID, planSOPInstanceUID=self.planSOPInstanceUID)
         # dumpableDose.patient = self.patient
         return dumpableDose
+
+    @classmethod
+    def createEmptyDoseWithSameMetaData(cls, image:Image3D):
+        return cls(imageArray=np.zeros_like(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
