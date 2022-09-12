@@ -119,6 +119,9 @@ class RegistrationMorphons(Registration):
                                self.fixed.spacing[1] * (self.fixed.gridSize[0] - 1) / (newGridSize[0] - 1),
                                self.fixed.spacing[2] * (self.fixed.gridSize[2] - 1) / (newGridSize[2] - 1)])
 
+            if(newVoxelSpacing[0]<self.fixed.spacing[0] and newVoxelSpacing[1]<self.fixed.spacing[1] and newVoxelSpacing[2]<self.fixed.spacing[2]):
+                break
+
             logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
