@@ -155,8 +155,7 @@ def readDicomDose(dcmFile):
     # generate dose image object
     image = DoseImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
                       spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID,
-                      frameOfReferenceUID=dcm.FrameOfReferenceUID, sopInstanceUID=dcm.SOPInstanceUID,
-                      planSOPInstanceUID=planSOPInstanceUID)
+                      sopInstanceUID=dcm.SOPInstanceUID)
     image.patient = patient
 
     return image
@@ -630,16 +629,19 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.SeriesNumber = 1
     dcm_file.InstanceNumber = 1
     dcm_file.PatientOrientation = ''
-    #dcm_file.FrameOfReferenceUID = self.FrameOfReferenceUID
+    if dose.referenceCT is None:
+        dcm_file.FrameOfReferenceUID = pydicom.uid.generate_uid()
+    else:
+        dcm_file.FrameOfReferenceUID = dose.referenceCT.frameOfReferenceUID
     dcm_file.DoseUnits = 'GY'
     dcm_file.DoseType = 'PHYSICAL'  # or 'EFFECTIVE' for RBE dose (but RayStation exports physical dose even if 1.1 factor is already taken into account)
     dcm_file.DoseSummationType = 'PLAN'
     ReferencedPlan = pydicom.dataset.Dataset()
     ReferencedPlan.ReferencedSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.8"  # ion plan
-    # if (plan_uid == []):
-    #     ReferencedPlan.ReferencedSOPInstanceUID = self.Plan_SOPInstanceUID
-    # else:
-    #     ReferencedPlan.ReferencedSOPInstanceUID = plan_uid
+    if dose.referencePlan is None:
+        ReferencedPlan.ReferencedSOPInstanceUID = pydicom.uid.generate_uid()
+    else:
+        ReferencedPlan.ReferencedSOPInstanceUID = dose.referencePlan.SOPInstanceUID
     dcm_file.ReferencedRTPlanSequence = pydicom.sequence.Sequence([ReferencedPlan])
     # dcm_file.ReferringPhysicianName
     # dcm_file.OperatorName
@@ -651,9 +653,9 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.Rows = dcm_file.Height
     dcm_file.NumberOfFrames = dose.gridSize[2]
     dcm_file.SliceThickness = dose.spacing[2]
-    dcm_file.PixelSpacing = dose.spacing[0:2]
+    dcm_file.PixelSpacing = list(dose.spacing[0:2])
     dcm_file.ColorType = 'grayscale'
-    dcm_file.ImagePositionPatient = dose.origin
+    dcm_file.ImagePositionPatient = list(dose.origin)
     dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
                                         0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
     dcm_file.SamplesPerPixel = 1
