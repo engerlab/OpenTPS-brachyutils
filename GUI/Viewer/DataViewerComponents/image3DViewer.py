@@ -153,15 +153,15 @@ class Image3DViewer(QWidget):
         secondaryImage = self._secondaryImageLayer.image
         self._secondaryImageLayer.image = None
 
+        if not (self._primaryImageLayer.image is None):
+            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
+            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
+
         self._primaryImageLayer.image = image
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)
 
         self._handlePosition(self._primaryImageLayer.image.selectedPosition)
-
-        if not (self._primaryImageLayer.image is None):
-            self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
-            self._primaryImageLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
 
         self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
         self._primaryImageLayer.image.nameChangedSignal.connect(self._setPrimaryName)
@@ -230,6 +230,9 @@ class Image3DViewer(QWidget):
         if imageAlreadyDisplayed:
             return
 
+        if not (self._secondaryImageLayer.image is None):
+            self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
+
         self._secondaryImageLayer.image = Image3DForViewer(image)
 
         if image is None:
@@ -240,9 +243,6 @@ class Image3DViewer(QWidget):
         self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
         self._textLayer.setSecondaryTextLine(2, self.secondaryImage.name)
-
-        if not (self._secondaryImageLayer.image is None):
-            self._secondaryImageLayer.image.nameChangedSignal.disconnect(self._setSecondaryName)
 
         self._secondaryImageLayer.image.nameChangedSignal.connect(self._setSecondaryName)
 

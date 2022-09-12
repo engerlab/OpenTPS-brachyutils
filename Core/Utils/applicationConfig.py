@@ -4,7 +4,7 @@ import logging
 import os
 from typing import Any
 
-from programSettings import Singleton, ProgramSettings
+from Core.Utils.programSettings import Singleton, ProgramSettings
 from pathlib import Path
 
 logger = logging.getLogger(__name__)

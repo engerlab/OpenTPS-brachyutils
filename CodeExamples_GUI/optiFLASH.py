@@ -21,7 +21,7 @@ patientList.append(patient)
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
-ctSize = 150
+ctSize = 100
 
 ct = CTImage()
 ct.name = 'CT'
@@ -38,7 +38,7 @@ roi.patient = patient
 roi.name = 'TV'
 roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
-data[100:120, 100:120, 100:120] = True
+data[30:80, 70:90, 30:80] = True
 roi.imageArray = data
 
 opentps.run()  # Launch opentps
