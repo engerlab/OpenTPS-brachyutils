@@ -133,17 +133,20 @@ class PlanIonLayer:
         if not isinstance(x, Iterable): x = [x]
         if not isinstance(y, Iterable): y = [y]
         if not isinstance(mu, Iterable): mu = [mu]
-        if timing != None and not isinstance(mu, Iterable): timing = [timing]
+        if timing is not None and not isinstance(timing, Iterable): timing = [timing]
 
         for i, xElem in enumerate(x):
             t = timing if timing is None else timing[i]
             self._appendSingleSpot(xElem, y[i], mu[i], t)
 
     def _appendSingleSpot(self, x: float, y: float, mu: float, timing: Optional[float] = None):
-        alreadyExists, _ = self.spotDefinedInXY(x, y)
+        alreadyExists, where = self.spotDefinedInXY(x, y)
         if alreadyExists:
             if timing is None:  # possible to have two spots at the same location with different timings (e.g. bursts in synchrocyclotron)
                 raise ValueError('Spot already exists in (x,y)')
+            else:
+                if timing == self._timings[where]:
+                    raise ValueError('Spot already exists in (x,y,timing)')
 
         self._x = np.append(self._x, x)
         self._y = np.append(self._y, y)
@@ -251,8 +254,51 @@ class PlanIonLayer:
             self._timings = np.array([self._timings[i] for i in order])
 
     def simplify(self, threshold: float = 0.0):
-        # TODO
-        raise (NotImplementedError('TODO'))
+        self._fusionDuplicates()
+        self.removeZeroMUSpots(threshold)
+    
+    def removeZeroMUSpots(self, threshold):
+        index_to_keep = np.flatnonzero(self._mu > threshold)
+        self._mu = np.array([self._mu[i] for i in range(len(self._mu)) if i in index_to_keep])
+        self._x = np.array([self._x[i] for i in range(len(self._x)) if i in index_to_keep])
+        self._y = np.array([self._y[i] for i in range(len(self._y)) if i in index_to_keep])
+
+
+    def _fusionDuplicates(self):
+        if len(self) > 1:
+            # If timing is not taken into account (self._timings is empty), two spots with the same location are considered duplicates
+            # If timing is taken into account (self._timings is not empty), two spots with the same location are considered duplicates only if their timing are equal
+            if len(self._timings)==0:
+                unique_positions = [(self._x[0], self._y[0])]
+                ind = 1
+                while ind < len(self._x):
+                    current_position = (self._x[ind], self._y[ind])
+                    if current_position in unique_positions:
+                        #fusion
+                        match_ind = unique_positions.index(current_position) # find index in unique positions
+                        self._mu[match_ind] += self._mu[ind]
+                        self._x = np.delete(self._x, ind)
+                        self._y = np.delete(self._y, ind)
+                        self._mu = np.delete(self._mu, ind)
+                    else:
+                        unique_positions.append(current_position)
+                        ind += 1
+            else:
+                unique_positions = [(self._x[0], self._y[0], self._timings[0])]
+                ind = 1
+                while ind < len(self._x):
+                    current_position = (self._x[ind], self._y[ind], self._timings[ind])
+                    if current_position in unique_positions:
+                        #fusion
+                        match_ind = unique_positions.index(current_position) # find index in unique positions
+                        self._mu[match_ind] += self._mu[ind]
+                        self._x = np.delete(self._x, ind)
+                        self._y = np.delete(self._y, ind)
+                        self._mu = np.delete(self._mu, ind)
+                        self._timings = np.delete(self._timings, ind)
+                    else:
+                        unique_positions.append(current_position)
+                        ind += 1
 
     def copy(self):
         return copy.deepcopy(self)
@@ -399,7 +445,7 @@ class PlanIonLayerTestCase(unittest.TestCase):
         layer.reorderSpots(order='scanAlgo')
         np.testing.assert_array_equal(layer.spotX, [3, 0, 1, 2])
         np.testing.assert_array_equal(layer.spotY, [0, 1, 2, 2])
-        np.testing.assert_array_equal(layer.spotMUs, np.array([0.1, 0.2, 0.3, 0.5]))
+        np.testing.assert_array_almost_equal(layer.spotMUs, np.array([0.1, 0.2, 0.3, 0.5]))
 
         layer = PlanIonLayer()
         x = [0, 1, 2, 3]
@@ -410,8 +456,49 @@ class PlanIonLayerTestCase(unittest.TestCase):
         layer.reorderSpots(order='timing')
         np.testing.assert_array_equal(layer.spotX, [1, 0, 2, 3])
         np.testing.assert_array_equal(layer.spotY, [2, 1, 2, 0])
-        np.testing.assert_array_equal(layer.spotMUs, np.array([0.5, 0.2, 0.3, 0.1]))
-        np.testing.assert_array_equal(layer.spotTimings, np.array([2, 3, 5, 6]))
+        np.testing.assert_array_almost_equal(layer.spotMUs, np.array([0.5, 0.2, 0.3, 0.1]))
+        np.testing.assert_array_almost_equal(layer.spotTimings, np.array([2, 3, 5, 6]))
+
+    def testFusionDuplicates(self):
+        layer = PlanIonLayer(nominalEnergy=100.)
+        x = [0, 2, 1, 3, 10, 4]
+        y = [1, 2, 2, 0, 2, 5]
+        mu = [0.2, 0.5, 0.3, 0.1, 0.2, 0.4]
+        layer.appendSpot(x, y, mu)
+        layer._x[4] = 2
+
+        layer._fusionDuplicates()
+        self.assertEqual(len(layer._x),5)
+        np.testing.assert_array_equal(layer.spotX, np.array([0, 2, 1, 3, 4]))
+        np.testing.assert_array_equal(layer.spotY, np.array([1, 2, 2, 0, 5]))
+        np.testing.assert_array_almost_equal(layer.spotMUs, np.array([0.2, 0.7, 0.3, 0.1, 0.4]))
+
+        layer = PlanIonLayer(nominalEnergy=100.)
+        x = [0, 2, 1, 3, 10, 4]
+        y = [1, 2, 2, 0, 2, 5]
+        mu = [0.2, 0.5, 0.3, 0.1, 0.2, 0.4]
+        timings = [1, 2, 3, 4, 2, 6]
+        layer.appendSpot(x, y, mu, timings)
+        layer._x[4] = 2
+
+        layer._fusionDuplicates()
+        self.assertEqual(len(layer._x),5)
+        np.testing.assert_array_equal(layer.spotX, np.array([0, 2, 1, 3, 4]))
+        np.testing.assert_array_equal(layer.spotY, np.array([1, 2, 2, 0, 5]))
+        np.testing.assert_array_equal(layer.spotMUs, np.array([0.2, 0.7, 0.3, 0.1, 0.4]))
+        np.testing.assert_array_almost_equal(layer.spotTimings, np.array([1, 2, 3, 4, 6]))
+
+        layer = PlanIonLayer(nominalEnergy=100.)
+        x = [0, 2, 1, 3, 10, 3, 2, 30]
+        y = [1, 2, 2, 0, 2, 3, 3, 0]
+        mu = [0.2, 0.5, 0.3, 0.1, 0.3, 0.6, 0.4, 0.2]
+        layer.appendSpot(x, y, mu)
+        layer._x[4] = 1
+        layer._x[-1] = 3
+        layer._fusionDuplicates()
+        np.testing.assert_array_equal(layer.spotX, np.array([0, 2, 1, 3, 3, 2]))
+        np.testing.assert_array_equal(layer.spotY, np.array([1, 2, 2, 0, 3, 3]))
+        np.testing.assert_array_almost_equal(layer.spotMUs, np.array([0.2, 0.5, 0.6, 0.3, 0.6, 0.4]))
 
 
 if __name__ == '__main__':

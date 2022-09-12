@@ -219,5 +219,6 @@ class RegistrationMorphons(Registration):
                 certainty._imageArray = imageFilter3D.normGaussConv(certainty.imageArray, certainty.imageArray, 1.25, tryGPU=self.tryGPU)
 
         self.deformed = deformation.deformImage(self.moving, fillValue='closest', tryGPU=self.tryGPU)
+        self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
 
         return deformation
