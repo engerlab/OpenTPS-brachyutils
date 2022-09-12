@@ -26,7 +26,14 @@ class RegistrationRigid(Registration):
 
         try:
             from Core.Processing.ImageProcessing import sitkImageProcessing
-            tform, center, self.deformed = sitkImageProcessing.register(sitkImageProcessing.image3DToSITK(self.fixed), sitkImageProcessing.image3DToSITK(self.moving), multimodal=self.multimodal, fillValue=float(self.moving.min()))
-            return Transform3D(tform=tform, center=center)
+            tform, center, deformed = sitkImageProcessing.register(sitkImageProcessing.image3DToSITK(self.fixed), sitkImageProcessing.image3DToSITK(self.moving), multimodal=self.multimodal, fillValue=float(self.moving.min()))
+            transform = Transform3D(tform=tform, center=center)
         except:
-            logger.info('Failed to use SITK registration. Abort.')
+            logger.info('Failed to use SITK registration. Try translation only.')
+            from Core.Processing.Registration.registrationTranslation import RegistrationTranslation
+            reg = RegistrationTranslation(self.fixed, self.moving)
+            transform = reg.compute()
+
+        self.deformed = transform.deformImage(self.moving, fillValue='closest')
+        self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
+        return transform

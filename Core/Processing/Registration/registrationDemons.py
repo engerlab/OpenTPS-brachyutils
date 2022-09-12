@@ -77,7 +77,7 @@ class RegistrationDemons(Registration):
                 # Regularize velocity deformation and certainty
                 self.regularizeField(deformation, filterType="Gaussian", sigma=1.25, tryGPU=self.tryGPU)
 
-        self.deformed = deformation.deformImage(self.moving, fillValue='closest')
+        self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
 
         return deformation
 

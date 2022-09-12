@@ -6,6 +6,7 @@ import time
 import logging
 from logConfigParser import parseArgs
 
+from Core.Data.Images._deformation3D import Deformation3D
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
 from Core.Data.Images._ctImage import CTImage
 
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     fixed = CTImage(imageArray=fixed_img, name='fixed', origin=[0,0,0], spacing=[1,1,1])
     moving_img = np.full((100, 100, 100), -1000)
     moving_img[30:75,35:75,40:75] = 0
-    moving = CTImage(imageArray=moving_img, name='fixed', origin=[0,0,0], spacing=[1,1,1])
+    moving = CTImage(imageArray=moving_img, name='moving', origin=[0,0,0], spacing=[1,1,1])
 
     # PERFORM REGISTRATION
     start_time = time.time()

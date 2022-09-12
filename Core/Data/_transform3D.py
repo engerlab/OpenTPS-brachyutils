@@ -5,14 +5,16 @@ __all__ = ['Transform3D']
 import logging
 import numpy as np
 import copy
-from Core.Data.Images._image3D import Image3D
+from Core.Data._patientData import PatientData
 
 logger = logging.getLogger(__name__)
 
 
-class Transform3D():
+class Transform3D(PatientData):
 
     def __init__(self, tform=None, name="Transform", center=None):
+        super().__init__(name=name)
+
         self.tform = tform
         self.name = name
         self.center = center

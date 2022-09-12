@@ -229,7 +229,7 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
     tform[0:-1, 0:-1] = np.array(euler3d_transform.GetMatrix()).reshape(3,3)
     center = euler3d_transform.GetCenter()
 
-    return tform, center, moving_resampled
+    return tform, center, sitkImageToImage3D(moving_resampled)
 
 
 if __name__ == "__main__":

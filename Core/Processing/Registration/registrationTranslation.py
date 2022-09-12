@@ -41,4 +41,7 @@ class RegistrationTranslation(Registration):
         tform[0:-1, -1] = translation
         tform[0:-1, 0:-1] = np.eye(3)
 
-        return Transform3D(tform=tform)
+        transform = Transform3D(tform=tform)
+        self.deformed = transform.deformImage(self.moving, fillValue='closest')
+        self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
+        return transform
