@@ -104,19 +104,15 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
     num_unstacked_col = 0
 
     if roi:
-        masks = []
+        logger.info("Beamlets are computed on {}".format([contour.name for contour in roi]))
+        roiUnion = None
         for contour in roi:
-            roiData = contour.imageArray
-            roiData = np.flip(roiData, 0)
-            roiData = np.flip(roiData, 1)
-            roiData = roiData.flatten(order='F')
-            roiData = roiData.astype(bool)
-            roiData = roiData.flatten()
-            masks.append(roiData)
-        roiUnion = np.zeros_like(masks[0])
-        for mask in masks:
-            # ROI Union mask
-            roiUnion = np.logical_or(roiUnion, mask)
+            roiData = np.flip(contour.imageArray,(0,1))
+            roiData = np.ndarray.flatten(roiData,'F').astype('bool')
+            if roiUnion is None:
+                roiUnion = roiData
+            else:
+                roiUnion = np.logical_or(roiUnion, roiData)
     else:
         roiUnion = np.ones((NbrVoxels, 1)).astype(bool)
 
@@ -128,6 +124,8 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
         [LayerID] = struct.unpack('I', fid.read(4))
         [xcoord] = struct.unpack('<f', fid.read(4))
         [ycoord] = struct.unpack('<f', fid.read(4))
+
+        logger.info("Spot {} : BeamID={} LayerID={} Position=({};{}) NonZeroVoxels={}".format(spot, BeamID, LayerID, xcoord, ycoord, NonZeroVoxels))
 
         if (NonZeroVoxels == 0):
             num_unstacked_col += 1

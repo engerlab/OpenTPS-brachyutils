@@ -1,15 +1,14 @@
-
 __all__ = ['PlanDesign']
-
 
 import logging
 
 import numpy as np
+import pydicom
 
 from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 from Core.Data.Images._ctImage import CTImage
 from Core.Data.Images._roiMask import ROIMask
-from Core.Data.Plan import PlanIonBeam
+from Core.Data.Plan import PlanIonBeam, _rangeShifter
 from Core.Data.Plan._objectivesList import ObjectivesList
 from Core.Data._patientData import PatientData
 from Core.Processing.ImageProcessing import resampler3D
@@ -22,17 +21,13 @@ class PlanDesign(PatientData):
     def __init__(self):
         super().__init__()
 
-        from Core.Data.Plan import RTPlan
-        self.plan = RTPlan()
-        self.plan.planDesign = self
-
         self.spotSpacing = 5.0
         self.layerSpacing = 5.0
         self.targetMargin = 5.0
-        self.targetMask:ROIMask = None
+        self.targetMask: ROIMask = None
         self.proximalLayers = 1
         self.distalLayers = 1
-        self.alignLayersToSpacing = False
+        self.layersToSpacingAlignment = False
         self.calibration: AbstractCTCalibration = None
         self.ct: CTImage = None
         self.beamNames = []
@@ -40,6 +35,7 @@ class PlanDesign(PatientData):
         self.couchAngles = []
         self.accumulatedLayer = 0
         self.accumulatedSpot = 0
+        self.rangeShifters: _rangeShifter = []
 
         self.objectives = ObjectivesList()
         self.beamlets = []
@@ -52,10 +48,22 @@ class PlanDesign(PatientData):
 
     def buildPlan(self):
         # Spot placement
-        self.defineTargetMaskAndPrescription()
-        self.createBeams()
-        self.initializeBeams()
-        # return plan ?
+        from Core.Data.Plan import RTPlan
+        plan = RTPlan("NewPlan")
+        plan.SOPInstanceUID = pydicom.uid.generate_uid()
+        plan.seriesInstanceUID = plan.SOPInstanceUID + ".1"
+        plan.modality = "Ion therapy"
+        plan.radiationType = "Proton"
+        plan.scanMode = "MODULATED"
+        plan.treatmentMachineName = "Unknown"
+
+        self.createBeams(plan)
+        self.initializeBeams(plan)
+        plan.planDesign = self
+        for beam in plan.beams:
+            beam.reorderLayers('decreasing')
+
+        return plan
 
     def defineTargetMaskAndPrescription(self):
         from Core.Data._roiContour import ROIContour
@@ -87,9 +95,9 @@ class PlanDesign(PatientData):
 
         self.targetMask = targetMask
 
-    def createBeams(self):
-        for beam in self.plan:
-            self.plan.removeBeam(beam)
+    def createBeams(self, plan):
+        for beam in plan:
+            plan.removeBeam(beam)
 
         for i, gantryAngle in enumerate(self.gantryAngles):
             beam = PlanIonBeam()
@@ -97,14 +105,21 @@ class PlanDesign(PatientData):
             beam.couchAngle = self.couchAngles[i]
             beam.isocenterPosition = self.targetMask.centerOfMass
             beam.id = i
-            beam.name = 'B' + str(i)
+            if self.beamNames:
+                beam.name = self.beamNames[i]
+            else:
+                beam.name = 'B' + str(i)
+            if self.rangeShifters and self.rangeShifters[i]:
+                beam.rangeShifter.ID = self.rangeShifters[i].ID
+                beam.rangeShifter.type = self.rangeShifters[i].type
 
-            self.plan.appendBeam(beam)
+            plan.appendBeam(beam)
 
-    def initializeBeams(self):
+    def initializeBeams(self, plan):
         initializer = PlanInitializer()
         initializer.ctCalibration = self.calibration
         initializer.ct = self.ct
-        initializer.plan = self.plan
+        initializer.plan = plan
         initializer.targetMask = self.targetMask
-        initializer.initializePlan(self.spotSpacing, self.layerSpacing, self.targetMargin)
+        initializer.placeSpots(self.spotSpacing, self.layerSpacing, self.targetMargin, self.layersToSpacingAlignment,
+                               self.proximalLayers, self.distalLayers)

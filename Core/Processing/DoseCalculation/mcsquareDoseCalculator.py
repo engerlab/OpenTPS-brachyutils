@@ -37,7 +37,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct: Optional[Image3D] = None
         self._plan: Optional[RTPlan] = None
         self._roi = None
-        self._roiMasks = None
         self._config = None
         self._mcsquareCTCalibration = None
         self._beamModel = None
@@ -229,7 +228,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roiMasks)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
         return beamletDose
 
     def _beamletRescaling(self) -> Sequence[float]:
@@ -320,6 +319,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Beamlet_Parallelization"] = True
         config["Dose_MHD_Output"] = False
         config["Dose_Sparse_Output"] = True
+        config["Dose_Sparse_Threshold"] = 20000.0
 
         return config
 
@@ -363,7 +363,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 1] / 2.0
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
-            self._roiMasks = []
+            roiResampled = []
             for contour in self._roi:
                 if isinstance(contour, ROIContour):
                     resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
@@ -374,8 +374,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                                                                 spacing=self.scoringVoxelSpacing)
                 else:
                     raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
-                self._roiMasks.append(resampledMask)
-
+                roiResampled.append(resampledMask)
+            self._roi = roiResampled
         # config["Stat_uncertainty"] = 2.
 
         return config

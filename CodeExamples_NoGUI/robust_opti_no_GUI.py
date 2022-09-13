@@ -46,7 +46,6 @@ ct = CTImage()
 ct.name = 'CT'
 ct.patient = patient
 
-
 huAir = -1024.
 huWater = ctCalibration.convertRSP2HU(1.)
 data = huAir * np.ones((ctSize, ctSize, ctSize))
@@ -56,7 +55,7 @@ ct.imageArray = data
 roi = ROIMask()
 roi.patient = patient
 roi.name = 'TV'
-roi.color = (255, 0, 0) # red
+roi.color = (255, 0, 0)  # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
@@ -83,12 +82,13 @@ mc2 = MCsquareDoseCalculator()
 mc2.beamModel = bdl
 mc2.nbPrimaries = 5e4
 mc2.ctCalibration = ctCalibration
-#mc2.independentScoringGrid = True
-#scoringSpacing = [2, 2, 2]
-#mc2.scoringVoxelSpacing = scoringSpacing
+mc2.SetupSystematicError = [5.0, 5.0, 5.0]  # mm
+mc2.SetupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
+mc2.RangeSystematicError = 3.0  # %
+mc2.Robustness_Strategy = "ErrorSpace_regular"
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "planTestp.p")
+plan_file = os.path.join(output_path, "RobustPlan.tps")
 
 if os.path.isfile(plan_file):
     plan = loadDataStructure(plan_file)[0]
@@ -103,13 +103,13 @@ else:
     planInit.calibration = ctCalibration
     planInit.spotSpacing = 5.0
     planInit.layerSpacing = 5.0
-    planInit.targetMargin = 5.0
+    planInit.targetMargin = max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2.SetupSystematicError)
 
     plan = planInit.buildPlan()  # Spot placement
-    plan.PlanName = "NewPlan"
+    plan.PlanName = "RobustPlan"
 
     beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
-    #beamlets = mc2.computeBeamlets(ct, plan)
+    # beamlets = mc2.computeBeamlets(ct, plan)
     plan.planDesign.beamlets = beamlets
     outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
 
@@ -118,11 +118,11 @@ else:
 plan.planDesign.objectives = ObjectivesList()
 plan.planDesign.objectives.setTarget(roi.name, 20.0)
 plan.planDesign.objectives.setScoringParameters(ct)
-#scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
-#plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
+# scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
+# plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
 plan.planDesign.objectives.fidObjList = []
-plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
-plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0, robust=True)
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0, robust=True)
 plan.planDesign.defineTargetMaskAndPrescription()
 objectiveFunction = DoseFidelity(plan.planDesign.objectives.fidObjList, beamletMatrix)
 print('fidelity init done')
@@ -160,12 +160,12 @@ planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMIN, 20.0, 1.
 optimizeIMPT(plan, planInit)
 #plan.planDesign.beamlets.beamletWeights = np.square(w).astype(np.float32)'''
 
-#plan.planDesign.beamlets.beamletWeights = plan.spotMUs
-#doseImage = plan.planDesign.beamlets.toDoseImage()
+# plan.planDesign.beamlets.beamletWeights = plan.spotMUs
+# doseImage = plan.planDesign.beamlets.toDoseImage()
 
 # MCsquare simulation
-#mc2.nbPrimaries = 1e6
-#doseImage = mc2.computeDose(ct, plan)
+# mc2.nbPrimaries = 1e6
+# doseImage = mc2.computeDose(ct, plan)
 
 # Compute DVH
 target_DVH = DVH(roi, doseImage)

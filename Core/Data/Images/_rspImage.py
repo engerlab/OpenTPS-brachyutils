@@ -54,3 +54,15 @@ class RSPImage(Image3D):
             outImage = rspIEC
 
         return outImage
+
+    def get_SPR_at_position(self, position):
+        voxel_id = self.getVoxelIndexFromPosition(position)
+
+        if voxel_id[0] < 0 or voxel_id[1] < 0 or voxel_id[2] < 0:
+            return 0.001
+
+        elif voxel_id[0] >= self.gridSize[0] or voxel_id[1] >= self.gridSize[1] or voxel_id[2] >= self.gridSize[2]:
+            return 0.001
+
+        else:
+            return self.imageArray[voxel_id[0], voxel_id[1], voxel_id[2]]
