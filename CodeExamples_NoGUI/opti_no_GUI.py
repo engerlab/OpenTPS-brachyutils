@@ -16,6 +16,7 @@ from Core.Data.Plan._objectivesList import FidObjective
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
 from Core.IO.serializedObjectIO import loadDataStructure
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
@@ -31,8 +32,8 @@ logging.config.dictConfig(config_dict)
 # Generic example: box of water with squared target
 patientList = PatientList()
 
-ctCalibration = readScanner(ProgramSettings().scannerFolder)
-bdl = mcsquareIO.readBDL(ProgramSettings().bdlFile)
+ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
+bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 patient = Patient()
 patient.name = 'Patient'
@@ -44,6 +45,7 @@ ctSize = 150
 ct = CTImage()
 ct.name = 'CT'
 ct.patient = patient
+
 
 huAir = -1024.
 huWater = ctCalibration.convertRSP2HU(1.)
@@ -58,11 +60,6 @@ roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
-
-ct2 = CTImage.fromImage3D(ct)
-ct2.spacing = np.array([0.8, 0.8, 0.8])
-ct2.imageArray = huAir * np.ones((ctSize - 3, ctSize - 3, ctSize - 3))
-resampler3D.resampleImage3DOnImage3D(roi, ct2, inPlace=True, fillValue=0)
 
 examplePath = "/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/testData"
 
@@ -84,7 +81,7 @@ if not os.path.isdir(output_path):
 # Configure MCsquare
 mc2 = MCsquareDoseCalculator()
 mc2.beamModel = bdl
-mc2.nbPrimaries = 1e4
+mc2.nbPrimaries = 5e4
 mc2.ctCalibration = ctCalibration
 #mc2.independentScoringGrid = True
 #scoringSpacing = [2, 2, 2]
@@ -107,14 +104,7 @@ else:
     planInit.spotSpacing = 5.0
     planInit.layerSpacing = 5.0
     planInit.targetMargin = 5.0
-    planInit.objectives = ObjectivesList()
-    planInit.objectives.setTarget(roi.name, 20.0)
-    planInit.objectives.setScoringParameters(ct)
-    #scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
-    #planInit.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
-    planInit.objectives.fidObjList = []
-    planInit.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
-    planInit.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
+
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
@@ -125,6 +115,15 @@ else:
 
     beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 
+plan.planDesign.objectives = ObjectivesList()
+plan.planDesign.objectives.setTarget(roi.name, 20.0)
+plan.planDesign.objectives.setScoringParameters(ct)
+#scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
+#plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
+plan.planDesign.objectives.fidObjList = []
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
+plan.planDesign.defineTargetMaskAndPrescription()
 objectiveFunction = DoseFidelity(plan.planDesign.objectives.fidObjList, beamletMatrix)
 print('fidelity init done')
 
@@ -159,9 +158,14 @@ planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMIN, 20.0, 1.
 # optimize
 #optimizeIMPT(plan, planInit, scoringSpacing)
 optimizeIMPT(plan, planInit)
-#plan.planDesign.beamlets.beamletWeights = np.square(w).astype(np.float32)
-plan.planDesign.beamlets.beamletWeights = plan.spotMUs
-doseImage = plan.planDesign.beamlets.toDoseImage()'''
+#plan.planDesign.beamlets.beamletWeights = np.square(w).astype(np.float32)'''
+
+#plan.planDesign.beamlets.beamletWeights = plan.spotMUs
+#doseImage = plan.planDesign.beamlets.toDoseImage()
+
+# MCsquare simulation
+#mc2.nbPrimaries = 1e6
+#doseImage = mc2.computeDose(ct, plan)
 
 # Compute DVH
 target_DVH = DVH(roi, doseImage)
