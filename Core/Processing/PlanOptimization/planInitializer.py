@@ -1,6 +1,7 @@
 from math import cos, pi
 from typing import Sequence
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
@@ -91,7 +92,7 @@ class BeamInitializerBEV:
         origin = imageBEV.origin
         end = imageBEV.origin + imageBEV.spacing * imageBEV.imageArray.shape
 
-        spotGridSpacing = [spotSpacing / 2., spotSpacing * cos(pi / 6.)]
+        spotGridSpacing = [spotSpacing/2., spotSpacing * cos(pi / 6.)]
 
         xFromIsoToOrigin = np.arange(isocenterBEV[0], origin[0], -spotGridSpacing[0])
         xFromOriginToIso = np.flipud(xFromIsoToOrigin)
@@ -111,12 +112,14 @@ class BeamInitializerBEV:
         isoInd0 = xFromOriginToIso.shape[0]  # index of isocenter
         isoInd1 = yFromOriginToIso.shape[0]  # index of isocenter
 
-        heaxagonalMask = np.zeros(spotGridX.shape)
-        heaxagonalMask[(isoInd0 + 1) % 2::2, (isoInd1 + 1) % 2:2] = 1
-        heaxagonalMask[1 - (isoInd0 + 1) % 2::2, 1 - (isoInd1 + 1) % 2::2] = 1
+        hexagonalMask = np.zeros(spotGridX.shape)
+        hexagonalMask[isoInd0%2-1::2, (isoInd1)%6+1::6] = 1
+        hexagonalMask[isoInd0%2-1::2, (isoInd1)%6+3::6] = 1
+        hexagonalMask[(isoInd0)%2::2, isoInd1%6::6] = 1 # Isocenter is here
+        hexagonalMask[(isoInd0)%2::2, (isoInd1)%6+4::6] = 1
 
-        spotGridX = spotGridX[heaxagonalMask.astype(bool)]
-        spotGridY = spotGridY[heaxagonalMask.astype(bool)]
+        spotGridX = spotGridX[hexagonalMask.astype(bool)]
+        spotGridY = spotGridY[hexagonalMask.astype(bool)]
 
         return spotGridX, spotGridY
 
