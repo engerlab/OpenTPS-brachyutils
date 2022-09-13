@@ -21,12 +21,17 @@ class DoseImage(Image3D):
 
     @classmethod
     def fromImage3D(cls, image: Image3D):
-        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
-
+        cl = cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
+        cl._patient = image._patient
+        if type(image) is DoseImage:
+            cl.referenceCT = image.referenceCT
+            cl.referencePlan = image.referencePlan
+        return cl
 
     def copy(self):
-        return DoseImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
-
+        dose = DoseImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid(), referencePlan=self.referencePlan, referenceCT=self.referenceCT)
+        dose._patient = self._patient
+        return dose
 
     def exportDicom(self, outputFile, planUID=[]):
         pass
@@ -38,4 +43,9 @@ class DoseImage(Image3D):
 
     @classmethod
     def createEmptyDoseWithSameMetaData(cls, image:Image3D):
-        return cls(imageArray=np.zeros_like(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
+        cl = cls(imageArray=np.zeros_like(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
+        cl._patient = image._patient
+        if type(image) is DoseImage:
+            cl.referenceCT = image.referenceCT
+            cl.referencePlan = image.referencePlan
+        return cl
