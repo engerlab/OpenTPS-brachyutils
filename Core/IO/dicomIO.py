@@ -677,7 +677,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.PhotometricInterpretation = 'MONOCHROME2'
     dcm_file.FrameIncrementPointer = pydicom.tag.Tag((0x3004, 0x000c))
     dcm_file.GridFrameOffsetVector = list(
-        np.arange(0, dose.gridSize[2] * dose.gridSize[2], dose.gridSize[2]))
+        np.arange(0, dose.gridSize[2] * dose.spacing[2], dose.spacing[2]))
 
     # transfer syntax
     dcm_file.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
