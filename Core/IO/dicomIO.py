@@ -72,8 +72,11 @@ def readDicomCT(dcmFiles):
     imagePositionPatient = (float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), sliceLocation[0])
 
     # collect patient information
-    patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                               sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # generate CT image object
     image = CTImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
@@ -149,8 +152,11 @@ def readDicomDose(dcmFile):
             imagePositionPatient[2] = imagePositionPatient[2] - imageData.shape[2] * pixelSpacing[2]
 
     # collect patient information
-    patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                       sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # generate dose image object
     image = DoseImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
@@ -185,8 +191,11 @@ def readDicomStruct(dcmFile):
         structName = dcm.SeriesInstanceUID
 
     # collect patient information
-    patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                       sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # Create the object that will be returned. Takes the same patientInfo as the refImage it is linked to
     struct = RTStruct(name=structName, seriesInstanceUID=dcm.SeriesInstanceUID,
@@ -249,8 +258,11 @@ def readDicomVectorField(dcmFile):
     fieldData = rawField.copy()
 
     # collect patient information
-    patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                       sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # collect other information
     if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
@@ -270,8 +282,11 @@ def readDicomPlan(dcmFile) -> RTPlan:
     dcm = pydicom.dcmread(dcmFile)
 
     # collect patient information
-    patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                       sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
         name = dcm.SeriesDescription
