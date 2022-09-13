@@ -216,7 +216,7 @@ def readDose(filePath):
     doseMHD.imageArray = np.flip(doseMHD.imageArray, 0)
     doseMHD.imageArray = np.flip(doseMHD.imageArray, 1)
 
-    doseImage = DoseImage.fromImage(doseMHD)
+    doseImage = DoseImage.fromImage3D(doseMHD)
 
     return doseImage
 
