@@ -69,6 +69,16 @@ class Dynamic3DSequence(PatientData):
         return imgList
 
 
+    def resampleOn(self, otherImage, fillValue=0, outputType=None, tryGPU=True):
+        for i in range(len(self.dyn3DImageList)):
+            self.dyn3DImageList[i].resample(otherImage.spacing, otherImage.gridSize, otherImage.origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
+
+    def resample(self, spacing, gridSize, origin, fillValue=0, outputType=None, tryGPU=True):
+        for i in range(len(self.dyn3DImageList)):
+            self.dyn3DImageList[i].resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
+
     def dumpableCopy(self):
         dumpableImageCopiesList = [image.dumpableCopy() for image in self.dyn3DImageList]
         dumpableSeq = Dynamic3DSequence(dyn3DImageList=dumpableImageCopiesList, timingsList=self.timingsList, name=self.name)

@@ -15,6 +15,7 @@ from GUI.Panels.roiPanel import ROIPanel
 from GUI.Panels.ScriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.Panels.breathingSignalPanel import BreathingSignalPanel
 from GUI.Panels.drrPanel import DRRPanel
+from GUI.Panels.registrationPanel import RegistrationPanel
 
 import Extensions as extensionModule
 
@@ -67,6 +68,7 @@ class MainToolbar(QToolBox):
         scriptingPanel = ScriptingPanel()
         #breathingSignalPanel = BreathingSignalPanel(self._viewController)
         #xRayProjPanel = DRRPanel(self._viewController)
+        registrationPanel = RegistrationPanel(self._viewController)
 
         item = self.ToolbarItem(patientDataPanel, 'Patient data')
         self.showItem(item)
@@ -86,6 +88,8 @@ class MainToolbar(QToolBox):
         #self.showItem(item)
         #item = self.ToolbarItem(xRayProjPanel, 'DRR')
         #self.showItem(item)
+        item = self.ToolbarItem(registrationPanel, 'Registration')
+        self.showItem(item)
 
         self._addExtenstions()
 

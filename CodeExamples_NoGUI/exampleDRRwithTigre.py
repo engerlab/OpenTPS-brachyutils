@@ -1,21 +1,28 @@
 import os
 import sys
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
 from pathlib import Path
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+import logging
+from logConfigParser import parseArgs
 
 from Core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+os.chdir(currentWorkingDir)
+
+logger = logging.getLogger(__name__)
+
 if __name__ == '__main__':
 
-    print(os.getcwd())
+    options = parseArgs(sys.argv[1:])
+
     # Get the current working directory, its parent, then add the testData folder at the end of it
-    testDataPath = os.getcwd() + '/testData/'
+    testDataPath = os.path.join(currentWorkingDir, 'testData/')
 
     # read a serialized dynamic sequence
     dataPath = testDataPath + "lightDynSeq.p"
