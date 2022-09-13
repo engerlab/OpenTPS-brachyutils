@@ -61,7 +61,7 @@ class PlanDesign(PatientData):
         self.initializeBeams(plan)
         plan.planDesign = self
         for beam in plan.beams:
-            beam.layers.sort(reverse=True, key=(lambda element: element.nominalEnergy))
+            beam.reorderLayers('decreasing')
 
         return plan
 
