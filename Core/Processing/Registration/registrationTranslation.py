@@ -1,6 +1,8 @@
+import numpy as np
 import scipy.signal
 import logging
 
+from Core.Data._transform3D import Transform3D
 from Core.Processing.Registration.registration import Registration
 
 logger = logging.getLogger(__name__)
@@ -19,7 +21,7 @@ class RegistrationTranslation(Registration):
 
             Returns
             -------
-            numpy array
+            Transform3D
                 Translation from moving to fixed images.
             """
 
@@ -29,10 +31,17 @@ class RegistrationTranslation(Registration):
                                       options={'xtol': 0.01, 'ftol': 0.0001, 'maxiter': 25, 'maxfev': 75})
 
         if (self.roiBox == []):
-            translation = opt._x
+            translation = opt.x
         else:
             start = self.roiBox[0]
             stop = self.roiBox[1]
-            translation = opt._x
+            translation = opt.x
 
-        return translation
+        tform = np.zeros((4, 4))
+        tform[0:-1, -1] = translation
+        tform[0:-1, 0:-1] = np.eye(3)
+
+        transform = Transform3D(tform=tform)
+        self.deformed = transform.deformImage(self.moving, fillValue='closest')
+        self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
+        return transform

@@ -2,9 +2,9 @@ import numpy as np
 from pydicom.uid import generate_uid
 import logging
 
-from Core.Data.Images._deformation3D import Deformation3D
-from Core.Data.Images._image3D import Image3D
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
+from Core.Data.Images._deformation3D import Deformation3D
+
 
 logger = logging.getLogger(__name__)
 

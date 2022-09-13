@@ -18,12 +18,8 @@ if __name__ == '__main__':
     testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
     ## read a serialized dynamic sequence
-    # dataPath = '/home/damien/Desktop/Patient0/Patient0BaseAndMod.p'
-    dataPath = testDataPath + "superLightDynSeqWithMod.p"
-    patient = loadDataStructure(dataPath)[0]
-
-    dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
-    dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
+    dataPath = testDataPath + "veryLightDynMod.p"
+    dynMod = loadDataStructure(dataPath)[0]
 
     simulationTime = 32
     amplitude = 10
@@ -113,8 +109,8 @@ if __name__ == '__main__':
 
 
     ## save it as a serialized object
-    savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung'
-    saveSerializedObjects(dynSeq, savingPath)
+    # savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung'
+    # saveSerializedObjects(dynSeq, savingPath)
 
     print('/'*80, '\n', '/'*80)
 
@@ -142,5 +138,5 @@ if __name__ == '__main__':
         dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
 
         ## save it as a serialized object
-        savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung_part' + str(i)
-        saveSerializedObjects(dynSeq, savingPath)
+        # savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung_part' + str(i)
+        # saveSerializedObjects(dynSeq, savingPath)

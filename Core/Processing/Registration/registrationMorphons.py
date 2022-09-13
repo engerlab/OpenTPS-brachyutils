@@ -119,6 +119,9 @@ class RegistrationMorphons(Registration):
                                self.fixed.spacing[1] * (self.fixed.gridSize[0] - 1) / (newGridSize[0] - 1),
                                self.fixed.spacing[2] * (self.fixed.gridSize[2] - 1) / (newGridSize[2] - 1)])
 
+            if(newVoxelSpacing[0]<self.fixed.spacing[0] and newVoxelSpacing[1]<self.fixed.spacing[1] and newVoxelSpacing[2]<self.fixed.spacing[2]):
+                break
+
             logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str(round(newVoxelSpacing[0] * 1e2) / 1e2 ) + 'x' + str(round(newVoxelSpacing[1] * 1e2) / 1e2) + 'x' + str(round(newVoxelSpacing[2] * 1e2) / 1e2) + 'mm3)')
 
             # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
@@ -219,5 +222,6 @@ class RegistrationMorphons(Registration):
                 certainty._imageArray = imageFilter3D.normGaussConv(certainty.imageArray, certainty.imageArray, 1.25, tryGPU=self.tryGPU)
 
         self.deformed = deformation.deformImage(self.moving, fillValue='closest', tryGPU=self.tryGPU)
+        self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
 
         return deformation
