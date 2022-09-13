@@ -1,7 +1,5 @@
-
 import time
 from typing import Optional, Sequence, Union
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
@@ -19,14 +17,6 @@ def image3DToSITK(image:Image3D, type=np.float32):
     imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 2)
 
-    # if isinstance(image, VectorField3D):
-    #     img = []
-    #     for i in range(3):
-    #         img.append(sitk.GetImageFromArray(imageData[:, :, :, i].astype(type)))
-    #         img[-1].SetOrigin(image.origin.tolist())
-    #         img[-1].SetSpacing(image.origin.tolist())
-    #
-    # else:
     img = sitk.GetImageFromArray(imageData)
     img.SetOrigin(image.origin.tolist())
     img.SetSpacing(image.spacing.tolist())
@@ -199,6 +189,47 @@ def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
     r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
+
+
+def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
+    initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+
+    registration_method = sitk.ImageRegistrationMethod()
+
+    if multimodal:
+        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+        registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
+        registration_method.SetMetricSamplingPercentage(0.05, seed=76926294)
+    else:
+        registration_method.SetMetricAsMeanSquares()
+        registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
+        registration_method.SetMetricSamplingPercentage(0.05, seed=76926294)
+
+    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=200)
+    registration_method.SetOptimizerScalesFromPhysicalShift()
+
+    registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4, 2, 1])
+    registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2, 1, 0])
+    registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+
+    registration_method.SetInterpolator(sitk.sitkLinear)
+    registration_method.SetInitialTransform(initial_transform, inPlace=False)
+
+    composite_transform = registration_method.Execute(fixed_image, moving_image)
+    moving_resampled = sitk.Resample(moving_image, fixed_image, composite_transform, sitk.sitkLinear, fillValue, moving_image.GetPixelID())
+
+    print(composite_transform)
+    print('Final metric value: {0}'.format(registration_method.GetMetricValue()))
+    print('Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+
+    final_transform = sitk.CompositeTransform(composite_transform).GetBackTransform()
+    euler3d_transform = sitk.Euler3DTransform(final_transform)
+    tform = np.zeros((4,4))
+    tform[0:-1, -1] = euler3d_transform.GetTranslation()
+    tform[0:-1, 0:-1] = np.array(euler3d_transform.GetMatrix()).reshape(3,3)
+    center = euler3d_transform.GetCenter()
+
+    return tform, center, sitkImageToImage3D(moving_resampled)
 
 
 if __name__ == "__main__":

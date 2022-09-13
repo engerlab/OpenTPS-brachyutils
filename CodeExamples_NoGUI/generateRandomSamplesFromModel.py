@@ -18,10 +18,8 @@ if __name__ == '__main__':
     testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
     ## read a serialized dynamic sequence
-    dataPath = testDataPath + "superLightDynSeqWithMod.p"
-    # dataPath = '/home/damien/Desktop/Patient0/Patient0_Model_bodyCropped.p'
-    patient = loadDataStructure(dataPath)[0]
-    dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
+    dataPath = testDataPath + "veryLightDynMod.p"
+    dynMod = loadDataStructure(dataPath)[0]
 
     tryGPU = True
     numberOfSamples = 50

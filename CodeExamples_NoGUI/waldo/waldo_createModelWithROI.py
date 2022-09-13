@@ -22,7 +22,7 @@ sys.path.append(currentWorkingDir)
 # print('after while', currentWorkingDir)
 
 
-from Core.IO.dataLoader import reaData
+from Core.IO.dataLoader import readData
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
@@ -51,7 +51,7 @@ if not os.path.exists(savingPath):
 savingPath += '/dynModAndROIs'
 
 # load the 4DCT data
-data4DList = reaData(data4DPath)
+data4DList = readData(data4DPath)
 print(len(data4DList), 'images found in the folder')
 print('Image type =', type(data4DList[0]))
 print('Image 0 shape =', data4DList[0].gridSize)
@@ -62,7 +62,7 @@ dynSeq.name = '4DCT'
 
 
 # load the rtStruct data and print its content
-structData = reaData(dataStructPath)[0]
+structData = readData(dataStructPath)[0]
 print('Available ROIs')
 structData.print_ROINames()
 

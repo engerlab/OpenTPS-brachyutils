@@ -8,20 +8,19 @@ from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibratio
 
 def readScanner(scannerFolder) -> AbstractCTCalibration:
     try:
-        return MCsquareCTCalibration(fromFiles=(scannerFolder + os.sep + 'HU_Density_Conversion.txt',
-                                                   scannerFolder + os.sep + 'HU_Material_Conversion.txt',
+        return MCsquareCTCalibration(fromFiles=(os.path.join(scannerFolder, 'HU_Density_Conversion.txt'),
+                                                os.path.join(scannerFolder, 'HU_Material_Conversion.txt'),
                                                    'default'))
     except:
         pass
 
     try:
-        materialsFile = glob.glob('material*.*')[0]
-        conversionFile = glob.glob('calibration*.*')
-        conversionFile += (glob.glob('Density*.*'))
+        materialsFile = glob.glob(os.path.join(scannerFolder, 'material*.*'))[0]
+        conversionFile = glob.glob(os.path.join(scannerFolder, 'calibration*.*'))
+        conversionFile += (glob.glob(os.path.join(scannerFolder, 'Density*.*')))
         conversionFile  = conversionFile[0]
-        return RayStationCTCalibration(fromFiles=(scannerFolder + os.sep + materialsFile,
-                                                   scannerFolder + os.sep + conversionFile))
-    except:
-        pass
 
-    raise ValueError(str(scannerFolder) + ' does not contain a supported CT calibration curve')
+        return RayStationCTCalibration(fromFiles=(conversionFile,
+                                                  materialsFile))
+    except Exception as e:
+        raise ValueError(str(scannerFolder) + ' does not contain a supported CT calibration curve') from e
