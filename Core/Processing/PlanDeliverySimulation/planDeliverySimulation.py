@@ -1,6 +1,8 @@
 from typing import Optional, Sequence, Union
 import opentps
 import os
+import numpy as np
+np.random.seed(42)
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.Plan._rtPlan import RTPlan
@@ -12,6 +14,7 @@ from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import 
 from Core.Data._rtStruct import ROIContour
 from Core.Data.Images._doseImage import DoseImage
 from Core.IO.dicomIO import readDicomDose, writeRTDose
+from Core.Processing.PlanDeliverySimulation.beamDeliveryTimings import BDT
 import time
 
 def simulate_4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None):
@@ -37,6 +40,79 @@ def simulate_4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel 
     compute_dose_on_each_phase(plan, CT4D, dir_4DD, crop_contour=crop_contour)
     output_accumulated_dose = os.path.join(dir_4DD, "dose_accumulated_4DD.dcm")
     accumulate_dose_reference_phase(dir_4DD, model3D, output_accumulated_dose, divide_total_dose=True, dose_name='4DD Accumulated dose')
+
+
+def simulate_4DDD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None, save_partial_doses=True):
+    """
+    4D dynamic dose computation (range variation + interplay) where one treatment is simulated on 4DCT
+    """
+    if len(plan.spotTimings)==0:
+        print('Plan has no delivery timings. Querying ScanAlgo...')
+        bdt = BDT(plan, config_file)
+        plan = bdt.getPBSTimings(sort_spots="true")
+    if simulation_dir is None:
+        simulation_dir = os.path.join(ProgramSettings().simulationFolder, 'plan_delivery_simulations')
+    if not os.path.exists(simulation_dir): os.mkdir(simulation_dir)
+    if model3D is None:
+        model3D = Dynamic3DModel()
+        model3D.name = 'MidP'
+        model3D.seriesInstanceUID = generate_uid()
+        model3D.computeMidPositionImage(CT4D, tryGPU=True)
+        
+    fx_dir = os.path.join(simulation_dir, f'{plan.numberOfFractionsPlanned}_fx')
+    dir_4DDD = os.path.join(fx_dir, '4DDD')
+    if not os.path.exists(fx_dir):
+        os.mkdir(fx_dir)
+    if not os.path.exists(dir_4DDD):
+        os.mkdir(dir_4DDD)
+    
+    number_of_phases = len(CT4D)
+    # for start_phase in range(number_of_phases):
+    start_phase = 0
+    plan_4DCT = split_plan_to_phases(plan, num_plans=number_of_phases, start_phase=start_phase)
+    path_dose = os.path.join(dir_4DDD, f'starting_phase_{start_phase}')
+    if not os.path.exists(path_dose):
+        os.mkdir(path_dose)
+    compute_dose_on_each_phase(plan_4DCT, CT4D, path_dose, crop_contour=crop_contour)
+    acc_filename = 'dose_accumulated.dcm'
+    acc_path = os.path.join(path_dose, acc_filename)
+    accumulate_dose_reference_phase(path_dose, model3D, acc_path, dose_name=f'4DDD accumulated dose - starting phase p{start_phase}')
+    print(f"4DDD simulation done for starting phase {start_phase}")
+    if not save_partial_doses:
+        for f in os.listdir(path_dose):
+            if f != acc_filename: os.remove(os.path.join(path_dose, f))
+
+
+def split_plan_to_phases(ReferencePlan, num_plans=10, breathing_period=4., start_phase=0):
+    """
+    Split spots from plan to num_plans plans according to the number of images in 4DCT, breathing period and start phase.
+    Return a list of num_plans plans where each spot is assigned to a plan (=breathing phase)
+    """
+    time_per_phase = breathing_period / num_plans
+
+    # Rearrange order of list CT4D to start at start_phase
+    phase_number = np.append(np.arange(start_phase,num_plans), np.arange(0,start_phase))
+
+    # Initialize plan for each image of the 4DCT
+    plan_4DCT = {}
+    for p in phase_number:
+        plan_4DCT[p] = ReferencePlan.createEmptyPlanWithSameMetaData()
+        plan_4DCT[p].name = f"plan_phase_{p}"
+
+    # Assign each spot to a phase depending on its timing
+    num_beams = len(ReferencePlan.beams)
+    for b in range(num_beams):
+        beam = ReferencePlan.beams[b]
+        current_beam_phase_offset = np.random.randint(num_plans) if b>0 else 0 # beams should start at different times
+        print('current_beam_phase_offset',current_beam_phase_offset)
+        for layer in beam.layers:
+            # Assing each spot
+            for s in range(len(layer.spotMUs)):
+                phase = int((layer.spotTimings[s] % breathing_period) // time_per_phase)
+                phase = (phase + current_beam_phase_offset) % num_plans
+                plan_4DCT[phase_number[phase]].appendSpot(beam, layer, s)
+
+    return plan_4DCT
 
 
 def compute_dose_on_each_phase(plans:Union[RTPlan, dict], CT4D:Dynamic3DSequence, output_path:str, crop_contour:ROIContour=None):
@@ -132,3 +208,4 @@ def accumulate_dose_reference_phase(dose_4DCT_path:str, model3D: Dynamic3DModel,
         print(f"dose deformed in {end-start} sec")
 
     writeRTDose(dose_MidP, output_path)
+
