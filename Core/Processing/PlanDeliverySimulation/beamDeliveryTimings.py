@@ -2,7 +2,7 @@ import requests
 import numpy as np
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data.Plan._scanAlgoPlan import ScanAlgoPlan
-
+from Core.IO.serializedObjectIO import saveRTPlan
 
 class BDT:
     def __init__(self, plan: RTPlan, config_file: str):
@@ -192,3 +192,7 @@ class BDT:
             raise NotImplementedError(f'{self.Gantry} not implemented')
 
         return conversion_coeff
+
+    def get_timings_and_save_plan(self, output_path):
+        plan_with_timings = self.getPBSTimings(sort_spots="true")
+        saveRTPlan(plan_with_timings, output_path)
