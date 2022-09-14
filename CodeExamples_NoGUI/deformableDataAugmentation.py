@@ -18,27 +18,33 @@ if __name__ == '__main__':
     testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
 
     ## read a serialized dynamic sequence
-    # dataPath = '/home/damien/Desktop/Patient0/Patient0BaseAndMod.p'
-    dataPath = testDataPath + "superLightDynSeqWithMod.p"
-    patient = loadDataStructure(dataPath)[0]
-
-    dynSeq = patient.getPatientDataOfType("Dynamic3DSequence")[0]
-    dynMod = patient.getPatientDataOfType("Dynamic3DModel")[0]
+    dataPath = testDataPath + "veryLightDynMod.p"
+    dynMod = loadDataStructure(dataPath)[0]
 
     simulationTime = 32
     amplitude = 10
 
     newSignal = SyntheticBreathingSignal(amplitude=amplitude,
-                                         variationAmplitude=0,
                                          breathingPeriod=4,
-                                         variationFrequency=0,
-                                         shift=0,
                                          meanNoise=0,
                                          varianceNoise=0,
                                          samplingPeriod=0.2,
-                                         meanEvent=0/30,
                                          simulationTime=simulationTime,
-                                         )
+                                         coeffMin=0,
+                                         coeffMax=0,
+                                         meanEvent=0/30,
+                                         meanEventApnea=0)
+    # newSignal = SyntheticBreathingSignal(amplitude=amplitude,
+    #                                      variationAmplitude=0,
+    #                                      breathingPeriod=4,
+    #                                      variationFrequency=0,
+    #                                      shift=0,
+    #                                      meanNoise=0,
+    #                                      varianceNoise=0,
+    #                                      samplingPeriod=0.2,
+    #                                      meanEvent=0/30,
+    #                                      simulationTime=simulationTime,
+    #                                      )
 
     newSignal.generate1DBreathingSignal()
     linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
@@ -46,15 +52,15 @@ if __name__ == '__main__':
     newSignal.breathingSignal = newSignal.breathingSignal * linearIncrease
 
     newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
-                                         variationAmplitude=0,
                                          breathingPeriod=4,
-                                         variationFrequency=0,
-                                         shift=0,
                                          meanNoise=0,
                                          varianceNoise=0,
                                          samplingPeriod=0.2,
                                          simulationTime=simulationTime,
-                                         meanEvent=0/30)
+                                         coeffMin=0,
+                                         coeffMax=0,
+                                         meanEvent=0/30,
+                                         meanEventApnea=0)
 
     newSignal2.breathingSignal = -newSignal.breathingSignal
 
@@ -103,8 +109,8 @@ if __name__ == '__main__':
 
 
     ## save it as a serialized object
-    savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung'
-    saveSerializedObjects(dynSeq, savingPath)
+    # savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung'
+    # saveSerializedObjects(dynSeq, savingPath)
 
     print('/'*80, '\n', '/'*80)
 
@@ -132,5 +138,5 @@ if __name__ == '__main__':
         dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
 
         ## save it as a serialized object
-        savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung_part' + str(i)
-        saveSerializedObjects(dynSeq, savingPath)
+        # savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung_part' + str(i)
+        # saveSerializedObjects(dynSeq, savingPath)

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.patient import Patient
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data._patient import Patient
 
 
 class DoseComparisonPanel(QWidget):
@@ -54,10 +54,10 @@ class DoseComparisonPanel(QWidget):
         if self._patient is None:
             self._removeAllDoses()
         else:
-            self._updateDoseComboBoxes()
-
             self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
             self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
+
+            self._updateDoseComboBoxes()
 
     def _updateDoseComboBoxes(self):
         self._removeAllDoses()
@@ -101,11 +101,12 @@ class DoseComparisonPanel(QWidget):
 
         if dose==self._selectedDose1:
             self._selectedDose1 = None
-            self._dose1ComboBox.removeItem(self._dose1ComboBox.findData(dose))
 
         if dose==self._selectedDose2:
             self._selectedDose2 = None
-            self._dose2ComboBox.removeItem(self._dose2ComboBox.findData(dose))
+
+        self._dose1ComboBox.removeItem(self._dose2ComboBox.findData(dose))
+        self._dose2ComboBox.removeItem(self._dose2ComboBox.findData(dose))
 
     def _handleImageAddedOrRemoved(self, image):
         self._updateDoseComboBoxes()

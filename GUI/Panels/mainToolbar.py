@@ -8,12 +8,14 @@ from PyQt5.QtWidgets import QToolBox, QWidget
 from Core.event import Event
 from GUI.Panels.doseComparisonPanel import DoseComparisonPanel
 from GUI.Panels.doseComputationPanel import DoseComputationPanel
-from GUI.Panels.patientDataPanel import PatientDataPanel
-from GUI.Panels.planOptiPanel import PlanOptiPanel
+from GUI.Panels.PatientDataPanel.patientDataPanel import PatientDataPanel
+from GUI.Panels.PlanDesignPanel.planDesignPanel import PlanDesignPanel
+from GUI.Panels.PlanOptimizationPanel.planOptiPanel import PlanOptiPanel
 from GUI.Panels.roiPanel import ROIPanel
-from GUI.Panels.scriptingPanel.scriptingPanel import ScriptingPanel
+from GUI.Panels.ScriptingPanel.scriptingPanel import ScriptingPanel
 from GUI.Panels.breathingSignalPanel import BreathingSignalPanel
 from GUI.Panels.drrPanel import DRRPanel
+from GUI.Panels.registrationPanel import RegistrationPanel
 
 import Extensions as extensionModule
 
@@ -49,22 +51,30 @@ class MainToolbar(QToolBox):
 
         self._viewController = viewController
         self._items = []
+        self._maxWidth = 270
 
         self.setStyleSheet("QToolBox::tab {font: bold; color: #000000; font-size: 16px;}")
 
         # initialize toolbox panels
         patientDataPanel = PatientDataPanel(self._viewController)
         roiPanel = ROIPanel(self._viewController)
+        planDesignPanel = PlanDesignPanel(self._viewController)
+        planDesignPanel.setMaximumWidth(self._maxWidth)
         planOptiPanel = PlanOptiPanel(self._viewController)
+        planOptiPanel.setMaximumWidth(self._maxWidth)
         dosePanel = DoseComputationPanel(self._viewController)
+        dosePanel.setMaximumWidth(self._maxWidth)
         doseComparisonPanel = DoseComparisonPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
-        breathingSignalPanel = BreathingSignalPanel(self._viewController)
-        xRayProjPanel = DRRPanel(self._viewController)
+        #breathingSignalPanel = BreathingSignalPanel(self._viewController)
+        #xRayProjPanel = DRRPanel(self._viewController)
+        registrationPanel = RegistrationPanel(self._viewController)
 
         item = self.ToolbarItem(patientDataPanel, 'Patient data')
         self.showItem(item)
         item = self.ToolbarItem(roiPanel, 'ROI')
+        self.showItem(item)
+        item = self.ToolbarItem(planDesignPanel, 'Plan design')
         self.showItem(item)
         item = self.ToolbarItem(planOptiPanel, 'Plan optimization')
         self.showItem(item)
@@ -74,9 +84,11 @@ class MainToolbar(QToolBox):
         self.showItem(item)
         item = self.ToolbarItem(scriptingPanel, 'Scripting')
         self.showItem(item)
-        item = self.ToolbarItem(breathingSignalPanel, 'Breathing signal generation')
-        self.showItem(item)
-        item = self.ToolbarItem(xRayProjPanel, 'DRR')
+        #item = self.ToolbarItem(breathingSignalPanel, 'Breathing signal generation')
+        #self.showItem(item)
+        #item = self.ToolbarItem(xRayProjPanel, 'DRR')
+        #self.showItem(item)
+        item = self.ToolbarItem(registrationPanel, 'Registration')
         self.showItem(item)
 
         self._addExtenstions()
@@ -120,8 +132,6 @@ class MainToolbar(QToolBox):
 
         for extensionFile in extensionFiles:
             try:
-                p = None
-
                 extensionName = os.path.splitext(os.path.basename(extensionFile))[0]
 
                 strToEval = 'from Extensions.'

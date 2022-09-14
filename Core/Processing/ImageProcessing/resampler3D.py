@@ -4,9 +4,9 @@ import numpy as np
 import logging
 
 import Core.Processing.ImageProcessing.filter3D as imageFilter3D
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 from Core.Processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 from Core.api import API
 
@@ -32,6 +32,9 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
     -------
 
     """
+
+    from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+
     if isinstance(data, Image3D):
         return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
                                outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
@@ -87,7 +90,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
 
     # gridSize is None but spacing is not
     if gridSize is None:
-        gridSize = image.gridSize*image.spacing/spacing
+        gridSize = np.floor(image.gridSize*image.spacing/spacing)
 
     if origin is None:
         origin = image.origin
@@ -103,6 +106,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
             image.spacing = spacing
             image.origin = origin
         except:
+            logger.info('Failed to use OpenMP resampler with GPU. Try SITK instead.')
             trySITK = True
     else:
         trySITK = True
@@ -112,6 +116,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
             from Core.Processing.ImageProcessing import sitkImageProcessing
             sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)
         except:
+            logger.info('Failed to use SITK resampler. Try OpenMP without GPU instead.')
             tryOpenMP = True
 
     if tryOpenMP:
@@ -324,6 +329,8 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
         if marginInMM[i] < 0:
             print('In crop3DDataAroundBox, negative margins not allowed')
             marginInMM[i] = 0
+
+    from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 
     if isinstance(data, Image3D):
         print('Before crop image 3D origin and grid size:', data.origin, data.gridSize)

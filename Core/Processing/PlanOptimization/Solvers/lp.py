@@ -10,7 +10,7 @@ except ModuleNotFoundError:
 import numpy as np
 import time
 from random import choice
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.Processing.PlanOptimization.tools import WeightStructure
 
 
@@ -153,7 +153,7 @@ class LP:
                             for k in range(self.solStruct.nSpots):
                                 self.xVars[k].Start = self.solStruct.x[k]
                     # optimize
-                    model.optimize()
+                    model.optimizeIMPT()
                     # model.optimize(mycallback)
                     status = model.Status
                     if status not in (GRB.INF_OR_UNBD, GRB.INFEASIBLE, GRB.UNBOUNDED):

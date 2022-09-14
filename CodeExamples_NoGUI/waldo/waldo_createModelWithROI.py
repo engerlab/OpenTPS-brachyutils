@@ -22,25 +22,26 @@ sys.path.append(currentWorkingDir)
 # print('after while', currentWorkingDir)
 
 
-from Core.IO.dataLoader import loadAllData
+from Core.IO.dataLoader import readData
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.IO.serializedObjectIO import saveSerializedObjects
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.Data.patient import Patient
+from Core.Data._patient import Patient
 
 # chose the patient folder, which will be used as the patient name
 organ = 'lung'
-patientName = 'Patient_10'
+study = 'CPAP_study/'
+patientName = 'Patient_8'
 patientComplement = '/2/FDG2'
 basePath = '/data/public/'
 
 
 # chose the 4DCT data folder
-data4DPath = basePath + organ + '/' + patientName + patientComplement + '/4DCT'
+data4DPath = basePath + organ + '/' + study + patientName + patientComplement + '/4DCT'
 # chose the dicom rtStruct file
-dataStructPath = basePath + organ + '/' + patientName + patientComplement + '/contours/MidP_CT_rtstruct.dcm'
+dataStructPath = basePath + organ + '/' + study + patientName + patientComplement + '/contours/MidP_CT_rtstruct.dcm'
 # chose a path to save the results
-savingPath = '/DATA2/public/' + organ + '/' + patientName + patientComplement
+savingPath = '/DATA2/public/' + organ + '/' + study + patientName + patientComplement
 
 if not os.path.exists(savingPath):
     os.umask(0)
@@ -50,7 +51,7 @@ if not os.path.exists(savingPath):
 savingPath += '/dynModAndROIs'
 
 # load the 4DCT data
-data4DList = loadAllData(data4DPath)
+data4DList = readData(data4DPath)
 print(len(data4DList), 'images found in the folder')
 print('Image type =', type(data4DList[0]))
 print('Image 0 shape =', data4DList[0].gridSize)
@@ -61,7 +62,7 @@ dynSeq.name = '4DCT'
 
 
 # load the rtStruct data and print its content
-structData = loadAllData(dataStructPath)[0]
+structData = readData(dataStructPath)[0]
 print('Available ROIs')
 structData.print_ROINames()
 

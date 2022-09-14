@@ -6,10 +6,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout
 from pyqtgraph import PlotWidget, mkPen, PlotCurveItem, SignalProxy, TextItem, FillBetweenItem
 
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.dvh import DVH
-from Core.Data.roiContour import ROIContour
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data._dvh import DVH
+from Core.Data._roiContour import ROIContour
 from Core.event import Event
 from GUI.Viewer.DataForViewer.ROIContourForViewer import ROIContourForViewer
 from GUI.Viewer.DataForViewer.ROIMaskForViewer import ROIMaskForViewer
@@ -54,11 +54,11 @@ class DVHViewer(QWidget):
 
     @property
     def dose2(self) -> Optional[DoseImage]:
-        return self._dose
+        return self._dose2
 
     @dose2.setter
     def dose2(self, dose: DoseImage):
-        if dose == self._dose:
+        if dose == self._dose2:
             return
 
         self._dose2 = dose
@@ -98,14 +98,16 @@ class DVHViewer(QWidget):
         self._partialVisibilityhandlers.append(partialHandler)
 
         self._dvhs.append(dvh)
-        self._dvhPlot.appendDVH(dvh, roi)
+        self._dvhPlot.appendDVH(dvh, roi, style=Qt.SolidLine)
         self._dvhs2.append(dvh2)
-        self._dvhPlot.appendDVH(dvh2, roi, style=Qt.DotLine)
+        self._dvhPlot.appendDVH(dvh2, roi, style=Qt.DashLine)
 
         if not (self._dose is None):
-            dvh.dose = self.dose
+            dvh.dose = self._dose
             dvh.computeDVH()
-            dvh2.dose = self.dose2
+
+        if not (self._dose2 is None):
+            dvh2.dose = self._dose2
             dvh2.computeDVH()
 
     def _handleROIVisibility(self, roi, visibility):
@@ -164,7 +166,7 @@ class DVHPlot(PlotWidget):
     def DVHs(self) -> Sequence[DVH]:
         return [dvh for dvh in self._dvhs]
 
-    def appendDVH(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], style=Qt.DashLine):
+    def appendDVH(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], style=Qt.SolidLine):
         curve = DVHCurve(dvh, referenceROI, self, style=style)
         self.addItem(curve.curve)
         self.addItem(curve.dvhLabel)
@@ -182,10 +184,11 @@ class DVHPlot(PlotWidget):
         self._dvhs.remove(dvh)
 
 class DVHCurve:
-    def __init__(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], parent=None, style=Qt.DashLine):
+    def __init__(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], parent=None, style=Qt.SolidLine):
         self._dvh = dvh
         self._referenceROI = referenceROI
         self._parent = parent
+        self._style = style
 
         self.curve = PlotCurveItem(np.array([]), np.array([]), style=style)
 
@@ -201,7 +204,7 @@ class DVHCurve:
 
     def _setCurveData(self, *args):
         mycolor = (self._referenceROI.color[0], self._referenceROI.color[1], self._referenceROI.color[2])
-        pen = mkPen(color=mycolor, width=2)
+        pen = mkPen(color=mycolor, width=2, style=self._style)
 
         dose, volume = self._dvh.histogram
         self.curve.setData(dose, volume, pen=pen, name=self._referenceROI.name)
@@ -226,6 +229,10 @@ class DVHCurve:
             for item in self.curve.scene().items():
                 if isinstance(item, PlotCurveItem):
                     data = item.getData()
+
+                    if data[0] is None or len(data[0])<=0:
+                        continue
+
                     y, y2 = np.interp([mousePoint.x(), mousePoint.x() * 1.01], data[0], data[1])
                     # if item.mouseShape().contains(mousePoint):
                     # check if mouse.y is close to f(mouse.x)

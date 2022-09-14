@@ -5,11 +5,11 @@ import bz2
 import _pickle as cPickle
 import pickle
 import os
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 
 
 # ---------------------------------------------------------------------------------------------------
-from Core.Data.sparseBeamlets import SparseBeamlets
+from Core.Data._sparseBeamlets import SparseBeamlets
 
 
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
@@ -17,7 +17,7 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
     if splitPatientsBool:
         patientList = [[patient] for patient in patientList]
         for patient in patientList:
-            patientName = '_' + patient[0].patientInfo.name
+            patientName = '_' + patient[0].name
             saveSerializedObjects(patient, savingPath + patientName, compressedBool=compressedBool)
 
     else:
@@ -86,14 +86,9 @@ def loadSerializedObject(filePath):
 
 
 def saveRTPlan(plan , file_path):
-    if plan.beamlets != []:
-        plan.beamlets.unload()
-
-    for scenario in plan.scenarios:
-        scenario.unload()
-        
     # dcm = plan.OriginalDicomDataset
     # plan.OriginalDicomDataset = []
+    plan.planDesign.beamlets = []
 
     with open(file_path, 'wb') as fid:
         pickle.dump(plan.__dict__, fid)

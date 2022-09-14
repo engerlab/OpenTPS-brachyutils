@@ -1,27 +1,24 @@
-import functools
 import logging
 import os
 import sys
-import threading
 from pathlib import Path
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtCore
 
 from Core.api import API, FileLogger
-from Core.Data.patientList import PatientList
+from Core.Data._patientList import PatientList
 from GUI.viewController import ViewController
-import Script
 
 from logConfigParser import parseArgs
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid display bug for 4k resolutions with 200% GUI scale
 
 
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
+def main():
     mainConfig = ProgramSettings()
 
     options = parseArgs(sys.argv[1:])
@@ -30,14 +27,16 @@ if __name__ == '__main__':
     if not app:
         app = QApplication([])
 
-    patientList = PatientList()
+    if API.patientList is None:
+        patientList = PatientList()
+        API.patientList = patientList
 
-    API.patientList = patientList
     API.logger.appendLoggingFunction(FileLogger().print)
     API.logger.appendLoggingFunction(logger.info)
     API.logger.enabled = True
 
     # instantiate the main GUI window
+    patientList = API.patientList
     viewController = ViewController(patientList)
     viewController.mainConfig = mainConfig
     viewController.mainWindow.show()
@@ -57,3 +56,6 @@ if __name__ == '__main__':
         print(output)
 
     app.exec_()
+
+if __name__ == '__main__':
+    main()

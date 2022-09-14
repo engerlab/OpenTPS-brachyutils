@@ -1,6 +1,5 @@
-import importlib
+
 import os
-import sys
 
 from PyQt5.QtCore import QSize, QDir
 from PyQt5.QtGui import QIcon
@@ -9,9 +8,10 @@ from PyQt5.QtWidgets import QToolBar, QAction, QDialog, QPushButton, QLineEdit, 
 
 from Core.IO import dataLoader
 from Core.event import Event
-from GUI.Tools.cropTool import CropWidget
 from GUI.Viewer.dataViewer import DataViewer
 from GUI.Viewer.exportWindow import ExportWindow
+from GUI.Tools._cropTool import CropWidget
+from GUI.Tools._resampleTool import ResampleWidget
 from GUI.programSettingEditor import ProgramSettingEditor
 
 import GUI.res.icons as IconModule
@@ -22,10 +22,13 @@ class ViewerToolbar(QToolBar):
     PLAY_STATUS = 1
     PAUSE_STATUS = 0
 
-    def __init__(self, viewController):
-        QToolBar.__init__(self)
+    def __init__(self, viewController, parent=None):
+        super().__init__(parent)
 
         self._viewController = viewController
+        self._cropWidgets = []
+        self._resampleWidgets = []
+
         self.setIconSize(QSize(16, 16))
 
         self.iconPath = str(IconModule.__path__[0]) + os.path.sep
@@ -62,6 +65,11 @@ class ViewerToolbar(QToolBar):
         self._buttonCrop.triggered.connect(self._handleCrop)
         self._buttonCrop.setCheckable(False)
 
+        self._buttonResample = QAction(QIcon(self.iconPath + "resample.png"), "Resample", self)
+        self._buttonResample.setStatusTip("Resample")
+        self._buttonResample.triggered.connect(self._handleResample)
+        self._buttonResample.setCheckable(False)
+
         self._dropModeCombo = QComboBox()
         self._dropModeToStr = {DataViewer.DropModes.AUTO: 'Drop mode: auto',
                                DataViewer.DropModes.PRIMARY: 'Drop as primary image',
@@ -80,6 +88,7 @@ class ViewerToolbar(QToolBar):
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonWindowLevel)
         self.addAction(self._buttonCrop)
+        self.addAction(self._buttonResample)
         self.addAction(self._dropModeAction)
 
         self.addSeparator()
@@ -143,8 +152,17 @@ class ViewerToolbar(QToolBar):
         self._viewController.crossHairEnabled = pressed
 
     def _handleCrop(self):
-        self._cropWidget = CropWidget(self._viewController)
-        self._cropWidget.show()
+        cw = CropWidget(self._viewController)
+        # TODO
+        # I don't know why but we must keep the reference to any CropWidget created even if we close it
+        # This is an issue because _cropWidgets might become huge
+        self._cropWidgets.append(cw)
+        cw.show()
+
+    def _handleResample(self):
+        rw = ResampleWidget(self._viewController)
+        self._resampleWidgets.append(rw)
+        rw.show()
 
     def _handleLoadData(self):
         filesOrFoldersList = self._getOpenFilesAndDirs(caption="Open patient data files or folders",

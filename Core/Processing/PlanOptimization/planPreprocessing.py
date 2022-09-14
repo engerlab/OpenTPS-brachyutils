@@ -3,10 +3,10 @@ from typing import Sequence
 
 import numpy as np
 
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.Plan.planIonSpot import PlanIonSpot
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planIonLayer import PlanIonLayer
+from Core.Data.Plan._planIonSpot import PlanIonSpot
+from Core.Data.Plan._rtPlan import RTPlan
 
 
 def extendPlanLayers(plan: RTPlan) -> RTPlan:
@@ -51,7 +51,6 @@ class ExtendedBeam(PlanIonBeam):
         newBeam.isocenterPosition = beam.isocenterPosition
         newBeam.gantryAngle = beam.gantryAngle
         newBeam.couchAngle = beam.couchAngle
-        newBeam.patientSupportAngle = beam.patientSupportAngle
         newBeam.rangeShifter = beam.rangeShifter
         newBeam.seriesInstanceUID = beam.seriesInstanceUID
 

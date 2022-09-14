@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from Core.Data.Images.doseImage import DoseImage
+from Core.Data.Images._doseImage import DoseImage
 from Core.event import Event
 from GUI.MainWindow import MainWindow
 from GUI.Viewer.DataViewerComponents.profileWidget import ProfileWidget
@@ -193,7 +193,7 @@ class ViewController():
     def secondaryImage(self, image):
         if self.independentViewsEnabled:
             # secondaryImage is only available when only one image can be shown
-            raise("secondaryImage is only available when only one image can be shown")
+            raise Exception("secondaryImage is only available when only one image can be shown")
 
         self._secondaryImage = image
         self.secondaryImageChangedSignal.emit(self._secondaryImage)

@@ -1,14 +1,16 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, QPushButton
 
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.patient import Patient
-from Core.Data.roiContour import ROIContour
-from Core.Data.rtStruct import RTStruct
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.MCsquare import MCsquareConfig
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._patient import Patient
+from Core.Data._roiContour import ROIContour
+from Core.Data._rtStruct import RTStruct
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 
 class DoseComputationPanel(QWidget):
@@ -51,6 +53,10 @@ class DoseComputationPanel(QWidget):
         self._primariesEdit.setText(str(int(1e7)))
         self.layout.addWidget(self._primariesEdit)
 
+        from GUI.programSettingEditor import MCsquareConfigEditor
+        self._mcsquareConfigWidget = MCsquareConfigEditor(self)
+        self.layout.addWidget(self._mcsquareConfigWidget)
+
         self._runButton = QPushButton('Run')
         self._runButton.clicked.connect(self._run)
         self.layout.addWidget(self._runButton)
@@ -85,9 +91,6 @@ class DoseComputationPanel(QWidget):
         if self._patient is None:
             self._removeAllCTs()
         else:
-            self._updateCTComboBox()
-            self._updatePlanComboBox()
-
             self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
             self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
 
@@ -96,6 +99,9 @@ class DoseComputationPanel(QWidget):
 
             self._patient.rtStructAddedSignal.connect(self._handleROIAddedOrRemoved)
             self._patient.rtStructRemovedSignal.connect(self._handleROIAddedOrRemoved)
+
+            self._updateCTComboBox()
+            self._updatePlanComboBox()
 
     def _updateCTComboBox(self):
         self._removeAllCTs()
@@ -214,7 +220,7 @@ class DoseComputationPanel(QWidget):
         self._updateROIComboBox()
 
     def _run(self):
-        settings = ProgramSettings()
+        settings = DoseCalculationConfig()
 
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)

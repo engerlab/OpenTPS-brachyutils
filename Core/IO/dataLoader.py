@@ -4,10 +4,10 @@ from typing import Sequence
 import pydicom
 import logging
 
-from Core.Data.patientData import PatientData
+from Core.Data._patientData import PatientData
 from Core.api import API
-from Core.Data.patient import Patient
-from Core.Data.patientList import PatientList
+from Core.Data._patient import Patient
+from Core.Data._patientList import PatientList
 from Core.IO.dicomIO import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
 from Core.IO import mhdIO
 from Core.IO.serializedObjectIO import loadDataStructure
@@ -16,7 +16,7 @@ from Core.IO.serializedObjectIO import loadDataStructure
 def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):
     #TODO: implement ignoreExistingData
 
-    dataList = loadAllData(dataPath, maxDepth=maxDepth)
+    dataList = readData(dataPath, maxDepth=maxDepth)
 
     patient = None
 
@@ -26,16 +26,29 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
     for data in dataList:
         if (isinstance(data, Patient)):
             patient = data
-            patientList.append(patient)
+            try:
+                patient = patientList.getPatientByPatientId(patient.id)
+            except:
+                patientList.append(patient)
 
-        if importInPatient is None:
+        elif importInPatient is None:
             # check if patient already exists
-            patient = patientList.getPatientByPatientId(data.patientInfo.patientID)
+            try:
+                patient = patientList.getPatientByPatientId(data.patient.id)
+            except:
+                pass
 
             # TODO: Get patient by name?
 
         if patient is None:
-            patient = Patient(patientInfo = data.patientInfo)
+            if data.patient is None:
+                data.patient = Patient()
+
+            patient = data.patient
+            patientList.append(patient)
+
+        if patient is None:
+            patient = Patient()
             patientList.append(patient)
 
         # add data to patient
@@ -49,7 +62,7 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
             continue
 
-def loadAllData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
+def readData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
     """
     Load all data found at the given input path.
 

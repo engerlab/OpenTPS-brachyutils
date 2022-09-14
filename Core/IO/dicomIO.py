@@ -2,17 +2,18 @@ import datetime
 import pydicom
 import numpy as np
 import logging
-from Core.Data.Plan.rangeShifter import RangeShifter
 
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.patientInfo import PatientInfo
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.rtStruct import RTStruct
-from Core.Data.roiContour import ROIContour
-from Core.Data.Images.vectorField3D import VectorField3D
+from Core.Data import Patient
+from Core.Data.Plan._rangeShifter import RangeShifter
+
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planIonLayer import PlanIonLayer
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data._rtStruct import RTStruct
+from Core.Data._roiContour import ROIContour
+from Core.Data.Images._vectorField3D import VectorField3D
 
 
 def readDicomCT(dcmFiles):
@@ -71,14 +72,18 @@ def readDicomCT(dcmFiles):
     imagePositionPatient = (float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), sliceLocation[0])
 
     # collect patient information
-    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
                               sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # generate CT image object
-    image = CTImage(imageArray=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient,
+    image = CTImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
                     spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID,
                     frameOfReferenceUID=dcm.FrameOfReferenceUID, sliceLocation=sliceLocation,
                     sopInstanceUIDs=sopInstanceUIDs)
+    image.patient = patient
 
     return image
 
@@ -147,14 +152,17 @@ def readDicomDose(dcmFile):
             imagePositionPatient[2] = imagePositionPatient[2] - imageData.shape[2] * pixelSpacing[2]
 
     # collect patient information
-    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                              sex=dcm.PatientSex)
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                      sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # generate dose image object
-    image = DoseImage(imageArray=imageData, name=imgName, patientInfo=patientInfo, origin=imagePositionPatient,
+    image = DoseImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
                       spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID,
-                      frameOfReferenceUID=dcm.FrameOfReferenceUID, sopInstanceUID=dcm.SOPInstanceUID,
-                      planSOPInstanceUID=planSOPInstanceUID)
+                      sopInstanceUID=dcm.SOPInstanceUID)
+    image.patient = patient
 
     return image
 
@@ -183,12 +191,16 @@ def readDicomStruct(dcmFile):
         structName = dcm.SeriesInstanceUID
 
     # collect patient information
-    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                              sex=dcm.PatientSex)
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                      sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # Create the object that will be returned. Takes the same patientInfo as the refImage it is linked to
-    struct = RTStruct(name=structName, patientInfo=patientInfo, seriesInstanceUID=dcm.SeriesInstanceUID,
+    struct = RTStruct(name=structName, seriesInstanceUID=dcm.SeriesInstanceUID,
                       sopInstanceUID=dcm.SOPInstanceUID)
+    struct.patient = patient
 
     for dcmStruct in dcm.StructureSetROISequence:
         referencedRoiId = next(
@@ -201,8 +213,9 @@ def readDicomStruct(dcmFile):
 
         # Create ROIContour object
         color = tuple([int(c) for c in list(dcmContour.ROIDisplayColor)])
-        contour = ROIContour(patientInfo=patientInfo, name=dcmStruct.ROIName, displayColor=color,
+        contour = ROIContour(name=dcmStruct.ROIName, displayColor=color,
                              referencedFrameOfReferenceUID=dcmStruct.ReferencedFrameOfReferenceUID)
+        contour.patient = patient
 
         for dcmSlice in dcmContour.ContourSequence:
             contour.polygonMesh.append(dcmSlice.ContourData)  # list of coordinates (XYZ) for the polygon
@@ -245,8 +258,11 @@ def readDicomVectorField(dcmFile):
     fieldData = rawField.copy()
 
     # collect patient information
-    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                              sex=dcm.PatientSex)
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                      sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     # collect other information
     if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
@@ -255,8 +271,9 @@ def readDicomVectorField(dcmFile):
         fieldName = dcm.SeriesInstanceUID
 
     # generate dose image object
-    field = VectorField3D(imageArray=fieldData, name=fieldName, patientInfo=patientInfo, origin=imagePositionPatient,
+    field = VectorField3D(imageArray=fieldData, name=fieldName, origin=imagePositionPatient,
                           spacing=pixelSpacing)
+    field.patient = patient
 
     return field
 
@@ -265,15 +282,19 @@ def readDicomPlan(dcmFile) -> RTPlan:
     dcm = pydicom.dcmread(dcmFile)
 
     # collect patient information
-    patientInfo = PatientInfo(patientID=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                              sex=dcm.PatientSex)
+    if hasattr(dcm, 'PatientID'):
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
+                      sex=dcm.PatientSex)
+    else:
+        patient = Patient()
 
     if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
         name = dcm.SeriesDescription
     else:
         name = dcm.SeriesInstanceUID
 
-    plan = RTPlan(name=name, patientInfo=patientInfo)
+    plan = RTPlan(name=name)
+    plan.patient = patient
 
     # plan.OriginalDicomDataset = dcm
 
@@ -561,7 +582,7 @@ def writeRTPlan(plan: RTPlan, filePath):
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]
             dcm_layer.GantryAngle = beam.gantryAngle
-            dcm_layer.PatientSupportAngle = beam.patientSupportAngle
+            dcm_layer.PatientSupportAngle = beam.couchAngle
 
             dcm_layer.RangeShifterSettingsSequence = []
             dcm_rsSettings = pydicom.dataset.Dataset()
@@ -623,16 +644,19 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.SeriesNumber = 1
     dcm_file.InstanceNumber = 1
     dcm_file.PatientOrientation = ''
-    #dcm_file.FrameOfReferenceUID = self.FrameOfReferenceUID
+    if dose.referenceCT is None:
+        dcm_file.FrameOfReferenceUID = pydicom.uid.generate_uid()
+    else:
+        dcm_file.FrameOfReferenceUID = dose.referenceCT.frameOfReferenceUID
     dcm_file.DoseUnits = 'GY'
     dcm_file.DoseType = 'PHYSICAL'  # or 'EFFECTIVE' for RBE dose (but RayStation exports physical dose even if 1.1 factor is already taken into account)
     dcm_file.DoseSummationType = 'PLAN'
     ReferencedPlan = pydicom.dataset.Dataset()
     ReferencedPlan.ReferencedSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.8"  # ion plan
-    # if (plan_uid == []):
-    #     ReferencedPlan.ReferencedSOPInstanceUID = self.Plan_SOPInstanceUID
-    # else:
-    #     ReferencedPlan.ReferencedSOPInstanceUID = plan_uid
+    if dose.referencePlan is None:
+        ReferencedPlan.ReferencedSOPInstanceUID = pydicom.uid.generate_uid()
+    else:
+        ReferencedPlan.ReferencedSOPInstanceUID = dose.referencePlan.SOPInstanceUID
     dcm_file.ReferencedRTPlanSequence = pydicom.sequence.Sequence([ReferencedPlan])
     # dcm_file.ReferringPhysicianName
     # dcm_file.OperatorName
@@ -644,16 +668,16 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.Rows = dcm_file.Height
     dcm_file.NumberOfFrames = dose.gridSize[2]
     dcm_file.SliceThickness = dose.spacing[2]
-    dcm_file.PixelSpacing = dose.spacing[0:2]
+    dcm_file.PixelSpacing = list(dose.spacing[0:2])
     dcm_file.ColorType = 'grayscale'
-    dcm_file.ImagePositionPatient = dose.origin
+    dcm_file.ImagePositionPatient = list(dose.origin)
     dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
                                         0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
     dcm_file.SamplesPerPixel = 1
     dcm_file.PhotometricInterpretation = 'MONOCHROME2'
     dcm_file.FrameIncrementPointer = pydicom.tag.Tag((0x3004, 0x000c))
     dcm_file.GridFrameOffsetVector = list(
-        np.arange(0, dose.gridSize[2] * dose.gridSize[2], dose.gridSize[2]))
+        np.arange(0, dose.gridSize[2] * dose.spacing[2], dose.spacing[2]))
 
     # transfer syntax
     dcm_file.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian

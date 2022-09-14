@@ -1,13 +1,13 @@
 import numpy as np
 
 from scipy.interpolate import LinearNDInterpolator, interpn
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 import time
 import matplotlib.pyplot as plt
 from scipy.interpolate import LinearNDInterpolator
 import copy
 import logging
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 
 logger = logging.getLogger(__name__)
 

@@ -1,17 +1,25 @@
 import os
 import sys
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import logging
+from logConfigParser import parseArgs
 
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images._ctImage import CTImage
+
+currentWorkingDir = os.getcwd()
+while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(currentWorkingDir)
+os.chdir(currentWorkingDir)
+
+logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
+
+    options = parseArgs(sys.argv[1:])
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = Dynamic3DSequence()

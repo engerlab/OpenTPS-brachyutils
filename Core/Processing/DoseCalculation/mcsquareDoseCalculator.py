@@ -4,26 +4,27 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
 import numpy as np
 
-from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.image3D import Image3D
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.MCsquare.bdl import BDL
-from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.MCsquare._bdl import BDL
+from Core.Data.MCsquare._mcsquareConfig import MCsquareConfig
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._roiContour import ROIContour
+from Core.Data._sparseBeamlets import SparseBeamlets
 from Core.Data.robustness import Robustness
-from Core.Data.roiContour import ROIContour
-from Core.Data.sparseBeamlets import SparseBeamlets
-from Core.IO.serializedObjectIO import saveBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
-from programSettings import ProgramSettings
+from Core.Processing.ImageProcessing import resampler3D
+from Core.Utils.programSettings import ProgramSettings
 
 import Core.IO.mcsquareIO as mcsquareIO
 
@@ -37,7 +38,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct: Optional[Image3D] = None
         self._plan: Optional[RTPlan] = None
         self._roi = None
-        self._roiMasks = None
         self._config = None
         self._mcsquareCTCalibration = None
         self._beamModel = None
@@ -124,7 +124,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return doseImage
 
-    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> SparseBeamlets:
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan,
+                        roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
@@ -137,8 +138,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         # Import sparse beamlets
         if self._robustnessStrategy == "Disabled":
             beamletDose = self._importBeamlets()
-            outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
-            saveBeamlets(beamletDose)
+            #outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
+            #saveBeamlets(beamletDose)
         else:
             self._sparseDoseFilePath = os.path.join(self._outputDir, "Sparse_Dose_Nominal.txt")
         beamletDose.beamletWeights = np.array(plan.spotMUs)
@@ -165,16 +166,19 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return scenarios
 
-    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[ROIContour]]) -> DoseImage:
+    def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> DoseImage:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         # Generate MCsquare configuration file
         self._config = self._beamletFreeOptiConfig
         # Export useful data
         self._writeFilesToSimuDir()
-        mcsquareIO.writeObjectives(self._plan.objectives, self._objFilePath)
+        mcsquareIO.writeObjectives(self._plan.planDesign.objectives, self._objFilePath)
         for contour in roi:
-            mask = contour.getBinaryMask(self._ct.origin, self._ct.gridSize, self._ct.spacing)
+            if isinstance(contour, ROIContour):
+                mask = contour.getBinaryMask(self._ct.origin, self._ct.gridSize, self._ct.spacing)
+            else:
+                mask = contour
             mcsquareIO.writeContours(mask, self._contourFolderPath)
         self._cleanDir(self._outputDir)
         # Start simulation
@@ -227,9 +231,18 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             # os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
         elif (platform.system() == "Windows"):
             if not opti:
-                os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
+                self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir,"MCsquare_win.bat"), cwd=self._mcsquareSimuDir)
             else:
-                os.system("cd " + self._mcsquareSimuDir + " && MCsquare_opti_win.bat")
+                raise Exception('MCsquare opti not available on Windows.')
+            self._subprocess.wait()
+            if self._subprocessKilled:
+                self._subprocessKilled = False
+                raise Exception('MCsquare subprocess killed by caller.')
+            self._subprocess = None
+            # if not opti:
+            #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
+            # else:
+            #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_opti_win.bat")
 
     def _importDose(self) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
@@ -248,11 +261,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._roiMasks)
-        beamletDose.beamletRescaling = self._beamletRescaling()
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
         return beamletDose
 
-    def _beamletRescaling(self):
+    def _beamletRescaling(self) -> Sequence[float]:
         beamletRescaling = []
         for beam in self._plan:
             for layer in beam:
@@ -385,7 +397,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
-        if self._independentScoringGrid == True:
+        if self._independentScoringGrid:
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = self._scoringVoxelSpacing  # in mm
             config["Scoring_grid_size"] = [int(math.floor(i / j * k)) for i, j, k in
@@ -400,14 +412,21 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             #                              config["Scoring_voxel_spacing"][1] / 2.0
             config["Scoring_origin"][1] = self._ct.origin[1] - config["Scoring_voxel_spacing"][
                 1] / 2.0
-            self._roiMasks = []
-            for contour in self._roi:
-                resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
-                                                      spacing=self.scoringVoxelSpacing)
-                self._roiMasks.append(resampledMask)
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
-
+            roiResampled = []
+            for contour in self._roi:
+                if isinstance(contour, ROIContour):
+                    resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
+                                                          spacing=self.scoringVoxelSpacing)
+                elif isinstance(contour, ROIMask):
+                    resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
+                                                                gridSize=config["Scoring_grid_size"],
+                                                                spacing=self.scoringVoxelSpacing)
+                else:
+                    raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
+                roiResampled.append(resampledMask)
+            self._roi = roiResampled
         # config["Stat_uncertainty"] = 2.
 
         return config

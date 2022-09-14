@@ -24,7 +24,7 @@ from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineSh
 if __name__ == '__main__':
 
     organ = 'lung'
-    patientFolder = 'Patient_4'
+    patientFolder = 'Patient_12'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
 
@@ -35,15 +35,15 @@ if __name__ == '__main__':
     savingPath = basePath + organ  + '/' + patientFolder + patientComplement + resultFolder
 
     # parameters selection ------------------------------------
-    bodyContourToUse = 'Body'
-    targetContourToUse = 'GTV T'
-    lungContourToUse = 'R lung'
+    bodyContourToUse = 'patient'
+    targetContourToUse = 'gtv t'
+    lungContourToUse = 'r lung'
     contourToAddShift = targetContourToUse
 
     # interfraction changes parameters
-    baselineShift = [-2, 0, 0]
-    translation = [-20, 0, 10]
-    rotation = [0, 5, 2]
+    baselineShift = [0, 0, 0]
+    translation = [0, 0, 0]
+    rotation = [0, 0, 0]
     shrinkSize = [3, 3, 3]
 
     # GPU used

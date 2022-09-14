@@ -1,13 +1,16 @@
 import functools
 import inspect
+import logging
 import os
 import sys
 import unittest
 from io import StringIO
 from typing import Callable
 
-import Script
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileLogger():
@@ -172,9 +175,9 @@ class APILogger:
     @staticmethod
     def _LoggedArgToString(arg):
         # Do import here to avoid circular import at compilation time
-        from Core.Data.Images.image3D import Image3D
-        from Core.Data.patient import Patient
-        from Core.Data.patientList import PatientList
+        from Core.Data.Images._image3D import Image3D
+        from Core.Data._patient import Patient
+        from Core.Data._patientList import PatientList
 
         argStr = ''
 
@@ -201,7 +204,7 @@ class APILogger:
 
         ind = _API._staticVars["patientList"].getIndex(patient)
         if ind < 0:
-            argStr = 'Error: Image or patient not found in patient'
+            argStr = 'Error: patient ' + patient.name + ' not found in patient'
         else:
             argStr = 'API.patientList[' \
                      + str(ind) + ']'
@@ -212,14 +215,13 @@ class APILogger:
     def _patientDataToString(image):
         argStr = ''
 
-        for patient in _API._staticVars["patientList"]:
-            if image in patient.images:
-                argStr = 'API.patientList[' \
-                         + str(_API._staticVars["patientList"].getIndex(patient)) + ']' \
-                         + '.patientData[' \
-                         + str(APILogger.getPatientDataIndex(patient, image)) + ']'
+        if not (image.patient is None) and image in image.patient.patientData:
+            argStr = APILogger._patientToString(image.patient) \
+                     + '.patientData[' \
+                     + str(APILogger.getPatientDataIndex(image.patient, image)) + ']'
+
         if argStr == '':
-            argStr = 'Error: Image or patient not found in patient or patient list'
+            argStr = 'Error: Data ' + image.name + ' not found in patient'
 
         return argStr
 
@@ -257,6 +259,7 @@ class APIInterpreter:
             exec(code)
         except Exception as err:
             sys.stdout = old_stdout
+            logger.info(format(err))
             raise err from err
 
         sys.stdout = old_stdout

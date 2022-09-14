@@ -3,13 +3,15 @@ import logging
 import numpy as np
 import scipy.sparse as sp
 
+from Core.Data.Plan._planDesign import PlanDesign
+
 try:
     import sparse_dot_mkl
     use_MKL = 1
 except:
     use_MKL = 0
 
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 from Core.Processing.PlanOptimization.Solvers import gradientDescent, bfgs, fista, localSearch, mip, sparcling, \
     beamletFree, lp
 from Core.Processing.PlanOptimization import planPreprocessing
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
-    def __init__(self, plan: RTPlan, functions=None, **kwargs):
+    def __init__(self, plan:RTPlan, functions=None, **kwargs):
         if functions is None:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
@@ -26,23 +28,19 @@ class PlanOptimizer:
         self.initPlan = plan
         self.opti_params = kwargs
         self.functions = functions
-        self.beamletMatrix = self.plan.beamlets.toSparseMatrix()
         self.xSquared = True
 
     def initializeWeights(self):
         # Total Dose calculation
         weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
 
-        if use_MKL == 1:
-            TotalDose = sparse_dot_mkl.dot_product_mkl(self.beamletMatrix, weights)
-        else:
-            TotalDose = sp.csc_matrix.dot(self.beamletMatrix, weights)
+        totalDose = self.plan.planDesign.beamlets.toDoseImage().imageArray
 
-        maxDose = np.max(TotalDose)
+        maxDose = np.max(totalDose)
         try:
             x0 = self.opti_params['init_weights']
         except KeyError:
-            x0 = (self.plan.objectives.targetPrescription / maxDose) * np.ones(self.plan.numberOfSpots,
+            x0 = (self.plan.planDesign.objectives.targetPrescription / maxDose) * np.ones(self.plan.numberOfSpots,
                                                                                dtype=np.float32)
         return x0
 
@@ -58,30 +56,34 @@ class PlanOptimizer:
         niter = result['niter']
         time = result['time']
         cost = result['objective']
+
+        if niter<=0:
+            niter = 1
+
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
                 .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
 
         # unload scenario beamlets
-        for s in range(len(self.plan.scenarios)):
-            self.plan.scenarios[s].unload()
+        for s in range(len(self.plan.planDesign.scenarios)):
+            self.plan.planDesign.scenarios[s].unload()
 
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.initPlan.spotMUs = np.square(weights).astype(np.float32)
-            self.initPlan.beamlets.beamletWeights = np.square(weights).astype(np.float32)
+            self.plan.spotMUs = np.square(weights).astype(np.float32)
+            self.plan.planDesign.beamlets.beamletWeights = np.square(weights).astype(np.float32)
         else:
-            self.initPlan.spotMUs = weights.astype(np.float32)
-            self.initPlan.beamlets.beamletWeights = weights.astype(np.float32)
+            self.plan.spotMUs = weights.astype(np.float32)
+            self.plan.planDesign.beamlets.beamletWeights = weights.astype(np.float32)
 
-        totalDose = self.initPlan.beamlets.toDoseImage()
+        totalDose = self.plan.planDesign.beamlets.toDoseImage()
 
         return weights, totalDose, cost
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan, functions=None, **kwargs):
+    def __init__(self, method, plan:RTPlan, functions=None, **kwargs):
         super().__init__(plan, functions, **kwargs)
         if functions is None:
             logger.error('You must specify the function you want to optimize')

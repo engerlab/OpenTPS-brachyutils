@@ -1,8 +1,10 @@
 import functools
 
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout, QCheckBox
+
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from GUI.Panels.mainToolbar import MainToolbar
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
 
 
 class EditableSetting(QWidget):
@@ -12,8 +14,10 @@ class EditableSetting(QWidget):
         self._mainLayout = QHBoxLayout(self)
         self.setLayout(self._mainLayout)
 
-        self._txt = QLabel(self)
-        self._txt.setText(property)
+        if not (property is None or property==""):
+            self._txt = QLabel(self)
+            self._txt.setText(property)
+            self._mainLayout.addWidget(self._txt)
 
         self._nameLineEdit = QLineEdit(self)
 
@@ -22,9 +26,10 @@ class EditableSetting(QWidget):
         self._validateButton.clicked.connect(lambda *args: action(self._nameLineEdit.text()))
 
         self._nameLineEdit.setText(str(value))
-        self._txt.setBuddy(self._nameLineEdit)
 
-        self._mainLayout.addWidget(self._txt)
+        if not (property is None or property == ""):
+            self._txt.setBuddy(self._nameLineEdit)
+
         self._mainLayout.addWidget(self._nameLineEdit)
         self._mainLayout.addWidget(self._validateButton)
 
@@ -47,7 +52,7 @@ class ProgramSettingEditor(QMainWindow):
         self._workspaceField = EditableSetting("Workspace", str(self.programSettings.workspace), self.setWorkspace)
         self._layout.addWidget(self._workspaceField)
 
-        self._machineParam = MachineParam(self.programSettings)
+        self._machineParam = MCsquareConfigEditor()
         self._layout.addWidget(self._machineParam)
 
         self._activeExtensions = ActiveExtensions(self.mainToolbar)
@@ -91,23 +96,29 @@ class ActiveExtensions(QWidget):
     def _handleItemChecked(self, item, checked):
         item.visible = checked
 
-class MachineParam(QWidget):
-    def __init__(self, programSettings:ProgramSettings):
-        super().__init__()
+class MCsquareConfigEditor(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-        self._programSettings = programSettings
+        self._dcConfig = DoseCalculationConfig()
 
         self._layout = QVBoxLayout(self)
         self.setLayout(self._layout)
 
-        self._scannerField = EditableSetting("Scanner", str(programSettings.scannerFolder), self._setScanner)
+        self._txt = QLabel(self)
+        self._txt.setText("Scanner folder")
+        self._layout.addWidget(self._txt)
+        self._scannerField = EditableSetting("", str(self._dcConfig.scannerFolder), self._setScanner)
         self._layout.addWidget(self._scannerField)
 
-        self._bdlField = EditableSetting("BDL", str(programSettings.bdlFile), self._setBDL)
+        self._txt2 = QLabel(self)
+        self._txt2.setText("BDL file")
+        self._layout.addWidget(self._txt2)
+        self._bdlField = EditableSetting("", str(self._dcConfig.bdlFile), self._setBDL)
         self._layout.addWidget(self._bdlField)
 
     def _setScanner(self, text):
-        self._programSettings.scannerFolder = text
+        self._dcConfig.scannerFolder = text
 
     def _setBDL(self, text):
-        self._programSettings.bdlFile = text
+        self._dcConfig.bdlFile = text

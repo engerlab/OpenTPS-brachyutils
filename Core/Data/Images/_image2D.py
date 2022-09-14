@@ -1,0 +1,111 @@
+
+__all__ = ['Image2D']
+
+
+import copy
+from typing import Sequence
+
+import numpy as np
+
+from Core.Data._patientData import PatientData
+from Core.event import Event
+
+
+class Image2D(PatientData):
+    def __init__(self, imageArray=None, name="2D Image", origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
+        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID)
+
+        self.dataChangedSignal = Event()
+
+        self._imageArray = imageArray
+        self._origin = np.array(origin)
+        self._spacing = np.array(spacing)
+        self._angles = np.array(angles)
+
+    def __str__(self):
+        gs = self.gridSize
+        s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
+        return s
+
+    def __deepcopy__(self, memodict={}):
+        newImage = Image2D()
+
+        newImage._deepCopyProperties(self, memodict)
+
+        return newImage
+
+    def _deepCopyProperties(self, otherImage, memodict):
+        if not (otherImage.imageArray is None):
+            self._imageArray = np.array(otherImage.imageArray)
+        self._origin = np.array(otherImage.origin)
+        self._spacing = np.array(otherImage.spacing)
+        self._angles = np.array(otherImage.angles)
+
+    # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D
+    @classmethod
+    def fromImage2D(cls, image):
+        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing,
+                       angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+
+    @property
+    def imageArray(self) -> np.ndarray:
+        #return np.array(self._imageArray)
+        return self._imageArray
+
+    @imageArray.setter
+    def imageArray(self, array:np.ndarray):
+        self._imageArray = array
+
+    @property
+    def origin(self) -> np.ndarray:
+        return self._origin
+
+    @origin.setter
+    def origin(self, origin):
+        self._origin = np.array(origin)
+        self.dataChangedSignal.emit()
+
+    @property
+    def spacing(self) -> np.ndarray:
+        return self._spacing
+
+    @spacing.setter
+    def spacing(self, spacing):
+        self._spacing = np.array(spacing)
+        self.dataChangedSignal.emit()
+
+    @property
+    def angles(self) -> np.ndarray:
+        return self._angles
+
+    @angles.setter
+    def angles(self, angles):
+        self._angles = np.array(angles)
+        self.dataChangedSignal.emit()
+
+    @property
+    def gridSize(self)  -> np.ndarray:
+        if self.imageArray is None:
+            return np.array((0, 0))
+
+        return np.array(self.imageArray.shape)
+
+    @property
+    def gridSizeInWorldUnit(self) -> np.ndarray:
+        return self.gridSize * self.spacing
+
+    def getDataAtPosition(self, position:Sequence):
+        voxelIndex = self.getVoxelIndexFromPosition(position)
+        dataNumpy = self.imageArray[voxelIndex[0], voxelIndex[1]]
+
+        return dataNumpy
+
+    def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
+        positionInMM = np.array(position)
+        shiftedPosInMM = positionInMM - self.origin
+        posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
+
+        return posInVoxels
+
+    def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        return self.origin + np.array(index).astype(dtype=float)*self.spacing

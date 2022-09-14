@@ -7,7 +7,7 @@ sys.path.append('..')
 from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
 from Core.Processing.DeformableDataAugmentationToolBox.generateRandomSamplesFromModel import generateRandomImagesFromModel, generateRandomDeformationsFromModel
 from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.ImageProcessing.segmentation3D import *
+from Core.Processing.Segmentation.segmentation3D import *
 
 ## Load patient & dynModCroppedXY
 patientName = 'Patient_5'

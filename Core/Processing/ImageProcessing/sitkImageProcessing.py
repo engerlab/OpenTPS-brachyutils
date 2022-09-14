@@ -1,10 +1,7 @@
-
 import time
 from typing import Optional, Sequence, Union
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.transform import Rotation as R
-from Core.Data.Images.vectorField3D import VectorField3D
 
 try:
     import SimpleITK as sitk
@@ -12,7 +9,7 @@ except:
     print('No module SimpleITK found')
 
 from Core.Processing.ImageProcessing import resampler3D
-from Core.Data.Images.image3D import Image3D
+from Core.Data.Images._image3D import Image3D
 
 
 def image3DToSITK(image:Image3D, type=np.float32):
@@ -20,14 +17,6 @@ def image3DToSITK(image:Image3D, type=np.float32):
     imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 2)
 
-    # if isinstance(image, VectorField3D):
-    #     img = []
-    #     for i in range(3):
-    #         img.append(sitk.GetImageFromArray(imageData[:, :, :, i].astype(type)))
-    #         img[-1].SetOrigin(image.origin.tolist())
-    #         img[-1].SetSpacing(image.origin.tolist())
-    #
-    # else:
     img = sitk.GetImageFromArray(imageData)
     img.SetOrigin(image.origin.tolist())
     img.SetSpacing(image.spacing.tolist())
@@ -56,38 +45,17 @@ def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=
 
     imgType = image.imageArray.dtype
     img = image3DToSITK(image)
-    if isinstance(image, VectorField3D):
-        dimension = img[0].GetDimension()
-        reference_image = sitk.Image(newShape.tolist(), img[0].GetPixelIDValue())
-        reference_image.SetDirection(img[0].GetDirection())
-    else:
-        dimension = img.GetDimension()
-        reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
-        reference_image.SetDirection(img.GetDirection())
-    # print('in sitkImageProcessing resize', dimension)
-    # reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
+    dimension = img.GetDimension()
+    reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
+    reference_image.SetDirection(img.GetDirection())
     reference_image.SetOrigin(newOrigin.tolist())
     reference_image.SetSpacing(newSpacing.tolist())
-    
 
     transform = sitk.AffineTransform(dimension)
-    if isinstance(image, VectorField3D):
-        transform.SetMatrix(img[0].GetDirection())
-    else:
-        transform.SetMatrix(img.GetDirection())
+    transform.SetMatrix(img.GetDirection())
 
-    if isinstance(image, VectorField3D):
-        outImg1 = sitk.Resample(img[0], reference_image, transform, sitk.sitkLinear, fillValue)
-        outImg2 = sitk.Resample(img[1], reference_image, transform, sitk.sitkLinear, fillValue)
-        outImg3 = sitk.Resample(img[2], reference_image, transform, sitk.sitkLinear, fillValue)
-        outData1 = np.array(sitk.GetArrayFromImage(outImg1))
-        outData2 = np.array(sitk.GetArrayFromImage(outImg2))
-        outData3 = np.array(sitk.GetArrayFromImage(outImg3))
-        outData = np.stack((outData1, outData2, outData3),  axis=3)
-        # np.stack(arrays, axis=0)
-    else:  
-        outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
-        outData = np.array(sitk.GetArrayFromImage(outImg))
+    outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
+    outData = np.array(sitk.GetArrayFromImage(outImg))
 
     if imgType==bool:
         outData[outData<0.5] = 0
@@ -221,6 +189,47 @@ def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
     r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
+
+
+def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
+    initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
+
+    registration_method = sitk.ImageRegistrationMethod()
+
+    if multimodal:
+        registration_method.SetMetricAsMattesMutualInformation(numberOfHistogramBins=50)
+        registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
+        registration_method.SetMetricSamplingPercentage(0.05, seed=76926294)
+    else:
+        registration_method.SetMetricAsMeanSquares()
+        registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
+        registration_method.SetMetricSamplingPercentage(0.05, seed=76926294)
+
+    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=200)
+    registration_method.SetOptimizerScalesFromPhysicalShift()
+
+    registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4, 2, 1])
+    registration_method.SetSmoothingSigmasPerLevel(smoothingSigmas=[2, 1, 0])
+    registration_method.SmoothingSigmasAreSpecifiedInPhysicalUnitsOn()
+
+    registration_method.SetInterpolator(sitk.sitkLinear)
+    registration_method.SetInitialTransform(initial_transform, inPlace=False)
+
+    composite_transform = registration_method.Execute(fixed_image, moving_image)
+    moving_resampled = sitk.Resample(moving_image, fixed_image, composite_transform, sitk.sitkLinear, fillValue, moving_image.GetPixelID())
+
+    print(composite_transform)
+    print('Final metric value: {0}'.format(registration_method.GetMetricValue()))
+    print('Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
+
+    final_transform = sitk.CompositeTransform(composite_transform).GetBackTransform()
+    euler3d_transform = sitk.Euler3DTransform(final_transform)
+    tform = np.zeros((4,4))
+    tform[0:-1, -1] = euler3d_transform.GetTranslation()
+    tform[0:-1, 0:-1] = np.array(euler3d_transform.GetMatrix()).reshape(3,3)
+    center = euler3d_transform.GetCenter()
+
+    return tform, center, sitkImageToImage3D(moving_resampled)
 
 
 if __name__ == "__main__":

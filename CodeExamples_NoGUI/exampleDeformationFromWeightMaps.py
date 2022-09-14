@@ -11,7 +11,7 @@ sys.path.append(currentWorkingDir)
 
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images.ctImage import CTImage
+from Core.Data.Images._ctImage import CTImage
 from Core.Processing.DeformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 
 if __name__ == '__main__':

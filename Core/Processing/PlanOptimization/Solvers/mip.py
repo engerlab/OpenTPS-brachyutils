@@ -1,7 +1,7 @@
 import time
 
 from Core.Processing.PlanOptimization.Solvers.lp import LP
-from Core.Data.Plan.rtPlan import RTPlan
+from Core.Data.Plan._rtPlan import RTPlan
 
 import logging
 import json
@@ -33,7 +33,7 @@ class MIP(LP):
 
     def createModel(self, name = "MIP"):
         model = super().createModel(name)
-        
+
         # Energy sequencing
         # Define the digraph for the EL path
         sourceID = self.solStruct.nLayers

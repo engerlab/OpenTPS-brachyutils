@@ -7,15 +7,15 @@ from GUI.Panels.mainToolbar import MainToolbar
 from GUI.Viewer.viewerPanel import ViewerPanel
 from GUI.programSettingEditor import ProgramSettingEditor
 from GUI.statusBar import StatusBar
-from programSettings import ProgramSettings
-
+from Core.Utils.programSettings import ProgramSettings
+import GUI.res.icons as IconModule
 
 class MainWindow(QMainWindow):
     def __init__(self, viewControler):
         QMainWindow.__init__(self)
 
         self.setWindowTitle('OpenTPS')
-        self.setWindowIcon(QIcon('GUI' + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep + 'OpenTPS_icon.png'))
+        self.setWindowIcon(QIcon(IconModule.__path__[0] + os.path.sep + 'OpenTPS_icon.png'))
         self.resize(1400, 920)
 
         centralWidget = QWidget()
@@ -35,7 +35,7 @@ class MainWindow(QMainWindow):
         ProgramSettingEditor.setMainToolbar(self.mainToolbar)
 
         # create and add the viewer panel
-        self.viewerPanel = ViewerPanel(self._viewControler)
+        self.viewerPanel = ViewerPanel(self._viewControler, self)
         self.mainLayout.addWidget(self.viewerPanel)
 
         self.statusBar = StatusBar()

@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 
 from Core.IO.dicomIO import readDicomCT
-from Core.IO.dataLoader import listAllFiles, loadAllData
+from Core.IO.dataLoader import listAllFiles, readData
 from Core.IO.serializedObjectIO import saveSerializedObjects
 
 if __name__ == '__main__':
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     print(type(image1))
 
     ## option 2 general
-    dataList = loadAllData(ctImagePath)
+    dataList = readData(ctImagePath)
     img2 = dataList[0]
     print(type(img2))
 

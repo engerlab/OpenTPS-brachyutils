@@ -12,28 +12,28 @@ import pydicom
 import scipy.sparse as sp
 from scipy.sparse import csc_matrix
 
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareCTCalibration import MCsquareCTCalibration
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMaterial import MCsquareMaterial
-from Core.Data.CTCalibrations.MCsquareCalibration.mcsquareMolecule import MCsquareMolecule
-from Core.Data.CTCalibrations.abstractCTCalibration import AbstractCTCalibration
-from Core.Data.Images.ctImage import CTImage
-from Core.Data.Images.doseImage import DoseImage
-from Core.Data.Images.roiMask import ROIMask
-from Core.Data.MCsquare.bdl import BDL
-from Core.Data.MCsquare.mcsquareConfig import MCsquareConfig
-from Core.Data.Plan.objectivesList import ObjectivesList
-from Core.Data.Plan.planIonBeam import PlanIonBeam
-from Core.Data.Plan.planIonLayer import PlanIonLayer
-from Core.Data.Plan.rangeShifter import RangeShifter
-from Core.Data.Plan.rtPlan import RTPlan
-from Core.Data.sparseBeamlets import SparseBeamlets
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareMaterial import MCsquareMaterial
+from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareMolecule import MCsquareMolecule
+from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._doseImage import DoseImage
+from Core.Data.Images._roiMask import ROIMask
+from Core.Data.MCsquare._bdl import BDL
+from Core.Data.MCsquare._mcsquareConfig import MCsquareConfig
+from Core.Data.Plan._objectivesList import ObjectivesList
+from Core.Data.Plan._planIonBeam import PlanIonBeam
+from Core.Data.Plan._planIonLayer import PlanIonLayer
+from Core.Data.Plan._rangeShifter import RangeShifter
+from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data._sparseBeamlets import SparseBeamlets
 from Core.IO import mhdIO
 from Core.IO.mhdIO import exportImageMHD, importImageMHD
-from Core.Processing.ImageProcessing import segmentation3D
+from Core.Processing.Segmentation import segmentation3D
 
 logger = logging.getLogger(__name__)
 
-def readBeamlets(file_path, roi: Optional[ROIMask] = None):
+def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIMask] = None):
     if (not file_path.endswith('.txt')):
         raise NameError('File ', file_path, ' is not a valid sparse matrix header')
 
@@ -49,7 +49,7 @@ def readBeamlets(file_path, roi: Optional[ROIMask] = None):
     sparseBeamlets = _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"], roi)
 
     beamletDose = SparseBeamlets()
-    beamletDose.setUnitaryBeamlets(sparseBeamlets)
+    beamletDose.setUnitaryBeamlets(csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(beamletRescaling), dtype=np.float32)))
     beamletDose.beamletWeights = np.ones(header["NbrSpots"])
     beamletDose.doseOrigin = header["Offset"]
     beamletDose.doseSpacing = header["VoxelSpacing"]
@@ -90,7 +90,7 @@ def _read_sparse_header(file_path):
     return header
 
 
-def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] = None) -> csc_matrix:
+def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] = []) -> csc_matrix:
     BeamletMatrix = []
 
     fid = open(Binary_file, 'rb')
@@ -103,20 +103,16 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
     last_stacked_col = -1
     num_unstacked_col = 0
 
-    if not (roi is None):
-        masks = []
+    if roi:
+        logger.info("Beamlets are computed on {}".format([contour.name for contour in roi]))
+        roiUnion = None
         for contour in roi:
-            roiData = contour.imageArray
-            roiData = np.flip(roiData, 0)
-            roiData = np.flip(roiData, 1)
-            roiData = roiData.flatten(order='F')
-            roiData = roiData.astype(bool)
-            roiData = roiData.flatten()
-            masks.append(roiData)
-        roiUnion = np.zeros_like(masks[0])
-        for mask in masks:
-            # ROI Union mask
-            roiUnion = np.logical_or(roiUnion, mask)
+            roiData = np.flip(contour.imageArray,(0,1))
+            roiData = np.ndarray.flatten(roiData,'F').astype('bool')
+            if roiUnion is None:
+                roiUnion = roiData
+            else:
+                roiUnion = np.logical_or(roiUnion, roiData)
     else:
         roiUnion = np.ones((NbrVoxels, 1)).astype(bool)
 
@@ -128,6 +124,8 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
         [LayerID] = struct.unpack('I', fid.read(4))
         [xcoord] = struct.unpack('<f', fid.read(4))
         [ycoord] = struct.unpack('<f', fid.read(4))
+
+        logger.info("Spot {} : BeamID={} LayerID={} Position=({};{}) NonZeroVoxels={}".format(spot, BeamID, LayerID, xcoord, ycoord, NonZeroVoxels))
 
         if (NonZeroVoxels == 0):
             num_unstacked_col += 1
@@ -216,7 +214,7 @@ def readDose(filePath):
     doseMHD.imageArray = np.flip(doseMHD.imageArray, 0)
     doseMHD.imageArray = np.flip(doseMHD.imageArray, 1)
 
-    doseImage = DoseImage.fromImage(doseMHD)
+    doseImage = DoseImage.fromImage3D(doseMHD)
 
     return doseImage
 
@@ -257,7 +255,7 @@ def readMCsquarePlan(ct: CTImage, file_path):
                 plan.beams[-1].gantryAngle = float(f.readline())
 
             elif line == "###PatientSupportAngle":
-                plan.beams[-1].patientSupportAngle = float(f.readline())
+                plan.beams[-1].couchAngle = float(f.readline())
 
             elif line == "###IsocenterPosition":
                 # read isocenter in MCsquare coordinates
@@ -541,7 +539,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
         fid.write("###GantryAngle\n")
         fid.write("%f\n" % beam.gantryAngle)
         fid.write("###PatientSupportAngle\n")
-        fid.write("%f\n" % beam.patientSupportAngle)
+        fid.write("%f\n" % beam.couchAngle)
         fid.write("###IsocenterPosition\n")
         fid.write(
             "%f\t %f\t %f\n" % _dicomIsocenterToMCsquare(beam.isocenterPosition, CT.origin, CT.spacing, CT.gridSize))
@@ -628,7 +626,18 @@ def writeObjectives(objectives: ObjectivesList, file_path):
         fid.write("Objective_parameters:\n")
         fid.write("ROIName = " + contourName + "\n")
         fid.write("Weight = " + str(objective.weight) + "\n")
-        fid.write(objective.metric + " " + objective.condition + " " + str(objective.limitValue) + "\n")
+        if objective.metric == objective.Metrics.DMIN:
+            metric = "Dmin"
+            condition = ">"
+        elif objective.metric == objective.Metrics.DMAX:
+            metric = "Dmax"
+            condition = "<"
+        elif objective.metric == objective.Metrics.DMEAN:
+            metric = "Dmean"
+            condition = "<"
+        else:
+            print("Error: objective metric " + metric + " is not supported.")
+        fid.write(metric + " " + condition + " " + str(objective.limitValue) + "\n")
         fid.write("\n")
 
     fid.close()
@@ -732,8 +741,8 @@ def writeBin(destFolder):
 
 class MCsquareIOTestCase(unittest.TestCase):
     def testWrite(self):
-        from Core.Data.Plan.planIonBeam import PlanIonBeam
-        from Core.Data.Plan.planIonLayer import PlanIonLayer
+        from Core.Data.Plan._planIonBeam import PlanIonBeam
+        from Core.Data.Plan._planIonLayer import PlanIonLayer
 
         import Core.Processing.DoseCalculation.MCsquare.BDL as BDLModule
 
