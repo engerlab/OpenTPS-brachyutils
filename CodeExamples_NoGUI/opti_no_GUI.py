@@ -110,8 +110,8 @@ else:
     plan.PlanName = "NewPlan"
     #saveRTPlan(plan, plan_file)
 
-    beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
-    #beamlets = mc2.computeBeamlets(ct, plan)
+    #beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
+    beamlets = mc2.computeBeamlets(ct, plan)
     plan.planDesign.beamlets = beamlets
     outputBeamletFile = os.path.join(output_path, "BeamletMatrix_Cropped" + plan.seriesInstanceUID + ".blm")
     #saveBeamlets(beamlets, outputBeamletFile)
@@ -125,9 +125,9 @@ plan.planDesign.objectives.setScoringParameters(ct)
 plan.planDesign.objectives.fidObjList = []
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
-plan.planDesign.defineTargetMaskAndPrescription()
+plan.planDesign.beamlets.cropFromROI(plan)
+beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 objectiveFunction = DoseFidelity(plan.planDesign.objectives.fidObjList, beamletMatrix)
-print('fidelity init done')
 
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=50)
 # Optimize treatment plan
