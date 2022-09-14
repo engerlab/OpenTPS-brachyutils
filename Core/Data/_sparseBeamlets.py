@@ -118,7 +118,8 @@ class SparseBeamlets(PatientData):
         roiObjectives = np.logical_or(roiObjectives, roiRobustObjectives)
 
         # reload beamlets and crop to optimization ROI
-        logger.info("Crop beamlets to optimization ROI...")
+        logger.info("Re-load and crop beamlets to optimization ROI...")
+        plan.planDesign.beamlets.load()
         if use_MKL == 1:
             beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                 sp.diags(roiObjectives.astype(np.float32), format='csc'), self.toSparseMatrix())

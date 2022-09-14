@@ -6,11 +6,12 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, List, Any
 
 import numpy as np
 
 from Core.Data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from Core.Data.Images import DoseImage
 from Core.Data.Images._ctImage import CTImage
 from Core.Data.Images._doseImage import DoseImage
 from Core.Data.Images._image3D import Image3D
@@ -21,6 +22,7 @@ from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data._roiContour import ROIContour
 from Core.Data._sparseBeamlets import SparseBeamlets
 from Core.Data.robustness import Robustness
+from Core.IO.serializedObjectIO import saveBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
@@ -50,6 +52,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._setupSystematicError = [2.5, 2.5, 2.5]  # mm
         self._setupRandomError = [1.0, 1.0, 1.0]  # mm
         self._rangeSystematicError = 3.0  # %
+
+        self._computeDVHOnly = 0
+        self._computeLETDistribution = 0
 
         self._subprocess = None
         self._subprocessKilled = True
@@ -110,7 +115,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._subprocess.kill()
             self._subprocess = None
 
-    def computeDose(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> DoseImage:
+    def computeDose(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> List[
+        Union[DoseImage, Any]]:
         self._ct = ct
         self._plan = plan
         self._roi = roi
@@ -120,9 +126,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._outputDir)
         self._startMCsquare()
 
-        doseImage = self._importDose()
-
-        return doseImage
+        mhdDose = self._importDose()
+        if (self._computeLETDistribution > 0):
+            mhdLET = self.importLET()
+            return [mhdDose, mhdLET]
+        return mhdDose
 
     def computeBeamlets(self, ct: CTImage, plan: RTPlan,
                         roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
@@ -137,16 +145,24 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         # Import sparse beamlets
         if self._robustnessStrategy == "Disabled":
+            # Beamlet dose
             beamletDose = self._importBeamlets()
-            #outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
-            #saveBeamlets(beamletDose)
+            outputBeamletFile = os.path.join(self._outputDir, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
+            saveBeamlets(beamletDose, outputBeamletFile)
+            beamletDose.unload()
+            plan.planDesign.beamlets = beamletDose
+            # Beamlet LET
+            if self._computeLETDistribution > 0:
+                beamletLET = self._importBeamletsLET()
+                outputBeamletLETFile = os.path.join(self._outputDir, "BeamletLETMatrix_" + plan.seriesInstanceUID + ".blm")
+                saveBeamlets(beamletLET, outputBeamletLETFile)
+                beamletLET.unload()
+                plan.planDesign.beamletsLET = beamletLET
+
         else:
             self._sparseDoseFilePath = os.path.join(self._outputDir, "Sparse_Dose_Nominal.txt")
-        beamletDose.beamletWeights = np.array(plan.spotMUs)
 
-        return beamletDose
-
-    def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[ROIContour]]):
+    def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]):
         scenarios = Robustness(plan)
         if self._robustnessStrategy == "DoseSpace":
             scenarios.selectionStrategy = "Dosimetric"
@@ -159,8 +175,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
+        # Generate MCsquare configuration file
         self._config = self._scenarioComputationConfig
-
+        # Export useful data
         self._writeFilesToSimuDir()
         self._cleanDir(self._outputDir)
 
@@ -231,7 +248,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             # os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
         elif (platform.system() == "Windows"):
             if not opti:
-                self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir,"MCsquare_win.bat"), cwd=self._mcsquareSimuDir)
+                self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_win.bat"),
+                                                    cwd=self._mcsquareSimuDir)
             else:
                 raise Exception('MCsquare opti not available on Windows.')
             self._subprocess.wait()
@@ -262,6 +280,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def _importBeamlets(self):
         beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
+        return beamletDose
+
+    def _importBeamletsLET(self):
+        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._roi)
         return beamletDose
 
     def _beamletRescaling(self) -> Sequence[float]:
@@ -335,6 +357,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return os.path.join(self._outputDir, "Sparse_Dose.txt")
 
     @property
+    def _sparseLETFilePath(self):
+        return os.path.join(self._outputDir, "Sparse_LET.txt")
+
+    @_sparseDoseFilePath.setter
+    def _sparseDoseFilePath(self, value):
+        self.__sparseDoseFilePath = value
+
+    @property
     def _doseComputationConfig(self) -> MCsquareConfig:
         config = self._generalMCsquareConfig
 
@@ -353,6 +383,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Dose_MHD_Output"] = False
         config["Dose_Sparse_Output"] = True
         config["Dose_Sparse_Threshold"] = 20000.0
+        if self._computeLETDistribution > 0: config["LET_Sparse_Output"] = True
         # Robustness settings
         if self._robustnessStrategy == "Disabled":
             config["Robustness_Mode"] = False
@@ -397,6 +428,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
+        if (self._computeDVHOnly > 0):
+            config["Dose_MHD_Output"] = False
+            config["Compute_DVH"] = True
+        if (self._computeLETDistribution > 0):
+            config["LET_MHD_Output"] = True
+
         if self._independentScoringGrid:
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = self._scoringVoxelSpacing  # in mm
