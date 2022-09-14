@@ -140,7 +140,7 @@ class SparseBeamlets(PatientData):
         self.setUnitaryBeamlets(beamletMatrix)
 
     def load(self, file_path=""):
-        if (file_path == ""):
+        if file_path == "":
             file_path = self._savedBeamletFile
 
         with open(file_path, 'rb') as fid:
