@@ -8,21 +8,18 @@ from Core.Data.Images import CTImage
 from Core.Data.Images import ROIMask
 from Core.Data.Plan import ObjectivesList
 from Core.Data.Plan import PlanDesign
-from Core.Data import ROIContour
 from Core.Data import DVH
 from Core.Data import Patient
 from Core.Data import PatientList
 from Core.Data.Plan._objectivesList import FidObjective
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
-from Core.IO.serializedObjectIO import loadDataStructure
+from Core.IO.serializedObjectIO import loadDataStructure, saveRTPlan, loadRTPlan, loadBeamlets, saveBeamlets
 from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Processing.ImageProcessing import resampler3D
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
-from Core.Utils.programSettings import ProgramSettings
 
 with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
           'r') as log_fid:
@@ -64,8 +61,6 @@ roi.imageArray = data
 examplePath = "/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/testData"
 
 output_path = os.path.join(examplePath, "fakeCT")
-# dataStructPath = os.path.join(ctImagePath, "reggui_phantom_5mm_rtstruct.dcm")
-
 
 # Design plan
 beamNames = ["Beam1"]
@@ -83,15 +78,21 @@ mc2 = MCsquareDoseCalculator()
 mc2.beamModel = bdl
 mc2.nbPrimaries = 5e4
 mc2.ctCalibration = ctCalibration
+
 #mc2.independentScoringGrid = True
 #scoringSpacing = [2, 2, 2]
 #mc2.scoringVoxelSpacing = scoringSpacing
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "planTestp.p")
+plan_file = os.path.join(output_path, "Plan_WaterPhantom_.tps")
 
 if os.path.isfile(plan_file):
-    plan = loadDataStructure(plan_file)[0]
+    plan = loadRTPlan(plan_file)
+    print('Plan loaded')
+    # not cropped
+    beamletPath = os.path.join(output_path,
+                               "BeamletMatrix_1.2.826.0.1.3680043.8.498.11493239558261298828819948370674664388.1.blm")
+    plan.planDesign.beamlets = loadBeamlets(beamletPath)
     beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 else:
     planInit = PlanDesign()
@@ -107,12 +108,13 @@ else:
 
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
+    #saveRTPlan(plan, plan_file)
 
     beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
     #beamlets = mc2.computeBeamlets(ct, plan)
     plan.planDesign.beamlets = beamlets
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
-
+    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_Cropped" + plan.seriesInstanceUID + ".blm")
+    #saveBeamlets(beamlets, outputBeamletFile)
     beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 
 plan.planDesign.objectives = ObjectivesList()
@@ -130,38 +132,6 @@ print('fidelity init done')
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=50)
 # Optimize treatment plan
 w, doseImage, ps = solver.optimize()
-
-# method 2 : using Sylvain's opti workflow
-
-# create & design plan
-'''plan = RTPlan()
-planInit = PlanDesign()
-planInit.ct = ct
-planInit.targetMask = roiMask
-planInit.gantryAngles = gantryAngles
-planInit.beamNames = beamNames
-planInit.couchAngles = couchAngles
-planInit.calibration = ctCalibration
-planInit.spotSpacing = 5.0
-planInit.layerSpacing = 5.0
-planInit.targetMargin = 5.0
-planInit.objectives = ObjectivesList()
-planInit.objectives.setTarget(roiMask.name, 20.0)
-scoringSpacing = [2, 2, 2]
-scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
-#planInit.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
-planInit.objectives.setScoringParameters(ct)
-planInit.objectives.fidObjList = []
-planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMAX, 20.0, 1.0)
-planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMIN, 20.0, 1.0)
-
-# optimize
-#optimizeIMPT(plan, planInit, scoringSpacing)
-optimizeIMPT(plan, planInit)
-#plan.planDesign.beamlets.beamletWeights = np.square(w).astype(np.float32)'''
-
-#plan.planDesign.beamlets.beamletWeights = plan.spotMUs
-#doseImage = plan.planDesign.beamlets.toDoseImage()
 
 # MCsquare simulation
 #mc2.nbPrimaries = 1e6
