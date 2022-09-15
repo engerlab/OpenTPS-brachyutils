@@ -33,11 +33,11 @@ build:
     paths:
       - dist/*.whl
 
-# TODO: test should be executed on built application
+# TODO: Should tests be executed on the built application
 test:
   script:
     - export PYTHONPATH="$PWD"
-    - poetry install # install dependencies
+    - poetry install --no-root # install dependencies
     - python3 CI/tests.py
 
 docs:
