@@ -93,7 +93,6 @@ if os.path.isfile(plan_file):
     beamletPath = os.path.join(output_path,
                                "BeamletMatrix_1.2.826.0.1.3680043.8.498.11493239558261298828819948370674664388.1.blm")
     plan.planDesign.beamlets = loadBeamlets(beamletPath)
-    beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 else:
     planInit = PlanDesign()
     planInit.ct = ct
@@ -110,12 +109,11 @@ else:
     plan.PlanName = "NewPlan"
     #saveRTPlan(plan, plan_file)
 
-    #beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
-    beamlets = mc2.computeBeamlets(ct, plan)
-    plan.planDesign.beamlets = beamlets
+    #beamlets = mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
+    mc2.computeBeamlets(ct, plan, output_path)
+    #plan.planDesign.beamlets = beamlets
     outputBeamletFile = os.path.join(output_path, "BeamletMatrix_Cropped" + plan.seriesInstanceUID + ".blm")
     #saveBeamlets(beamlets, outputBeamletFile)
-    beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 
 plan.planDesign.objectives = ObjectivesList()
 plan.planDesign.objectives.setTarget(roi.name, 20.0)

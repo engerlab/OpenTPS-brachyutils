@@ -32,8 +32,6 @@ class PlanOptimizer:
 
     def initializeWeights(self):
         # Total Dose calculation
-        weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
-
         totalDose = self.plan.planDesign.beamlets.toDoseImage().imageArray
 
         maxDose = np.max(totalDose)
