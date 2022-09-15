@@ -26,6 +26,7 @@ before_script:
 
 build:
   script:
+    - export PYTHONPATH="$PWD/opentps"
     - python3 docs/tools/version_utils.py
     - poetry build
     #- pip install dist/*  # Opentps package is not wellstructured yet for build
@@ -36,6 +37,7 @@ build:
 # TODO: test should be executed on built application
 test:
   script:
+    - export PYTHONPATH="$PWD/opentps"
     - python3 CI/tests.py
 
 docs:
