@@ -43,4 +43,6 @@ print(model3D)
 
 
 ### 4D Dose simulation
-simulate_4DD(plan, CT4D, model3D)
+# simulate_4DD(plan, CT4D, model3D)
+
+simulate_4DDD(plan, CT4D, model3D)

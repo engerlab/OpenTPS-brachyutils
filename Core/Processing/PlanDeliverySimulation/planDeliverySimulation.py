@@ -42,14 +42,19 @@ def simulate_4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel 
     accumulate_dose_reference_phase(dir_4DD, model3D, output_accumulated_dose, divide_total_dose=True, dose_name='4DD Accumulated dose')
 
 
-def simulate_4DDD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None, save_partial_doses=True):
+def simulate_4DDD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None, save_partial_doses=True, number_of_starts=1):
     """
     4D dynamic dose computation (range variation + interplay) where one treatment is simulated on 4DCT
     """
+    number_of_phases = len(CT4D)
+    if number_of_starts>number_of_phases:
+        print(f"Number of starting phases must be smaller or equal to number of phases in 4DCT. Chagning it to {number_of_phases}")
+        number_of_starts = number_of_phases
     if len(plan.spotTimings)==0:
         print('Plan has no delivery timings. Querying ScanAlgo...')
-        bdt = BDT(plan, config_file)
+        bdt = BDT(plan)
         plan = bdt.getPBSTimings(sort_spots="true")
+    # plan.simplify()
     if simulation_dir is None:
         simulation_dir = os.path.join(ProgramSettings().simulationFolder, 'plan_delivery_simulations')
     if not os.path.exists(simulation_dir): os.mkdir(simulation_dir)
@@ -66,24 +71,22 @@ def simulate_4DDD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel
     if not os.path.exists(dir_4DDD):
         os.mkdir(dir_4DDD)
     
-    number_of_phases = len(CT4D)
-    # for start_phase in range(number_of_phases):
-    start_phase = 0
-    plan_4DCT = split_plan_to_phases(plan, num_plans=number_of_phases, start_phase=start_phase)
-    path_dose = os.path.join(dir_4DDD, f'starting_phase_{start_phase}')
-    if not os.path.exists(path_dose):
-        os.mkdir(path_dose)
-    compute_dose_on_each_phase(plan_4DCT, CT4D, path_dose, crop_contour=crop_contour)
-    acc_filename = 'dose_accumulated.dcm'
-    acc_path = os.path.join(path_dose, acc_filename)
-    accumulate_dose_reference_phase(path_dose, model3D, acc_path, dose_name=f'4DDD accumulated dose - starting phase p{start_phase}')
-    print(f"4DDD simulation done for starting phase {start_phase}")
-    if not save_partial_doses:
-        for f in os.listdir(path_dose):
-            if f != acc_filename: os.remove(os.path.join(path_dose, f))
+    for start_phase in range(number_of_starts):
+        plan_4DCT = split_plan_to_phases(plan, num_plans=number_of_phases, start_phase=start_phase)
+        path_dose = os.path.join(dir_4DDD, f'starting_phase_{start_phase}')
+        if not os.path.exists(path_dose):
+            os.mkdir(path_dose)
+        compute_dose_on_each_phase(plan_4DCT, CT4D, path_dose, crop_contour=crop_contour)
+        acc_filename = 'dose_accumulated.dcm'
+        acc_path = os.path.join(path_dose, acc_filename)
+        accumulate_dose_reference_phase(path_dose, model3D, acc_path, dose_name=f'4DDD accumulated dose - starting phase p{start_phase}')
+        print(f"4DDD simulation done for starting phase {start_phase}")
+        if not save_partial_doses:
+            for f in os.listdir(path_dose):
+                if f != acc_filename: os.remove(os.path.join(path_dose, f))
 
 
-def split_plan_to_phases(ReferencePlan, num_plans=10, breathing_period=4., start_phase=0):
+def split_plan_to_phases(ReferencePlan: RTPlan, num_plans=10, breathing_period=4., start_phase=0):
     """
     Split spots from plan to num_plans plans according to the number of images in 4DCT, breathing period and start phase.
     Return a list of num_plans plans where each spot is assigned to a plan (=breathing phase)

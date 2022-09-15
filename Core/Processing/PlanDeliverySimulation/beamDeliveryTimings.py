@@ -3,26 +3,14 @@ import numpy as np
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data.Plan._scanAlgoPlan import ScanAlgoPlan
 from Core.IO.serializedObjectIO import saveRTPlan
+from Core.Processing.PlanDeliverySimulation.deliverySimulationConfig import DeliverySimulationConfig
 
 class BDT:
-    def __init__(self, plan: RTPlan, config_file: str):
+    def __init__(self, plan: RTPlan):
         self.plan = plan
-        params = self.getConfigParams(config_file)
-        self.gantry = params['Gantry']
-        self.url = params['Gateway']
-
-
-    def getConfigParams(self,config):
-        with open(config) as f:
-            lines = f.readlines()
-            d = {}
-            for line in lines:
-                if line.strip():
-                    line = line.strip().split(',')# remove leading/trailing white spaces
-                    key  = line[0].strip()
-                    value  = line[1].strip()
-                    d[key]=value
-        return d
+        config = DeliverySimulationConfig()
+        self.gantry = config.gantry
+        self.url = config.gateway
 
 
     def getPBSTimings(self, sort_spots="true"):
