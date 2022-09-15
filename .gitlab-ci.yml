@@ -24,20 +24,21 @@ before_script:
   - source venv/bin/activate
   - pip3 install poetry
 
-test:
+build:
   script:
-    - poetry build
-
-run:
-  script:
+    - python3 -m docs/tools/version_utils.py
     - poetry build
     - pip install dist/*
-    - python3 -m CI/tests.py
   artifacts:
     paths:
       - dist/*.whl
 
-pages:
+# TODO: test should be executed on built application
+test:
+  script:
+    - python3 -m CI/tests.py
+
+docs:
   script:
     - pip install sphinx sphinx-rtd-theme
     - cd docs
