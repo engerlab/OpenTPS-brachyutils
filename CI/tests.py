@@ -10,6 +10,8 @@ from Core.IO.scannerReader import readScanner
 from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 
 
+print('TEST')
+
 patientList = opentps.patientList
 
 patient = Patient()
