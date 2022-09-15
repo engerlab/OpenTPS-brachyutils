@@ -1,4 +1,5 @@
 import copy
+import logging
 import math
 import os
 import platform
@@ -30,6 +31,8 @@ from Core.Utils.programSettings import ProgramSettings
 
 import Core.IO.mcsquareIO as mcsquareIO
 
+logger = logging.getLogger(__name__)
+
 
 class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalculator):
     def __init__(self):
@@ -44,6 +47,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
+        self._maxUncertainty = 2.0
         self._independentScoringGrid = False
         self._scoringVoxelSpacing = [2.0, 2.0, 2.0]
         self._simulationDirectory = ProgramSettings().simulationFolder
@@ -52,6 +56,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._setupSystematicError = [2.5, 2.5, 2.5]  # mm
         self._setupRandomError = [1.0, 1.0, 1.0]  # mm
         self._rangeSystematicError = 3.0  # %
+        self._numScenarios = None
 
         self._computeDVHOnly = 0
         self._computeLETDistribution = 0
@@ -117,52 +122,24 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def computeDose(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> List[
         Union[DoseImage, Any]]:
+        logger.info("Prepare MCsquare Dose calculation")
         self._ct = ct
         self._plan = plan
         self._roi = roi
         self._config = self._doseComputationConfig
 
         self._writeFilesToSimuDir()
-        self._cleanDir(self._outputDir)
+        self._cleanDir(self._workDir)
         self._startMCsquare()
 
         mhdDose = self._importDose()
-        if (self._computeLETDistribution > 0):
+        if self._computeLETDistribution > 0:
             mhdLET = self.importLET()
             return [mhdDose, mhdLET]
         return mhdDose
 
-    def computeBeamlets(self, ct: CTImage, plan: RTPlan,
-                        roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
-        self._ct = ct
-        self._plan = self._setPlanWeightsTo1(plan)
-        self._roi = roi
-        self._config = self._beamletComputationConfig
-
-        self._writeFilesToSimuDir()
-        self._cleanDir(self._outputDir)
-        self._startMCsquare()
-
-        # Import sparse beamlets
-        if self._robustnessStrategy == "Disabled":
-            # Beamlet dose
-            beamletDose = self._importBeamlets()
-            outputBeamletFile = os.path.join(self._outputDir, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
-            saveBeamlets(beamletDose, outputBeamletFile)
-            beamletDose.unload()
-            plan.planDesign.beamlets = beamletDose
-            # Beamlet LET
-            if self._computeLETDistribution > 0:
-                beamletLET = self._importBeamletsLET()
-                outputBeamletLETFile = os.path.join(self._outputDir, "BeamletLETMatrix_" + plan.seriesInstanceUID + ".blm")
-                saveBeamlets(beamletLET, outputBeamletLETFile)
-                beamletLET.unload()
-                plan.planDesign.beamletsLET = beamletLET
-
-        else:
-            self._sparseDoseFilePath = os.path.join(self._outputDir, "Sparse_Dose_Nominal.txt")
-
     def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]):
+        logger.info("Prepare MCsquare Robust Dose calculation")
         scenarios = Robustness(plan)
         if self._robustnessStrategy == "DoseSpace":
             scenarios.selectionStrategy = "Dosimetric"
@@ -176,12 +153,79 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
         # Generate MCsquare configuration file
+        self._config = self._doseComputationConfig
+        # Export useful data
+        self._writeFilesToSimuDir()
+        self._cleanDir(self._workDir)
+        # Start nominal simulation
+        logger.info("Simulation of nominal scenario")
+        self._startMCsquare()
+        dose = self._importDose()
+        scenarios.setNominal(dose, self._roi)
+        # Use special config for robustness
         self._config = self._scenarioComputationConfig
         # Export useful data
         self._writeFilesToSimuDir()
-        self._cleanDir(self._outputDir)
+        # Start simulation of error scenarios
+        logger.info("Simulation of error scenarios")
+        self._startMCsquare()
+        # Import dose results
+        for s in range(self._numScenarios):
+            fileName = 'Dose_Scenario_' + str(s + 1) + '-' + str(self._numScenarios) + '.mhd'
+            self._doseFilePath = os.path.join(self._workDir, fileName)
+            if os.path.isfile(self._doseFilePath):
+                dose = self._importDose()
+                scenarios.addScenario(dose, self._roi)
 
         return scenarios
+
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan, outputDir,
+                        roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
+        logger.info("Prepare MCsquare Beamlet calculation")
+        self._ct = ct
+        self._plan = self._setPlanWeightsTo1(plan)
+        self._roi = roi
+        self._config = self._beamletComputationConfig
+
+        self._writeFilesToSimuDir()
+        self._cleanDir(self._workDir)
+        self._startMCsquare()
+
+        # Import sparse beamlets
+        if self._robustnessStrategy == "Disabled":
+            # Beamlet dose
+            beamletDose = self._importBeamlets()
+            outputBeamletFile = os.path.join(outputDir, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
+            saveBeamlets(beamletDose, outputBeamletFile)
+            beamletDose.unload()
+            plan.planDesign.beamlets = beamletDose
+            # Beamlet LET
+            if self._computeLETDistribution > 0:
+                beamletLET = self._importBeamletsLET()
+                outputBeamletLETFile = os.path.join(outputDir, "BeamletLETMatrix_" + plan.seriesInstanceUID + ".blm")
+                saveBeamlets(beamletLET, outputBeamletLETFile)
+                beamletLET.unload()
+                plan.planDesign.beamletsLET = beamletLET
+
+        else:
+            self._sparseDoseFilePath = os.path.join(self._workDir, "Sparse_Dose_Nominal.txt")
+            nominal = self._importBeamlets()
+            outputBeamletFile = os.path.join(outputDir, "BeamletMatrix_" + plan.seriesInstanceUID + "_Nominal.blm")
+            saveBeamlets(nominal, outputBeamletFile)
+            nominal.unload()
+            plan.planDesign.beamlets = nominal
+            plan.planDesign.scenarios = []
+            for s in range(self._numScenarios):
+                self._sparseDoseFilePath = os.path.join(self._workDir, "Sparse_Dose_Scenario_" + str(s + 1) + "-" + str(
+                    self._numScenarios) + ".txt")
+                scenario = self._importBeamlets()
+                outputBeamletFile = os.path.join(outputDir,
+                                                 "BeamletMatrix_" + plan.seriesInstanceUID + "_Scenario_" + str(
+                                                     s + 1) + "-" + str(self._numScenarios) + ".blm")
+                saveBeamlets(scenario, outputBeamletFile)
+                scenario.unload()
+                plan.planDesign.scenarios.append(scenario)
+                plan.planDesign.numScenarios += 1
 
     def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> DoseImage:
         self._ct = ct
@@ -197,7 +241,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             else:
                 mask = contour
             mcsquareIO.writeContours(mask, self._contourFolderPath)
-        self._cleanDir(self._outputDir)
+        self._cleanDir(self._workDir)
         # Start simulation
         self._startMCsquare(opti=True)
 
@@ -234,8 +278,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             raise Exception("MCsquare already running")
 
         self._subprocessKilled = False
-
-        if (platform.system() == "Linux"):
+        logger.info("Start MCsquare simulation")
+        if platform.system() == "Linux":
             if not opti:
                 self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
             else:
@@ -246,7 +290,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 raise Exception('MCsquare subprocess killed by caller.')
             self._subprocess = None
             # os.system("cd " + self._mcsquareSimuDir + " && sh MCsquare")
-        elif (platform.system() == "Windows"):
+        elif platform.system() == "Windows":
             if not opti:
                 self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_win.bat"),
                                                     cwd=self._mcsquareSimuDir)
@@ -257,10 +301,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 self._subprocessKilled = False
                 raise Exception('MCsquare subprocess killed by caller.')
             self._subprocess = None
-            # if not opti:
-            #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_win.bat")
-            # else:
-            #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_opti_win.bat")
 
     def _importDose(self) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
@@ -303,7 +343,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return folder
 
     @property
-    def _outputDir(self):
+    def _workDir(self):
         folder = os.path.join(self._mcsquareSimuDir, 'Outputs')
         self._createFolderIfNotExists(folder)
         return folder
@@ -350,15 +390,19 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def _doseFilePath(self):
-        return os.path.join(self._outputDir, "Dose.mhd")
+        return os.path.join(self._workDir, "Dose.mhd")
+
+    @_doseFilePath.setter
+    def _doseFilePath(self, value):
+        self.__doseFilePath = value
 
     @property
     def _sparseDoseFilePath(self):
-        return os.path.join(self._outputDir, "Sparse_Dose.txt")
+        return os.path.join(self._workDir, "Sparse_Dose.txt")
 
     @property
     def _sparseLETFilePath(self):
-        return os.path.join(self._outputDir, "Sparse_LET.txt")
+        return os.path.join(self._workDir, "Sparse_LET.txt")
 
     @_sparseDoseFilePath.setter
     def _sparseDoseFilePath(self, value):
@@ -369,6 +413,31 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config = self._generalMCsquareConfig
 
         config["Dose_to_Water_conversion"] = "OnlineSPR"
+
+        return config
+
+    @property
+    def _scenarioComputationConfig(self) -> MCsquareConfig:
+        config = self._generalMCsquareConfig
+        config["Dose_to_Water_conversion"] = "OnlineSPR"
+        # Import number of particles from previous simulation
+        self.SimulatedParticles, self.SimulatedStatUncert = self.getSimulationProgress()
+        config["Num_Primaries"] = self.SimulatedParticles
+        config["Compute_stat_uncertainty"] = False
+        config["Robustness_Mode"] = True
+        config["Simulate_nominal_plan"] = False
+        config["Systematic_Setup_Error"] = [self._setupSystematicError[0] / 10, self._setupSystematicError[1] / 10,
+                                            self._setupSystematicError[2] / 10]  # cm
+        config["Random_Setup_Error"] = [self._setupRandomError[0] / 10, self._setupRandomError[1] / 10,
+                                        self._setupRandomError[2] / 10]  # cm
+        config["Systematic_Range_Error"] = self._rangeSystematicError  # %
+        if self._robustnessStrategy == "DoseSpace":
+            config["Scenario_selection"] = "Random"
+            config["Num_Random_Scenarios"] = 100
+            self._numScenarios = config["Num_Random_Scenarios"]
+        else:
+            config["Scenario_selection"] = "All"
+            self._numScenarios = 81
 
         return config
 
@@ -399,9 +468,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             config[
                 "Scenario_selection"] = "ReducedSet"  # "All" (81 scenarios), or "ReducedSet" (21 scenarios as in RayStation)
             if config["Scenario_selection"] == "All":
-                NumScenarios = 81
+                self._numScenarios = 81
             else:
-                NumScenarios = 21
+                self._numScenarios = 21
 
         return config
 
@@ -421,6 +490,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config = MCsquareConfig()
 
         config["Num_Primaries"] = self._nbPrimaries
+        config["Stat_uncertainty"] = self._maxUncertainty
         config["WorkDir"] = self._mcsquareSimuDir
         config["CT_File"] = self._ctName
         config["ScannerDirectory"] = self._scannerFolder  # ??? Required???
@@ -428,10 +498,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
         config["BDL_Machine_Parameter_File"] = self._bdlFilePath
         config["BDL_Plan_File"] = self._planFilePath
-        if (self._computeDVHOnly > 0):
+        if self._computeDVHOnly > 0:
             config["Dose_MHD_Output"] = False
             config["Compute_DVH"] = True
-        if (self._computeLETDistribution > 0):
+        if self._computeLETDistribution > 0:
             config["LET_MHD_Output"] = True
 
         if self._independentScoringGrid:
@@ -464,9 +534,35 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                     raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
                 roiResampled.append(resampledMask)
             self._roi = roiResampled
-        # config["Stat_uncertainty"] = 2.
 
         return config
+
+    def getSimulationProgress(self):
+        progressionFile = os.path.join(self._workDir, "Simulation_progress.txt")
+
+        simulationStarted = 0
+        batch = 0
+        uncertainty = -1
+        multiplier = 1.0
+
+        with open(progressionFile, 'r') as fid:
+            for line in fid:
+                if "Simulation started (" in line:
+                    simulationStarted = 0
+                    batch = 0
+                    uncertainty = -1
+                    multiplier = 1.0
+
+                elif "batch " in line and " completed" in line:
+                    tmp = line.split(' ')
+                    if tmp[1].isnumeric(): batch = int(tmp[1])
+                    if len(tmp) >= 6: uncertainty = float(tmp[5])
+
+                elif "10x more particles per batch" in line:
+                    multiplier *= 10.0
+
+        numParticles = int(batch * multiplier * self._nbPrimaries / 10.0)
+        return numParticles, uncertainty
 
     def _createFolderIfNotExists(self, folder):
         folder = Path(folder)
