@@ -28,7 +28,7 @@ build:
   script:
     - python3 docs/tools/version_utils.py
     - poetry build
-    - pip install dist/*
+    #- pip install dist/*  # Opentps package is not wellstructured yet for build
   artifacts:
     paths:
       - dist/*.whl
