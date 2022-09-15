@@ -1,9 +1,12 @@
+import copy
 import json
 import logging.config
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+
+import opentps
 from Core.Data.Images import CTImage
 from Core.Data.Images import ROIMask
 from Core.Data.Plan import ObjectivesList
@@ -23,14 +26,11 @@ from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.Utils.programSettings import ProgramSettings
+from Core.Processing.PlanOptimization import optimizationWorkflows
 
-with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
-          'r') as log_fid:
-    config_dict = json.load(log_fid)
-logging.config.dictConfig(config_dict)
 
 # Generic example: box of water with squared target
-patientList = PatientList()
+patientList = opentps.patientList
 
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
@@ -58,13 +58,9 @@ roi.patient = patient
 roi.name = 'TV'
 roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
-data[100:120, 100:120, 100:120] = True
+data[80:100, 100:120, 120:140] = True
 roi.imageArray = data
 
-examplePath = "/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/testData"
-
-output_path = os.path.join(examplePath, "fakeCT")
-# dataStructPath = os.path.join(ctImagePath, "reggui_phantom_5mm_rtstruct.dcm")
 
 
 # Design plan
@@ -73,10 +69,6 @@ gantryAngles = [0.]
 couchAngles = [0.]
 
 # method 1 : create or load existing plan (no workflow)
-
-# Create output folder
-if not os.path.isdir(output_path):
-    os.mkdir(output_path)
 
 # Configure MCsquare
 mc2 = MCsquareDoseCalculator()
@@ -87,12 +79,9 @@ mc2.ctCalibration = ctCalibration
 #scoringSpacing = [2, 2, 2]
 #mc2.scoringVoxelSpacing = scoringSpacing
 
-# Load / Generate new plan
-plan_file = os.path.join(output_path, "planTestp.p")
 
-if os.path.isfile(plan_file):
-    plan = loadDataStructure(plan_file)[0]
-    beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
+if False:
+    pass
 else:
     planInit = PlanDesign()
     planInit.ct = ct
@@ -108,10 +97,11 @@ else:
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
-    beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
+    roiDilated = ROIMask.fromImage3D(roi)
+    roiDilated.dilate(planInit.targetMargin*3)
+    beamlets = mc2.computeBeamlets(ct, plan, roi=[roiDilated])
     #beamlets = mc2.computeBeamlets(ct, plan)
     plan.planDesign.beamlets = beamlets
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
 
     beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
 
@@ -123,13 +113,16 @@ plan.planDesign.objectives.setScoringParameters(ct)
 plan.planDesign.objectives.fidObjList = []
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
-plan.planDesign.defineTargetMaskAndPrescription()
+#plan.planDesign.defineTargetMaskAndPrescription()
 objectiveFunction = DoseFidelity(plan.planDesign.objectives.fidObjList, beamletMatrix)
 print('fidelity init done')
 
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=50)
 # Optimize treatment plan
 w, doseImage, ps = solver.optimize()
+
+doseImage.patient = patient
+opentps.run()
 
 # method 2 : using Sylvain's opti workflow
 
