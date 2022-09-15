@@ -25,7 +25,6 @@ class PlanOptimizer:
             functions = []
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
         self.plan = planPreprocessing.extendPlanLayers(plan)
-        self.planStructure = self.plan.planDesign
         self.initPlan = plan
         self.opti_params = kwargs
         self.functions = functions
@@ -35,13 +34,13 @@ class PlanOptimizer:
         # Total Dose calculation
         weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
 
-        totalDose = self.planStructure.beamlets.toDoseImage().imageArray
+        totalDose = self.plan.planDesign.beamlets.toDoseImage().imageArray
 
         maxDose = np.max(totalDose)
         try:
             x0 = self.opti_params['init_weights']
         except KeyError:
-            x0 = (self.planStructure.objectives.targetPrescription / maxDose) * np.ones(self.plan.numberOfSpots,
+            x0 = (self.plan.planDesign.objectives.targetPrescription / maxDose) * np.ones(self.plan.numberOfSpots,
                                                                                dtype=np.float32)
         return x0
 
@@ -66,19 +65,19 @@ class PlanOptimizer:
                 .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
 
         # unload scenario beamlets
-        for s in range(len(self.planStructure.scenarios)):
-            self.planStructure.scenarios[s].unload()
+        for s in range(len(self.plan.planDesign.scenarios)):
+            self.plan.planDesign.scenarios[s].unload()
 
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.initPlan.spotMUs = np.square(weights).astype(np.float32)
-            self.planStructure.beamlets.beamletWeights = np.square(weights).astype(np.float32)
+            self.plan.spotMUs = np.square(weights).astype(np.float32)
+            self.plan.planDesign.beamlets.beamletWeights = np.square(weights).astype(np.float32)
         else:
-            self.initPlan.spotMUs = weights.astype(np.float32)
-            self.planStructure.beamlets.beamletWeights = weights.astype(np.float32)
+            self.plan.spotMUs = weights.astype(np.float32)
+            self.plan.planDesign.beamlets.beamletWeights = weights.astype(np.float32)
 
-        totalDose = self.planStructure.beamlets.toDoseImage()
+        totalDose = self.plan.planDesign.beamlets.toDoseImage()
 
         return weights, totalDose, cost
 

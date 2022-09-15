@@ -1,6 +1,7 @@
 
 __all__ = ['ROIMask']
 
+import math
 
 import numpy as np
 import scipy
@@ -64,13 +65,19 @@ class ROIMask(Image3D):
 
         if filt is None:
             radius = radius/np.array(self.spacing)
-            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
-            diameter = diameter + (diameter+1)%2
-            diameter = np.round(diameter).astype(int)
-
-            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
-            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
-            filt = filt.astype(bool)
+            if np.min(radius)<=0:
+                return
+            diameter = np.ceil(radius).astype(int) * 2 + 1
+            filt = np.zeros(tuple(diameter)).astype(bool)
+            for i in range(diameter[0]):
+                for j in range(diameter[1]):
+                    for k in range(diameter[2]):
+                        y = i - math.floor(diameter[0] / 2)
+                        x = j - math.floor(diameter[1] / 2)
+                        z = k - math.floor(diameter[2] / 2)
+                        if (
+                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[2] ** 2 <= 1):  # generate ellipsoid structuring element
+                            filt[i, j, k] = True
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
@@ -147,8 +154,7 @@ class ROIMask(Image3D):
     def getBinaryContourMask(self):
         dilatedROI = ROIMask.fromImage3D(self)
         dilatedROI.imageArray = np.array(dilatedROI.imageArray)
-        # Quid des ct non isotropique?
-        dilatedROI.dilate(radius=dilatedROI.spacing[0])
+        dilatedROI.dilate(radius=dilatedROI.spacing)
         imageArray = np.logical_xor(dilatedROI.imageArray, self.imageArray)
 
         dilatedROI.imageArray = imageArray

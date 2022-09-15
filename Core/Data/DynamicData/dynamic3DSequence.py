@@ -49,6 +49,9 @@ class Dynamic3DSequence(PatientData):
 
         return s
 
+    def __len__(self):
+        return len(self.dyn3DImageList)
+
 
     def print_dynSeries_info(self, prefix=""):
         print(prefix + "Dyn series: " + self.name)
@@ -64,6 +67,16 @@ class Dynamic3DSequence(PatientData):
     def sortImgsByName(self, imgList):
         imgList = sorted(imgList, key=lambda img: img.name)
         return imgList
+
+
+    def resampleOn(self, otherImage, fillValue=0, outputType=None, tryGPU=True):
+        for i in range(len(self.dyn3DImageList)):
+            self.dyn3DImageList[i].resample(otherImage.spacing, otherImage.gridSize, otherImage.origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+
+
+    def resample(self, spacing, gridSize, origin, fillValue=0, outputType=None, tryGPU=True):
+        for i in range(len(self.dyn3DImageList)):
+            self.dyn3DImageList[i].resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
 
     def dumpableCopy(self):
