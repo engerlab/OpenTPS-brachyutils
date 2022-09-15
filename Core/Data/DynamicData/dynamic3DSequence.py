@@ -20,7 +20,7 @@ class Dynamic3DSequence(PatientData):
         else:
             self.breathingPeriod = 4000
             self.inhaleDuration = 1800
-            self.timingsList = self.prepareTimings()
+            self.prepareTimings()
 
         # self.isDynamic = True
         self.repetitionMode = repetitionMode
@@ -57,8 +57,8 @@ class Dynamic3DSequence(PatientData):
 
     def prepareTimings(self):
         numberOfImages = len(self.dyn3DImageList)
-        timingList = np.linspace(0, 4000, numberOfImages + 1)
-        return timingList
+        self.timingsList = np.linspace(0, 4000, numberOfImages + 1)
+        # print('in dynamic3DSequence prepareTimings', self.timingsList)
 
 
     def sortImgsByName(self, imgList):
