@@ -26,7 +26,7 @@ before_script:
 
 build:
   script:
-    - python3 -m docs/tools/version_utils.py
+    - python3 docs/tools/version_utils.py
     - poetry build
     - pip install dist/*
   artifacts:
@@ -36,7 +36,7 @@ build:
 # TODO: test should be executed on built application
 test:
   script:
-    - python3 -m CI/tests.py
+    - python3 CI/tests.py
 
 docs:
   script:
