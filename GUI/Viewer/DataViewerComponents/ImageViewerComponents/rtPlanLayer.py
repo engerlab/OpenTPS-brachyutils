@@ -111,6 +111,7 @@ class RTPlanLayer:
         self._renderer = renderer
         self._renderWindow = renderWindow
         self._resliceAxes = None
+        self._plan = None
 
         self._beamLayers = []
 
@@ -135,8 +136,15 @@ class RTPlanLayer:
 
     def setPlan(self, plan:RTPlan, referenceImage:Image3D):
         if plan is None:
+            self._plan = None
             self.close()
             return
+        elif self._plan == plan:
+            return
+
+        self._plan = plan
+
+        self.close()
 
         for beam in plan:
             bLayer = BeamLayer(self._renderer, self._renderWindow)

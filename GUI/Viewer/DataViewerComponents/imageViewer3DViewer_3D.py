@@ -1,0 +1,110 @@
+from typing import Optional
+
+from PyQt5.QtWidgets import *
+
+import vtkmodules.vtkRenderingCore as vtkRenderingCore
+from vtkmodules import vtkInteractionStyle
+from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+
+from Core.Data.Images._image3D import Image3D
+from Core.Data.Plan import RTPlan
+from Core.event import Event
+from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
+from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImage3DLayer_3D import PrimaryImage3DLayer_3D
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.rtplanLayer_3D import RTPlanLayer_3D
+from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
+
+
+class Image3DViewer_3D(QWidget):
+    def __init__(self, viewController):
+        QWidget.__init__(self)
+        self.primaryImageSignal = Event(object)
+        self.secondaryImageSignal = Event(object)
+
+        self._blackWidget = BlackEmptyPlot(self)
+        self._renderer = vtkRenderingCore.vtkRenderer()
+        self._viewController = viewController
+        self._vtkWidget = QVTKRenderWindowInteractor(self)
+        self._mainLayout = QVBoxLayout()
+        self._renderWindow = self._vtkWidget.GetRenderWindow()
+
+        self._iStyle = vtkInteractionStyle.vtkInteractorStyleTrackballCamera()
+
+        self._primaryImageLayer = PrimaryImage3DLayer_3D(self._renderer, self._renderWindow, self._iStyle)
+        self._rtPlanLayer = RTPlanLayer_3D(self._renderer, self._renderWindow)
+
+
+        self.setLayout(self._mainLayout)
+        self._vtkWidget.hide()
+        self._mainLayout.addWidget(self._blackWidget)
+        self._blackWidget.show()
+        self._mainLayout.setContentsMargins(0, 0, 0, 0)
+
+        self._renderer.SetBackground(0, 0, 0)
+        self._renderer.GetActiveCamera().SetParallelProjection(True)
+
+        self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
+        self._renderWindow.AddRenderer(self._renderer)
+
+    def close(self):
+        self._primaryImageLayer.close()
+        self._rtPlanLayer.close()
+
+    def show(self):
+        super(Image3DViewer_3D, self).show()
+        self._primaryImageLayer.update()
+        self._rtPlanLayer.update()
+
+    @property
+    def primaryImage(self) -> Optional[Image3D]:
+        if self._primaryImageLayer.image is None:
+            return None
+        return self._primaryImageLayer.image.data
+
+    @primaryImage.setter
+    def primaryImage(self, image: Image3D):
+        imageAlreadyDisplayed = image==self._primaryImageLayer.image or (not (self._primaryImageLayer.image is None) and image==self._primaryImageLayer.image.data)
+        if imageAlreadyDisplayed:
+            return
+
+        if image is None:
+            self._resetPrimaryImageLayer()
+        else:
+            self._setPrimaryImageForViewer(Image3DForViewer(image))
+            if self.isVisible():
+                self._primaryImageLayer.update()
+
+        self.primaryImageSignal.emit(self.primaryImage)
+
+    def _resetPrimaryImageLayer(self):
+        self._primaryImageLayer.image = None
+        self._mainLayout.removeWidget(self._vtkWidget)
+        self._vtkWidget.hide()
+        self._mainLayout.addWidget(self._blackWidget)
+        self._blackWidget.show()
+
+    def _setPrimaryImageForViewer(self, image:GenericImageForViewer):
+        self._primaryImageLayer.image = image
+
+        self._blackWidget.hide()
+        self._mainLayout.removeWidget(self._blackWidget)
+        self._mainLayout.addWidget(self._vtkWidget)
+        self._vtkWidget.show()
+
+        # Start interaction
+        self._renderWindow.GetInteractor().Start()
+
+        self._renderer.ResetCamera()
+        self._renderWindow.Render()
+
+    @property
+    def rtPlan(self) -> RTPlan:
+        raise NotImplementedError
+
+    @rtPlan.setter
+    def rtPlan(self, plan: RTPlan):
+        self._rtPlanLayer.setPlan(plan)
+
+        if self.isVisible():
+            self._primaryImageLayer.update()
