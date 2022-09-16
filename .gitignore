@@ -14,5 +14,6 @@ tests/
 notebooks/
 *.txt
 version.py
+Perso/
 
 Core/Processing/DoseCalculation/MCsquare/BDL/UMCG_P1_v2_RangeShifter.txt

@@ -7,11 +7,11 @@ from vtkmodules.vtkInteractionWidgets import vtkScalarBarWidget
 from vtkmodules.vtkRenderingAnnotation import vtkScalarBarActor
 
 from Core.event import Event
-from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
-from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImage3DLayer import PrimaryImage3DLayer
+from GUI.Viewer.DataForViewer.image2DForViewer import Image2DForViewer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImage2DLayer import PrimaryImage2DLayer
 
 
-class SecondaryImage2DLayer(PrimaryImage3DLayer):
+class SecondaryImage2DLayer(PrimaryImage2DLayer):
     def __init__(self, renderer, renderWindow, iStyle):
         self._colorMapper = vtkImagingCore.vtkImageMapToColors()
 
@@ -33,13 +33,13 @@ class SecondaryImage2DLayer(PrimaryImage3DLayer):
         self._colorbarWidget.SetScalarBarActor(self._colorbarActor)
 
     def _setMainMapperInputConnection(self):
-        self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
+        # self._colorMapper.SetInputConnection(self._reslice.GetOutputPort())
         self._mainMapper.SetInputConnection(self._colorMapper.GetOutputPort())
 
     def close(self):
         super().close()
 
-    def _setImage(self, image: Optional[Image3DForViewer]):
+    def _setImage(self, image: Optional[Image2DForViewer]):
         if image == self._image:
             return
 

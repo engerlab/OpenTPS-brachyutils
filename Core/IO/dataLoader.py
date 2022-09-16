@@ -41,10 +41,12 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             # TODO: Get patient by name?
 
         if patient is None:
+
             if data.patient is None:
-                data.patient = Patient()
+                data.patient = Patient(name='You Know Who')
 
             patient = data.patient
+
             patientList.append(patient)
 
         if patient is None:
