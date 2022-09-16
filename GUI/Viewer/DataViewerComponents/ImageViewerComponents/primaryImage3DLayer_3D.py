@@ -50,34 +50,21 @@ class PrimaryImage3DLayer_3D:
         self._volumeProperty.SetDiffuse(0.6)
         self._volumeProperty.SetSpecular(0.2)
 
-        self._mainActor.SetMapper(self._mainMapper)
-        self._mainActor.SetProperty(self._volumeProperty)
-
-        self.update()
-
     def close(self):
         self._disconnectAll()
+        self._renderer.RemoveActor(self._mainActor)
+        self._mainMapper.RemoveAllInputs()
 
     def update(self):
         self._setImage(self._imageToBeSet)
 
     @property
     def image(self) -> Optional[Image3DForViewer]:
-        """
-        Image displayed
-        :type:Optional[Image3DForViewer]
-        """
-        if self._image is None:
-            return None
-
-        return self._image
+        return self._imageToBeSet
 
     @image.setter
     def image(self, image:Optional[GenericImageForViewer]):
-        if image == self._image:
-            return
-
-        if not (isinstance(image, GenericImageForViewer) or (image is None)):
+        if image == self._imageToBeSet:
             return
 
         self._imageToBeSet = image
@@ -91,39 +78,28 @@ class PrimaryImage3DLayer_3D:
 
         if not (self._image is None):
             self._mainMapper.SetInputConnection(self._image.vtkOutputPort)
+            self._mainActor.SetMapper(self._mainMapper)
+            self._mainActor.SetProperty(self._volumeProperty)
+            self._mainActor.Update()
 
             self._renderer.AddActor(self._mainActor)
 
             self._connectAll()
 
+            self._renderer.ResetCamera()
+        
         self.imageChangedSignal.emit(self._image)
 
         self._renderWindow.Render()
 
-    def _setLookupTable(self):
-        imageProperty = self._mainActor.GetProperty()
-        imageProperty.SetLookupTable(self._image.lookupTable)
-        imageProperty.UseLookupTableScalarRangeOn()
-
-    def _updateLookupTable(self, lt):
-        imageProperty = self._mainActor.GetProperty()
-        imageProperty.SetLookupTable(self._image.lookupTable)
-
-        self._renderWindow.Render()
-
-
     def _connectAll(self):
         self._image.dataChangedSignal.connect(self._render)
-        self._image.lookupTableChangedSignal.connect(self._updateLookupTable)
-        self._image.rangeChangedSignal.connect(self._render)
 
     def _disconnectAll(self):
         if self._image is None:
             return
 
         self._image.dataChangedSignal.disconnect(self._render)
-        self._image.lookupTableChangedSignal.disconnect(self._updateLookupTable)
-        self._image.rangeChangedSignal.connect(self._render)
 
     def _render(self, *args):
         self._renderWindow.Render()

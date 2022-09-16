@@ -1,3 +1,4 @@
+from typing import Optional
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
@@ -133,6 +134,10 @@ class RTPlanLayer:
 
         for bl in self._beamLayers:
             bl.resliceAxes = self._resliceAxes
+
+    @property
+    def plan(self) -> Optional[RTPlan]:
+        return self._plan
 
     def setPlan(self, plan:RTPlan, referenceImage:Image3D):
         if plan is None:

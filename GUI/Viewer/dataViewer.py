@@ -569,6 +569,8 @@ class DataViewer(QWidget):
         if isinstance(image, Image3D):
             self.cachedStaticImage3DViewer.primaryImage = image
             self.cachedStaticImage3DViewer_3D.primaryImage = image
+            if self.displayMode == self.DisplayModes.DYNAMIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE3D_3D:
+                self.cachedStaticImage3DViewer_3D.update()
         elif isinstance(image, Image2D):
             self.cachedStaticImage2DViewer.primaryImage = image
         elif isinstance(image, Dynamic3DSequence):
@@ -613,6 +615,8 @@ class DataViewer(QWidget):
     def _setPlan(self, plan:Optional[RTPlan]):
         self.cachedStaticImage3DViewer.rtPlan = plan
         self.cachedStaticImage3DViewer_3D.rtPlan = plan
+        if self.displayMode == self.DisplayModes.DYNAMIC and self.displayType == self.DisplayTypes.DISPLAY_IMAGE3D_3D:
+            self.cachedStaticImage3DViewer_3D.update()
 
     def _setDVHDose(self, image:Optional[DoseImage]):
         if image is None:

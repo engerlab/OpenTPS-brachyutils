@@ -1,11 +1,13 @@
 from typing import Optional
 
+import numpy as np
 from PyQt5.QtWidgets import *
 
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
 from vtkmodules import vtkInteractionStyle
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
+from Core.Data.Images import CTImage
 from Core.Data.Images._image3D import Image3D
 from Core.Data.Plan import RTPlan
 from Core.event import Event
@@ -48,13 +50,17 @@ class Image3DViewer_3D(QWidget):
         self._renderWindow.AddRenderer(self._renderer)
 
     def close(self):
-        self._primaryImageLayer.close()
         self._rtPlanLayer.close()
+        self._primaryImageLayer.close()
 
     def show(self):
         super(Image3DViewer_3D, self).show()
+        self.update()
+
+    def update(self):
         self._primaryImageLayer.update()
         self._rtPlanLayer.update()
+
 
     @property
     def primaryImage(self) -> Optional[Image3D]:
@@ -64,16 +70,9 @@ class Image3DViewer_3D(QWidget):
 
     @primaryImage.setter
     def primaryImage(self, image: Image3D):
-        imageAlreadyDisplayed = image==self._primaryImageLayer.image or (not (self._primaryImageLayer.image is None) and image==self._primaryImageLayer.image.data)
-        if imageAlreadyDisplayed:
-            return
-
-        if image is None:
-            self._resetPrimaryImageLayer()
-        else:
-            self._setPrimaryImageForViewer(Image3DForViewer(image))
-            if self.isVisible():
-                self._primaryImageLayer.update()
+        self._setPrimaryImageForViewer(Image3DForViewer(image))
+        if self.isVisible():
+            self.update()
 
         self.primaryImageSignal.emit(self.primaryImage)
 
@@ -92,11 +91,6 @@ class Image3DViewer_3D(QWidget):
         self._mainLayout.addWidget(self._vtkWidget)
         self._vtkWidget.show()
 
-        # Start interaction
-        self._renderWindow.GetInteractor().Start()
-
-        self._renderer.ResetCamera()
-        self._renderWindow.Render()
 
     @property
     def rtPlan(self) -> RTPlan:
@@ -107,4 +101,4 @@ class Image3DViewer_3D(QWidget):
         self._rtPlanLayer.setPlan(plan)
 
         if self.isVisible():
-            self._primaryImageLayer.update()
+            self.update()

@@ -69,9 +69,9 @@ class PolyData3DLayer_3D:
             self._renderer.AddActor(self._mainActor)
 
             colors = vtkNamedColors()
-            backFaceProp = vtkProperty()
-            backFaceProp.SetDiffuseColor(colors.GetColor3d("Silver"))
-            self._mainActor.SetBackfaceProperty(backFaceProp)
+            #backFaceProp = vtkProperty()
+            #backFaceProp.SetDiffuseColor(colors.GetColor3d("Silver"))
+            #self._mainActor.SetBackfaceProperty(backFaceProp)
             self._mainActor.GetProperty().SetDiffuseColor(colors.GetColor3d("NavajoWhite"))
 
             self._connectAll()

@@ -1,4 +1,5 @@
 import os.path
+from typing import Optional
 
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
@@ -34,12 +35,12 @@ class BeamLayer_3D:
 
     def close(self):
         self._nozzleLayer.close()
+        self._tformFilter.RemoveAllInputs()
 
     def update(self):
         self._nozzleLayer.update()
 
     def _tform(self, gantryAngle, couchAngle):
-        print(gantryAngle)
         #TODO couchAngle
         tform = vtkTransform()
         tform.RotateY(90)
@@ -72,6 +73,10 @@ class RTPlanLayer_3D:
     def update(self):
         for bl in self._beamLayers:
             bl.update()
+
+    @property
+    def plan(self) -> Optional[RTPlan]:
+        return self._plan
 
     def setPlan(self, plan:RTPlan):
         #TODO connect to plan.dataChangedSignal
