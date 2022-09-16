@@ -121,7 +121,7 @@ def signalGeneration(amplitude=10, period=4.0, mean=0, sigma=3, step=0.5, signal
 
 def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
 
-    timestamps, mainMotionSignal = signalGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120)
+    timestamps, mainMotionSignal = signalGeneration(amplitude=amplitude, period=period, mean=mean, sigma=sigma, step=step, signalDuration=signalDuration, coeffMin=coeffMin, coeffMax=coeffMax, meanEvent=meanEvent, meanEventApnea=meanEventApnea)
 
     secondMotionSignal = mainMotionSignal * otherDimensionsRatio[0] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[0], size=mainMotionSignal.shape[0])
     thirdMotionSignal = mainMotionSignal * otherDimensionsRatio[1] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[1], size=mainMotionSignal.shape[0])
@@ -129,13 +129,29 @@ def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, sign
     signal3D = np.vstack((mainMotionSignal, secondMotionSignal, thirdMotionSignal))
     signal3D = signal3D.transpose(1, 0)
 
-    plt.figure()
-    plt.plot(signal3D[:, 0])
-    plt.plot(signal3D[:, 1])
-    plt.plot(signal3D[:, 2])
-    plt.show()
+    # plt.figure()
+    # plt.plot(signal3D[:, 0])
+    # plt.plot(signal3D[:, 1])
+    # plt.plot(signal3D[:, 2])
+    # plt.show()
 
     return timestamps, signal3D
+
+def signal2DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
+
+    timestamps, mainMotionSignal = signalGeneration(amplitude=amplitude, period=period, mean=mean, sigma=sigma, step=step, signalDuration=signalDuration, coeffMin=coeffMin, coeffMax=coeffMax, meanEvent=meanEvent, meanEventApnea=meanEventApnea)
+
+    secondMotionSignal = mainMotionSignal * otherDimensionsRatio[0] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[0], size=mainMotionSignal.shape[0])
+
+    signal2D = np.vstack((mainMotionSignal, secondMotionSignal))
+    signal2D = signal2D.transpose(1, 0)
+
+    # plt.figure()
+    # plt.plot(signal3D[:, 0])
+    # plt.plot(signal3D[:, 1])
+    # plt.show()
+
+    return timestamps, signal2D
 
 
 
