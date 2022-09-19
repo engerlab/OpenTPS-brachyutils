@@ -65,7 +65,7 @@ class DoseComparisonImageProvider:
         elif self._dose2 is None:
             dose = None
         else:
-            dose = DoseImage.fromImage3D(self._dose1)
+            dose = DoseImage.fromImage3D(self._dose1, patient=None)
             dose2 = resampler3D.resampleImage3DOnImage3D(self._dose2, dose, inPlace=False)
 
             if self._comparisonMetric == self.Metric.DIFFERENCE:

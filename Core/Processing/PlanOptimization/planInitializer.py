@@ -174,7 +174,7 @@ class PlanInitializer:
         self._beamInitializer.distalLayers = distalLayers
 
         from Core.Data.Images._rspImage import RSPImage
-        roiDilated = ROIMask.fromImage3D(self.targetMask)
+        roiDilated = ROIMask.fromImage3D(self.targetMask, patient=None)
         roiDilated.dilate(radius=targetMargin)
         self._beamInitializer.targetMask = roiDilated
 

@@ -1,7 +1,7 @@
 
 __all__ = ['RSPImage']
 
-
+import copy
 from typing import Optional
 
 import numpy as np
@@ -16,9 +16,9 @@ from Core.Processing.ImageProcessing import resampler3D
 
 class RSPImage(Image3D):
     def __init__(self, imageArray=None, name="RSP image", origin=(0, 0, 0), spacing=(1, 1, 1),
-                 angles=(0, 0, 0), seriesInstanceUID="", frameOfReferenceUID="", sliceLocation=[], sopInstanceUIDs=[]):
+                 angles=(0, 0, 0), seriesInstanceUID=None, frameOfReferenceUID=None, sliceLocation=[], sopInstanceUIDs=[], patient=None):
         super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing,
-                         angles=angles, seriesInstanceUID=seriesInstanceUID)
+                         angles=angles, seriesInstanceUID=seriesInstanceUID, patient=patient)
         self.frameOfReferenceUID = frameOfReferenceUID
         self.seriesInstanceUID = seriesInstanceUID
         self.sliceLocation = sliceLocation
@@ -28,9 +28,11 @@ class RSPImage(Image3D):
         return "RSP image: " + self.seriesInstanceUID
 
     @classmethod
-    def fromImage3D(cls, image: Image3D):
-        return cls(imageArray=image.imageArray, origin=image.origin, spacing=image.spacing, angles=image.angles,
-                   seriesInstanceUID=image.seriesInstanceUID)
+    def fromImage3D(cls, image, **kwargs):
+        dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+        dic.update(kwargs)
+        return cls(**dic)
 
     @classmethod
     def fromCT(cls, ct:CTImage, calibration:AbstractCTCalibration, energy:float=100.):

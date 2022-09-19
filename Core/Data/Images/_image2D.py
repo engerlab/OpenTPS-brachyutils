@@ -12,8 +12,8 @@ from Core.event import Event
 
 
 class Image2D(PatientData):
-    def __init__(self, imageArray=None, name="2D Image", origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
-        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID)
+    def __init__(self, imageArray=None, name="2D Image", origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
+        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID, patient=None)
 
         self.dataChangedSignal = Event()
 
@@ -29,9 +29,11 @@ class Image2D(PatientData):
 
     # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D
     @classmethod
-    def fromImage2D(cls, image):
-        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing,
-                       angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+    def fromImage2D(cls, image, **kwargs):
+        dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+        dic.update(kwargs)
+        return cls(**dic)
 
     @property
     def imageArray(self) -> np.ndarray:

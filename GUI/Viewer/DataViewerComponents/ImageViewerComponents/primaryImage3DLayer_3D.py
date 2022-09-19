@@ -87,7 +87,7 @@ class PrimaryImage3DLayer_3D:
             self._connectAll()
 
             self._renderer.ResetCamera()
-        
+
         self.imageChangedSignal.emit(self._image)
 
         self._renderWindow.Render()
