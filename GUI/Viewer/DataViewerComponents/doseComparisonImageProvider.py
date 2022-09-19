@@ -5,7 +5,7 @@ import numpy as np
 
 from Core.Data.Images._doseImage import DoseImage
 from Core.Data.Images._image3D import Image3D
-from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
+from Core.Processing.ImageProcessing import resampler3D
 from Core.event import Event
 
 
@@ -67,6 +67,7 @@ class DoseComparisonImageProvider:
         else:
             dose = DoseImage.fromImage3D(self._dose1, patient=None)
             dose2 = resampler3D.resampleImage3DOnImage3D(self._dose2, dose, inPlace=False)
+            dose2.patient = None
 
             if self._comparisonMetric == self.Metric.DIFFERENCE:
                 dose.imageArray = dose.imageArray - dose2.imageArray

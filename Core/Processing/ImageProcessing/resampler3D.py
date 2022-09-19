@@ -77,7 +77,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
 
     """
     if not inPlace:
-        image = image.__class__.fromImage3D(image)
+        image = image.__class__.fromImage3D(image, patient=None)
 
     # spacing is None
     if spacing is None:
@@ -171,7 +171,7 @@ def resampleImage3DOnImage3D(image:Image3D, fixedImage:Image3D, fillValue:float=
 
     """
     if not inPlace:
-        image = image.__class__.fromImage3D(image)
+        image = image.__class__.fromImage3D(image, patient=None)
 
     if not (image.hasSameGrid(fixedImage)):
         resampleImage3D(image, spacing=fixedImage.spacing, origin=fixedImage.origin, gridSize=fixedImage.gridSize.astype(int),

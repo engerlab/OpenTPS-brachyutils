@@ -27,7 +27,6 @@ class DoseImage(Image3D):
         dic.update(kwargs)
 
         cl = cls(**dic)
-        cl.patient = image.patient
         if isinstance(image, DoseImage):
             cl.referenceCT = image.referenceCT
             cl.referencePlan = image.referencePlan

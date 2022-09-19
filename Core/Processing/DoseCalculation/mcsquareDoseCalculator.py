@@ -392,6 +392,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                                                             spacing=self.scoringVoxelSpacing)
             else:
                 raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
+            resampledMask.patient = None
             roiResampled.append(resampledMask)
         self._roi = roiResampled
         self._roi[0].patient = self._ct.patient
