@@ -1,11 +1,11 @@
 
 from vtkmodules.vtkCommonCore import vtkCommand
 
-from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
-from GUI.Viewer.DataForViewer.dyn3DSeqForViewer import Dyn3DSeqForViewer
+from GUI.Viewer.DataViewerComponents.image2DViewer import Image2DViewer
+from GUI.Viewer.DataForViewer.dyn2DSeqForViewer import Dyn2DSeqForViewer
 
 
-class DynamicImage2DViewer(Image3DViewer):
+class DynamicImage2DViewer(Image2DViewer):
     def __init__(self, viewController):
         super().__init__(viewController)
 
@@ -41,7 +41,7 @@ class DynamicImage2DViewer(Image3DViewer):
             super().image = None
         elif dyn3DImgSeq != self.dynPrimaryImgSeq:
             self.dynPrimaryImgSeq = dyn3DImgSeq
-            self.dynPrimaryImgSeqForViewer = Dyn3DSeqForViewer(self.dynPrimaryImgSeq)
+            self.dynPrimaryImgSeqForViewer = Dyn2DSeqForViewer(self.dynPrimaryImgSeq)
             super()._setPrimaryImageForViewer(self.dynPrimaryImgSeqForViewer)
 
     def nextImage(self, index):
