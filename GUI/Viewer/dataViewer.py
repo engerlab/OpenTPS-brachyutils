@@ -610,6 +610,7 @@ class DataViewer(QWidget):
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
         self.cachedStaticImage3DViewer.secondaryImage = image
+        self.cachedStaticImage3DViewer_3D.secondaryImage = image
         self._setDVHDose(image)
 
     def _setPlan(self, plan:Optional[RTPlan]):
@@ -631,7 +632,6 @@ class DataViewer(QWidget):
 
         if self.cachedStaticImage3DViewer.primaryImage == image:
             self.cachedStaticImage3DViewer.primaryImage = None
-            self.cachedStaticImage3DViewer_3D.primaryImage = None
         if self.cachedStaticImage3DViewer.secondaryImage == image:
             self._setSecondaryImage(None)
 
@@ -646,5 +646,10 @@ class DataViewer(QWidget):
 
         if self.cachedStaticDVHViewer.dose == image:
             self._setDVHDose(None)
+
+        if self.cachedStaticImage3DViewer_3D.primaryImage==image:
+            self.cachedStaticImage3DViewer_3D.primaryImage = None
+        if self.cachedStaticImage3DViewer_3D.secondaryImage==image:
+            self.cachedStaticImage3DViewer_3D.secondaryImage = None
 
         #image.patient.imageRemovedSignal.disconnect(self._removeImageFromViewers)

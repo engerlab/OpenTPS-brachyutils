@@ -38,7 +38,7 @@ class PrimaryImage3DLayer_3D:
 
         self._volumeGradientOpacity.AddPoint(-1000, 0.0)
         self._volumeGradientOpacity.AddPoint(0, 0.5)
-        self._volumeGradientOpacity.AddPoint(100, 1.0)
+        self._volumeGradientOpacity.AddPoint(100, 0.85)
 
         self._volumeProperty = vtkRenderingCore.vtkVolumeProperty()
         self._volumeProperty.SetColor(self._volumeColor)

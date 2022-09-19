@@ -1,13 +1,11 @@
 from typing import Optional
 
-import numpy as np
 from PyQt5.QtWidgets import *
 
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
 from vtkmodules import vtkInteractionStyle
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
-from Core.Data.Images import CTImage
 from Core.Data.Images._image3D import Image3D
 from Core.Data.Plan import RTPlan
 from Core.event import Event
@@ -15,6 +13,7 @@ from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.primaryImage3DLayer_3D import PrimaryImage3DLayer_3D
 from GUI.Viewer.DataViewerComponents.ImageViewerComponents.rtplanLayer_3D import RTPlanLayer_3D
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.secondaryImage3DLayer_3D import SecondaryImage3DLayer_3D
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 
 
@@ -34,6 +33,7 @@ class Image3DViewer_3D(QWidget):
         self._iStyle = vtkInteractionStyle.vtkInteractorStyleTrackballCamera()
 
         self._primaryImageLayer = PrimaryImage3DLayer_3D(self._renderer, self._renderWindow, self._iStyle)
+        self._secondaryImageLayer = SecondaryImage3DLayer_3D(self._renderer, self._renderWindow, self._iStyle)
         self._rtPlanLayer = RTPlanLayer_3D(self._renderer, self._renderWindow)
 
 
@@ -52,6 +52,7 @@ class Image3DViewer_3D(QWidget):
     def close(self):
         self._rtPlanLayer.close()
         self._primaryImageLayer.close()
+        self._secondaryImageLayer.close()
 
     def show(self):
         super(Image3DViewer_3D, self).show()
@@ -59,6 +60,7 @@ class Image3DViewer_3D(QWidget):
 
     def update(self):
         self._primaryImageLayer.update()
+        self._secondaryImageLayer.update()
         self._rtPlanLayer.update()
 
 
@@ -91,6 +93,33 @@ class Image3DViewer_3D(QWidget):
         self._mainLayout.addWidget(self._vtkWidget)
         self._vtkWidget.show()
 
+    @property
+    def secondaryImage(self) -> Optional[Image3D]:
+        if self._secondaryImageLayer.image is None:
+            return None
+        return self._secondaryImageLayer.image.data
+
+    @secondaryImage.setter
+    def secondaryImage(self, image: Image3D):
+        if self.primaryImage is None:
+            return
+
+        if image is None:
+            self._secondaryImageLayer.image = None
+            if self.isVisible():
+                self.update()
+
+            self.secondaryImageSignal.emit(self.secondaryImage)
+            return
+        else:
+            self._secondaryImageLayer.image = Image3DForViewer(image)
+
+        if self.isVisible():
+            self.update()
+
+        self._renderWindow.Render()
+
+        self.secondaryImageSignal.emit(self.secondaryImage)
 
     @property
     def rtPlan(self) -> RTPlan:
