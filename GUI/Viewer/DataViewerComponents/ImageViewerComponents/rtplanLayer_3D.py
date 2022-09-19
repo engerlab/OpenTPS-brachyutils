@@ -19,15 +19,10 @@ class BeamLayer_3D:
 
         self._nozzleLayer = PolyData3DLayer_3D(self._renderer, self._renderWindow)
 
-        filePath = os.path.join(iconModule.__path__[0], 'iba_nozzle.stl')
+        altPath = '/home/sylvain/Downloads/Universal_nozzle_cover.stl'
+        filePath = os.path.join(altPath) #iconModule.__path__[0], 'iba_nozzle.stl')
         self._stlReader = vtkSTLReader()
         self._stlReader.SetFileName(filePath)
-        gantryAngle = 300
-        tform = vtkTransform()
-        tform.RotateY(90)
-        tform.RotateZ(180)
-        tform.RotateX(90 + gantryAngle)
-        tform.Translate(0, 0, -1000)
         self._tformFilter = vtkTransformPolyDataFilter()
         self._tformFilter.SetTransform(self._tform(0, 0))
         self._tformFilter.SetInputConnection(self._stlReader.GetOutputPort())
@@ -43,10 +38,12 @@ class BeamLayer_3D:
     def _tform(self, gantryAngle, couchAngle):
         #TODO couchAngle
         tform = vtkTransform()
-        tform.RotateY(90)
+        tform.RotateY(-90)
+        #tform.RotateY(90)
         tform.RotateZ(180)
-        tform.RotateX(90 + gantryAngle)
-        tform.Translate(0, 0, -1000)
+        #tform.RotateX(90 + gantryAngle)
+        tform.RotateX(180-gantryAngle)
+        tform.Translate(0, 0, 0)
 
         return tform
 

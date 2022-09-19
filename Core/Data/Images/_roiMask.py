@@ -25,8 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class ROIMask(Image3D):
-    def __init__(self, imageArray=None, name="ROI contour", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), displayColor=(0, 0, 0), patient=None):
-        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, patient=patient)
+    def __init__(self, imageArray=None, name="ROI contour", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), displayColor=(0, 0, 0), patient=None, seriesInstanceUID=None):
+        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, patient=patient, seriesInstanceUID=seriesInstanceUID)
 
         self.colorChangedSignal = Event(object)
 
