@@ -1,10 +1,12 @@
+import copy
 import json
 import logging.config
-import math
 import os
 
 import numpy as np
 from matplotlib import pyplot as plt
+
+import opentps
 from Core.Data.Images import CTImage
 from Core.Data.Images import ROIMask
 from Core.Data.Plan import ObjectivesList
@@ -16,25 +18,22 @@ from Core.Data import PatientList
 from Core.Data.Plan._objectivesList import FidObjective
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
-from Core.IO.serializedObjectIO import loadRTPlan, loadBeamlets, loadDataStructure
+from Core.IO.serializedObjectIO import loadDataStructure
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
-from Core.Processing.PlanOptimization.optimizationWorkflows import optimizeIMPT
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
-from programSettings import ProgramSettings
+from Core.Utils.programSettings import ProgramSettings
+from Core.Processing.PlanOptimization import optimizationWorkflows
 
-with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
-          'r') as log_fid:
-    config_dict = json.load(log_fid)
-logging.config.dictConfig(config_dict)
 
 # Generic example: box of water with squared target
-patientList = PatientList()
+patientList = opentps.patientList
 
-ctCalibration = readScanner(ProgramSettings().scannerFolder)
-bdl = mcsquareIO.readBDL(ProgramSettings().bdlFile)
+ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
+bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 patient = Patient()
 patient.name = 'Patient'
@@ -47,31 +46,21 @@ ct = CTImage()
 ct.name = 'CT'
 ct.patient = patient
 
+
 huAir = -1024.
 huWater = ctCalibration.convertRSP2HU(1.)
 data = huAir * np.ones((ctSize, ctSize, ctSize))
 data[:, 50:, :] = huWater
 ct.imageArray = data
 
-roi = ROIContour(patient, 'TV', (255, 0, 0))
+roi = ROIMask()
+roi.patient = patient
+roi.name = 'TV'
+roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
+data[80:100, 100:120, 120:140] = True
+roi.imageArray = data
 
-roiMask = ROIMask()
-roiMask.patient = patient
-roiMask.name = 'TV'
-roiMask.color = (255, 0, 0)  # red
-
-data[100:120, 100:120, 100:120] = True
-roiMask.imageArray = data
-ct2 = CTImage.fromImage3D(ct)
-ct2.spacing = np.array([0.8, 0.8, 0.8])
-ct2.imageArray = huAir * np.ones((ctSize - 3, ctSize - 3, ctSize - 3))
-resampler3D.resampleImage3DOnImage3D(roiMask, ct2, inPlace=True, fillValue=0)
-
-examplePath = "/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/testData"
-
-output_path = os.path.join(examplePath, "fakeCT")
-# dataStructPath = os.path.join(ctImagePath, "reggui_phantom_5mm_rtstruct.dcm")
 
 
 # Design plan
@@ -81,29 +70,22 @@ couchAngles = [0.]
 
 # method 1 : create or load existing plan (no workflow)
 
-# Create output folder
-if not os.path.isdir(output_path):
-    os.mkdir(output_path)
-
 # Configure MCsquare
 mc2 = MCsquareDoseCalculator()
 mc2.beamModel = bdl
-mc2.nbPrimaries = 1e4
+mc2.nbPrimaries = 5e4
 mc2.ctCalibration = ctCalibration
 #mc2.independentScoringGrid = True
 #scoringSpacing = [2, 2, 2]
 #mc2.scoringVoxelSpacing = scoringSpacing
 
-# Load / Generate new plan
-plan_file = os.path.join(output_path, "planTestp.p")
 
-if os.path.isfile(plan_file):
-    plan = loadDataStructure(plan_file)[0]
-    beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
+if False:
+    pass
 else:
     planInit = PlanDesign()
     planInit.ct = ct
-    planInit.targetMask = roiMask
+    planInit.targetMask = roi
     planInit.gantryAngles = gantryAngles
     planInit.beamNames = beamNames
     planInit.couchAngles = couchAngles
@@ -111,30 +93,36 @@ else:
     planInit.spotSpacing = 5.0
     planInit.layerSpacing = 5.0
     planInit.targetMargin = 5.0
-    planInit.objectives = ObjectivesList()
-    planInit.objectives.setTarget(roiMask.name, 20.0)
-    planInit.objectives.setScoringParameters(ct)
-    #scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
-    #planInit.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
-    planInit.objectives.fidObjList = []
-    planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMAX, 20.0, 1.0)
-    planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMIN, 20.0, 1.0)
-    planInit.buildPlan()  # Spot placement
-    planInit.plan.PlanName = "NewPlan"
-    plan = planInit.plan
-    #beamlets = mc2.computeBeamlets(ct, plan, roi=[roiMask])
-    beamlets = mc2.computeBeamlets(ct, plan)
-    planInit.beamlets = beamlets
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + planInit.plan.seriesInstanceUID + ".blm")
 
-    beamletMatrix = planInit.beamlets.toSparseMatrix()
+    plan = planInit.buildPlan()  # Spot placement
+    plan.PlanName = "NewPlan"
 
+    roiDilated = ROIMask.fromImage3D(roi)
+    roiDilated.dilate(planInit.targetMargin*3)
+    beamlets = mc2.computeBeamlets(ct, plan, roi=[roiDilated])
+    #beamlets = mc2.computeBeamlets(ct, plan)
+    plan.planDesign.beamlets = beamlets
+
+    beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
+
+plan.planDesign.objectives = ObjectivesList()
+plan.planDesign.objectives.setTarget(roi.name, 20.0)
+plan.planDesign.objectives.setScoringParameters(ct)
+#scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
+#plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
+plan.planDesign.objectives.fidObjList = []
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
+#plan.planDesign.defineTargetMaskAndPrescription()
 objectiveFunction = DoseFidelity(plan.planDesign.objectives.fidObjList, beamletMatrix)
 print('fidelity init done')
 
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=50)
 # Optimize treatment plan
 w, doseImage, ps = solver.optimize()
+
+doseImage.patient = patient
+opentps.run()
 
 # method 2 : using Sylvain's opti workflow
 
@@ -163,23 +151,29 @@ planInit.objectives.addFidObjective(roiMask, FidObjective.Metrics.DMIN, 20.0, 1.
 # optimize
 #optimizeIMPT(plan, planInit, scoringSpacing)
 optimizeIMPT(plan, planInit)
-#plan.planDesign.beamlets.beamletWeights = np.square(w).astype(np.float32)
-plan.planDesign.beamlets.beamletWeights = plan.spotMUs
-doseImage = plan.planDesign.beamlets.toDoseImage()'''
+#plan.planDesign.beamlets.beamletWeights = np.square(w).astype(np.float32)'''
+
+#plan.planDesign.beamlets.beamletWeights = plan.spotMUs
+#doseImage = plan.planDesign.beamlets.toDoseImage()
+
+# MCsquare simulation
+#mc2.nbPrimaries = 1e6
+#doseImage = mc2.computeDose(ct, plan)
 
 # Compute DVH
-target_DVH = DVH(roiMask, doseImage)
+target_DVH = DVH(roi, doseImage)
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')
 print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
 
 # center of mass
-COM_coord = roiMask.centerOfMass
-COM_index = roiMask.getVoxelIndexFromPosition(COM_coord)
+roi = resampleImage3DOnImage3D(roi, ct)
+COM_coord = roi.centerOfMass
+COM_index = roi.getVoxelIndexFromPosition(COM_coord)
 Z_coord = COM_index[2]
 
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
-contourTargetMask = roiMask.getBinaryContourMask()
+contourTargetMask = roi.getBinaryContourMask()
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
 img_dose = resampleImage3DOnImage3D(doseImage, ct)
 img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)

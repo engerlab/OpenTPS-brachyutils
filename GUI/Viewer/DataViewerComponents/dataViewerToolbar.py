@@ -3,7 +3,7 @@ import os
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QToolBar, QAction, QMenu, QWidgetAction, QPushButton
-import GUI as GUIModule
+import GUI.res.icons as IconModule
 
 class DataViewerToolbar(QToolBar):
     def __init__(self, dataViewer):
@@ -14,7 +14,7 @@ class DataViewerToolbar(QToolBar):
         self.setIconSize(QSize(16, 16))
 
         # TODO use full path from import GUI.res.icons as iconModule
-        iconPath = GUIModule.__path__[0] + os.path.sep + 'res' + os.path.sep + 'icons' + os.path.sep
+        iconPath = IconModule.__path__[0] + os.path.sep
 
         self._buttonDVH = QAction(QIcon(iconPath + "dvh.png"), "DVH", self)
         self._buttonDVH.setStatusTip("DVH")
@@ -31,9 +31,15 @@ class DataViewerToolbar(QToolBar):
         self._buttonViewer.triggered.connect(self._handleButtonViewer)
         self._buttonViewer.setCheckable(True)
 
+        self._buttonViewer_3D = QAction(QIcon(iconPath + "cube.png"), "3D Image viewer", self)
+        self._buttonViewer_3D.setStatusTip("3D Image viewer")
+        self._buttonViewer_3D.triggered.connect(self._handleButtonViewer_3D)
+        self._buttonViewer_3D.setCheckable(True)
+
         self.addAction(self._buttonViewer)
         self.addAction(self._buttonProfile)
         self.addAction(self._buttonDVH)
+        self.addAction(self._buttonViewer_3D)
 
         self._menuButton = QPushButton("Tools", self)
         self._menu = QMenu(self._menuButton)
@@ -60,6 +66,10 @@ class DataViewerToolbar(QToolBar):
         if pressed:
             self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D
 
+    def _handleButtonViewer_3D(self, pressed):
+        if pressed:
+            self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D_3D
+
     def _handleDisplayTypeChange(self, displayType):
         self._uncheckAllDisplayButton()
 
@@ -69,8 +79,11 @@ class DataViewerToolbar(QToolBar):
             self._buttonProfile.setChecked(True)
         elif displayType == self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D:
             self._buttonViewer.setChecked(True)
+        elif displayType == self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D_3D:
+            self._buttonViewer_3D.setChecked(True)
 
     def _uncheckAllDisplayButton(self):
         self._buttonDVH.setChecked(False)
         self._buttonProfile.setChecked(False)
         self._buttonViewer.setChecked(False)
+        self._buttonViewer_3D.setChecked(False)

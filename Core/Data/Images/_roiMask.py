@@ -1,6 +1,7 @@
 
 __all__ = ['ROIMask']
 
+import math
 
 import numpy as np
 import scipy
@@ -24,16 +25,19 @@ logger = logging.getLogger(__name__)
 
 
 class ROIMask(Image3D):
-    def __init__(self, imageArray=None, name="ROI contour", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), displayColor=(0, 0, 0)):
-        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles)
+    def __init__(self, imageArray=None, name="ROI contour", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), displayColor=(0, 0, 0), patient=None, seriesInstanceUID=None):
+        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, patient=patient, seriesInstanceUID=seriesInstanceUID)
 
         self.colorChangedSignal = Event(object)
 
         self._displayColor = displayColor
 
     @classmethod
-    def fromImage3D(cls, image:Image3D):
-        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
+    def fromImage3D(cls, image, **kwargs):
+        dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+        dic.update(kwargs)
+        return cls(**dic)
 
     @property
     def color(self):
@@ -64,13 +68,19 @@ class ROIMask(Image3D):
 
         if filt is None:
             radius = radius/np.array(self.spacing)
-            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
-            diameter = diameter + (diameter+1)%2
-            diameter = np.round(diameter).astype(int)
-
-            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
-            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
-            filt = filt.astype(bool)
+            if np.min(radius)<=0:
+                return
+            diameter = np.ceil(radius).astype(int) * 2 + 1
+            filt = np.zeros(tuple(diameter)).astype(bool)
+            for i in range(diameter[0]):
+                for j in range(diameter[1]):
+                    for k in range(diameter[2]):
+                        y = i - math.floor(diameter[0] / 2)
+                        x = j - math.floor(diameter[1] / 2)
+                        z = k - math.floor(diameter[2] / 2)
+                        if (
+                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[2] ** 2 <= 1):  # generate ellipsoid structuring element
+                            filt[i, j, k] = True
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
@@ -147,8 +157,7 @@ class ROIMask(Image3D):
     def getBinaryContourMask(self):
         dilatedROI = ROIMask.fromImage3D(self)
         dilatedROI.imageArray = np.array(dilatedROI.imageArray)
-        # Quid des ct non isotropique?
-        dilatedROI.dilate(radius=dilatedROI.spacing[0])
+        dilatedROI.dilate(radius=dilatedROI.spacing)
         imageArray = np.logical_xor(dilatedROI.imageArray, self.imageArray)
 
         dilatedROI.imageArray = imageArray

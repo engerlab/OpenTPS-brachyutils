@@ -20,8 +20,8 @@ def euclidean_dist(v1, v2):
 
 
 class Image3D(PatientData):
-    def __init__(self, imageArray=None, name="3D Image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
-        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID)
+    def __init__(self, imageArray=None, name="3D Image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
+        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID, patient=patient)
 
         self.dataChangedSignal = Event()
 
@@ -40,8 +40,11 @@ class Image3D(PatientData):
 
     # This is different from deepcopy because image can be a subclass of image3D but the method always returns an Image3D
     @classmethod
-    def fromImage3D(cls, image):
-        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+    def fromImage3D(cls, image, **kwargs):
+        dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+        dic.update(kwargs)
+        return cls(**dic)
 
     def copy(self):
         return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
@@ -56,6 +59,9 @@ class Image3D(PatientData):
         if not (array is None):
             logger.debug("Array " + str(array.shape))
         self._imageArray = array
+        self.dataChangedSignal.emit()
+
+    def update(self):
         self.dataChangedSignal.emit()
 
     @property
@@ -182,3 +188,9 @@ class Image3D(PatientData):
 
     def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
         return self.origin + np.array(index).astype(dtype=float)*self.spacing
+
+    def min(self):
+        return self._imageArray.min()
+
+    def max(self):
+        return self._imageArray.max()

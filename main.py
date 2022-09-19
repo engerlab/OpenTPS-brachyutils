@@ -14,8 +14,7 @@ from GUI.viewController import ViewController
 import Script
 
 from logConfigParser import parseArgs
-from programSettings import ProgramSettings
-
+from Core.Utils.programSettings import ProgramSettings
 QApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True) # avoid display bug for 4k resolutions with 200% GUI scale
 
 

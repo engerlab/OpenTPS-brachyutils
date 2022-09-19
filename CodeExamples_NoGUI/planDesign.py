@@ -1,5 +1,5 @@
 import os
-from Core.IO.dataLoader import reaData
+from Core.IO.dataLoader import readData
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
 from Core.IO import mcsquareIO
@@ -16,7 +16,7 @@ if not os.path.isdir(output_path):
     os.mkdir(output_path)
 
 # Load patient data
-dataList = reaData(ctImagePath, maxDepth=0)
+dataList = readData(ctImagePath, maxDepth=0)
 ct = dataList[7]
 contours = dataList[6]
 print('Available ROIs')

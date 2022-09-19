@@ -1,4 +1,6 @@
 import subprocess
+import os
+import platform
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow
 
@@ -8,8 +10,8 @@ from Core.Data.Plan._planDesign import PlanDesign
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data._patient import Patient
 from Core.Processing.PlanOptimization import optimizationWorkflows
-from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
-from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ROITable
+from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimizationConfig
+from GUI.Panels.PlanOptimizationPanel.objectivesWindow import ObjectivesWindow
 
 
 class PlanOptiPanel(QWidget):
@@ -44,6 +46,10 @@ class PlanOptiPanel(QWidget):
         self._configButton = QPushButton('Open configuration')
         self._configButton.clicked.connect(self._openConfig)
         self.layout.addWidget(self._configButton)
+
+        from GUI.programSettingEditor import MCsquareConfigEditor
+        self._mcsquareConfigWidget = MCsquareConfigEditor(self)
+        self.layout.addWidget(self._mcsquareConfigWidget)
 
         self._runButton = QPushButton('Run')
         self._runButton.clicked.connect(self._run)
@@ -158,7 +164,10 @@ class PlanOptiPanel(QWidget):
         self._updatePlanStructureComboBox()
 
     def _openConfig(self):
-        subprocess.run(['xdg-open', PlanOptimizationSettings().configFile], check=True)
+        if platform.system() == "Windows":
+            os.system("start " + PlanOptimizationConfig().configFile)
+        else:
+            subprocess.run(['xdg-open', PlanOptimizationConfig().configFile], check=True)
 
     def _run(self):
         self._selectedPlanStructure.ct = self._selectedCT
@@ -180,12 +189,10 @@ class ObjectivesWidget(QWidget):
     def __init__(self, viewController):
         QWidget.__init__(self)
 
-        self._roiWindow = QMainWindow(self)
+        self._roiWindow = ObjectivesWindow(viewController, self)
         self._roiWindow.setMinimumWidth(400)
         self._roiWindow.setMinimumHeight(400)
         self._roiWindow.hide()
-        self._roitTable = ROITable(viewController, self._roiWindow)
-        self._roiWindow.setCentralWidget(self._roitTable)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -197,7 +204,7 @@ class ObjectivesWidget(QWidget):
         self._objectivesLabels = QLabel(self.DEFAULT_OBJECTIVES_TEXT)
         self.layout.addWidget(self._objectivesLabels)
 
-        self._roitTable.objectivesModifiedEvent.connect(self._showObjectives)
+        self._roiWindow.objectivesModifiedEvent.connect(self._showObjectives)
 
     def closeEvent(self, QCloseEvent):
         self._roitTable.objectivesModifiedEvent.disconnect(self._showObjectives)
@@ -205,13 +212,13 @@ class ObjectivesWidget(QWidget):
 
     @property
     def objectives(self):
-        return self._roitTable.getObjectiveTerms()
+        return self._roiWindow.getObjectiveTerms()
 
     def setPatient(self, p:Patient):
-        self._roitTable.patient = p
+        self._roiWindow.patient = p
 
     def _showObjectives(self):
-        objectives = self._roitTable.getObjectiveTerms()
+        objectives = self._roiWindow.getObjectiveTerms()
 
         if len(objectives)<=0:
             self._objectivesLabels.setText(self.DEFAULT_OBJECTIVES_TEXT)

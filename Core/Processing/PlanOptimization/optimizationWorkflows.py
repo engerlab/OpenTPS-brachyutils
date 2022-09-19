@@ -1,5 +1,5 @@
 import logging
-
+import time
 import numpy as np
 
 from Core.Data.Images._doseImage import DoseImage
@@ -8,25 +8,28 @@ from Core.Data.Plan._planIonBeam import PlanIonBeam
 from Core.Data.Plan._planDesign import PlanDesign
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.IO import mcsquareIO, scannerReader
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing import resampler3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planInitializer import PlanInitializer
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
-from Core.Processing.PlanOptimization.planOptimizationSettings import PlanOptimizationSettings
-from programSettings import ProgramSettings
-
+from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimizationConfig
 
 logger = logging.getLogger(__name__)
 
 def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
+    start = time.time()
     plan.planDesign = planStructure
-
     planStructure.objectives.setScoringParameters(planStructure.ct)
 
     _defineTargetMaskAndPrescription(planStructure)
     _createBeams(plan, planStructure)
     _initializeBeams(plan, planStructure)
+
+    logger.info("New plan created in {} sec".format(time.time() - start))
+    logger.info("Number of spots: {}".format(plan.numberOfSpots))
+
     _computeBeamlets(plan, planStructure)
     _optimizePlan(plan, planStructure)
 
@@ -56,6 +59,7 @@ def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
                 targetMask = mask
             else:
                 targetMask.imageArray = np.logical_or(targetMask.imageArray, mask.imageArray)
+            targetMask.patient = None
 
     if targetMask is None:
         raise Exception('Could not find a target volume in dose fidelity objectives')
@@ -77,8 +81,8 @@ def _createBeams(plan:RTPlan, planStructure:PlanDesign):
         plan.appendBeam(beam)
 
 def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
-    programSettings = ProgramSettings()
-    ctCalibration = scannerReader.readScanner(programSettings.scannerFolder)
+    dcConfig = DoseCalculationConfig()
+    ctCalibration = scannerReader.readScanner(dcConfig.scannerFolder)
 
     initializer = PlanInitializer()
     initializer.ctCalibration = ctCalibration
@@ -88,27 +92,27 @@ def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
     initializer.initializePlan(planStructure.spotSpacing, planStructure.layerSpacing, planStructure.targetMargin)
 
 def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
-    programSettings = ProgramSettings()
-    optimizationSettings = PlanOptimizationSettings()
+    dcConfig = DoseCalculationConfig()
+    optimizationSettings = PlanOptimizationConfig()
 
-    bdl = mcsquareIO.readBDL(programSettings.bdlFile)
-    ctCalibration = scannerReader.readScanner(programSettings.scannerFolder)
+    bdl = mcsquareIO.readBDL(dcConfig.bdlFile)
+    ctCalibration = scannerReader.readScanner(dcConfig.scannerFolder)
 
     mc2 = MCsquareDoseCalculator()
     mc2.ctCalibration = ctCalibration
     mc2.beamModel = bdl
     mc2.nbPrimaries = optimizationSettings.beamletPrimaries
-    mc2.independentScoringGrid = True
     # TODO: specify scoring grid
+    #mc2.independentScoringGrid = True
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
 def _optimizePlan(plan:RTPlan, planStructure:PlanDesign):
-    optimizationSettings = PlanOptimizationSettings()
+    optimizationSettings = PlanOptimizationConfig()
 
     beamletMatrix = planStructure.beamlets.toSparseMatrix()
 
-    objectiveFunction = DoseFidelity(planStructure.objectives.fidObjList, beamletMatrix, formatArray=32, xSquare=False, scenariosBL=None, returnWorstCase=False)
+    objectiveFunction = DoseFidelity(planStructure.objectives.fidObjList, beamletMatrix, xSquare=False, scenariosBL=None, returnWorstCase=False)
     solver = IMPTPlanOptimizer(optimizationSettings.imptSolver, plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
 
     solver.xSquared = False

@@ -88,6 +88,8 @@ class DynamicDisplayController():
             loopShift = timingsList[-1] * dynamicViewerUnit.loopStepNumber
             curIndex = dynamicViewerUnit.curPrimaryImgIdx
 
+            # print('in dynamicDisplayController, checkIfUpdate', timingsList)
+
             if self.time - loopShift > timingsList[curIndex + 1]:
                 newIndex = self.lookForClosestIndex(self.time - loopShift, curIndex, timingsList, dynamicViewerUnit)
                 dynamicViewerUnit.nextImage(newIndex)
