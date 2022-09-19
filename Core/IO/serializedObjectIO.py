@@ -53,7 +53,7 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False):
 # ---------------------------------------------------------------------------------------------------
 def loadDataStructure(filePath):
 
-    if filePath.endswith('.p'):
+    if filePath.endswith('.p') or filePath.endswith('.pkl') or filePath.endswith('.pickle'):
         # option using basic pickle function
         # self.Patients.list.append(pickle.load(open(dictFilePath, "rb")).list[0])
 

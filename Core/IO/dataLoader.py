@@ -146,6 +146,107 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
     return dataList
 
 
+def readSingleData(filePath, dicomCT = {}):
+    if os.path.isdir(filePath):
+        # Check that it is a DICOM CT otherwise error
+        listFiles = listAllFiles(filePath, maxDepth=0)
+        if len(listFiles['Serialized'])>0 or len(listFiles['MHD'])>0:
+            logging.error('readSingleData should not contain multiple files')
+            return
+        for file_i in listFiles["Dicom"]:
+            readSingleData(file_i, dicomCT)
+        if len(dicomCT)==0:
+            logging.error('readSingleData should not contain multiple files')
+            return
+        # import Dicom CT images
+        if len(dicomCT)>1:
+            logging.error('readSingleData should not contain multiple CT.')
+            return
+        ctFile = list(dicomCT.values())[0]
+        ct = readDicomCT(ctFile)
+        return ct
+    else:
+        filetype = get_file_type(filePath)
+        if filetype == 'Dicom':
+            dcm = pydicom.dcmread(filePath)
+
+            # Dicom field
+            if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or dcm.Modality == "REG":
+                field = readDicomVectorField(filePath)
+                return field
+
+            # Dicom CT
+            elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
+                # Dicom CT are not loaded directly. All slices must first be classified according to SeriesInstanceUID.
+                newCT = 1
+                for key in dicomCT:
+                    if key == dcm.SeriesInstanceUID:
+                        dicomCT[dcm.SeriesInstanceUID].append(filePath)
+                        newCT = 0
+                if newCT == 1:
+                    dicomCT[dcm.SeriesInstanceUID] = [filePath]
+                
+
+            # Dicom dose
+            elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.2":
+                dose = readDicomDose(filePath)
+                return dose
+
+            # Dicom RT Plan
+            elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5":
+                logging.warning("WARNING: cannot import ", filePath, " because photon RT plan is not implemented yet")
+
+            # Dicom RT Ion Plan
+            elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
+                plan = readDicomPlan(filePath)
+                return plan
+
+            # Dicom struct
+            elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.3":
+                struct = readDicomStruct(filePath)
+                return struct
+
+            else:
+                logging.warning("WARNING: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + filePath)
+
+        # read MHD image
+        if filetype == "MHD":
+            mhdImage = mhdIO.importImageMHD(filePath)
+            return mhdImage
+
+        # read serialized object files
+        if filetype == "Serialized":
+            return loadDataStructure(filePath)
+        
+        if filetype is None:
+            return None
+
+
+def get_file_type(filePath):
+    # Is Dicom file ?
+    dcm = None
+    try:
+        dcm = pydicom.dcmread(filePath)
+    except:
+        pass
+    if(dcm != None):
+        return 'Dicom'
+
+    # Is MHD file ?
+    with open(filePath, 'rb') as fid:
+        data = fid.read(50*1024)  # read 50 kB, which should be more than enough for MHD header
+        if data.isascii():
+            if("ElementDataFile" in data.decode('ascii')): # recognize key from MHD header
+                return 'MHD'
+
+    # Is serialized file ?
+    if filePath.endswith('.p') or filePath.endswith('.pbz2') or filePath.endswith('.pkl') or filePath.endswith('.pickle'):
+        return "Serialized"
+
+    logging.info("INFO: cannot recognize file format of " + filePath)
+    return None
+
+
 
 def listAllFiles(inputPaths, maxDepth=-1):
     """
@@ -203,34 +304,11 @@ def listAllFiles(inputPaths, maxDepth=-1):
 
         # files
         elif os.path.isfile(filePath):
-
-            # Is Dicom file ?
-            dcm = None
-            try:
-                dcm = pydicom.dcmread(filePath)
-            except:
-                pass
-            if(dcm != None):
-                fileLists["Dicom"].append(filePath)
-                continue
-
-
-            # Is MHD file ?
-            with open(filePath, 'rb') as fid:
-                data = fid.read(50*1024)  # read 50 kB, which should be more than enough for MHD header
-                if data.isascii():
-                    if("ElementDataFile" in data.decode('ascii')): # recognize key from MHD header
-                        fileLists["MHD"].append(filePath)
-                        continue
-
-
-            # Is serialized file ?
-            if filePath.endswith('.p') or filePath.endswith('.pbz2'):
-                fileLists["Serialized"].append(filePath)
-
-
-            # Unknown file format
-            logging.info("INFO: cannot recognize file format of " + filePath)
+            filetype = get_file_type(filePath)
+            if filetype is None:
+                logging.info("INFO: cannot recognize file format of " + filePath)
+            else:
+                fileLists[filetype].append(filePath)
 
     return fileLists
 
