@@ -250,7 +250,7 @@ class PatientDataTree(QTreeView):
 
 ## ------------------------------------------------------------------------------------------
 class PatientDataItem(QStandardItem):
-    def __init__(self, data, txt="", dataType="", color=QColor(125, 125, 125)):
+    def __init__(self, data, txt="", dataType="", color=QColor(75, 75, 75)):
         QStandardItem.__init__(self)
 
 

@@ -31,10 +31,10 @@ if __name__ == '__main__':
     dynseq = Dynamic3DSequence(dyn3DImageList=dataList)
     print('Type of the created object =', type(dynseq))
     print('Sequence name =', dynseq.name)
-    dynseq.name = 'new4DCT'
+    dynseq.name = 'Light4DCT'
     print('Sequence name = ', dynseq.name)
     print('Sequence lenght =', len(dynseq.dyn3DImageList))
 
-    ## save it as a serialized object
-    # savingPath = testDataPath + 'TestSmall_dynSeq'
-    # saveSerializedObjects(dynseq, savingPath)
+    # save it as a serialized object
+    savingPath = testDataPath + 'lightDynSeq'
+    saveSerializedObjects(dynseq, savingPath)

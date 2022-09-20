@@ -1,94 +1,115 @@
-import os
+import json
+import logging.config
+import numpy as np
+
 from matplotlib import pyplot as plt
-
-
+from Core.Data.Images import CTImage
+from Core.Data.Images import ROIMask
+from Core.Data.Plan import ObjectivesList
+from Core.Data.Plan import PlanDesign
+from Core.Data import DVH
+from Core.Data import Patient
+from Core.Data import PatientList
+from Core.Data.Plan._objectivesList import FidObjective
 from Core.IO import mcsquareIO
-from Core.IO.dataLoader import readData
+from Core.IO.scannerReader import readScanner
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
-from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan, loadBeamlets
-from Core.Data.Plan._objectivesList import ObjectivesList
-from Core.Data._dvh import DVH
-# CT path
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 
-ctImagePath = "/home/sophie/Documents/Protontherapy/OpenTPS/arc_dev/opentps/data/Plan_IMPT_patient1"
-# Output path
-output_path = os.path.join(ctImagePath, "OpenTPS")
 
-# Load patient data
-dataList = readData(ctImagePath, maxDepth=0)
-ct = dataList[7]
-contours = dataList[6]
-print('Available ROIs')
-contours.print_ROINames()
+with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
+          'r') as log_fid:
+    config_dict = json.load(log_fid)
+logging.config.dictConfig(config_dict)
+
+# Generic example: box of water with squared target
+patientList = PatientList()
+
+ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
+bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
+
+patient = Patient()
+patient.name = 'Patient'
+
+patientList.append(patient)
+
+ctSize = 150
+
+ct = CTImage()
+ct.name = 'CT'
+ct.patient = patient
+
+huAir = -1024.
+huWater = ctCalibration.convertRSP2HU(1.)
+data = huAir * np.ones((ctSize, ctSize, ctSize))
+data[:, 50:, :] = huWater
+ct.imageArray = data
+
+roi = ROIMask()
+roi.patient = patient
+roi.name = 'TV'
+roi.color = (255, 0, 0) # red
+data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
+data[100:120, 100:120, 100:120] = True
+roi.imageArray = data
 
 # Configure MCsquare
 MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
 mc2 = MCsquareDoseCalculator()
-beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
-mc2.beamModel = beamModel
-# small number of primaries for beamlet calculation
+mc2.beamModel = bdl
+mc2.ctCalibration = ctCalibration
 mc2.nbPrimaries = 1e7
 
-scannerPath = os.path.join(MCSquarePath, 'Scanners', 'UCL_Toshiba')
-calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
-                                               os.path.join(scannerPath, 'HU_Material_Conversion.txt'),
-                                               os.path.join(MCSquarePath, 'Materials')))
-mc2.ctCalibration = calibration
+# Design plan
+beamNames = ["Beam1"]
+gantryAngles = [0.]
+couchAngles = [0.]
 
-# ROIs
-target = contours.getContourByName('CTV')
-targetMask = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
-opticChiasm = contours.getContourByName('Optic Chiasm')
-brainStem = contours.getContourByName('Brain Stem')
+# Generate new plan
+planInit = PlanDesign()
+planInit.ct = ct
+planInit.targetMask = roi
+planInit.gantryAngles = gantryAngles
+planInit.beamNames = beamNames
+planInit.couchAngles = couchAngles
+planInit.calibration = ctCalibration
+planInit.spotSpacing = 5.0
+planInit.layerSpacing = 5.0
+planInit.targetMargin = 5.0
 
-# Load plan
-plan_file = os.path.join(output_path, "test2RefactorPlan.tps")
-if os.path.isfile(plan_file):
-    plan = loadRTPlan(plan_file)
-    print('Plan loaded')
-    beamletPath = os.path.join(output_path,
-                               "BeamletMatrix_1.2.826.0.1.3680043.8.498.69745754105946645553673858433070834612.1.blm")
-    plan.beamlets = loadBeamlets(beamletPath)
-    print('Beamlets loaded')
-else:
-    print('Path is wrong or plan does not exist')
+plan = planInit.buildPlan()  # Spot placement
+plan.PlanName = "NewPlan"
 
-# optimization objectives
-plan.objectives = ObjectivesList()
-plan.objectives.setTarget(target.name, 65.0)
-plan.objectives.fidObjList = []
-plan.objectives.addFidObjective(target.name, "Dmax", "<", 65.0, 1.)
-plan.objectives.addFidObjective(target.name, "Dmin", ">", 65.0, 1.0)
-
-plan_filepath = os.path.join(output_path, "NewPlan_optimized.tps")
-# saveRTPlan(plan, plan_filepath)
+plan.planDesign.objectives = ObjectivesList()
+plan.planDesign.objectives.setTarget(roi.name, 20.0)
+plan.planDesign.objectives.setScoringParameters(ct)
+plan.planDesign.objectives.fidObjList = []
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
+plan.planDesign.defineTargetMaskAndPrescription()
 
 # MCsquare beamlet free optimization
-doseImage = mc2.optimizeBeamletFree(ct, plan, [target])
-
+doseImage = mc2.optimizeBeamletFree(ct, plan, [roi])
 # Compute DVH
-target_DVH = DVH(target, doseImage)
-chiasm_DVH = DVH(opticChiasm, doseImage)
-stem_DVH = DVH(brainStem, doseImage)
-
+# must flip back because was flipped for compatibility with MCsquare optimization
+roi.imageArray = np.flip(roi.imageArray, (0,1))
+target_DVH = DVH(roi, doseImage)
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')
 print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
-print("Dmax",target_DVH._Dmax)
-print("Dmin",target_DVH._Dmin)
 
 # center of mass
-COM_coord = targetMask.centerOfMass
-COM_index = targetMask.getVoxelIndexFromPosition(COM_coord)
+roi = resampleImage3DOnImage3D(roi, ct)
+COM_coord = roi.centerOfMass
+COM_index = roi.getVoxelIndexFromPosition(COM_coord)
 Z_coord = COM_index[2]
 
 img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
-contourTargetMask = target.getBinaryContourMask(origin=ct.origin, gridSize=ct.gridSize, spacing=ct.spacing)
+contourTargetMask = roi.getBinaryContourMask()
 img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
-#img_dose = resampleImage3DOnImage3D(doseImage, ct)
-img_dose = doseImage.imageArray[:, :, Z_coord].transpose(1, 0)
+img_dose = resampleImage3DOnImage3D(doseImage, ct)
+img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
 # Display dose
 fig, ax = plt.subplots(1, 2, figsize=(12, 5))
@@ -99,8 +120,6 @@ ax[0].imshow(img_mask, alpha=.2, cmap='binary')  # PTV
 dose = ax[0].imshow(img_dose, cmap='jet', alpha=.2)
 plt.colorbar(dose, ax=ax[0])
 ax[1].plot(target_DVH.histogram[0], target_DVH.histogram[1], label=target_DVH.name)
-ax[1].plot(chiasm_DVH.histogram[0], chiasm_DVH.histogram[1], label=chiasm_DVH.name)
-ax[1].plot(stem_DVH.histogram[0], stem_DVH.histogram[1], label=stem_DVH.name)
 ax[1].set_xlabel("Dose (Gy)")
 ax[1].set_ylabel("Volume (%)")
 plt.grid(True)

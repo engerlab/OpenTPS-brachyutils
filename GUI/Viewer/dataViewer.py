@@ -16,6 +16,7 @@ from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
 from GUI.Viewer.DataViewerComponents.dynamicImage3DViewer import DynamicImage3DViewer
 from GUI.Viewer.DataViewerComponents.image2DViewer import Image2DViewer
 from GUI.Viewer.DataViewerComponents.dynamicImage2DViewer import DynamicImage2DViewer
+from GUI.Viewer.DataViewerComponents.imageViewer3DViewer_3D import Image3DViewer_3D
 from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerActions
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
@@ -59,6 +60,7 @@ class DataViewer(QWidget):
         DISPLAY_PROFILE = 'DISPLAY_PROFILE'
         DISPLAY_IMAGE3D = 'DISPLAY_IMAGE3D'
         DISPLAY_IMAGE2D = 'DISPLAY_IMAGE2D'
+        DISPLAY_IMAGE3D_3D = 'DISPLAY_IMAGE3D_3D'
 
         DEFAULT = DISPLAY_IMAGE3D
 
@@ -105,9 +107,9 @@ class DataViewer(QWidget):
         self._dvhViewer = DVHViewer(self)
         self._noneViewer = BlackEmptyPlot(self)
         self._staticProfileviewer = ProfileViewer(viewController)
-
         self._staticImage3DViewer = Image3DViewer(viewController)
         self._staticImage2DViewer = Image2DViewer(viewController)
+        self._staticImage3DViewer_3D = Image3DViewer_3D(viewController)
 
         ## dynamic stuff
         self._dynImage3DViewer = DynamicImage3DViewer(viewController)
@@ -117,9 +119,9 @@ class DataViewer(QWidget):
         self._dvhViewer.hide()
         self._noneViewer.hide()
         self._staticProfileviewer.hide()
-
         self._staticImage3DViewer.hide()
         self._staticImage2DViewer.hide()
+        self._staticImage3DViewer_3D.hide()
 
         self._dynImage3DViewer.hide()
         self._dynImage2DViewer.hide()
@@ -136,6 +138,7 @@ class DataViewer(QWidget):
         self._mainLayout.addWidget(self._dynImage3DViewer)
         self._mainLayout.addWidget(self._dynImage2DViewer)
         self._mainLayout.addWidget(self._staticImage3DViewer)
+        self._mainLayout.addWidget(self._staticImage3DViewer_3D)
         self._mainLayout.addWidget(self._staticImage2DViewer)
         self._mainLayout.addWidget(self._staticProfileviewer)
         self._mainLayout.addWidget(self._noneViewer)
@@ -174,6 +177,10 @@ class DataViewer(QWidget):
             :type: Image3DViewer
         """
         return self._staticImage3DViewer
+
+    @property
+    def cachedStaticImage3DViewer_3D(self) -> Image3DViewer_3D:
+        return self._staticImage3DViewer_3D
 
     @property
     def cachedStaticImage2DViewer(self) -> Image2DViewer:
@@ -318,6 +325,8 @@ class DataViewer(QWidget):
             self._setCurrentViewerToStaticImage3DViewer()
         elif self._displayType == self.DisplayTypes.DISPLAY_IMAGE2D:
             self._setCurrentViewerToStaticImage2DViewer()
+        elif self._displayType == self.DisplayTypes.DISPLAY_IMAGE3D_3D:
+            self._setCurrentViewerToStaticImage3DViewer_3D()
         else:
             raise ValueError('Invalid display type: ' + str(self._displayType))
 
@@ -368,6 +377,17 @@ class DataViewer(QWidget):
         self._viewController.showContourSignal.connect(self._dvhViewer.appendROI)
         self._viewController.windowLevelEnabledSignal.connect(self._staticImage3DViewer.setWWLEnabled)
 
+    def _setCurrentViewerToStaticImage3DViewer_3D(self):
+
+        self._disconnectCurrentViewer()
+        self._currentViewer = self._staticImage3DViewer_3D
+        self.dropEnabled = self._dropEnabled
+
+        # self._viewController.crossHairEnabledSignal.disconnect(self._dynImage3DViewer.setCrossHairEnabled)
+        # self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage3DViewer.setProfileWidgetEnabled)
+        # self._viewController.showContourSignal.disconnect(self._dynImage3DViewer._contourLayer.setNewContour)
+        # self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage3DViewer.setWWLEnabled)
+
     def _setCurrentViewerToStaticImage2DViewer(self):
 
         self._disconnectCurrentViewer()
@@ -410,6 +430,9 @@ class DataViewer(QWidget):
             self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage2DViewer.setProfileWidgetEnabled)
             self._viewController.showContourSignal.disconnect(self._dynImage2DViewer._contourLayer.setNewContour)
             self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage2DViewer.setWWLEnabled)
+
+        elif self._currentViewer == self._staticImage3DViewer_3D:
+            pass
 
 
     @property
@@ -545,6 +568,9 @@ class DataViewer(QWidget):
         """
         if isinstance(image, Image3D):
             self.cachedStaticImage3DViewer.primaryImage = image
+            self.cachedStaticImage3DViewer_3D.primaryImage = image
+            if self.displayMode == self.DisplayModes.DYNAMIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE3D_3D:
+                self.cachedStaticImage3DViewer_3D.update()
         elif isinstance(image, Image2D):
             self.cachedStaticImage2DViewer.primaryImage = image
         elif isinstance(image, Dynamic3DSequence):
@@ -556,6 +582,7 @@ class DataViewer(QWidget):
         elif image is None:
             if self.displayMode == self.DisplayModes.STATIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE3D:
                 self.cachedStaticImage3DViewer.primaryImage = None
+                self.cachedStaticImage3DViewer_3D.primaryImage = image
             elif self.displayMode == self.DisplayModes.STATIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE2D:
                 self.cachedStaticImage2DViewer.primaryImage = None
             elif self.displayMode == self.DisplayModes.DYNAMIC and self.displayType==self.DisplayTypes.DISPLAY_IMAGE3D:
@@ -583,10 +610,14 @@ class DataViewer(QWidget):
             image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
 
         self.cachedStaticImage3DViewer.secondaryImage = image
+        self.cachedStaticImage3DViewer_3D.secondaryImage = image
         self._setDVHDose(image)
 
     def _setPlan(self, plan:Optional[RTPlan]):
         self.cachedStaticImage3DViewer.rtPlan = plan
+        self.cachedStaticImage3DViewer_3D.rtPlan = plan
+        if self.displayMode == self.DisplayModes.DYNAMIC and self.displayType == self.DisplayTypes.DISPLAY_IMAGE3D_3D:
+            self.cachedStaticImage3DViewer_3D.update()
 
     def _setDVHDose(self, image:Optional[DoseImage]):
         if image is None:
@@ -615,5 +646,10 @@ class DataViewer(QWidget):
 
         if self.cachedStaticDVHViewer.dose == image:
             self._setDVHDose(None)
+
+        if self.cachedStaticImage3DViewer_3D.primaryImage==image:
+            self.cachedStaticImage3DViewer_3D.primaryImage = None
+        if self.cachedStaticImage3DViewer_3D.secondaryImage==image:
+            self.cachedStaticImage3DViewer_3D.secondaryImage = None
 
         #image.patient.imageRemovedSignal.disconnect(self._removeImageFromViewers)

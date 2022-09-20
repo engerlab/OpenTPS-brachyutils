@@ -1,5 +1,5 @@
 import logging
-
+import time
 import numpy as np
 
 from Core.Data.Images._doseImage import DoseImage
@@ -16,17 +16,20 @@ from Core.Processing.PlanOptimization.planInitializer import PlanInitializer
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 from Core.Processing.PlanOptimization.planOptimizationConfig import PlanOptimizationConfig
 
-
 logger = logging.getLogger(__name__)
 
 def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
+    start = time.time()
     plan.planDesign = planStructure
-
     planStructure.objectives.setScoringParameters(planStructure.ct)
 
     _defineTargetMaskAndPrescription(planStructure)
     _createBeams(plan, planStructure)
     _initializeBeams(plan, planStructure)
+
+    logger.info("New plan created in {} sec".format(time.time() - start))
+    logger.info("Number of spots: {}".format(plan.numberOfSpots))
+
     _computeBeamlets(plan, planStructure)
     _optimizePlan(plan, planStructure)
 
@@ -56,6 +59,7 @@ def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
                 targetMask = mask
             else:
                 targetMask.imageArray = np.logical_or(targetMask.imageArray, mask.imageArray)
+            targetMask.patient = None
 
     if targetMask is None:
         raise Exception('Could not find a target volume in dose fidelity objectives')
@@ -98,8 +102,8 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
     mc2.ctCalibration = ctCalibration
     mc2.beamModel = bdl
     mc2.nbPrimaries = optimizationSettings.beamletPrimaries
-    #mc2.independentScoringGrid = True
     # TODO: specify scoring grid
+    #mc2.independentScoringGrid = True
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 

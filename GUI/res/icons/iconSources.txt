@@ -4,3 +4,5 @@ crop.png https://icons.iconarchive.com/icons/iconsmind/outline/512/Crop-2-icon.p
 reload.png https://icons.iconarchive.com/icons/custom-icon-design/flatastic-8/512/Refresh-icon.png
 save.png https://iconarchive.com/show/pretty-office-7-icons-by-custom-icon-design/Save-icon.html
 resample.png https://iconarchive.com/show/ios7-icons-by-icons8/Editing-Resize-icon.html
+cube.png https://iconarchive.com/show/farm-fresh-icons-by-fatcow/ice-cube-icon.html
+

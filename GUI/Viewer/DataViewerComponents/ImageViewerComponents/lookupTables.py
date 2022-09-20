@@ -1,8 +1,10 @@
-from typing import Sequence
+from typing import Sequence, Tuple
 
 import numpy as np
 import vtkmodules.vtkCommonCore as vtkCommonCore
 from matplotlib import pyplot as plt
+from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
+from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 
 def fusionLT(range:Sequence[float], opacity:float, colormap:str) -> vtkCommonCore.vtkLookupTable:
@@ -48,3 +50,26 @@ def grayLT(range) -> vtkCommonCore.vtkLookupTable:
     table.Build()
 
     return table
+
+
+def fusionLTTo3DLT(lt:vtkCommonCore.vtkLookupTable) -> Tuple[vtkColorTransferFunction, vtkPiecewiseFunction, vtkPiecewiseFunction]:
+    rangeVal = lt.GetRange()
+
+    volumeColor = vtkColorTransferFunction()
+    volumeScalarOpacity = vtkPiecewiseFunction()
+    volumeGradientOpacity = vtkPiecewiseFunction()
+
+    volumeScalarOpacity.AddPoint(rangeVal[0], 0)
+    volumeScalarOpacity.AddPoint((rangeVal[0]+rangeVal[1])/.2, 0.25)
+    volumeScalarOpacity.AddPoint(rangeVal[1], 1.)
+
+    volumeGradientOpacity.AddPoint(rangeVal[0], 0.25)
+    volumeGradientOpacity.AddPoint((rangeVal[0]+rangeVal[1])/2, 0.5)
+    volumeGradientOpacity.AddPoint(rangeVal[1], 1.)
+
+    tableVals = np.linspace(rangeVal[0], rangeVal[1], lt.GetNumberOfTableValues())
+    for i in range(lt.GetNumberOfTableValues()):
+        tbVal = lt.GetTableValue(i)
+        volumeColor.AddRGBPoint(tableVals[i], tbVal[0], tbVal[1], tbVal[2])
+
+    return volumeColor, volumeScalarOpacity, volumeGradientOpacity
