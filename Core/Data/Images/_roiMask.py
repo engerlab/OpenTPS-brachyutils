@@ -65,7 +65,6 @@ class ROIMask(Image3D):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
     def dilate(self, radius=1.0, filt=None, tryGPU=True):
-
         if filt is None:
             radius = radius/np.array(self.spacing)
             if np.min(radius)<=0:
@@ -92,16 +91,22 @@ class ROIMask(Image3D):
             self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
 
     def erode(self, radius=1.0, filt=None, tryGPU=True):
-
         if filt is None:
-            radius = radius/np.array(self.spacing)
-            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
-            diameter = diameter + (diameter+1)%2
-            diameter = np.round(diameter).astype(int)
-
-            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
-            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
-            filt = filt.astype(bool)
+            radius = radius / np.array(self.spacing)
+            if np.min(radius) <= 0:
+                return
+            diameter = np.ceil(radius).astype(int) * 2 + 1
+            filt = np.zeros(tuple(diameter)).astype(bool)
+            for i in range(diameter[0]):
+                for j in range(diameter[1]):
+                    for k in range(diameter[2]):
+                        y = i - math.floor(diameter[0] / 2)
+                        x = j - math.floor(diameter[1] / 2)
+                        z = k - math.floor(diameter[2] / 2)
+                        if (
+                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[
+                            2] ** 2 <= 1):  # generate ellipsoid structuring element
+                            filt[i, j, k] = True
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
@@ -113,16 +118,22 @@ class ROIMask(Image3D):
             self._imageArray = morphology.binary_erosion(self._imageArray, structure=filt)
 
     def open(self, radius=1.0, filt=None, tryGPU=True):
-
         if filt is None:
-            radius = radius/np.array(self.spacing)
-            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
-            diameter = diameter + (diameter+1)%2
-            diameter = np.round(diameter).astype(int)
-
-            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
-            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
-            filt = filt.astype(bool)
+            radius = radius / np.array(self.spacing)
+            if np.min(radius) <= 0:
+                return
+            diameter = np.ceil(radius).astype(int) * 2 + 1
+            filt = np.zeros(tuple(diameter)).astype(bool)
+            for i in range(diameter[0]):
+                for j in range(diameter[1]):
+                    for k in range(diameter[2]):
+                        y = i - math.floor(diameter[0] / 2)
+                        x = j - math.floor(diameter[1] / 2)
+                        z = k - math.floor(diameter[2] / 2)
+                        if (
+                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[
+                            2] ** 2 <= 1):  # generate ellipsoid structuring element
+                            filt[i, j, k] = True
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
@@ -134,16 +145,22 @@ class ROIMask(Image3D):
             self._imageArray = morphology.binary_opening(self._imageArray, structure=filt)
 
     def close(self, radius=1.0, filt=None, tryGPU=True):
-
         if filt is None:
-            radius = radius/np.array(self.spacing)
-            diameter = radius*2+1 # if margin=0, filt must be identity matrix. If margin=1, we want to dilate by 1 => Filt must have three 1's per row.
-            diameter = diameter + (diameter+1)%2
-            diameter = np.round(diameter).astype(int)
-
-            filt = np.zeros((diameter[0]+2, diameter[1]+2, diameter[2]+2))
-            filt[1:diameter[0]+2, 1:diameter[1]+2, 1:diameter[2]+2] = 1
-            filt = filt.astype(bool)
+            radius = radius / np.array(self.spacing)
+            if np.min(radius) <= 0:
+                return
+            diameter = np.ceil(radius).astype(int) * 2 + 1
+            filt = np.zeros(tuple(diameter)).astype(bool)
+            for i in range(diameter[0]):
+                for j in range(diameter[1]):
+                    for k in range(diameter[2]):
+                        y = i - math.floor(diameter[0] / 2)
+                        x = j - math.floor(diameter[1] / 2)
+                        z = k - math.floor(diameter[2] / 2)
+                        if (
+                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[
+                            2] ** 2 <= 1):  # generate ellipsoid structuring element
+                            filt[i, j, k] = True
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
