@@ -12,17 +12,19 @@ from Core.Processing.PlanOptimization.Objectives.baseFunction import BaseFunc
 
 
 class DoseFidelity(BaseFunc):
-    def __init__(self, plan, xSquare=True, returnWorstCase=False):
+    def __init__(self, plan, xSquare=True):
         super(DoseFidelity, self).__init__()
         self.list = plan.planDesign.objectives.fidObjList
         self.xSquare = xSquare
         self.beamlets = plan.planDesign.beamlets.toSparseMatrix()
-        if plan.planDesign.scenarios: self.scenariosBL = [plan.planDesign.scenarios[s].toSparseMatrix() for s in range(len(plan.planDesign.scenarios))]
-        else: self.scenariosBL = []
+        if plan.planDesign.scenarios:
+            self.scenariosBL = [plan.planDesign.scenarios[s].toSparseMatrix() for s in
+                                range(len(plan.planDesign.scenarios))]
+        else:
+            self.scenariosBL = []
 
-        self.returnWorstCase = returnWorstCase
 
-    def computeFidelityFunction(self, x):
+    def computeFidelityFunction(self, x, returnWorstCase=False):
         if self.xSquare:
             weights = np.square(x).astype(np.float32)
         else:
@@ -60,7 +62,7 @@ class DoseFidelity(BaseFunc):
                 robust = True
 
         if self.scenariosBL == [] or robust is False:
-            if not self.returnWorstCase:
+            if not returnWorstCase:
                 return fTot
             else:
                 return fTot, -1  # returns id of the worst case scenario (-1 for nominal)
@@ -94,7 +96,7 @@ class DoseFidelity(BaseFunc):
 
         fTot += max(scenarioList)
 
-        if not self.returnWorstCase:
+        if not returnWorstCase:
             return fTot
         else:
             return fTot, scenarioList.index(
@@ -103,8 +105,7 @@ class DoseFidelity(BaseFunc):
     def computeFidelityGradient(self, x):
         # get worst case scenario
         if self.scenariosBL:
-            self.returnWorstCase = True
-            fTot, worstCase = self.eval(x)
+            fTot, worstCase = self.computeFidelityFunction(x, returnWorstCase=True)
         else:
             worstCase = -1
         if self.xSquare:
