@@ -1,3 +1,5 @@
+import logging
+import re
 from typing import Optional, Sequence, Union
 import opentps
 import os
@@ -8,6 +10,7 @@ random.seed(42)
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
 from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data.Images._ctImage import CTImage
 from Core.IO import mcsquareIO
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Utils.programSettings import ProgramSettings
@@ -17,6 +20,10 @@ from Core.Data._rtStruct import ROIContour
 from Core.Data.Images._doseImage import DoseImage
 from Core.IO.dicomIO import readDicomDose, writeRTDose
 from Core.Processing.PlanDeliverySimulation.beamDeliveryTimings import BDT
+from Core.IO.scannerReader import readScanner
+from Core.IO.dataLoader import listAllFiles, readSingleData
+from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
+from Core.Data.Images._deformation3D import Deformation3D
 import time
 
 def simulate_4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None):
@@ -89,8 +96,27 @@ def simulate_4DDD_scenarios(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dyna
         simulation_dir: str = None, crop_contour=None, save_partial_doses=True, number_of_fractions=1, 
         number_of_starting_phases=1, number_of_fractionation_scenarios=1):
     """
-    Simulate treatment with fraction number of fractions where num_scenarios MidP dose are accumulated on the MidP.
-    A scenario consist of a 1 fraction simulation with a random starting phase (with replacement)
+    4D dynamic simulation under different scenarios
+
+    Parameters
+    ----------
+    plan : RTPlan
+    CT4D : Dynamic3DSequence
+    model3D : Dynamic3DModel
+    simulation_dir : str
+        Path to the simulation direcrotry where the doses are saved
+    crop_contour : ROIContour
+        Overwrite values outside crop_contour
+    save_partial_doses: bool
+        Whether or not to save partial doses, i.e. doses on each phase before accumulation
+    number_of_fractions: int
+        Number of fractions for delivering the treatment
+    number_of_starting_phases: int
+        Number of times we simulate the delivery where each time with start from a different phase.
+        Hence, number_of_starting_phases <= len(4DCT)
+    number_of_fractionation_scenarios: int
+        Number fractionation scenarios. For instance, if number_of_fractions=5 and number_of_fractionation_scenarios=3;
+        Simulate 3 scenarios with starting phases [1,2,3,4,5]; [1,3,1,2,4]; [4, 5, 1, 4, 2].
     """
     plan.numberOfFractionsPlanned = number_of_fractions
     number_of_phases = len(CT4D)
@@ -116,7 +142,7 @@ def simulate_4DDD_scenarios(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dyna
 
     # 4DDD simulation
     for start_phase in range(number_of_starting_phases):
-        if not os.exists(os.path.join(fx_dir, f'starting_phase_{start_phase}')):
+        if not os.path.exists(os.path.join(fx_dir, f'starting_phase_{start_phase}')):
             simulate_4DDD(plan, CT4D, model3D, simulation_dir, crop_contour, save_partial_doses, start_phase)
 
     path_to_accumulated_doses = [os.path.join(fx_dir, start_phase_dir, 'dose_accumulated.dcm') for start_phase_dir in sorted(os.listdir(fx_dir)) if start_phase_dir != 'scenarios']
@@ -124,6 +150,78 @@ def simulate_4DDD_scenarios(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dyna
         dose_files = random_combination_with_replacement(path_to_accumulated_doses, number_of_fractionation_scenarios)
         output_path = os.path.join(dir_scenarios, f'dose_scenario_{str(scenario_number)}.dcm')
         accumulate_dose_from_same_phase(dose_files, model3D.midp, output_path, number_of_fractions=number_of_fractions, dose_name=f'dose {number_of_fractions}fx scenario {str(scenario_number)}')
+
+
+def simulate_plan_on_continuous_sequence(plan: RTPlan, midp: CTImage, ct_folder, def_fields_folder, sequence_timings, output_dose_path=None, save_all_doses=False, remove_interpolated_files=False, workdir_simu=None, downsample=0, start_irradiation=0.):
+    if len(plan.spotTimings)==0:
+        print('Plan has no delivery timings. Querying ScanAlgo...')
+        bdt = BDT(plan)
+        plan = bdt.getPBSTimings(sort_spots="true")
+    
+    if output_dose_path is None:
+        output_dose_path = os.path.join(ProgramSettings().simulationFolder, 'plan_delivery_simulations')
+        if not os.path.exists(output_dose_path): os.mkdir(output_dose_path)
+        output_dose_path = os.path.join(output_dose_path, 'continuous_seq')
+        if not os.path.exists(output_dose_path): os.mkdir(output_dose_path)
+    
+    t_start = time.time()
+    ctList = sorted(os.listdir(ct_folder))
+    ctList = [x for x in ctList if not x.endswith('.raw') and not x.endswith('.RAW')]
+    defList = sorted(os.listdir(def_fields_folder))
+    defList = [x for x in defList if not x.endswith('.raw') and not x.endswith('.RAW')]
+
+    # remove interpolated files
+    if remove_interpolated_files:
+        r1 = re.compile(r"_0\.[0-9]\.mhd$") # math _0.[0-9].mhd
+        ctList = [x for x in ctList if r1.search(x) is None]
+        defList = [x for x in defList if r1.search(x) is None]
+
+    if downsample > 1:
+        ctList = ctList[::downsample]
+        defList = defList[::downsample]
+        sequence_timings = sequence_timings[::downsample]
+
+    assert len(ctList) == len(defList)
+    assert len(ctList) == len(sequence_timings)
+
+    # Split plan to list of plans
+    plan_sequence = split_plan_to_continuous_sequence(plan, sequence_timings, start_irradiation)
+    print(f'Plans splitted on the continuous sequence: results in {len(plan_sequence)} created.')
+
+    # Initialize reference dose on the MidP image
+    dose_MidP = DoseImage().createEmptyDoseWithSameMetaData(midp)
+    dose_MidP.name = 'Accumulated dose'
+
+    mc2 = initialize_MCsquare_params(workdir_simu)
+    for i in plan_sequence:
+        print(f"Importing CT {ctList[i]}")
+        phaseImage = readSingleData(os.path.join(ct_folder, ctList[i]))
+
+        dose_name = f"dose_on_phase_image_{str(i)}"
+        mc2.nbPrimaries = np.minimum(1e5 * plan_sequence[i].numberOfSpots, 1e7)
+        dose = mc2.computeDose(phaseImage, plan_sequence[i])
+        dose.name = dose_name
+
+        if save_all_doses:
+            writeRTDose(dose, os.path.join(output_dose_path, dose_name+'.dcm'))
+
+        ## Accumulate dose on MidP
+        # Load deformation field on 3D image
+        print(f"Importing deformation field {defList[i]}")
+        df = readSingleData(os.path.join(def_fields_folder, defList[i]))
+        df2 = Deformation3D()
+        df2.initFromVelocityField(df)
+
+        # Apply deformation field and accumulate on MidP
+        dose_MidP._imageArray += df2.deformImage(dose)._imageArray
+
+
+    t_end = time.time()
+    print(f"it took {t_end-t_start} to simulate on the continuous sequence.")
+    writeRTDose(dose_MidP, os.path.join(output_dose_path, "dose_midP_continuous_seq.dcm"))
+    print("Total irradiation time:",get_irradiation_time(plan),"seconds")
+    with open(os.path.join(output_dose_path, "treatment_info.txt"), 'w') as f:
+        f.write(f"Total treatment time: {get_irradiation_time(plan)} seconds")
 
 
 def split_plan_to_phases(ReferencePlan: RTPlan, num_plans=10, breathing_period=4., start_phase=0):
@@ -156,6 +254,37 @@ def split_plan_to_phases(ReferencePlan: RTPlan, num_plans=10, breathing_period=4
                 plan_4DCT[phase_number[phase]].appendSpot(beam, layer, s)
 
     return plan_4DCT
+
+
+def split_plan_to_continuous_sequence(ReferencePlan: RTPlan, sequence_timings, start_irradiation=0.):
+    # Check if plan include spot timings
+    # start_irradiation \in [0,1] : moment at which to start the irradiation with beggining of 
+    # continuous seq = 0. and end = 1.
+    if len(ReferencePlan.spotTimings)==0:
+        print('Plan has no delivery timings. Querying ScanAlgo...')
+        bdt = BDT(ReferencePlan)
+        ReferencePlan = bdt.getPBSTimings(sort_spots="true")
+
+    # Iterate on spots from referencePlan and add each spot to a specific image of the continuous sequence:
+    plan_sequence = {} # list of plans of the sequence
+    start_time = start_irradiation * sequence_timings[-1]
+    beam_fraction_time = (1 / len(ReferencePlan.beams)) * sequence_timings[-1] # each beam must be started independently
+    count_beam = 0
+    for beam in ReferencePlan.beams:
+        beam_time = count_beam * beam_fraction_time
+        count_beam += 1
+        for layer in beam.layers:
+            for t in range(len(layer.spotTimings)):
+                # Check closest sequence timing to spot timing
+                current_time = (start_time + beam_time + layer.spotTimings[t]) % sequence_timings[-1] # modulo operation to restart at beggining in a loop if spotTiming > sequence_timings[-1]
+                idx = np.nanargmin(np.abs(sequence_timings - current_time))
+                if idx not in plan_sequence:
+                    # Create plan on image idx
+                    plan_sequence[idx] = ReferencePlan.createEmptyPlanWithSameMetaData()
+
+                plan_sequence[idx].appendSpot(beam, layer, t)
+    return plan_sequence
+
 
 
 def compute_dose_on_each_phase(plans:Union[RTPlan, dict], CT4D:Dynamic3DSequence, output_path:str, crop_contour:ROIContour=None):
@@ -195,18 +324,13 @@ def compute_dose_on_each_phase(plans:Union[RTPlan, dict], CT4D:Dynamic3DSequence
         writeRTDose(dose, os.path.join(output_path, f"{dose_prefix}{p:03d}.dcm"))
 
 
-def initialize_MCsquare_params(workdir=None, scannerName = 'UCL_Toshiba', beamModelFile = 'UMCG_P1_v2_RangeShifter.txt'):
+def initialize_MCsquare_params(workdir=None):
     mc2 = MCsquareDoseCalculator()
     if workdir is not None:
       mc2.simulationDirectory = workdir
-    MCSquarePath = os.path.join(os.path.split(opentps.__file__)[0], 'Core', 'Processing', 'DoseCalculation', 'MCsquare')
-    beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', beamModelFile))
-    mc2.beamModel = beamModel
-    scannerPath = os.path.join(MCSquarePath, 'Scanners', scannerName)
-    calibration = MCsquareCTCalibration(fromFiles=(os.path.join(scannerPath, 'HU_Density_Conversion.txt'),
-                                                os.path.join(scannerPath, 'HU_Material_Conversion.txt'),
-                                                os.path.join(MCSquarePath, 'Materials')))
-    mc2.ctCalibration = calibration
+
+    mc2.ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
+    mc2.beamModel = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
     mc2.nbPrimaries = 1e7
     return mc2
 
@@ -284,3 +408,8 @@ def random_combination_with_replacement(iterable, r):
     indices = random.choices(range(n), k=r)
     return [pool[i] for i in indices]
 
+
+def get_irradiation_time(plan):
+    assert len(plan.spotTimings)>0
+    total_time = [plan.beams[i].layers[-1].spotTimings[-1] for i in range(len(plan.beams))]
+    return np.sum(total_time)
