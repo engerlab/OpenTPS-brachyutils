@@ -12,14 +12,14 @@ from Core.Processing.PlanOptimization.Objectives.baseFunction import BaseFunc
 
 
 class DoseFidelity(BaseFunc):
-    def __init__(self, objectiveList, beamletMatrix, xSquare=True, scenariosBL=None, returnWorstCase=False):
+    def __init__(self, plan, xSquare=True, returnWorstCase=False):
         super(DoseFidelity, self).__init__()
-        if scenariosBL is None:
-            scenariosBL = []
-        self.list = objectiveList
-        self.beamlets = beamletMatrix
+        self.list = plan.planDesign.objectives.fidObjList
         self.xSquare = xSquare
-        self.scenariosBL = scenariosBL
+        self.beamlets = plan.planDesign.beamlets.toSparseMatrix()
+        if plan.planDesign.scenarios: self.scenariosBL = [plan.planDesign.scenarios[s].toSparseMatrix() for s in range(len(plan.planDesign.scenarios))]
+        else: self.scenariosBL = []
+
         self.returnWorstCase = returnWorstCase
 
     def computeFidelityFunction(self, x):
@@ -70,9 +70,9 @@ class DoseFidelity(BaseFunc):
             fTotScenario = 0.0
 
             if use_MKL == 1:
-                doseTotal = sparse_dot_mkl.dot_product_mkl(ScenarioBL.BeamletMatrix, weights)
+                doseTotal = sparse_dot_mkl.dot_product_mkl(ScenarioBL, weights)
             else:
-                doseTotal = sp.csc_matrix.dot(ScenarioBL.BeamletMatrix, weights)
+                doseTotal = sp.csc_matrix.dot(ScenarioBL, weights)
 
             for objective in self.list:
                 if not objective.robust:
@@ -121,8 +121,8 @@ class DoseFidelity(BaseFunc):
                 doseNominalBL = self.beamlets
 
             if worstCase != -1:
-                doseScenario = sparse_dot_mkl.dot_product_mkl(self.scenariosBL[worstCase].BeamletMatrix, weights)
-                doseScenarioBL = sparse_dot_mkl.dot_product_mkl(self.scenariosBL[worstCase].BeamletMatrix, xDiag)
+                doseScenario = sparse_dot_mkl.dot_product_mkl(self.scenariosBL[worstCase], weights)
+                doseScenarioBL = sparse_dot_mkl.dot_product_mkl(self.scenariosBL[worstCase], xDiag)
             dfTot = np.zeros((1, len(x)), dtype=np.float32)
 
         else:
@@ -133,8 +133,8 @@ class DoseFidelity(BaseFunc):
                 doseNominalBL = self.beamlets
             doseNominalBL = sp.csc_matrix.transpose(doseNominalBL)
             if worstCase != -1:
-                doseScenario = sp.csc_matrix.dot(self.scenariosBL[worstCase].BeamletMatrix, weights)
-                doseScenarioBL = sp.csc_matrix.dot(self.scenariosBL[worstCase].BeamletMatrix, xDiag)
+                doseScenario = sp.csc_matrix.dot(self.scenariosBL[worstCase], weights)
+                doseScenarioBL = sp.csc_matrix.dot(self.scenariosBL[worstCase], xDiag)
                 doseScenarioBL = sp.csc_matrix.transpose(doseScenarioBL)
             dfTot = np.zeros((len(x), 1), dtype=np.float32)
 

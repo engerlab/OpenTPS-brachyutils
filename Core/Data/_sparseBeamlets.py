@@ -105,41 +105,6 @@ class SparseBeamlets(PatientData):
     def toSparseMatrix(self) -> csc_matrix:
         return self._sparseBeamlets
 
-    def cropFromROI(self, plan):
-        roiObjectives = np.zeros(plan.planDesign.ct.numberOfVoxels).astype(bool)
-        roiRobustObjectives = np.zeros(plan.planDesign.ct.numberOfVoxels).astype(bool)
-        robust = False
-        for objective in plan.planDesign.objectives.fidObjList:
-            if objective.robust:
-                robust = True
-                roiRobustObjectives = np.logical_or(roiRobustObjectives, objective.maskVec)
-            else:
-                roiObjectives = np.logical_or(roiObjectives, objective.maskVec)
-        roiObjectives = np.logical_or(roiObjectives, roiRobustObjectives)
-
-        # reload beamlets and crop to optimization ROI
-        logger.info("Re-load and crop beamlets to optimization ROI...")
-        plan.planDesign.beamlets.load()
-        if use_MKL == 1:
-            beamletMatrix = sparse_dot_mkl.dot_product_mkl(
-                sp.diags(roiObjectives.astype(np.float32), format='csc'), self.toSparseMatrix())
-        else:
-            beamletMatrix = sp.csc_matrix.dot(sp.diags(roiObjectives.astype(np.float32), format='csc'),
-                                              self.toSparseMatrix())
-
-        if robust:
-            for s in range(len(plan.planDesign.scenarios)):
-                plan.planDesign.scenarios[s].load()
-                if use_MKL == 1:
-                    plan.planDesign.scenarios[s].BeamletMatrix = sparse_dot_mkl.dot_product_mkl(
-                        sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
-                        plan.planDesign.scenarios[s].BeamletMatrix)
-                else:
-                    plan.scenarios[s].BeamletMatrix = sp.csc_matrix.dot(
-                        sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
-                        plan.planDesign.scenarios[s].BeamletMatrix)
-        self.setUnitaryBeamlets(beamletMatrix)
-
     def load(self, file_path=""):
         if file_path == "":
             file_path = self._savedBeamletFile

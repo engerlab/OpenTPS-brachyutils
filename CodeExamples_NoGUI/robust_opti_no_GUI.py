@@ -94,15 +94,15 @@ else:
     planInit.couchAngles = couchAngles
     planInit.calibration = ctCalibration
     planInit.spotSpacing = 5.0
-    planInit.layerSpacing = 5.0
-    planInit.targetMargin = 5.0
+    planInit.layerSpacing = 10.0
+    planInit.targetMargin = 1.0
     #max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2.SetupSystematicError)
 
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "RobustPlan"
 
     mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
-    # beamlets = mc2.computeBeamlets(ct, plan, output_path)
+    #mc2.computeBeamlets(ct, plan, output_path)
     outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
 
 
@@ -116,11 +116,8 @@ plan.planDesign.objectives.setScoringParameters(ct)
 plan.planDesign.objectives.fidObjList = []
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0, robust=True)
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0, robust=True)
-plan.planDesign.beamlets.cropFromROI(plan)
-objectiveFunction = DoseFidelity(plan.planDesign.objectives.fidObjList, beamletMatrix)
-print('fidelity init done')
 
-solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, functions=[objectiveFunction], maxit=50)
+solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
 # Optimize treatment plan
 w, doseImage, ps = solver.optimize()
 

@@ -4,6 +4,7 @@ import numpy as np
 import scipy.sparse as sp
 
 from Core.Data.Plan._planDesign import PlanDesign
+from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 
 try:
     import sparse_dot_mkl
@@ -20,15 +21,15 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
-    def __init__(self, plan:RTPlan, functions=None, **kwargs):
-        if functions is None:
-            functions = []
+    def __init__(self, plan:RTPlan, **kwargs):
+
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
         self.plan = planPreprocessing.extendPlanLayers(plan)
         self.initPlan = plan
         self.opti_params = kwargs
-        self.functions = functions
+        self.functions = []
         self.xSquared = True
+        self.returnWorstCase = False
 
     def initializeWeights(self):
         # Total Dose calculation
@@ -42,7 +43,48 @@ class PlanOptimizer:
                                                                                dtype=np.float32)
         return x0
 
+    def initializeFidObjectiveFunction(self):
+        # crop on ROI
+        roiObjectives = np.zeros(self.plan.planDesign.ct.numberOfVoxels).astype(bool)
+        roiRobustObjectives = np.zeros(self.plan.planDesign.ct.numberOfVoxels).astype(bool)
+        robust = False
+        for objective in self.plan.planDesign.objectives.fidObjList:
+            if objective.robust:
+                robust = True
+                roiRobustObjectives = np.logical_or(roiRobustObjectives, objective.maskVec)
+            else:
+                roiObjectives = np.logical_or(roiObjectives, objective.maskVec)
+        roiObjectives = np.logical_or(roiObjectives, roiRobustObjectives)
+
+        # reload beamlets and crop to optimization ROI
+        logger.info("Re-load and crop beamlets to optimization ROI...")
+        self.plan.planDesign.beamlets.load()
+        if use_MKL == 1:
+            beamletMatrix = sparse_dot_mkl.dot_product_mkl(
+                sp.diags(roiObjectives.astype(np.float32), format='csc'), self.plan.planDesign.beamlets.toSparseMatrix())
+        else:
+            beamletMatrix = sp.csc_matrix.dot(sp.diags(roiObjectives.astype(np.float32), format='csc'),
+                                              self.plan.planDesign.beamlets.toSparseMatrix())
+        self.plan.planDesign.beamlets.setUnitaryBeamlets(beamletMatrix)
+
+        if robust:
+            for s in range(len(self.plan.planDesign.scenarios)):
+                self.plan.planDesign.scenarios[s].load()
+                if use_MKL == 1:
+                    beamletMatrix = sparse_dot_mkl.dot_product_mkl(
+                        sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
+                        self.plan.planDesign.scenarios[s].toSparseMatrix())
+                else:
+                    beamletMatrix = sp.csc_matrix.dot(
+                        sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
+                        self.plan.planDesign.scenarios[s].toSparseMatrix())
+                self.plan.planDesign.scenarios[s].setUnitaryBeamlets(beamletMatrix)
+        #
+        objectiveFunction = DoseFidelity(self.plan, self.xSquared, self.returnWorstCase)
+        self.functions.append(objectiveFunction)
+
     def optimize(self):
+        self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
         # Optimization
         result = self.solver.solve(self.functions, x0)
@@ -81,10 +123,9 @@ class PlanOptimizer:
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan:RTPlan, functions=None, **kwargs):
-        super().__init__(plan, functions, **kwargs)
-        if functions is None:
-            logger.error('You must specify the function you want to optimize')
+    def __init__(self, method, plan:RTPlan, **kwargs):
+        super().__init__(plan, **kwargs)
+
         if method == 'Scipy-BFGS':
             self.solver = bfgs.ScipyOpt('BFGS',**kwargs)
         elif method == 'Scipy-LBFGS':
@@ -108,10 +149,8 @@ class IMPTPlanOptimizer(PlanOptimizer):
 
 
 class ARCPTPlanOptimizer(PlanOptimizer):
-    def __init__(self, method, plan, functions=None, **kwargs):
-        if functions is None:
-            functions = []
-        super(ARCPTPlanOptimizer, self).__init__(plan, functions, **kwargs)
+    def __init__(self, method, plan, **kwargs):
+        super(ARCPTPlanOptimizer, self).__init__(plan, **kwargs)
         if method == 'FISTA':
             self.solver = fista.FISTA()
         elif method == 'LS':
