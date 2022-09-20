@@ -9,6 +9,7 @@ from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
 from Core.event import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 from GUI.Viewer.DataForViewer.image3DForViewer import Image3DForViewer
+from GUI.Viewer.DataViewerComponents.ImageViewerComponents.lookupTables import ct3DLT
 
 
 class PrimaryImage3DLayer_3D:
@@ -26,19 +27,7 @@ class PrimaryImage3DLayer_3D:
         self._renderer = renderer
         self._renderWindow = renderWindow
 
-        self._volumeColor.AddRGBPoint(-1000, 0.0, 0.0, 0.0)
-        self._volumeColor.AddRGBPoint(-500, 240.0 / 255.0, 184.0 / 255.0, 160.0 / 255.0)
-        self._volumeColor.AddRGBPoint(0, 240.0 / 255.0, 184.0 / 255.0, 160.0 / 255.0)
-        self._volumeColor.AddRGBPoint(500, 1.0, 1.0, 240.0 / 255.0)
-
-        self._volumeScalarOpacity.AddPoint(-1000, 0.00)
-        self._volumeScalarOpacity.AddPoint(-500, 0.15)
-        self._volumeScalarOpacity.AddPoint(0, 0.15)
-        self._volumeScalarOpacity.AddPoint(500, 0.85)
-
-        self._volumeGradientOpacity.AddPoint(-1000, 0.0)
-        self._volumeGradientOpacity.AddPoint(0, 0.5)
-        self._volumeGradientOpacity.AddPoint(100, 0.85)
+        self._volumeColor, self._volumeScalarOpacity, self._volumeGradientOpacity = ct3DLT()
 
         self._volumeProperty = vtkRenderingCore.vtkVolumeProperty()
         self._volumeProperty.SetColor(self._volumeColor)
@@ -94,12 +83,17 @@ class PrimaryImage3DLayer_3D:
 
     def _connectAll(self):
         self._image.dataChangedSignal.connect(self._render)
+        self._image.lookupTableChangedSignal.connect(self._updateLookupTable)
 
     def _disconnectAll(self):
         if self._image is None:
             return
 
         self._image.dataChangedSignal.disconnect(self._render)
+        self._image.lookupTableChangedSignal.disconnect(self._updateLookupTable)
 
     def _render(self, *args):
         self._renderWindow.Render()
+
+    def _updateLookupTable(self, lt):
+        pass
