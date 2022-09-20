@@ -37,9 +37,11 @@ class MCsquareMolecule(MCsquareMaterial):
 
         return s
 
-    def load(self, materialNb, materialsPath='default'):
+    @classmethod
+    def load(cls, materialNb, materialsPath='default'):
         moleculePath = MCsquareMaterial.getFolderFromMaterialNumber(materialNb, materialsPath)
 
+        self = cls()
         self.number = materialNb
         self.MCsquareElements = []
         self.weights = []
@@ -71,8 +73,7 @@ class MCsquareMolecule(MCsquareMaterial):
                 if re.search(r'Mixture_Component', line):
                     line = line.split()
 
-                    element = MCsquareElement()
-                    element.load(int(line[1]), materialsPath)
+                    element = MCsquareElement.load(int(line[1]), materialsPath)
 
                     self.MCsquareElements.append(element)
                     self.weights.append(float(line[3]))
@@ -84,3 +85,5 @@ class MCsquareMolecule(MCsquareMaterial):
 
         self.sp = G4StopPow(fromFile=os.path.join(moleculePath, 'G4_Stop_Pow.dat'))
         self.pstarSP = G4StopPow(fromFile=os.path.join(moleculePath, 'PSTAR_Stop_Pow.dat'))
+
+        return self
