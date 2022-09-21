@@ -83,20 +83,23 @@ def ct3DLT() -> Tuple[vtkColorTransferFunction, vtkPiecewiseFunction, vtkPiecewi
 
     volumeColor.AddRGBPoint(-1000, 0.0, 0.0, 0.0)
     volumeColor.AddRGBPoint(-500, 240.0/255.0, 184.0/255.0, 160.0/255.0)
-    volumeColor.AddRGBPoint(0, 240.0 / 255.0, 184.0 / 255.0, 160.0 / 255.0)
+    volumeColor.AddRGBPoint(0, 232/255, 147/255, 132/255)
     volumeColor.AddRGBPoint(500, 1.0, 1.0, 240.0 / 255.0)
     volumeColor.AddRGBPoint(700,  242/255, 220/255, 172/255)
     volumeColor.AddRGBPoint(1800, 173/255, 166/255, 166/255)
     volumeColor.AddRGBPoint(2500, 237/255, 171/255, 64/255)
 
     volumeScalarOpacity.AddPoint(-1000, 0.00)
-    volumeScalarOpacity.AddPoint(-500, 0.15)
-    volumeScalarOpacity.AddPoint(0, 0.5)
-    volumeScalarOpacity.AddPoint(500, 0.6)
+    volumeScalarOpacity.AddPoint(-500, 0.05)
+    volumeScalarOpacity.AddPoint(-200, 0.5)
+    volumeScalarOpacity.AddPoint(-100, 0.85)
+    volumeScalarOpacity.AddPoint(0, 0.85)
+    volumeScalarOpacity.AddPoint(500, 0.85)
     volumeScalarOpacity.AddPoint(700, 0.85)
 
     volumeGradientOpacity.AddPoint(-1000, 0.0)
-    volumeGradientOpacity.AddPoint(0, 0.5)
-    volumeGradientOpacity.AddPoint(100, 0.85)
+    volumeGradientOpacity.AddPoint(-500, 0.0)
+    volumeGradientOpacity.AddPoint(0, 0.6)
+    volumeGradientOpacity.AddPoint(500, 0.85)
 
     return volumeColor, volumeScalarOpacity, volumeGradientOpacity

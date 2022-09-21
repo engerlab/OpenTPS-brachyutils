@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 def main():
     mainConfig = ProgramSettings()
 
-    options = parseArgs(sys.argv[1:])
+    #options = parseArgs(sys.argv[1:])
     logger.info("Start Application")
     app = QApplication.instance()
     if not app:

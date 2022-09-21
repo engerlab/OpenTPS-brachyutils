@@ -21,8 +21,6 @@ def euclidean_dist(v1, v2):
 
 class Image3D(PatientData):
     def __init__(self, imageArray=None, name="3D Image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
-        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID, patient=patient)
-
         self.dataChangedSignal = Event()
 
         self._imageArray = imageArray
@@ -32,6 +30,9 @@ class Image3D(PatientData):
         # if UID is None:
         #     UID = generate_uid()
         # self.UID = UID
+
+        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID,
+                         patient=patient)  # We want to trigger super signal only when the object is fully initialized
 
     def __str__(self):
         gs = self.gridSize

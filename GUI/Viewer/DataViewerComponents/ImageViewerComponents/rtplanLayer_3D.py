@@ -93,4 +93,5 @@ class RTPlanLayer_3D:
             bLayer.setBeam(beam)
             self._beamLayers.append(bLayer)
 
+        self._renderer.ResetCamera()
         self._renderWindow.Render()
