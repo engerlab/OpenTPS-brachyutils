@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 
 from Core.Data.Plan._rtPlan import RTPlan
-from Core.Data.Plan._beamDeliveryTimings import BDT
+from Core.Processing.PlanDeliverySimulation.beamDeliveryTimings import BDT
 from Core.IO.dicomIO import readDicomPlan
 
 """

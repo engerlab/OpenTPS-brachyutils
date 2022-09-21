@@ -47,10 +47,13 @@ class DoseImage(Image3D):
         return dumpableDose
 
     @classmethod
-    def createEmptyDoseWithSameMetaData(cls, image:Image3D):
-        cl = cls(imageArray=np.zeros_like(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles)
-        cl._patient = image._patient
-        if type(image) is DoseImage:
+    def createEmptyDoseWithSameMetaData(cls, image:Image3D, **kwargs):
+        dic = {'imageArray': np.zeros_like(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+        dic.update(kwargs)
+
+        cl = cls(**dic)
+        if isinstance(image, DoseImage):
             cl.referenceCT = image.referenceCT
             cl.referencePlan = image.referencePlan
         return cl

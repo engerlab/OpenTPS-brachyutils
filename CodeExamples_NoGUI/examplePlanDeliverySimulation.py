@@ -44,3 +44,9 @@ print(model3D)
 
 ### 4D Dose simulation
 simulate_4DD(plan, CT4D, model3D)
+
+## 4D dynamic simulation
+simulate_4DDD(plan, CT4D, model3D)
+
+## Simulate fractionation scenarios
+simulate_4DDD_scenarios(plan, CT4D, model3D, number_of_fractions=5, number_of_starting_phases=3, number_of_fractionation_scenarios=5)

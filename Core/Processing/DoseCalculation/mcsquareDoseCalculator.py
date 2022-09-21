@@ -123,7 +123,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._outputDir)
         self._startMCsquare()
 
-        doseImage = self._importDose()
+        doseImage = self._importDose(plan)
 
         return doseImage
 
@@ -165,7 +165,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
         mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
 
-        doseImage = self._importDose()
+        doseImage = self._importDose(plan)
         return doseImage
 
     def _setPlanWeightsTo1(self, plan):
@@ -221,10 +221,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             # else:
             #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_opti_win.bat")
 
-    def _importDose(self) -> DoseImage:
+    def _importDose(self, plan:RTPlan = None) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
         dose.patient = self._ct.patient
-        dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000
+        if plan is None:
+            fraction = 1.
+        else:
+            fraction = plan.numberOfFractionsPlanned
+        dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
 
         return dose
 
