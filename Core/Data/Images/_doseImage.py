@@ -14,11 +14,12 @@ class DoseImage(Image3D):
 
     def __init__(self, imageArray=None, name="Dose image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0),
                  seriesInstanceUID=None, sopInstanceUID=None, referencePlan:RTPlan = None, referenceCT:CTImage = None, patient=None):
-        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID, patient=patient)
-        self.seriesInstanceUID = seriesInstanceUID
         self.referenceCT = referenceCT
         self.sopInstanceUID = sopInstanceUID
         self.referencePlan = referencePlan
+
+        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles,
+                         seriesInstanceUID=seriesInstanceUID, patient=patient)
 
     @classmethod
     def fromImage3D(cls, image: Image3D, **kwargs):

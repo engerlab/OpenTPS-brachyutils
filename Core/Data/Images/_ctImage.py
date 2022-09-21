@@ -11,11 +11,12 @@ from Core.Data.Images._image3D import Image3D
 class CTImage(Image3D):
     def __init__(self, imageArray=None, name="CT image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0),
                  seriesInstanceUID="", frameOfReferenceUID="", sliceLocation=None, sopInstanceUIDs=None, patient=None):
-        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID, patient=patient)
         self.frameOfReferenceUID = frameOfReferenceUID
-        self.seriesInstanceUID = seriesInstanceUID
         self.sliceLocation = sliceLocation
         self.sopInstanceUIDs = sopInstanceUIDs
+
+        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles,
+                         seriesInstanceUID=seriesInstanceUID, patient=patient)
     
     def __str__(self):
         return "CT image: " + self.seriesInstanceUID

@@ -13,8 +13,6 @@ from Core.event import Event
 
 class Image2D(PatientData):
     def __init__(self, imageArray=None, name="2D Image", origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
-        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID, patient=None)
-
         self.dataChangedSignal = Event()
 
         self._imageArray = imageArray
@@ -22,9 +20,13 @@ class Image2D(PatientData):
         self._spacing = np.array(spacing)
         self._angles = np.array(angles)
 
+        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID, patient=None)
+
     def __str__(self):
         gs = self.gridSize
-        s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
+        s = 'Image2D '
+        if not self.imageArray is None:
+            s += str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
         return s
 
     # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D

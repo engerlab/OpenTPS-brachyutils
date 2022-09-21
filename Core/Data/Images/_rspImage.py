@@ -17,12 +17,13 @@ from Core.Processing.ImageProcessing import resampler3D
 class RSPImage(Image3D):
     def __init__(self, imageArray=None, name="RSP image", origin=(0, 0, 0), spacing=(1, 1, 1),
                  angles=(0, 0, 0), seriesInstanceUID=None, frameOfReferenceUID=None, sliceLocation=[], sopInstanceUIDs=[], patient=None):
-        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing,
-                         angles=angles, seriesInstanceUID=seriesInstanceUID, patient=patient)
+
         self.frameOfReferenceUID = frameOfReferenceUID
-        self.seriesInstanceUID = seriesInstanceUID
         self.sliceLocation = sliceLocation
         self.sopInstanceUIDs = sopInstanceUIDs
+
+        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing,
+                         angles=angles, seriesInstanceUID=seriesInstanceUID, patient=patient)
 
     def __str__(self):
         return "RSP image: " + self.seriesInstanceUID
