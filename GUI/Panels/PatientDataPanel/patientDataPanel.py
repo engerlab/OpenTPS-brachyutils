@@ -20,10 +20,8 @@ class PatientDataPanel(QWidget):
         self._viewController = viewController
 
         self._viewController.patientAddedSignal.connect(self.patientAddedSignal.emit)
-        self._viewController.patientAddedSignal.connect(self._handleNewPatient)
 
         self._viewController.patientRemovedSignal.connect(self.patientRemovedSignal.emit)
-        self._viewController.patientRemovedSignal.connect(self._handleRemovedPatient)
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -41,14 +39,6 @@ class PatientDataPanel(QWidget):
         self.layout.addLayout(self.buttonLayout)
 
         self.dataPath = QDir.currentPath() # maybe not the ideal default data directory
-
-    def _handleNewPatient(self, patient):
-        if self._viewController.currentPatient is None:
-            self._viewController.currentPatient = patient
-
-    def _handleRemovedPatient(self, patient):
-        if self._viewController.currentPatient == patient:
-            self._viewController.currentPatient = None
 
     def loadData(self):
         filesOrFoldersList = _getOpenFilesAndDirs(caption="Open patient data files or folders", directory=QDir.currentPath())
