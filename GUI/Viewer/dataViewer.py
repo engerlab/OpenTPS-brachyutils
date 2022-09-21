@@ -16,7 +16,7 @@ from GUI.Viewer.DataViewerComponents.image3DViewer import Image3DViewer
 from GUI.Viewer.DataViewerComponents.dynamicImage3DViewer import DynamicImage3DViewer
 from GUI.Viewer.DataViewerComponents.image2DViewer import Image2DViewer
 from GUI.Viewer.DataViewerComponents.dynamicImage2DViewer import DynamicImage2DViewer
-from GUI.Viewer.DataViewerComponents.imageViewer3DViewer_3D import Image3DViewer_3D
+from GUI.Viewer.DataViewerComponents.image3DViewer_3D import Image3DViewer_3D
 from GUI.Viewer.DataViewerComponents.imageViewerActions import ImageViewerActions
 from GUI.Viewer.DataViewerComponents.dataViewerToolbar import DataViewerToolbar
 from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot

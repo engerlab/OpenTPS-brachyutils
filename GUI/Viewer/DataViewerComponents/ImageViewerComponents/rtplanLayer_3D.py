@@ -1,6 +1,9 @@
 import os.path
 from typing import Optional
 
+import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
+import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
+from vtkmodules.vtkCommonCore import vtkCommand
 from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkSTLReader

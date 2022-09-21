@@ -2,6 +2,10 @@ from typing import Optional
 
 from PyQt5.QtWidgets import *
 
+import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
+import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
+from vtkmodules.vtkCommonCore import vtkCommand
+
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
 from vtkmodules import vtkInteractionStyle
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -18,8 +22,9 @@ from GUI.Viewer.DataViewerComponents.blackEmptyPlot import BlackEmptyPlot
 
 
 class Image3DViewer_3D(QWidget):
-    def __init__(self, viewController):
-        QWidget.__init__(self)
+    def __init__(self, viewController, parent=None):
+        QWidget.__init__(self, parent=parent)
+
         self.primaryImageSignal = Event(object)
         self.secondaryImageSignal = Event(object)
 

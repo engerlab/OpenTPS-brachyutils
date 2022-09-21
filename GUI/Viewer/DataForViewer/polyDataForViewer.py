@@ -1,6 +1,4 @@
 
-from vtkmodules.vtkIOGeometry import vtkSTLReader
-
 from Core import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
 

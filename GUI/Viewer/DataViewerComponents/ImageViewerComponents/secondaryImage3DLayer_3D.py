@@ -2,6 +2,7 @@ from typing import Optional
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
+from vtkmodules.vtkCommonCore import vtkCommand
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
 
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
