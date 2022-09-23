@@ -89,8 +89,10 @@ class SparseBeamlets(PatientData):
 
     def toDoseImage(self) -> DoseImage:
         weights = np.array(self._weights)
-
-        totalDose = csc_matrix.dot(self._sparseBeamlets, weights)
+        if use_MKL == 1:
+            totalDose = sparse_dot_mkl.dot_product_mkl(self._sparseBeamlets, weights)
+        else:
+            totalDose = csc_matrix.dot(self._sparseBeamlets, weights)
 
         totalDose = np.reshape(totalDose, self._gridSize, order='F')
         totalDose = np.flip(totalDose, 0)
