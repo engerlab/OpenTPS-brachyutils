@@ -87,6 +87,10 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
             else:
                 gridSize = image.gridSize
         spacing = image.spacing*image.gridSize/gridSize
+    else:
+        if np.isscalar(spacing):
+            spacing = spacing*np.ones(image.spacing.shape)
+
 
     # gridSize is None but spacing is not
     if gridSize is None:

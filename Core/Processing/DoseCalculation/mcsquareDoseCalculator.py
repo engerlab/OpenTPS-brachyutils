@@ -90,8 +90,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             return self._ct.spacing
 
     @scoringVoxelSpacing.setter
-    def scoringVoxelSpacing(self, spacing: Sequence[float]):
-        self._scoringVoxelSpacing = spacing
+    def scoringVoxelSpacing(self, spacing: Union[float, Sequence[float]]):
+        if np.isscalar(spacing):
+            self._scoringVoxelSpacing = [spacing, spacing, spacing]
+        else:
+            self._scoringVoxelSpacing = spacing
 
     @property
     def scoringGridSize(self):
