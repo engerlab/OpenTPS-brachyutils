@@ -90,8 +90,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             return self._ct.spacing
 
     @scoringVoxelSpacing.setter
-    def scoringVoxelSpacing(self, spacing: Sequence[float]):
-        self._scoringVoxelSpacing = spacing
+    def scoringVoxelSpacing(self, spacing: Union[float, Sequence[float]]):
+        if np.isscalar(spacing):
+            self._scoringVoxelSpacing = [spacing, spacing, spacing]
+        else:
+            self._scoringVoxelSpacing = spacing
 
     @property
     def scoringGridSize(self):
@@ -372,9 +375,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["BDL_Plan_File"] = self._planFilePath
         if self._independentScoringGrid:
             config["Independent_scoring_grid"] = True
-            config["Scoring_voxel_spacing"] = self._scoringVoxelSpacing  # in mm
+            config["Scoring_voxel_spacing"] = [x / 10.0 for x in self.scoringVoxelSpacing]  # in cm
             config["Scoring_grid_size"] = self.scoringGridSize
-            config["Scoring_origin"] = [0, 0, 0]
             config["Scoring_origin"][0] = self._ct.origin[0] - config["Scoring_voxel_spacing"][
                 0] / 2.0
             config["Scoring_origin"][2] = self._ct.origin[2] - config["Scoring_voxel_spacing"][
@@ -385,7 +387,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             config["Scoring_origin"][1] = self._ct.origin[1] - config["Scoring_voxel_spacing"][
                 1] / 2.0
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
-            config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
         # config["Stat_uncertainty"] = 2.
 
         return config
@@ -398,11 +399,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         for contour in self._roi:
             if isinstance(contour, ROIContour):
                 resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=self.scoringGridSize,
-                                                      spacing=self.scoringVoxelSpacing)
+                                                      spacing=np.array(self.scoringVoxelSpacing))
             elif isinstance(contour, ROIMask):
                 resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
                                                             gridSize=self.scoringGridSize,
-                                                            spacing=self.scoringVoxelSpacing)
+                                                            spacing=np.array(self.scoringVoxelSpacing))
             else:
                 raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
             resampledMask.patient = None
