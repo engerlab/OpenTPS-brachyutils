@@ -57,7 +57,7 @@ class ObjectivesList:
         elif metric == FidObjective.Metrics.DMEAN:
             objective.metric = FidObjective.Metrics.DMEAN
         else:
-            print("Error: objective metric " + metric + " is not supported.")
+            print("Error: objective metric " + str(metric) + " is not supported.")
             return
 
         objective.kind = kind

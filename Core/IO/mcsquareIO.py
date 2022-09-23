@@ -91,7 +91,7 @@ def _read_sparse_header(file_path):
 
 
 def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=None) -> csc_matrix:
-    BeamletMatrix = []
+    BeamletMatrix = None
 
     fid = open(Binary_file, 'rb')
 
@@ -181,7 +181,10 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=No
     # stack last cols
     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
                       shape=(NbrVoxels, num_unstacked_col), dtype=np.float32)
-    BeamletMatrix = sp.hstack([BeamletMatrix, A])
+    if BeamletMatrix is None:
+        BeamletMatrix = A
+    else:
+        BeamletMatrix = sp.hstack([BeamletMatrix, A])
 
     logger.info('Beamlets imported in {} sec'.format(time.time() - time_start))
 

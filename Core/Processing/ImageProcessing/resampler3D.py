@@ -87,6 +87,10 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
             else:
                 gridSize = image.gridSize
         spacing = image.spacing*image.gridSize/gridSize
+    else:
+        if np.isscalar(spacing):
+            spacing = spacing*np.ones(image.spacing.shape)
+
 
     # gridSize is None but spacing is not
     if gridSize is None:
@@ -115,7 +119,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
         try:
             from Core.Processing.ImageProcessing import sitkImageProcessing
             sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)
-        except:
+        except Exception as e:
             logger.info('Failed to use SITK resampler. Try OpenMP without GPU instead.')
             tryOpenMP = True
 

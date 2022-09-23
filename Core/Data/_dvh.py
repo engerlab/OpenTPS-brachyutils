@@ -109,6 +109,9 @@ class DVH:
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
     def computeDVH(self, maxDVH:float=100.0):
+        if (self._doseImage is None):
+            return
+
         self._convertContourToROI()
 
         if not(self._doseImage.hasSameGrid(self._roiMask)):
