@@ -1,6 +1,7 @@
 import copy
 import json
 import logging.config
+import math
 import os
 import sys
 
@@ -66,9 +67,8 @@ data[80:100, 100:120, 120:140] = True
 roi.imageArray = data
 
 examplePath = "../testData"
-
-output_path = os.path.join(examplePath, "fakeCT")
-
+patient_data_path = os.path.join(examplePath, "fakeCT")
+output_path = os.path.join(patient_data_path, "OpenTPS")
 
 # Design plan
 beamNames = ["Beam1"]
@@ -83,12 +83,12 @@ mc2.beamModel = bdl
 mc2.nbPrimaries = 5e4
 mc2.ctCalibration = ctCalibration
 
-#mc2._independentScoringGrid = True
-#scoringSpacing = [2, 2, 2]
-#mc2._scoringVoxelSpacing = scoringSpacing
+mc2._independentScoringGrid = True
+scoringSpacing = [2, 2, 2]
+mc2._scoringVoxelSpacing = scoringSpacing
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped.tps")
+plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
 
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
@@ -110,13 +110,15 @@ else:
 
     mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
     #mc2.computeBeamlets(ct, plan, output_path)
-    #saveRTPlan(plan, plan_file)
+    saveRTPlan(plan, plan_file)
 
 plan.planDesign.objectives = ObjectivesList()
 plan.planDesign.objectives.setTarget(roi.name, 20.0)
-plan.planDesign.objectives.setScoringParameters(ct)
-#scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip([150,150,150], scoringSpacing, [1,1,1])]
-#plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
+#plan.planDesign.objectives.setScoringParameters(ct)
+scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip([150,150,150], scoringSpacing, [1,1,1])]
+print(scoringGridSize, scoringSpacing)
+quit()
+plan.planDesign.objectives.setScoringParameters(ct, np.array(scoringGridSize), np.array(scoringSpacing))
 plan.planDesign.objectives.fidObjList = []
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
