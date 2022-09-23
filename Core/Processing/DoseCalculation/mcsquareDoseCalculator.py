@@ -96,6 +96,36 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._nbPrimaries = primaries
 
     @property
+    def independentScoringGrid(self) -> bool:
+        return self._independentScoringGrid
+
+    @independentScoringGrid.setter
+    def independentScoringGrid(self, independent: bool):
+        self._independentScoringGrid = independent
+
+    @property
+    def scoringVoxelSpacing(self) -> Sequence[float]:
+        if self.independentScoringGrid:
+            return self._scoringVoxelSpacing
+        else:
+            return self._ct.spacing
+
+    @scoringVoxelSpacing.setter
+    def scoringVoxelSpacing(self, spacing: Union[float, Sequence[float]]):
+        if np.isscalar(spacing):
+            self._scoringVoxelSpacing = [spacing, spacing, spacing]
+        else:
+            self._scoringVoxelSpacing = spacing
+
+    @property
+    def scoringGridSize(self):
+        if self.independentScoringGrid:
+            return [int(math.floor(i / j * k)) for i, j, k in
+                    zip(self._ct.gridSize, self.scoringVoxelSpacing, self._ct.spacing)]
+        else:
+            return self._ct.gridSize
+
+    @property
     def simulationDirectory(self) -> str:
         return str(self._simulationDirectory)
 
