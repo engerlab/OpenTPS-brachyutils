@@ -34,13 +34,16 @@ def sitkImageToImage3D(sitkImage:sitk.Image, type=float):
     return image
 
 def resize(image:Image3D, newSpacing:np.ndarray, newOrigin:Optional[np.ndarray]=None, newShape:Optional[np.ndarray]=None, fillValue:float=0.):
-    
     # print('in sitkImageProcessing resize', type(image))
     if newOrigin is None:
         newOrigin = image.origin
+    newOrigin = np.array(newOrigin)
+
+    newSpacing = np.array(newSpacing)
 
     if newShape is None:
         newShape = (image.origin - newOrigin + image.gridSize*image.spacing)/newSpacing
+    newShape = np.array(newShape)
     newShape = np.ceil(newShape).astype(int)
 
     imgType = image.imageArray.dtype

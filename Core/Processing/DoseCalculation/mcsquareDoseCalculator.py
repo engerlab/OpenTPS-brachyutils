@@ -375,7 +375,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["BDL_Plan_File"] = self._planFilePath
         if self._independentScoringGrid:
             config["Independent_scoring_grid"] = True
-            config["Scoring_voxel_spacing"] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
+            config["Scoring_voxel_spacing"] = [x / 10.0 for x in self.scoringVoxelSpacing]  # in cm
             config["Scoring_grid_size"] = self.scoringGridSize
             config["Scoring_origin"][0] = self._ct.origin[0] - config["Scoring_voxel_spacing"][
                 0] / 2.0
