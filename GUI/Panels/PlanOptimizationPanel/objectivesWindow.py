@@ -110,8 +110,9 @@ class ROITable(QTableWidget):
 
         self._patient = p
 
-        self._patient.rtStructAddedSignal.connect(self.updateTable)
-        self._patient.rtStructRemovedSignal.connect(self.updateTable)
+        if not self._patient is None:
+            self._patient.rtStructAddedSignal.connect(self.updateTable)
+            self._patient.rtStructRemovedSignal.connect(self.updateTable)
 
         self.updateTable()
 
@@ -124,6 +125,8 @@ class ROITable(QTableWidget):
 
     def _fillRoiTable(self):
         patient = self._viewController.currentPatient
+        if patient is None:
+            return
 
         self._rois = []
         i = 0

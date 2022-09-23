@@ -1,8 +1,10 @@
-from typing import Sequence
+from typing import Sequence, Tuple
 
 import numpy as np
 import vtkmodules.vtkCommonCore as vtkCommonCore
 from matplotlib import pyplot as plt
+from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
+from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 
 def fusionLT(range:Sequence[float], opacity:float, colormap:str) -> vtkCommonCore.vtkLookupTable:
@@ -48,3 +50,56 @@ def grayLT(range) -> vtkCommonCore.vtkLookupTable:
     table.Build()
 
     return table
+
+
+def fusionLTTo3DLT(lt:vtkCommonCore.vtkLookupTable) -> Tuple[vtkColorTransferFunction, vtkPiecewiseFunction, vtkPiecewiseFunction]:
+    rangeVal = lt.GetRange()
+
+    volumeColor = vtkColorTransferFunction()
+    volumeScalarOpacity = vtkPiecewiseFunction()
+    volumeGradientOpacity = vtkPiecewiseFunction()
+
+    volumeScalarOpacity.AddPoint(rangeVal[0], 0)
+    volumeScalarOpacity.AddPoint((rangeVal[0]+rangeVal[1])/.2, 0.0)
+    volumeScalarOpacity.AddPoint(3*(rangeVal[0] + rangeVal[1]) /4. , 0.5)
+    volumeScalarOpacity.AddPoint(rangeVal[1], 1.)
+
+    volumeGradientOpacity.AddPoint(rangeVal[0], 0.1)
+    volumeGradientOpacity.AddPoint((rangeVal[0]+rangeVal[1])/2, 0.25)
+    volumeGradientOpacity.AddPoint(3*(rangeVal[0] + rangeVal[1]) /4. , 0.5)
+    volumeGradientOpacity.AddPoint(rangeVal[1], 1.)
+
+    tableVals = np.linspace(rangeVal[0], rangeVal[1], lt.GetNumberOfTableValues())
+    for i in range(lt.GetNumberOfTableValues()):
+        tbVal = lt.GetTableValue(i)
+        volumeColor.AddRGBPoint(tableVals[i], tbVal[0], tbVal[1], tbVal[2])
+
+    return volumeColor, volumeScalarOpacity, volumeGradientOpacity
+
+def ct3DLT() -> Tuple[vtkColorTransferFunction, vtkPiecewiseFunction, vtkPiecewiseFunction]:
+    volumeColor = vtkColorTransferFunction()
+    volumeScalarOpacity = vtkPiecewiseFunction()
+    volumeGradientOpacity = vtkPiecewiseFunction()
+
+    volumeColor.AddRGBPoint(-1000, 0.0, 0.0, 0.0)
+    volumeColor.AddRGBPoint(-500, 240.0/255.0, 184.0/255.0, 160.0/255.0)
+    volumeColor.AddRGBPoint(0, 232/255, 147/255, 132/255)
+    volumeColor.AddRGBPoint(500, 1.0, 1.0, 240.0 / 255.0)
+    volumeColor.AddRGBPoint(700,  242/255, 220/255, 172/255)
+    volumeColor.AddRGBPoint(1800, 173/255, 166/255, 166/255)
+    volumeColor.AddRGBPoint(2500, 237/255, 171/255, 64/255)
+
+    volumeScalarOpacity.AddPoint(-1000, 0.00)
+    volumeScalarOpacity.AddPoint(-500, 0.05)
+    volumeScalarOpacity.AddPoint(-200, 0.5)
+    volumeScalarOpacity.AddPoint(-100, 0.85)
+    volumeScalarOpacity.AddPoint(0, 0.85)
+    volumeScalarOpacity.AddPoint(500, 0.85)
+    volumeScalarOpacity.AddPoint(700, 0.85)
+
+    volumeGradientOpacity.AddPoint(-1000, 0.0)
+    volumeGradientOpacity.AddPoint(-500, 0.0)
+    volumeGradientOpacity.AddPoint(0, 0.6)
+    volumeGradientOpacity.AddPoint(500, 0.85)
+
+    return volumeColor, volumeScalarOpacity, volumeGradientOpacity

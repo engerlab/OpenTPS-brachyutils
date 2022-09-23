@@ -34,14 +34,21 @@ class PlanOptimizer:
         # Total Dose calculation
         weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
 
-        totalDose = self.plan.planDesign.beamlets.toDoseImage().imageArray
+        if use_MKL == 1:
+            totalDose = sparse_dot_mkl.dot_product_mkl(self.beamletMatrix, weights)
+        else:
+            totalDose = sp.csc_matrix.dot(self.beamletMatrix, weights)
 
         maxDose = np.max(totalDose)
+
         try:
             x0 = self.opti_params['init_weights']
         except KeyError:
             x0 = (self.plan.planDesign.objectives.targetPrescription / maxDose) * np.ones(self.plan.numberOfSpots,
-                                                                               dtype=np.float32)
+                                                                           dtype=np.float32)
+        if self.xSquared:
+            x0 = np.sqrt(x0)
+
         return x0
 
     def optimize(self):

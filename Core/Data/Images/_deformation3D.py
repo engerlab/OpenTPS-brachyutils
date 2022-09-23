@@ -32,10 +32,10 @@ class Deformation3D(Image3D):
             else:
                 logger.error("Velocity and displacement fields have different spacing. Cannot create deformation object.")
 
-        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
-
         self.velocity = velocity
         self.displacement = displacement
+
+        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
 
     @property
     def gridSize(self):

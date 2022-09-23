@@ -34,8 +34,20 @@ class MCsquareHU2Material:
     def _initializeFromFiles(self, huMaterialFile, materialsPath='default'):
         self.__load(huMaterialFile, materialsPath=materialsPath)
 
+    def addEntry(self, hu:float, material:MCsquareMolecule):
+        self.__hu = np.append(self.__hu, hu)
+        self.__materials = np.append(self.__materials, material)
+
+        self.__hu = np.array(self.__hu)
+        self.__materials = np.array(self.__materials)
+
+        ind = np.argsort(self.__hu)
+
+        self.__hu = self.__hu[ind]
+        self.__materials = self.__materials[ind]
+
     def mcsquareFormatted(self):
-        mats = self._allMaterialsandElements()
+        mats = self.allMaterialsAndElements()
         matNames = [mat.name for mat in mats]
 
         s = ''
@@ -134,8 +146,7 @@ class MCsquareHU2Material:
                 if len(lineSplit) > 1:
                     self.__hu.append(float(lineSplit[0]))
 
-                    material = MCsquareMolecule()
-                    material.load(int(lineSplit[1]), materialsPath)
+                    material = MCsquareMolecule.load(int(lineSplit[1]), materialsPath)
                     self.__materials.append(material)
 
     def write(self, folderPath, huMaterialFile):
@@ -156,7 +167,7 @@ class MCsquareHU2Material:
         materialsOrderedForPrinting = self.materialsOrderedForPrinting()
         matNames = [mat.name for mat in materialsOrderedForPrinting]
 
-        for material in self._allMaterialsandElements():
+        for material in self.allMaterialsAndElements():
             material.write(folderPath, matNames)
 
     def _copyDefaultMaterials(self, folderPath):
@@ -180,7 +191,7 @@ class MCsquareHU2Material:
                 f.write(str(i+1) + ' ' + mat.name + '\n')
 
     def materialsOrderedForPrinting(self):
-        materials = self._allMaterialsandElements()
+        materials = self.allMaterialsAndElements()
         defaultMats = MCsquareMaterial.getMaterialList('default')
 
         orderMaterials = []
@@ -194,7 +205,7 @@ class MCsquareHU2Material:
 
         return orderMaterials
 
-    def _allMaterialsandElements(self):
+    def allMaterialsAndElements(self):
         materials = []
         for material in self.__materials:
             materials.append(material)
