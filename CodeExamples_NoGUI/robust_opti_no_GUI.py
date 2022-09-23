@@ -59,7 +59,8 @@ data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
 examplePath = "../testData"
-output_path = os.path.join(examplePath, "fakeCT")
+patient_data_path = os.path.join(examplePath, "fakeCT")
+output_path = os.path.join(patient_data_path, "OpenTPS")
 
 # Design plan
 beamNames = ["Beam1"]
