@@ -26,13 +26,13 @@ from GUI.Viewer.DataViewerComponents.ImageViewerComponents.textLayer import Text
 
 
 class Image2DViewer(QWidget):
-    class ViewerTypes(Enum):
-        AXIAL = 'axial'
-        CORONAL = 'coronal'
-        SAGITTAL = 'sagittal'
-        DEFAULT = 'sagittal'
-
-    _viewerTypesList = iter(list(ViewerTypes))
+    # class ViewerTypes(Enum):
+    #     AXIAL = 'axial'
+    #     CORONAL = 'coronal'
+    #     SAGITTAL = 'sagittal'
+    #     DEFAULT = 'sagittal'
+    #
+    # _viewerTypesList = iter(list(ViewerTypes))
 
 
     def __init__(self, viewController):
@@ -56,7 +56,7 @@ class Image2DViewer(QWidget):
         self.__sendingWWL = False
         self._viewController = viewController
         self._viewMatrix = vtkCommonMath.vtkMatrix4x4()
-        self._viewType = self.ViewerTypes.DEFAULT
+        # self._viewType = self.ViewerTypes.DEFAULT
         self._vtkWidget = QVTKRenderWindowInteractor(self)
         self._wwlEnabled = False
 
@@ -74,9 +74,9 @@ class Image2DViewer(QWidget):
         self._profileWidget.secondaryLayer = self._secondaryImageLayer
         self._profileWidget.contourLayer = self._contourLayer
 
-        self._setViewType(self._viewType)
-        self._contourLayer.resliceAxes = self._viewMatrix
-        self._rtPlanLayer.resliceAxes = self._viewMatrix
+        # self._setViewType(self._viewType)
+        # self._contourLayer.resliceAxes = self._viewMatrix
+        # self._rtPlanLayer.resliceAxes = self._viewMatrix
 
         self.setLayout(self._mainLayout)
         self._vtkWidget.hide()
@@ -401,36 +401,7 @@ class Image2DViewer(QWidget):
             self._iStyle.OnMouseMove()
 
     def onScroll(self, obj=None, event='Forward'):
-        sliceSpacing = self._primaryImage2DLayer._reslice.GetOutput().GetSpacing()[2]
-
-        deltaY = 0.
-        if 'Forward' in event:
-            deltaY = sliceSpacing
-        if 'Backward' in event:
-            deltaY = -sliceSpacing
-
-        point = (0., 0., 0., 0.)
-        if self._crossHairEnabled:
-            worldPos = Image2DForViewer(self.primaryImage).selectedPosition
-            if worldPos is None:
-                return
-
-            tform = vtkCommonMath.vtkMatrix4x4()
-            tform.DeepCopy(self._viewMatrix)
-            tform.Invert()
-            point = tform.MultiplyPoint((worldPos[0], worldPos[1], worldPos[2], 1))
-
-        # move the center point that we are slicing through
-        center = self._viewMatrix.MultiplyPoint((0, 0, deltaY, 1))
-        self._viewMatrix.SetElement(0, 3, center[0])
-        self._viewMatrix.SetElement(1, 3, center[1])
-        self._viewMatrix.SetElement(2, 3, center[2])
-
-        if self._crossHairEnabled:
-            point = self._viewMatrix.MultiplyPoint((point[0], point[1], point[2], 1))
-            Image2DForViewer(self.primaryImage).selectedPosition = point
-
-        self._renderWindow.Render()
+        print(NotImplementedError)
 
     def _handlePosition(self, position: typing.Sequence):
         if not self._crossHairEnabled or position is None:

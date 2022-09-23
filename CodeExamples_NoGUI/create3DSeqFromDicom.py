@@ -22,6 +22,10 @@ if __name__ == '__main__':
 
     ## read a serialized dynamic sequence
     dataPath = testDataPath + "4DCTDicomLight"
+
+    basePath = 'D:/ImageData/lung/Patient_12/1/FDG1/'
+    dataPath = basePath + 'dynModAndROIs_bodyCropped.p'
+
     print(dataPath)
     dataList = readData(dataPath)
     print(len(dataList), 'images found in the folder')

@@ -36,6 +36,8 @@ class Image2DForViewer(GenericImageForViewer):
         imageSpacing = self.spacing
         # imageData = np.swapaxes(self.imageArray, 0, 2)
         imageData = self.imageArray
+        # imageData[100:140, 200:500] = 300
+        imageData -= np.min(imageData)
 
         # imageData = np.tile(imageData, (3, 1, 1))
         # print(imageData.shape)
@@ -60,24 +62,28 @@ class Image2DForViewer(GenericImageForViewer):
 
         self._vtkOutputPort = self._dataImporter.GetOutputPort()
 
-        # import vtk
-        #
-        # actor = vtk.vtkActor3D()
-        # actor.SetMapper(mapper)
-        #
-        # ren = vtk.vtkRenderer()
-        # ren.AddActor(self._vtkOutputPort)
-        # ren.SetBackground(0.1, 0.2, 0.4)
-        #
-        # renWin = vtk.vtkRenderWindow()
-        # renWin.AddRenderer(ren)
-        # renWin.SetSize(400, 400)
-        #
-        # iren = vtk.vtkRenderWindowInteractor()
-        # iren.SetRenderWindow(renWin)
-        #
-        # renWin.Render()
-        # iren.Start()
+        import vtk
+
+        mapper = vtk.vtkImageMapper()
+        print(type(self._vtkOutputPort))
+        mapper.SetInputConnection(self._vtkOutputPort)
+        # mapper.SetInputData(self._vtkOutputPort)
+        actor = vtk.vtkActor2D()
+        actor.SetMapper(mapper)
+
+        ren = vtk.vtkRenderer()
+        ren.AddActor(actor)
+        ren.SetBackground(0.1, 0.2, 0.4)
+
+        renWin = vtk.vtkRenderWindow()
+        renWin.AddRenderer(ren)
+        renWin.SetSize(400, 400)
+
+        iren = vtk.vtkRenderWindowInteractor()
+        iren.SetRenderWindow(renWin)
+
+        renWin.Render()
+        iren.Start()
 
     @property
     def vtkOutputPort(self):

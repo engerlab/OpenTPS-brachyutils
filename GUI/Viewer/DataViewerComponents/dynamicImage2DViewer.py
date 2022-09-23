@@ -29,6 +29,8 @@ class DynamicImage2DViewer(Image2DViewer):
 
     @property
     def primaryImage(self):
+
+        print('in dynamicImage2DVIewer, primaryImage (property)')
         if self._primaryImageLayer.image is None:
             return None
         return self.dynPrimaryImgSeqForViewer
