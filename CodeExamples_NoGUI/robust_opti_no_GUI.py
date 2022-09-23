@@ -16,7 +16,7 @@ from Core.Data import PatientList
 from Core.Data.Plan._objectivesList import FidObjective
 from Core.IO import mcsquareIO
 from Core.IO.scannerReader import readScanner
-from Core.IO.serializedObjectIO import loadDataStructure, loadRTPlan
+from Core.IO.serializedObjectIO import loadDataStructure, loadRTPlan, saveRTPlan
 from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
@@ -81,7 +81,7 @@ mc2._rangeSystematicError = 3.0  # %
 mc2._robustnessStrategy = "ErrorSpace_regular"
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "RobustPlan.tps")
+plan_file = os.path.join(output_path, "RobustPlan_notCropped.tps")
 
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
@@ -93,21 +93,22 @@ else:
     planInit.beamNames = beamNames
     planInit.couchAngles = couchAngles
     planInit.calibration = ctCalibration
-    planInit.spotSpacing = 5.0
-    planInit.layerSpacing = 10.0
-    planInit.targetMargin = 1.0
-    #max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2.SetupSystematicError)
+    planInit.spotSpacing = 7.0
+    planInit.layerSpacing = 6.0
+    planInit.targetMargin = max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2._setupSystematicError)
 
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "RobustPlan"
 
-    mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
-    #mc2.computeBeamlets(ct, plan, output_path)
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
+    #mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
+    mc2.computeBeamlets(ct, plan, output_path)
+    #saveRTPlan(plan, plan_file)
+
 
 
 beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
-
+plan.planDesign.beamlets.load()
+saveRTPlan(plan, plan_file)
 plan.planDesign.objectives = ObjectivesList()
 plan.planDesign.objectives.setTarget(roi.name, 20.0)
 plan.planDesign.objectives.setScoringParameters(ct)
@@ -115,7 +116,7 @@ plan.planDesign.objectives.setScoringParameters(ct)
 # plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
 plan.planDesign.objectives.fidObjList = []
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0, robust=True)
-plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0, robust=True)
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0, robust=True)
 
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
 # Optimize treatment plan

@@ -2,9 +2,6 @@ from typing import Union, Optional, Sequence
 
 __all__ = ['DVHBand']
 
-
-from Core.Data._patientData import PatientData
-
 import numpy as np
 
 from Core.Data.Images._doseImage import DoseImage
@@ -13,18 +10,15 @@ from Core.Data._roiContour import ROIContour
 from Core.event import Event
 
 
-class DVHBand(PatientData):
+class DVHBand():
     def __init__(self, roiMask: Union[ROIContour, ROIMask], dose: DoseImage = None):
 
         self.dataUpdatedEvent = Event()
 
-        self._roiName = ""
         self._roiName = roiMask.name
-        self._doseImage = dose
 
-        self._lineStyle = "solid"
         self._nominalDVH = None
-        self._dose = None
+        self._dose = dose
         self._volumeLow = None
         self._volumeHigh = None
         self._volumeAbsoluteLow = None
@@ -74,7 +68,7 @@ class DVHBand(PatientData):
     def Dmax(self) -> Sequence[float]:
         return self._Dmax
 
-    def compute_metrics(self):
+    def computeMetrics(self):
         # compute metrics
         self._D98 = self.computeBandDx(98)
         self._D95 = self.computeBandDx(95)
