@@ -35,9 +35,9 @@ class PlanOptimizer:
         weights = np.ones(self.plan.numberOfSpots, dtype=np.float32)
 
         if use_MKL == 1:
-            totalDose = sparse_dot_mkl.dot_product_mkl(self.beamletMatrix, weights)
+            totalDose = sparse_dot_mkl.dot_product_mkl(self.plan.planDesign.beamlets.toSparseMatrix(), weights)
         else:
-            totalDose = sp.csc_matrix.dot(self.beamletMatrix, weights)
+            totalDose = sp.csc_matrix.dot(self.plan.planDesign.beamlets.toSparseMatrix(), weights)
 
         maxDose = np.max(totalDose)
 
