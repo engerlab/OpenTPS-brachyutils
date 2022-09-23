@@ -12,9 +12,7 @@ from Core.event import Event
 
 
 class Image2D(PatientData):
-    def __init__(self, imageArray=None, name="2D Image", origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
-        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID)
-
+    def __init__(self, imageArray=None, name="2D Image", origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
         self.dataChangedSignal = Event()
 
         self._imageArray = imageArray
@@ -22,30 +20,22 @@ class Image2D(PatientData):
         self._spacing = np.array(spacing)
         self._angles = np.array(angles)
 
+        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID, patient=None)
+
     def __str__(self):
         gs = self.gridSize
-        s = 'Image2D ' + str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
+        s = 'Image2D '
+        if not self.imageArray is None:
+            s += str(self.imageArray.shape[0]) + 'x' +  str(self.imageArray.shape[1]) + '\n'
         return s
-
-    def __deepcopy__(self, memodict={}):
-        newImage = Image2D()
-
-        newImage._deepCopyProperties(self, memodict)
-
-        return newImage
-
-    def _deepCopyProperties(self, otherImage, memodict):
-        if not (otherImage.imageArray is None):
-            self._imageArray = np.array(otherImage.imageArray)
-        self._origin = np.array(otherImage.origin)
-        self._spacing = np.array(otherImage.spacing)
-        self._angles = np.array(otherImage.angles)
 
     # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D
     @classmethod
-    def fromImage2D(cls, image):
-        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing,
-                       angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+    def fromImage2D(cls, image, **kwargs):
+        dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+        dic.update(kwargs)
+        return cls(**dic)
 
     @property
     def imageArray(self) -> np.ndarray:

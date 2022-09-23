@@ -41,7 +41,7 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
     outImages = []
     for image in images:
         if not inPlace:
-            image = image.__class__.fromImage3D(image)
+            image = image.__class__.fromImage3D(image, patient=None)
 
         sitkImageProcessing.resize(image, newSpacing, newOrigin=newOrigin, newShape=np.round((newEnd - newOrigin)/newSpacing).astype(int),
                fillValue=fillValue)
@@ -59,7 +59,7 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     tform = linalg.inv(tform)
 
-    outImage = image.__class__.fromImage3D(image)
+    outImage = image.__class__.fromImage3D(image, patient=None)
 
     outputBox = _cropBoxAfterTransform(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
 
@@ -90,7 +90,7 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
 
     if not (cropROI is None):
         outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
-        cropROIBEV = ROIMask.fromImage3D(cropROI)
+        cropROIBEV = ROIMask.fromImage3D(cropROI, patient=None)
         sitkImageProcessing.applyTransform(cropROIBEV, tform, fillValue=0)
         cropROIBEV.imageArray = cropROIBEV.imageArray.astype(bool)
         roiBox = segmentation3D.getBoxAroundROI(cropROIBEV)
@@ -124,7 +124,7 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
 
-    outImage = image.__class__.fromImage3D(image)
+    outImage = image.__class__.fromImage3D(image, patient = None)
     sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage

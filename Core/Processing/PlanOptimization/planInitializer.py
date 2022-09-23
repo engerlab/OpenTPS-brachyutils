@@ -9,7 +9,7 @@ from Core.Data.Images._ctImage import CTImage
 from Core.Data.Images._roiMask import ROIMask
 from Core.Data.Plan._planIonLayer import PlanIonLayer
 from Core.Data.Plan._rtPlan import RTPlan
-from Core.Processing.rangeEnergy import energyToRange
+from Core.Processing.rangeEnergy import rangeToEnergy, energyToRange
 from Core.Processing.C_libraries.libRayTracing_wrapper import *
 
 
@@ -174,7 +174,7 @@ class PlanInitializer:
         self._beamInitializer.distalLayers = distalLayers
 
         from Core.Data.Images._rspImage import RSPImage
-        roiDilated = ROIMask.fromImage3D(self.targetMask)
+        roiDilated = ROIMask.fromImage3D(self.targetMask, patient=None)
         roiDilated.dilate(radius=targetMargin)
         self._beamInitializer.targetMask = roiDilated
 

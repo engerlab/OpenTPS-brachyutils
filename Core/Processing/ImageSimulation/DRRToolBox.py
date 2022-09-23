@@ -1,5 +1,6 @@
 import math
 import logging
+import matplotlib.pyplot as plt
 
 from numpy import ndarray
 import numpy
@@ -33,6 +34,11 @@ def forwardProjection(image, angle, axis='Z'):
         try:
             import tomopy       ## this way the import is done multiple times in the case of a DRRSet or DRRSequence creation, not sure it's the best idea
             drrImage = tomopy.project(img3DArrayOriented, angleInRad)[0]
+
+            # plt.figure()
+            # plt.imshow(drrImage)
+            # plt.show()
+
             # drrImage = tomopy.sim.project.add_gaussian(drrImage, mean=0, std=1)
             return drrImage
         except:

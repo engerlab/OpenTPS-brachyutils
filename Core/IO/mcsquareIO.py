@@ -90,7 +90,7 @@ def _read_sparse_header(file_path):
     return header
 
 
-def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] = []) -> csc_matrix:
+def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=None) -> csc_matrix:
     BeamletMatrix = []
 
     fid = open(Binary_file, 'rb')
@@ -103,7 +103,9 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi: Optional[ROIMask] =
     last_stacked_col = -1
     num_unstacked_col = 0
 
-    if roi:
+    if not(roi is None) or (roi is list and not(len(roi)==0)):
+        if isinstance(roi, ROIMask):
+            roi = [roi]
         logger.info("Beamlets are computed on {}".format([contour.name for contour in roi]))
         roiUnion = None
         for contour in roi:
@@ -447,8 +449,7 @@ def readBDL(path, materialsPath='default') -> BDL:
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
 
-                material = MCsquareMolecule()
-                material.load(int(value), materialsPath)
+                material = MCsquareMolecule.load(int(value), materialsPath)
 
                 bdl.rangeShifters[-1].material = material
 

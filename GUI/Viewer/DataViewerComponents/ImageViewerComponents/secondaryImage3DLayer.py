@@ -48,6 +48,7 @@ class SecondaryImage3DLayer(PrimaryImage3DLayer):
         if image is None:
             self.colorbarOn = False
         else:
+            self._image.lookupTableName = 'jet'
             self.colorbarOn = True # TODO: Get this from parent
 
         self._renderWindow.Render()
@@ -86,9 +87,7 @@ class SecondaryImage3DLayer(PrimaryImage3DLayer):
             return
 
     def _setLookupTable(self):
-        self._image.lookupTableName = 'jet'
-        self._colorMapper.SetLookupTable(self._image.lookupTable)
-        self._colorbarActor.SetLookupTable(self._image.lookupTable)
+        self._updateLookupTable(self._image.lookupTable)
 
     def _updateLookupTable(self, lt):
         self._colorMapper.SetLookupTable(lt)

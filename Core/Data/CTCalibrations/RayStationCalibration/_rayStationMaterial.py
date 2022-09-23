@@ -115,8 +115,7 @@ class RayStationMaterial:
         waterSP = None
         for materialNumber in materialNumbers:
             try:
-                element = MCsquareElement()
-                element.load(materialNumber, materialsPath)
+                element = MCsquareElement.load(materialNumber, materialsPath)
                 MCSquareElements.append(element)
                 MCSquareAWs.append(element.atomicWeight)
             except BaseException as err:
@@ -126,8 +125,7 @@ class RayStationMaterial:
                 continue
 
             try:
-                molecule = MCsquareMolecule()
-                molecule.load(materialNumber, materialsPath)
+                molecule = MCsquareMolecule.load(materialNumber, materialsPath)
                 if molecule.name == 'Water':
                     waterSP = molecule.sp
             except:

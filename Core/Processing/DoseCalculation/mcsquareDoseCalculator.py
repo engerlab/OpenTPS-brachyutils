@@ -5,7 +5,6 @@ import os
 import platform
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Optional, Sequence, Union, List, Any
 
@@ -51,6 +50,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._independentScoringGrid = False
         self._scoringVoxelSpacing = [2.0, 2.0, 2.0]
         self._simulationDirectory = ProgramSettings().simulationFolder
+        self._simulationFolderName = 'MCsquare_simulation'
+
         # Robustness settings
         self._robustnessStrategy = "Disabled"
         self._setupSystematicError = [2.5, 2.5, 2.5]  # mm
@@ -237,7 +238,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
         mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
 
-        doseImage = self._importDose()
+        doseImage = self._importDose(plan)
         return doseImage
 
     def _setPlanWeightsTo1(self, plan):
@@ -290,10 +291,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 raise Exception('MCsquare subprocess killed by caller.')
             self._subprocess = None
 
-    def _importDose(self) -> DoseImage:
+    def _importDose(self, plan:RTPlan = None) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
         dose.patient = self._ct.patient
-        dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000
+        if plan is None:
+            fraction = 1.
+        else:
+            fraction = plan.numberOfFractionsPlanned
+        dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
 
         return dose
 
@@ -307,10 +312,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
+        self._resampleROI()
         beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
         return beamletDose
 
     def _importBeamletsLET(self):
+        self._resampleROI()
         beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._roi)
         return beamletDose
 
@@ -326,9 +333,17 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def _mcsquareSimuDir(self):
-        folder = os.path.join(self._simulationDirectory, 'MCsquare_simulation')
+        folder = os.path.join(self._simulationDirectory, self._simulationFolderName)
         self._createFolderIfNotExists(folder)
         return folder
+
+    @property
+    def simulationFolderName(self):
+        return self._simulationFolderName
+
+    @simulationFolderName.setter
+    def simulationFolderName(self, name):
+        self._simulationFolderName = name
 
     @property
     def _workDir(self):
@@ -475,8 +490,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         if self._independentScoringGrid:
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = self._scoringVoxelSpacing  # in mm
-            config["Scoring_grid_size"] = [int(math.floor(i / j * k)) for i, j, k in
-                                           zip(self._ct.gridSize, config["Scoring_voxel_spacing"], self._ct.spacing)]
+            config["Scoring_grid_size"] = self.scoringGridSize
             config["Scoring_origin"] = [0, 0, 0]
             config["Scoring_origin"][0] = self._ct.origin[0] - config["Scoring_voxel_spacing"][
                 0] / 2.0
@@ -489,19 +503,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 1] / 2.0
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
-            roiResampled = []
-            for contour in self._roi:
-                if isinstance(contour, ROIContour):
-                    resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
-                                                          spacing=self._scoringVoxelSpacing)
-                elif isinstance(contour, ROIMask):
-                    resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
-                                                                gridSize=config["Scoring_grid_size"],
-                                                                spacing=self._scoringVoxelSpacing)
-                else:
-                    raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
-                roiResampled.append(resampledMask)
-            self._roi = roiResampled
 
         return config
 
@@ -531,6 +532,26 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         numParticles = int(batch * multiplier * self._nbPrimaries / 10.0)
         return numParticles, uncertainty
+
+    def _resampleROI(self):
+        if self._roi is None or not self._roi:
+            return
+
+        roiResampled = []
+        for contour in self._roi:
+            if isinstance(contour, ROIContour):
+                resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=self.scoringGridSize,
+                                                      spacing=self.scoringVoxelSpacing)
+            elif isinstance(contour, ROIMask):
+                resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
+                                                            gridSize=self.scoringGridSize,
+                                                            spacing=self.scoringVoxelSpacing)
+            else:
+                raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
+            resampledMask.patient = None
+            roiResampled.append(resampledMask)
+        self._roi = roiResampled
+        self._roi[0].patient = self._ct.patient
 
     def _createFolderIfNotExists(self, folder):
         folder = Path(folder)

@@ -1,3 +1,4 @@
+import copy
 import json
 import logging.config
 import os
@@ -7,6 +8,8 @@ sys.path.append('..')
 
 import numpy as np
 from matplotlib import pyplot as plt
+
+import opentps
 from Core.Data.Images import CTImage
 from Core.Data.Images import ROIMask
 from Core.Data.Plan import ObjectivesList
@@ -24,13 +27,14 @@ from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 
+
 with open('../config/logger/logging_config.json',
           'r') as log_fid:
     config_dict = json.load(log_fid)
 logging.config.dictConfig(config_dict)
 
 # Generic example: box of water with squared target
-patientList = PatientList()
+patientList = opentps.patientList
 
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
@@ -58,12 +62,13 @@ roi.patient = patient
 roi.name = 'TV'
 roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
-data[100:120, 100:120, 100:120] = True
+data[80:100, 100:120, 120:140] = True
 roi.imageArray = data
 
-examplePath = "/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/testData"
+examplePath = "../testData"
 
 output_path = os.path.join(examplePath, "fakeCT")
+
 
 # Design plan
 beamNames = ["Beam1"]
@@ -71,10 +76,6 @@ gantryAngles = [0.]
 couchAngles = [0.]
 
 # method 1 : create or load existing plan (no workflow)
-
-# Create output folder
-if not os.path.isdir(output_path):
-    os.mkdir(output_path)
 
 # Configure MCsquare
 mc2 = MCsquareDoseCalculator()
@@ -92,7 +93,6 @@ plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped.tps")
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
     print('Plan loaded')
-
 else:
     planInit = PlanDesign()
     planInit.ct = ct

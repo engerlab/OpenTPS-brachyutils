@@ -49,7 +49,7 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False):
 
 # ---------------------------------------------------------------------------------------------------
 def loadDataStructure(filePath):
-    if filePath.endswith('.p'):
+    if filePath.endswith('.p') or filePath.endswith('.pkl') or filePath.endswith('.pickle'):
         # option using basic pickle function
         # self.Patients.list.append(pickle.load(open(dictFilePath, "rb")).list[0])
 
@@ -60,7 +60,11 @@ def loadDataStructure(filePath):
         with open(filePath, 'rb') as f_in:
             for _ in range(0, input_size, max_bytes):
                 bytes_in += f_in.read(max_bytes)
-        data = pickle.loads(bytes_in)
+        try:
+            data = pickle.loads(bytes_in)
+        except:
+            from Core.Utils import pickel2 as pickle2
+            data = pickle2.loads(bytes_in)
 
     elif filePath.endswith('.pbz2'):
         data = bz2.BZ2File(filePath, 'rb')
@@ -79,6 +83,7 @@ def loadSerializedObject(filePath):
     to do in the same way as for saving (object - structure)
     """
     pass
+
 
 
 def saveRTPlan(plan, file_path):

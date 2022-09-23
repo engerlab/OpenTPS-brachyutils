@@ -3,6 +3,8 @@ __all__ = ['MCsquareCTCalibration']
 
 
 import os
+from typing import Optional
+
 import numpy as np
 from scipy.interpolate import interpolate
 
@@ -34,6 +36,12 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
 
         return newObj
 
+    def addEntry(self, hu:float, density:Optional[float], material:Optional[MCsquareMolecule]):
+        if not (density is None):
+            PiecewiseHU2Density.addEntry(self, hu, density)
+        if not(material is None):
+            MCsquareHU2Material.addEntry(self, hu, material)
+
     def convertHU2MassDensity(self, hu):
         return PiecewiseHU2Density.convertHU2MassDensity(self, hu)
 
@@ -42,8 +50,7 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         return densities*self.convertHU2SP(hu, energy=energy)/self.waterSP(energy=energy)
 
     def waterSP(self, energy:float=100.) -> float:
-        material = MCsquareMolecule()
-        material.load(17, 'default') # 17 is the ID of Water. This is hard-coded in MCsquare
+        material = MCsquareMolecule.load(17, 'default') # 17 is the ID of Water. This is hard-coded in MCsquare
         return material.stoppingPower(energy)
 
     def convertMassDensity2HU(self, density):
