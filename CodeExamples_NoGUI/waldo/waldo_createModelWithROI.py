@@ -29,11 +29,26 @@ from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data._patient import Patient
 
 # chose the patient folder, which will be used as the patient name
+## FDGorFAZA_study
 organ = 'lung'
-study = 'CPAP_study/'
+study = 'FDGorFAZA_study/'
 patientName = 'Patient_8'
 patientComplement = '/2/FDG2'
 basePath = '/data/public/'
+
+# ## CPAP_study
+# organ = 'lung'
+# study = 'CPAP_study/'
+# patientName = 'Patient_8'
+# patientComplement = '/1/NO_CPAP'
+# basePath = '/data/public/'
+
+# ## liver
+# organ = 'lung'
+# study = 'CPAP_study/'
+# patientName = 'Patient_8'
+# patientComplement = ''
+# basePath = '/data/public/'
 
 
 # chose the 4DCT data folder
