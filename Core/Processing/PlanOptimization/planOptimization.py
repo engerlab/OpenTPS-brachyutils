@@ -1,4 +1,5 @@
 import logging
+import math
 
 import numpy as np
 import scipy.sparse as sp
@@ -29,24 +30,25 @@ class PlanOptimizer:
         self.opti_params = kwargs
         self.functions = []
         self.xSquared = True
-        self.returnWorstCase = False
 
     def initializeWeights(self):
         # Total Dose calculation
         totalDose = self.plan.planDesign.beamlets.toDoseImage().imageArray
-
         maxDose = np.max(totalDose)
         try:
             x0 = self.opti_params['init_weights']
         except KeyError:
-            x0 = (self.plan.planDesign.objectives.targetPrescription / maxDose) * np.ones(self.plan.numberOfSpots,
-                                                                               dtype=np.float32)
+            normFactor = self.plan.planDesign.objectives.targetPrescription / maxDose
+            if self.xSquared:
+                normFactor = math.sqrt(normFactor)
+            x0 = normFactor * np.ones(self.plan.numberOfSpots, dtype=np.float32)
+
         return x0
 
     def initializeFidObjectiveFunction(self):
         # crop on ROI
-        roiObjectives = np.zeros(self.plan.planDesign.ct.numberOfVoxels).astype(bool)
-        roiRobustObjectives = np.zeros(self.plan.planDesign.ct.numberOfVoxels).astype(bool)
+        roiObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
+        roiRobustObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
         robust = False
         for objective in self.plan.planDesign.objectives.fidObjList:
             if objective.robust:
@@ -79,8 +81,8 @@ class PlanOptimizer:
                         sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
                         self.plan.planDesign.scenarios[s].toSparseMatrix())
                 self.plan.planDesign.scenarios[s].setUnitaryBeamlets(beamletMatrix)
-        #
-        objectiveFunction = DoseFidelity(self.plan, self.xSquared, self.returnWorstCase)
+
+        objectiveFunction = DoseFidelity(self.plan, self.xSquared)
         self.functions.append(objectiveFunction)
 
     def optimize(self):
@@ -110,6 +112,7 @@ class PlanOptimizer:
 
         # total dose
         logger.info("Total dose calculation ...")
+        # Fonctionne pas car self.plan = copie du plan
         if self.xSquared:
             self.plan.spotMUs = np.square(weights).astype(np.float32)
             self.plan.planDesign.beamlets.beamletWeights = np.square(weights).astype(np.float32)
