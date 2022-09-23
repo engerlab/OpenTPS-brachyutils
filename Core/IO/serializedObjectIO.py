@@ -6,6 +6,13 @@ import _pickle as cPickle
 import pickle
 import os
 from Core.Data.Plan._rtPlan import RTPlan
+from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
+from Core.Data.DynamicData.dynamic2DSequence import Dynamic2DSequence
+from Core.Data.Images._ctImage import CTImage
+from Core.Data.Images._projections import DRR
+from Core.Data.Images._vectorField3D import VectorField3D
+from Core.Data._patient import Patient
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -25,10 +32,14 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
 
 
 # ---------------------------------------------------------------------------------------------------
-def saveSerializedObjects(dataList, savingPath, compressedBool=False):
+def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionarized=True):
 
     if type(dataList) != list:
         dataList = [dataList]
+
+    if dictionarized:
+        for elementIdx in range(len(dataList)):
+            dataList[elementIdx] = dictionarizeData(dataList[elementIdx])
 
     if compressedBool:
         print('Compress and save serialized data structure in drive')
@@ -50,6 +61,7 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False):
     print('Serialized data structure saved in drive:', savingPath + ".p")
 
 
+
 # ---------------------------------------------------------------------------------------------------
 def loadDataStructure(filePath):
 
@@ -64,17 +76,19 @@ def loadDataStructure(filePath):
         with open(filePath, 'rb') as f_in:
             for _ in range(0, input_size, max_bytes):
                 bytes_in += f_in.read(max_bytes)
-        data = pickle.loads(bytes_in)
+        dataList = pickle.loads(bytes_in)
 
     elif filePath.endswith('.pbz2'):
-        data = bz2.BZ2File(filePath, 'rb')
-        data = cPickle.load(data)
+        dataList = bz2.BZ2File(filePath, 'rb')
+        dataList = cPickle.load(dataList)
 
-    print('Serialized data list of', len(data), 'items loaded')
-    for itemIndex, item in enumerate(data):
+    print('Serialized data list of', len(dataList), 'items loaded')
+    for itemIndex, item in enumerate(dataList):
+        if type(item) == dict:
+            dataList[itemIndex] = unDictionarize(dataList[itemIndex])
         print(itemIndex + 1, type(item))
 
-    return data
+    return dataList
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -117,4 +131,89 @@ def loadBeamlets(file_path):
     return beamletDose
 
 
+def dictionarizeData(data):
+
+    print('Dictionarize Data -', data.getTypeAsString())
+    newDict = {}
+
+    if isinstance(data, Patient):
+
+        patient = dictionarizeData(data)
+        print(patient.keys())
+
+    elif isinstance(data, Dynamic3DModel):
+
+        newDict = data.__dict__
+
+        midPDict = dictionarizeData(data.midp)
+        newDict['midp'] = midPDict
+
+        defDictList = []
+        for field in data.deformationList:
+            defDictList.append(dictionarizeData(field))
+
+        newDict['deformationList'] = defDictList
+
+        newDict['dataType'] = data.getTypeAsString()
+
+    elif isinstance(data, Dynamic3DSequence):
+
+        newDict = data.__dict__
+        dynImagesDictList = []
+        for img in data.dyn3DImageList:
+            dynImagesDictList.append(dictionarizeData(img))
+
+        newDict['dyn3DImageList'] = dynImagesDictList
+        newDict['dataType'] = data.getTypeAsString()
+
+    elif isinstance(data, CTImage):
+
+        newDict = data.__dict__
+        newDict['dataType'] = data.getTypeAsString()
+
+    elif isinstance(data, VectorField3D):
+
+        newDict = data.__dict__
+        newDict['dataType'] = data.getTypeAsString()
+
+    else:
+        newDict = data.__dict__
+        newDict['dataType'] = data.getTypeAsString()
+
+    return newDict
+
+def unDictionarize(dataDict):
+
+    print('Read Data under dict Format -', dataDict['dataType'])
+    data = None
+
+    print(dataDict.keys())
+
+    if dataDict['dataType'] == 'Dynamic3DModel':
+        data = Dynamic3DModel()
+        data.__dict__.update(dataDict)
+        data.midp = unDictionarize(dataDict['midp'])
+
+        for field in dataDict['deformationList']:
+            data.deformationList.append(unDictionarize(field))
+
+    elif dataDict['dataType'] == 'Dynamic3DSequence':
+        data = Dynamic3DSequence()
+        data.__dict__.update(dataDict)
+
+        for img in dataDict['dyn3DImageList']:
+            data.dyn3DImageList.append(unDictionarize(img))
+
+    elif dataDict['dataType'] == 'CTImage':
+        data = CTImage()
+        data.__dict__.update(dataDict)
+
+    elif dataDict['dataType'] == 'VectorField3D':
+        data = VectorField3D()
+        data.__dict__.update(dataDict)
+
+    else:
+        NotImplementedError
+
+    return data
 

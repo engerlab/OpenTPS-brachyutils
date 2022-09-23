@@ -41,7 +41,7 @@ if __name__ == '__main__':
     print(len(dynSeq.dyn3DImageList), 'images in the dynamic sequence')
 
     # reduce resolution to speed up calculations
-    dynSeq.resample(np.array([5,5,5]), None, None)
+    dynSeq.resample(np.array([5, 5, 5]), None, None)
 
     ## create Dynamic3DModel
     model3D = Dynamic3DModel()
