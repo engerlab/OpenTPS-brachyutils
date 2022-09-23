@@ -22,7 +22,7 @@ from Core.Data.MCsquare._mcsquareConfig import MCsquareConfig
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data._roiContour import ROIContour
 from Core.Data._sparseBeamlets import SparseBeamlets
-from Core.Data.robustness import Robustness
+from Core.Processing.PlanEvaluation._robustnessEvaluation import Robustness
 from Core.IO.serializedObjectIO import saveBeamlets
 from Core.Processing.DoseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from Core.Processing.DoseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
@@ -66,6 +66,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         self.overwriteOutsideROI = None  # Previously cropCTContour but this name was confusing
 
+        self._sparseLETFilePath = os.path.join(self._workDir, "Sparse_Dose.txt")
+        self._sparseDoseFilePath = os.path.join(self._workDir, "Sparse_Dose.txt")
+        self._doseFilePath = os .path.join(self._workDir, "Dose.mhd")
+
     @property
     def ctCalibration(self) -> Optional[AbstractCTCalibration]:
         return self._ctCalibration
@@ -89,22 +93,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     @nbPrimaries.setter
     def nbPrimaries(self, primaries: int):
         self._nbPrimaries = primaries
-
-    @property
-    def independentScoringGrid(self) -> bool:
-        return self._independentScoringGrid
-
-    @independentScoringGrid.setter
-    def independentScoringGrid(self, independent: bool):
-        self._independentScoringGrid = independent
-
-    @property
-    def scoringVoxelSpacing(self) -> Sequence[float]:
-        return self._scoringVoxelSpacing
-
-    @scoringVoxelSpacing.setter
-    def scoringVoxelSpacing(self, spacing: Sequence[float]):
-        self._scoringVoxelSpacing = spacing
 
     @property
     def simulationDirectory(self) -> str:
@@ -140,7 +128,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]):
         logger.info("Prepare MCsquare Robust Dose calculation")
-        scenarios = Robustness(plan)
+        scenarios = Robustness()
         if self._robustnessStrategy == "DoseSpace":
             scenarios.selectionStrategy = "Dosimetric"
         else:
@@ -150,7 +138,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         scenarios.rangeSystematicError = self._rangeSystematicError
 
         self._ct = ct
-        self._plan = self._setPlanWeightsTo1(plan)
+        self._plan = plan
         self._roi = roi
         # Generate MCsquare configuration file
         self._config = self._doseComputationConfig
@@ -389,26 +377,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return folder
 
     @property
-    def _doseFilePath(self):
-        return os.path.join(self._workDir, "Dose.mhd")
-
-    @_doseFilePath.setter
-    def _doseFilePath(self, value):
-        self.__doseFilePath = value
-
-    @property
-    def _sparseDoseFilePath(self):
-        return os.path.join(self._workDir, "Sparse_Dose.txt")
-
-    @property
-    def _sparseLETFilePath(self):
-        return os.path.join(self._workDir, "Sparse_LET.txt")
-
-    @_sparseDoseFilePath.setter
-    def _sparseDoseFilePath(self, value):
-        self.__sparseDoseFilePath = value
-
-    @property
     def _doseComputationConfig(self) -> MCsquareConfig:
         config = self._generalMCsquareConfig
 
@@ -525,11 +493,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             for contour in self._roi:
                 if isinstance(contour, ROIContour):
                     resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
-                                                          spacing=self.scoringVoxelSpacing)
+                                                          spacing=self._scoringVoxelSpacing)
                 elif isinstance(contour, ROIMask):
                     resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
                                                                 gridSize=config["Scoring_grid_size"],
-                                                                spacing=self.scoringVoxelSpacing)
+                                                                spacing=self._scoringVoxelSpacing)
                 else:
                     raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
                 roiResampled.append(resampledMask)

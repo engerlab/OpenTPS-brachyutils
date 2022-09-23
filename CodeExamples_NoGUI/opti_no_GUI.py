@@ -1,6 +1,9 @@
 import json
 import logging.config
 import os
+import sys
+
+sys.path.append('..')
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -21,7 +24,7 @@ from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 
-with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps/config/logger/logging_config.json',
+with open('../config/logger/logging_config.json',
           'r') as log_fid:
     config_dict = json.load(log_fid)
 logging.config.dictConfig(config_dict)
@@ -79,20 +82,17 @@ mc2.beamModel = bdl
 mc2.nbPrimaries = 5e4
 mc2.ctCalibration = ctCalibration
 
-#mc2.independentScoringGrid = True
+#mc2._independentScoringGrid = True
 #scoringSpacing = [2, 2, 2]
-#mc2.scoringVoxelSpacing = scoringSpacing
+#mc2._scoringVoxelSpacing = scoringSpacing
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "Plan_WaterPhantom_.tps")
+plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped.tps")
 
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
     print('Plan loaded')
-    # not cropped
-    beamletPath = os.path.join(output_path,
-                               "BeamletMatrix_1.2.826.0.1.3680043.8.498.11493239558261298828819948370674664388.1.blm")
-    plan.planDesign.beamlets = loadBeamlets(beamletPath)
+
 else:
     planInit = PlanDesign()
     planInit.ct = ct
@@ -107,17 +107,15 @@ else:
 
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
-    #saveRTPlan(plan, plan_file)
 
-    #beamlets = mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
-    mc2.computeBeamlets(ct, plan, output_path)
-    outputBeamletFile = os.path.join(output_path, "BeamletMatrix_Cropped" + plan.seriesInstanceUID + ".blm")
-    #saveBeamlets(beamlets, outputBeamletFile)
+    mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
+    #mc2.computeBeamlets(ct, plan, output_path)
+    #saveRTPlan(plan, plan_file)
 
 plan.planDesign.objectives = ObjectivesList()
 plan.planDesign.objectives.setTarget(roi.name, 20.0)
 plan.planDesign.objectives.setScoringParameters(ct)
-#scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
+#scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip([150,150,150], scoringSpacing, [1,1,1])]
 #plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
 plan.planDesign.objectives.fidObjList = []
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
@@ -127,8 +125,12 @@ solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
 # Optimize treatment plan
 w, doseImage, ps = solver.optimize()
 
+# Save plan with updated spot weights
+plan.spotMUs = np.square(w).astype(np.float32)
+saveRTPlan(plan, plan_file)
+
 # MCsquare simulation
-#mc2.nbPrimaries = 1e6
+#mc2.nbPrimaries = 1e7
 #doseImage = mc2.computeDose(ct, plan)
 
 # Compute DVH
