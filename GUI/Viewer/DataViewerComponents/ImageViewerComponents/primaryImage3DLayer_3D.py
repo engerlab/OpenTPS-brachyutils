@@ -1,11 +1,10 @@
-from typing import Optional, Sequence
+from typing import Optional
 
 import vtkmodules.vtkRenderingOpenGL2 #This is necessary to avoid a seg fault
 import vtkmodules.vtkRenderingFreeType  #This is necessary to avoid a seg fault
 from vtkmodules.vtkCommonCore import vtkCommand
 import vtkmodules.vtkRenderingCore as vtkRenderingCore
-from vtkmodules import vtkRenderingVolume
-from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
+from vtkmodules.vtkRenderingVolumeOpenGL2 import vtkSmartVolumeMapper
 
 from Core.event import Event
 from GUI.Viewer.DataForViewer.genericImageForViewer import GenericImageForViewer
@@ -21,12 +20,11 @@ class PrimaryImage3DLayer_3D:
         self._imageToBeSet = None
         self._iStyle = iStyle
         self._mainActor = vtkRenderingCore.vtkVolume()
-        self._mainMapper = vtkRenderingVolume.vtkFixedPointVolumeRayCastMapper()
-        self._volumeColor = vtkRenderingCore.vtkColorTransferFunction()
-        self._volumeScalarOpacity = vtkPiecewiseFunction()
-        self._volumeGradientOpacity = vtkPiecewiseFunction()
+        self._mainMapper = vtkSmartVolumeMapper()
         self._renderer = renderer
         self._renderWindow = renderWindow
+
+        self._mainActor.SetMapper(self._mainMapper)
 
         self._volumeColor, self._volumeScalarOpacity, self._volumeGradientOpacity = ct3DLT()
 
@@ -68,11 +66,10 @@ class PrimaryImage3DLayer_3D:
 
         if not (self._image is None):
             self._mainMapper.SetInputConnection(self._image.vtkOutputPort)
-            self._mainActor.SetMapper(self._mainMapper)
-            self._mainActor.SetProperty(self._volumeProperty)
-            self._mainActor.Update()
 
             self._renderer.AddActor(self._mainActor)
+
+            self._mainActor.SetProperty(self._volumeProperty)
 
             self._connectAll()
 

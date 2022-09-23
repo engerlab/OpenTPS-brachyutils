@@ -76,7 +76,12 @@ def loadDataStructure(filePath):
         with open(filePath, 'rb') as f_in:
             for _ in range(0, input_size, max_bytes):
                 bytes_in += f_in.read(max_bytes)
-        dataList = pickle.loads(bytes_in)
+
+        try:
+            dataList = pickle.loads(bytes_in)
+        except:
+            from Core.Utils import pickel2 as pickle2
+            dataList = pickle2.loads(bytes_in)
 
     elif filePath.endswith('.pbz2'):
         dataList = bz2.BZ2File(filePath, 'rb')

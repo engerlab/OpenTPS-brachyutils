@@ -43,6 +43,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._independentScoringGrid = False
         self._scoringVoxelSpacing = [2.0, 2.0, 2.0]
         self._simulationDirectory = ProgramSettings().simulationFolder
+        self._simulationFolderName = 'MCsquare_simulation'
 
         self._subprocess = None
         self._subprocessKilled = True
@@ -258,9 +259,17 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def _mcsquareSimuDir(self):
-        folder = os.path.join(self._simulationDirectory, 'MCsquare_simulation')
+        folder = os.path.join(self._simulationDirectory, self._simulationFolderName)
         self._createFolderIfNotExists(folder)
         return folder
+
+    @property
+    def simulationFolderName(self):
+        return self._simulationFolderName
+
+    @simulationFolderName.setter
+    def simulationFolderName(self, name):
+        self._simulationFolderName = name
 
     @property
     def _outputDir(self):
