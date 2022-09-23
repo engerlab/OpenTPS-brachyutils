@@ -35,6 +35,8 @@ def rangeToEnergy(r80: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
             3.464048 + 0.561372013 * log(r80) - 0.004900892 * log(r80) * log(r80) + 0.001684756748 * log(r80) * log(
                 r80) * log(r80))
 
+def rangeMMToEnergy(r80: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    return rangeToEnergy(r80/10.)
 
 def energyToRange(energy: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
     '''This function converts a proton beam energy (in MeV) to a water equivalent range (defined as r80,
@@ -62,3 +64,6 @@ def energyToRange(energy: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
             energy) * log(energy))
 
     return r80
+
+def energyToRangeMM(energy: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
+    return energyToRange(energy)*10.

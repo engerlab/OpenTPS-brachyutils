@@ -50,10 +50,11 @@ class ROIPanel(QWidget):
 
     self._setFilteredROIs()
 
-    self._patient.rtStructAddedSignal.connect(self._setFilteredROIs)
-    self._patient.rtStructRemovedSignal.connect(self._setFilteredROIs)
-    self._patient.roiMaskAddedSignal.connect(self._setFilteredROIs)
-    self._patient.roiMaskRemovedSignal.connect(self._setFilteredROIs)
+    if not (self._patient is None):
+      self._patient.rtStructAddedSignal.connect(self._setFilteredROIs)
+      self._patient.rtStructRemovedSignal.connect(self._setFilteredROIs)
+      self._patient.roiMaskAddedSignal.connect(self._setFilteredROIs)
+      self._patient.roiMaskRemovedSignal.connect(self._setFilteredROIs)
 
   def _resetList(self):
     for widget in self.items:

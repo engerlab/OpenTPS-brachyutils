@@ -60,10 +60,24 @@ class ViewController():
 
         self.logger = logging.getLogger(__name__)
 
-        self._patientList.patientAddedSignal.connect(self.appendActivePatient)
-        self._patientList.patientRemovedSignal.connect(self.appendActivePatient)
+        self._patientList.patientAddedSignal.connect(self._handleNewPatient)
+        self._patientList.patientRemovedSignal.connect(self._handleRemovedPatient)
 
         self.shownDataUIDsList = [] #this is to keep track of which data is currently shown, but not used yet
+
+    def _handleNewPatient(self, patient):
+        self._activePatients.append(patient)
+        self.patientAddedSignal.emit(self._activePatients[-1])
+
+        if self.currentPatient is None:
+            self.currentPatient = patient
+
+    def _handleRemovedPatient(self, patient):
+        self._activePatients.remove(patient)
+        self.patientRemovedSignal.emit(patient)
+
+        if self.currentPatient == patient:
+            self.currentPatient = None
 
     @property
     def displayLayoutType(self):
@@ -96,15 +110,6 @@ class ViewController():
     @property
     def activePatients(self):
         return [patient for patient in self._activePatients]
-
-    # if self.multipleActivePatientsEnabled
-    def appendActivePatient(self, patient):
-        self._activePatients.append(patient)
-        self.patientAddedSignal.emit(self._activePatients[-1])
-
-    def removeActivePatient(self, patient):
-        self._activePatients.remove(patient)
-        self.patientRemovedSignal.emit(patient)
 
     @property
     def crossHairEnabled(self):

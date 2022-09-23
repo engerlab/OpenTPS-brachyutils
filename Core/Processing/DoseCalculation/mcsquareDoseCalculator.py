@@ -4,7 +4,6 @@ import os
 import platform
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Optional, Sequence, Union
 
@@ -44,6 +43,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._independentScoringGrid = False
         self._scoringVoxelSpacing = [2.0, 2.0, 2.0]
         self._simulationDirectory = ProgramSettings().simulationFolder
+        self._simulationFolderName = 'MCsquare_simulation'
 
         self._subprocess = None
         self._subprocessKilled = True
@@ -84,11 +84,22 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def scoringVoxelSpacing(self) -> Sequence[float]:
-        return self._scoringVoxelSpacing
+        if self.independentScoringGrid:
+            return self._scoringVoxelSpacing
+        else:
+            return self._ct.spacing
 
     @scoringVoxelSpacing.setter
     def scoringVoxelSpacing(self, spacing: Sequence[float]):
         self._scoringVoxelSpacing = spacing
+
+    @property
+    def scoringGridSize(self):
+        if self.independentScoringGrid:
+            return [int(math.floor(i / j * k)) for i, j, k in
+                    zip(self._ct.gridSize, self.scoringVoxelSpacing, self._ct.spacing)]
+        else:
+            return self._ct.gridSize
 
     @property
     def simulationDirectory(self) -> str:
@@ -113,12 +124,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._outputDir)
         self._startMCsquare()
 
-        doseImage = self._importDose()
+        doseImage = self._importDose(plan)
 
         return doseImage
 
     def computeBeamlets(self, ct: CTImage, plan: RTPlan,
-                        roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
+                        roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> SparseBeamlets:
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
@@ -155,7 +166,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
         mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
 
-        doseImage = self._importDose()
+        doseImage = self._importDose(plan)
         return doseImage
 
     def _setPlanWeightsTo1(self, plan):
@@ -211,10 +222,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             # else:
             #     os.system("cd " + self._mcsquareSimuDir + " && MCsquare_opti_win.bat")
 
-    def _importDose(self) -> DoseImage:
+    def _importDose(self, plan:RTPlan = None) -> DoseImage:
         dose = mcsquareIO.readDose(self._doseFilePath)
         dose.patient = self._ct.patient
-        dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000
+        if plan is None:
+            fraction = 1.
+        else:
+            fraction = plan.numberOfFractionsPlanned
+        dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
 
         return dose
 
@@ -228,6 +243,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
+        self._resampleROI()
         beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
         return beamletDose
 
@@ -243,9 +259,17 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def _mcsquareSimuDir(self):
-        folder = os.path.join(self._simulationDirectory, 'MCsquare_simulation')
+        folder = os.path.join(self._simulationDirectory, self._simulationFolderName)
         self._createFolderIfNotExists(folder)
         return folder
+
+    @property
+    def simulationFolderName(self):
+        return self._simulationFolderName
+
+    @simulationFolderName.setter
+    def simulationFolderName(self, name):
+        self._simulationFolderName = name
 
     @property
     def _outputDir(self):
@@ -349,8 +373,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         if self._independentScoringGrid:
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = self._scoringVoxelSpacing  # in mm
-            config["Scoring_grid_size"] = [int(math.floor(i / j * k)) for i, j, k in
-                                           zip(self._ct.gridSize, config["Scoring_voxel_spacing"], self._ct.spacing)]
+            config["Scoring_grid_size"] = self.scoringGridSize
             config["Scoring_origin"] = [0, 0, 0]
             config["Scoring_origin"][0] = self._ct.origin[0] - config["Scoring_voxel_spacing"][
                 0] / 2.0
@@ -363,22 +386,29 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 1] / 2.0
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
             config["Scoring_voxel_spacing"][:] = [x / 10.0 for x in config["Scoring_voxel_spacing"]]  # in cm
-            roiResampled = []
-            for contour in self._roi:
-                if isinstance(contour, ROIContour):
-                    resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=config["Scoring_grid_size"],
-                                                          spacing=self.scoringVoxelSpacing)
-                elif isinstance(contour, ROIMask):
-                    resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
-                                                                gridSize=config["Scoring_grid_size"],
-                                                                spacing=self.scoringVoxelSpacing)
-                else:
-                    raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
-                roiResampled.append(resampledMask)
-            self._roi = roiResampled
         # config["Stat_uncertainty"] = 2.
 
         return config
+
+    def _resampleROI(self):
+        if self._roi is None or not self._roi:
+            return
+
+        roiResampled = []
+        for contour in self._roi:
+            if isinstance(contour, ROIContour):
+                resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=self.scoringGridSize,
+                                                      spacing=self.scoringVoxelSpacing)
+            elif isinstance(contour, ROIMask):
+                resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
+                                                            gridSize=self.scoringGridSize,
+                                                            spacing=self.scoringVoxelSpacing)
+            else:
+                raise Exception(contour.__class__.__name__ + ' is not a supported class for roi')
+            resampledMask.patient = None
+            roiResampled.append(resampledMask)
+        self._roi = roiResampled
+        self._roi[0].patient = self._ct.patient
 
     def _createFolderIfNotExists(self, folder):
         folder = Path(folder)

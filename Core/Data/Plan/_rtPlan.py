@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class RTPlan(PatientData):
-    def __init__(self, name="RTPlan"):
-        super().__init__(name=name)
-
+    def __init__(self, name="RTPlan", patient=None):
         self.deliveredProtons = None
         self._beams = []
         self._layers = []
@@ -37,6 +35,8 @@ class RTPlan(PatientData):
         self.originalDicomDataset = []
 
         self.planDesign = None
+
+        super().__init__(name=name, patient=patient)
 
     def __getitem__(self, beamNb) -> PlanIonBeam:
         return self._beams[beamNb]
