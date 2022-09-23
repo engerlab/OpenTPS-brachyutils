@@ -15,7 +15,7 @@ from Core.event import Event
 class PatientData:
     _staticVars = {"deepCopyingExceptNdArray": False}
 
-    def __init__(self, name='', seriesInstanceUID=''):
+    def __init__(self, name='', seriesInstanceUID='', patient=None):
 
         self.nameChangedSignal = Event(str)
         # self.setEvents()
@@ -27,6 +27,8 @@ class PatientData:
             self.seriesInstanceUID = seriesInstanceUID
         else:
             self.seriesInstanceUID = pydicom.uid.generate_uid()
+
+        self.setPatient(patient)
 
     def __deepcopy__(self, memodict={}):
         # We don't copy patient

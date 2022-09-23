@@ -31,9 +31,15 @@ class DataViewerToolbar(QToolBar):
         self._buttonViewer.triggered.connect(self._handleButtonViewer)
         self._buttonViewer.setCheckable(True)
 
+        self._buttonViewer_3D = QAction(QIcon(iconPath + "cube.png"), "3D Image viewer", self)
+        self._buttonViewer_3D.setStatusTip("3D Image viewer")
+        self._buttonViewer_3D.triggered.connect(self._handleButtonViewer_3D)
+        self._buttonViewer_3D.setCheckable(True)
+
         self.addAction(self._buttonViewer)
         self.addAction(self._buttonProfile)
         self.addAction(self._buttonDVH)
+        self.addAction(self._buttonViewer_3D)
 
         self._menuButton = QPushButton("Tools", self)
         self._menu = QMenu(self._menuButton)
@@ -60,6 +66,10 @@ class DataViewerToolbar(QToolBar):
         if pressed:
             self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D
 
+    def _handleButtonViewer_3D(self, pressed):
+        if pressed:
+            self._dataViewer.displayType = self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D_3D
+
     def _handleDisplayTypeChange(self, displayType):
         self._uncheckAllDisplayButton()
 
@@ -69,8 +79,11 @@ class DataViewerToolbar(QToolBar):
             self._buttonProfile.setChecked(True)
         elif displayType == self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D:
             self._buttonViewer.setChecked(True)
+        elif displayType == self._dataViewer.DisplayTypes.DISPLAY_IMAGE3D_3D:
+            self._buttonViewer_3D.setChecked(True)
 
     def _uncheckAllDisplayButton(self):
         self._buttonDVH.setChecked(False)
         self._buttonProfile.setChecked(False)
         self._buttonViewer.setChecked(False)
+        self._buttonViewer_3D.setChecked(False)

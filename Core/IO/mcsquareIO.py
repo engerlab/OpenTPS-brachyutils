@@ -452,8 +452,7 @@ def readBDL(path, materialsPath='default') -> BDL:
                 line = line.split('=')
                 value = line[1].replace('\r', '').replace('\n', '').replace('\t', '').replace(' ', '')
 
-                material = MCsquareMolecule()
-                material.load(int(value), materialsPath)
+                material = MCsquareMolecule.load(int(value), materialsPath)
 
                 bdl.rangeShifters[-1].material = material
 

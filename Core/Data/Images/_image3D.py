@@ -20,9 +20,7 @@ def euclidean_dist(v1, v2):
 
 
 class Image3D(PatientData):
-    def __init__(self, imageArray=None, name="3D Image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=""):
-        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID)
-
+    def __init__(self, imageArray=None, name="3D Image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
         self.dataChangedSignal = Event()
 
         self._imageArray = imageArray
@@ -33,6 +31,9 @@ class Image3D(PatientData):
         #     UID = generate_uid()
         # self.UID = UID
 
+        super().__init__(name=name, seriesInstanceUID=seriesInstanceUID,
+                         patient=patient)  # We want to trigger super signal only when the object is fully initialized
+
     def __str__(self):
         gs = self.gridSize
         s = 'Image3D ' + str(gs[0]) + ' x ' +  str(gs[1]) +  ' x ' +  str(gs[2]) + '\n'
@@ -40,8 +41,11 @@ class Image3D(PatientData):
 
     # This is different from deepcopy because image can be a subclass of image3D but the method always returns an Image3D
     @classmethod
-    def fromImage3D(cls, image):
-        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+    def fromImage3D(cls, image, **kwargs):
+        dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+        dic.update(kwargs)
+        return cls(**dic)
 
     def copy(self):
         return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)

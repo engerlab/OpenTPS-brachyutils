@@ -34,8 +34,11 @@ class MCsquareElement(MCsquareMaterial):
 
         return s
 
-    def load(self, materialNb, materialsPath='default'):
+    @classmethod
+    def load(cls, materialNb, materialsPath='default'):
         elementPath = MCsquareMaterial.getFolderFromMaterialNumber(materialNb, materialsPath)
+
+        self = cls()
 
         self.number = materialNb
         self.MCsquareElements = []
@@ -88,10 +91,10 @@ class MCsquareElement(MCsquareMaterial):
                 if re.search(r'Mixture_Component', line):
                     raise ValueError(elementPath + ' is a molecule not an element.')
 
-
-
         self.sp = G4StopPow(fromFile=os.path.join(elementPath, 'G4_Stop_Pow.dat'))
         self.pstarSP = G4StopPow(fromFile=os.path.join(elementPath, 'PSTAR_Stop_Pow.dat'))
+
+        return self
 
     def write(self, folderPath, materialNamesOrderedForPrinting):
         super().write(folderPath, materialNamesOrderedForPrinting)

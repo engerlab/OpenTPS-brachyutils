@@ -59,6 +59,7 @@ def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
                 targetMask = mask
             else:
                 targetMask.imageArray = np.logical_or(targetMask.imageArray, mask.imageArray)
+            targetMask.patient = None
 
     if targetMask is None:
         raise Exception('Could not find a target volume in dose fidelity objectives')

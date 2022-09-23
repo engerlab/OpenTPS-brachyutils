@@ -53,7 +53,7 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False):
 # ---------------------------------------------------------------------------------------------------
 def loadDataStructure(filePath):
 
-    if filePath.endswith('.p'):
+    if filePath.endswith('.p') or filePath.endswith('.pkl') or filePath.endswith('.pickle'):
         # option using basic pickle function
         # self.Patients.list.append(pickle.load(open(dictFilePath, "rb")).list[0])
 
@@ -88,7 +88,8 @@ def loadSerializedObject(filePath):
 def saveRTPlan(plan , file_path):
     # dcm = plan.OriginalDicomDataset
     # plan.OriginalDicomDataset = []
-    plan.planDesign.beamlets = []
+    if hasattr(plan,'planDesign'):
+        plan.planDesign.beamlets = []
 
     with open(file_path, 'wb') as fid:
         pickle.dump(plan.__dict__, fid)
