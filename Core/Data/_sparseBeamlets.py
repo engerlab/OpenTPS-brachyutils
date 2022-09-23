@@ -88,7 +88,7 @@ class SparseBeamlets(PatientData):
         self._sparseBeamlets = beamlets
 
     def toDoseImage(self) -> DoseImage:
-        weights = np.array(self._weights)
+        weights = np.array(self._weights, dtype=np.float32)
         if use_MKL == 1:
             totalDose = sparse_dot_mkl.dot_product_mkl(self._sparseBeamlets, weights)
         else:
