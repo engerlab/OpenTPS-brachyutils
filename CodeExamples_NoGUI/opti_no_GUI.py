@@ -24,7 +24,7 @@ from Core.IO.scannerReader import readScanner
 from Core.IO.serializedObjectIO import loadDataStructure, saveRTPlan, loadRTPlan, loadBeamlets, saveBeamlets
 from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D
+from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D,resampleImage3D
 from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
 from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 
@@ -63,7 +63,7 @@ roi.patient = patient
 roi.name = 'TV'
 roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
-data[80:100, 100:120, 120:140] = True
+data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
 examplePath = "../testData"
@@ -88,7 +88,7 @@ scoringSpacing = [2, 2, 2]
 mc2._scoringVoxelSpacing = scoringSpacing
 
 # Load / Generate new plan
-plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
+plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled___.tps")
 
 if os.path.isfile(plan_file):
     plan = loadRTPlan(plan_file)
@@ -116,12 +116,10 @@ plan.planDesign.objectives = ObjectivesList()
 plan.planDesign.objectives.setTarget(roi.name, 20.0)
 #plan.planDesign.objectives.setScoringParameters(ct)
 scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip([150,150,150], scoringSpacing, [1,1,1])]
-print(scoringGridSize, scoringSpacing)
-quit()
 plan.planDesign.objectives.setScoringParameters(ct, np.array(scoringGridSize), np.array(scoringSpacing))
 plan.planDesign.objectives.fidObjList = []
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
-plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
+plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
 
 solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
 # Optimize treatment plan
@@ -135,8 +133,9 @@ saveRTPlan(plan, plan_file)
 #mc2.nbPrimaries = 1e7
 #doseImage = mc2.computeDose(ct, plan)
 
-# Compute DVH
-target_DVH = DVH(roi, doseImage)
+# Compute DVH on resampled contour
+roiResampled = resampleImage3D(roi, origin=ct.origin, gridSize=scoringGridSize, spacing=scoringSpacing)
+target_DVH = DVH(roiResampled, doseImage)
 print('D95 = ' + str(target_DVH.D95) + ' Gy')
 print('D5 = ' + str(target_DVH.D5) + ' Gy')
 print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
@@ -155,8 +154,8 @@ img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
 # Display dose
 fig, ax = plt.subplots(1, 2, figsize=(12, 5))
-ax[0].axes.get_xaxis().set_visible(False)
-ax[0].axes.get_yaxis().set_visible(False)
+#ax[0].axes.get_xaxis().set_visible(False)
+#ax[0].axes.get_yaxis().set_visible(False)
 ax[0].imshow(img_ct, cmap='gray')
 ax[0].imshow(img_mask, alpha=.2, cmap='binary')  # PTV
 dose = ax[0].imshow(img_dose, cmap='jet', alpha=.2)
