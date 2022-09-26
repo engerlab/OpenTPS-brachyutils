@@ -56,8 +56,8 @@ class PrimaryImage2DLayer:
     def _setMainMapperInputConnection(self):
         if not (self._image is None):
             self._mainMapper.SetInputConnection(self._image.vtkOutputPort)
-        print('in primaryImage2DLayer, setMainMapperInputCOnnection')
-        print(type(self._image))
+        # print('in primaryImage2DLayer, setMainMapperInputCOnnection')
+        # print(type(self._image))
 
     def close(self):
         self._disconnectAll()

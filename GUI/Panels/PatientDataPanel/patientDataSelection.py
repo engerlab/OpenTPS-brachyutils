@@ -254,9 +254,9 @@ class PatientDataItem(QStandardItem):
         QStandardItem.__init__(self)
 
 
-        print('in patientDataSelection.py, PatientDataItem init', type(data), data.getTypeAsString())
+        # print('in patientDataSelection.py, PatientDataItem init', type(data), data.getTypeAsString())
         self.data = data
-        print(data.__dict__)
+        # print(data.__dict__)
         self.data.nameChangedSignal.connect(self.setName)
 
         self.setEditable(False)
