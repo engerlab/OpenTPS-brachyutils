@@ -162,7 +162,14 @@ class Patient:
             self.removePatientData(data)
         return
 
+    def getTypeAsString(self) -> str:
+        return self.__class__.__name__
+
+
     def dumpableCopy(self):
+        """
+        deprecated?
+        """
         dumpablePatientCopy = Patient()
         for data in self._patientData:
             dumpablePatientCopy._patientData.append(data.dumpableCopy())

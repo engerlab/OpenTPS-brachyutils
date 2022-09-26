@@ -143,7 +143,7 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
     # read serialized object files
     for filePath in fileLists["Serialized"]:
         dataList += loadDataStructure(filePath) # not append because loadDataStructure returns a list already
-
+        print('---------', type(dataList[-1]))
 
     return dataList
 

@@ -5,6 +5,9 @@ import bz2
 import _pickle as cPickle
 import pickle
 import os
+
+import matplotlib.pyplot as plt
+
 from Core.Data.Plan._rtPlan import RTPlan
 from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
 from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
@@ -143,7 +146,13 @@ def dictionarizeData(data):
 
     if isinstance(data, Patient):
 
+        patientDataDictList = []
+        for patientData in data.patientData:
+            patientDataDictList.append(dictionarizeData(patientData))
+
+        data.patientData = None
         patient = dictionarizeData(data)
+
         print(patient.keys())
 
     elif isinstance(data, Dynamic3DModel):
@@ -185,6 +194,8 @@ def dictionarizeData(data):
         newDict = data.__dict__
         newDict['dataType'] = data.getTypeAsString()
 
+    print(newDict.keys())
+
     return newDict
 
 def unDictionarize(dataDict):
@@ -196,7 +207,13 @@ def unDictionarize(dataDict):
 
     if dataDict['dataType'] == 'Dynamic3DModel':
         data = Dynamic3DModel()
+
+        patient = dataDict['patient']
+        dataDict['patient'] = None
         data.__dict__.update(dataDict)
+        data.patient = patient
+
+        # data.__dict__.update(dataDict)
         data.midp = unDictionarize(dataDict['midp'])
 
         for field in dataDict['deformationList']:
@@ -210,8 +227,18 @@ def unDictionarize(dataDict):
             data.dyn3DImageList.append(unDictionarize(img))
 
     elif dataDict['dataType'] == 'CTImage':
+
+        print('--------------------')
+        print(dataDict.keys())
         data = CTImage()
+        print(data.__dict__)
         data.__dict__.update(dataDict)
+        print(data.__dict__)
+
+        print('in serializedIO, unDict')
+        plt.figure()
+        plt.imshow(data.imageArray[:,:,20])
+        plt.show()
 
     elif dataDict['dataType'] == 'VectorField3D':
         data = VectorField3D()
