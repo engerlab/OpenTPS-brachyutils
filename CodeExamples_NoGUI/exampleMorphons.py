@@ -6,7 +6,7 @@ import time
 import logging
 from logConfigParser import parseArgs
 
-from Core.Data.Images._deformation3D import Deformation3D
+from Core.Data.Images._deformation3D import Deformation3D # needed to avoid circular import
 from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
 from Core.Data.Images._ctImage import CTImage
 
