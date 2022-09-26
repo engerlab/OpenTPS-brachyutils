@@ -55,9 +55,12 @@ class SyntheticBreathingSignal(BreathingSignal):
         self.timestamps, self.breathingSignal = signal3DGeneration(self.amplitude,self.breathingPeriod, self.meanNoise, self.varianceNoise, self.samplingPeriod, self.simulationTime, self.coeffMin, self.coeffMax,self.meanEvent, self.meanEventApnea)
         return self.breathingSignal
 
-    def normalize(self):
+    def normalize(self, bound = None):
 
-        self.breathingSignal -= np.min(self.breathingSignal)
-        self.breathingSignal = self.breathingSignal / np.max(self.breathingSignal)
-
+        if bound is None :
+            self.breathingSignal -= np.min(self.breathingSignal)
+            self.breathingSignal = self.breathingSignal / np.max(self.breathingSignal)
+        else :
+            self.breathingSignal = (self.breathingSignal-np.min(self.breathingSignal))/(np.max(self.breathingSignal)-np.min(self.breathingSignal))
+            self.breathingSignal = (1-2*bound)*self.breathingSignal + bound
         self.isNormalized = True
