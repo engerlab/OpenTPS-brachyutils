@@ -116,4 +116,4 @@ class SparseBeamlets(PatientData):
         self.__dict__.update(tmp)
 
     def unload(self):
-        self._sparseBeamlets = []
+        self._sparseBeamlets = None
