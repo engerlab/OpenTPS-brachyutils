@@ -38,14 +38,13 @@ def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIM
         raise NameError('File ', file_path, ' is not a valid sparse matrix header')
 
     # Read sparse beamlets header file
-    print('Read sparse beamlets: ', file_path)
+    logger.info('Read sparse beamlets: {}'.format(file_path))
     header = _read_sparse_header(file_path)
-
-    if (header["SimulationMode"] != 'Beamlet'):
+    if 'Beamlet' not in header["SimulationMode"]:
         raise ValueError('Not a beamlet file')
 
     # Read sparse beamlets binary file
-    print('Read binary file: ', file_path)
+    logger.info('Read binary file: {}'.format(file_path))
     sparseBeamlets = _read_sparse_data(header["Binary_file"], header["NbrVoxels"], header["NbrSpots"], roi)
 
     beamletDose = SparseBeamlets()
@@ -66,6 +65,7 @@ def _read_sparse_header(file_path):
     FileName, FileExtension = os.path.splitext(File)
     Header_file = file_path
     header["ImgName"] = FileName
+    header["SimulationMode"] = []
 
     with open(Header_file, 'r') as fid:
         for line in fid:
@@ -83,7 +83,7 @@ def _read_sparse_header(file_path):
                 elif key == 'Offset':
                     header["Offset"] = [float(i) for i in val.split()]
                 elif key == 'SimulationMode':
-                    header["SimulationMode"] = val.strip()
+                    header["SimulationMode"].append(val.strip())
                 elif key == 'BinaryFile':
                     header["Binary_file"] = os.path.join(Folder, val.strip())
 
@@ -91,7 +91,7 @@ def _read_sparse_header(file_path):
 
 
 def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=None) -> csc_matrix:
-    BeamletMatrix = []
+    BeamletMatrix = None
 
     fid = open(Binary_file, 'rb')
 
@@ -181,9 +181,12 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=No
     # stack last cols
     A = sp.csc_matrix((beamlet_data[:data_id], (row_index[:data_id], col_index[:data_id])),
                       shape=(NbrVoxels, num_unstacked_col), dtype=np.float32)
-    BeamletMatrix = sp.hstack([BeamletMatrix, A])
+    if BeamletMatrix is None:
+        BeamletMatrix = A
+    else:
+        BeamletMatrix = sp.hstack([BeamletMatrix, A])
 
-    print('Beamlets imported in ' + str(time.time() - time_start) + ' sec')
+    logger.info('Beamlets imported in {} sec'.format(time.time() - time_start))
 
     _print_memory_usage(BeamletMatrix)
 
@@ -192,20 +195,17 @@ def _read_sparse_data(Binary_file, NbrVoxels, NbrSpots, roi:Optional[ROIMask]=No
 
 
 def _print_memory_usage(BeamletMatrix):
-    if (BeamletMatrix == []):
-        print(" ")
-        print("Beamlets not loaded")
-        print(" ")
+    if BeamletMatrix == []:
+        logger.info("Beamlets not loaded")
+
 
     else:
         mat_size = BeamletMatrix.data.nbytes + BeamletMatrix.indptr.nbytes + BeamletMatrix.indices.nbytes
-        print(" ")
-        print("Beamlets loaded")
-        print("Matrix size: " + str(BeamletMatrix.shape))
-        print("Non-zero values: " + str(BeamletMatrix.nnz))
-        print("Data format: " + str(BeamletMatrix.dtype))
-        print("Memory usage: " + str(mat_size / 1024 ** 3) + " GB")
-        print(" ")
+        logger.info("Beamlets loaded")
+        logger.info("Matrix size: {}".format(BeamletMatrix.shape))
+        logger.info("Non-zero values: {}".format(BeamletMatrix.nnz))
+        logger.info("Data format: {}".format(BeamletMatrix.dtype))
+        logger.info("Memory usage: {} GB".format(mat_size / 1024 ** 3))
 
 
 def readDose(filePath):
@@ -335,7 +335,7 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
 
     # Crop CT image with contour
     if overwriteOutsideROI is not None:
-        print(f'Cropping CT around {overwriteOutsideROI.name}')
+        logger.info(f'Cropping CT around {overwriteOutsideROI.name}')
         contour_mask = overwriteOutsideROI.getBinaryMask(image.origin, image.gridSize, image.spacing)
         image.imageArray[contour_mask.imageArray.astype(bool) == False] = -1024
 
@@ -500,14 +500,14 @@ def _writeBDL(bdl: BDL, fileName, materials):
 
 def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
     if (plan.scanMode != "MODULATED"):
-        print("Error: cannot simulate this treatment modality. Please convert the plan to PBS delivery mode.")
+        logger.error("Error: cannot simulate this treatment modality. Please convert the plan to PBS delivery mode.")
         return
 
     DestFolder, DestFile = os.path.split(file_path)
     FileName, FileExtension = os.path.splitext(DestFile)
 
     # export plan
-    logger.info("Write Plan: " + file_path)
+    logger.info("Write Plan: {}".format(file_path))
 
     # export plan
     fid = open(file_path, 'w')
@@ -582,10 +582,6 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
                     ID = RS_index.index(beam.rangeShifter.ID)
                     fid.write("%f\n" % bdl.rangeShifters[ID].WET)
                 else:
-                    print('layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness',
-                          layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
-                    print('type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)',
-                          type(layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness))
                     fid.write("%f\n" % layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
 
             fid.write("####NbOfScannedSpots\n")
@@ -614,7 +610,7 @@ def writeContours(contour: ROIMask, folder_path):
 def writeObjectives(objectives: ObjectivesList, file_path):
     targetName = objectives.targetName.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
 
-    print("Write plan objectives: " + file_path)
+    logger.info("Write plan objectives: {}".format(file_path))
     fid = open(file_path, 'w');
     fid.write("# List of objectives for treatment plan optimization\n\n")
     fid.write("Target_ROIName:\n" + targetName + "\n\n")
@@ -637,7 +633,7 @@ def writeObjectives(objectives: ObjectivesList, file_path):
             metric = "Dmean"
             condition = "<"
         else:
-            print("Error: objective metric " + metric + " is not supported.")
+            logger.error("Error: objective metric {} is not supported.".format(metric))
         fid.write(metric + " " + condition + " " + str(objective.limitValue) + "\n")
         fid.write("\n")
 

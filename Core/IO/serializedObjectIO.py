@@ -17,13 +17,11 @@ from Core.Data.Images._projections import DRR
 from Core.Data.Images._vectorField3D import VectorField3D
 from Core.Data._patient import Patient
 
-
 # ---------------------------------------------------------------------------------------------------
 from Core.Data._sparseBeamlets import SparseBeamlets
 
 
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
-
     if splitPatientsBool:
         patientList = [[patient] for patient in patientList]
         for patient in patientList:
@@ -36,6 +34,7 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
 
 # ---------------------------------------------------------------------------------------------------
 def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionarized=True):
+
 
     if type(dataList) != list:
         dataList = [dataList]
@@ -67,7 +66,6 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionari
 
 # ---------------------------------------------------------------------------------------------------
 def loadDataStructure(filePath):
-
     if filePath.endswith('.p') or filePath.endswith('.pkl') or filePath.endswith('.pickle'):
         # option using basic pickle function
         # self.Patients.list.append(pickle.load(open(dictFilePath, "rb")).list[0])
@@ -107,16 +105,18 @@ def loadSerializedObject(filePath):
     pass
 
 
-def saveRTPlan(plan , file_path):
-    # dcm = plan.OriginalDicomDataset
-    # plan.OriginalDicomDataset = []
-    if hasattr(plan,'planDesign'):
-        plan.planDesign.beamlets = []
+
+def saveRTPlan(plan, file_path):
+    if plan.planDesign.beamlets:
+        plan.planDesign.beamlets.unload()
+    if plan.planDesign.beamletsLET:
+        plan.planDesign.beamletsLET.unload()
+
+    for scenario in plan.planDesign.scenarios:
+        scenario.unload()
 
     with open(file_path, 'wb') as fid:
         pickle.dump(plan.__dict__, fid)
-
-    # plan.OriginalDicomDataset = dcm
 
 
 def loadRTPlan(file_path):
@@ -127,9 +127,12 @@ def loadRTPlan(file_path):
     plan.__dict__.update(tmp)
     return plan
 
+
 def saveBeamlets(beamlets, file_path):
+    beamlets._savedBeamletFile = file_path
     with open(file_path, 'wb') as fid:
         pickle.dump(beamlets.__dict__, fid, protocol=4)
+
 
 def loadBeamlets(file_path):
     with open(file_path, 'rb') as fid:
@@ -249,3 +252,5 @@ def unDictionarize(dataDict):
 
     return data
 
+=======
+>>>>>>> refactor
