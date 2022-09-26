@@ -7,11 +7,11 @@ import numpy as np
 from pathlib import Path
 import math
 
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
+from opentps_core.opentps.core.IO import loadDataStructure
 import matplotlib.pyplot as plt
-from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
-from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDynSeqFromBreathingSignalsAndModel
-from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import getVoxelIndexFromPosition
+from opentps_core.opentps.core.data import SyntheticBreathingSignal
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import generateDynSeqFromBreathingSignalsAndModel
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import getVoxelIndexFromPosition
 
 if __name__ == '__main__':
 

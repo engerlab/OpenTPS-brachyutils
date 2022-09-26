@@ -14,21 +14,17 @@ sys.path.append(currentWorkingDir)
 
 import math
 import time
-import numpy as np 
 import copy
 from numpy.random import uniform as unif
 
 
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
-from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
-from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
-from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.DeformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
-from Core.Processing.ImageProcessing.resampler3D import *
-from Core.Processing.Segmentation.segmentation3D import *
-from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineShift
-from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
-from Core.Processing.DeformableDataAugmentationToolBox.multiProcSpawnMethods import multiProcDeform
+from opentps_core.opentps.core.IO import saveSerializedObjects, loadDataStructure
+from opentps_core.opentps.core.data import SyntheticBreathingSignal
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import generateDeformationListFromBreathingSignalsAndModel
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import shrinkOrgan, translateData, rotateData
+from opentps_core.opentps.core import applyBaselineShift
+from opentps_core.opentps.core.Processing import multiProcDRRs
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import multiProcDeform
 
 
 ## ------------------------------------------------------------------------------------
@@ -149,7 +145,7 @@ if __name__ == '__main__':
         GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize,
                                            spacing=dynMod.midp.spacing)
     
-        ## if you want to see the crop in the GUI you can save the data in cropped version
+        ## if you want to see the crop in the opentps_core you can save the data in cropped version
         saveSerializedObjects(patient, savingPath + 'croppedModelAndROIs')
     
         ## get the 3D center of mass of this ROI

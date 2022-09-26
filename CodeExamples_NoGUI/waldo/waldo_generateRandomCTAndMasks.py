@@ -1,13 +1,9 @@
 import os
-import time
-import numpy as np
-import matplotlib.pyplot as plt
 import sys
 sys.path.append('..')
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
-from Core.Processing.DeformableDataAugmentationToolBox.generateRandomSamplesFromModel import generateRandomImagesFromModel, generateRandomDeformationsFromModel
-from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.Segmentation.segmentation3D import *
+from opentps_core.opentps.core.IO import saveSerializedObjects, loadDataStructure
+from opentps_core.opentps.core.Processing import \
+    generateRandomDeformationsFromModel
 
 ## Load patient & dynModCroppedXY
 patientName = 'Patient_5'

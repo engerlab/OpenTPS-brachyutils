@@ -1,13 +1,12 @@
 import os
-from Core.IO.dataLoader import readData
-from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
-from Core.IO import mcsquareIO
-from Core.Data.Plan._planDesign import PlanDesign
-from Core.IO.serializedObjectIO import saveRTPlan, saveBeamlets
+from opentps_core.opentps.core.IO import readData, mcsquareIO
+from opentps_core.opentps.core.Processing.DoseCalculation import MCsquareDoseCalculator
+from opentps_core.opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
+from opentps_core.opentps.core.data.Plan._planDesign import PlanDesign
+from opentps_core.opentps.core.IO import saveRTPlan, saveBeamlets
 
 # CT path
-ctImagePath = "/home/sophie/Documents/Protontherapy/OpenTPS/arc_dev/opentps/data/Plan_IMPT_patient1"
+ctImagePath = "/home/sophie/Documents/Protontherapy/OpenTPS/arc_dev/opentps_core/data/Plan_IMPT_patient1"
 # Output path
 output_path = os.path.join(ctImagePath, "OpenTPS")
 
@@ -23,7 +22,7 @@ print('Available ROIs')
 contours.print_ROINames()
 
 # Configure MCsquare
-MCSquarePath = '../Core/Processing/DoseCalculation/MCsquare/'
+MCSquarePath = '../core/Processing/DoseCalculation/MCsquare/'
 mc2 = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 mc2.beamModel = beamModel

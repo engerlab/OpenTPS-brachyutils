@@ -20,7 +20,7 @@ Here under are some examples
 
 
 # ------- Simple load data example --------
-from Core.api import API
+from opentps_core.opentps.core import API
 API.loadData(['/home/damien/Desktop/Patient0/Patient0_dynSeq.p'])
 
 

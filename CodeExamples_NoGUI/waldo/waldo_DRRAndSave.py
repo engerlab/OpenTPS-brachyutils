@@ -17,9 +17,8 @@ sys.path.append(currentWorkingDir)
 import math
 import time
 
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
-from Core.Processing.Segmentation.segmentation3D import *
-from Core.Processing.ImageSimulation.multiProcForkMethods import multiProcDRRs
+from opentps_core.opentps.core.IO import saveSerializedObjects, loadDataStructure
+from opentps_core.opentps.core.Processing import multiProcDRRs
 
 if __name__ == '__main__':
 

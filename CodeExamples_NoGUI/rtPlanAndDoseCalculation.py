@@ -2,18 +2,17 @@ import sys
 
 sys.path.append('..')
 
-from Core.Data._dvh import DVH
+from opentps_core.opentps.core.data import DVH
 import os
-from Core.IO.dataLoader import listAllFiles, readData
-from Core.Data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
-from Core.IO import mcsquareIO
-from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.IO.mhdIO import exportImageMHD
-from Core.Data.Plan._rtPlan import RTPlan
-from Core.Data.Plan._planIonBeam import PlanIonBeam
-from Core.Data.Plan._planIonLayer import PlanIonLayer
-from Core.IO.serializedObjectIO import loadRTPlan, saveRTPlan
-from Core.IO.dicomIO import readDicomCT, readDicomPlan
+from opentps_core.opentps.core.IO import readData, mcsquareIO
+from opentps_core.opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
+from opentps_core.opentps.core.Processing.DoseCalculation import MCsquareDoseCalculator
+from opentps_core.opentps.core.IO import exportImageMHD
+from opentps_core.opentps.core.data.Plan._rtPlan import RTPlan
+from opentps_core.opentps.core.data import PlanIonBeam
+from opentps_core.opentps.core.data import PlanIonLayer
+from opentps_core.opentps.core.IO import loadRTPlan, saveRTPlan
+from opentps_core.opentps.core.IO import readDicomPlan
 
 # Create plan from scratch
 plan = RTPlan()
@@ -42,8 +41,8 @@ plan3 = readDicomPlan(plan_path)
 
 
 # Dose computation from plan
-openTPS_path = '/home/vhamaide/opentps'
-MCSquarePath = os.path.join(openTPS_path, 'Core/Processing/DoseCalculation/MCsquare/')
+openTPS_path = '/home/vhamaide/opentps_core'
+MCSquarePath = os.path.join(openTPS_path, 'core/Processing/DoseCalculation/MCsquare/')
 doseCalculator = MCsquareDoseCalculator()
 beamModel = mcsquareIO.readBDL(os.path.join(MCSquarePath, 'BDL', 'UMCG_P1_v2_RangeShifter.txt'))
 doseCalculator.beamModel = beamModel

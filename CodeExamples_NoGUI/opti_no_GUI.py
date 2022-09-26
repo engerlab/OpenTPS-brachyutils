@@ -1,4 +1,3 @@
-import copy
 import json
 import logging.config
 import math
@@ -10,32 +9,30 @@ sys.path.append('..')
 import numpy as np
 from matplotlib import pyplot as plt
 
-import opentps
-from Core.Data.Images import CTImage
-from Core.Data.Images import ROIMask
-from Core.Data.Plan import ObjectivesList
-from Core.Data.Plan import PlanDesign
-from Core.Data import DVH
-from Core.Data import Patient
-from Core.Data import PatientList
-from Core.Data.Plan._objectivesList import FidObjective
-from Core.IO import mcsquareIO
-from Core.IO.scannerReader import readScanner
-from Core.IO.serializedObjectIO import loadDataStructure, saveRTPlan, loadRTPlan, loadBeamlets, saveBeamlets
-from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
-from Core.Processing.DoseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from Core.Processing.ImageProcessing.resampler3D import resampleImage3DOnImage3D,resampleImage3D
-from Core.Processing.PlanOptimization.Objectives.doseFidelity import DoseFidelity
-from Core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
+import opentps_core
+from opentps_core.opentps.core.data import CTImage
+from opentps_core.opentps.core.data import ROIMask
+from opentps_core.opentps.core.data.Plan import ObjectivesList
+from opentps_core.opentps.core.data.Plan import PlanDesign
+from opentps_core.opentps.core.data import DVH
+from opentps_core.opentps.core.data import Patient
+from opentps_core.opentps.core.data import FidObjective
+from opentps_core.opentps.core.IO import mcsquareIO
+from opentps_core.opentps.core.IO import readScanner
+from opentps_core.opentps.core.IO import saveRTPlan, loadRTPlan
+from opentps_core.opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps_core.opentps.core.Processing.DoseCalculation import MCsquareDoseCalculator
+from opentps_core.opentps.core import resampleImage3DOnImage3D,resampleImage3D
+from opentps_core.opentps.core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
 
 
-with open('../config/logger/logging_config.json',
+with open('../opentps_core/opentps/core/config/logger/logging_config.json',
           'r') as log_fid:
     config_dict = json.load(log_fid)
 logging.config.dictConfig(config_dict)
 
 # Generic example: box of water with squared target
-patientList = opentps.patientList
+patientList = opentps_core.patientList
 
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)

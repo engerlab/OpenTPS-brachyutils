@@ -1,10 +1,9 @@
 import sys
 sys.path.append('..')
-from Core.IO.dataLoader import readData
-from Core.IO.dicomIO import readDicomPlan
-from Core.Data.Images._ctImage import CTImage
-from Core.Data.Images._deformation3D import Deformation3D
-from Core.Processing.PlanDeliverySimulation.planDeliverySimulation import *
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core.IO import readDicomPlan
+from opentps_core.opentps.core.data import CTImage
+from opentps_core.opentps.core.data.Images._deformation3D import Deformation3D
 
 ######## Simulation on 4DCT #########
 patient_name = 'patient_0'

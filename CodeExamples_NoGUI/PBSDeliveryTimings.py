@@ -1,9 +1,8 @@
 import sys
 sys.path.append('..')
 
-from Core.Data.Plan._rtPlan import RTPlan
-from Core.Processing.PlanDeliverySimulation.beamDeliveryTimings import BDT
-from Core.IO.dicomIO import readDicomPlan
+from opentps_core.opentps.core.Processing.PlanDeliverySimulation.beamDeliveryTimings import BDT
+from opentps_core.opentps.core.IO import readDicomPlan
 
 """
 #### Config file: text file config.txt with 2 lines
@@ -17,7 +16,7 @@ plan = readDicomPlan(plan_path)
 
 #### Conventional PT usage.Gantry
 # Add PBS timings into a plan
-congig_path = '../config/config_scanAlgo.txt'
+congig_path = '../opentps_core/opentps/core/config/config_scanAlgo.txt'
 bdt = BDT(plan, congig_path)
 plan_with_timings = bdt.getPBSTimings(sort_spots="true")
 

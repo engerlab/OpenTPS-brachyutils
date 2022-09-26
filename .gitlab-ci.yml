@@ -29,7 +29,7 @@ build:
   image: python:3.9
   script:
     - export PYTHONPATH="$PWD"
-    - poetry build
+    #- poetry build
     #- pip install dist/*
   artifacts:
     paths:
@@ -40,16 +40,16 @@ test:
   image: python:3.9
   script:
     - export PYTHONPATH="$CI_PROJECT_DIR"
-    - poetry install --no-root # install dependencies
-    - python3 CI/tests.py
+    #- poetry install --no-root # install dependencies
+    #- python3 CI/tests.py
 
 docs:
   script:
     - pip install sphinx sphinx-rtd-theme
-    - export PYTHONPATH="$CI_PROJECT_DIR"
-    - python3 docs/tools/version_utils.py
-    - cd docs
-    - make html
+    #- export PYTHONPATH="$CI_PROJECT_DIR"
+    #- python3 docs/tools/version_utils.py
+    #- cd docs
+    #- make html
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 

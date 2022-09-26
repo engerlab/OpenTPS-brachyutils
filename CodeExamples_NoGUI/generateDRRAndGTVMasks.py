@@ -17,19 +17,17 @@ from itertools import repeat
 import os
 import sys
 
-from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
+from opentps_core.opentps.core import crop3DDataAroundBox
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
-from Core.Data.DynamicData.breathingSignals import SyntheticBreathingSignal
-from Core.Processing.DeformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDeformationListFromBreathingSignalsAndModel
-from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.ImageSimulation.DRRToolBox import forwardProjection
-from Core.Processing.ImageProcessing.image2DManip import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
-from Core.Processing.Segmentation.segmentation3D import *
+from opentps_core.opentps.core.IO import saveSerializedObjects, loadDataStructure
+from opentps_core.opentps.core.data import SyntheticBreathingSignal
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import generateDeformationListFromBreathingSignalsAndModel
+from opentps_core.opentps.core import forwardProjection
+from opentps_core.opentps.core import getBinaryMaskFromROIDRR, get2DMaskCenterOfMass
 
 if __name__ == '__main__':
     ## paths selection ------------------------------------
@@ -175,7 +173,7 @@ if __name__ == '__main__':
     ## get the mask in cropped version (the dynMod.midp is now cropped so its origin and gridSize has changed)
     GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
 
-    ## if you want to see the crop in the GUI you can save the data in cropped version
+    ## if you want to see the crop in the opentps_core you can save the data in cropped version
     saveSerializedObjects(patient, savingPath + 'croppedModelAndROIs')
 
     ## get the 3D center of mass of this ROI

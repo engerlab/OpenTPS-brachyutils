@@ -4,9 +4,7 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.IO.mhdIO import *
-from Core.IO.dataLoader import listAllFiles, readData
-from Core.IO.dicomIO import readDicomCT
+from opentps_core.opentps.core.IO import readData
 
 if __name__ == '__main__':
 

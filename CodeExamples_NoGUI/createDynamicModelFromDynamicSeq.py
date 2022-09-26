@@ -7,16 +7,15 @@ This file contains an example on how to:
 
 import os
 import sys
-from pathlib import Path
 from pydicom.uid import generate_uid
 import time
 import numpy as np
 import logging
 from logConfigParser import parseArgs
 
-from Core.IO.serializedObjectIO import saveSerializedObjects
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.IO.serializedObjectIO import loadDataStructure
+from opentps_core.opentps.core.IO import saveSerializedObjects
+from opentps_core.opentps.core.data import Dynamic3DModel
+from opentps_core.opentps.core.IO import loadDataStructure
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)

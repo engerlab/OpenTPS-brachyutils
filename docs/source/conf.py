@@ -22,9 +22,9 @@ copyright = '2021, Kevin Souris, Guillaume Janssens, Sophie Wuyckens, Margerie H
 author = 'Kevin Souris, Guillaume Janssens, Sophie Wuyckens, Margerie Huet, Damien Dasnoy, Sylvain Deffet, Valentin Hamaide'
 
 # The full version, including alpha/beta/rc tags
-import opentps
+import opentps_core
 #TODO
-#release = opentps.version
+#release = opentps_core.version
 
 
 # -- General configuration ---------------------------------------------------
@@ -34,7 +34,7 @@ import opentps
 # ones.
 extensions = [ 
     'sphinx.ext.napoleon',
-    'sphinx.ext.autodoc',  # Core library for html generation from docstrings
+    'sphinx.ext.autodoc',  # core library for html generation from docstrings
     'sphinx.ext.autosummary',  # Create neat summary tables
     'sphinx_pyreverse',
     'sphinx.ext.doctest'

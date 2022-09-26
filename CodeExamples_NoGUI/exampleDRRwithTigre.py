@@ -1,14 +1,13 @@
 import os
 import sys
-from pathlib import Path
 import math
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
 from logConfigParser import parseArgs
 
-from Core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
+from opentps_core.opentps.core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
+from opentps_core.opentps.core.IO import loadDataStructure
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)

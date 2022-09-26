@@ -5,9 +5,9 @@ import sys
 import logging
 from logConfigParser import parseArgs
 
-from Core.Data.Images._ctImage import CTImage
-from Core.Processing.Segmentation.segmentation3D import applyThreshold
-from Core.Processing.Segmentation.segmentationCT import SegmentationCT
+from opentps_core.opentps.core.data import CTImage
+from opentps_core.opentps.core import applyThreshold
+from opentps_core.opentps.core.Processing.Segmentation.segmentationCT import SegmentationCT
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)

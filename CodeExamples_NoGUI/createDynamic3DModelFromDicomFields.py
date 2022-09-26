@@ -3,9 +3,9 @@ import sys
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
-from Core.IO.dataLoader import readData
-from Core.Data.Images._deformation3D import Deformation3D
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core.data.Images._deformation3D import Deformation3D
+from opentps_core.opentps.core.data import Dynamic3DModel
 
 # Load DICOM CT
 patient_name = 'Patient_1'

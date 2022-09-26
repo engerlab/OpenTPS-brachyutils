@@ -6,9 +6,9 @@ import time
 import logging
 from logConfigParser import parseArgs
 
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images._ctImage import CTImage
+from opentps_core.opentps.core.data import Dynamic3DModel
+from opentps_core.opentps.core.data import Dynamic3DSequence
+from opentps_core.opentps.core.data import CTImage
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)

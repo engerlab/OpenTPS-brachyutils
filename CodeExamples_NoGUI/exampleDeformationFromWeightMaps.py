@@ -3,16 +3,16 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-from Core.Processing.ImageProcessing import imageTransform3D, resampler3D
+from opentps_core.opentps.core.Processing.ImageProcessing import resampler3D
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data.Images._ctImage import CTImage
-from Core.Processing.DeformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
+from opentps_core.opentps.core.data import Dynamic3DModel
+from opentps_core.opentps.core.data import Dynamic3DSequence
+from opentps_core.opentps.core.data import CTImage
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 
 if __name__ == '__main__':
 

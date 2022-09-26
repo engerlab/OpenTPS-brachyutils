@@ -18,11 +18,11 @@ from pydicom.uid import generate_uid
 import time
 import numpy as np
 
-from Core.IO.dataLoader import readData
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.IO.serializedObjectIO import saveSerializedObjects
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.Data._patient import Patient
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core.data import Dynamic3DSequence
+from opentps_core.opentps.core.IO import saveSerializedObjects
+from opentps_core.opentps.core.data import Dynamic3DModel
+from opentps_core.opentps.core.data._patient import Patient
 
 
 if __name__ == '__main__':

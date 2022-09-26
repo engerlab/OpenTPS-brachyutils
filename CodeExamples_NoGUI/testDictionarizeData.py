@@ -5,15 +5,10 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-import opentps
-from Core.IO.dataLoader import readData
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data._patient import Patient
-from Core.Processing.ImageSimulation.DRRToolBox import createDRRDynamic2DSequences
-from Core.IO.serializedObjectIO import saveSerializedObjects, dictionarizeData
-import matplotlib.pyplot as plt
-
-from Core.Data.Images._ctImage import CTImage
+import opentps_core
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core.data._patient import Patient
+from opentps_core.opentps.core.IO import saveSerializedObjects
 
 if __name__ == '__main__':
 
@@ -43,10 +38,10 @@ if __name__ == '__main__':
 
     patient.name = 'Mystery'
 
-    patientList = opentps.patientList
+    patientList = opentps_core.patientList
     patientList.append(patient)
 
-    opentps.run()
+    opentps_core.run()
 
     #
     # # print(type(dataList[0]))

@@ -6,9 +6,8 @@ import time
 import logging
 from logConfigParser import parseArgs
 
-from Core.Data.Images._deformation3D import Deformation3D # needed to avoid circular import
-from Core.Processing.Registration.registrationMorphons import RegistrationMorphons
-from Core.Data.Images._ctImage import CTImage
+from opentps_core.opentps.core.Processing.Registration.registrationMorphons import RegistrationMorphons
+from opentps_core.opentps.core.data import CTImage
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)

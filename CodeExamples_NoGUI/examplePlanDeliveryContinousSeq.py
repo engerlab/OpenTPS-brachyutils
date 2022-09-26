@@ -1,11 +1,9 @@
 import sys
 sys.path.append('..')
 import numpy as np
-from Core.IO.dataLoader import readData
-from Core.IO.dicomIO import readDicomPlan
-from Core.Data.Images._ctImage import CTImage
-from Core.Data.Images._deformation3D import Deformation3D
-from Core.Processing.PlanDeliverySimulation.planDeliverySimulation import *
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core.IO import readDicomPlan
+from opentps_core.opentps.core.data import CTImage
 
 
 def get_sequence_timings_from_txt_file(sequence_timings_filepath, return_tracker_amplitude=False):

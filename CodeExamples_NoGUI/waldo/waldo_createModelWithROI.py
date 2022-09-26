@@ -22,11 +22,11 @@ sys.path.append(currentWorkingDir)
 # print('after while', currentWorkingDir)
 
 
-from Core.IO.dataLoader import readData
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.IO.serializedObjectIO import saveSerializedObjects
-from Core.Data.DynamicData.dynamic3DModel import Dynamic3DModel
-from Core.Data._patient import Patient
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core.data import Dynamic3DSequence
+from opentps_core.opentps.core.IO import saveSerializedObjects
+from opentps_core.opentps.core.data import Dynamic3DModel
+from opentps_core.opentps.core.data._patient import Patient
 
 # chose the patient folder, which will be used as the patient name
 ## FDGorFAZA_study

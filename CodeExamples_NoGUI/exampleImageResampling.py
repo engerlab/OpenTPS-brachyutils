@@ -11,8 +11,8 @@ while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os
 sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
 
-from Core.IO.dataLoader import readData
-from Core.Processing.ImageProcessing.resampler3D import resample, resampleOnImage3D
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core import resample, resampleOnImage3D
 
 
 if __name__ == '__main__':

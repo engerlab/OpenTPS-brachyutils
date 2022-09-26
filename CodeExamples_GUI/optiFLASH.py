@@ -1,16 +1,14 @@
 import numpy as np
 
-import opentps
-from Core.Data.Images import CTImage
-from Core.Data.Images import ROIMask
-from Core.Data import Patient
-from Core.IO import mcsquareIO
-from Core.IO.scannerReader import readScanner
-from Core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
-from Core.Processing.ImageProcessing import resampler3D
+import opentps_core
+from opentps_core.opentps.core.data import CTImage
+from opentps_core.opentps.core.data import ROIMask
+from opentps_core.opentps.core.data import Patient
+from opentps_core.opentps.core.IO import mcsquareIO
+from opentps_core.opentps.core.IO import readScanner
+from opentps_core.opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 
-
-patientList = opentps.patientList
+patientList = opentps_core.patientList
 
 patient = Patient()
 patient.name = 'Patient'
@@ -41,4 +39,4 @@ data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[30:80, 70:90, 30:80] = True
 roi.imageArray = data
 
-opentps.run()  # Launch opentps
+opentps_core.run()  # Launch opentps_core

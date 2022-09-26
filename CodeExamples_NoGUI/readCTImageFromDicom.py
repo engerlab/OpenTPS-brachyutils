@@ -13,9 +13,8 @@ sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from Core.IO.dicomIO import readDicomCT
-from Core.IO.dataLoader import listAllFiles, readData
-from Core.IO.serializedObjectIO import saveSerializedObjects
+from opentps_core.opentps.core.IO import readDicomCT
+from opentps_core.opentps.core.IO import listAllFiles, readData
 
 if __name__ == '__main__':
 

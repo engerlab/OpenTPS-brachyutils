@@ -6,11 +6,11 @@ sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from Core.Processing.ImageSimulation.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
-from Core.IO.serializedObjectIO import loadDataStructure, saveSerializedObjects
-from Core.IO.dataLoader import readData
-from Core.Data.DynamicData.dynamic3DSequence import Dynamic3DSequence
-from Core.Data._patient import Patient
+from opentps_core.opentps.core import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
+from opentps_core.opentps.core.IO import saveSerializedObjects
+from opentps_core.opentps.core.IO import readData
+from opentps_core.opentps.core.data import Dynamic3DSequence
+from opentps_core.opentps.core.data._patient import Patient
 
 if __name__ == '__main__':
 

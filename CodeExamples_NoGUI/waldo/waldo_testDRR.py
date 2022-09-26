@@ -4,16 +4,14 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 import matplotlib.pyplot as plt
-from pathlib import Path
-import multiprocessing
 import numpy as np
 import concurrent
 # from timeit import repeat
 
 import time
 
-from Core.Processing.ImageSimulation.DRRToolBox import computeDRRSet, computeDRRSequence, forwardProjection, createDRRDynamic2DSequences
-from Core.IO.serializedObjectIO import loadDataStructure, saveSerializedObjects
+from opentps_core.opentps.core import computeDRRSet, forwardProjection
+from opentps_core.opentps.core.IO import loadDataStructure
 
 if __name__ == '__main__':
 

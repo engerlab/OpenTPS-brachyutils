@@ -11,14 +11,13 @@ This file contains an example on how to:
 import os
 import sys
 
-from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
+from opentps_core.opentps.core import crop3DDataAroundBox
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.Processing.Segmentation.segmentation3D import *
-from Core.IO.serializedObjectIO import loadDataStructure
+from opentps_core.opentps.core.IO import loadDataStructure
 
 if __name__ == '__main__':
 

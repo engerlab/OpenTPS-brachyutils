@@ -16,12 +16,10 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from Core.IO.serializedObjectIO import saveSerializedObjects, loadDataStructure
-from Core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import *
-from Core.Processing.DeformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
-from Core.Processing.ImageProcessing.syntheticDeformation import applyBaselineShift
-from Core.Processing.Segmentation.segmentation3D import *
-from Core.Processing.ImageProcessing.resampler3D import crop3DDataAroundBox
+from opentps_core.opentps.core.IO import loadDataStructure
+from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import shrinkOrgan, translateData, rotateData
+from opentps_core.opentps.core import applyBaselineShift
+from opentps_core.opentps.core import crop3DDataAroundBox
 
 if __name__ == '__main__':
 
