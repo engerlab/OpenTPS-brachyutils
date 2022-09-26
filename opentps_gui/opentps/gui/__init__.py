@@ -1,5 +1,5 @@
 
-from opentps.gui.main import run
+from opentps.gui.main import run, patientList
 
 import opentps.gui.extensions as extensions
 import opentps.gui.panels as panels

@@ -61,7 +61,8 @@ class PlanOptimizer:
 
         # reload beamlets and crop to optimization ROI
         logger.info("Re-load and crop beamlets to optimization ROI...")
-        self.plan.planDesign.beamlets.load()
+        # TODO: This should also work if the beamlets were not saved on disk and are already loaded in self.plan.planDesign.beamlets
+#        self.plan.planDesign.beamlets.load()
         if use_MKL == 1:
             beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                 sp.diags(roiObjectives.astype(np.float32), format='csc'), self.plan.planDesign.beamlets.toSparseMatrix())

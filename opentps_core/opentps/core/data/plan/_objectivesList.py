@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ['ObjectivesList']
+__all__ = ['ObjectivesList', 'FidObjective']
 
 
 from enum import Enum
@@ -12,8 +12,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from opentps.core.data.images._ctImage import CTImage
-    from opentps.core.data.images._roiMask import ROIMask
-    from opentps.core.processing.imageProcessing import resampler3D
+
+from opentps.core.data.images._roiMask import ROIMask
+from opentps.core.processing.imageProcessing import resampler3D
 
 class ObjectivesList:
     def __init__(self):

@@ -2,6 +2,7 @@
 __all__ = ['MCsquareCTCalibration']
 
 from typing import Optional
+import os
 
 import numpy as np
 from scipy.interpolate import interpolate

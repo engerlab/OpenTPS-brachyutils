@@ -197,8 +197,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return scenarios
 
-    def computeBeamlets(self, ct: CTImage, plan: RTPlan, outputDir,
-                        roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
         logger.info("Prepare MCsquare Beamlet calculation")
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
@@ -208,6 +207,19 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._writeFilesToSimuDir()
         self._cleanDir(self._workDir)
         self._startMCsquare()
+
+        beamletDose = self._importBeamlets()
+        beamletDose.beamletWeights = np.array(plan.spotMUs)
+
+        return beamletDose
+
+        # TODO:This does not look at the right place. This should be moved directly to where you need it because
+        #  - we don't always need to store the beamlets
+        #  - we do not always have a planDesign in plan (could be None)
+        #  - when we will have another dose engine this code will be duplicated
+        # A solution could be where you call computeBeamlets:
+        # beamlet = mc2.computeBeamlets(...)
+        # storeBeamlets(beamlets, outputDir) # a function that stores the beamlets with the code below.
 
         # Import sparse beamlets
         if self._robustnessStrategy == "Disabled":
