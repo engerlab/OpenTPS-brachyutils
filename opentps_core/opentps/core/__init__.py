@@ -7,5 +7,6 @@ import opentps.core.data as data
 import opentps.core.io as io
 import opentps.core.processing as processing
 import opentps.core.utils as utils
+import opentps.core.examples as examples
 
 __all__ = [s for s in dir() if not s.startswith('_')]

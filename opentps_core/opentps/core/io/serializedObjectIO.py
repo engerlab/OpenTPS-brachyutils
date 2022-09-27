@@ -31,7 +31,7 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
 
 
 # ---------------------------------------------------------------------------------------------------
-def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionarized=True):
+def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionarized=False):
 
 
     if type(dataList) != list:
