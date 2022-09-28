@@ -15,9 +15,6 @@ from opentps.gui.panels.roiPanel import ROIPanel
 from opentps.gui.panels.scriptingPanel.scriptingPanel import ScriptingPanel
 from opentps.gui.panels.registrationPanel import RegistrationPanel
 
-import opentps.gui.extensions as extensionModule
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -68,34 +65,18 @@ class MainToolbar(QToolBox):
         #xRayProjPanel = DRRPanel(self._viewController)
         registrationPanel = RegistrationPanel(self._viewController)
 
-        item = self.ToolbarItem(patientDataPanel, 'Patient data')
-        self.showItem(item)
-        item = self.ToolbarItem(roiPanel, 'ROI')
-        self.showItem(item)
-        item = self.ToolbarItem(planDesignPanel, 'plan design')
-        self.showItem(item)
-        item = self.ToolbarItem(planOptiPanel, 'plan optimization')
-        self.showItem(item)
-        item = self.ToolbarItem(dosePanel, 'Dose computation')
-        self.showItem(item)
-        item = self.ToolbarItem(doseComparisonPanel, 'Dose comparison')
-        self.showItem(item)
-        item = self.ToolbarItem(scriptingPanel, 'Scripting')
-        self.showItem(item)
-        #item = self.ToolbarItem(breathingSignalPanel, 'Breathing signal generation')
-        #self.showItem(item)
-        #item = self.ToolbarItem(xRayProjPanel, 'DRR')
-        #self.showItem(item)
-        item = self.ToolbarItem(registrationPanel, 'registration')
-        self.showItem(item)
+        self.addWidget(patientDataPanel, 'Patient data')
+        self.addWidget(roiPanel, 'ROI')
+        self.addWidget(planDesignPanel, 'Plan design')
+        self.addWidget(planOptiPanel, 'Plan optimization')
+        self.addWidget(dosePanel, 'Dose computation')
+        self.addWidget(doseComparisonPanel, 'Dose comparison')
+        self.addWidget(scriptingPanel, 'Scripting')
 
-        self._addExtenstions()
-
-        self._addVisibilityListenerToAllItems()
-
-    def _addVisibilityListenerToAllItems(self):
-        for item in self._items:
-            item.visibleEvent.connect(functools.partial(self._handleVisibleEvent, item))
+    def addWidget(self, widget:QWidget, name:str):
+        item = self.ToolbarItem(widget, name)
+        self.showItem(item)
+        item.visibleEvent.connect(functools.partial(self._handleVisibleEvent, item))
 
     def _handleVisibleEvent(self, item:ToolbarItem, visible:bool):
         if visible:
@@ -120,36 +101,3 @@ class MainToolbar(QToolBox):
     @property
     def items(self):
         return [item for item in self._items]
-
-    def _addExtenstions(self):
-        extensionFilesFromDir = lambda d:[f for f in glob.glob(os.path.join(d, "*.py")) if "extension" in f or "Extension"]
-        extensionFiles = extensionFilesFromDir(extensionModule.__path__[0])
-        subdirs = glob.glob(os.path.join(extensionModule.__path__[0], '*/'), recursive=False)
-        for subdir in subdirs:
-            extensionFiles.extend(extensionFilesFromDir(subdir))
-
-        for extensionFile in extensionFiles:
-            try:
-                extensionName = os.path.splitext(os.path.basename(extensionFile))[0]
-
-                strToEval = 'from extensions.'
-                extensionsFound = False
-                for dirElem in extensionFile.split(os.path.sep):
-                    if extensionsFound:
-                        if os.path.splitext(dirElem)[0]==extensionName:
-                            break
-                        else:
-                            strToEval += dirElem + '.'
-                    else:
-                        if dirElem=='extensions':
-                            extensionsFound = True
-
-
-                strToEval +=  extensionName + ' import Panel\n'
-                strToEval += 'p = Panel(self._viewController)\n'
-                strToEval += 'item = self.ToolbarItem(p, \'' + extensionName + '\')\n'
-                strToEval += 'self.showItem(item)'
-                exec(strToEval)
-            except Exception as e:
-                logger.error(str(e))
-

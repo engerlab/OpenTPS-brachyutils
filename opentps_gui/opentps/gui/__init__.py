@@ -1,7 +1,6 @@
 
-from opentps.gui.main import run, patientList
+from opentps.gui.main import run, patientList, mainWindow, viewController
 
-import opentps.gui.extensions as extensions
 import opentps.gui.panels as panels
 import opentps.gui.res as res
 import opentps.gui.tools as tools

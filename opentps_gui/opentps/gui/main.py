@@ -10,22 +10,24 @@ logger = logging.getLogger(__name__)
 
 patientList = PatientList()
 
+mainConfig = ProgramSettings()
+
+logger.info("Instantiate opentps GUI")
+app = QApplication.instance()
+if not app:
+    app = QApplication([])
+
+# instantiate the main opentps_core window
+viewController = ViewController(patientList)
+viewController.mainConfig = mainConfig
+mainWindow = viewController.mainWindow
+
 def run():
-    mainConfig = ProgramSettings()
-
     # options = parseArgs(sys.argv[1:])
-    logger.info("Start Application")
-    app = QApplication.instance()
-    if not app:
-        app = QApplication([])
+    logger.info("Start opentps GUI")
 
-    # instantiate the main opentps_core window
-    viewController = ViewController(patientList)
-    viewController.mainConfig = mainConfig
-    viewController.mainWindow.show()
-
+    mainWindow.show()
     app.exec_()
-
 
 if __name__ == '__main__':
     run()
