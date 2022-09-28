@@ -6,11 +6,12 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional, Sequence, Union, List, Any
+from typing import Optional, Sequence, Union, List, Any, Tuple
 
 import numpy as np
 
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from opentps.core.data.images import LETImage
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.data.images._image3D import Image3D
@@ -52,10 +53,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._simulationFolderName = 'MCsquare_simulation'
 
         # Robustness settings
-        self._robustnessStrategy = "Disabled"
-        self._setupSystematicError = [2.5, 2.5, 2.5]  # mm
-        self._setupRandomError = [1.0, 1.0, 1.0]  # mm
-        self._rangeSystematicError = 3.0  # %
+        self.robustnessStrategy = "Disabled"
+        self.setupSystematicError = [2.5, 2.5, 2.5]  # mm
+        self.setupRandomError = [1.0, 1.0, 1.0]  # mm
+        self.rangeSystematicError = 3.0  # %
         self._numScenarios = None
 
         self._computeDVHOnly = 0
@@ -66,9 +67,22 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         self.overwriteOutsideROI = None  # Previously cropCTContour but this name was confusing
 
-        self._sparseLETFilePath = os.path.join(self._workDir, "Sparse_Dose.txt")
-        self._sparseDoseFilePath = os.path.join(self._workDir, "Sparse_Dose.txt")
+        self._sparseLETFilePath = os.path.join(self._workDir, "Sparse_LET.txt")
         self._doseFilePath = os .path.join(self._workDir, "Dose.mhd")
+        self._letFilePath = os.path.join(self._workDir, "LET.mhd")
+
+        self._sparseDoseScenarioToRead = None
+
+    @property
+    def _sparseDoseFilePath(self):
+        if self.robustnessStrategy== "Disabled":
+            return os.path.join(self._workDir, "Sparse_Dose.txt")
+        elif self._sparseDoseScenarioToRead==None:
+            return os.path.join(self._workDir, "Sparse_Dose_Nominal.txt")
+        else:
+            return os.path.join(self._workDir, "Sparse_Dose_Scenario_" + str(self._sparseDoseScenarioToRead + 1) + "-" + str(
+                self._numScenarios) + ".txt")
+
 
     @property
     def ctCalibration(self) -> Optional[AbstractCTCalibration]:
@@ -138,8 +152,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._subprocess.kill()
             self._subprocess = None
 
-    def computeDose(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = []) -> List[
-        Union[DoseImage, Any]]:
+    def computeDose(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = None) -> DoseImage:
         logger.info("Prepare MCsquare Dose calculation")
         self._ct = ct
         self._plan = plan
@@ -151,21 +164,24 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare()
 
         mhdDose = self._importDose()
-        if self._computeLETDistribution > 0:
-            mhdLET = self.importLET()
-            return [mhdDose, mhdLET]
         return mhdDose
 
-    def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]):
+    def computeDoseAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = None) -> Tuple[DoseImage, LETImage]:
+        self._computeLETDistribution = True
+        dose = self.computeDose(ct, plan, roi)
+        let = self._importLET()
+        return dose, let
+
+    def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> Robustness:
         logger.info("Prepare MCsquare Robust Dose calculation")
         scenarios = Robustness()
-        if self._robustnessStrategy == "DoseSpace":
+        if self.robustnessStrategy == "DoseSpace":
             scenarios.selectionStrategy = "Dosimetric"
         else:
             scenarios.selectionStrategy = "Error"
-        scenarios.setupSystematicError = self._setupSystematicError
-        scenarios.setupRandomError = self._setupRandomError
-        scenarios.rangeSystematicError = self._rangeSystematicError
+        scenarios.setupSystematicError = self.setupSystematicError
+        scenarios.setupRandomError = self.setupRandomError
+        scenarios.rangeSystematicError = self.rangeSystematicError
 
         self._ct = ct
         self._plan = plan
@@ -197,7 +213,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return scenarios
 
-    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = []) -> SparseBeamlets:
+    def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> SparseBeamlets:
         logger.info("Prepare MCsquare Beamlet calculation")
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
@@ -213,49 +229,35 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         return beamletDose
 
-        # TODO:This does not look at the right place. This should be moved directly to where you need it because
-        #  - we don't always need to store the beamlets
-        #  - we do not always have a planDesign in plan (could be None)
-        #  - when we will have another dose engine this code will be duplicated
-        # A solution could be where you call computeBeamlets:
-        # beamlet = mc2.computeBeamlets(...)
-        # storeBeamlets(beamlets, outputDir) # a function that stores the beamlets with the code below.
+    def computeBeamletsAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> Tuple[SparseBeamlets, SparseBeamlets]:
+        self._computeLETDistribution = True
 
-        # Import sparse beamlets
-        if self._robustnessStrategy == "Disabled":
-            # Beamlet dose
-            beamletDose = self._importBeamlets()
-            outputBeamletFile = os.path.join(outputDir, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm")
-            saveBeamlets(beamletDose, outputBeamletFile)
-            beamletDose.unload()
-            plan.planDesign.beamlets = beamletDose
-            # Beamlet LET
-            if self._computeLETDistribution > 0:
-                beamletLET = self._importBeamletsLET()
-                outputBeamletLETFile = os.path.join(outputDir, "BeamletLETMatrix_" + plan.seriesInstanceUID + ".blm")
-                saveBeamlets(beamletLET, outputBeamletLETFile)
-                beamletLET.unload()
-                plan.planDesign.beamletsLET = beamletLET
+        beamletDose = self.computeBeamlets(ct, plan, roi)
+        beamletLET = self._importBeamletsLET()
 
-        else:
-            self._sparseDoseFilePath = os.path.join(self._workDir, "Sparse_Dose_Nominal.txt")
-            nominal = self._importBeamlets()
-            outputBeamletFile = os.path.join(outputDir, "BeamletMatrix_" + plan.seriesInstanceUID + "_Nominal.blm")
-            saveBeamlets(nominal, outputBeamletFile)
-            nominal.unload()
-            plan.planDesign.beamlets = nominal
-            plan.planDesign.scenarios = []
-            for s in range(self._numScenarios):
-                self._sparseDoseFilePath = os.path.join(self._workDir, "Sparse_Dose_Scenario_" + str(s + 1) + "-" + str(
-                    self._numScenarios) + ".txt")
-                scenario = self._importBeamlets()
-                outputBeamletFile = os.path.join(outputDir,
+        return beamletDose, beamletLET
+
+    def computeRobustScenarioBeamlets(self, ct:CTImage, plan:RTPlan, \
+                                      roi:Optional[Sequence[Union[ROIContour, ROIMask]]]=None, storePath:Optional[str] = None) \
+            -> Tuple[SparseBeamlets, Sequence[SparseBeamlets]]:
+
+        nominal = self.computeBeamlets(ct, plan, roi)
+        if not (storePath is None):
+            outputBeamletFile = os.path.join(storePath, "BeamletMatrix_" + plan.seriesInstanceUID + "_Nominal.blm")
+            nominal.storeOnFS(outputBeamletFile)
+
+        scenarios = []
+        for s in range(self._numScenarios):
+            self._sparseDoseScenarioToRead = s
+            scenario = self._importBeamlets()
+            if not (storePath is None):
+                outputBeamletFile = os.path.join(storePath,
                                                  "BeamletMatrix_" + plan.seriesInstanceUID + "_Scenario_" + str(
                                                      s + 1) + "-" + str(self._numScenarios) + ".blm")
-                saveBeamlets(scenario, outputBeamletFile)
-                scenario.unload()
-                plan.planDesign.scenarios.append(scenario)
-                plan.planDesign.numScenarios += 1
+                scenario.storeOnFS(outputBeamletFile)
+            scenarios.append(scenario)
+
+        return nominal, scenarios
 
     def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> DoseImage:
         self._ct = ct
@@ -342,6 +344,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
 
         return dose
+
+    def _importLET(self) -> LETImage:
+        return LETImage.fromImage3D(mcsquareIO.readMCsquareMHD(self._letFilePath))
 
     def _deliveredProtons(self) -> float:
         deliveredProtons = 0.
@@ -450,12 +455,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Compute_stat_uncertainty"] = False
         config["Robustness_Mode"] = True
         config["Simulate_nominal_plan"] = False
-        config["Systematic_Setup_Error"] = [self._setupSystematicError[0] / 10, self._setupSystematicError[1] / 10,
-                                            self._setupSystematicError[2] / 10]  # cm
-        config["Random_Setup_Error"] = [self._setupRandomError[0] / 10, self._setupRandomError[1] / 10,
-                                        self._setupRandomError[2] / 10]  # cm
-        config["Systematic_Range_Error"] = self._rangeSystematicError  # %
-        if self._robustnessStrategy == "DoseSpace":
+        config["Systematic_Setup_Error"] = [self.setupSystematicError[0] / 10, self.setupSystematicError[1] / 10,
+                                            self.setupSystematicError[2] / 10]  # cm
+        config["Random_Setup_Error"] = [self.setupRandomError[0] / 10, self.setupRandomError[1] / 10,
+                                        self.setupRandomError[2] / 10]  # cm
+        config["Systematic_Range_Error"] = self.rangeSystematicError  # %
+        if self.robustnessStrategy == "DoseSpace":
             config["Scenario_selection"] = "Random"
             config["Num_Random_Scenarios"] = 100
             self._numScenarios = config["Num_Random_Scenarios"]
@@ -478,17 +483,17 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Dose_Sparse_Threshold"] = 20000.0
         if self._computeLETDistribution > 0: config["LET_Sparse_Output"] = True
         # Robustness settings
-        if self._robustnessStrategy == "Disabled":
+        if self.robustnessStrategy == "Disabled":
             config["Robustness_Mode"] = False
         else:
             config["Robustness_Mode"] = True
             config["Simulate_nominal_plan"] = True
-            config["Systematic_Setup_Error"] = [self._setupSystematicError[0] / 10,
-                                                self._setupSystematicError[1] / 10,
-                                                self._setupSystematicError[2] / 10]  # cm
-            config["Random_Setup_Error"] = [self._setupRandomError[0] / 10, self._setupRandomError[1] / 10,
-                                            self._setupRandomError[2] / 10]  # cm
-            config["Systematic_Range_Error"] = self._rangeSystematicError  # %
+            config["Systematic_Setup_Error"] = [self.setupSystematicError[0] / 10,
+                                                self.setupSystematicError[1] / 10,
+                                                self.setupSystematicError[2] / 10]  # cm
+            config["Random_Setup_Error"] = [self.setupRandomError[0] / 10, self.setupRandomError[1] / 10,
+                                            self.setupRandomError[2] / 10]  # cm
+            config["Systematic_Range_Error"] = self.rangeSystematicError  # %
             config[
                 "Scenario_selection"] = "ReducedSet"  # "All" (81 scenarios), or "ReducedSet" (21 scenarios as in RayStation)
             if config["Scenario_selection"] == "All":

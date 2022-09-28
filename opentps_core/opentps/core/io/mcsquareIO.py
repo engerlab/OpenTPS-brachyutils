@@ -10,6 +10,7 @@ from typing import Optional, Sequence
 import numpy as np
 import pydicom
 import scipy.sparse as sp
+from opentps.core.data.images import LETImage, Image3D
 from scipy.sparse import csc_matrix
 
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
@@ -207,17 +208,23 @@ def _print_memory_usage(BeamletMatrix):
         logger.info("Memory usage: {} GB".format(mat_size / 1024 ** 3))
 
 
-def readDose(filePath):
-    doseMHD = importImageMHD(filePath)
-
-    # Convert data for compatibility with MCsquare
-    # These transformations may be modified in a future version
-    doseMHD.imageArray = np.flip(doseMHD.imageArray, 0)
-    doseMHD.imageArray = np.flip(doseMHD.imageArray, 1)
+def readDose(filePath)->DoseImage:
+    doseMHD = readMCsquareMHD(filePath)
 
     doseImage = DoseImage.fromImage3D(doseMHD)
 
     return doseImage
+
+def readMCsquareMHD(filePath) -> Image3D:
+    image = importImageMHD(filePath)
+
+    # Convert data for compatibility with MCsquare
+    # These transformations may be modified in a future version
+    image.imageArray = np.flip(image.imageArray, 0)
+    image.imageArray = np.flip(image.imageArray, 1)
+
+    return image
+
 
 def readMCsquarePlan(ct: CTImage, file_path):
     destFolder, destFile = os.path.split(file_path)

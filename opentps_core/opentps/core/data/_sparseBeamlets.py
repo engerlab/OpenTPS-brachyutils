@@ -5,7 +5,7 @@ import pickle
 from typing import Sequence, Optional
 
 import numpy as np
-from opentps.core.io.serializedObjectIO import saveBeamlets
+from opentps.core.io.serializedObjectIO import saveData
 from scipy.sparse import csc_matrix
 
 try:
@@ -112,12 +112,11 @@ class SparseBeamlets(PatientData):
     def reloadFromFS(self):
         with open(self._savedBeamletFile, 'rb') as fid:
             tmp = pickle.load(fid)
-
         self.__dict__.update(tmp)
 
     def storeOnFS(self, filePath):
         self._savedBeamletFile = filePath
-        saveBeamlets(self, self._savedBeamletFile)
+        saveData(self, self._savedBeamletFile)
         self.unload()
 
     def unload(self):

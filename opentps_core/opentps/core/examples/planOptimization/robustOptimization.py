@@ -1,41 +1,35 @@
-import json
-import logging.config
+
 import os
 import sys
 
 sys.path.append('..')
 import numpy as np
 from matplotlib import pyplot as plt
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core.data import ROIMask
-from opentps_core.opentps.core.data.Plan import ObjectivesList
-from opentps_core.opentps.core.data.Plan import PlanDesign
-from opentps_core.opentps.core.data import DVH
-from opentps_core.opentps.core.data import Patient
-from opentps_core.opentps.core.data import PatientList
-from opentps_core.opentps.core.data import FidObjective
-from opentps_core.opentps.core.IO import mcsquareIO
-from opentps_core.opentps.core.IO import readScanner
-from opentps_core.opentps.core.IO import loadRTPlan, saveRTPlan
-from opentps_core.opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps_core.opentps.core.Processing.DoseCalculation import MCsquareDoseCalculator
-from opentps_core.opentps.core import resampleImage3DOnImage3D
-from opentps_core.opentps.core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
-
-with open('../opentps_core/opentps/core/config/logger/logging_config.json', 'r') as log_fid:
-    config_dict = json.load(log_fid)
-logging.config.dictConfig(config_dict)
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import ROIMask
+from opentps.core.data.plan import ObjectivesList
+from opentps.core.data.plan import PlanDesign
+from opentps.core.data import DVH
+from opentps.core.data import Patient
+from opentps.core.data.plan import FidObjective
+from opentps.core.io import mcsquareIO
+from opentps.core.io.scannerReader import readScanner
+from opentps.core.io.serializedObjectIO import loadRTPlan, saveRTPlan
+from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
+from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
 
 # Generic example: box of water with squared target
-patientList = PatientList()
+output_path = os.getcwd()
+print('Files will be stored in ' + output_path)
+
 
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 patient = Patient()
 patient.name = 'Patient'
-
-patientList.append(patient)
 
 ctSize = 150
 
@@ -57,10 +51,6 @@ data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
-examplePath = "../testData"
-patient_data_path = os.path.join(examplePath, "fakeCT")
-output_path = os.path.join(patient_data_path, "OpenTPS")
-
 # Design plan
 beamNames = ["Beam1"]
 gantryAngles = [0.]
@@ -75,10 +65,10 @@ mc2 = MCsquareDoseCalculator()
 mc2.beamModel = bdl
 mc2.nbPrimaries = 5e4
 mc2.ctCalibration = ctCalibration
-mc2._setupSystematicError = [5.0, 5.0, 5.0]  # mm
-mc2._setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
-mc2._rangeSystematicError = 3.0  # %
-mc2._robustnessStrategy = "ErrorSpace_regular"
+mc2.setupSystematicError = [5.0, 5.0, 5.0]  # mm
+mc2.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
+mc2.rangeSystematicError = 3.0  # %
+mc2.robustnessStrategy = "ErrorSpace_regular"
 
 # Load / Generate new plan
 plan_file = os.path.join(output_path, "RobustPlan_notCropped.tps")
@@ -95,19 +85,21 @@ else:
     planInit.calibration = ctCalibration
     planInit.spotSpacing = 7.0
     planInit.layerSpacing = 6.0
-    planInit.targetMargin = max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2._setupSystematicError)
+    planInit.targetMargin = max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2.setupSystematicError)
 
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "RobustPlan"
 
-    #mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
-    mc2.computeBeamlets(ct, plan, output_path)
+    nominal, scenarios = mc2.computeRobustScenarioBeamlets(ct, plan, roi=[roi], storePath=output_path)
+    plan.planDesign.beamlets = nominal
+    plan.planDesign.scenarios = scenarios
+    plan.planDesign.numScenarios = len(scenarios)
+
     #saveRTPlan(plan, plan_file)
 
 
 
 beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
-plan.planDesign.beamlets.load()
 saveRTPlan(plan, plan_file)
 plan.planDesign.objectives = ObjectivesList()
 plan.planDesign.objectives.setTarget(roi.name, 20.0)

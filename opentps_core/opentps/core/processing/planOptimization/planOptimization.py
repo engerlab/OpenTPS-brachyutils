@@ -69,7 +69,6 @@ class PlanOptimizer:
 
         if robust:
             for s in range(len(self.plan.planDesign.scenarios)):
-                self.plan.planDesign.scenarios[s].load()
                 if use_MKL == 1:
                     beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                         sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),

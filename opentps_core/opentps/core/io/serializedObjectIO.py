@@ -127,19 +127,22 @@ def loadRTPlan(file_path):
 
 
 def saveBeamlets(beamlets, file_path):
-    beamlets._savedBeamletFile = file_path
-    with open(file_path, 'wb') as fid:
-        pickle.dump(beamlets.__dict__, fid, protocol=4)
-
+    beamlets.storeOnFS(file_path)
 
 def loadBeamlets(file_path):
     from opentps.core.data._sparseBeamlets import SparseBeamlets
+    return loadData(file_path, SparseBeamlets)
 
+def saveData(data, file_path):
+    with open(file_path, 'wb') as fid:
+        pickle.dump(data.__dict__, fid, protocol=4)
+
+def loadData(file_path, cls):
     with open(file_path, 'rb') as fid:
         tmp = pickle.load(fid)
-    beamletDose = SparseBeamlets()
-    beamletDose.__dict__.update(tmp)
-    return beamletDose
+    data = cls()
+    data.__dict__.update(tmp)
+    return data
 
 
 def dictionarizeData(data):
