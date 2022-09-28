@@ -824,7 +824,7 @@ class _Unpickler:
             newModuleFound = False
 
             for moduleName in moduleNames:
-                if 'core' in moduleName or 'opentps_core' in moduleName or 'extensions' in moduleName:
+                if 'core' in moduleName or 'gui' in moduleName or 'extensions' in moduleName:
                     try:
                         for membName, obj in inspect.getmembers(sys.modules[moduleName]):
                             if membName == name.split('.')[0]:

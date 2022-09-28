@@ -47,7 +47,7 @@ class ProgramSettings(metaclass=Singleton):
         self._config["dir"]["resultFolder"] = str(path / "Results")
         self._config["dir"]["simulationFolder"] = str(path / "Simulations")
         self._config["dir"]["logFolder"] = str(path / "Logs")
-        self._config["dir"]["exampleFolder"] = str(path / "Examples")
+        self._config["dir"]["exampleFolder"] = str(path / "examples")
 
         self.writeConfig()
 

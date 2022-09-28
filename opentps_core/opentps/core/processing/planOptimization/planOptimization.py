@@ -59,8 +59,8 @@ class PlanOptimizer:
                 roiObjectives = np.logical_or(roiObjectives, objective.maskVec)
         roiObjectives = np.logical_or(roiObjectives, roiRobustObjectives)
 
-        # reload beamlets and crop to optimization ROI
-        logger.info("Re-load and crop beamlets to optimization ROI...")
+        # reload beamlets and crop to planOptimization ROI
+        logger.info("Re-load and crop beamlets to planOptimization ROI...")
         if self.plan.planDesign.beamlets is None:
             self.plan.planDesign.beamlets.load()
         if use_MKL == 1:

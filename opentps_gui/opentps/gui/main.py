@@ -12,7 +12,7 @@ patientList = PatientList()
 
 mainConfig = ProgramSettings()
 
-logger.info("Instantiate opentps GUI")
+logger.info("Instantiate opentps gui")
 app = QApplication.instance()
 if not app:
     app = QApplication([])
@@ -24,7 +24,7 @@ mainWindow = viewController.mainWindow
 
 def run():
     # options = parseArgs(sys.argv[1:])
-    logger.info("Start opentps GUI")
+    logger.info("Start opentps gui")
 
     mainWindow.show()
     app.exec_()

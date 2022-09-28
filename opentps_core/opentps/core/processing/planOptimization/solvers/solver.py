@@ -24,7 +24,7 @@ class ConvexSolver(object):
 
     def solve(self, functions, x0):
         """
-        Solve an optimization problem whose objective function is the sum of some
+        Solve an planOptimization problem whose objective function is the sum of some
         convex functions.
         Inputs:
         - functions: list of convex functions to minimize (objects must implement the "pyopti.functions.func.eval"

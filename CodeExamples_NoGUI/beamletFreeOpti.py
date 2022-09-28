@@ -89,10 +89,10 @@ plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0,
 plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
 plan.planDesign.defineTargetMaskAndPrescription()
 
-# MCsquare beamlet free optimization
+# MCsquare beamlet free planOptimization
 doseImage = mc2.optimizeBeamletFree(ct, plan, [roi])
 # Compute DVH
-# must flip back because was flipped for compatibility with MCsquare optimization
+# must flip back because was flipped for compatibility with MCsquare planOptimization
 roi.imageArray = np.flip(roi.imageArray, (0,1))
 target_DVH = DVH(roi, doseImage)
 print('D95 = ' + str(target_DVH.D95) + ' Gy')

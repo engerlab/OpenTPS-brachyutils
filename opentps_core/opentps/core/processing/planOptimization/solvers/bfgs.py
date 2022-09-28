@@ -38,9 +38,9 @@ class ScipyOpt:
 class BFGS(GradientDescent):
     """
     Broyden–Fletcher–Goldfarb–Shanno algorithm.
-    This algorithm solves unconstrained nonlinear optimization problems.
+    This algorithm solves unconstrained nonlinear planOptimization problems.
     The BFGS method belongs to quasi-Newton methods, a class of hill-climbing
-    optimization techniques that seek a stationary point of a (preferably twice
+    planOptimization techniques that seek a stationary point of a (preferably twice
     continuously differentiable) function.
     """
 

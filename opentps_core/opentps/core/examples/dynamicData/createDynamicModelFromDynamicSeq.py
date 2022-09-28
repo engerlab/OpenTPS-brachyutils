@@ -7,15 +7,14 @@ This file contains an example on how to:
 
 import os
 import sys
+
+from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+from opentps.core.io.serializedObjectIO import loadDataStructure, saveSerializedObjects
 from pydicom.uid import generate_uid
 import time
 import numpy as np
 import logging
 from logConfigParser import parseArgs
-
-from opentps_core.opentps.core.IO import saveSerializedObjects
-from opentps_core.opentps.core.data import Dynamic3DModel
-from opentps_core.opentps.core.IO import loadDataStructure
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
@@ -29,7 +28,7 @@ if __name__ == '__main__':
     options = parseArgs(sys.argv[1:])
 
     # Get the current working directory, its parent, then add the testData folder at the end of it
-    testDataPath = os.path.join(currentWorkingDir, 'testData/')
+    testDataPath = os.path.join(currentWorkingDir, 'testData')
 
     ## read a serialized dynamic sequence
     dataPath = testDataPath + "lightDynSeq.p"

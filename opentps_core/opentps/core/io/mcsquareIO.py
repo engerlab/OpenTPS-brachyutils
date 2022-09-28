@@ -611,7 +611,7 @@ def writeObjectives(objectives: ObjectivesList, file_path):
 
     logger.info("Write plan objectives: {}".format(file_path))
     fid = open(file_path, 'w');
-    fid.write("# List of objectives for treatment plan optimization\n\n")
+    fid.write("# List of objectives for treatment plan planOptimization\n\n")
     fid.write("Target_ROIName:\n" + targetName + "\n\n")
     fid.write("Dose_prescription:\n" + str(objectives.targetPrescription) + "\n\n")
     fid.write("Number_of_objectives:\n" + str(len(objectives.fidObjList)) + "\n\n")

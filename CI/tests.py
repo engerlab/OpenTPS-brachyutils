@@ -2,12 +2,12 @@
 import numpy as np
 
 import opentps_core
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core.data import ROIMask
-from opentps_core.opentps.core.data import Patient
-from opentps_core.opentps.core.IO import mcsquareIO
-from opentps_core.opentps.core.IO import readScanner
-from opentps_core.opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.data import CTImage
+from opentps.core.data import ROIMask
+from opentps.core.data import Patient
+from opentps.core.IO import mcsquareIO
+from opentps.core.IO import readScanner
+from opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
 
 
 print('TEST')
