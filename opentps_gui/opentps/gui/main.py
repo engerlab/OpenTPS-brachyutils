@@ -3,12 +3,12 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from opentps.core import logConfigParser
+from opentps.core import loggingConfig
 from opentps.core.data import PatientList
 from opentps.core.utils.programSettings import ProgramSettings
 from opentps.gui.viewController import ViewController
 
-options = logConfigParser.parseArgs(sys.argv[1:])
+options = loggingConfig.configure(sys.argv[1:])
 
 logger = logging.getLogger(__name__)
 

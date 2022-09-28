@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
-    options = logConfigParser.parseArgs(sys.argv[1:])
+    options = logConfigParser.configure(sys.argv[1:])
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed_img = np.full((100, 100, 100), -1000)

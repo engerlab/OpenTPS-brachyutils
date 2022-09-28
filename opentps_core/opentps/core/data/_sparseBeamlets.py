@@ -5,6 +5,7 @@ import pickle
 from typing import Sequence, Optional
 
 import numpy as np
+from opentps.core.io.serializedObjectIO import saveBeamlets
 from scipy.sparse import csc_matrix
 
 try:
@@ -32,7 +33,7 @@ class SparseBeamlets(PatientData):
         self._gridSize = (0, 0, 0)
         self._orientation = (1, 0, 0, 0, 1, 0, 0, 0, 1)
 
-        self._savedBeamletFile = ""
+        self._savedBeamletFile = None
 
     @property
     def beamletWeights(self) -> Optional[Sequence]:
@@ -104,16 +105,20 @@ class SparseBeamlets(PatientData):
         return doseImage
 
     def toSparseMatrix(self) -> csc_matrix:
+        if self._sparseBeamlets is None and not(self._savedBeamletFile is None):
+            self.reloadFromFS()
         return self._sparseBeamlets
 
-    def load(self, file_path=""):
-        if file_path == "":
-            file_path = self._savedBeamletFile
-
-        with open(file_path, 'rb') as fid:
+    def reloadFromFS(self):
+        with open(self._savedBeamletFile, 'rb') as fid:
             tmp = pickle.load(fid)
 
         self.__dict__.update(tmp)
+
+    def storeOnFS(self, filePath):
+        self._savedBeamletFile = filePath
+        saveBeamlets(self, self._savedBeamletFile)
+        self.unload()
 
     def unload(self):
         self._sparseBeamlets = None

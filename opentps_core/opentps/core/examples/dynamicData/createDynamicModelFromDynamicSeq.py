@@ -14,7 +14,7 @@ from pydicom.uid import generate_uid
 import time
 import numpy as np
 import logging
-from opentps.core._logConfigParser import parseArgs
+from opentps.core._loggingConfig import configure
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
 
-    options = parseArgs(sys.argv[1:])
+    options = configure(sys.argv[1:])
 
     # Get the current working directory, its parent, then add the testData folder at the end of it
     testDataPath = os.path.join(currentWorkingDir, 'testData')

@@ -9,38 +9,32 @@ sys.path.append('..')
 import numpy as np
 from matplotlib import pyplot as plt
 
-import opentps_core
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core.data import ROIMask
-from opentps_core.opentps.core.data.Plan import ObjectivesList
-from opentps_core.opentps.core.data.Plan import PlanDesign
-from opentps_core.opentps.core.data import DVH
-from opentps_core.opentps.core.data import Patient
-from opentps_core.opentps.core.data import FidObjective
-from opentps_core.opentps.core.IO import mcsquareIO
-from opentps_core.opentps.core.IO import readScanner
-from opentps_core.opentps.core.IO import saveRTPlan, loadRTPlan
-from opentps_core.opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps_core.opentps.core.Processing.DoseCalculation import MCsquareDoseCalculator
-from opentps_core.opentps.core import resampleImage3DOnImage3D,resampleImage3D
-from opentps_core.opentps.core.Processing.PlanOptimization.planOptimization import IMPTPlanOptimizer
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import ROIMask
+from opentps.core.data.plan import ObjectivesList
+from opentps.core.data.plan import PlanDesign
+from opentps.core.data import DVH
+from opentps.core.data import Patient
+from opentps.core.data.plan import FidObjective
+from opentps.core.io import mcsquareIO
+from opentps.core.io.scannerReader import readScanner
+from opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
+from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D, resampleImage3D
+from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
 
-
-with open('../opentps_core/opentps/core/config/logger/logging_config.json',
-          'r') as log_fid:
-    config_dict = json.load(log_fid)
-logging.config.dictConfig(config_dict)
 
 # Generic example: box of water with squared target
-patientList = opentps_core.patientList
+
+output_path = os.getcwd()
+print('Files will be stored in ' + output_path)
 
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 patient = Patient()
 patient.name = 'Patient'
-
-patientList.append(patient)
 
 ctSize = 150
 
@@ -62,10 +56,6 @@ roi.color = (255, 0, 0) # red
 data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
-
-examplePath = "../testData"
-patient_data_path = os.path.join(examplePath, "fakeCT")
-output_path = os.path.join(patient_data_path, "OpenTPS")
 
 # Design plan
 beamNames = ["Beam1"]
@@ -105,8 +95,10 @@ else:
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
-    mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
-    #mc2.computeBeamlets(ct, plan, output_path)
+    beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
+    plan.planDesign.beamlets = beamlets
+    beamlets.storeOnFS(os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm"))
+
     saveRTPlan(plan, plan_file)
 
 plan.planDesign.objectives = ObjectivesList()

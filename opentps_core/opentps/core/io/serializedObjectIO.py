@@ -16,7 +16,7 @@ from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data._patient import Patient
 
 # ---------------------------------------------------------------------------------------------------
-from opentps.core.data._sparseBeamlets import SparseBeamlets
+
 
 
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
@@ -133,6 +133,8 @@ def saveBeamlets(beamlets, file_path):
 
 
 def loadBeamlets(file_path):
+    from opentps.core.data._sparseBeamlets import SparseBeamlets
+
     with open(file_path, 'rb') as fid:
         tmp = pickle.load(fid)
     beamletDose = SparseBeamlets()
