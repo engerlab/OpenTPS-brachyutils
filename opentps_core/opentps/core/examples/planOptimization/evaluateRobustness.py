@@ -4,16 +4,16 @@ import datetime
 
 import numpy as np
 from matplotlib import pyplot as plt
-from opentps_core.opentps.core.data.images import CTImage
-from opentps_core.opentps.core.data.images import ROIMask
-from opentps_core.opentps.core.data.plan import PlanDesign
-from opentps_core.opentps.core.data import Patient
-from opentps_core.opentps.core.io import mcsquareIO
-from opentps_core.opentps.core.io.scannerReader import readScanner
-from opentps_core.opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
-from opentps_core.opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps_core.opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from opentps_core.opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import ROIMask
+from opentps.core.data.plan import PlanDesign
+from opentps.core.data import Patient
+from opentps.core.io import mcsquareIO
+from opentps.core.io.scannerReader import readScanner
+from opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
+from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 
 
 output_path = os.getcwd()
