@@ -7,13 +7,13 @@ from opentps.core.data import Patient
 from opentps.core.io import mcsquareIO, scannerReader
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 
-from opentps.gui import patientList
 
 print('TEST')
 
 patient = Patient()
 patient.name = 'Patient'
 
+patientList = PatientList()
 patientList.append(patient)
 
 
