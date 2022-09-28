@@ -4,21 +4,16 @@ import os
 import sys
 import time
 import logging
-from logConfigParser import parseArgs
 
-from opentps_core.opentps.core.Processing.Registration.registrationMorphons import RegistrationMorphons
-from opentps_core.opentps.core.data import CTImage
-
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
-os.chdir(currentWorkingDir)
+from opentps.core import logConfigParser
+from opentps.core.data.images import CTImage
+from opentps.core.processing.registration.registrationMorphons import RegistrationMorphons
 
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
 
-    options = parseArgs(sys.argv[1:])
+    options = logConfigParser.parseArgs(sys.argv[1:])
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed_img = np.full((100, 100, 100), -1000)

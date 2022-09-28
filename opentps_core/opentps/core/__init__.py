@@ -2,6 +2,7 @@
 
 from opentps.core._event import Event
 from opentps.core._api import APIInterpreter
+import opentps.core._logConfigParser as logConfigParser
 
 import opentps.core.data as data
 import opentps.core.io as io

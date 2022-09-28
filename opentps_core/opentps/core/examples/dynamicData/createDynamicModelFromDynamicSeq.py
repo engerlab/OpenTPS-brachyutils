@@ -14,7 +14,7 @@ from pydicom.uid import generate_uid
 import time
 import numpy as np
 import logging
-from logConfigParser import parseArgs
+from opentps.core._logConfigParser import parseArgs
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)

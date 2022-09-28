@@ -4,7 +4,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-from logConfigParser import parseArgs
+from opentps_core.opentps.core.logConfigParser import parseArgs
 
 from opentps_core.opentps.core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
 from opentps_core.opentps.core.IO import loadDataStructure

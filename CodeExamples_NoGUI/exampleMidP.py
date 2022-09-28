@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import logging
-from logConfigParser import parseArgs
+from opentps_core.opentps.core.logConfigParser import parseArgs
 
 from opentps_core.opentps.core.data import Dynamic3DModel
 from opentps_core.opentps.core.data import Dynamic3DSequence

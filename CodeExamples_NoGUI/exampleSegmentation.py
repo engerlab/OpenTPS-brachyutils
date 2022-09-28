@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import logging
-from logConfigParser import parseArgs
+from opentps_core.opentps.core.logConfigParser import parseArgs
 
 from opentps_core.opentps.core.data import CTImage
 from opentps_core.opentps.core import applyThreshold
