@@ -31,7 +31,7 @@ build:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
     - cd $PWD/opentps_core
     - poetry build
-    - cd ../opentps_core/opentps_gui
+    - cd ../opentps_gui
     - poetry build
     #- pip install dist/*
   artifacts:
@@ -48,6 +48,7 @@ test:
     - poetry install --no-root # install dependencies
     - cd $CI_PROJECT_DIR/opentps_gui
     - poetry install --no-root # install dependencies
+    - cd $CI_PROJECT_DIR/
     - python3 CI/tests.py
 
 docs:
