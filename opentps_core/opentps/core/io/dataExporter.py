@@ -3,9 +3,9 @@ import os
 from enum import Enum
 from typing import Sequence
 
-from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.data._patient import Patient
+from opentps.core.data.images import Image3D
+from opentps.core.data.plan import RTPlan
+from opentps.core.data import Patient
 from opentps.core.io import mhdIO
 from opentps.core.io import dicomIO
 

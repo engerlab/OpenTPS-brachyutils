@@ -7,7 +7,7 @@ import numpy as np
 from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data._roiContour import ROIContour
-from opentps.core._event import Event
+from opentps.core import Event
 
 
 class DVHBand():

@@ -6,8 +6,9 @@ from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.processing.doseCalculation.abstractDoseCalculator import ProgressInfo
-from opentps.core._event import Event
+from opentps.core import Event
 
+__all__ = ['AbstractDoseInfluenceCalculator']
 
 class AbstractDoseInfluenceCalculator:
     def __init__(self):

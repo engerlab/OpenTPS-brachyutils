@@ -8,32 +8,27 @@ sys.path.append('..')
 
 import numpy as np
 from matplotlib import pyplot as plt
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core.data import ROIMask
-from opentps_core.opentps.core.data.Plan import PlanDesign
+from opentps_core.opentps.core.data.images import CTImage
+from opentps_core.opentps.core.data.images import ROIMask
+from opentps_core.opentps.core.data.plan import PlanDesign
 from opentps_core.opentps.core.data import Patient
-from opentps_core.opentps.core.data import PatientList
-from opentps_core.opentps.core.IO import mcsquareIO
-from opentps_core.opentps.core.IO import readScanner
-from opentps_core.opentps.core.IO import saveRTPlan, loadRTPlan
-from opentps_core.opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps_core.opentps.core.Processing.DoseCalculation import MCsquareDoseCalculator
-from opentps_core.opentps.core.Processing.PlanEvaluation import Robustness
+from opentps_core.opentps.core.io import mcsquareIO
+from opentps_core.opentps.core.io.scannerReader import readScanner
+from opentps_core.opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
+from opentps_core.opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps_core.opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps_core.opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 
-with open('../opentps_core/opentps/core/config/logger/logging_config.json', 'r') as log_fid:
-    config_dict = json.load(log_fid)
-logging.config.dictConfig(config_dict)
+
+output_path = os.getcwd()
 
 # Generic example: box of water with squared target
-patientList = PatientList()
 
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 patient = Patient()
 patient.name = 'Patient'
-
-patientList.append(patient)
 
 ctSize = 150
 
@@ -56,9 +51,6 @@ data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
 data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
-examplePath = "../testData"
-patient_data_path = os.path.join(examplePath, "fakeCT")
-output_path = os.path.join(patient_data_path, "OpenTPS")
 # Create output folder
 if not os.path.isdir(output_path):
     os.mkdir(output_path)
@@ -94,7 +86,8 @@ else:
     plan = planInit.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
-    mc2.computeBeamlets(ct, plan, output_path, roi=[roi])
+    beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
+    plan.planDesign.beamlets = beamlets
     # mc2.computeBeamlets(ct, plan, output_path)
     saveRTPlan(plan, plan_file)
 

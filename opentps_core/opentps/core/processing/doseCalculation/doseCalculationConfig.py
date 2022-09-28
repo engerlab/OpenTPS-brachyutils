@@ -7,6 +7,7 @@ import opentps.core.processing.doseCalculation.MCsquare.Scanners as ScannerModul
 
 from opentps.core.utils.applicationConfig import AbstractApplicationConfig
 
+__all__ = ['DoseCalculationConfig']
 
 logger = logging.getLogger(__name__)
 

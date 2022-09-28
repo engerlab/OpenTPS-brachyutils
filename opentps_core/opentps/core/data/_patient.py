@@ -12,7 +12,7 @@ from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
 from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data._patientData import PatientData
 from opentps.core.data._rtStruct import RTStruct
-from opentps.core._event import Event
+from opentps.core import Event
 
 
 class Patient:

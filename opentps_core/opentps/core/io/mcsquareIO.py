@@ -10,26 +10,28 @@ from typing import Optional, Sequence
 import numpy as np
 import pydicom
 import scipy.sparse as sp
-from opentps.core.data.images import LETImage, Image3D
 from scipy.sparse import csc_matrix
 
-from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareCTCalibration import MCsquareCTCalibration
-from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial import MCsquareMaterial
-from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMolecule import MCsquareMolecule
-from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
-from opentps.core.data.images._ctImage import CTImage
-from opentps.core.data.images._doseImage import DoseImage
-from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.data.MCsquare._bdl import BDL
-from opentps.core.data.MCsquare._mcsquareConfig import MCsquareConfig
-from opentps.core.data.plan._objectivesList import ObjectivesList
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
-from opentps.core.data.plan._planIonLayer import PlanIonLayer
-from opentps.core.data.plan._rangeShifter import RangeShifter
-from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.data._sparseBeamlets import SparseBeamlets
+from opentps.core.data.CTCalibrations.MCsquareCalibration import MCsquareCTCalibration
+from opentps.core.data.CTCalibrations.MCsquareCalibration import MCsquareMaterial
+from opentps.core.data.CTCalibrations.MCsquareCalibration import MCsquareMolecule
+from opentps.core.data.CTCalibrations import AbstractCTCalibration
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import DoseImage
+from opentps.core.data.images import ROIMask
+from opentps.core.data.MCsquare import BDL
+from opentps.core.data.MCsquare import MCsquareConfig
+from opentps.core.data.plan import ObjectivesList
+from opentps.core.data.plan import PlanIonBeam
+from opentps.core.data.plan import PlanIonLayer
+from opentps.core.data.plan import RangeShifter
+from opentps.core.data.plan import RTPlan
+from opentps.core.data import SparseBeamlets
 from opentps.core.io import mhdIO
 from opentps.core.io.mhdIO import exportImageMHD, importImageMHD
+
+from opentps.core.data.images import Image3D
+
 
 logger = logging.getLogger(__name__)
 

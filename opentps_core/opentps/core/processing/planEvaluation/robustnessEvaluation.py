@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Union
 
@@ -5,10 +7,15 @@ import numpy as np
 import pickle
 import os
 
-from opentps.core.data import ROIContour
-from opentps.core.data.images import ROIMask, DoseImage
-from opentps.core.data._dvh import DVH
+
 from opentps.core.data._dvhBand import DVHBand
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from opentps.core.data import ROIContour
+    from opentps.core.data.images import ROIMask, DoseImage
+
 logger = logging.getLogger(__name__)
 
 class Robustness:
@@ -27,6 +34,7 @@ class Robustness:
         self.doseDistribution = []
 
     def setNominal(self, dose: DoseImage, contours: Union[ROIContour, ROIMask]):
+        from opentps.core.data._dvh import DVH
         self.nominal.dose = dose
         self.nominal.dvh.clear()
         for contour in contours:
@@ -35,6 +43,7 @@ class Robustness:
         self.nominal.dose.imageArray = self.nominal.dose.imageArray.astype(np.float32)
 
     def addScenario(self, dose: DoseImage, contours: Union[ROIContour, ROIMask]):
+        from opentps.core.data._dvh import DVH
         scenario = RobustnessScenario()
         scenario.dose = dose
         # Need to set patient to None for memory, est-ce que ca va poser probleme ?
@@ -69,6 +78,7 @@ class Robustness:
                     break
 
     def recomputeDVH(self, contours):
+        from opentps.core.data._dvh import DVH
         self.nominal.dvh.clear()
         for contour in contours:
             myDVH = DVH(contour, self.nominal.dose)

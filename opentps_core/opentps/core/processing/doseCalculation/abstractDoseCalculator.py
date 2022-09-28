@@ -1,13 +1,20 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from enum import Enum
 from typing import Optional
 
-from opentps.core.data.CTCalibrations import AbstractCTCalibration
-from opentps.core.data.images._ctImage import CTImage
-from opentps.core.data.images._doseImage import DoseImage
-from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core._event import Event
+from opentps.core import Event
 
+__all__ = ['AbstractDoseCalculator']
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from opentps.core.data.images._doseImage import DoseImage
+    from opentps.core.data.CTCalibrations import AbstractCTCalibration
+    from opentps.core.data.images._ctImage import CTImage
+    from opentps.core.data.plan._rtPlan import RTPlan
 
 class AbstractDoseCalculator:
     def __init__(self):

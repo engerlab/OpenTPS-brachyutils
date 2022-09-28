@@ -11,7 +11,7 @@ import copy
 import logging
 
 from opentps.core.data.images._image3D import Image3D
-from opentps.core._event import Event
+from opentps.core import Event
 
 
 try:

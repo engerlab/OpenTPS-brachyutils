@@ -6,7 +6,7 @@ from typing import Sequence
 
 from opentps.core.data._patient import Patient
 from opentps.core.data._patientData import PatientData
-from opentps.core._event import Event
+from opentps.core import Event
 
 
 class PatientList():

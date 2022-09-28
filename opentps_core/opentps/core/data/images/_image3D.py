@@ -10,7 +10,7 @@ import logging
 # from core.data.images.vectorField3D import VectorField3D
 
 from opentps.core.data._patientData import PatientData
-from opentps.core._event import Event
+from opentps.core import Event
 
 logger = logging.getLogger(__name__)
 

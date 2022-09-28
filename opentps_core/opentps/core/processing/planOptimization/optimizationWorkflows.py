@@ -8,8 +8,8 @@ from opentps.core.data.plan._planIonBeam import PlanIonBeam
 from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.io import scannerReader, mcsquareIO
-from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.doseCalculation import DoseCalculationConfig
+from opentps.core.processing.doseCalculation import MCsquareDoseCalculator
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.processing.planOptimization.objectives.doseFidelity import DoseFidelity
 from opentps.core.processing.planOptimization.planInitializer import PlanInitializer

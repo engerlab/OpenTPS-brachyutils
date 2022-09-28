@@ -1,3 +1,4 @@
+
 import copy
 import logging
 import math
@@ -10,25 +11,27 @@ from typing import Optional, Sequence, Union, List, Any, Tuple
 
 import numpy as np
 
-from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
-from opentps.core.data.images import LETImage
-from opentps.core.data.images._ctImage import CTImage
-from opentps.core.data.images._doseImage import DoseImage
-from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.data.MCsquare._bdl import BDL
-from opentps.core.data.MCsquare._mcsquareConfig import MCsquareConfig
-from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.data._roiContour import ROIContour
-from opentps.core.data._sparseBeamlets import SparseBeamlets
-from opentps.core.processing.planEvaluation._robustnessEvaluation import Robustness
-from opentps.core.io.serializedObjectIO import saveBeamlets
+from opentps.core.data.MCsquare import MCsquareConfig
+from opentps.core.data import SparseBeamlets
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.doseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from opentps.core.processing.doseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.utils.programSettings import ProgramSettings
+from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import DoseImage
+from opentps.core.data.images import LETImage
+from opentps.core.data.images import Image3D
+from opentps.core.data.images import ROIMask
+from opentps.core.data.MCsquare import BDL
+from opentps.core.data.plan import RTPlan
+from opentps.core.data import ROIContour
 
 import opentps.core.io.mcsquareIO as mcsquareIO
+
+__all__ = ['MCsquareDoseCalculator']
+
 
 logger = logging.getLogger(__name__)
 
@@ -346,6 +349,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return dose
 
     def _importLET(self) -> LETImage:
+        from opentps.core.data.images import LETImage
         return LETImage.fromImage3D(mcsquareIO.readMCsquareMHD(self._letFilePath))
 
     def _deliveredProtons(self) -> float:

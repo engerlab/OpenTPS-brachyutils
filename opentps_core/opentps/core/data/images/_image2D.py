@@ -8,7 +8,7 @@ from typing import Sequence
 import numpy as np
 
 from opentps.core.data._patientData import PatientData
-from opentps.core._event import Event
+from opentps.core import Event
 
 
 class Image2D(PatientData):

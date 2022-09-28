@@ -10,7 +10,7 @@ from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.io import mcsquareIO
-from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.doseCalculation import MCsquareDoseCalculator
 from opentps.core.utils.programSettings import ProgramSettings
 from pydicom.uid import generate_uid
 from opentps.core.data._rtStruct import ROIContour
@@ -19,7 +19,7 @@ from opentps.core.io.dicomIO import readDicomDose, writeRTDose
 from opentps.core.processing.planDeliverySimulation.beamDeliveryTimings import BDT
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.io.dataLoader import readSingleData
-from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.processing.doseCalculation import DoseCalculationConfig
 from opentps.core.data.images._deformation3D import Deformation3D
 import time
 

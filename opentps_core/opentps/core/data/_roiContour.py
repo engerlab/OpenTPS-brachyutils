@@ -9,7 +9,7 @@ import logging
 from opentps.core.data._patientData import PatientData
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.processing.imageProcessing import resampler3D
-from opentps.core._event import Event
+from opentps.core import Event
 
 
 class ROIContour(PatientData):

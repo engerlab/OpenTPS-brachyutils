@@ -8,7 +8,7 @@ import unittest
 import numpy as np
 import pydicom
 
-from opentps.core._event import Event
+from opentps.core import Event
 
 
 class PatientData:
