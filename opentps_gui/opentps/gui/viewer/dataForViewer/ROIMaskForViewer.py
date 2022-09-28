@@ -33,6 +33,8 @@ class ROIMaskForViewer(DataMultiton):
         self.visibleChangedSignal.emit(self._visible)
 
     def _updateVtkOutputPort(self):
+        if self._imageArray is None:
+            return
         referenceShape = self.gridSize
         referenceOrigin = self.origin
         referenceSpacing = self.spacing
