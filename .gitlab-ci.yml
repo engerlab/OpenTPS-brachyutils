@@ -1,0 +1,63 @@
+# Official language image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+image: python:latest
+
+# Change pip's cache directory to be inside the project directory since we can
+# only cache local items.
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Pip's cache doesn't store the python packages
+# https://pip.pypa.io/en/stable/topics/caching/
+#
+# If you want to also cache the installed packages, you have to install
+# them in a virtualenv and cache it as well.
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+
+before_script:
+  - python --version  # For debugging
+  - pip install virtualenv
+  - virtualenv venv
+  - source venv/bin/activate
+  - pip3 install poetry
+
+build:
+  image: python:3.9
+  script:
+    - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
+    - cd $PWD/opentps_core
+    - poetry build
+    - cd ../opentps_gui
+    - poetry build
+    #- pip install dist/*
+  artifacts:
+    paths:
+      - dist/*.whl
+
+# TODO: Should tests be executed on the built application
+test:
+  image: python:3.9
+  script:
+    - cd $CI_PROJECT_DIR
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
+    - cd $CI_PROJECT_DIR/opentps_core
+    - poetry install --no-root # install dependencies
+    - cd $CI_PROJECT_DIR/opentps_gui
+    - poetry install --no-root # install dependencies
+    - cd $CI_PROJECT_DIR/
+    - python3 CI/tests.py
+
+docs:
+  script:
+    - pip install sphinx sphinx-rtd-theme
+    #- export PYTHONPATH="$CI_PROJECT_DIR"
+    #- python3 docs/tools/version_utils.py
+    #- cd docs
+    #- make html
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+

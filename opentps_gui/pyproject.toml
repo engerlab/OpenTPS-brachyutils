@@ -1,0 +1,40 @@
+
+[tool.poetry]
+name = "opentps-gui"
+homepage = "http://opentps.org/"
+version = "1.0.3"
+readme = "README.md"
+license = "GPLv3"
+description = "Open source TPS for advanced proton therapy"
+authors = ["Sylvain Deffet <sylvaindeffet@gmail.com>",
+    "Damien Dasnoy <damien.dasnoy@uclouvain.be>",
+    "Valentin Hamaide <valentin.hamaide@uclouvain.be>",
+    "Guillaume Janssens <guillaume.janssens@iba-group.com>",
+    "Kevin Souris <kevin.souris@iba-group.com>",
+    "Sophie Wuyckens <sophie.wuyckens@uclouvain.be>"]
+packages = [
+    { include = "opentps" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+vtk = "^9.1.0"
+numpy = "^1.23.2"
+Pillow = "^9.2.0"
+pydicom = "^2.3.0"
+PyQt5 = "5.14"
+pyqtgraph = "^0.12.4"
+SimpleITK = "^2.1.1"
+sparse-dot-mkl = "^0.8.2"
+setuptools = "^61.0.0" # Required for local testing with python -m pip install -e .
+pandas = "^1.4.3"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+opentps = "opentps.gui:main.run"
+
+[build-system]
+requires = ["poetry-core>=1.0.8"]
+build-backend = "poetry.core.masonry.api"
+
