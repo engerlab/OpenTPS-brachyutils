@@ -1,18 +1,15 @@
 
 import numpy as np
 
-import opentps_core
-from opentps.core.data import CTImage
-from opentps.core.data import ROIMask
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import ROIMask
 from opentps.core.data import Patient
-from opentps.core.IO import mcsquareIO
-from opentps.core.IO import readScanner
-from opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.io import mcsquareIO, scannerReader
+from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 
+from opentps.gui import patientList
 
 print('TEST')
-
-patientList = opentps_core.patientList
 
 patient = Patient()
 patient.name = 'Patient'
@@ -20,7 +17,7 @@ patient.name = 'Patient'
 patientList.append(patient)
 
 
-ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
+ctCalibration = scannerReader.readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 ctSize = 150
