@@ -1,38 +1,28 @@
-import json
-import logging.config
+
 import numpy as np
 
 from matplotlib import pyplot as plt
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core.data import ROIMask
-from opentps_core.opentps.core.data.Plan import ObjectivesList
-from opentps_core.opentps.core.data.Plan import PlanDesign
+from opentps_core.opentps.core.data.images import CTImage
+from opentps_core.opentps.core.data.images import ROIMask
+from opentps_core.opentps.core.data.plan import ObjectivesList
+from opentps_core.opentps.core.data.plan import PlanDesign
 from opentps_core.opentps.core.data import DVH
 from opentps_core.opentps.core.data import Patient
-from opentps_core.opentps.core.data import PatientList
-from opentps_core.opentps.core.data import FidObjective
-from opentps_core.opentps.core.IO import mcsquareIO
-from opentps_core.opentps.core.IO import readScanner
-from opentps_core.opentps.core.Processing.DoseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps_core.opentps.core.Processing.DoseCalculation import MCsquareDoseCalculator
-from opentps_core.opentps.core import resampleImage3DOnImage3D
+from opentps_core.opentps.core.data.plan import FidObjective
+from opentps_core.opentps.core.io import mcsquareIO
+from opentps_core.opentps.core.io.scannerReader import readScanner
+from opentps_core.opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps_core.opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps_core.opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
 
-
-with open('/home/sophie/Documents/Protontherapy/OpenTPS/refactor/opentps_core/config/logger/logging_config.json',
-          'r') as log_fid:
-    config_dict = json.load(log_fid)
-logging.config.dictConfig(config_dict)
 
 # Generic example: box of water with squared target
-patientList = PatientList()
 
 ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
 bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
 patient = Patient()
 patient.name = 'Patient'
-
-patientList.append(patient)
 
 ctSize = 150
 
@@ -55,7 +45,6 @@ data[100:120, 100:120, 100:120] = True
 roi.imageArray = data
 
 # Configure MCsquare
-MCSquarePath = '../core/Processing/DoseCalculation/MCsquare/'
 mc2 = MCsquareDoseCalculator()
 mc2.beamModel = bdl
 mc2.ctCalibration = ctCalibration

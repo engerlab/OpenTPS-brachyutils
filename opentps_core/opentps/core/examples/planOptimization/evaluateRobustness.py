@@ -1,10 +1,6 @@
-import json
-import logging.config
+
 import os
 import datetime
-import sys
-
-sys.path.append('..')
 
 import numpy as np
 from matplotlib import pyplot as plt
