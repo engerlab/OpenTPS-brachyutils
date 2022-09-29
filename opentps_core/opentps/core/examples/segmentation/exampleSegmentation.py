@@ -1,24 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
-import sys
 import logging
-from opentps_core.opentps.core.logConfigParser import parseArgs
 
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core import applyThreshold
-from opentps_core.opentps.core.Processing.Segmentation.segmentationCT import SegmentationCT
-
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
-os.chdir(currentWorkingDir)
+from opentps.core.data.images import CTImage
+from opentps.core.processing.segmentation.segmentation3D import applyThreshold
+from opentps.core.processing.segmentation.segmentationCT import SegmentationCT
 
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
-
-    options = parseArgs(sys.argv[1:])
 
     # GENERATE SYNTHETIC CT IMAGE
     im = np.full((170, 170, 100), -1000)
