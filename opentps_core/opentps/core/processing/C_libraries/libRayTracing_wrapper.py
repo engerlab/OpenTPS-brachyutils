@@ -8,8 +8,8 @@ import math
 import ctypes
 import platform
 
-sys.path.append('..')
 from opentps.core.processing.rangeEnergy import rangeToEnergy
+import opentps.core.processing.C_libraries as clibraries
 
 logger = logging.getLogger(__name__)
 currentWorkingDir = os.getcwd()
@@ -19,9 +19,9 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
     try:
         # import C library
         if (platform.system() == "Linux"):
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.so")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif (platform.system() == "Windows"):
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.dll")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -110,9 +110,9 @@ def compute_position_from_range(SPR, spot_positions, spot_directions, spot_range
     try:
         # import C library
         if platform.system() == "Linux":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.so")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.dll")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -198,9 +198,9 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
     try:
         # import C library
         if platform.system() == "Linux":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.so")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.dll")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -286,9 +286,9 @@ def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET,
     try:
         # import C library
         if platform.system() == "Linux":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.so")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.dll")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -393,9 +393,9 @@ def transport_spots_inside_target_map(SPR, Target_mask, SpotGrid, direction, min
     try:
         # import C library
         if platform.system() == "Linux":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.so")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
-            libRaytracing = ctypes.cdll.LoadLibrary("../core/processing/C_libraries/libRayTracing.dll")
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
