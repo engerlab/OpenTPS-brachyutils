@@ -2,18 +2,18 @@
 import numpy as np
 
 from matplotlib import pyplot as plt
-from opentps_core.opentps.core.data.images import CTImage
-from opentps_core.opentps.core.data.images import ROIMask
-from opentps_core.opentps.core.data.plan import ObjectivesList
-from opentps_core.opentps.core.data.plan import PlanDesign
-from opentps_core.opentps.core.data import DVH
-from opentps_core.opentps.core.data import Patient
-from opentps_core.opentps.core.data.plan import FidObjective
-from opentps_core.opentps.core.io import mcsquareIO
-from opentps_core.opentps.core.io.scannerReader import readScanner
-from opentps_core.opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps_core.opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from opentps_core.opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import ROIMask
+from opentps.core.data.plan import ObjectivesList
+from opentps.core.data.plan import PlanDesign
+from opentps.core.data import DVH
+from opentps.core.data import Patient
+from opentps.core.data.plan import FidObjective
+from opentps.core.io import mcsquareIO
+from opentps.core.io.scannerReader import readScanner
+from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
 
 
 # Generic example: box of water with squared target
