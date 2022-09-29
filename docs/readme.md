@@ -17,10 +17,10 @@ pip install sphinx-pyreverse
 ``` 
 
 4. Build the API (only required if new files were added)
-
 ```
 cd docs
-sphinx-apidoc -o source/ ../
+sphinx-apidoc --implicit-namespaces -o source/ ../opentps_core/opentps/
+sphinx-apidoc --implicit-namespaces -o source/ ../opentps_gui/opentps/
 ```
 
 5. Build the html

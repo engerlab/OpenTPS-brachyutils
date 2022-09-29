@@ -57,9 +57,9 @@ commit_count = '%(commit_count)s'
         a.close()
 
 if __name__ == "__main__":
-    from opentps.core import main as mainModule
+    import opentps.core as mainModule
 
-    cwd = os.path.dirname(mainModule.__file__)
+    cwd = os.path.join(mainModule.__path__[0], '..', '..', '..')
     print(git_version(cwd))
     write_version_py(cwd)
 
