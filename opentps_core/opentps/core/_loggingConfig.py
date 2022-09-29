@@ -105,15 +105,22 @@ def configure(*args):
     # parse the program's main arguments using the dictionary of defaults and
     # the previous parsers as "parent' parsers
     parsers = [loggingArgparse, configArgparse]
-    mainParser = ArgumentParser(prog=__file__, parents=parsers)
+    mainParser = ArgumentParser(prog=__file__, parents=parsers, exit_on_error=False)
     mainParser.set_defaults(**defaults)
     # Dummy example
     mainParser.add_argument('-1', '--option1')
     mainParser.add_argument('-2', '--option2')
-    mainArgs = mainParser.parse_args(*args)
 
-    # where did the value of each argument come from?
-    logger.info("Option 1: {}".format(mainArgs.option1))
-    logger.info("Option 2: {}".format(mainArgs.option2))
+    try:
+        mainArgs = mainParser.parse_args(*args)
+        # where did the value of each argument come from?
+        logger.info("Option 1: {}".format(mainArgs.option1))
+        logger.info("Option 2: {}".format(mainArgs.option2))
 
-    return mainArgs
+        return mainArgs
+
+    except:
+        return None
+
+if __name__=='__main__':
+    configure()
