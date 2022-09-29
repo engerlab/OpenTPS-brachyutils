@@ -1,20 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
-import sys
 import time
 import logging
 
-from opentps.core import logConfigParser
 from opentps.core.data.images import CTImage
 from opentps.core.processing.registration.registrationMorphons import RegistrationMorphons
 
 logger = logging.getLogger(__name__)
 
-if __name__ == "__main__":
-
-    options = logConfigParser.configure(sys.argv[1:])
-
+def run():
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed_img = np.full((100, 100, 100), -1000)
     fixed_img[25:75,25:75,25:75] = 0
@@ -97,3 +91,6 @@ if __name__ == "__main__":
 
     print('done')
     print(' ')
+
+if __name__ == "__main__":
+    run()
