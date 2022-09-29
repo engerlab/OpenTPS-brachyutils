@@ -1,25 +1,15 @@
-import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 import logging
-from opentps_core.opentps.core.logConfigParser import parseArgs
 
-from opentps_core.opentps.core.data import Dynamic3DModel
-from opentps_core.opentps.core.data import Dynamic3DSequence
-from opentps_core.opentps.core.data import CTImage
-
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
-os.chdir(currentWorkingDir)
+from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.images import CTImage
 
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
-
-    options = parseArgs(sys.argv[1:])
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = Dynamic3DSequence()

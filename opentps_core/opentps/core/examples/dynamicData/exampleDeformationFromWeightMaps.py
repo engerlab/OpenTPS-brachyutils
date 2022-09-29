@@ -1,57 +1,51 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
-import sys
+import logging
 
-from opentps_core.opentps.core.Processing.ImageProcessing import resampler3D
+from opentps.core.processing.imageProcessing import resampler3D
+from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.images import CTImage
+from opentps.core.processing.deformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
-
-from opentps_core.opentps.core.data import Dynamic3DModel
-from opentps_core.opentps.core.data import Dynamic3DSequence
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
+logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = Dynamic3DSequence()
     phase0 = np.full((170, 100, 100), -1000)
-    phase0[20:150,20:80,:] = 0
-    phase0[30:70,30:70,20:] = -800
-    phase0[100:140,30:70,20:] = -800
-    phase0[45:55,45:55,30:40] = 0
+    phase0[20:150, 20:80, :] = 0
+    phase0[30:70, 30:70, 20:] = -800
+    phase0[100:140, 30:70, 20:] = -800
+    phase0[80:90, 45:55, :] = 800
+    phase1 = phase0.copy()
+    phase2 = phase0.copy()
+    phase3 = phase0.copy()
+    phase0[45:55, 45:55, 30:40] = 0
+    phase1[30:70, 30:70, 20:25] = 0
+    phase1[100:140, 30:70, 20:25] = 0
+    phase1[42:52, 45:55, 35:45] = 0
+    phase2[30:70, 30:70, 20:30] = 0
+    phase2[100:140, 30:70, 20:30] = 0
+    phase2[45:55, 45:55, 40:50] = 0
+    phase3[30:70, 30:70, 20:25] = 0
+    phase3[100:140, 30:70, 20:25] = 0
+    phase3[48:58, 45:55, 35:45] = 0
     CT4D.dyn3DImageList.append(CTImage(imageArray=phase0, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    phase1 = np.full((170, 100, 100), -1000)
-    phase1[20:150,20:80,:] = 0
-    phase1[30:70,30:70,30:] = -800
-    phase1[100:140,30:70,30:] = -800
-    phase1[42:52,45:55,40:50] = 0
     CT4D.dyn3DImageList.append(CTImage(imageArray=phase1, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    phase2 = np.full((170, 100, 100), -1000)
-    phase2[20:150,20:80,:] = 0
-    phase2[30:70,30:70,40:] = -800
-    phase2[100:140,30:70,40:] = -800
-    phase2[45:55,45:55,50:60] = 0
     CT4D.dyn3DImageList.append(CTImage(imageArray=phase2, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    phase3 = np.full((170, 100, 100), -1000)
-    phase3[20:150,20:80,:] = 0
-    phase3[30:70,30:70,30:] = -800
-    phase3[100:140,30:70,30:] = -800
-    phase3[48:58,45:55,40:50] = 0
     CT4D.dyn3DImageList.append(CTImage(imageArray=phase3, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
 
     # CREATE TRACKER POSITIONS
-    trackers = [[30, 50, 30],
-                [70, 50, 30],
-                [100, 50, 30],
-                [140, 50, 30]]
+    trackers = [[30, 50, 40],
+                [70, 50, 40],
+                [100, 50, 40],
+                [140, 50, 40]]
 
     # GENERATE MIDP
     Model4D = Dynamic3DModel()
-    Model4D.computeMidPositionImage(CT4D, 0, baseResolution=4, nbProcesses=1)
+    Model4D.computeMidPositionImage(CT4D, 0, tryGPU=True)
 
     # GENERATE ADDITIONAL PHASES
     df1, wm = generateDeformationFromTrackers(Model4D, [0, 0, 2/4, 2/4], [1, 1, 1, 1], trackers)
@@ -67,40 +61,41 @@ if __name__ == '__main__':
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 5)
-    ax[0,0].imshow(Model4D.midp.imageArray[:, 49, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-    s0 = wm[0].imageArray[:, 49, :].T[::-1, ::1]
-    s1 = wm[1].imageArray[:, 49, :].T[::-1, ::1]
-    s2 = wm[2].imageArray[:, 49, :].T[::-1, ::1]
-    s3 = wm[3].imageArray[:, 49, :].T[::-1, ::1]
+    ax[0,0].imshow(Model4D.midp.imageArray[:, 50, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+    s0 = wm[0].imageArray[:, 50, :].T[::-1, ::1]
+    s1 = wm[1].imageArray[:, 50, :].T[::-1, ::1]
+    s2 = wm[2].imageArray[:, 50, :].T[::-1, ::1]
+    s3 = wm[3].imageArray[:, 50, :].T[::-1, ::1]
     ax[0,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
     ax[0,2].imshow(s1, cmap='Reds', origin='upper', vmin=0, vmax=1)
     ax[0,3].imshow(s2, cmap='Blues', origin='upper', vmin=0, vmax=1)
     ax[0,4].imshow(s3, cmap='Blues', origin='upper', vmin=0, vmax=1)
-    ax[0,0].plot(30,100-30,'ro')
-    ax[0,0].plot(70,100-30,'ro')
-    ax[0,0].plot(100,100-30,'bo')
-    ax[0,0].plot(140,100-30,'bo')
-    ax[0,1].plot(30,100-30,'ro')
-    ax[0,2].plot(70,100-30,'ro')
-    ax[0,3].plot(100,100-30,'bo')
-    ax[0,4].plot(140,100-30,'bo')
-    ax[1,0].imshow(Model4D.midp.imageArray[:, :, 49].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-    s0 = wm[0].imageArray[:, :, 49].T[::-1, ::1]
-    s1 = wm[1].imageArray[:, :, 49].T[::-1, ::1]
-    s2 = wm[2].imageArray[:, :, 49].T[::-1, ::1]
-    s3 = wm[3].imageArray[:, :, 49].T[::-1, ::1]
+    ax[0,0].plot(trackers[0][0],100-trackers[0][2],'ro')
+    ax[0,0].plot(trackers[1][0],100-trackers[1][2],'ro')
+    ax[0,0].plot(trackers[2][0],100-trackers[2][2],'bo')
+    ax[0,0].plot(trackers[3][0],100-trackers[3][2],'bo')
+    ax[0,1].plot(trackers[0][0],100-trackers[0][2],'ro')
+    ax[0,2].plot(trackers[1][0],100-trackers[1][2],'ro')
+    ax[0,3].plot(trackers[2][0],100-trackers[2][2],'bo')
+    ax[0,4].plot(trackers[3][0],100-trackers[3][2],'bo')
+
+    ax[1,0].imshow(Model4D.midp.imageArray[:, :, 50].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+    s0 = wm[0].imageArray[:, :, 50].T[::-1, ::1]
+    s1 = wm[1].imageArray[:, :, 50].T[::-1, ::1]
+    s2 = wm[2].imageArray[:, :, 50].T[::-1, ::1]
+    s3 = wm[3].imageArray[:, :, 50].T[::-1, ::1]
     ax[1,1].imshow(s0, cmap='Reds', origin='upper', vmin=0, vmax=1)
     ax[1,2].imshow(s1, cmap='Reds', origin='upper', vmin=0, vmax=1)
     ax[1,3].imshow(s2, cmap='Blues', origin='upper', vmin=0, vmax=1)
     ax[1,4].imshow(s3, cmap='Blues', origin='upper', vmin=0, vmax=1)
-    ax[1,0].plot(30,50,'ro')
-    ax[1,0].plot(70,50,'ro')
-    ax[1,0].plot(100,50,'bo')
-    ax[1,0].plot(140,50,'bo')
-    ax[1,1].plot(30,50,'ro')
-    ax[1,2].plot(70,50,'ro')
-    ax[1,3].plot(100,50,'bo')
-    ax[1,4].plot(140,50,'bo')
+    ax[1,0].plot(trackers[0][0],trackers[0][1],'ro')
+    ax[1,0].plot(trackers[1][0],trackers[1][1],'ro')
+    ax[1,0].plot(trackers[2][0],trackers[2][1],'bo')
+    ax[1,0].plot(trackers[3][0],trackers[3][1],'bo')
+    ax[1,1].plot(trackers[0][0],trackers[0][1],'ro')
+    ax[1,2].plot(trackers[1][0],trackers[1][1],'ro')
+    ax[1,3].plot(trackers[2][0],trackers[2][1],'bo')
+    ax[1,4].plot(trackers[3][0],trackers[3][1],'bo')
     ax[0,0].title.set_text('MidP and trackers')
     ax[0,1].title.set_text('Tracker 1')
     ax[0,2].title.set_text('Tracker 2')
@@ -121,10 +116,10 @@ if __name__ == '__main__':
     ax[1,0].imshow(Model4D.midp.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[1,0].imshow(wm[0].imageArray[:, y_slice, :].T[::-1, ::1] + wm[1].imageArray[:, y_slice, :].T[::-1, ::1], cmap='Reds', origin='upper', vmin=0, vmax=1, alpha=0.3)
     ax[1,0].imshow(wm[2].imageArray[:, y_slice, :].T[::-1, ::1] + wm[3].imageArray[:, y_slice, :].T[::-1, ::1], cmap='Blues', origin='upper', vmin=0, vmax=1, alpha=0.3)
-    ax[1,0].plot(30,100-30,'ro')
-    ax[1,0].plot(70,100-30,'ro')
-    ax[1,0].plot(100,100-30,'bo')
-    ax[1,0].plot(140,100-30,'bo')
+    ax[1, 0].plot(trackers[0][0],100-trackers[0][2], 'ro')
+    ax[1, 0].plot(trackers[1][0],100-trackers[1][2], 'ro')
+    ax[1, 0].plot(trackers[2][0],100-trackers[2][2], 'bo')
+    ax[1, 0].plot(trackers[3][0],100-trackers[3][2], 'bo')
     ax[1,0].title.set_text('MidP and weight maps')
     ax[1,1].imshow(im1.imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[1,1].title.set_text('phases [0,2] - amplitude 1')

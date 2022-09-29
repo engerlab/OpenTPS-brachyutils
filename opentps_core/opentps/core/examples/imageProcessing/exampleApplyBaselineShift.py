@@ -1,14 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import os
-import sys
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
+import logging
 
-from opentps_core.opentps.core.data import CTImage
-from opentps_core.opentps.core.data import ROIMask
-from opentps_core.opentps.core import applyBaselineShift
+from opentps.core.data.images import CTImage
+from opentps.core.data.images import ROIMask
+from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
+
+logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
 

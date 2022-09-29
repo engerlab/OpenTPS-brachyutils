@@ -4,21 +4,18 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-from opentps_core.opentps.core.logConfigParser import parseArgs
-
-from opentps_core.opentps.core.Processing.ImageSimulation.ForwardProjectorTigre import forwardProjectionTigre
-from opentps_core.opentps.core.IO import loadDataStructure
 
 currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 os.chdir(currentWorkingDir)
 
+from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwardProjectionTigre
+from opentps.core.io.serializedObjectIO import loadDataStructure
+
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
-
-    options = parseArgs(sys.argv[1:])
 
     # Get the current working directory, its parent, then add the testData folder at the end of it
     testDataPath = os.path.join(currentWorkingDir, 'testData/')
