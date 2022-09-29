@@ -1,9 +1,8 @@
-import sys
-sys.path.append('..')
 import numpy as np
-from opentps_core.opentps.core.IO import readData
-from opentps_core.opentps.core.IO import readDicomPlan
-from opentps_core.opentps.core.data import CTImage
+from opentps.core.io.dataLoader import readData
+from opentps.core.io.dicomIO import readDicomPlan
+from opentps.core.data.images._ctImage import CTImage
+from opentps.core.processing.planDeliverySimulation.planDeliverySimulation import simulate_plan_on_continuous_sequence
 
 
 def get_sequence_timings_from_txt_file(sequence_timings_filepath, return_tracker_amplitude=False):
