@@ -173,7 +173,7 @@ class MCsquareHU2Material:
         materialsPath = os.path.join(str(MCsquareModule.__path__[0]), 'Materials')
 
         for folder in glob(materialsPath + os.path.sep + '*' + os.path.sep):
-            y = folder.split('/')
+            y = folder.split(os.path.sep)
             last_folder = y[-1]
             if last_folder=='':
                 last_folder = y[-2]
