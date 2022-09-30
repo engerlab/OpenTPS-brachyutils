@@ -105,7 +105,7 @@ def configure(*args):
     # parse the program's main arguments using the dictionary of defaults and
     # the previous parsers as "parent' parsers
     parsers = [loggingArgparse, configArgparse]
-    mainParser = ArgumentParser(prog=__file__, parents=parsers, exit_on_error=False)
+    mainParser = ArgumentParser(prog=__file__, parents=parsers)
     mainParser.set_defaults(**defaults)
     # Dummy example
     mainParser.add_argument('-1', '--option1')
