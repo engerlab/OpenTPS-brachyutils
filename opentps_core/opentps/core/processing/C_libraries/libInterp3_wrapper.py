@@ -10,7 +10,7 @@ try:
     import cupyx
     # cupy.cuda.Device(0).use()
 except:
-    print('cupy not found.')
+    print('Warning: cupy not found.')
 
 logger = logging.getLogger(__name__)
 
