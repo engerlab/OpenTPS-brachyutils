@@ -1,9 +1,7 @@
 import sys
 sys.path.append('..')
 import numpy as np
-# from opentps_core.opentps.core.IO import readData
-# from opentps_core.opentps.core.IO import readDicomPlan
-# from opentps_core.opentps.core.data import CTImage
+
 from opentps.core.io.dataLoader import readData
 from opentps.core.io.dataLoader import readDicomPlan
 from opentps.core.data.images import CTImage
