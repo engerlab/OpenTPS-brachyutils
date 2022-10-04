@@ -1,34 +1,30 @@
-import os
-import sys
 import math
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
 
-currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
-os.chdir(currentWorkingDir)
-
+from opentps.core.data.images import CTImage
 from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwardProjectionTigre
-from opentps.core.io.serializedObjectIO import loadDataStructure
 
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
 
-    # Get the current working directory, its parent, then add the testData folder at the end of it
-    testDataPath = os.path.join(currentWorkingDir, 'testData/')
-
-    # read a serialized dynamic sequence
-    dataPath = testDataPath + "lightDynSeq.p"
-    dynSeq = loadDataStructure(dataPath)[0]
+    # GENERATE SYNTHETIC CT IMAGE
+    im = np.full((170, 170, 100), -1000)
+    im[20:150, 70:130, :] = 0
+    im[30:70, 80:120, 20:] = -800
+    im[100:140, 80:120, 20:] = -800
+    im[45:55, 95:105, 30:40] = 0
+    im[80:90, 115:125, :] = 800
+    im[:, 130:140, :] = 100  # couch
+    ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=[2, 2.5, 3])
 
     # Compute projections
     angles = np.array([0,90,180])*2*math.pi/360
-    DRR_no_noise = forwardProjectionTigre(dynSeq.dyn3DImageList[0], angles, axis='Z', poissonNoise=None, gaussianNoise=None)
-    DRR_realistic = forwardProjectionTigre(dynSeq.dyn3DImageList[0], angles, axis='Z')
-    DRR_high_noise = forwardProjectionTigre(dynSeq.dyn3DImageList[0], angles, axis='Z', poissonNoise=3e4, gaussianNoise=30)
+    DRR_no_noise = forwardProjectionTigre(ct, angles, axis='Z', poissonNoise=None, gaussianNoise=None)
+    DRR_realistic = forwardProjectionTigre(ct, angles, axis='Z')
+    DRR_high_noise = forwardProjectionTigre(ct, angles, axis='Z', poissonNoise=3e4, gaussianNoise=30)
 
     # Compute error
     error_realistic_projections = np.abs(DRR_realistic-DRR_no_noise)
