@@ -1,4 +1,7 @@
 import numpy as np
+
+
+
 from opentps.core.io.dataLoader import readData
 from opentps.core.io.dicomIO import readDicomPlan
 from opentps.core.data.images._ctImage import CTImage
@@ -17,6 +20,7 @@ def get_sequence_timings_from_txt_file(sequence_timings_filepath, return_tracker
 
 ######## Simulation on 4DCT #########
 patient_name = 'patient_0'
+
 
 # Load plan
 plan_path = f'/data/vhamaide/liver/{patient_name}/MidP_CT/Raystation/plan_4D_robust.dcm'
