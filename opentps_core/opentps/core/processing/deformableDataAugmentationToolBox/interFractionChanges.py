@@ -169,13 +169,13 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
             #
             # plt.show()
 
-            return newModel, organMask, erodedMaskCOM
+            return newModel, organMask
 
         else:
-            return model, organMask, organCOM
+            return model, organMask
 
     else:
-        return model, organMask, organCOM
+        return model, organMask
 
 ## ------------------------------------------------------------------------------------------------
 def rotateData(data, rotationInDeg=[0, 0, 0]):
