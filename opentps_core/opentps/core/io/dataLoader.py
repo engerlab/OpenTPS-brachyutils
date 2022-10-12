@@ -98,13 +98,27 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
         # Dicom CT
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
             # Dicom CT are not loaded directly. All slices must first be classified according to SeriesInstanceUID.
+
+            print(filePath)
+            print(os.path.dirname(os.path.dirname(filePath)))
+
+            # this checks if a breathingPeriod file is present in the ct folder or in the parent of the ct folder
+            # if yes, this ct slice is given a dynamic series index
+            dynSeriesIndex = -1
+            for txtFilePathIndex, txtFilePath in enumerate(fileLists["txt"]):
+                if txtFilePath.endswith('breathingPeriod.txt'):
+                    if os.path.dirname(txtFilePath) == os.path.dirname(filePath) or os.path.dirname(txtFilePath) == os.path.dirname(os.path.dirname(filePath)):
+                        print('IN IF', txtFilePath)
+                        dynSeriesIndex = txtFilePathIndex
+                        ## associer la slice à une série 4D
+
             newCT = 1
             for key in dicomCT:
                 if key == dcm.SeriesInstanceUID:
                     dicomCT[dcm.SeriesInstanceUID].append(filePath)
                     newCT = 0
             if newCT == 1:
-                dicomCT[dcm.SeriesInstanceUID] = [filePath]
+                dicomCT[dcm.SeriesInstanceUID] = [dynSeriesIndex, filePath]
 
         # Dicom dose
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.2":
@@ -130,7 +144,9 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
 
     # import Dicom CT images
     for key in dicomCT:
-        ct = readDicomCT(dicomCT[key])
+        print('in dataLoader readData, for key in dicomCT', key)
+        print(dicomCT[key][0])
+        ct = readDicomCT(dicomCT[key][1:])
         dataList.append(ct)
 
     # read MHD images
@@ -243,6 +259,10 @@ def get_file_type(filePath):
     if filePath.endswith('.p') or filePath.endswith('.pbz2') or filePath.endswith('.pkl') or filePath.endswith('.pickle'):
         return "Serialized"
 
+    # Is txt file ?
+    if filePath.endswith('.txt'):
+        return 'txt'
+
     logging.info("INFO: cannot recognize file format of " + filePath)
     return None
 
@@ -271,7 +291,8 @@ def listAllFiles(inputPaths, maxDepth=-1):
     fileLists = {
         "Dicom": [],
         "MHD": [],
-        "Serialized": []
+        "Serialized": [],
+        "txt": []
     }
 
     # if inputPaths is a list of path, then iteratively call this function with each path of the list
