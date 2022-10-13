@@ -15,10 +15,10 @@ if __name__ == '__main__':
     CT4D = createSynthetic4DCT()
 
     # CREATE TRACKER POSITIONS
-    trackers = [[30, 50, 40],
-                [70, 50, 40],
-                [100, 50, 40],
-                [140, 50, 40]]
+    trackers = [[30, 75, 40],
+                [70, 75, 40],
+                [100, 75, 40],
+                [140, 75, 40]]
 
     # GENERATE MIDP
     Model4D = Dynamic3DModel()

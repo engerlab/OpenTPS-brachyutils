@@ -24,7 +24,7 @@ if __name__ == '__main__':
     mask[45:55, 95:105, 30:40] = 1
     roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 2, 3])
 
-    ct, roi = createSynthetic3DCT(returnTumorMaks=True)
+    ct, roi = createSynthetic3DCT(returnTumorMask=True)
 
     # APPLY BASELINE SHIFT
     ctDef1, maskDef1 = applyBaselineShift(ct, roi, [5, 5, 5])
