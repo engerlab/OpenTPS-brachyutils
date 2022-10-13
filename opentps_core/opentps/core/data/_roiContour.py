@@ -70,9 +70,7 @@ class ROIContour(PatientData):
         contourSpacing[0] = minSpatialResolution
         contourSpacing[1] = minSpatialResolution
         contourSpacing[2] = minSpatialResolution
-
-        print(contourSpacing)
-
+        
         contourGridSize[0] = int(round((allX[-1]-contourOrigin[0])/contourSpacing[0])) + 1
         contourGridSize[1] = int(round((allY[-1]-contourOrigin[1])/contourSpacing[1])) + 1
         contourGridSize[2] = int(round((allZ[-1]-contourOrigin[2])/contourSpacing[2])) + 1
