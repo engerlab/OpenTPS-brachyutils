@@ -5,6 +5,7 @@ import logging
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import ROIMask
 from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
+from opentps.core.examples.syntheticData import *
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +24,11 @@ if __name__ == '__main__':
     mask[45:55, 95:105, 30:40] = 1
     roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 2, 3])
 
+    ct, roi = createSynthetic3DCT(returnTumorMaks=True)
+
     # APPLY BASELINE SHIFT
     ctDef1, maskDef1 = applyBaselineShift(ct, roi, [5, 5, 5])
-    ctDef2, maskDef2 = applyBaselineShift(ct, roi, [-5, -5, -5])
+    ctDef2, maskDef2 = applyBaselineShift(ct, roi, [-5, -3, -5])
     ctDef3, maskDef3 = applyBaselineShift(ct, roi, [0, 0, -20])
 
     # DISPLAY RESULTS
