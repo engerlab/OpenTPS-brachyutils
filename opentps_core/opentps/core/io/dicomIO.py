@@ -219,7 +219,8 @@ def readDicomStruct(dcmFile):
 
         for dcmSlice in dcmContour.ContourSequence:
             contour.polygonMesh.append(dcmSlice.ContourData)  # list of coordinates (XYZ) for the polygon
-            contour.referencedSOPInstanceUIDs.append(dcmSlice.ContourImageSequence[
+            if hasattr(dcmSlice, 'ContourImageSequence'):
+                contour.referencedSOPInstanceUIDs.append(dcmSlice.ContourImageSequence[
                                                          0].ReferencedSOPInstanceUID)  # UID of the image of reference (eg. ct slice)
 
         struct.appendContour(contour)
