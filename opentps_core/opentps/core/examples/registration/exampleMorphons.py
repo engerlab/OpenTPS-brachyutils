@@ -10,13 +10,10 @@ from opentps.core.examples.syntheticData import *
 logger = logging.getLogger(__name__)
 
 def run():
-    # GENERATE SYNTHETIC INPUT IMAGES
 
+    # GENERATE SYNTHETIC INPUT IMAGES
     fixed = createSynthetic3DCT(diaphragmPos=20, targetPos=[45, 95, 30])
     moving = createSynthetic3DCT(diaphragmPos=30, targetPos=[45, 95, 38])
-
-    # fixed = createSynthetic3DCT1()
-    # moving = createSynthetic3DCT2()
 
     # PERFORM REGISTRATION
     start_time = time.time()

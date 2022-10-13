@@ -12,17 +12,17 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
 
     # GENERATE SYNTHETIC CT IMAGE AND TUMOR MASK
-    im = np.full((170, 170, 100), -1000)
-    im[20:150, 70:130, :] = 0
-    im[30:70, 80:120, 20:] = -800
-    im[100:140, 80:120, 20:] = -800
-    im[45:55, 95:105, 30:40] = 0 #tumor
-    im[80:90, 95:105, :] = 800
-    im[:, 130:135, :] = 100 #couch
-    ct = CTImage(imageArray=im, origin=[0, 0, 0], spacing=[1, 2, 3])
-    mask = np.full((170, 170, 100), 0)
-    mask[45:55, 95:105, 30:40] = 1
-    roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 2, 3])
+    # im = np.full((170, 170, 100), -1000)
+    # im[20:150, 70:130, :] = 0
+    # im[30:70, 80:120, 20:] = -800
+    # im[100:140, 80:120, 20:] = -800
+    # im[45:55, 95:105, 30:40] = 0 #tumor
+    # im[80:90, 95:105, :] = 800
+    # im[:, 130:135, :] = 100 #couch
+    # ct = CTImage(imageArray=im, origin=[0, 0, 0], spacing=[1, 2, 3])
+    # mask = np.full((170, 170, 100), 0)
+    # mask[45:55, 95:105, 30:40] = 1
+    # roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 2, 3])
 
     ct, roi = createSynthetic3DCT(returnTumorMask=True)
 
