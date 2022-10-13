@@ -24,7 +24,7 @@ def createSynthetic3DCT(diaphragmPos = 20, targetPos = [45, 95, 30], returnTumor
 
     if returnTumorMask:
         mask = np.full((170, 170, 100), 0)
-        mask[45:55, 95:105, 30:40] = 1
+        mask[targetPos[0]:targetPos[0]+10, targetPos[1]:targetPos[1]+10, targetPos[2]:targetPos[2]+10] = 1
         roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 1, 2])
 
         return ct, roi
