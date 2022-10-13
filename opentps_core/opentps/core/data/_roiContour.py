@@ -67,10 +67,10 @@ class ROIContour(PatientData):
         zDiff = np.abs(np.diff(allZ))
         zDiff[zDiff == 0] = np.Inf
 
-        contourSpacing[0] = np.max((xDiff.min(), minSpatialResolution))
-        contourSpacing[1] = np.max((yDiff.min(), minSpatialResolution))
-        contourSpacing[2] = np.max((zDiff.min(), minSpatialResolution))
-
+        contourSpacing[0] = minSpatialResolution
+        contourSpacing[1] = minSpatialResolution
+        contourSpacing[2] = minSpatialResolution
+        
         contourGridSize[0] = int(round((allX[-1]-contourOrigin[0])/contourSpacing[0])) + 1
         contourGridSize[1] = int(round((allY[-1]-contourOrigin[1])/contourSpacing[1])) + 1
         contourGridSize[2] = int(round((allZ[-1]-contourOrigin[2])/contourSpacing[2])) + 1
