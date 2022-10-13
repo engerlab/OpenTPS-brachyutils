@@ -13,13 +13,16 @@ import os
 import sys
 
 currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
-sys.path.append(currentWorkingDir)
+print('currentWorkingDir :', currentWorkingDir)
+# while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
+sys.path.append(os.path.dirname(currentWorkingDir))
 
-from opentps_core.opentps.core.IO import loadDataStructure
-from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import shrinkOrgan, translateData, rotateData
-from opentps_core.opentps.core import applyBaselineShift
-from opentps_core.opentps.core import crop3DDataAroundBox
+from opentps.core.io.serializedObjectIO import loadDataStructure
+from opentps.core.processing.deformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
+from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
+from opentps.core.processing.imageProcessing.resampler3D import crop3DDataAroundBox
+from opentps.core.processing.segmentation.segmentation3D import getBoxAroundROI
+from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
 
 if __name__ == '__main__':
 
@@ -56,10 +59,10 @@ if __name__ == '__main__':
     marginInMM = [50, 0, 100]
 
     # interfraction changes parameters
-    baselineShift = [-5, 0, 30]
-    translation = [0, 0, 0]
-    rotation = [0, 0, 0]
-    shrinkSize = [0, 0, 0]
+    baselineShift = [-5, 0, 3]
+    translation = [-5, 3, 10]
+    rotation = [0, 5, 0]
+    shrinkSize = [2, 2, 2]
 
     # GPU used
     usedGPU = 0
@@ -138,7 +141,7 @@ if __name__ == '__main__':
     rotateData(GTVMask, rotationInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask, newMask3DCOM = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
+    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     print('-' * 50)
