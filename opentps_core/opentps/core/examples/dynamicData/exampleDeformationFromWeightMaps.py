@@ -4,8 +4,7 @@ import logging
 
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
-from opentps.core.data.images import CTImage
+from opentps.core.examples.syntheticData import createSynthetic4DCT
 from opentps.core.processing.deformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 
 logger = logging.getLogger(__name__)
@@ -13,35 +12,13 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
-    CT4D = Dynamic3DSequence()
-    phase0 = np.full((170, 100, 100), -1000)
-    phase0[20:150, 20:80, :] = 0
-    phase0[30:70, 30:70, 20:] = -800
-    phase0[100:140, 30:70, 20:] = -800
-    phase0[80:90, 45:55, :] = 800
-    phase1 = phase0.copy()
-    phase2 = phase0.copy()
-    phase3 = phase0.copy()
-    phase0[45:55, 45:55, 30:40] = 0
-    phase1[30:70, 30:70, 20:25] = 0
-    phase1[100:140, 30:70, 20:25] = 0
-    phase1[42:52, 45:55, 35:45] = 0
-    phase2[30:70, 30:70, 20:30] = 0
-    phase2[100:140, 30:70, 20:30] = 0
-    phase2[45:55, 45:55, 40:50] = 0
-    phase3[30:70, 30:70, 20:25] = 0
-    phase3[100:140, 30:70, 20:25] = 0
-    phase3[48:58, 45:55, 35:45] = 0
-    CT4D.dyn3DImageList.append(CTImage(imageArray=phase0, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    CT4D.dyn3DImageList.append(CTImage(imageArray=phase1, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    CT4D.dyn3DImageList.append(CTImage(imageArray=phase2, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    CT4D.dyn3DImageList.append(CTImage(imageArray=phase3, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
+    CT4D = createSynthetic4DCT()
 
     # CREATE TRACKER POSITIONS
-    trackers = [[30, 50, 40],
-                [70, 50, 40],
-                [100, 50, 40],
-                [140, 50, 40]]
+    trackers = [[30, 75, 40],
+                [70, 75, 40],
+                [100, 75, 40],
+                [140, 75, 40]]
 
     # GENERATE MIDP
     Model4D = Dynamic3DModel()
