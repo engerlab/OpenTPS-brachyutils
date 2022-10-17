@@ -5,19 +5,13 @@ import logging
 from opentps.core.data.images import CTImage
 from opentps.core.processing.segmentation.segmentation3D import applyThreshold
 from opentps.core.processing.segmentation.segmentationCT import SegmentationCT
+from opentps.core.examples.syntheticData import *
 
 logger = logging.getLogger(__name__)
 
 def run():
     # GENERATE SYNTHETIC CT IMAGE
-    im = np.full((170, 170, 100), -1000)
-    im[20:150, 70:130, :] = 0
-    im[30:70, 80:120, 20:] = -800
-    im[100:140, 80:120, 20:] = -800
-    im[45:55, 95:105, 30:40] = 0
-    im[80:90, 95:105, :] = 800
-    im[:, 130:135, :] = 100 #couch
-    ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=[1, 2, 3])
+    ct = createSynthetic3DCT()
 
     # APPLY THRESHOLD SEGMENTATION
     mask = applyThreshold(ct, -750)

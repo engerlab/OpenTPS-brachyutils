@@ -7,6 +7,7 @@ from opentps.core.data.images import ROIMask
 from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
 from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
 from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.examples.syntheticData import *
 
 logger = logging.getLogger(__name__)
 
