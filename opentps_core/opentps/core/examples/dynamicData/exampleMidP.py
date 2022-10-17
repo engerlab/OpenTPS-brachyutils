@@ -9,8 +9,7 @@ from opentps.core.data.images import CTImage
 
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
-
+def run():
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = Dynamic3DSequence()
     phase0 = np.full((100, 100, 100), -1000)
@@ -46,6 +45,10 @@ if __name__ == '__main__':
     im2 = Model4D.generate3DImage(2/4, amplitude=2.0, tryGPU=False)
     im3 = Model4D.generate3DImage(2/4, amplitude=0.5, tryGPU=False)
 
+    # CHECK RESULTS
+    # assert (Model4D.midp.imageArray[50,50,40] == 0) & (Model4D.midp.imageArray[50,50,57] == -800), f"Wrong midp"
+
+
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 4)
     fig.tight_layout()
@@ -69,5 +72,8 @@ if __name__ == '__main__':
 
     plt.show()
 
-    print('done')
-    print(' ')
+    print('MidP example completed')
+    print('')
+
+if __name__ == "__main__":
+    run()

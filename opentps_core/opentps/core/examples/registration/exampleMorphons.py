@@ -24,13 +24,20 @@ def run():
     processing_time = time.time() - start_time
     print('Registration processing time was', processing_time, '\n')
 
-    # DISPLAY RESULTS
+    # COMPUTE IMAGE DIFFERENCE
     df.resampleOn(moving, fillValue=-1024.)
     diff_before = fixed.copy()
     diff_before._imageArray = moving.imageArray - fixed.imageArray
     diff_after = fixed.copy()
     diff_after._imageArray = reg.deformed.imageArray - fixed.imageArray
 
+    # CHECK RESULTS
+    diff_before_sum = abs(diff_before.imageArray.sum())
+    diff_after_sum = abs(diff_after.imageArray.sum())
+    assert diff_before_sum-diff_after_sum > 0, f"Image difference is larger after registration"
+    assert abs(diff_after.imageArray[27,27,27])==0, f"Wrong target voxel difference after registration {diff_after.imageArray[27,27,27]} (expected 0)"
+
+    # DISPLAY RESULTS
     fig, ax = plt.subplots(3, 3)
     vmin = -1000
     vmax = 1000
@@ -89,8 +96,7 @@ def run():
 
     plt.show()
 
-    print('done')
-    print(' ')
+    print('Morphons example completed')
 
 if __name__ == "__main__":
     run()
