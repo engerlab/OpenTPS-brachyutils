@@ -10,6 +10,7 @@ from opentps.core.examples.syntheticData import *
 logger = logging.getLogger(__name__)
 
 def run():
+
     # GENERATE SYNTHETIC CT IMAGE
     ct = createSynthetic3DCT()
 

@@ -11,29 +11,8 @@ from opentps.core.examples.syntheticData import *
 logger = logging.getLogger(__name__)
 
 def run():
+
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
-    # CT4D = Dynamic3DSequence()
-    # phase0 = np.full((100, 100, 100), -1000)
-    # phase0[20:80,20:80,:] = 0
-    # phase0[30:70,30:70,20:] = -800
-    # phase0[45:55,45:55,30:40] = 0
-    # CT4D.dyn3DImageList.append(CTImage(imageArray=phase0, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    # phase1 = np.full((100, 100, 100), -1000)
-    # phase1[20:80,20:80,:] = 0
-    # phase1[30:70,30:70,30:] = -800
-    # phase1[42:52,45:55,40:50] = 0
-    # CT4D.dyn3DImageList.append(CTImage(imageArray=phase1, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    # phase2 = np.full((100, 100, 100), -1000)
-    # phase2[20:80,20:80,:] = 0
-    # phase2[30:70,30:70,40:] = -800
-    # phase2[45:55,45:55,50:60] = 0
-    # CT4D.dyn3DImageList.append(CTImage(imageArray=phase2, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    # phase3 = np.full((100, 100, 100), -1000)
-    # phase3[20:80,20:80,:] = 0
-    # phase3[30:70,30:70,30:] = -800
-    # phase3[48:58,45:55,40:50] = 0
-    # CT4D.dyn3DImageList.append(CTImage(imageArray=phase3, name='fixed', origin=[0,0,0], spacing=[1,1,1]))
-    #
     CT4D = createSynthetic4DCT()
 
     # GENERATE MIDP
@@ -49,8 +28,9 @@ def run():
     im3 = Model4D.generate3DImage(2/4, amplitude=0.5, tryGPU=False)
 
     # CHECK RESULTS
-    # assert (Model4D.midp.imageArray[50,50,40] == 0) & (Model4D.midp.imageArray[50,50,57] == -800), f"Wrong midp"
-
+    assert (Model4D.midp.imageArray[50,100,35] == 0) & (Model4D.midp.imageArray[50,100,33] == -800), f"Wrong midp"
+    assert (im1.imageArray[50, 100, 33] == 0) & (im1.imageArray[50, 100, 31] < -600), f"Wrong generated phase 0.5"
+    assert (im2.imageArray[50, 100, 43] == 0) & (im2.imageArray[50, 100, 41] < -600), f"Wrong generated phase 2 with amplitude 2"
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 4)
@@ -76,7 +56,6 @@ def run():
     plt.show()
 
     print('MidP example completed')
-    print('')
 
 if __name__ == "__main__":
     run()
