@@ -75,7 +75,7 @@ class RegistrationQuick(Registration):
         movingProfile = np.sum(self.deformed.imageArray, (0, 1))
         shift = matchProfiles(fixedProfile, movingProfile)
         translation[2] = self.fixed.origin[2] - self.moving.origin[2] + shift * self.deformed.spacing[2]
-
+        
         self.translateOrigin(self.deformed, translation)
 
         tform = np.zeros((4, 4))
