@@ -8,8 +8,7 @@ from opentps.core.processing.segmentation.segmentationCT import SegmentationCT
 
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
-
+def run():
     # GENERATE SYNTHETIC CT IMAGE
     im = np.full((170, 170, 100), -1000)
     im[20:150, 70:130, :] = 0
@@ -28,6 +27,11 @@ if __name__ == '__main__':
     body = seg.segmentBody()
     bones = seg.segmentBones()
     lungs = seg.segmentLungs()
+
+    # CHECK RESULTS
+    assert (body.imageArray[50,100,80] == True) & (body.imageArray[0,0,0] == False), f"Wrong body segmentation"
+    assert (bones.imageArray[85,100,50] == True) & (bones.imageArray[85,110,50] == False), f"Wrong bones segmentation"
+    assert (lungs.imageArray[120,100,35] == True) & (lungs.imageArray[50,100,35] == False), f"Wrong lungs segmentation"
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 5)
@@ -58,5 +62,7 @@ if __name__ == '__main__':
 
     plt.show()
 
-    print('done')
-    print(' ')
+    print('Segmentation example completed')
+
+if __name__ == "__main__":
+    run()
