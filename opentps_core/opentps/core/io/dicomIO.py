@@ -73,15 +73,18 @@ def readDicomCT(dcmFiles):
 
     # collect patient information
     if hasattr(dcm, 'PatientID'):
-        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                              sex=dcm.PatientSex)
+        brth = dcm.PatientBirthDate if hasattr(dcm, 'PatientBirthDate') else None
+        sex = dcm.PatientSex if hasattr(dcm, 'PatientSex') else None
+
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=brth, sex=sex)
     else:
         patient = Patient()
 
     # generate CT image object
+    FrameOfReferenceUID = dcm.FrameOfReferenceUID if hasattr(dcm, 'FrameOfReferenceUID') else None
     image = CTImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
                     spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID,
-                    frameOfReferenceUID=dcm.FrameOfReferenceUID, sliceLocation=sliceLocation,
+                    frameOfReferenceUID=FrameOfReferenceUID, sliceLocation=sliceLocation,
                     sopInstanceUIDs=sopInstanceUIDs)
     image.patient = patient
 
@@ -153,8 +156,10 @@ def readDicomDose(dcmFile):
 
     # collect patient information
     if hasattr(dcm, 'PatientID'):
-        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                      sex=dcm.PatientSex)
+        brth = dcm.PatientBirthDate if hasattr(dcm, 'PatientBirthDate') else None
+        sex = dcm.PatientSex if hasattr(dcm, 'PatientSex') else None
+
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=brth, sex=sex)
     else:
         patient = Patient()
 
@@ -192,8 +197,10 @@ def readDicomStruct(dcmFile):
 
     # collect patient information
     if hasattr(dcm, 'PatientID'):
-        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                      sex=dcm.PatientSex)
+        brth = dcm.PatientBirthDate if hasattr(dcm, 'PatientBirthDate') else None
+        sex = dcm.PatientSex if hasattr(dcm, 'PatientSex') else None
+
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=brth, sex=sex)
     else:
         patient = Patient()
 
@@ -260,8 +267,10 @@ def readDicomVectorField(dcmFile):
 
     # collect patient information
     if hasattr(dcm, 'PatientID'):
-        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                      sex=dcm.PatientSex)
+        brth = dcm.PatientBirthDate if hasattr(dcm, 'PatientBirthDate') else None
+        sex = dcm.PatientSex if hasattr(dcm, 'PatientSex') else None
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=brth,
+                      sex=sex)
     else:
         patient = Patient()
 
@@ -284,8 +293,11 @@ def readDicomPlan(dcmFile) -> RTPlan:
 
     # collect patient information
     if hasattr(dcm, 'PatientID'):
-        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=dcm.PatientBirthDate,
-                      sex=dcm.PatientSex)
+        brth = dcm.PatientBirthDate if hasattr(dcm, 'PatientBirthDate') else None
+        sex = dcm.PatientSex if hasattr(dcm, 'PatientSex') else None
+
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=brth,
+                      sex=sex)
     else:
         patient = Patient()
 
