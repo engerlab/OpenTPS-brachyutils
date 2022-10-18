@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import logging
 
 from opentps.core.processing.imageProcessing import resampler3D
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.examples.syntheticData import createSynthetic4DCT
 from opentps.core.processing.deformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers, generateDeformationFromTrackersAndWeightMaps
 

@@ -5,8 +5,8 @@ import logging
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import ROIMask
 from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.examples.syntheticData import *
 
 logger = logging.getLogger(__name__)
@@ -14,37 +14,41 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
 
     # GENERATE SYNTHETIC CT IMAGE
-    im = np.full((210, 150, 100), -1000)
-    im[20:190, 30:110, :] = 0
-    im[30:90, 40:100, 20:] = -800 # right lung
-    im[120:180, 40:100, 20:] = -800 # left lung
-    im[100:110, 65:75, :] = 800 # spine
-    im[:, 110:115, :] = 100 # couch
-    ct = CTImage(imageArray=im, origin=[0, 0, 0], spacing=[1, 1, 1.5])
+    # im = np.full((210, 150, 100), -1000)
+    # im[20:190, 30:110, :] = 0
+    # im[30:90, 40:100, 20:] = -800 # right lung
+    # im[120:180, 40:100, 20:] = -800 # left lung
+    # im[100:110, 65:75, :] = 800 # spine
+    # im[:, 110:115, :] = 100 # couch
+    # ct = CTImage(imageArray=im, origin=[0, 0, 0], spacing=[1, 1, 1.5])
 
-    # GENERATE MASK
-    mask = np.full((210, 150, 100), 0)
-    mask[52:68, 65:75, 35:55] = 1
-    roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 1, 1.5])
+    # ct, roi = createSynthetic3DCT()
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
-    CT4D = Dynamic3DSequence()
-    phase0 = ct.copy()
-    phase0._imageArray[55:65, 65:75, 35:45] = 0  # tumor
-    phase0._imageArray[30:90, 40:100, 15:20] = -800  # right lung3
-    phase0._imageArray[120:180, 40:100, 15:20] = -800  # left lung
-    CT4D.dyn3DImageList.append(phase0)
-    phase1 = ct.copy()
-    phase1._imageArray[52:62, 65:75, 40:50] = 0  # tumor
-    CT4D.dyn3DImageList.append(phase1)
-    phase2 = ct.copy()
-    phase2._imageArray[55:65, 65:75, 45:55] = 0  # tumor
-    phase2._imageArray[30:90, 40:100, 20:25] = 0
-    phase2._imageArray[120:180, 40:100, 20:25] = 0
-    CT4D.dyn3DImageList.append(phase2)
-    phase3 = ct.copy()
-    phase3._imageArray[58:68, 65:75, 40:50] = 0  # tumor
-    CT4D.dyn3DImageList.append(phase3)
+    # CT4D = Dynamic3DSequence()
+    # phase0 = ct.copy()
+    # phase0._imageArray[55:65, 65:75, 35:45] = 0  # tumor
+    # phase0._imageArray[30:90, 40:100, 15:20] = -800  # right lung3
+    # phase0._imageArray[120:180, 40:100, 15:20] = -800  # left lung
+    # CT4D.dyn3DImageList.append(phase0)
+    # phase1 = ct.copy()
+    # phase1._imageArray[52:62, 65:75, 40:50] = 0  # tumor
+    # CT4D.dyn3DImageList.append(phase1)
+    # phase2 = ct.copy()
+    # phase2._imageArray[55:65, 65:75, 45:55] = 0  # tumor
+    # phase2._imageArray[30:90, 40:100, 20:25] = 0
+    # phase2._imageArray[120:180, 40:100, 20:25] = 0
+    # CT4D.dyn3DImageList.append(phase2)
+    # phase3 = ct.copy()
+    # phase3._imageArray[58:68, 65:75, 40:50] = 0  # tumor
+    # CT4D.dyn3DImageList.append(phase3)
+
+    CT4D = createSynthetic4DCT(numberOfPhases=8)
+
+    # GENERATE MASK
+    mask = np.full(CT4D.dyn3DImageList[0].gridSize, 0)
+    mask[52:68, 65:75, 35:55] = 1
+    roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 1, 1.5])
 
     # GENERATE MIDP
     Model = Dynamic3DModel()

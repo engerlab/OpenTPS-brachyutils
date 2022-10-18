@@ -7,9 +7,9 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.data.dynamicData.dynamic2DSequence import Dynamic2DSequence
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic2DSequence import Dynamic2DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data._patientData import PatientData
 from opentps.core.data._rtStruct import RTStruct
 from opentps.core import Event

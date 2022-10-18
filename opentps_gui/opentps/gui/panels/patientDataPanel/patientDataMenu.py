@@ -9,8 +9,8 @@ from pydicom.uid import generate_uid
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data import PatientData
 from opentps.core.io.serializedObjectIO import saveSerializedObjects
 from opentps.gui.viewer.dataViewerComponents.patientDataPropertyEditor import PatientDataPropertyEditor

@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import time
 import logging
 
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images import CTImage
 from opentps.core.examples.syntheticData import *
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def run():
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
-    CT4D = createSynthetic4DCT()
+    CT4D = createSynthetic4DCT(numberOfPhases=8)
 
     # GENERATE MIDP
     Model4D = Dynamic3DModel()

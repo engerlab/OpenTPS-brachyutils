@@ -2,12 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import math
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._roiMask import ROIMask
 
 
-def createSynthetic3DCT(diaphragmPos = 20, targetPos = [45, 95, 30], returnTumorMask = False):
+def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], returnTumorMask = False):
     # GENERATE SYNTHETIC CT IMAGE
     # background
     im = np.full((170, 170, 100), -1000)
@@ -105,24 +105,24 @@ def createSynthetic4DCT(numberOfPhases = 4, returnTumorMasks = False):
 
     CT4D.dyn3DImageList = phaseList
 
-    # DISPLAY RESULTS
-    fig = plt.figure(tight_layout=True)
-    gs = gridspec.GridSpec(2, numberOfPhases)
-
-    xPosList = np.append(xPosList, xPosList[0])
-    zPosList = np.append(zPosList, zPosList[0])
-
-    ax = fig.add_subplot(gs[1, int(numberOfPhases/2)])
-    ax.plot(xPosList, zPosList)
-
-    y_slice = 95
-    for i in range(numberOfPhases):
-        ax = fig.add_subplot(gs[0, i])
-        ax.imshow(CT4D.dyn3DImageList[i].imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
-        ax.title.set_text('Phase' + str(i))
-        ax.scatter(xPosList[i], CT4D.dyn3DImageList[i].imageArray.shape[2] - zPosList[i])
-
-    plt.show()
+    # # DISPLAY RESULTS
+    # fig = plt.figure(tight_layout=True)
+    # gs = gridspec.GridSpec(2, numberOfPhases)
+    #
+    # xPosList = np.append(xPosList, xPosList[0])
+    # zPosList = np.append(zPosList, zPosList[0])
+    #
+    # ax = fig.add_subplot(gs[1, int(numberOfPhases/2)])
+    # ax.plot(xPosList, zPosList)
+    #
+    # y_slice = 95
+    # for i in range(numberOfPhases):
+    #     ax = fig.add_subplot(gs[0, i])
+    #     ax.imshow(CT4D.dyn3DImageList[i].imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+    #     ax.title.set_text('Phase' + str(i))
+    #     ax.scatter(xPosList[i], CT4D.dyn3DImageList[i].imageArray.shape[2] - zPosList[i])
+    #
+    # plt.show()
 
     if returnTumorMasks:
         return CT4D, maskList
