@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 if __name__ == '__main__':
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
-    CT4D = createSynthetic4DCT()
+    CT4D = createSynthetic4DCT(numberOfPhases=10)
 
     # CREATE TRACKER POSITIONS
     trackers = [[30, 75, 40],

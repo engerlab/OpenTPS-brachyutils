@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 4)
     fig.tight_layout()
-    y_slice = 100
+    y_slice = 95
     ax[0,0].imshow(CT4D.dyn3DImageList[0].imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
     ax[0,0].title.set_text('Phase 0')
     ax[0,1].imshow(CT4D.dyn3DImageList[1].imageArray[:, y_slice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
