@@ -6,9 +6,9 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from opentps.core.data.images import DoseImage
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images import Image2D
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic2DSequence import Dynamic2DSequence
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic2DSequence import Dynamic2DSequence
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core import Event
 from opentps.gui.viewer.dataViewerComponents.dvhViewerActions import DVHViewerActions

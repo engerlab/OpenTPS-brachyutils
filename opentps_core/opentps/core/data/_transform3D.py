@@ -4,6 +4,7 @@ __all__ = ['Transform3D']
 
 import logging
 import copy
+import math as m
 from opentps.core.data._patientData import PatientData
 
 logger = logging.getLogger(__name__)
@@ -54,3 +55,28 @@ class Transform3D(PatientData):
             logger.info('Failed to use SITK transform. Abort.')
 
         return image
+      
+    def getRotationAngles(self):
+        """Returns the Euler angles in radians.
+        
+            Returns
+            -------                
+                list of 3 floats: the Euler angles in radians (Rx,Ry,Rz).
+            """
+            
+        R = self.tform[0:-1,0:-1]    
+        eul1 = m.atan2(R.item(1,0),R.item(0,0))
+        sp = m.sin(eul1)
+        cp = m.cos(eul1)
+        eul2 = m.atan2(-R.item(2,0),cp*R.item(0,0)+sp*R.item(1,0))
+        eul3 = m.atan2(sp*R.item(0,2)-cp*R.item(1,2),cp*R.item(1,1)-sp*R.item(0,1)) 
+        return [eul3,eul2,eul1]
+         
+    def getTranslation(self):
+        """Returns the translation.
+        
+            Returns
+            -------                
+                list of 3 floats: the translation in the 3 directions [Tx,Ty,Tz].
+            """
+        return self.tform[0:-1, -1]
