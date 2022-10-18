@@ -12,8 +12,12 @@ logger = logging.getLogger(__name__)
 def run():
 
     # GENERATE SYNTHETIC INPUT IMAGES
-    fixed = createSynthetic3DCT(diaphragmPos=20, targetPos=[45, 95, 30])
-    moving = createSynthetic3DCT(diaphragmPos=30, targetPos=[45, 95, 38])
+    fixed_img = np.full((100, 100, 100), -1000)
+    fixed_img[25:75, 25:75, 25:75] = 0
+    fixed = CTImage(imageArray=fixed_img, name='fixed', origin=[0, 0, 0], spacing=[1, 1, 1])
+    moving_img = np.full((100, 100, 100), -1000)
+    moving_img[30:75, 35:75, 40:75] = 0
+    moving = CTImage(imageArray=moving_img, name='moving', origin=[0, 0, 0], spacing=[1, 1, 1])
 
     # PERFORM REGISTRATION
     start_time = time.time()
@@ -22,23 +26,26 @@ def run():
     processing_time = time.time() - start_time
     print('Registration processing time was', processing_time, '\n')
 
-    # DISPLAY RESULTS
+    # COMPUTE IMAGE DIFFERENCE
     df.resampleOn(moving, fillValue=-1024.)
     diff_before = fixed.copy()
     diff_before._imageArray = moving.imageArray - fixed.imageArray
     diff_after = fixed.copy()
     diff_after._imageArray = reg.deformed.imageArray - fixed.imageArray
 
+    # CHECK RESULTS
+    diff_before_sum = abs(diff_before.imageArray.sum())
+    diff_after_sum = abs(diff_after.imageArray.sum())
+    assert diff_before_sum-diff_after_sum > 0, f"Image difference is larger after registration"
+    assert abs(diff_after.imageArray[27,27,27])==0, f"Wrong target voxel difference after registration {diff_after.imageArray[27,27,27]} (expected 0)"
+
+    # DISPLAY RESULTS
     fig, ax = plt.subplots(3, 3)
     vmin = -1000
     vmax = 1000
-    # x_slice = round(fixed.imageArray.shape[0]/2)-1
-    # y_slice = round(fixed.imageArray.shape[1]/2)-1
-    # z_slice = round(fixed.imageArray.shape[2]/2)-1
-
-    x_slice = 50
-    y_slice = 100
-    z_slice = 35
+    x_slice = round(fixed.imageArray.shape[0] / 2) - 1
+    y_slice = round(fixed.imageArray.shape[1] / 2) - 1
+    z_slice = round(fixed.imageArray.shape[2] / 2) - 1
 
     # Plot X-Y field
     u = df.velocity.imageArray[:, :, z_slice, 0]
@@ -91,8 +98,7 @@ def run():
 
     plt.show()
 
-    print('done')
-    print(' ')
+    print('Morphons example completed')
 
 if __name__ == "__main__":
     run()
