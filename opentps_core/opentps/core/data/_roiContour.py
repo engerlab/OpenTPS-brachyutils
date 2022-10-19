@@ -56,10 +56,6 @@ class ROIContour(PatientData):
         allY = np.sort(allY)
         allZ = np.sort(allZ)
 
-        contourOrigin[0] = allX[0]
-        contourOrigin[1] = allY[0]
-        contourOrigin[2] = allZ[0]
-
         xDiff = np.abs(np.diff(allX))
         xDiff[xDiff==0] = np.Inf
         yDiff = np.abs(np.diff(allY))
@@ -69,11 +65,15 @@ class ROIContour(PatientData):
 
         contourSpacing[0] = minSpatialResolution
         contourSpacing[1] = minSpatialResolution
-        contourSpacing[2] = minSpatialResolution
-        
-        contourGridSize[0] = int(round((allX[-1]-contourOrigin[0])/contourSpacing[0])) + 1
-        contourGridSize[1] = int(round((allY[-1]-contourOrigin[1])/contourSpacing[1])) + 1
-        contourGridSize[2] = int(round((allZ[-1]-contourOrigin[2])/contourSpacing[2])) + 1
+        contourSpacing[2] = zDiff[0]
+
+        contourOrigin[0] = allX[0]
+        contourOrigin[1] = allY[0]
+        contourOrigin[2] = allZ[0]
+
+        contourGridSize[0] = int(round((allX[-1] - contourOrigin[0]) / contourSpacing[0])) + 1
+        contourGridSize[1] = int(round((allY[-1] - contourOrigin[1]) / contourSpacing[1])) + 1
+        contourGridSize[2] = int(round((allZ[-1] - contourOrigin[2]) / contourSpacing[2])) + 1
 
         mask3D = np.zeros(contourGridSize).astype(bool)
 

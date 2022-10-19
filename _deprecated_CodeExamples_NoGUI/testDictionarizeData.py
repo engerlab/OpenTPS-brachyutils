@@ -43,13 +43,15 @@ if __name__ == '__main__':
     # plt.imshow(dataList[0].imageArray[:, :, 22])
     # plt.show()
 
+
+    # create a patient, add the data and give him a name
     patient = Patient()
     for element in dataList:
-        print(type(element))
         patient.appendPatientData(element)
 
     patient.name = 'Mystery'
 
+    # launch the GUI with the patient we just filled already loaded
     import opentps.gui as GUI
     GUI.patientList.append(patient)
     GUI.run()

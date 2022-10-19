@@ -1,5 +1,5 @@
 import os
-from typing import Sequence
+from typing import Sequence, Optional, Union
 
 import pydicom
 import logging
@@ -11,7 +11,7 @@ from opentps.core.io.dicomIO import readDicomCT, readDicomDose, readDicomVectorF
 from opentps.core.io import mhdIO
 from opentps.core.io.serializedObjectIO import loadDataStructure
 
-def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData=True, importInPatient=None):
+def loadData(patientList:PatientList, dataPath:str, maxDepth=-1, ignoreExistingData:bool=True, importInPatient:Optional[Patient]=None):
     #TODO: implement ignoreExistingData
 
     dataList = readData(dataPath, maxDepth=maxDepth)
@@ -19,15 +19,19 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
     patient = None
 
     if not (importInPatient is None):
+        dataList = dataList[0].patientData
         patient = importInPatient
 
     for data in dataList:
         if (isinstance(data, Patient)):
-            patient = data
+            newPatient = data
             try:
-                patient = patientList.getPatientByPatientId(patient.id)
+                newPatient = patientList.getPatientByPatientId(patient.id)
             except:
-                patientList.append(patient)
+                patientList.append(newPatient)
+
+            if importInPatient is None:
+                patient = newPatient
 
         elif importInPatient is None:
             # check if patient already exists
@@ -39,9 +43,8 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
             # TODO: Get patient by name?
 
         if patient is None:
-
             if data.patient is None:
-                data.patient = Patient(name='You Know Who')
+                data.patient = Patient(name='New patient')
 
             patient = data.patient
 
@@ -54,15 +57,13 @@ def loadData(patientList: PatientList, dataPath, maxDepth=-1, ignoreExistingData
         # add data to patient
         if(isinstance(data, PatientData)):
             patient.appendPatientData(data)
-        # elif (isinstance(data, Dynamic2DSequence)): ## not implemented in patient yet, maybe only one function for both 2D and 3D dynamic sequences ?
-        #     patient.appendDyn2DSeq(data)
         elif (isinstance(data, Patient)):
             pass  # see above, the Patient case is considered
         else:
             logging.warning("WARNING: " + str(data.__class__) + " not loadable yet")
             continue
 
-def readData(inputPaths, maxDepth=-1) -> Sequence[PatientData]:
+def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
     """
     Load all data found at the given input path.
 

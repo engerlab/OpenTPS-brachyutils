@@ -53,12 +53,12 @@ class PiecewiseHU2Density:
         self.__densities = np.append(self.__densities, density)
 
         self.__hu = np.array(self.__hu)
-        self.__materials = np.array(self.__densities)
+        self.__densities = np.array(self.__densities)
 
         ind = np.argsort(self.__hu)
 
         self.__hu = self.__hu[ind]
-        self.__materials = self.__materials[ind]
+        self.__densities = self.__densities[ind]
 
     def write(self, scannerFile):
         with open(scannerFile, 'w') as f:

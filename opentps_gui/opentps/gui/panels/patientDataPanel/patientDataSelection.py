@@ -5,9 +5,9 @@ from PyQt5.QtCore import QMimeData, Qt
 from PyQt5.QtGui import QStandardItemModel, QDrag, QFont, QStandardItem, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QTreeView, QAbstractItemView
 
-from opentps.core.data.dynamicData.dynamic2DSequence import Dynamic2DSequence
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic2DSequence import Dynamic2DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import DoseImage

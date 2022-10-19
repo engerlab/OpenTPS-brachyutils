@@ -8,7 +8,7 @@ from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwar
 
 logger = logging.getLogger(__name__)
 
-if __name__ == '__main__':
+def run():
 
     # GENERATE SYNTHETIC CT IMAGE
     im = np.full((170, 170, 100), -1000)
@@ -54,4 +54,7 @@ if __name__ == '__main__':
     ax[0,4].title.set_text('High noise')
     plt.show()
 
-    print('done')
+    print('TIGRE DRR example completed')
+
+if __name__ == "__main__":
+    run()
