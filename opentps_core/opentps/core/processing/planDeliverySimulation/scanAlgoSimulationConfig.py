@@ -7,7 +7,7 @@ from opentps.core.utils.applicationConfig import AbstractApplicationConfig
 logger = logging.getLogger(__name__)
 
 
-class DeliverySimulationConfig(AbstractApplicationConfig):
+class ScanAlgoSimulationConfig(AbstractApplicationConfig):
     def __init__(self):
         super().__init__()
 

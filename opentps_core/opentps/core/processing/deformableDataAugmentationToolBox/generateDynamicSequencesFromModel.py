@@ -1,5 +1,5 @@
 import numpy as np
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.processing.deformableDataAugmentationToolBox.weightMaps import generateDeformationFromTrackers
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
 

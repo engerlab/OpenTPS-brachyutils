@@ -1,9 +1,9 @@
 import math
 import logging
 
-from opentps.core.data.dynamicData.dynamic2DSequence import Dynamic2DSequence
+from opentps.core.data.dynamicData._dynamic2DSequence import Dynamic2DSequence
 from opentps.core.data.images._projections import DRR
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwardProjectionTigre
 
 logger = logging.getLogger(__name__)

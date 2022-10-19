@@ -9,6 +9,7 @@ from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwar
 logger = logging.getLogger(__name__)
 
 def run():
+
     # GENERATE SYNTHETIC CT IMAGE
     im = np.full((170, 170, 100), -1000)
     im[20:150, 70:130, :] = 0

@@ -7,7 +7,7 @@ import numpy as np
 from opentps.core.io.dataLoader import readData
 from opentps.core.io.dataLoader import readDicomPlan
 from opentps.core.data.images import CTImage
-from opentps.core.processing.planDeliverySimulation.planDeliverySimulation import simulate_plan_on_continuous_sequence
+from opentps.core.processing.planDeliverySimulation.planDeliverySimulation import simulatePlanOnContinuousSequence
 
 
 def get_sequence_timings_from_txt_file(sequence_timings_filepath, return_tracker_amplitude=False):
@@ -44,4 +44,4 @@ def_fields_folder = basePath + patient_name + 'VelocityFieldsByFrame_damien/'
 sequence_timings_filepath = basePath + patient_name + 'MRI_Pos1Cor_CropToCT_Multi_5_r.txt'
 sequence_timings = get_sequence_timings_from_txt_file(sequence_timings_filepath)
 
-simulate_plan_on_continuous_sequence(plan, midP, ct_folder, def_fields_folder, sequence_timings, output_dose_path=None, save_all_doses=True, remove_interpolated_files=True, workdir_simu=None, downsample=4, start_irradiation=0.)
+simulatePlanOnContinuousSequence(plan, midP, ct_folder, def_fields_folder, sequence_timings, output_dose_path=None, save_all_doses=True, remove_interpolated_files=True, workdir_simu=None, downsample=4, start_irradiation=0.)

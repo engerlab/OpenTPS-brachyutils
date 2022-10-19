@@ -1,5 +1,3 @@
-
-
 from opentps.core._event import Event
 from opentps.core._api import APIInterpreter
 import opentps.core._loggingConfig as loggingConfig

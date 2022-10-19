@@ -5,8 +5,8 @@ import numpy as np
 np.random.seed(42)
 import random
 random.seed(42)
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.io import mcsquareIO
@@ -16,16 +16,20 @@ from pydicom.uid import generate_uid
 from opentps.core.data._rtStruct import ROIContour
 from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.io.dicomIO import readDicomDose, writeRTDose
-from opentps.core.processing.planDeliverySimulation.beamDeliveryTimings import BDT
+from opentps.core.processing.planDeliverySimulation.scanAlgoDeliveryTimings import BDT
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.io.dataLoader import readSingleData
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.data.images._deformation3D import Deformation3D
 import time
 
-def simulate_4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None):
+def simulate4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None):
     """
-    4D dose computation (range variation - no interplay) where one treatment is simulated on 4DCT
+    4D dose computation (range variation - no interplay). Steps:
+    1) treatment plan `plan` is simulated on each phase of the 4DCT `CT4D`,
+    2) each resulting dose is non-rigidly registered to the MidP CT `model3D.midp` 
+    3) the average of these doses is computed
+    All doses are saved in the simulation directory `simulation_dir`.
     """
     if simulation_dir is None:
         simulation_dir = os.path.join(ProgramSettings().simulationFolder, 'plan_delivery_simulations')
@@ -43,14 +47,19 @@ def simulate_4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel 
     if not os.path.exists(fx_dir):
         os.mkdir(fx_dir)
 
-    compute_dose_on_each_phase(plan, CT4D, fx_dir, crop_contour=crop_contour)
+    computeDoseOnEachPhase(plan, CT4D, fx_dir, crop_contour=crop_contour)
     output_accumulated_dose = os.path.join(fx_dir, "dose_accumulated_4DD.dcm")
-    accumulate_dose_from_different_phases(fx_dir, model3D, output_accumulated_dose, divide_total_dose=True, dose_name='4DD Accumulated dose')
+    accumulateDoseFromDifferentPhases(fx_dir, model3D, output_accumulated_dose, divide_total_dose=True, dose_name='4DD Accumulated dose')
 
 
-def simulate_4DDD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None, save_partial_doses=True, start_phase=0):
+def simulate4DDD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None, save_partial_doses=True, start_phase=0):
     """
-    4D dynamic dose computation (range variation + interplay) where one treatment is simulated on 4DCT
+    4D dynamic dose computation (range variation + interplay). Steps:
+    1) Delivery timings of the spots in `plan` are computed if not present
+    2) treatment plan `plan` is dynamically simulated on the 4DCT `CT4D` in a loop until all spots are delivered,
+    3) each resulting dose is non-rigidly registered to the MidP CT `model3D.midp` 
+    3) the sum of these doses is computed
+    All doses are saved in the simulation directory `simulation_dir`.
     """
     if len(plan.spotTimings)==0:
         print('plan has no delivery timings. Querying ScanAlgo...')
@@ -75,25 +84,25 @@ def simulate_4DDD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel
         os.mkdir(fx_dir)
     
     # for start_phase in range(number_of_starting_phases):
-    plan_4DCT = split_plan_to_phases(plan, num_plans=len(CT4D), start_phase=start_phase)
+    plan_4DCT = splitPlanToPhases(plan, num_plans=len(CT4D), start_phase=start_phase)
     path_dose = os.path.join(fx_dir, f'starting_phase_{start_phase}')
     if not os.path.exists(path_dose):
         os.mkdir(path_dose)
-    compute_dose_on_each_phase(plan_4DCT, CT4D, path_dose, crop_contour=crop_contour)
+    computeDoseOnEachPhase(plan_4DCT, CT4D, path_dose, crop_contour=crop_contour)
     acc_filename = 'dose_accumulated.dcm'
     acc_path = os.path.join(path_dose, acc_filename)
-    accumulate_dose_from_different_phases(path_dose, model3D, acc_path, dose_name=f'4DDD accumulated dose - starting phase p{start_phase}')
+    accumulateDoseFromDifferentPhases(path_dose, model3D, acc_path, dose_name=f'4DDD accumulated dose - starting phase p{start_phase}')
     print(f"4DDD simulation done for starting phase {start_phase}")
     if not save_partial_doses:
         for f in os.listdir(path_dose):
             if f != acc_filename: os.remove(os.path.join(path_dose, f))
 
 
-def simulate_4DDD_scenarios(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, 
+def simulate4DDDScenarios(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, 
         simulation_dir: str = None, crop_contour=None, save_partial_doses=True, number_of_fractions=1, 
         number_of_starting_phases=1, number_of_fractionation_scenarios=1):
     """
-    4D dynamic simulation under different scenarios
+    4D dynamic simulation under different scenarios.
 
     Parameters
     ----------
@@ -109,10 +118,12 @@ def simulate_4DDD_scenarios(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dyna
     number_of_fractions: int
         Number of fractions for delivering the treatment
     number_of_starting_phases: int
-        Number of times we simulate the delivery where each time with start from a different phase.
+        Number of times we simulate the delivery where each time we start from a different phase.
         Hence, number_of_starting_phases <= len(4DCT)
     number_of_fractionation_scenarios: int
-        Number fractionation scenarios. For instance, if number_of_fractions=5 and number_of_fractionation_scenarios=3;
+        Number fractionation scenarios: how many scenarios we select where each scenario
+        is a random combination with replacement of 4DDD simulations with a specific starting phase
+        For instance, if number_of_fractions=5 and number_of_fractionation_scenarios=3;
         Simulate 3 scenarios with starting phases [1,2,3,4,5]; [1,3,1,2,4]; [4, 5, 1, 4, 2].
     """
     plan.numberOfFractionsPlanned = number_of_fractions
@@ -140,16 +151,20 @@ def simulate_4DDD_scenarios(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dyna
     # 4DDD simulation
     for start_phase in range(number_of_starting_phases):
         if not os.path.exists(os.path.join(fx_dir, f'starting_phase_{start_phase}')):
-            simulate_4DDD(plan, CT4D, model3D, simulation_dir, crop_contour, save_partial_doses, start_phase)
+            simulate4DDD(plan, CT4D, model3D, simulation_dir, crop_contour, save_partial_doses, start_phase)
 
     path_to_accumulated_doses = [os.path.join(fx_dir, start_phase_dir, 'dose_accumulated.dcm') for start_phase_dir in sorted(os.listdir(fx_dir)) if start_phase_dir != 'scenarios']
     for scenario_number in range(number_of_fractionation_scenarios):
-        dose_files = random_combination_with_replacement(path_to_accumulated_doses, number_of_fractionation_scenarios)
+        dose_files = randomCombinationWithReplacement(path_to_accumulated_doses, number_of_fractionation_scenarios)
         output_path = os.path.join(dir_scenarios, f'dose_scenario_{str(scenario_number)}.dcm')
-        accumulate_dose_from_same_phase(dose_files, model3D.midp, output_path, number_of_fractions=number_of_fractions, dose_name=f'dose {number_of_fractions}fx scenario {str(scenario_number)}')
+        accumulateDoseFromSamePhase(dose_files, model3D.midp, output_path, number_of_fractions=number_of_fractions, dose_name=f'dose {number_of_fractions}fx scenario {str(scenario_number)}')
 
 
-def simulate_plan_on_continuous_sequence(plan: RTPlan, midp: CTImage, ct_folder, def_fields_folder, sequence_timings, output_dose_path=None, save_all_doses=False, remove_interpolated_files=False, workdir_simu=None, downsample=0, start_irradiation=0.):
+def simulatePlanOnContinuousSequence(plan: RTPlan, midp: CTImage, ct_folder, def_fields_folder, sequence_timings, output_dose_path=None, save_all_doses=False, remove_interpolated_files=False, workdir_simu=None, downsample=0, start_irradiation=0.):
+    """
+    4D dynamic simulation on a continuous sequence of CT. Same principle as simulate4DDD function but the 4DCT (i.e. continuous sequence)
+    is not stored in the RAM.
+    """
     if len(plan.spotTimings)==0:
         print('plan has no delivery timings. Querying ScanAlgo...')
         bdt = BDT(plan)
@@ -182,14 +197,14 @@ def simulate_plan_on_continuous_sequence(plan: RTPlan, midp: CTImage, ct_folder,
     assert len(ctList) == len(sequence_timings)
 
     # Split plan to list of plans
-    plan_sequence = split_plan_to_continuous_sequence(plan, sequence_timings, start_irradiation)
+    plan_sequence = splitPlanToContinuousSequence(plan, sequence_timings, start_irradiation)
     print(f'Plans splitted on the continuous sequence: results in {len(plan_sequence)} created.')
 
     # Initialize reference dose on the MidP image
     dose_MidP = DoseImage().createEmptyDoseWithSameMetaData(midp)
     dose_MidP.name = 'Accumulated dose'
 
-    mc2 = initialize_MCsquare_params(workdir_simu)
+    mc2 = initializeMCsquareParams(workdir_simu)
     for i in plan_sequence:
         print(f"Importing CT {ctList[i]}")
         phaseImage = readSingleData(os.path.join(ct_folder, ctList[i]))
@@ -216,15 +231,15 @@ def simulate_plan_on_continuous_sequence(plan: RTPlan, midp: CTImage, ct_folder,
     t_end = time.time()
     print(f"it took {t_end-t_start} to simulate on the continuous sequence.")
     writeRTDose(dose_MidP, os.path.join(output_dose_path, "dose_midP_continuous_seq.dcm"))
-    print("Total irradiation time:",get_irradiation_time(plan),"seconds")
+    print("Total irradiation time:",getIrradiationTime(plan),"seconds")
     with open(os.path.join(output_dose_path, "treatment_info.txt"), 'w') as f:
-        f.write(f"Total treatment time: {get_irradiation_time(plan)} seconds")
+        f.write(f"Total treatment time: {getIrradiationTime(plan)} seconds")
 
 
-def split_plan_to_phases(ReferencePlan: RTPlan, num_plans=10, breathing_period=4., start_phase=0):
+def splitPlanToPhases(ReferencePlan: RTPlan, num_plans=10, breathing_period=4., start_phase=0):
     """
-    Split spots from plan to num_plans plans according to the number of images in 4DCT, breathing period and start phase.
-    Return a list of num_plans plans where each spot is assigned to a plan (=breathing phase)
+    Split spots from `ReferencePlan` to `num_plans` plans according to the number of images in 4DCT, breathing period and start phase.
+    Return a list of `num_plans` plans where each spot is assigned to a plan (=breathing phase)
     """
     time_per_phase = breathing_period / num_plans
 
@@ -253,7 +268,13 @@ def split_plan_to_phases(ReferencePlan: RTPlan, num_plans=10, breathing_period=4
     return plan_4DCT
 
 
-def split_plan_to_continuous_sequence(ReferencePlan: RTPlan, sequence_timings, start_irradiation=0.):
+def splitPlanToContinuousSequence(ReferencePlan: RTPlan, sequence_timings, start_irradiation=0.):
+    """
+    Create a plan for each image in the continuous sequence where at least one spot is shot
+    and assign each spot of the `ReferencePlan`to one of the created plans.
+    Returns a dictionnary of plans where the index number corresponds to the image number in
+    the continuous sequence.
+    """
     # Check if plan include spot timings
     # start_irradiation \in [0,1] : moment at which to start the irradiation with beggining of 
     # continuous seq = 0. and end = 1.
@@ -284,16 +305,23 @@ def split_plan_to_continuous_sequence(ReferencePlan: RTPlan, sequence_timings, s
 
 
 
-def compute_dose_on_each_phase(plans:Union[RTPlan, dict], CT4D:Dynamic3DSequence, output_path:str, crop_contour:ROIContour=None):
+def computeDoseOnEachPhase(plans:Union[RTPlan, dict], CT4D:Dynamic3DSequence, output_path:str, crop_contour:ROIContour=None):
     """
-    Compute and save doses simulated on each 3DCT image of path_4DCT
-    In case plans is a RTplan, the same plan is simulated on each 3DCT (4DD case)
-    In case plans is a list, len(plans)==len(path_4DCT) and each plans is computed on the 3DCT image (4DDD)
-    INPUT:
-        plans: either a RTplan object or a dictionnary of RTplans
-        path_4DCT: list of 3DCT paths
-        output_path: folder path to save doses
-        crop_contour: contour name for on which we crop the CT (None if not applicable)
+    Compute and save doses simulated on each 3DCT image of `CT4D`
+    In case plans is a `RTplan`, the same plan is simulated on each 3DCT (4DD case)
+    In case plans is a `dict`, `len(plans)==len(CT4D)` and each plan is computed on the corresponding 3DCT image (4DDD case)
+    Parameters
+    ----------
+        plans: Union[RTPlan, dict]
+            either a RTplan object or a dictionnary of RTplans
+        CT4D: Dynamic3DSequence
+            list of 3DCT images
+        output_path: str
+            folder path to save doses
+        crop_contour: crop_contour
+            contour name for on which we crop the CT (None if not applicable)
+
+    Save the doses in `output_path`
     """
     if type(plans) is dict:
         assert len(plans)==len(CT4D)
@@ -314,14 +342,14 @@ def compute_dose_on_each_phase(plans:Union[RTPlan, dict], CT4D:Dynamic3DSequence
             current_plan = plans[plan_names[p]]
 
         # Create MCsquare simulation
-        mc2 = initialize_MCsquare_params()
+        mc2 = initializeMCsquareParams()
         if crop_contour is not None:
             mc2.overwriteOutsideROI = crop_contour
         dose = mc2.computeDose(CT, current_plan)
         writeRTDose(dose, os.path.join(output_path, f"{dose_prefix}{p:03d}.dcm"))
 
 
-def initialize_MCsquare_params(workdir=None):
+def initializeMCsquareParams(workdir=None):
     mc2 = MCsquareDoseCalculator()
     if workdir is not None:
       mc2.simulationDirectory = workdir
@@ -332,9 +360,10 @@ def initialize_MCsquare_params(workdir=None):
     return mc2
 
 
-def accumulate_dose_from_different_phases(dose_4DCT_path:str, model3D: Dynamic3DModel, output_path:str, divide_total_dose=False, dose_name='Accumulated dose'):
+def accumulateDoseFromDifferentPhases(dose_4DCT_path:str, model3D: Dynamic3DModel, output_path:str, divide_total_dose=False, dose_name='Accumulated dose'):
     """
-    Accumulate partial doses from 4DCT on reference image MidPCT via deformable registration according to deformation fields df_phase_to_ref_path
+    Accumulate partial doses from `dose_4DCT_path` on reference image `model3D.midp` via deformable registration
+    according to deformation fields `model3D.deformationList`. The resulting dose is saved in `output_path`.
     """
     
     dose_files = []
@@ -374,9 +403,11 @@ def accumulate_dose_from_different_phases(dose_4DCT_path:str, model3D: Dynamic3D
     writeRTDose(dose_MidP, output_path)
 
 
-def accumulate_dose_from_same_phase(dose_4DCT_path, MidPCT, output_path, number_of_fractions=1, dose_name='Accumulated dose'):
-    """ Same function as accumulate_dose_from_different_phases but from doses from the same phase
-    i.e. no deformable registration needed"""
+def accumulateDoseFromSamePhase(dose_4DCT_path, MidPCT, output_path, number_of_fractions=1, dose_name='Accumulated dose'):
+    """ 
+    Same function as `accumulateDoseFromDifferentPhases` but accumulates doses from doses from the same phase
+    i.e. no deformable registration needed
+    """
     dose_files = dose_4DCT_path
     dose_files.sort()
 
@@ -396,8 +427,9 @@ def accumulate_dose_from_same_phase(dose_4DCT_path, MidPCT, output_path, number_
     writeRTDose(dose_MidP, output_path)
 
 
-def random_combination_with_replacement(iterable, r):
-    """Random selection from itertools.combinations_with_replacement(iterable, r)
+def randomCombinationWithReplacement(iterable, r):
+    """
+    Random selection from itertools.combinations_with_replacement(iterable, r)
     Taken from https://docs.python.org/3/library/itertools.html#itertools-recipes
     """
     pool = tuple(iterable)
@@ -406,7 +438,7 @@ def random_combination_with_replacement(iterable, r):
     return [pool[i] for i in indices]
 
 
-def get_irradiation_time(plan):
+def getIrradiationTime(plan):
     assert len(plan.spotTimings)>0
     total_time = [plan.beams[i].layers[-1].spotTimings[-1] for i in range(len(plan.beams))]
     return np.sum(total_time)

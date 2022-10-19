@@ -3,12 +3,15 @@ import numpy as np
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.plan._scanAlgoPlan import ScanAlgoPlan
 from opentps.core.io.serializedObjectIO import saveRTPlan
-from opentps.core.processing.planDeliverySimulation.deliverySimulationConfig import DeliverySimulationConfig
+from opentps.core.processing.planDeliverySimulation.scanAlgoSimulationConfig import ScanAlgoSimulationConfig
 
 class BDT:
+    """
+    Beam Delivery Timings for ScanAlgo
+    """
     def __init__(self, plan: RTPlan):
         self.plan = plan
-        config = DeliverySimulationConfig()
+        config = ScanAlgoSimulationConfig()
         self.gantry = config.gantry
         self.url = config.gateway
 
@@ -62,7 +65,7 @@ class BDT:
             SA_layer = scanAlgo['layer'][l]['spot']
             if len(SA_layer) != len(original_layer._x):
                 N = len(SA_layer)
-                conversion_coeff = self.get_charge_to_MU_conversion(original_layer, scanAlgo['layer'][l])
+                conversion_coeff = self.getChargeToMUConversion(original_layer, scanAlgo['layer'][l])
                 original_layer._x = np.array([])
                 original_layer._y = np.array([])
                 original_layer._mu = np.array([])
@@ -75,7 +78,7 @@ class BDT:
             else:
                 original_layer._timings = np.zeros(len(SA_layer))
                 for s in range(len(original_layer._x)):
-                    index_spot_scanAlgo = self.find_spot_index_json(scanAlgo['layer'][l],
+                    index_spot_scanAlgo = self.findSpotIndexJson(scanAlgo['layer'][l],
                         original_layer._x[s],
                         original_layer._y[s])
                     start_time = float(SA_layer[index_spot_scanAlgo]['start']) / 1000
@@ -110,7 +113,7 @@ class BDT:
             SA_burst = scanAlgo['layers'][l]['bursts']
             cumul_layer_time += float(scanAlgo['layers'][l]["switchingTime"])
 
-            conversion_coeff = self.get_charge_to_MU_conversion(original_layer, scanAlgo['layers'][l])
+            conversion_coeff = self.getChargeToMUConversion(original_layer, scanAlgo['layers'][l])
             original_layer._x = np.array([])
             original_layer._y = np.array([])
             original_layer._mu = np.array([])
@@ -130,7 +133,7 @@ class BDT:
         return plan
 
 
-    def find_spot_index_json(self, json_arr, pos_x, pos_y, return_first=True):
+    def findSpotIndexJson(self, json_arr, pos_x, pos_y, return_first=True):
         """
         Find index of spot corresposding to position (pos_x,pos_y) in JSON file
         """
@@ -159,9 +162,9 @@ class BDT:
             return indices
 
 
-    def get_charge_to_MU_conversion(self, original_layer, SA_layer):
+    def getChargeToMUConversion(self, original_layer, SA_layer):
         if self.gantry == 'PPlus':
-            index_spot_scanAlgo = self.find_spot_index_json(SA_layer,
+            index_spot_scanAlgo = self.findSpotIndexJson(SA_layer,
                     original_layer._x[0],
                     original_layer._y[0], return_first=False)
             factor = 1
@@ -170,7 +173,7 @@ class BDT:
                 index_spot_scanAlgo = index_spot_scanAlgo[0]
             conversion_coeff = original_layer._mu[0] / (SA_layer['spot'][index_spot_scanAlgo]['charge'] * factor)
         elif self.gantry == 'POne':
-            index_spot_scanAlgo = self.find_spot_index_json(SA_layer,
+            index_spot_scanAlgo = self.findSpotIndexJson(SA_layer,
                     original_layer._x[0],
                     original_layer._y[0], return_first=False)
             # total_charge = sum([item for sublist in list(index_spot_scanAlgo.values()) for item in sublist])
@@ -181,6 +184,6 @@ class BDT:
 
         return conversion_coeff
 
-    def get_timings_and_save_plan(self, output_path):
+    def getTimingsAndSavePlan(self, output_path):
         plan_with_timings = self.getPBSTimings(sort_spots="true")
         saveRTPlan(plan_with_timings, output_path)

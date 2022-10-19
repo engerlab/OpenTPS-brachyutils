@@ -9,8 +9,8 @@ import os
 import matplotlib.pyplot as plt
 
 from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data._patient import Patient
@@ -105,13 +105,14 @@ def loadSerializedObject(filePath):
 
 
 def saveRTPlan(plan, file_path):
-    if plan.planDesign.beamlets:
-        plan.planDesign.beamlets.unload()
-    if plan.planDesign.beamletsLET:
-        plan.planDesign.beamletsLET.unload()
+    if plan.planDesign:
+        if plan.planDesign.beamlets:
+            plan.planDesign.beamlets.unload()
+        if plan.planDesign.beamletsLET:
+            plan.planDesign.beamletsLET.unload()
 
-    for scenario in plan.planDesign.scenarios:
-        scenario.unload()
+        for scenario in plan.planDesign.scenarios:
+            scenario.unload()
 
     with open(file_path, 'wb') as fid:
         pickle.dump(plan.__dict__, fid)
@@ -159,7 +160,7 @@ def dictionarizeData(data):
         data.patientData = None
         patient = dictionarizeData(data)
 
-        print(patient.keys())
+        # print(patient.keys())
 
     elif isinstance(data, Dynamic3DModel):
 
@@ -186,10 +187,10 @@ def dictionarizeData(data):
         newDict['dyn3DImageList'] = dynImagesDictList
         newDict['dataType'] = data.getTypeAsString()
 
-    elif isinstance(data, CTImage):
-
-        newDict = data.__dict__
-        newDict['dataType'] = data.getTypeAsString()
+    # elif isinstance(data, CTImage):
+    #
+    #     newDict = data.__dict__
+    #     newDict['dataType'] = data.getTypeAsString()
 
     elif isinstance(data, VectorField3D):
 
@@ -197,10 +198,11 @@ def dictionarizeData(data):
         newDict['dataType'] = data.getTypeAsString()
 
     else:
+        print('in dictionarizeData else, data type: ', type(data))
         newDict = data.__dict__
         newDict['dataType'] = data.getTypeAsString()
 
-    print(newDict.keys())
+    # print(newDict.keys())
 
     return newDict
 

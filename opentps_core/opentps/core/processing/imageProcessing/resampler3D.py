@@ -5,7 +5,7 @@ import logging
 
 import opentps.core.processing.imageProcessing.filter3D as imageFilter3D
 
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 
@@ -32,7 +32,7 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 
     """
 
-    from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+    from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 
     if isinstance(data, Image3D):
         return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
@@ -332,7 +332,7 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
             print('In crop3DDataAroundBox, negative margins not allowed')
             marginInMM[i] = 0
 
-    from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+    from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 
     if isinstance(data, Image3D):
         print('Before crop image 3D origin and grid size:', data.origin, data.gridSize)
