@@ -5,8 +5,8 @@ import numpy as np
 np.random.seed(42)
 import random
 random.seed(42)
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
-from opentps.core.data.dynamicData.dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.io import mcsquareIO

@@ -4,7 +4,7 @@ import logging
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.images._deformation3D import Deformation3D
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 import opentps.core.processing.imageProcessing.filter3D as imageFilter3D
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.processing.segmentation.segmentationCT import compute3DStructuralElement

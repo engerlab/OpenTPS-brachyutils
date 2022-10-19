@@ -8,9 +8,10 @@ This file contains an example on how to:
 import os
 import sys
 
-from opentps.core.data.dynamicData.dynamic3DModel import Dynamic3DModel
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.io.serializedObjectIO import loadDataStructure, saveSerializedObjects
 from pydicom.uid import generate_uid
+from opentps.core.examples.syntheticData import *
 import time
 import numpy as np
 import logging
