@@ -5,7 +5,7 @@ import concurrent
 # from timeit import repeat
 
 def multiProcDeform(deformationList, dynMod, GTVMask):
-
+    
     imgList = [dynMod.midp for i in range(len(deformationList))]
     maskList = [GTVMask for i in range(len(deformationList))]
     
