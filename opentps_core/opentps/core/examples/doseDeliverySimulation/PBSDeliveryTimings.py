@@ -2,7 +2,7 @@ import sys
 sys.path.append('..')
 
 from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.processing.planDeliverySimulation.beamDeliveryTimings import BDT
+from opentps.core.processing.planDeliverySimulation.scanAlgoDeliveryTimings import BDT
 from opentps.core.io.dicomIO import readDicomPlan
 
 """
