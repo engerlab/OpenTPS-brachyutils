@@ -65,7 +65,10 @@ class ROIContour(PatientData):
 
         contourSpacing[0] = minSpatialResolution
         contourSpacing[1] = minSpatialResolution
-        contourSpacing[2] = zDiff[0]
+        if np.isfinite(zDiff[0]):
+            contourSpacing[2] = zDiff[0]
+        else:
+            contourSpacing[2] = minSpatialResolution
 
         contourOrigin[0] = allX[0]
         contourOrigin[1] = allY[0]
