@@ -105,13 +105,14 @@ def loadSerializedObject(filePath):
 
 
 def saveRTPlan(plan, file_path):
-    if plan.planDesign.beamlets:
-        plan.planDesign.beamlets.unload()
-    if plan.planDesign.beamletsLET:
-        plan.planDesign.beamletsLET.unload()
+    if plan.planDesign:
+        if plan.planDesign.beamlets:
+            plan.planDesign.beamlets.unload()
+        if plan.planDesign.beamletsLET:
+            plan.planDesign.beamletsLET.unload()
 
-    for scenario in plan.planDesign.scenarios:
-        scenario.unload()
+        for scenario in plan.planDesign.scenarios:
+            scenario.unload()
 
     with open(file_path, 'wb') as fid:
         pickle.dump(plan.__dict__, fid)
