@@ -134,7 +134,7 @@ class Robustness:
         self.dvhBands.clear()
         for c in range(len(self.scenarios[0].dvh)):
             dvh = self.scenarios[0].dvh[c]
-            dvhBand = DVHBand(dvh._roiMask)
+            dvhBand = DVHBand()
             dvhBand._roiName = dvh._roiName
             dvhBand._dose = dvh._dose
             dvhBand._volumeLow = np.amin(allDVH[c], axis=1)
