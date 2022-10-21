@@ -13,7 +13,6 @@ import numpy as np
 
 from opentps.core.data.MCsquare import MCsquareConfig
 from opentps.core.data import SparseBeamlets
-from opentps.core.processing.doseCalculation._utils import MCsquareSharedLib
 from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.doseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from opentps.core.processing.doseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
@@ -77,8 +76,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._letFilePath = os.path.join(self._workDir, "LET.mhd")
 
         self._sparseDoseScenarioToRead = None
-
-        self._mc2Lib = MCsquareSharedLib(mcsquarePath=self._mcsquareSimuDir)
 
     @property
     def _sparseDoseFilePath(self):
@@ -244,6 +241,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         os.environ['MCsquare_Materials_Dir'] = self._materialFolder
         nVoxels = self.scoringGridSize[0]*self.scoringGridSize[1]*self.scoringGridSize[2]
 
+        from opentps.core.processing.doseCalculation._utils import MCsquareSharedLib
+        self._mc2Lib = MCsquareSharedLib(mcsquarePath=self._mcsquareSimuDir)
         sparseBeamlets = self._mc2Lib.computeBeamletsSharedLib(self._configFilePath, nVoxels, self._plan.numberOfSpots)
 
         beamletDose = SparseBeamlets()
