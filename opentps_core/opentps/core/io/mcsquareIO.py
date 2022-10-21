@@ -664,6 +664,11 @@ def writeBin(destFolder):
     mcsquarePath = str(MCsquareModule.__path__[0])
 
     if (platform.system() == "Linux"):
+        source_path = os.path.join(mcsquarePath, "libMCsquare.so")
+        destination_path = os.path.join(destFolder, "libMCsquare.so")
+        shutil.copyfile(source_path, destination_path)  # copy file
+        shutil.copymode(source_path, destination_path)  # copy permissions
+
         source_path = os.path.join(mcsquarePath, "MCsquare")
         destination_path = os.path.join(destFolder, "MCsquare")
         shutil.copyfile(source_path, destination_path)  # copy file

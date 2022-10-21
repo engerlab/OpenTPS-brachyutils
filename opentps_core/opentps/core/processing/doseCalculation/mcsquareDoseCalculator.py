@@ -7,12 +7,13 @@ import platform
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Optional, Sequence, Union, List, Any, Tuple
+from typing import Optional, Sequence, Union, Tuple
 
 import numpy as np
 
 from opentps.core.data.MCsquare import MCsquareConfig
 from opentps.core.data import SparseBeamlets
+from opentps.core.processing.doseCalculation._utils import MCsquareSharedLib
 from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.doseCalculation.abstractDoseInfluenceCalculator import AbstractDoseInfluenceCalculator
 from opentps.core.processing.doseCalculation.abstractMCDoseCalculator import AbstractMCDoseCalculator
@@ -32,6 +33,7 @@ import opentps.core.io.mcsquareIO as mcsquareIO
 
 __all__ = ['MCsquareDoseCalculator']
 
+from scipy.sparse import csc_matrix
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +78,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         self._sparseDoseScenarioToRead = None
 
+        self._mc2Lib = MCsquareSharedLib(mcsquarePath=self._mcsquareSimuDir)
+
     @property
     def _sparseDoseFilePath(self):
         if self.robustnessStrategy== "Disabled":
@@ -109,7 +113,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @nbPrimaries.setter
     def nbPrimaries(self, primaries: int):
-        self._nbPrimaries = primaries
+        self._nbPrimaries = int(primaries)
 
     @property
     def independentScoringGrid(self) -> bool:
@@ -225,10 +229,30 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         self._writeFilesToSimuDir()
         self._cleanDir(self._workDir)
-        self._startMCsquare()
 
-        beamletDose = self._importBeamlets()
+        if platform.system() == "Linux2":
+            beamletDose = self._computeBeamletsLinux()
+        else:
+            self._startMCsquare()
+            beamletDose = self._importBeamlets()
+
         beamletDose.beamletWeights = np.array(plan.spotMUs)
+
+        return beamletDose
+
+    def _computeBeamletsLinux(self):
+        os.environ['MCsquare_Materials_Dir'] = self._materialFolder
+        nVoxels = self.scoringGridSize[0]*self.scoringGridSize[1]*self.scoringGridSize[2]
+
+        sparseBeamlets = self._mc2Lib.computeBeamletsSharedLib(self._configFilePath, nVoxels, self._plan.numberOfSpots)
+
+        beamletDose = SparseBeamlets()
+        beamletDose.setUnitaryBeamlets(
+            csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(self._beamletRescaling()), dtype=np.float32)))
+
+        beamletDose.doseOrigin = self._ct.origin
+        beamletDose.doseSpacing = self.scoringVoxelSpacing
+        beamletDose.doseGridSize = self.scoringGridSize
 
         return beamletDose
 
@@ -525,7 +549,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Num_Primaries"] = self._nbPrimaries
         config["Stat_uncertainty"] = self._maxUncertainty
         config["WorkDir"] = self._mcsquareSimuDir
-        config["CT_File"] = self._ctName
+        config["CT_File"] = self._ctFilePath
         config["ScannerDirectory"] = self._scannerFolder  # ??? Required???
         config["HU_Density_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Density_Conversion.txt")
         config["HU_Material_Conversion_File"] = os.path.join(self._scannerFolder, "HU_Material_Conversion.txt")
@@ -541,14 +565,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = [x / 10.0 for x in self.scoringVoxelSpacing]  # in cm
             config["Scoring_grid_size"] = self.scoringGridSize
-            config["Scoring_origin"][0] = self._ct.origin[0] - config["Scoring_voxel_spacing"][
+            config["Scoring_origin"][0] = self._ct.origin[0] - self._scoringVoxelSpacing[
                 0] / 2.0
-            config["Scoring_origin"][2] = self._ct.origin[2] - config["Scoring_voxel_spacing"][
+            config["Scoring_origin"][2] = self._ct.origin[2] - self._scoringVoxelSpacing[
                 2] / 2.0
             # config["Scoring_origin"][1] = -self._ct.origin[1] - config["Scoring_voxel_spacing"][1] * \
             #                              config["Scoring_grid_size"][1] + \
             #                              config["Scoring_voxel_spacing"][1] / 2.0
-            config["Scoring_origin"][1] = self._ct.origin[1] - config["Scoring_voxel_spacing"][
+            config["Scoring_origin"][1] = self._ct.origin[1] - self._scoringVoxelSpacing[
                 1] / 2.0
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
         # config["Stat_uncertainty"] = 2.
@@ -585,6 +609,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def _resampleROI(self):
         if self._roi is None or not self._roi:
             return
+
+        if not(isinstance(self._roi, Sequence)):
+            self._roi = [self._roi]
 
         roiResampled = []
         for contour in self._roi:

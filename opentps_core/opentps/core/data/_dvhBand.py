@@ -4,24 +4,21 @@ __all__ = ['DVHBand']
 
 import numpy as np
 
-from opentps.core.data.images._doseImage import DoseImage
-from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.data._roiContour import ROIContour
 from opentps.core import Event
 
 
 class DVHBand():
-    def __init__(self, roiMask: Union[ROIContour, ROIMask], dose: DoseImage = None):
+    def __init__(self, roiName: str = None, dose: np.array = None):
 
         self.dataUpdatedEvent = Event()
 
-        self._roiName = roiMask.name
+        self._roiName = roiName
 
         self._nominalDVH = None
-        self._dose = dose
-        self._volumeLow = None
-        self._volumeHigh = None
-        self._volumeAbsoluteLow = None
+        self._dose = dose # 1D numpy array representing the discretization of the dose [0, maxDose]
+        self._volumeLow = None # lower envelope of DVH scenarios in % of volume
+        self._volumeHigh = None # upper envelope of DVH scenarios in % of volume
+        self._volumeAbsoluteLow = None # in cm^3
         self._volumeAbsoluteHigh = None
         self._Dmean = [0, 0]
         self._D98 = [0, 0]
