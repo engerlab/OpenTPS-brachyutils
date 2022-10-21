@@ -1,27 +1,62 @@
 import os
 import sys
 currentWorkingDir = os.getcwd()
-while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 import numpy as np
 from pathlib import Path
 import math
 
-from opentps_core.opentps.core.IO import loadDataStructure
+# from opentps.core.io.serializedObjectIO import loadDataStructure
 import matplotlib.pyplot as plt
-from opentps_core.opentps.core.data import SyntheticBreathingSignal
-from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox import generateDynSeqFromBreathingSignalsAndModel
-from opentps_core.opentps.core.Processing.DeformableDataAugmentationToolBox.modelManipFunctions import getVoxelIndexFromPosition
+from matplotlib.animation import FuncAnimation
+from opentps.core.data.dynamicData._breathingSignals import SyntheticBreathingSignal
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.processing.deformableDataAugmentationToolBox.generateDynamicSequencesFromModel import generateDynSeqFromBreathingSignalsAndModel
+from opentps.core.processing.imageProcessing.imageTransform3D import getVoxelIndexFromPosition
+from opentps.core.processing.imageProcessing.resampler3D import resample
+from opentps.core.examples.syntheticData import*
 
 if __name__ == '__main__':
 
-    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
+    CT4D = createSynthetic4DCT(numberOfPhases=8)
 
-    ## read a serialized dynamic sequence
-    dataPath = testDataPath + "veryLightDynMod.p"
-    dynMod = loadDataStructure(dataPath)[0]
+    plt.figure()
+    fig = plt.gcf()
+    def updateAnim(imageIndex):
 
-    simulationTime = 32
+        fig.clear()
+        plt.imshow(np.rot90(CT4D.dyn3DImageList[imageIndex].imageArray[:, 95, :]))
+
+    anim = FuncAnimation(fig, updateAnim, frames=len(CT4D.dyn3DImageList), interval=300)
+    anim.save('D:/anim.gif')
+    plt.show()
+
+    # GENERATE MIDP
+    dynMod = Dynamic3DModel()
+    dynMod.computeMidPositionImage(CT4D, 0, tryGPU=True)
+
+    # plt.figure()
+    # plt.imshow(np.rot90(dynMod.midp.imageArray[:, 95, :]))
+    # plt.show()
+
+    print('Resample model image')
+    dynMod = resample(dynMod, gridSize=(80, 50, 50))
+
+    # print(np.max(dynMod.midp.imageArray))
+    #
+    # plt.figure()
+    # plt.imshow(np.rot90(dynMod.midp.imageArray[:, 29, :]))
+    # plt.show()
+
+    for fieldIndex in range(len(dynMod.deformationList)):
+        print('Resample model field', fieldIndex)
+        dynMod.deformationList[fieldIndex] = resample(dynMod.deformationList[fieldIndex], gridSize=dynMod.midp.gridSize)
+
+    # for field in dynMod.deformationList:
+    #     print('Resample model field')
+    #     field.resample(gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing, origin=dynMod.midp.origin)
+
+    simulationTime = 10
     amplitude = 10
 
     newSignal = SyntheticBreathingSignal(amplitude=amplitude,
@@ -65,19 +100,16 @@ if __name__ == '__main__':
     newSignal2.breathingSignal = -newSignal.breathingSignal
 
     signalList = [newSignal.breathingSignal, newSignal2.breathingSignal]
-    # signalList = [newSignal.breathingSignal] ## for single ROI testing
 
-    pointRLung = np.array([108, 72, -116])
-    pointLLung = np.array([-94, 45, -117])
+    pointRLung = np.array([50, 100, 50])
+    pointLLung = np.array([120, 100, 50])
 
     ## get points in voxels --> for the plot, not necessary for the process example
     pointRLungInVoxel = getVoxelIndexFromPosition(pointRLung, dynMod.midp)
     pointLLungInVoxel = getVoxelIndexFromPosition(pointLLung, dynMod.midp)
 
     pointList = [pointRLung, pointLLung]
-    # pointList = [pointRLung] ## for single ROI testing
     pointVoxelList = [pointRLungInVoxel, pointLLungInVoxel]
-    # pointVoxelList = [pointRLungInVoxel] ## for single ROI testing
 
     ## to show signals and ROIs
     prop_cycle = plt.rcParams['axes.prop_cycle']
@@ -88,25 +120,21 @@ if __name__ == '__main__':
         ax = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 1)
         ax.set_title('Slice Y:' + str(pointVoxelList[pointIndex][1]))
         ax.imshow(np.rot90(dynMod.midp.imageArray[:, pointVoxelList[pointIndex][1], :]))
-        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]],
-                   c=colors[pointIndex], marker="x", s=100)
+        ax.scatter([pointVoxelList[pointIndex][0]], [dynMod.midp.imageArray.shape[2] - pointVoxelList[pointIndex][2]], c=colors[pointIndex], marker="x", s=100)
         ax2 = plt.subplot(2, 2 * len(pointList), 2 * pointIndex + 2)
         ax2.set_title('Slice Z:' + str(pointVoxelList[pointIndex][2]))
         ax2.imshow(np.rot90(dynMod.midp.imageArray[:, :, pointVoxelList[pointIndex][2]], 3))
-        ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]],
-                   c=colors[pointIndex], marker="x", s=100)
+        ax2.scatter([pointVoxelList[pointIndex][0]], [pointVoxelList[pointIndex][1]], c=colors[pointIndex], marker="x", s=100)
         signalAx.plot(newSignal.timestamps / 1000, signalList[pointIndex], c=colors[pointIndex])
  
     signalAx.set_xlabel('Time (s)')
     signalAx.set_ylabel('Deformation amplitude in Z direction (mm)')
     plt.show()
 
-
     ## all in one seq version
     dynSeq = generateDynSeqFromBreathingSignalsAndModel(dynMod, signalList, pointList, dimensionUsed='Z', outputType=np.int16)
     dynSeq.breathingPeriod = newSignal.breathingPeriod
     dynSeq.timingsList = newSignal.timestamps
-
 
     ## save it as a serialized object
     # savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung'
@@ -114,29 +142,13 @@ if __name__ == '__main__':
 
     print('/'*80, '\n', '/'*80)
 
+    plt.figure()
+    fig = plt.gcf()
+    def updateAnim(imageIndex):
 
-    ## by signal sub part version
-    sequenceSize = newSignal.breathingSignal.shape[0]
-    subSequenceSize = 25
-    print('Sequence Size =', sequenceSize, 'split by stack of ', subSequenceSize)
+        fig.clear()
+        plt.imshow(np.rot90(dynSeq.dyn3DImageList[imageIndex].imageArray[:, 29, :]))
 
-    subSequencesIndexes = [subSequenceSize * i for i in range(math.ceil(sequenceSize/subSequenceSize))]
-    subSequencesIndexes.append(sequenceSize)
-    print('Sub sequences indexes', subSequencesIndexes)
-
-    for i in range(len(subSequencesIndexes)-1):
-        print('*'*80)
-        print('Creating images', subSequencesIndexes[i], 'to', subSequencesIndexes[i + 1] - 1)
-        dynSeq = generateDynSeqFromBreathingSignalsAndModel(dynMod,
-                                                            signalList,
-                                                            pointList,
-                                                            signalIdxUsed=[subSequencesIndexes[i], subSequencesIndexes[i+1]],
-                                                            dimensionUsed='Z',
-                                                            outputType=np.int16)
-
-        dynSeq.breathingPeriod = newSignal.breathingPeriod
-        dynSeq.timingsList = newSignal.timestamps[subSequencesIndexes[i]:subSequencesIndexes[i+1]]
-
-        ## save it as a serialized object
-        # savingPath = 'C:/Users/damie/Desktop/' + 'PatientTest_InvLung_part' + str(i)
-        # saveSerializedObjects(dynSeq, savingPath)
+    anim = FuncAnimation(fig, updateAnim, frames=len(dynSeq.dyn3DImageList), interval=300)
+    anim.save('D:/anim.gif')
+    plt.show()
