@@ -58,7 +58,7 @@ def createSynthetic4DCT(numberOfPhases = 4, returnTumorMasks = False):
 
     ## For the target z position
     zMotionAmp = int(np.round(diaphMotionAmp * 0.8))
-    zMinPos = 30
+    zMinPos = 40
     zPosList = getPhasesPositions(numberOfPhases, zMinPos, zMinPos+zMotionAmp)
 
     zNoise = [[3, 1],

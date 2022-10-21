@@ -8,6 +8,7 @@ import math
 import ctypes
 import platform
 
+import opentps.core.processing.imageProcessing.imageTransform3D
 from opentps.core.processing.rangeEnergy import rangeToEnergy
 import opentps.core.processing.C_libraries as clibraries
 
@@ -255,7 +256,7 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
                 if SpotGrid["z"][s] > ImgBorders_z[1] and direction[2] > 0: SpotGrid["WET"][s] = -1; break
 
                 # check if we reached the target
-                voxel = SPR.getVoxelIndexFromPosition([SpotGrid["x"][s], SpotGrid["y"][s], SpotGrid["z"][s]])
+                voxel = opentps.core.processing.imageProcessing.imageTransform3D.getVoxelIndexFromPosition([SpotGrid["x"][s], SpotGrid["y"][s], SpotGrid["z"][s]])
                 if (voxel[0] >= 0 and voxel[1] >= 0 and voxel[2] >= 0 and voxel[0] < SPR.gridSize[0] and voxel[1] <
                         SPR.gridSize[1] and voxel[2] < SPR.gridSize[2]):
                     if Target_mask.imageArray[voxel[0], voxel[1], voxel[2]]: break
@@ -353,7 +354,7 @@ def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET,
 
                 # check if we reached the next layer
                 if SpotGrid["WET"][s] >= Layer_WET:
-                    voxel = SPR.getVoxelIndexFromPosition([SpotGrid["x"][s], SpotGrid["y"][s], SpotGrid["z"][s]])
+                    voxel = opentps.core.processing.imageProcessing.imageTransform3D.getVoxelIndexFromPosition([SpotGrid["x"][s], SpotGrid["y"][s], SpotGrid["z"][s]])
                     if (voxel[0] >= 0 and voxel[1] >= 0 and voxel[2] >= 0 and voxel[0] < SPR.gridSize[0] and voxel[1] <
                             SPR.gridSize[1] and voxel[2] < SPR.gridSize[2]):
                         if Target_mask.imageArray[voxel[0], voxel[1], voxel[2]]:

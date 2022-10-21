@@ -231,11 +231,11 @@ class PlanIonLayer:
                         if np.abs(coord_previous - coord_first_x_at_current_y) > np.abs(
                                 coord_previous - coord_last_x_at_current_y):
                             # Need to inverse the order of the spot irradiated for those coordinates:
-                            order[ind_first_x_at_current_y:ind_last_x_at_current_y] = order[
-                                                                                      ind_first_x_at_current_y:ind_last_x_at_current_y][
+                            order[ind_first_x_at_current_y:ind_last_x_at_current_y+1] = order[
+                                                                                      ind_first_x_at_current_y:ind_last_x_at_current_y+1][
                                                                                       ::-1]
-                            coord[ind_first_x_at_current_y:ind_last_x_at_current_y] = coord[
-                                                                                      ind_first_x_at_current_y:ind_last_x_at_current_y][
+                            coord[ind_first_x_at_current_y:ind_last_x_at_current_y+1] = coord[
+                                                                                      ind_first_x_at_current_y:ind_last_x_at_current_y+1][
                                                                                       ::-1]
 
             elif order == 'timing':  # sort spots by increasing order of timings

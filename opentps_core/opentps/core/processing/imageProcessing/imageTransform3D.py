@@ -200,3 +200,25 @@ def _pitch(angle:float, offset:Sequence[float]) -> np.ndarray:
          [0., 0., 0., 1.]]
 
     return np.array(R)
+
+
+def getVoxelIndexFromPosition(position, image3D):
+    """
+    Get the voxel index of the position given in scanner coordinates.
+
+    Parameters
+    ----------
+    position : tuple or list of 3 elements in scanner coordinates
+        The 3D position that will be translated into voxel indexes
+    image3D : Image3D
+        The 3D image that contains its position in scanner coordinates and voxel spacing
+
+    Returns
+    -------
+    posInVoxels : the 3D position as voxel indexes in the input image voxel grid
+    """
+    positionInMM = np.array(position)
+    shiftedPosInMM = positionInMM - image3D.origin
+    posInVoxels = np.round(np.divide(shiftedPosInMM, image3D.spacing)).astype(np.int)
+
+    return posInVoxels

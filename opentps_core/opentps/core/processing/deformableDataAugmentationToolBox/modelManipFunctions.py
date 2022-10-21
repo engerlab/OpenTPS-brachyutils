@@ -1,5 +1,7 @@
 import numpy as np
 
+from opentps.core.processing.imageProcessing.imageTransform3D import getVoxelIndexFromPosition
+
 
 ## ---------------------------------------------------------------------------------------------
 def getAverageModelValuesAroundPosition(position, model, dimensionUsed='Z', tryGPU=True):
@@ -110,23 +112,3 @@ def getFieldValueAtPosition(position, field, dimensionUsed='Z'):
     return usedValue
 
 ## ---------------------------------------------------------------------------------------------
-def getVoxelIndexFromPosition(position, field):
-    """
-    Get the voxel index of the position given in scanner coordinates.
-
-    Parameters
-    ----------
-    position : tuple or list of 3 elements in scanner coordinates
-        The 3D position that will be translated into voxel indexes
-    field : VectorField3D
-        The 3D vector field that contains its position in scanner coordinates and voxel spacing
-
-    Returns
-    -------
-    posInVoxels : the 3D position as voxel indexes in the field voxel grid
-    """
-    positionInMM = np.array(position)
-    shiftedPosInMM = positionInMM - field.origin
-    posInVoxels = np.round(np.divide(shiftedPosInMM, field.spacing)).astype(np.int)
-
-    return posInVoxels

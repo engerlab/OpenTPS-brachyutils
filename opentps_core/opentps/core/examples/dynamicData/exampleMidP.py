@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def run():
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
-    CT4D = createSynthetic4DCT(numberOfPhases=8)
+    CT4D = createSynthetic4DCT()
 
     # GENERATE MIDP
     Model4D = Dynamic3DModel()
