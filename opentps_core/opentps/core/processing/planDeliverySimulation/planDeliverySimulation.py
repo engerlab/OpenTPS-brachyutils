@@ -21,6 +21,8 @@ from opentps.core.io.scannerReader import readScanner
 from opentps.core.io.dataLoader import readSingleData
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.data.images._deformation3D import Deformation3D
+from opentps.core.data._dvh import DVH
+from opentps.core.data._dvhBand import DVHBand
 import time
 
 def simulate4DD(plan: RTPlan, CT4D: Dynamic3DSequence, model3D: Dynamic3DModel = None, simulation_dir: str = None, crop_contour=None):
@@ -442,3 +444,20 @@ def getIrradiationTime(plan):
     assert len(plan.spotTimings)>0
     total_time = [plan.beams[i].layers[-1].spotTimings[-1] for i in range(len(plan.beams))]
     return np.sum(total_time)
+
+
+def computeDVHBand(doseList:list = [], ROIList:list = []):
+    dvh_bands = []
+    for roi in ROIList:
+        dvh = DVH(roi, doseList[0])
+        volumes = dvh._volume.reshape(-1,1)
+        for i in range(1,len(doseList)):
+            dvh = DVH(roi, doseList[i])
+            volumes = np.hstack((volumes, dvh._volume.reshape(-1,1)))
+        dvh_band = DVHBand()
+        dvh_band._roiName = roi.name
+        dvh_band._dose = dvh._dose
+        dvh_band._volumeLow = np.amin(volumes, axis=1)
+        dvh_band._volumeLow = np.amax(volumes, axis=1)
+        dvh_bands.append(dvh_band)
+    return dvh_bands
