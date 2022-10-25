@@ -18,7 +18,7 @@ from opentps.core.examples.syntheticData import*
 
 if __name__ == '__main__':
 
-    CT4D = createSynthetic4DCT(numberOfPhases=8)
+    CT4D = createSynthetic4DCT(numberOfPhases=4)
 
     plt.figure()
     fig = plt.gcf()
@@ -35,26 +35,26 @@ if __name__ == '__main__':
     dynMod = Dynamic3DModel()
     dynMod.computeMidPositionImage(CT4D, 0, tryGPU=True)
 
-    # plt.figure()
-    # plt.imshow(np.rot90(dynMod.midp.imageArray[:, 95, :]))
-    # plt.show()
+    plt.figure()
+    plt.imshow(np.rot90(dynMod.midp.imageArray[:, 95, :]))
+    plt.show()
 
     print('Resample model image')
     dynMod = resample(dynMod, gridSize=(80, 50, 50))
 
-    # print(np.max(dynMod.midp.imageArray))
-    #
-    # plt.figure()
-    # plt.imshow(np.rot90(dynMod.midp.imageArray[:, 29, :]))
-    # plt.show()
+    print(np.max(dynMod.midp.imageArray))
 
-    for fieldIndex in range(len(dynMod.deformationList)):
-        print('Resample model field', fieldIndex)
-        dynMod.deformationList[fieldIndex] = resample(dynMod.deformationList[fieldIndex], gridSize=dynMod.midp.gridSize)
+    plt.figure()
+    plt.imshow(np.rot90(dynMod.midp.imageArray[:, 29, :]))
+    plt.show()
 
-    # for field in dynMod.deformationList:
-    #     print('Resample model field')
-    #     field.resample(gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing, origin=dynMod.midp.origin)
+    # for fieldIndex in range(len(dynMod.deformationList)):
+    #     print('Resample model field', fieldIndex)
+    #     dynMod.deformationList[fieldIndex] = resample(dynMod.deformationList[fieldIndex], gridSize=dynMod.midp.gridSize, tryGPU=True)
+
+    for field in dynMod.deformationList:
+        print('Resample model field')
+        field.resample(gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing, origin=dynMod.midp.origin)
 
     simulationTime = 10
     amplitude = 10
