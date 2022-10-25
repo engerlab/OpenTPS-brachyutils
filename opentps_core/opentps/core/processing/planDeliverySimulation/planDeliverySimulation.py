@@ -133,7 +133,7 @@ class PlanDeliverySimulation():
             dose.name = f"partial_4DDD_p{p:03d}"
             if save_partial_doses:
                 # if self.saveDosesInObject: self.computedDoses.append(dose)
-                if self.saveDosesToFile: writeRTDose(dose, os.path.join(fx_dir, f"{dose.name}.dcm"))
+                if self.saveDosesToFile: writeRTDose(dose, os.path.join(path_dose, f"{dose.name}.dcm"))
             # Accumulate dose on MidP CT
             df = self.model3D.deformationList[p]
             dose_MidP._imageArray += df.deformImage(dose)._imageArray
@@ -207,7 +207,7 @@ class PlanDeliverySimulation():
             # Initialize reference dose on the MidP image
             dose_MidP = DoseImage().createEmptyDoseWithSameMetaData(self.model3D.midp)
             dose_MidP.name = f'dose {number_of_fractions}fx scenario {str(scenario_number)}'
-            selected_doses = self._randomCombinationWithReplacement(accumulated_doses, number_of_fractionation_scenarios)
+            selected_doses = self._randomCombinationWithReplacement(accumulated_doses, number_of_fractions)
             # Accumulate on MidP
             dose_MidP._imageArray += np.sum(np.stack([dose._imageArray for dose in selected_doses], axis=0), axis=0) / number_of_fractions
             if self.saveDosesInObject: self.computedDoses.append(dose_MidP)
