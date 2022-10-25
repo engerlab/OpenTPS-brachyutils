@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class Deformation3D(Image3D):
 
-    def __init__(self, imageArray=None, name="Deformation", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", velocity=None, displacement=None):
+    def __init__(self, imageArray=None, name="Deformation", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID="", velocity=None, displacement=None, patient=None):
 
         if (displacement is None) and not(velocity is None):
             origin = velocity._origin
@@ -34,7 +34,7 @@ class Deformation3D(Image3D):
         self.velocity = velocity
         self.displacement = displacement
 
-        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID)
+        super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing, angles=angles, seriesInstanceUID=seriesInstanceUID, patient=patient)
 
     @property
     def gridSize(self):

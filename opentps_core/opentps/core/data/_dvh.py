@@ -21,8 +21,8 @@ class DVH:
         self._roiName = roiMask.name
         self._doseImage = dose
 
-        self._dose = None
-        self._volume = None
+        self._dose = None # 1D numpy array representing the discretization of the dose [0, maxDose]
+        self._volume = None # the useful information
         self._volume_absolute = None
         self._Dmean = 0
         self._D98 = 0
