@@ -167,7 +167,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._workDir)
         self._startMCsquare()
 
-        mhdDose = self._importDose()
+        mhdDose = self._importDose(plan)
         return mhdDose
 
     def computeDoseAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = None) -> Tuple[DoseImage, LETImage]:
@@ -198,7 +198,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         # Start nominal simulation
         logger.info("Simulation of nominal scenario")
         self._startMCsquare()
-        dose = self._importDose()
+        dose = self._importDose(plan)
         scenarios.setNominal(dose, self._roi)
         # Use special config for robustness
         self._config = self._scenarioComputationConfig
@@ -212,7 +212,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             fileName = 'Dose_Scenario_' + str(s + 1) + '-' + str(self._numScenarios) + '.mhd'
             self._doseFilePath = os.path.join(self._workDir, fileName)
             if os.path.isfile(self._doseFilePath):
-                dose = self._importDose()
+                dose = self._importDose(plan)
                 scenarios.addScenario(dose, self._roi)
 
         return scenarios
