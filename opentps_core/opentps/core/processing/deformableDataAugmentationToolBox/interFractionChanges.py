@@ -296,14 +296,13 @@ def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
     """
 
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
-
         translationInMM = np.array(translationInMM)
 
         if isinstance(data, Dynamic3DModel):
             print('Translate Dynamic3DModel of', translationInMM, 'mm')
             print('Translate dynamic 3D model - midp image')
             translateData(data.midp, translationInMM=translationInMM)
-
+            
             for field in data.deformationList:
                 if field.velocity != None:
                     print('Translate dynamic 3D model - velocity field')
@@ -318,9 +317,9 @@ def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
                 translateData(image3D, translationInMM=translationInMM)
 
         if isinstance(data, Image3D):
-
+            
             translationInPixels = translationInMM / data.spacing
-
+            
             if isinstance(data, VectorField3D):
                 print('Translate VectorField3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
                 translationInPixels = np.append(translationInPixels, [0])
