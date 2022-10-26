@@ -1,7 +1,10 @@
+import matplotlib.pyplot as plt
+
 from opentps.core.io.dataLoader import readData
 from opentps.core.io.dicomIO import readDicomPlan
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._deformation3D import Deformation3D
+from opentps.core.data._rtStruct import RTStruct
 from opentps.core.processing.planDeliverySimulation.planDeliverySimulation import *
 
 ######## Simulation on 4DCT #########
@@ -19,8 +22,10 @@ CT4D = Dynamic3DSequence(CT4D)
 
 # Load model3D
 MidPCT_Path = r"C:\Users\valentin.hamaide\data\ARIES\patient_0\MidP_CT"
-midP = readData(MidPCT_Path, 0)
-midP = [data for data in midP if type(data) is CTImage][0]
+midP_data = readData(MidPCT_Path, 0)
+midP = [data for data in midP_data if type(data) is CTImage][0]
+# Load MidP RT struct
+midP_struct = [data for data in midP_data if type(data) is RTStruct][0]
 
 # Load deformation fields
 inputPaths = r"C:\Users\valentin.hamaide\data\ARIES\patient_0\deformation_fields"
@@ -39,12 +44,49 @@ print(deformationList)
 model3D = Dynamic3DModel(name=patient_name, midp=midP, deformationList=deformationList)
 print(model3D)
 
+PDS = PlanDeliverySimulation(plan, CT4D, model3D)
 
-### 4D Dose simulation
-simulate4DD(plan, CT4D, model3D)
+## 4D Dose simulation
+PDS.simulate4DDose()
 
 ## 4D dynamic simulation
-simulate4DDD(plan, CT4D, model3D)
+PDS.simulate4DDynamicDose()
 
 ## Simulate fractionation scenarios
-simulate4DDDScenarios(plan, CT4D, model3D, number_of_fractions=5, number_of_starting_phases=3, number_of_fractionation_scenarios=5)
+number_of_fractions=5 # number of fractions of the plan
+number_of_starting_phases=3 # number of simulations (from a different starting phase)
+number_of_fractionation_scenarios=7 # how many scenarios we select where each scenario is a random combination with replacement
+PDS.simulate4DDynamicDoseScenarios(number_of_fractions=number_of_fractions, number_of_starting_phases=number_of_starting_phases, number_of_fractionation_scenarios=number_of_fractionation_scenarios)
+
+# # Plot DVH with bands for a single fraction
+dvh_bands = PDS.computeDVHBand4DDD(midP_struct.contours, singleFraction=True)
+
+# # Display DVH + DVH-bands
+fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+for dvh_band in dvh_bands:
+    phigh = ax.plot(dvh_band._dose, dvh_band._volumeHigh, alpha=0)
+    plow = ax.plot(dvh_band._dose, dvh_band._volumeLow, alpha=0)
+    pNominal = ax.plot(dvh_band._nominalDVH._dose, dvh_band._nominalDVH._volume, label=dvh_band._roiName)
+    pfill = ax.fill_between(dvh_band._dose, dvh_band._volumeHigh, dvh_band._volumeLow, alpha=0.2)
+ax.set_xlabel("Dose (Gy)")
+ax.set_ylabel("Volume (%)")
+plt.grid(True)
+plt.legend()
+plt.show()
+
+
+# Plot DVH with band for the accumulation of 5 fractions
+dvh_bands = PDS.computeDVHBand4DDD(midP_struct.contours, singleFraction=False)
+
+# Display DVH + DVH-bands
+fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+for dvh_band in dvh_bands:
+    phigh = ax.plot(dvh_band._dose, dvh_band._volumeHigh, alpha=0)
+    plow = ax.plot(dvh_band._dose, dvh_band._volumeLow, alpha=0)
+    pNominal = ax.plot(dvh_band._nominalDVH._dose, dvh_band._nominalDVH._volume, label=dvh_band._roiName)
+    pfill = ax.fill_between(dvh_band._dose, dvh_band._volumeHigh, dvh_band._volumeLow, alpha=0.2)
+ax.set_xlabel("Dose (Gy)")
+ax.set_ylabel("Volume (%)")
+plt.grid(True)
+plt.legend()
+plt.show()
