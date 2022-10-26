@@ -37,20 +37,16 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 
     if isinstance(data, Deformation3D):
 
-        print('in resampler3D resample in if deformation3D')
-
         if not(data.velocity is None):
-            data.origin = np.array(origin)
-            data.spacing = np.array(spacing)
             resampleImage3D(data.velocity, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
                             outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
-
+            data.origin = np.array(data.velocity.origin)
+            data.spacing = np.array(data.velocity.spacing)
         if not(data.displacement is None):
-            data.origin = np.array(data.displacement.origin)
-            data.spacing = np.array(data.displacement.spacing)
             resampleImage3D(data.displacement, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
                             outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
-
+            data.origin = np.array(data.displacement.origin)
+            data.spacing = np.array(data.displacement.spacing)
         if data.velocity is None and data.displacement is None:
             print('No fields found in the Deformation3D object, velocity and displacement are None')
             return
@@ -58,7 +54,6 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
             return data
 
     elif isinstance(data, Image3D):
-        print('in resampler3D is instance data Image3D', type(data))
         return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
                                outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
 
@@ -100,18 +95,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
 
     """
     if not inPlace:
-        print('in resampler3D resampleImage3D in if not inPlace avant fromImage')
-        print(type(image))
-        print(np.min(image.imageArray))
-        print(image.origin)
-        print(image.spacing)
         image = image.__class__.fromImage3D(image, patient=None)
-        print('in resampler3D resampleImage3D in if not inPlace après fromImage')
-        print(type(image))
-        print(np.min(image.imageArray))
-        print(image.origin)
-        print(image.spacing)
-
 
     # spacing is None
     if spacing is None:
@@ -283,7 +267,6 @@ def resampleOpenMP(data, inputOrigin, inputSpacing, inputGridSize, outputOrigin,
     xi = xi.reshape((xi.size // 3, 3))
 
     if vectorDimension > 1:
-        print('in resampler3D resample OpenMP, in if vectorDimension > 1')
         field = np.zeros((*outputGridSize, vectorDimension))
         for i in range(vectorDimension):
             fieldTemp = interpolateTrilinear(data[:, :, :, i], inputGridSize, xi, fillValue=fillValue, tryGPU=tryGPU)

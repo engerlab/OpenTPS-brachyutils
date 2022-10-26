@@ -18,7 +18,8 @@ from opentps.core.examples.syntheticData import*
 
 if __name__ == '__main__':
 
-    CT4D = createSynthetic4DCT(numberOfPhases=4)
+    CT4D = createSynthetic4DCT(numberOfPhases=6)
+    # CT4D = resample(CT4D, gridSize=(80, 50, 50))
 
     plt.figure()
     fig = plt.gcf()
@@ -35,26 +36,28 @@ if __name__ == '__main__':
     dynMod = Dynamic3DModel()
     dynMod.computeMidPositionImage(CT4D, 0, tryGPU=True)
 
-    plt.figure()
-    plt.imshow(np.rot90(dynMod.midp.imageArray[:, 95, :]))
-    plt.show()
-
+    print(dynMod.midp.origin, dynMod.midp.spacing, dynMod.midp.gridSize)
     print('Resample model image')
     dynMod = resample(dynMod, gridSize=(80, 50, 50))
+    print('after resampling', dynMod.midp.origin, dynMod.midp.spacing, dynMod.midp.gridSize)
 
-    print(np.max(dynMod.midp.imageArray))
-
-    plt.figure()
-    plt.imshow(np.rot90(dynMod.midp.imageArray[:, 29, :]))
-    plt.show()
-
+    # # option 1
     # for fieldIndex in range(len(dynMod.deformationList)):
     #     print('Resample model field', fieldIndex)
     #     dynMod.deformationList[fieldIndex] = resample(dynMod.deformationList[fieldIndex], gridSize=dynMod.midp.gridSize, tryGPU=True)
+    #     print('after resampling', dynMod.deformationList[fieldIndex].origin, dynMod.deformationList[fieldIndex].spacing, dynMod.deformationList[fieldIndex].gridSize)
 
+    # # option 2
+    # for fieldIndex in range(len(dynMod.deformationList)):
+    #     print('Resample model field', fieldIndex)
+    #     resample(dynMod.deformationList[fieldIndex], gridSize=dynMod.midp.gridSize, tryGPU=True, inPlace=True)
+    #     print('after resampling', dynMod.deformationList[fieldIndex].origin, dynMod.deformationList[fieldIndex].spacing, dynMod.deformationList[fieldIndex].gridSize)
+
+    # option 3
     for field in dynMod.deformationList:
         print('Resample model field')
-        field.resample(gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing, origin=dynMod.midp.origin)
+        field.resample(spacing=dynMod.midp.spacing, gridSize=dynMod.midp.gridSize, origin=dynMod.midp.origin)
+        print('after resampling', field.origin, field.spacing, field.gridSize)
 
     simulationTime = 10
     amplitude = 10
@@ -69,34 +72,13 @@ if __name__ == '__main__':
                                          coeffMax=0,
                                          meanEvent=0/30,
                                          meanEventApnea=0)
-    # newSignal = SyntheticBreathingSignal(amplitude=amplitude,
-    #                                      variationAmplitude=0,
-    #                                      breathingPeriod=4,
-    #                                      variationFrequency=0,
-    #                                      shift=0,
-    #                                      meanNoise=0,
-    #                                      varianceNoise=0,
-    #                                      samplingPeriod=0.2,
-    #                                      meanEvent=0/30,
-    #                                      simulationTime=simulationTime,
-    #                                      )
 
     newSignal.generate1DBreathingSignal()
     linearIncrease = np.linspace(0.8, 10, newSignal.breathingSignal.shape[0])
 
     newSignal.breathingSignal = newSignal.breathingSignal * linearIncrease
 
-    newSignal2 = SyntheticBreathingSignal(amplitude=amplitude,
-                                         breathingPeriod=4,
-                                         meanNoise=0,
-                                         varianceNoise=0,
-                                         samplingPeriod=0.2,
-                                         simulationTime=simulationTime,
-                                         coeffMin=0,
-                                         coeffMax=0,
-                                         meanEvent=0/30,
-                                         meanEventApnea=0)
-
+    newSignal2 = SyntheticBreathingSignal()
     newSignal2.breathingSignal = -newSignal.breathingSignal
 
     signalList = [newSignal.breathingSignal, newSignal2.breathingSignal]
@@ -150,5 +132,5 @@ if __name__ == '__main__':
         plt.imshow(np.rot90(dynSeq.dyn3DImageList[imageIndex].imageArray[:, 29, :]))
 
     anim = FuncAnimation(fig, updateAnim, frames=len(dynSeq.dyn3DImageList), interval=300)
-    anim.save('D:/anim.gif')
+    anim.save('D:/anim3.gif')
     plt.show()

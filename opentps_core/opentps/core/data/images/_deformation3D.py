@@ -148,7 +148,7 @@ class Deformation3D(Image3D):
             """
 
         from opentps.core.processing.imageProcessing.resampler3D import resample
-        resample(self, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue, tryGPU=tryGPU, outputType=outputType)
+        resample(self, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue, tryGPU=tryGPU, outputType=outputType, inPlace=True)
 
         # if not(self.velocity is None):
         #     self.velocity.resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
