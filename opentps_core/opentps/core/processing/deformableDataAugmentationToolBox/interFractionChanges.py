@@ -280,7 +280,7 @@ def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
 
 
 ## --------------------------------------------------------------------------------------
-def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
+def translateData(data, binarizeMask=True, translationInMM=[0, 0, 0], cval=-1000):
 
     """
 
@@ -301,25 +301,24 @@ def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
         if isinstance(data, Dynamic3DModel):
             print('Translate Dynamic3DModel of', translationInMM, 'mm')
             print('Translate dynamic 3D model - midp image')
-            translateData(data.midp, translationInMM=translationInMM)
+            translateData(data.midp, binarizeMask=binarizeMask, translationInMM=translationInMM)
             
             for field in data.deformationList:
                 if field.velocity != None:
                     print('Translate dynamic 3D model - velocity field')
-                    translateData(field.velocity, translationInMM=translationInMM)
+                    translateData(field.velocity, binarizeMask=binarizeMask, translationInMM=translationInMM)
                 if field.displacement != None:
                     print('Translate dynamic 3D model - displacement field')
-                    translateData(field.displacement,  translationInMM=translationInMM)
+                    translateData(field.displacement, binarizeMask=binarizeMask, translationInMM=translationInMM)
 
         if isinstance(data, Dynamic3DSequence):
             print('Translate Dynamic3DSequence of', translationInMM, 'mm')
             for image3D in data.dyn3DImageList:
-                translateData(image3D, translationInMM=translationInMM)
+                translateData(image3D, binarizeMask=binarizeMask, translationInMM=translationInMM)
 
         if isinstance(data, Image3D):
             
             translationInPixels = translationInMM / data.spacing
-            
             if isinstance(data, VectorField3D):
                 print('Translate VectorField3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
                 translationInPixels = np.append(translationInPixels, [0])
@@ -346,7 +345,8 @@ def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
                 print('Translate ROIMask of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
                 data.imageArray = data.imageArray.astype(np.float)
                 data.imageArray = translateCupy(data.imageArray, translationInPixels=translationInPixels, cval=0)
-                data.imageArray = data.imageArray > 0.5
+                if binarizeMask:
+                    data.imageArray = data.imageArray > 0.5
 
             else:
                 print('Translate Image3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
