@@ -222,6 +222,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
+        if self._plan.planDesign and self._plan.planDesign.scoringVoxelSpacing:
+            if not np.all(self._ct.spacing == self._plan.planDesign.scoringVoxelSpacing):
+                self.independentScoringGrid = True
+                self.scoringVoxelSpacing = self._plan.planDesign.scoringVoxelSpacing
+        
         self._config = self._beamletComputationConfig
 
         self._writeFilesToSimuDir()

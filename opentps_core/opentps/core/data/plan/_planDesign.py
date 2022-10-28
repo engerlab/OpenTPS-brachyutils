@@ -25,6 +25,7 @@ class PlanDesign(PatientData):
         self.spotSpacing = 5.0
         self.layerSpacing = 5.0
         self.targetMargin = 5.0
+        self.scoringVoxelSpacing = None
         self.targetMask: ROIMask = None
         self.proximalLayers = 1
         self.distalLayers = 1

@@ -23,9 +23,9 @@ class ObjectivesList:
         self.targetName = ""
         self.targetPrescription = 0.0
 
-        self._scoringOrigin = np.array((0, 0, 0))
+        self._scoringOrigin = None
         self._scoringGridSize = None
-        self._scoringSpacing = np.array((1, 1, 1))
+        self._scoringSpacing = None
 
     @property
     def scoringOrigin(self) -> Sequence[float]:
@@ -53,7 +53,6 @@ class ObjectivesList:
 
     def addFidObjective(self, roi, metric, limitValue, weight, kind="Soft", robust=False):
         objective = FidObjective(roi=roi, metric=metric, limitValue=limitValue, weight=weight)
-
         if metric == FidObjective.Metrics.DMIN:
             objective.metric = FidObjective.Metrics.DMIN
         elif metric == FidObjective.Metrics.DMAX:
@@ -66,23 +65,30 @@ class ObjectivesList:
 
         objective.kind = kind
         objective.robust = robust
-        objective.setScoringParameters(self.scoringSpacing, self.scoringGridSize, self.scoringOrigin)
+        if self.scoringSpacing is not None and self.scoringGridSize is not None and self.scoringOrigin is not None:
+            objective._updateMaskVec(spacing=self.scoringSpacing, gridSize=self.scoringGridSize, origin=self.scoringOrigin)
 
         self.fidObjList.append(objective)
 
     def setScoringParameters(self, ct:CTImage, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None):
         self._scoringOrigin = ct.origin
 
-        if scoringGridSize is None:
-            scoringGridSize = ct.gridSize
-        self._scoringGridSize = scoringGridSize
-
+        # spacing is None
         if scoringSpacing is None:
-            scoringSpacing = ct.spacing
+            if scoringGridSize is None:
+                scoringGridSize = ct.gridSize
+            scoringSpacing = ct.spacing*ct.gridSize/scoringGridSize
+        else:
+            if np.isscalar(scoringSpacing):
+                scoringSpacing = scoringSpacing*np.ones(ct.spacing.shape)
+            # gridSize is None but spacing is not
+            if scoringGridSize is None:
+                scoringGridSize = np.floor(ct.gridSize*ct.spacing/scoringSpacing)
+        self._scoringGridSize = scoringGridSize
         self._scoringSpacing = scoringSpacing
 
         for objective in self.fidObjList:
-            objective.setScoringParameters(self._scoringSpacing, self._scoringGridSize, self._scoringOrigin)
+            objective._updateMaskVec(self._scoringSpacing, self._scoringGridSize, self._scoringOrigin)
 
     def addExoticObjective(self, weight):
         objective = ExoticObjective()
@@ -103,13 +109,7 @@ class FidObjective:
         self.robust = False
         self.kind = "Soft"
         self.maskVec = None
-
-        self._roi = None
-        self._scoringOrigin = np.array((0, 0, 0))
-        self._scoringGridSize = None
-        self._scoringSpacing = np.array((1, 1, 1))
-
-        self.roi = roi
+        self._roi = roi
 
     @property
     def roi(self):
@@ -119,47 +119,28 @@ class FidObjective:
     def roi(self, roi):
         self._roi = roi
 
-        if not (self._scoringGridSize is None):
-            self._updateMaskVec()
-
     @property
     def roiName(self) -> str:
         return self.roi.name
 
-    @property
-    def scoringOrigin(self) -> Sequence[float]:
-        return self._scoringOrigin
 
-    @property
-    def scoringGridSize(self) -> Sequence[int]:
-        return self._scoringGridSize
-
-    @property
-    def scoringSpacing(self) -> Sequence[float]:
-        return self._scoringSpacing
-
-    def setScoringParameters(self, spacing:Sequence[float], gridSize:Sequence[int], origin:Sequence[float]):
-        self._scoringSpacing = spacing
-        self._scoringGridSize = gridSize
-        self._scoringOrigin = origin
-
-        self._updateMaskVec()
-
-    def _updateMaskVec(self):
+    def _updateMaskVec(self, spacing:Sequence[float], gridSize:Sequence[int], origin:Sequence[float]):
         from opentps.core.data._roiContour import ROIContour
 
-        if self.scoringGridSize is None:
-            raise Exception("scoringGridSize not set")
-
         if isinstance(self.roi, ROIContour):
-            mask = self.roi.getBinaryMask(origin=self.scoringOrigin, gridSize=self.scoringGridSize, spacing=self.scoringSpacing)
+            mask = self.roi.getBinaryMask(origin=origin, gridSize=gridSize, spacing=spacing)
         elif isinstance(self.roi, ROIMask):
-            mask = resampler3D.resampleImage3D(self.roi, gridSize=self.scoringGridSize, spacing=self.scoringSpacing, origin=self.scoringOrigin)
+            mask = self.roi
+            if not (np.array_equal(mask.gridSize, gridSize) and
+                np.allclose(mask.origin, origin, atol=0.01) and
+                np.allclose(mask.spacing, spacing, atol=0.01)):
+                mask = resampler3D.resampleImage3D(self.roi, gridSize=gridSize, spacing=spacing, origin=origin)
         else:
             raise Exception(self.roi.__class__.__name__ + ' is not a supported class for roi')
 
         self.maskVec = np.flip(mask.imageArray, (0, 1))
         self.maskVec = np.ndarray.flatten(self.maskVec, 'F').astype('bool')
+
 
 class ExoticObjective:
     def __init__(self):
