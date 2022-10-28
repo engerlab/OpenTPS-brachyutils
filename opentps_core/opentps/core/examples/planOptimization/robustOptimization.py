@@ -2,7 +2,6 @@
 import os
 import sys
 
-import opentps.core.processing.imageProcessing.imageTransform3D
 
 sys.path.append('..')
 import numpy as np
@@ -130,7 +129,7 @@ def run():
     # center of mass
     roi = resampleImage3DOnImage3D(roi, ct)
     COM_coord = roi.centerOfMass
-    COM_index = opentps.core.processing.imageProcessing.imageTransform3D.getVoxelIndexFromPosition(COM_coord)
+    COM_index = roi.getVoxelIndexFromPosition(COM_coord)
     Z_coord = COM_index[2]
 
     img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)
