@@ -4,24 +4,25 @@ import concurrent
 
 # from timeit import repeat
 
-def multiProcDeform(deformationList, dynMod, GTVMask):
-
+def multiProcDeform(deformationList, dynMod, GTVMask, GPUNumber=0):
     imgList = [dynMod.midp for i in range(len(deformationList))]
     maskList = [GTVMask for i in range(len(deformationList))]
+    tryGPUList = [True for i in range(len(deformationList))]
+    GPUNumberList = [GPUNumber for i in range(len(deformationList))]
     
     import multiprocessing
     multiprocessing.set_start_method('spawn', force=True)
 
     test = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        results = executor.map(deformImageAndMask, imgList, maskList, deformationList)
+        results = executor.map(deformImageAndMask, imgList, maskList, deformationList, tryGPUList, GPUNumberList)
         test += results
         executor.shutdown()
 
     return test
 
 ## ------------------------------------------------------------------------------------
-def deformImageAndMask(img, ROIMask, deformation, tryGPU=True):
+def deformImageAndMask(img, ROIMask, deformation, tryGPU=True, GPUNumber=0):
     """
     This function is specific to this example and used to :
     - deform a CTImage and an ROIMask,
@@ -30,6 +31,11 @@ def deformImageAndMask(img, ROIMask, deformation, tryGPU=True):
     - binarize the DRR of the ROIMask
     - compute the 2D center of mass for the ROI DRR
     """
+    try:
+        import cupy
+        cupy.cuda.Device(GPUNumber).use()
+    except:
+        print('cupy not found.')
     
     startTime = time.time()
     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
