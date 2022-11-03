@@ -250,9 +250,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(self._beamletRescaling()), dtype=np.float32)))
 
         beamletDose.doseOrigin = self._ct.origin
+
         beamletDose.doseSpacing = self.scoringVoxelSpacing
         beamletDose.doseGridSize = self.scoringGridSize
-
         return beamletDose
 
     def computeBeamletsAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> Tuple[SparseBeamlets, SparseBeamlets]:
@@ -386,12 +386,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def _importBeamlets(self):
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _importBeamletsLET(self):
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _beamletRescaling(self) -> Sequence[float]:

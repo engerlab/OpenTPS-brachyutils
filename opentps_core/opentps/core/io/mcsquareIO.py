@@ -35,7 +35,7 @@ from opentps.core.data.images import Image3D
 
 logger = logging.getLogger(__name__)
 
-def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIMask] = None):
+def readBeamlets(file_path, beamletRescaling:Sequence[float], origin, roi: Optional[ROIMask] = None):
     if (not file_path.endswith('.txt')):
         raise NameError('File ', file_path, ' is not a valid sparse matrix header')
 
@@ -52,7 +52,7 @@ def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIM
     beamletDose = SparseBeamlets()
     beamletDose.setUnitaryBeamlets(csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(beamletRescaling), dtype=np.float32)))
     beamletDose.beamletWeights = np.ones(header["NbrSpots"])
-    beamletDose.doseOrigin = header["Offset"]
+    beamletDose.doseOrigin = origin
     beamletDose.doseSpacing = header["VoxelSpacing"]
     beamletDose.doseGridSize = header["ImageSize"]
 
