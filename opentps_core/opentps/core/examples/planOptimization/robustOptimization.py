@@ -105,12 +105,12 @@ def run():
     saveRTPlan(plan, plan_file)
     plan.planDesign.objectives = ObjectivesList()
     plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    plan.planDesign.objectives.setScoringParameters(ct)
     # scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
     # plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0, robust=True)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0, robust=True)
+    plan.planDesign.setScoringParameters()
 
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
     # Optimize treatment plan

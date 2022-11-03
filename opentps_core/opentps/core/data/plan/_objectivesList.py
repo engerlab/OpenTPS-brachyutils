@@ -23,22 +23,6 @@ class ObjectivesList:
         self.targetName = ""
         self.targetPrescription = 0.0
 
-        self._scoringOrigin = None
-        self._scoringGridSize = None
-        self._scoringSpacing = None
-
-    @property
-    def scoringOrigin(self) -> Sequence[float]:
-        return self._scoringOrigin
-
-    @property
-    def scoringGridSize(self) -> Sequence[int]:
-        return self._scoringGridSize
-
-    @property
-    def scoringSpacing(self) -> Sequence[float]:
-        return self._scoringSpacing
-
     def setTarget(self, roiName, prescription):
         self.targetName = roiName
         self.targetPrescription = prescription
@@ -65,30 +49,8 @@ class ObjectivesList:
 
         objective.kind = kind
         objective.robust = robust
-        if self.scoringSpacing is not None and self.scoringGridSize is not None and self.scoringOrigin is not None:
-            objective._updateMaskVec(spacing=self.scoringSpacing, gridSize=self.scoringGridSize, origin=self.scoringOrigin)
 
         self.fidObjList.append(objective)
-
-    def setScoringParameters(self, ct:CTImage, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None):
-        self._scoringOrigin = ct.origin
-
-        # spacing is None
-        if scoringSpacing is None:
-            if scoringGridSize is None:
-                scoringGridSize = ct.gridSize
-            scoringSpacing = ct.spacing*ct.gridSize/scoringGridSize
-        else:
-            if np.isscalar(scoringSpacing):
-                scoringSpacing = scoringSpacing*np.ones(ct.spacing.shape)
-            # gridSize is None but spacing is not
-            if scoringGridSize is None:
-                scoringGridSize = np.floor(ct.gridSize*ct.spacing/scoringSpacing)
-        self._scoringGridSize = scoringGridSize
-        self._scoringSpacing = scoringSpacing
-
-        for objective in self.fidObjList:
-            objective._updateMaskVec(self._scoringSpacing, self._scoringGridSize, self._scoringOrigin)
 
     def addExoticObjective(self, weight):
         objective = ExoticObjective()

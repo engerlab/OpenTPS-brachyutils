@@ -100,10 +100,10 @@ def run():
 
     plan.planDesign.objectives = ObjectivesList()
     plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    plan.planDesign.objectives.setScoringParameters(ct, scoringSpacing=plan.planDesign.scoringVoxelSpacing)
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
+    plan.planDesign.setScoringParameters(scoringSpacing=plan.planDesign.scoringVoxelSpacing)
 
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
     # Optimize treatment plan

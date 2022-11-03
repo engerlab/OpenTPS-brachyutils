@@ -2,6 +2,7 @@
 __all__ = ['PlanDesign']
 
 import logging
+from typing import Optional, Sequence
 
 import numpy as np
 import pydicom
@@ -26,6 +27,7 @@ class PlanDesign(PatientData):
         self.layerSpacing = 5.0
         self.targetMargin = 5.0
         self.scoringVoxelSpacing = None
+        self.scoringGridSize = None
         self.targetMask: ROIMask = None
         self.proximalLayers = 1
         self.distalLayers = 1
@@ -126,3 +128,25 @@ class PlanDesign(PatientData):
         initializer.targetMask = self.targetMask
         initializer.placeSpots(self.spotSpacing, self.layerSpacing, self.targetMargin, self.layersToSpacingAlignment,
                                self.proximalLayers, self.distalLayers)
+
+
+    def setScoringParameters(self, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None):
+        # self._scoringOrigin = self.ct.origin
+
+        # spacing is None
+        if scoringSpacing is None:
+            if scoringGridSize is None:
+                scoringGridSize = self.ct.gridSize
+            scoringSpacing = self.ct.spacing*self.ct.gridSize/scoringGridSize
+        else:
+            if np.isscalar(scoringSpacing):
+                scoringSpacing = scoringSpacing*np.ones(self.ct.spacing.shape)
+            # gridSize is None but spacing is not
+            if scoringGridSize is None:
+                scoringGridSize = np.floor(self.ct.gridSize*self.ct.spacing/scoringSpacing)
+        self.scoringGridSize = scoringGridSize
+        self.scoringVoxelSpacing = scoringSpacing
+
+        for objective in self.objectives.fidObjList:
+            objective._updateMaskVec(spacing=self.scoringVoxelSpacing, gridSize=self.scoringGridSize, origin=self.ct.origin)
+            
