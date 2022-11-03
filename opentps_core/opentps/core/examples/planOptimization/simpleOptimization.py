@@ -71,7 +71,7 @@ def run():
     mc2.ctCalibration = ctCalibration
 
     # Load / Generate new plan
-    plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled___.tps")
+    plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
 
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
@@ -121,7 +121,6 @@ def run():
     #doseImage = mc2.computeDose(ct, plan)
 
     # Compute DVH on resampled contour
-    # roiResampled = resampleImage3D(roi, origin=ct.origin, gridSize=scoringGridSize, spacing=scoringSpacing)
     target_DVH = DVH(roi, doseImage)
     print('D95 = ' + str(target_DVH.D95) + ' Gy')
     print('D5 = ' + str(target_DVH.D5) + ' Gy')

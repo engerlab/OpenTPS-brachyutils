@@ -115,10 +115,10 @@ class DVH:
         self._convertContourToROI()
 
         if not(self._doseImage.hasSameGrid(self._roiMask)):
-            self._doseImage = resampler3D.resampleImage3DOnImage3D(self._doseImage, self._roiMask, inPlace=False, fillValue=0.)
+            roiResampled = resampler3D.resampleImage3DOnImage3D(self._roiMask, self._doseImage, inPlace=False, fillValue=0.)
 
         dose = self._doseImage.imageArray
-        mask = self._roiMask.imageArray.astype(bool)
+        mask = roiResampled.imageArray.astype(bool)
         spacing = self._doseImage.spacing
         number_of_bins = 4096
         DVH_interval = [0, maxDVH]
