@@ -100,10 +100,7 @@ def run():
 
     plan.planDesign.objectives = ObjectivesList()
     plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    #plan.planDesign.objectives.setScoringParameters(ct)
-    #scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip([150,150,150], scoringSpacing, [1,1,1])]
     plan.planDesign.objectives.setScoringParameters(ct, scoringSpacing=plan.planDesign.scoringVoxelSpacing)
-    # plan.planDesign.objectives.setScoringParameters(ct, np.array(scoringGridSize), np.array(scoringSpacing))
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
