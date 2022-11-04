@@ -110,7 +110,6 @@ def run():
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0, robust=True)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0, robust=True)
-    plan.planDesign.setScoringParameters()
 
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
     # Optimize treatment plan

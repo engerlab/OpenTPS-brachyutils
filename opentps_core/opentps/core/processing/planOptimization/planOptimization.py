@@ -47,8 +47,7 @@ class PlanOptimizer:
         return x0
 
     def initializeFidObjectiveFunction(self):
-        if self.plan.planDesign.objectives.fidObjList[0].maskVec is None:
-            raise Exception('ROI objective mask undefined, most likely because setScoringParameters was not called')
+        self.plan.planDesign.setScoringParameters()
         # crop on ROI
         roiObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
         roiRobustObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)

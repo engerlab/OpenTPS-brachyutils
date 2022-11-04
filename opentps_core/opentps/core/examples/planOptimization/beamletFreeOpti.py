@@ -76,7 +76,6 @@ def run():
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
-    plan.planDesign.setScoringParameters()
     plan.planDesign.defineTargetMaskAndPrescription()
 
     # MCsquare beamlet free planOptimization
