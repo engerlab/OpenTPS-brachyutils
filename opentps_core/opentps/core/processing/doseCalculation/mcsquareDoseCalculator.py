@@ -371,7 +371,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         else:
             fraction = plan.numberOfFractionsPlanned
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
-
+        dose.origin = self._ct.origin # to avoid middle of voxel correction from MCsquare calculation when independentScoringGrid is used
         return dose
 
     def _importLET(self) -> LETImage:
