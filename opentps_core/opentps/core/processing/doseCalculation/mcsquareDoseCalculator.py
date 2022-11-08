@@ -133,8 +133,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._scoringVoxelSpacing = [spacing, spacing, spacing]
         else:
             self._scoringVoxelSpacing = spacing
-        # if self._plan.planDesign:
-        #     self._plan.planDesign.scoringVoxelSpacing = self._scoringVoxelSpacing
+        if self._plan.planDesign:
+            self._plan.planDesign.scoringVoxelSpacing = self._scoringVoxelSpacing
 
     @property
     def scoringGridSize(self):
