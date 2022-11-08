@@ -133,8 +133,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._scoringVoxelSpacing = [spacing, spacing, spacing]
         else:
             self._scoringVoxelSpacing = spacing
-        if self._plan.planDesign:
-            self._plan.planDesign.scoringVoxelSpacing = self._scoringVoxelSpacing
+        # if self._plan.planDesign:
+        #     self._plan.planDesign.scoringVoxelSpacing = self._scoringVoxelSpacing
 
     @property
     def scoringGridSize(self):
@@ -356,7 +356,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_win.bat"),
                                                     cwd=self._mcsquareSimuDir)
             else:
-                raise Exception('MCsquare opti not available on Windows.')
+                self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_opti_win.bat"),
+                                                    cwd=self._mcsquareSimuDir)
             self._subprocess.wait()
             if self._subprocessKilled:
                 self._subprocessKilled = False
