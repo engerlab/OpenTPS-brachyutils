@@ -105,7 +105,6 @@ def run():
     saveRTPlan(plan, plan_file)
     plan.planDesign.objectives = ObjectivesList()
     plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    plan.planDesign.objectives.setScoringParameters(ct)
     # scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
     # plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
     plan.planDesign.objectives.fidObjList = []

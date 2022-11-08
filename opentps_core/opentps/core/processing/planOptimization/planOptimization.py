@@ -47,6 +47,7 @@ class PlanOptimizer:
         return x0
 
     def initializeFidObjectiveFunction(self):
+        self.plan.planDesign.setScoringParameters()
         # crop on ROI
         roiObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
         roiRobustObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)

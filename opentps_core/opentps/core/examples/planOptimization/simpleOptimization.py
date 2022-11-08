@@ -70,10 +70,6 @@ def run():
     mc2.nbPrimaries = 5e4
     mc2.ctCalibration = ctCalibration
 
-    mc2._independentScoringGrid = True
-    scoringSpacing = [2, 2, 2]
-    mc2._scoringVoxelSpacing = scoringSpacing
-
     # Load / Generate new plan
     plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
 
@@ -91,6 +87,7 @@ def run():
         planInit.spotSpacing = 5.0
         planInit.layerSpacing = 5.0
         planInit.targetMargin = 5.0
+        planInit.scoringVoxelSpacing = [2, 2, 2]
 
         plan = planInit.buildPlan()  # Spot placement
         plan.PlanName = "NewPlan"
@@ -103,9 +100,6 @@ def run():
 
     plan.planDesign.objectives = ObjectivesList()
     plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    #plan.planDesign.objectives.setScoringParameters(ct)
-    scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip([150,150,150], scoringSpacing, [1,1,1])]
-    plan.planDesign.objectives.setScoringParameters(ct, np.array(scoringGridSize), np.array(scoringSpacing))
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
