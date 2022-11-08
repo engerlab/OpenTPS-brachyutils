@@ -735,10 +735,21 @@ def writeBin(destFolder):
         shutil.copyfile(source_path, destination_path)
         shutil.copymode(source_path, destination_path)
 
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_win.bat")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_win.bat")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
         source_path = os.path.join(mcsquarePath, "MCsquare_win.exe")
         destination_path = os.path.join(destFolder, "MCsquare_win.exe")
         shutil.copyfile(source_path, destination_path)
         shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_win.exe")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_win.exe")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
 
         source_path = os.path.join(mcsquarePath, "libiomp5md.dll")
         destination_path = os.path.join(destFolder, "libiomp5md.dll")
