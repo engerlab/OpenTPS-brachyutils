@@ -50,7 +50,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
-        self._maxUncertainty = 2.0
+        self._statUncertainty = 0.0
         self._scoringVoxelSpacing = None
         self._simulationDirectory = ProgramSettings().simulationFolder
         self._simulationFolderName = 'MCsquare_simulation'
@@ -548,7 +548,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config = MCsquareConfig()
 
         config["Num_Primaries"] = self._nbPrimaries
-        config["Stat_uncertainty"] = self._maxUncertainty
+        config["Stat_uncertainty"] = self._statUncertainty
         config["WorkDir"] = self._mcsquareSimuDir
         config["CT_File"] = self._ctFilePath
         config["ScannerDirectory"] = self._scannerFolder  # ??? Required???
