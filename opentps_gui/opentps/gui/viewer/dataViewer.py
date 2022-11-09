@@ -620,10 +620,7 @@ class DataViewer(QWidget):
             self.cachedStaticImage3DViewer_3D.update()
 
     def _setDVHDose(self, image:Optional[DoseImage]):
-        if image is None:
-            self.cachedStaticDVHViewer.clear()
-        else:
-            self.cachedStaticDVHViewer.dose = image
+        self.cachedStaticDVHViewer.dose = image
 
     def _removeImageFromViewers(self, image: Union[Image3D, ]):
         """
