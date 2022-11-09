@@ -89,7 +89,7 @@ class DoseComparisonDataViewer(DataViewer):
 
     def _setDVHDose(self, image:Optional[DoseImage]):
         if not self._displayDoseComparison:
-            self.cachedStaticDVHViewer.clear()
+            self.cachedStaticDVHViewer.dose2 = None
             super()._setDVHDose(image)
         else:
             return
