@@ -571,13 +571,14 @@ def writeRTPlan(plan: RTPlan, filePath):
 
         dcm_beam.RangeShifterSequence = []
         dcm_rs = pydicom.dataset.Dataset()
-        dcm_rs.RangeShifterID = rangeShifter.ID
-        if rangeShifter.type == "binary":
-            dcm_rs.RangeShifterType = "BINARY"
-        elif rangeShifter.type == "analog":
-            dcm_rs.RangeShifterType = "ANALOG"
-        else:
-            print("ERROR: Unknown range shifter type: " + rangeShifter.type)
+        if not (rangeShifter is None):
+            dcm_rs.RangeShifterID = rangeShifter.ID
+            if rangeShifter.type == "binary":
+                dcm_rs.RangeShifterType = "BINARY"
+            elif rangeShifter.type == "analog":
+                dcm_rs.RangeShifterType = "ANALOG"
+            else:
+                print("ERROR: Unknown range shifter type: " + rangeShifter.type)
 
         dcm_beam.RangeShifterSequence.append(dcm_rs)
 
