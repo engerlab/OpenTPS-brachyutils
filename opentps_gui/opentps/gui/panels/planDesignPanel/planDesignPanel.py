@@ -1,8 +1,11 @@
-
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox, QListWidget
 
 from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data._patient import Patient
+from opentps.core.io.mcsquareIO import readBDL
+from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.gui.panels.planDesignPanel.beamDialog import BeamDialog
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
 
 
@@ -71,17 +74,15 @@ class PlanDesignPanel(QWidget):
         self._distalSpin.setPrefix("Distal: ")
         self.layout.addWidget(self._distalSpin)
 
-        self._anglesLabel = QLabel('Gantry angles:')
-        self.layout.addWidget(self._anglesLabel)
-        self._anglesEdit = QLineEdit(self)
-        self._anglesEdit.setPlaceholderText('0;45')
-        self.layout.addWidget(self._anglesEdit)
+        self._beams = QListWidget()
+        self._beams.setContextMenuPolicy(Qt.CustomContextMenu)
+        self._beams.customContextMenuRequested.connect(lambda pos, list_type='beam': self.List_RightClick(pos, list_type))
+        self.layout.addWidget(self._beams)
 
-        self._couchAnglesLabel = QLabel('Couch angles:')
-        self.layout.addWidget(self._couchAnglesLabel)
-        self._couchAnglesEdit = QLineEdit(self)
-        self._couchAnglesEdit.setText('0')
-        self.layout.addWidget(self._couchAnglesEdit)
+        self._beamButton = QPushButton('Add beam')
+        self.layout.addWidget(self._beamButton)
+        self._beamButton.clicked.connect(self.add_new_beam)
+
 
         self._robustnessSettingsButton = QPushButton('Modify robustness settings')
         self._robustnessSettingsButton.clicked.connect(self._openRobustnessSettings)
@@ -127,6 +128,30 @@ class PlanDesignPanel(QWidget):
         planStructure.name = self._planNameEdit.text()
 
         planStructure.patient = self._patient
+
+    def add_new_beam(self):
+        beam_number = self._beams.count()
+
+        # retrieve list of range shifters from BDL
+        bdl = readBDL(DoseCalculationConfig().bdlFile)
+        RangeShifterList = [rs.ID for rs in bdl.rangeShifters]
+
+        dialog = BeamDialog("Beam " + str(beam_number + 1), RangeShifterList=RangeShifterList)
+        if (dialog.exec()):
+            BeamName = dialog.BeamName.text()
+            GantryAngle = dialog.GantryAngle.value()
+            CouchAngle = dialog.CouchAngle.value()
+            RangeShifter = dialog.RangeShifter.currentText()
+
+            if (RangeShifter == "None"):
+                RS_disp = ""
+            else:
+                RS_disp = ", RS"
+            self._beams.addItem(BeamName + ":  G=" + str(GantryAngle) + "°,  C=" + str(CouchAngle) + "°" + RS_disp)
+            self.BeamDescription.append(
+                {"BeamType": "beam", "BeamName": BeamName, "GantryAngle": GantryAngle, "CouchAngle": CouchAngle,
+                 "RangeShifter": RangeShifter})
+
 
     def _openRobustnessSettings(self):
         dialog = RobustnessSettings(planEvaluation=False)
