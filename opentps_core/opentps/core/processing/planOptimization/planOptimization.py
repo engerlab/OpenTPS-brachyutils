@@ -143,6 +143,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
         elif method == "BLFree":
             self.solver = beamletFree.BLFree(**kwargs)
         elif method == "LP":
+            self.xSquared = False
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
@@ -158,6 +159,7 @@ class ARCPTPlanOptimizer(PlanOptimizer):
         elif method == 'LS':
             self.solver = localSearch.LS()
         elif method == 'MIP':
+            self.xSquared = False
             self.solver = mip.MIP(self.plan, **kwargs)
         elif method == 'SPArcling':
             try:
