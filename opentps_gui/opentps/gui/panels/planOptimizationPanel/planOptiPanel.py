@@ -234,6 +234,8 @@ class ObjectivesWidget(QWidget):
                 objStr += ">"
             if objective.metric == objective.Metrics.DMAX:
                 objStr += "<"
+            elif objective.metric == objective.Metrics.DMEAN:
+                objStr += "="
             objStr += str(objective.limitValue)
             objStr += ' Gy\n'
 
