@@ -68,7 +68,7 @@ class MainToolbar(QToolBox):
         self.addWidget(patientDataPanel, 'Patient data')
         self.addWidget(roiPanel, 'ROI')
         self.addWidget(planDesignPanel, 'Plan design')
-        self.addWidget(planOptiPanel, 'Plan planOptimization')
+        self.addWidget(planOptiPanel, 'Plan optimization')
         self.addWidget(dosePanel, 'Dose computation')
         self.addWidget(doseComparisonPanel, 'Dose comparison')
         self.addWidget(scriptingPanel, 'Scripting')

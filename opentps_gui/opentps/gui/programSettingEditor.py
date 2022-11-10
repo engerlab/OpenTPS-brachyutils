@@ -12,6 +12,7 @@ class EditableSetting(QWidget):
         super().__init__(parent)
 
         self._mainLayout = QHBoxLayout(self)
+        self._mainLayout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._mainLayout)
 
         if not (property is None or property==""):
@@ -103,16 +104,17 @@ class MCsquareConfigEditor(QWidget):
         self._dcConfig = DoseCalculationConfig()
 
         self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
 
         self._txt = QLabel(self)
-        self._txt.setText("Scanner folder")
+        self._txt.setText("Scanner folder:")
         self._layout.addWidget(self._txt)
         self._scannerField = EditableSetting("", str(self._dcConfig.scannerFolder), self._setScanner)
         self._layout.addWidget(self._scannerField)
 
         self._txt2 = QLabel(self)
-        self._txt2.setText("BDL file")
+        self._txt2.setText("BDL file:")
         self._layout.addWidget(self._txt2)
         self._bdlField = EditableSetting("", str(self._dcConfig.bdlFile), self._setBDL)
         self._layout.addWidget(self._bdlField)
