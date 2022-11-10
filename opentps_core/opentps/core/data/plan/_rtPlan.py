@@ -26,8 +26,6 @@ class RTPlan(PatientData):
     def __init__(self, name="RTPlan", patient=None):
         self.deliveredProtons = None
         self._beams = []
-        self._layers = []
-        self._spots = []
         self._numberOfFractionsPlanned: int = 1
 
         self.seriesInstanceUID = ""
@@ -74,15 +72,6 @@ class RTPlan(PatientData):
             layers.extend(beam.layers)
 
         return layers
-
-    def appendLayerAccum(self, layer: PlanIonLayer):
-        self._layers.append(layer)
-
-    def appendSpotAccum(self, spot: PlanIonSpot):
-        self._spots.append(spot)
-
-    def removeLayer(self, layer: PlanIonLayer):
-        self._layers.remove(layer)
 
     @property
     def spotMUs(self) -> np.ndarray:
