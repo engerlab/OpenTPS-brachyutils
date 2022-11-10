@@ -1,5 +1,6 @@
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox, QListWidget
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox, QListWidget, \
+    QHBoxLayout
 
 from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data._patient import Patient
@@ -25,54 +26,70 @@ class PlanDesignPanel(QWidget):
         self._planNameEdit.setText('New plan')
         self.layout.addWidget(self._planNameEdit)
 
+        self._spacingLayout = QHBoxLayout()
+        self.layout.addLayout(self._spacingLayout)
+
         self._spacingLabel = QLabel('Spot spacing:')
-        self.layout.addWidget(self._spacingLabel)
+        self._spacingLayout.addWidget(self._spacingLabel)
         self._spacingSpin = QDoubleSpinBox()
         self._spacingSpin.setGroupSeparatorShown(True)
         self._spacingSpin.setRange(0.1, 100.0)
         self._spacingSpin.setSingleStep(1.0)
         self._spacingSpin.setValue(5.0)
         self._spacingSpin.setSuffix(" mm")
-        self.layout.addWidget(self._spacingSpin)
+        self._spacingLayout.addWidget(self._spacingSpin)
+
+        self._layerLayout = QHBoxLayout()
+        self.layout.addLayout(self._layerLayout)
 
         self._layerLabel = QLabel('Layer spacing:')
-        self.layout.addWidget(self._layerLabel)
+        self._layerLayout.addWidget(self._layerLabel)
         self._layerSpin = QDoubleSpinBox()
         self._layerSpin.setGroupSeparatorShown(True)
         self._layerSpin.setRange(0.1, 100.0)
         self._layerSpin.setSingleStep(1.0)
         self._layerSpin.setValue(2.0)
         self._layerSpin.setSuffix(" mm")
-        self.layout.addWidget(self._layerSpin)
+        self._layerLayout.addWidget(self._layerSpin)
+
+        self._marginLayout = QHBoxLayout()
+        self.layout.addLayout(self._marginLayout)
 
         self._marginLabel = QLabel('Target margin:')
-        self.layout.addWidget(self._marginLabel)
+        self._marginLayout.addWidget(self._marginLabel)
         self._marginSpin = QDoubleSpinBox()
         self._marginSpin.setGroupSeparatorShown(True)
         self._marginSpin.setRange(0.1, 100.0)
         self._marginSpin.setSingleStep(1.0)
         self._marginSpin.setValue(5.0)
         self._marginSpin.setSuffix(" mm")
-        self.layout.addWidget(self._marginSpin)
+        self._marginLayout.addWidget(self._marginSpin)
 
-        self._layersLabel = QLabel('Add layers:')
-        self.layout.addWidget(self._layersLabel)
+        self._proximalLayout = QHBoxLayout()
+        self.layout.addLayout(self._proximalLayout)
+
+        self._proximalLabel = QLabel('Proximal layers:')
+        self._proximalLayout.addWidget(self._proximalLabel)
         self._proximalSpin = QDoubleSpinBox()
         self._proximalSpin.setGroupSeparatorShown(True)
         self._proximalSpin.setRange(0, 100)
         self._proximalSpin.setSingleStep(1)
         self._proximalSpin.setValue(1)
         self._proximalSpin.setDecimals(0)
-        self._proximalSpin.setPrefix("Proximal: ")
-        self.layout.addWidget(self._proximalSpin)
+        self._proximalLayout.addWidget(self._proximalSpin)
+
+        self._distalLayout = QHBoxLayout()
+        self.layout.addLayout(self._distalLayout)
+
+        self._distalLabel = QLabel('Distal layers:')
+        self._distalLayout.addWidget(self._distalLabel)
         self._distalSpin = QDoubleSpinBox()
         self._distalSpin.setGroupSeparatorShown(True)
         self._distalSpin.setRange(0, 1)
         self._distalSpin.setSingleStep(1)
         self._distalSpin.setValue(1)
         self._distalSpin.setDecimals(0)
-        self._distalSpin.setPrefix("Distal: ")
-        self.layout.addWidget(self._distalSpin)
+        self._distalLayout.addWidget(self._distalSpin)
 
         self._beams = QListWidget()
         self._beams.setContextMenuPolicy(Qt.CustomContextMenu)
