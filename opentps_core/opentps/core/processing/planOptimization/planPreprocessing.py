@@ -13,10 +13,8 @@ Extend rtplan with attributs .layers and .spots to access directly global id and
 '''
 
 def extendPlanLayers(plan: RTPlan) -> RTPlan:
-    outPlan = copy.deepcopy(plan)
-    outPlan._layers = []
-    outPlan._spots = []
-
+    plan._layers = []
+    plan._spots = []
 
     layerID = 0
     spotID = 0
@@ -37,12 +35,10 @@ def extendPlanLayers(plan: RTPlan) -> RTPlan:
                 spot.energy = outLayer.nominalEnergy
 
                 spotID += 1
-                outPlan._spots.append(spot)
+                plan._spots.append(spot)
 
             layerID += 1
-            outPlan._layers.append(outLayer)
-
-    return outPlan
+            plan._layers.append(outLayer)
 
 
 class ExtendedBeam(PlanIonBeam):
