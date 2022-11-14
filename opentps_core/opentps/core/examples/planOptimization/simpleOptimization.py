@@ -109,7 +109,6 @@ def run():
     w, doseImage, ps = solver.optimize()
 
     # Save plan with updated spot weights
-    plan.spotMUs = np.square(w).astype(np.float32)
     saveRTPlan(plan, plan_file)
 
     # MCsquare simulation
