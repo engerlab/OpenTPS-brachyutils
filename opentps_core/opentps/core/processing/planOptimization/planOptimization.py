@@ -114,8 +114,6 @@ class PlanOptimizer:
 
         # total dose
         logger.info("Total dose calculation ...")
-        # Fonctionne pas car self.plan = copie du plan
-        self.plan.planDesign.beamlets = self.plan.planDesign.beamlets
         if self.xSquared:
             self.plan.spotMUs = np.square(weights).astype(np.float32)
             self.plan.planDesign.beamlets.beamletWeights = np.square(weights).astype(np.float32)
