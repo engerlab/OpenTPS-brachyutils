@@ -91,6 +91,10 @@ class PlanOptimizer:
         return self.postProcess(result)
 
     def postProcess(self, result):
+        # Remove unnecessary attributs in plan
+        del self.plan._spots
+        del self.plan._layers
+
         weights = result['sol']
         crit = result['crit']
         niter = result['niter']
