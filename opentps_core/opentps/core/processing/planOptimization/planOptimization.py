@@ -30,7 +30,16 @@ class PlanOptimizer:
         self.plan = plan
         self.opti_params = kwargs
         self.functions = []
-        self.xSquared = True
+        self._xSquared = True
+
+    @property
+    def xSquared(self):
+        return self._xSquared
+
+    @xSquared.setter
+    def xSquared(self, x2):
+        self._xSquared = x2
+
 
     def initializeWeights(self):
         # Total Dose calculation
@@ -42,7 +51,7 @@ class PlanOptimizer:
             normFactor = self.plan.planDesign.objectives.targetPrescription / maxDose
             if self.xSquared:
                 normFactor = math.sqrt(normFactor)
-            x0 = normFactor * np.ones(self.plan.numberOfSpots, dtype=np.float32)
+            x0 = normFactor * np.ones(self.plan.planDesign.beamlets.shape[1], dtype=np.float32)
 
         return x0
 
@@ -84,6 +93,7 @@ class PlanOptimizer:
         self.functions.append(objectiveFunction)
 
     def optimize(self):
+        self.plan.simplify() # make sure no duplicates
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
         # Optimization
@@ -116,10 +126,18 @@ class PlanOptimizer:
         logger.info("Total dose calculation ...")
         if self.xSquared:
             self.plan.spotMUs = np.square(weights).astype(np.float32)
-            self.plan.planDesign.beamlets.beamletWeights = np.square(weights).astype(np.float32)
         else:
             self.plan.spotMUs = weights.astype(np.float32)
-            self.plan.planDesign.beamlets.beamletWeights = weights.astype(np.float32)
+        
+        threshold_MU = 1e-4
+        MU_before_simplify = self.plan.spotMUs.copy()
+        self.plan.simplify(threshold=threshold_MU) # remove zero MU spots
+        if self.plan.planDesign.beamlets.shape[1] != len(self.plan.spotMUs):
+            # Beamlet matrix has not removed zero weight column
+            ind_to_keep = MU_before_simplify > threshold_MU
+            assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
+            self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+        self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
 
         totalDose = self.plan.planDesign.beamlets.toDoseImage()
 
@@ -150,6 +168,63 @@ class IMPTPlanOptimizer(PlanOptimizer):
             logger.error(
                 'Method {} is not implemented. Pick among ["Scipy-lBFGS", "Gradient", "BFGS", "FISTA"]'.format(
                     self.method))
+
+
+class BoundConstraintsOptimizer(PlanOptimizer):
+    def __init__(self, plan:RTPlan, method='Scipy-LBFGS', bounds=(0.02, 5), **kwargs):
+        super().__init__(plan, **kwargs)
+        self.bounds = bounds
+        if method == 'Scipy-LBFGS':
+            self.solver = bfgs.ScipyOpt('L-BFGS-B', **kwargs)
+        else:
+            raise NotImplementedError(f'Method {method} does not accept bound constraints')
+
+    @property
+    def xSquared(self):
+        return False
+
+    def formatBoundsForSolver(self, bounds=None):
+        if bounds is None:
+            bounds = self.bounds
+        bound_min = bounds[0] * self.plan.numberOfFractionsPlanned
+        bound_max = bounds[1] * self.plan.numberOfFractionsPlanned
+        return [(bound_min, bound_max)] * self.plan.planDesign.beamlets.shape[1]
+
+    def optimize(self, nIterations=None):
+        self.plan.simplify() # make sure no duplicates
+        self.initializeFidObjectiveFunction()
+        x0 = self.initializeWeights()
+
+        if self.bounds[0] == 0:
+            result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds), maxit=self.opti_params.get('maxit', 100))
+        else:
+            if nIterations is not None:
+                nit1, nit2 = nIterations[0], nIterations[1]
+            else:
+                nit1 = self.opti_params.get('maxit', 100) // 2
+                nit2 = self.opti_params.get('maxit', 100) // 2
+            
+            # First Optimization with lower bound = 0
+            self.solver.params['maxit'] = nit1
+            result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver((0, self.bounds[1])))
+            x0 = result['sol']
+            ind_to_keep = x0 >= self.bounds[0]
+            x0 = x0[ind_to_keep]
+            self.functions = [] # to avoid a beamlet copy with different size
+            self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+            objectiveFunction = DoseFidelity(self.plan, self.xSquared)
+            self.functions.append(objectiveFunction)
+
+            # second optimization with lower bound = self.bounds[0]
+            self.solver.params['maxit'] = nit2
+            result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds))
+            result_weights = np.zeros(ind_to_keep.shape, dtype=np.float32)
+            result_weights[ind_to_keep] = result['sol']
+            result['sol'] = result_weights
+
+        
+        return self.postProcess(result)
+    
 
 
 class ARCPTPlanOptimizer(PlanOptimizer):
