@@ -28,7 +28,7 @@ class PlanOptiPanel(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self._planStructureLabel = QLabel('plan:')
+        self._planStructureLabel = QLabel('Plan:')
         self.layout.addWidget(self._planStructureLabel)
         self._planStructureComboBox = QComboBox(self)
         self._planStructureComboBox.currentIndexChanged.connect(self._handlePlanStructureIndex)
@@ -41,6 +41,7 @@ class PlanOptiPanel(QWidget):
         self.layout.addWidget(self._ctComboBox)
 
         self._objectivesWidget = ObjectivesWidget(self._viewController)
+        self._objectivesWidget.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self._objectivesWidget)
 
         self._configButton = QPushButton('Open configuration')
@@ -49,7 +50,16 @@ class PlanOptiPanel(QWidget):
 
         from opentps.gui.programSettingEditor import MCsquareConfigEditor
         self._mcsquareConfigWidget = MCsquareConfigEditor(self)
+        self._mcsquareConfigWidget.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self._mcsquareConfigWidget)
+
+        self.layout.addWidget(QLabel('Optimization algorithm:'))
+        self._algoBox = QComboBox()
+        self._algoBox.addItem("Beamlet-free MCsquare")
+        self._algoBox.addItem("Beamlet-based BFGS")
+        self._algoBox.addItem("Beamlet-based L-BFGS")
+        self._algoBox.addItem("Beamlet-based Scipy-lBFGS")
+        self.layout.addWidget(self._algoBox)
 
         self._runButton = QPushButton('Run')
         self._runButton.clicked.connect(self._run)
@@ -197,12 +207,17 @@ class ObjectivesWidget(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self._objectiveButton = QPushButton('Open objectives panel')
-        self._objectiveButton.clicked.connect(self._openObjectivePanel)
-        self.layout.addWidget(self._objectiveButton)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+        self._objectivesLabel = QLabel("Objectives:")
+        self.layout.addWidget(self._objectivesLabel)
 
         self._objectivesLabels = QLabel(self.DEFAULT_OBJECTIVES_TEXT)
         self.layout.addWidget(self._objectivesLabels)
+
+        self._objectiveButton = QPushButton('Open objectives panel')
+        self._objectiveButton.clicked.connect(self._openObjectivePanel)
+        self.layout.addWidget(self._objectiveButton)
 
         self._roiWindow.objectivesModifiedEvent.connect(self._showObjectives)
 
@@ -234,6 +249,8 @@ class ObjectivesWidget(QWidget):
                 objStr += ">"
             if objective.metric == objective.Metrics.DMAX:
                 objStr += "<"
+            elif objective.metric == objective.Metrics.DMEAN:
+                objStr += "="
             objStr += str(objective.limitValue)
             objStr += ' Gy\n'
 
