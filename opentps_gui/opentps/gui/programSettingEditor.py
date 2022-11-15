@@ -26,13 +26,16 @@ class EditableSetting(QWidget):
         self._validateButton.setText("Validate")
         self._validateButton.clicked.connect(lambda *args: action(self._nameLineEdit.text()))
 
-        self._nameLineEdit.setText(str(value))
+        self.setValue(value)
 
         if not (property is None or property == ""):
             self._txt.setBuddy(self._nameLineEdit)
 
         self._mainLayout.addWidget(self._nameLineEdit)
         self._mainLayout.addWidget(self._validateButton)
+
+    def setValue(self, value):
+        self._nameLineEdit.setText(str(value))
 
 class ProgramSettingEditor(QMainWindow):
     # singleton class!
@@ -118,6 +121,9 @@ class MCsquareConfigEditor(QWidget):
         self._layout.addWidget(self._txt2)
         self._bdlField = EditableSetting("", str(self._dcConfig.bdlFile), self._setBDL)
         self._layout.addWidget(self._bdlField)
+
+        self._dcConfig.scannerFolderChangedSignal.connect(self._scannerField.setValue)
+        self._dcConfig.bdlFileChangedSignal.connect(self._bdlField.setValue)
 
     def _setScanner(self, text):
         self._dcConfig.scannerFolder = text

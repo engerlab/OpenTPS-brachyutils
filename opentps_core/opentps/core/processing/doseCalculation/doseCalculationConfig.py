@@ -36,6 +36,9 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @beamletPrimaries.setter
     def beamletPrimaries(self, primaries:int):
+        if primaries==self.beamletPrimaries:
+            return
+
         self.setConfigField("MCsquare", "beamletPrimaries", int(primaries))
         self.beamletPrimariesChangedSignal.emit(self.beamletPrimaries)
 
@@ -45,6 +48,9 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @finalDosePrimaries.setter
     def finalDosePrimaries(self, primaries: int):
+        if primaries==self.finalDosePrimaries:
+            return
+
         self.setConfigField("MCsquare", "finalDosePrimaries", int(primaries))
         self.finalDosePrimariesChangedSignal.emit(self.finalDosePrimaries)
 
@@ -58,6 +64,9 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @bdlFile.setter
     def bdlFile(self, path:str):
+        if path==self.bdlFile:
+            return
+
         self.setConfigField("MCsquare", "bdlFile", path)
         self.bdlFileChangedSignal.emit(self.bdlFile)
 
@@ -71,5 +80,8 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @scannerFolder.setter
     def scannerFolder(self, path:str):
+        if path==self.scannerFolder:
+            return
+
         self.setConfigField("MCsquare", "scannerFolder", path)
         self.scannerFolderChangedSignal.emit(self.scannerFolder)

@@ -6,7 +6,6 @@ from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data._patient import Patient
 from opentps.core.io import mcsquareIO
 from opentps.core.io.mcsquareIO import readBDL
-from opentps.core.io.scannerReader import readScanner
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.gui.panels.planDesignPanel.beamDialog import BeamDialog
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
@@ -140,8 +139,6 @@ class PlanDesignPanel(QWidget):
 
         settings = DoseCalculationConfig()
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
-        calibration = readScanner(settings.scannerFolder)
-        planDesign.calibration = calibration
 
         # extract beam info from QListWidget
         beamNames = []
