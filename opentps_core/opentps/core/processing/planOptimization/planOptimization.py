@@ -142,8 +142,6 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = bfgs.LBFGS(**kwargs)
         elif method == "FISTA":
             self.solver = fista.FISTA(**kwargs)
-        elif method == "BLFree":
-            self.solver = beamletFree.BLFree(**kwargs)
         elif method == "LP":
             self.solver = lp.LP(self.plan, **kwargs)
         else:
@@ -163,8 +161,11 @@ class ARCPTPlanOptimizer(PlanOptimizer):
             self.solver = mip.MIP(self.plan, **kwargs)
         elif method == 'SPArcling':
             try:
-                mode = self.params['mode']
-                self.solver = sparcling.SPArCling(mode)
+                mode = self.opti_params['mode']
+                coreOptimizer = None
+                if mode == "BLBased":
+                    coreOptimizer = self.opti_params['core']
+                self.solver = sparcling.SPArCling(mode, coreOptimizer)
             except KeyError:
                 # Use default
                 self.solver = sparcling.SPArCling()
