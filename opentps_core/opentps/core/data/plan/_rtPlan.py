@@ -84,6 +84,8 @@ class RTPlan(PatientData):
 
     @spotMUs.setter
     def spotMUs(self, w: Sequence[float]):
+        if len(w) != self.numberOfSpots:
+            raise ValueError(f'Cannot spotMU of size {len(w)} to size {self.numberOfSpots}')
         w = np.array(w)
 
         ind = 0
@@ -102,6 +104,8 @@ class RTPlan(PatientData):
 
     @spotTimings.setter
     def spotTimings(self, t: Sequence[float]):
+        if len(t) != self.numberOfSpots:
+            raise ValueError(f'Cannot spot timings of size {len(t)} to size {self.numberOfSpots}')
         t = np.array(t)
 
         ind = 0
