@@ -78,18 +78,18 @@ def run():
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
     else:
-        planInit = PlanDesign()
-        planInit.ct = ct
-        planInit.targetMask = roi
-        planInit.gantryAngles = gantryAngles
-        planInit.beamNames = beamNames
-        planInit.couchAngles = couchAngles
-        planInit.calibration = ctCalibration
-        planInit.spotSpacing = 7.0
-        planInit.layerSpacing = 6.0
-        planInit.targetMargin = max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2.setupSystematicError)
+        planDesign = PlanDesign()
+        planDesign.ct = ct
+        planDesign.targetMask = roi
+        planDesign.gantryAngles = gantryAngles
+        planDesign.beamNames = beamNames
+        planDesign.couchAngles = couchAngles
+        planDesign.calibration = ctCalibration
+        planDesign.spotSpacing = 7.0
+        planDesign.layerSpacing = 6.0
+        planDesign.targetMargin = max(planDesign.spotSpacing, planDesign.layerSpacing) + max(mc2.setupSystematicError)
 
-        plan = planInit.buildPlan()  # Spot placement
+        plan = planDesign.buildPlan()  # Spot placement
         plan.PlanName = "RobustPlan"
 
         nominal, scenarios = mc2.computeRobustScenarioBeamlets(ct, plan, roi=[roi], storePath=output_path)

@@ -1,11 +1,5 @@
-
-
-import math
 import os
 import sys
-
-import opentps.gui
-from opentps import gui
 
 sys.path.append('..')
 
@@ -60,14 +54,6 @@ def run():
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
 
-    roi2 = ROIMask.fromImage3D(roi)
-    roi2.dilate(50)
-    roi2.patient = patient
-
-    opentps.gui.patientList.append(patient)
-
-    gui.run()
-
     # Design plan
     beamNames = ["Beam1"]
     gantryAngles = [0.]
@@ -88,19 +74,19 @@ def run():
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
     else:
-        planInit = PlanDesign()
-        planInit.ct = ct
-        planInit.targetMask = roi
-        planInit.gantryAngles = gantryAngles
-        planInit.beamNames = beamNames
-        planInit.couchAngles = couchAngles
-        planInit.calibration = ctCalibration
-        planInit.spotSpacing = 5.0
-        planInit.layerSpacing = 5.0
-        planInit.targetMargin = 5.0
-        planInit.scoringVoxelSpacing = [2, 2, 2]
+        planDesign = PlanDesign()
+        planDesign.ct = ct
+        planDesign.targetMask = roi
+        planDesign.gantryAngles = gantryAngles
+        planDesign.beamNames = beamNames
+        planDesign.couchAngles = couchAngles
+        planDesign.calibration = ctCalibration
+        planDesign.spotSpacing = 5.0
+        planDesign.layerSpacing = 5.0
+        planDesign.targetMargin = 5.0
+        planDesign.scoringVoxelSpacing = [2, 2, 2]
 
-        plan = planInit.buildPlan()  # Spot placement
+        plan = planDesign.buildPlan()  # Spot placement
         plan.PlanName = "NewPlan"
 
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
