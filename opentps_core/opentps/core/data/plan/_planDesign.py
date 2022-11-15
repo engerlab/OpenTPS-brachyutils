@@ -36,8 +36,6 @@ class PlanDesign(PatientData):
         self.beamNames = []
         self.gantryAngles = []
         self.couchAngles = []
-        self.accumulatedLayer = 0
-        self.accumulatedSpot = 0
         self.rangeShifters: _rangeShifter = []
 
         self.objectives = ObjectivesList()
