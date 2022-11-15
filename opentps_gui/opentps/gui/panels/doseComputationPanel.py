@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, QPushButton
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, QPushButton, QDoubleSpinBox, \
+    QHBoxLayout, QCheckBox
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.plan._rtPlan import RTPlan
@@ -45,11 +46,34 @@ class DoseComputationPanel(QWidget):
         self._roiComboBox.currentIndexChanged.connect(self._handleROIIndex)
         self.layout.addWidget(self._roiComboBox)
 
+        self._doseSpacingLayout = QHBoxLayout()
+        self.layout.addLayout(self._doseSpacingLayout)
+
+        self._doseSpacingLabel = QCheckBox('Scoring spacing:')
+        self._doseSpacingLabel.toggled.connect(self._setScoringSpacingVisible)
+        self._doseSpacingLayout.addWidget(self._doseSpacingLabel)
+        self._doseSpacingSpin = QDoubleSpinBox()
+        self._doseSpacingSpin.setGroupSeparatorShown(True)
+        self._doseSpacingSpin.setRange(0.1, 100.0)
+        self._doseSpacingSpin.setSingleStep(1.0)
+        self._doseSpacingSpin.setValue(2.0)
+        self._doseSpacingSpin.setSuffix(" mm")
+        self._doseSpacingLayout.addWidget(self._doseSpacingSpin)
+        self._doseSpacingSpin.hide()
+
+
+        self._primariesLayout = QHBoxLayout()
+        self.layout.addLayout(self._primariesLayout)
+
         self._primariesLabel = QLabel('Primaries:')
         self.layout.addWidget(self._primariesLabel)
-        self._primariesEdit = QLineEdit(self)
-        self._primariesEdit.setText(str(int(1e7)))
-        self.layout.addWidget(self._primariesEdit)
+        self._primariesSpin = QDoubleSpinBox()
+        self._primariesSpin.setGroupSeparatorShown(True)
+        self._primariesSpin.setRange(1000, 1e9)
+        self._primariesSpin.setSingleStep(1000)
+        self._primariesSpin.setValue(1e7)
+        self._primariesSpin.setDecimals(0)
+        self.layout.addWidget(self._primariesSpin)
 
         from opentps.gui.programSettingEditor import MCsquareConfigEditor
         self._mcsquareConfigWidget = MCsquareConfigEditor(self)
@@ -116,6 +140,13 @@ class DoseComputationPanel(QWidget):
             self._ctComboBox.setCurrentIndex(0)
             if len(self._ctImages):
                 self._selectedCT = self._ctImages[0]
+
+    def _setScoringSpacingVisible(self):
+        if self._doseSpacingLabel.isChecked():
+            self._doseSpacingSpin.show()
+        else:
+            self._doseSpacingSpin.hide()
+
 
     def _updatePlanComboBox(self):
         self._removeAllPlans()
@@ -223,10 +254,13 @@ class DoseComputationPanel(QWidget):
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)
 
+        self._selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
+
         doseCalculator = MCsquareDoseCalculator()
 
         doseCalculator.beamModel = beamModel
-        doseCalculator.nbPrimaries = int(self._primariesEdit.text())
+        self._selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
+        doseCalculator.nbPrimaries = self._primariesSpin.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._selectedROI
 
