@@ -4,6 +4,9 @@ import math
 import os
 import sys
 
+import opentps.gui
+from opentps import gui
+
 sys.path.append('..')
 
 import numpy as np
@@ -56,6 +59,14 @@ def run():
     data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
+
+    roi2 = ROIMask.fromImage3D(roi)
+    roi2.dilate(50)
+    roi2.patient = patient
+
+    opentps.gui.patientList.append(patient)
+
+    gui.run()
 
     # Design plan
     beamNames = ["Beam1"]
