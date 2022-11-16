@@ -1,3 +1,6 @@
+
+
+import math
 import os
 import sys
 
@@ -19,7 +22,7 @@ from opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D, resampleImage3D
-from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
+from opentps.core.processing.planOptimization.planOptimization import BoundConstraintsOptimizer, IMPTPlanOptimizer
 
 
 # Generic example: box of water with squared target
@@ -74,19 +77,19 @@ def run():
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
     else:
-        planDesign = PlanDesign()
-        planDesign.ct = ct
-        planDesign.targetMask = roi
-        planDesign.gantryAngles = gantryAngles
-        planDesign.beamNames = beamNames
-        planDesign.couchAngles = couchAngles
-        planDesign.calibration = ctCalibration
-        planDesign.spotSpacing = 5.0
-        planDesign.layerSpacing = 5.0
-        planDesign.targetMargin = 5.0
-        planDesign.scoringVoxelSpacing = [2, 2, 2]
+        planInit = PlanDesign()
+        planInit.ct = ct
+        planInit.targetMask = roi
+        planInit.gantryAngles = gantryAngles
+        planInit.beamNames = beamNames
+        planInit.couchAngles = couchAngles
+        planInit.calibration = ctCalibration
+        planInit.spotSpacing = 5.0
+        planInit.layerSpacing = 5.0
+        planInit.targetMargin = 5.0
+        planInit.scoringVoxelSpacing = [2, 2, 2]
 
-        plan = planDesign.buildPlan()  # Spot placement
+        plan = planInit.buildPlan()  # Spot placement
         plan.PlanName = "NewPlan"
 
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
@@ -101,12 +104,12 @@ def run():
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
 
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
+    solver = BoundConstraintsOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50, bounds=(0.2, 50))
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
     # Save plan with updated spot weights
-    saveRTPlan(plan, plan_file)
+    # saveRTPlan(plan, plan_file)
 
     # MCsquare simulation
     #mc2.nbPrimaries = 1e7
