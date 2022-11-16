@@ -2,14 +2,15 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QLineEdit, 
     QHBoxLayout, QCheckBox
 
 from opentps.core.data.images import CTImage
-from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data._patient import Patient
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data._rtStruct import RTStruct
+from opentps.core.data.plan import RTPlan
 from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 
 
 class DoseComputationPanel(QWidget):
@@ -20,7 +21,6 @@ class DoseComputationPanel(QWidget):
         self._viewController = viewController
         self._ctImages = []
         self._selectedCT = None
-        self._plans = []
         self._rois = []
         self._selectedROI = None
 
@@ -29,12 +29,12 @@ class DoseComputationPanel(QWidget):
 
         self._ctLabel = QLabel('CT:')
         self.layout.addWidget(self._ctLabel)
-        self._ctComboBox = QComboBox(self)
+        self._ctComboBox = PatientDataComboBox(patientDataType=CTImage, patient=self._patient, parent=self)
         self.layout.addWidget(self._ctComboBox)
 
-        self._planLabel = QLabel('plan:')
+        self._planLabel = QLabel('Plan:')
         self.layout.addWidget(self._planLabel)
-        self._planComboBox = QComboBox(self)
+        self._planComboBox = PatientDataComboBox(patientDataType=RTPlan, patient=self._patient, parent=self)
         self.layout.addWidget(self._planComboBox)
 
         self._roiLabel = QLabel('Overwrite outside this ROI:')
@@ -91,31 +91,25 @@ class DoseComputationPanel(QWidget):
 
     @property
     def selectedCT(self):
-        return self._ctImages[self._ctComboBox.currentIndex()]
+        return self._ctComboBox.selectedData
 
     @selectedCT.setter
     def selectedCT(self, ct):
-        self._ctComboBox.setCurrentIndex(self._ctImages.index(ct))
+        self._ctComboBox.selectedData = ct
 
     @property
     def selectedPlan(self):
-        return self._plans[self._planComboBox.currentIndex()]
+        return self._planComboBox.selectedData
 
     @selectedPlan.setter
     def selectedPlan(self, plan):
-        self._planComboBox.setCurrentIndex(self._plans.index(plan))
+        self._planComboBox.selectedData = plan
 
     def _handleROIIndex(self, *args):
         self._selectedROI = self._rois[self._roiComboBox.currentIndex()]
 
     def setCurrentPatient(self, patient:Patient):
         if not (self._patient is None):
-            self._patient.imageAddedSignal.disconnect(self._handleImageAddedOrRemoved)
-            self._patient.imageRemovedSignal.disconnect(self._handleImageAddedOrRemoved)
-
-            self._patient.planAddedSignal.disconnect(self._handlePlanAddedOrRemoved)
-            self._patient.planRemovedSignal.disconnect(self._handlePlanAddedOrRemoved)
-
             self._patient.rtStructAddedSignal.disconnect(self._handleROIAddedOrRemoved)
             self._patient.rtStructRemovedSignal.disconnect(self._handleROIAddedOrRemoved)
 
@@ -124,56 +118,18 @@ class DoseComputationPanel(QWidget):
         if self._patient is None:
             self._removeAllCTs()
         else:
-            self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
-            self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
-
-            self._patient.planAddedSignal.connect(self._handlePlanAddedOrRemoved)
-            self._patient.planRemovedSignal.connect(self._handlePlanAddedOrRemoved)
 
             self._patient.rtStructAddedSignal.connect(self._handleROIAddedOrRemoved)
             self._patient.rtStructRemovedSignal.connect(self._handleROIAddedOrRemoved)
 
-            self._updateCTComboBox()
-            self._updatePlanComboBox()
-
-    def _updateCTComboBox(self):
-        self._removeAllCTs()
-
-        self._ctImages = [ct for ct in self._patient.getPatientDataOfType(CTImage)]
-
-        for ct in self._ctImages:
-            self._addCT(ct)
-
-        try:
-            currentIndex = self._ctImages.index(self.selectedCT)
-            self._ctComboBox.setCurrentIndex(currentIndex)
-        except:
-            self._ctComboBox.setCurrentIndex(0)
-            if len(self._ctImages):
-                self._selectedCT = self._ctImages[0]
+            self._planComboBox.setPatient(patient)
+            self._ctComboBox.setPatient(patient)
 
     def _setScoringSpacingVisible(self):
         if self._doseSpacingLabel.isChecked():
             self._doseSpacingSpin.show()
         else:
             self._doseSpacingSpin.hide()
-
-
-    def _updatePlanComboBox(self):
-        self._removeAllPlans()
-
-        self._plans = [plan for plan in self._patient.getPatientDataOfType(RTPlan)]
-
-        for plan in self._plans:
-            self._addPlan(plan)
-
-        try:
-            currentIndex = self._plans.index(self.selectedPlan)
-            self._planComboBox.setCurrentIndex(currentIndex)
-        except:
-            self._planComboBox.setCurrentIndex(0)
-            if len(self._plans):
-                self.selectedPlan = self._plans[0]
 
     def _updateROIComboBox(self):
         self._removeAllROIs()
@@ -200,36 +156,13 @@ class DoseComputationPanel(QWidget):
         for ct in self._ctImages:
             self._removeCT(ct)
 
-    def _removeAllPlans(self):
-        for plan in self._plans:
-            self._removePlan(plan)
-
     def _removeAllROIs(self):
         for roi in self._rois:
             self._removeROI(roi)
 
-    def _addCT(self, ct:CTImage):
-        self._ctComboBox.addItem(ct.name, ct)
-        ct.nameChangedSignal.connect(self._handleCTChanged)
-
-    def _addPlan(self, plan:RTPlan):
-        self._planComboBox.addItem(plan.name, plan)
-        plan.nameChangedSignal.connect(self._handlePlanChanged)
-
     def _addROI(self, roi:ROIContour):
         self._roiComboBox.addItem(roi.name, roi)
         roi.nameChangedSignal.connect(self._handleROIChanged)
-
-    def _removeCT(self, ct:CTImage):
-        if ct==self.selectedCT:
-            self._selectedCT = None
-
-        ct.nameChangedSignal.disconnect(self._handleCTChanged)
-        self._ctComboBox.removeItem(self._ctComboBox.findData(ct))
-
-    def _removePlan(self, plan:RTPlan):
-        plan.nameChangedSignal.disconnect(self._handlePlanChanged)
-        self._planComboBox.removeItem(self._planComboBox.findData(plan))
 
     def _removeROI(self, roi:ROIContour):
         if roi==self._selectedROI:
@@ -238,20 +171,8 @@ class DoseComputationPanel(QWidget):
         roi.nameChangedSignal.disconnect(self._handleROIChanged)
         self._roiComboBox.removeItem(self._roiComboBox.findData(roi))
 
-    def _handleImageAddedOrRemoved(self, image):
-        self._updateCTComboBox()
-
-    def _handlePlanAddedOrRemoved(self, plan):
-        self._updatePlanComboBox()
-
     def _handleROIAddedOrRemoved(self, roi):
         self._updateROIComboBox()
-
-    def _handleCTChanged(self, ct):
-        self._updateCTComboBox()
-
-    def _handlePlanChanged(self, plan):
-        self._updatePlanComboBox()
 
     def _handleROIChanged(self, roi):
         self._updateROIComboBox()

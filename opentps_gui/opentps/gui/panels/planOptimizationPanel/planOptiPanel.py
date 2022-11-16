@@ -9,12 +9,12 @@ from opentps.core.data.plan import ObjectivesList
 from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data._patient import Patient
-from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.planOptimization import optimizationWorkflows
 from opentps.core.processing.planOptimization.planOptimizationConfig import PlanOptimizationConfig
 from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
+from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planOptimizationPanel.objectivesWindow import ObjectivesWindow
 
 
@@ -45,24 +45,18 @@ class PlanOptiPanel(QWidget):
 
         self._patient:Patient = None
         self._viewController = viewController
-        self._ctImages = []
-        self._planStructures = []
-        self._selectedCT = None
-        self._selectedPlanStructure:PlanDesign = None
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
         self._planStructureLabel = QLabel('Plan design:')
         self.layout.addWidget(self._planStructureLabel)
-        self._planStructureComboBox = QComboBox(self)
-        self._planStructureComboBox.currentIndexChanged.connect(self._handlePlanStructureIndex)
+        self._planStructureComboBox = PatientDataComboBox(patientDataType=PlanDesign, patient=self._patient, parent=self)
         self.layout.addWidget(self._planStructureComboBox)
 
         self._ctLabel = QLabel('CT:')
         self.layout.addWidget(self._ctLabel)
-        self._ctComboBox = QComboBox(self)
-        self._ctComboBox.currentIndexChanged.connect(self._handleCTIndex)
+        self._ctComboBox = PatientDataComboBox(patientDataType=CTImage, patient=self._patient, parent=self)
         self.layout.addWidget(self._ctComboBox)
 
         from opentps.gui.programSettingEditor import MCsquareConfigEditor
@@ -108,108 +102,18 @@ class PlanOptiPanel(QWidget):
 
         self._handleAlgo()
 
-    def _handlePlanStructureIndex(self):
-        self._selectedPlanStructure = self._planStructures[self._planStructureComboBox.currentIndex()]
+    @property
+    def selectedCT(self):
+        return self._ctComboBox.selectedData
 
-    def _handleCTIndex(self, *args):
-        self._selectedCT = self._ctImages[self._ctComboBox.currentIndex()]
+    def selectedPlanStructure(self):
+        return self._planStructureComboBox.selectedData
 
     def setCurrentPatient(self, patient:Patient):
-        if not (self._patient is None):
-            self._patient.imageAddedSignal.disconnect(self._handleImageAddedOrRemoved)
-            self._patient.imageRemovedSignal.disconnect(self._handleImageAddedOrRemoved)
-            self._patient.patientDataAddedSignal.disconnect(self._handlePlanStructureAddedOrRemoved)
-            self._patient.patientDataAddedSignal.disconnect(self._handlePlanStructureAddedOrRemoved)
-
-        self._patient = patient
-
-        if self._patient is None:
-            self._removeAllCTs()
-            self._removeAllPlanStructures()
-        else:
-            self._updateCTComboBox()
-            self._updatePlanStructureComboBox()
-
-            self._patient.imageAddedSignal.connect(self._handleImageAddedOrRemoved)
-            self._patient.imageRemovedSignal.connect(self._handleImageAddedOrRemoved)
-            self._patient.patientDataAddedSignal.connect(self._handlePlanStructureAddedOrRemoved)
-            self._patient.patientDataAddedSignal.connect(self._handlePlanStructureAddedOrRemoved)
+        self._planStructureComboBox.setPatient(patient)
+        self._ctComboBox.setPatient(patient)
 
         self._objectivesWidget.setPatient(patient)
-
-    def _updateCTComboBox(self):
-        self._removeAllCTs()
-
-        self._ctImages = [ct for ct in self._patient.getPatientDataOfType(CTImage)]
-
-        for ct in self._ctImages:
-            self._addCT(ct)
-
-        try:
-            currentIndex = self._ctImages.index(self._selectedCT)
-            self._ctComboBox.setCurrentIndex(currentIndex)
-        except:
-            self._ctComboBox.setCurrentIndex(0)
-            if len(self._ctImages):
-                self._selectedCT = self._ctImages[0]
-
-    def _removeAllCTs(self):
-        for ct in self._ctImages:
-            self._removeCT(ct)
-
-    def _addCT(self, ct:CTImage):
-        self._ctComboBox.addItem(ct.name, ct)
-        ct.nameChangedSignal.connect(self._handleCTChanged)
-
-    def _removeCT(self, ct:CTImage):
-        if ct==self._selectedCT:
-            self._selectedCT = None
-
-        ct.nameChangedSignal.disconnect(self._handleCTChanged)
-        self._ctComboBox.removeItem(self._ctComboBox.findData(ct))
-
-    def _updatePlanStructureComboBox(self):
-        self._removeAllPlanStructures()
-
-        self._planStructures = [ps for ps in self._patient.getPatientDataOfType(PlanDesign)]
-
-        for ps in self._planStructures:
-            self._addPlanStructure(ps)
-
-        try:
-            currentIndex = self._planStructures.index(self._selectedPlanStructure)
-            self._planStructureComboBox.setCurrentIndex(currentIndex)
-        except:
-            self._planStructureComboBox.setCurrentIndex(0)
-            if len(self._planStructures):
-                self._selectedPlanStructure = self._planStructures[0]
-
-    def _removeAllPlanStructures(self):
-        for ps in self._planStructures:
-            self._removePlanStructure(ps)
-
-    def _addPlanStructure(self, ps:PlanDesign):
-        self._planStructureComboBox.addItem(ps.name, ps)
-        ps.nameChangedSignal.connect(self._handlePlanStructureChanged)
-
-    def _removePlanStructure(self, ps:PlanDesign):
-        if ps==self._selectedPlanStructure:
-            self._selectedPlanStructure = None
-
-        ps.nameChangedSignal.disconnect(self._handlePlanStructureChanged)
-        self._planStructureComboBox.removeItem(self._planStructureComboBox.findData(ps))
-
-    def _handleImageAddedOrRemoved(self, image):
-        self._updateCTComboBox()
-
-    def _handleCTChanged(self, ct):
-        self._updateCTComboBox()
-
-    def _handlePlanStructureAddedOrRemoved(self, data):
-        if isinstance(data, PlanDesign):
-            self._updatePlanStructureComboBox()
-    def _handlePlanStructureChanged(self, ct):
-        self._updatePlanStructureComboBox()
 
     def _openConfig(self):
         if platform.system() == "Windows":
@@ -221,8 +125,8 @@ class PlanOptiPanel(QWidget):
         settings = DoseCalculationConfig()
         ctCalibration = readScanner(settings.scannerFolder)
 
-        self._selectedPlanStructure.ct = self._selectedCT
-        self._selectedPlanStructure.calibration = ctCalibration
+        self.selectedPlanStructure.ct = self.selectedCT
+        self.selectedPlanStructure.calibration = ctCalibration
 
         self._setObjectives()
 
@@ -239,11 +143,11 @@ class PlanOptiPanel(QWidget):
         for obj in self._objectivesWidget.objectives:
             objectiveList.append(obj)
 
-        self._selectedPlanStructure.objectives = objectiveList
+        self.selectedPlanStructure.objectives = objectiveList
 
     def _placeSpots(self):
-        self._selectedPlanStructure.defineTargetMaskAndPrescription()
-        self._plan = self._selectedPlanStructure.buildPlan()  # Spot placement
+        self.selectedPlanStructure.defineTargetMaskAndPrescription()
+        self._plan = self.selectedPlanStructure.buildPlan()  # Spot placement
 
     def _handleAlgo(self):
         if self._selectedAlgo == "Beamlet-free MCsquare":
@@ -256,19 +160,19 @@ class PlanOptiPanel(QWidget):
 
     def _computeBeamlets(self):
         self._beamletWindow.setWindowTitle('Compute beamlets')
-        self._beamletWindow.setCT(self._selectedPlanStructure.ct)
-        self._plan.patient = self._selectedPlanStructure.ct.patient
+        self._beamletWindow.setCT(self.selectedPlanStructure.ct)
+        self._plan.patient = self.selectedPlanStructure.ct.patient
         self._beamletWindow.setPlan(self._plan)
         self._beamletWindow.exec()
 
-        self._selectedPlanStructure.scoringVoxelSpacing = self._selectedPlanStructure.beamlets.doseSpacing
+        self.selectedPlanStructure.scoringVoxelSpacing = self.selectedPlanStructure.beamlets.doseSpacing
 
     def _optimize(self):
         plan = RTPlan()
-        plan.name = self._selectedPlanStructure.name
-        plan.patient = self._selectedPlanStructure.patient
+        plan.name = self.selectedPlanStructure.name
+        plan.patient = self.selectedPlanStructure.patient
 
-        optimizationWorkflows.optimizeIMPT(plan, self._selectedPlanStructure)
+        optimizationWorkflows.optimizeIMPT(plan, self.selectedPlanStructure)
 
 
 class ObjectivesWidget(QWidget):

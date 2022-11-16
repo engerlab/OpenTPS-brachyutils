@@ -2,7 +2,10 @@ import os
 from datetime import datetime
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt, QDir, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
+from opentps.core.data import Patient
+from opentps.core.data.plan import RTPlan
+from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
 
 
@@ -12,12 +15,18 @@ class PlanEvaluationPanel(QWidget):
     def __init__(self, viewController):
         QWidget.__init__(self)
 
+        self._patient:Patient = None
         self._viewController = viewController
 
         self.robustness_scenarios = []
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+
+        self._planLabel = QLabel('plan:')
+        self.layout.addWidget(self._planLabel)
+        self._planComboBox = PatientDataComboBox(patientDataType=RTPlan, patient=self._patient, parent=self)
+        self.layout.addWidget(self._planComboBox)
 
         self._robustSettings = RobustnessSettings(self._viewController, planEvaluation=True, parent=self)
         self.layout.addWidget(self._robustSettings)
@@ -70,7 +79,18 @@ class PlanEvaluationPanel(QWidget):
         self.DisplayedDose.currentIndexChanged.connect(self.recompute_robustness_analysis)
         self.Target.currentIndexChanged.connect(self.recompute_robustness_analysis)
         self.Prescription.valueChanged.connect(self.recompute_robustness_analysis)
+
+        self.setCurrentPatient(self._viewController.currentPatient)
+        self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
+
         self.recompute_robustness_analysis()
+
+    def setCurrentPatient(self, patient:Patient):
+        self._planComboBox.setPatient(patient)
+
+    @property
+    def selectedPlan(self):
+        return self._planComboBox.selectedPlan
 
     def compute_robustness_scenarios(self):
         # find selected CT image
