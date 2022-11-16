@@ -1,11 +1,7 @@
-
-
-import math
 import os
 import sys
 
-import opentps.gui
-from opentps import gui
+from opentps.core.processing.planOptimization.tools import evaluateClinical
 
 sys.path.append('..')
 
@@ -45,7 +41,6 @@ def run():
     ct.name = 'CT'
     ct.patient = patient
 
-
     huAir = -1024.
     huWater = ctCalibration.convertRSP2HU(1.)
     data = huAir * np.ones((ctSize, ctSize, ctSize))
@@ -55,18 +50,10 @@ def run():
     roi = ROIMask()
     roi.patient = patient
     roi.name = 'TV'
-    roi.color = (255, 0, 0) # red
+    roi.color = (255, 0, 0)  # red
     data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
-
-    roi2 = ROIMask.fromImage3D(roi)
-    roi2.dilate(50)
-    roi2.patient = patient
-
-    opentps.gui.patientList.append(patient)
-
-    gui.run()
 
     # Design plan
     beamNames = ["Beam1"]
@@ -123,14 +110,18 @@ def run():
     saveRTPlan(plan, plan_file)
 
     # MCsquare simulation
-    #mc2.nbPrimaries = 1e7
-    #doseImage = mc2.computeDose(ct, plan)
+    # mc2.nbPrimaries = 1e7
+    # doseImage = mc2.computeDose(ct, plan)
 
     # Compute DVH on resampled contour
     target_DVH = DVH(roi, doseImage)
-    print('D95 = ' + str(target_DVH.D95) + ' Gy')
-    print('D5 = ' + str(target_DVH.D5) + ' Gy')
     print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
+    clinROI = [roi.name, roi.name]
+    clinMetric = ["Dmin", "Dmax"]
+    clinLimit = [19., 21.]
+    clinObj = {'ROI': clinROI, 'Metric': clinMetric, 'Limit': clinLimit}
+    print('Clinical evaluation')
+    evaluateClinical(doseImage, [roi], clinObj)
 
     # center of mass
     roi = resampleImage3DOnImage3D(roi, ct)
@@ -146,8 +137,8 @@ def run():
 
     # Display dose
     fig, ax = plt.subplots(1, 2, figsize=(12, 5))
-    #ax[0].axes.get_xaxis().set_visible(False)
-    #ax[0].axes.get_yaxis().set_visible(False)
+    ax[0].axes.get_xaxis().set_visible(False)
+    ax[0].axes.get_yaxis().set_visible(False)
     ax[0].imshow(img_ct, cmap='gray')
     ax[0].imshow(img_mask, alpha=.2, cmap='binary')  # PTV
     dose = ax[0].imshow(img_dose, cmap='jet', alpha=.2)
@@ -159,6 +150,7 @@ def run():
     plt.legend()
 
     plt.show()
+
 
 if __name__ == "__main__":
     run()
