@@ -45,11 +45,6 @@ class PlanEvaluationPanel(QWidget):
         self.layout.addWidget(self.DisplayedDose)
         self.layout.addSpacing(30)
 
-        self.layout.addWidget(QLabel('<b>Target:</b>'))
-        self.Target = QComboBox()
-        self.layout.addWidget(self.Target)
-        self.layout.addSpacing(10)
-
         self.layout.addWidget(QLabel('<b>Prescription:</b>'))
         self.Prescription = QDoubleSpinBox()
         self.Prescription.setRange(0.0, 100.0)
@@ -74,10 +69,8 @@ class PlanEvaluationPanel(QWidget):
         self.layout.addWidget(self.CI)
         self.layout.addStretch()
 
-        self.CI.valueChanged.connect(self.recompute_robustness_analysis)
         self.Metric.currentIndexChanged.connect(self.recompute_robustness_analysis)
         self.DisplayedDose.currentIndexChanged.connect(self.recompute_robustness_analysis)
-        self.Target.currentIndexChanged.connect(self.recompute_robustness_analysis)
         self.Prescription.valueChanged.connect(self.recompute_robustness_analysis)
 
         self.setCurrentPatient(self._viewController.currentPatient)
@@ -93,6 +86,8 @@ class PlanEvaluationPanel(QWidget):
         return self._planComboBox.selectedPlan
 
     def compute_robustness_scenarios(self):
+        # TODO: Take CT, target, etc. from plan.planDesign. Same for MC2 config
+
         # find selected CT image
         if (self.CT_disp_ID < 0):
             print("Error: No CT image selected")
@@ -151,6 +146,7 @@ class PlanEvaluationPanel(QWidget):
         self.recompute_robustness_analysis()
 
     def recompute_robustness_analysis(self):
+        # TODO: Take CT, target, etc. from plan.planDesign. Same for MC2 config
 
         if (self.robustness_scenarios == []): return
 
