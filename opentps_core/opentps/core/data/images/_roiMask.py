@@ -114,16 +114,16 @@ class ROIMask(Image3D):
             radius: thickness of each ring in mm
         """
         rings = []
-        targetSizes = [self]
+        roiSizes = [self]
         maskCopy = self.copy()
 
         for i in range(nRings):
             maskCopy.dilate(radius)
-            targetSizes.append(maskCopy.copy())
+            roiSizes.append(maskCopy.copy())
 
         for i in range(nRings):
             ringMask = self.copy()
-            ringMask.imageArray = np.logical_xor(targetSizes[i + 1].imageArray, targetSizes[i].imageArray)
+            ringMask.imageArray = np.logical_xor(roiSizes[i + 1].imageArray, roiSizes[i].imageArray)
             ringMask.name = 'ring_' + str(i + 1)
             rings.append(ringMask)
         return rings
