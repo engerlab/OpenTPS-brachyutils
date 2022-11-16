@@ -112,6 +112,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._nbPrimaries = int(primaries)
 
     @property
+    def statUncertainty(self) -> float:
+        return self._statUncertainty
+
+    @nbPrimaries.setter
+    def statUncertainty(self, uncertainty: float):
+        self._statUncertainty = uncertainty
+
+    @property
     def independentScoringGrid(self) -> bool:
         return not np.allclose(self._ct.spacing, self.scoringVoxelSpacing, atol=0.01)
 
@@ -603,7 +611,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
                 elif "10x more particles per batch" in line:
                     multiplier *= 10.0
-
         numParticles = int(batch * multiplier * self._nbPrimaries / 10.0)
         return numParticles, uncertainty
 
