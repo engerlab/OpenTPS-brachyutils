@@ -15,7 +15,7 @@ class PatientDataComboBox(QComboBox):
     def setPatient(self, patient:Patient):
         if not (self._patient is None):
             self._patient.patientDataAddedSignal.disconnect(self._handleDataAddedOrRemoved)
-            self._patient.patientDataAddedSignal.disconnect(self._handleDataAddedOrRemoved)
+            self._patient.patientDataRemovedSignal.disconnect(self._handleDataAddedOrRemoved)
 
         self._patient = patient
 
@@ -23,7 +23,7 @@ class PatientDataComboBox(QComboBox):
             pass
         else:
             self._patient.patientDataAddedSignal.connect(self._handleDataAddedOrRemoved)
-            self._patient.patientDataAddedSignal.connect(self._handleDataAddedOrRemoved)
+            self._patient.patientDataRemovedSignal.connect(self._handleDataAddedOrRemoved)
 
             self._updateComboBox()
 

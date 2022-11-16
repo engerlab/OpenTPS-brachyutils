@@ -106,6 +106,7 @@ class PlanOptiPanel(QWidget):
     def selectedCT(self):
         return self._ctComboBox.selectedData
 
+    @property
     def selectedPlanStructure(self):
         return self._planStructureComboBox.selectedData
 
