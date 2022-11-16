@@ -29,6 +29,8 @@ class BeamletCalculationWindow(QMainWindow):
 
 
 class PlanOptiPanel(QWidget):
+    _optiAlgos = ["Beamlet-free MCsquare", "Beamlet-based BFGS", "Beamlet-based L-BFGS", "Beamlet-based Scipy-lBFGS"]
+
     def __init__(self, viewController):
         QWidget.__init__(self)
 
@@ -65,10 +67,11 @@ class PlanOptiPanel(QWidget):
 
         self.layout.addWidget(QLabel('Optimization algorithm:'))
         self._algoBox = QComboBox()
-        self._algoBox.addItem("Beamlet-free MCsquare")
-        self._algoBox.addItem("Beamlet-based BFGS")
-        self._algoBox.addItem("Beamlet-based L-BFGS")
-        self._algoBox.addItem("Beamlet-based Scipy-lBFGS")
+        self._algoBox.addItem(self._optiAlgos[0])
+        self._algoBox.addItem(self._optiAlgos[1])
+        self._algoBox.addItem(self._optiAlgos[2])
+        self._algoBox.addItem(self._optiAlgos[3])
+        self._algoBox.currentIndexChanged.connect(self._handleAlgo)
         self.layout.addWidget(self._algoBox)
 
         self._configButton = QPushButton('Open configuration')
@@ -93,6 +96,8 @@ class PlanOptiPanel(QWidget):
 
         self.setCurrentPatient(self._viewController.currentPatient)
         self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
+
+        self._handleAlgo()
 
     def _handlePlanStructureIndex(self):
         self._selectedPlanStructure = self._planStructures[self._planStructureComboBox.currentIndex()]
@@ -207,13 +212,23 @@ class PlanOptiPanel(QWidget):
         if self._spotPlacementBox.isChecked():
             self._placeSpots()
 
-        if self._beamletBox.isChecked():
+        if self._beamletBox.isChecked() and self._beamletBox.isEnabled():
             self._computeBeamlets()
 
         self._optimize()
 
     def _placeSpots(self):
         pass
+
+
+    def _handleAlgo(self):
+        if self._selectedAlgo == "Beamlet-free MCsquare":
+            self._beamletBox.setEnabled(False)
+        else:
+            self._beamletBox.setEnabled(True)
+    @property
+    def _selectedAlgo(self):
+        return self._optiAlgos[self._algoBox.currentIndex()]
 
     def _computeBeamlets(self):
         self._beamletWindow.setWindowTitle('Compute beamlets')
