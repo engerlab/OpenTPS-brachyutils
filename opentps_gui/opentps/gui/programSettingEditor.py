@@ -54,6 +54,11 @@ class ProgramSettingEditor(QMainWindow):
         self._layout = QVBoxLayout()
         centralWidget.setLayout(self._layout)
 
+        progSettingsTxt = 'Main program settings are located in ' + self.programSettings.programSettingsFolder
+        self._progSettingsLabel = QLabel(self)
+        self._progSettingsLabel.setText(progSettingsTxt)
+        self._layout.addWidget(self._progSettingsLabel)
+
         self._workspaceField = EditableSetting("Workspace", str(self.programSettings.workspace), self.setWorkspace)
         self._layout.addWidget(self._workspaceField)
 
