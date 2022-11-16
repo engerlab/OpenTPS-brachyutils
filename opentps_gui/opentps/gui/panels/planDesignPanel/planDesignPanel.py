@@ -107,13 +107,8 @@ class PlanDesignPanel(QWidget):
         self.layout.addWidget(self._beamButton)
         self._beamButton.clicked.connect(self.add_new_beam)
 
-
-        self._robustnessSettingsButton = QPushButton('Modify robustness settings')
-        self._robustnessSettingsButton.clicked.connect(self._openRobustnessSettings)
-        self.layout.addWidget(self._robustnessSettingsButton)
-
-        self._robustSettingsLabel = QLabel('')
-        self.layout.addWidget(self._robustSettingsLabel)
+        self._robustSettings = RobustnessSettings(self._viewController, parent=self)
+        self.layout.addWidget(self._robustSettings)
 
         self._runButton = QPushButton('Design plan')
         self._runButton.clicked.connect(self._create)
@@ -186,25 +181,6 @@ class PlanDesignPanel(QWidget):
             self._beamDescription.append(
                 {"BeamType": "beam", "BeamName": BeamName, "GantryAngle": GantryAngle, "CouchAngle": CouchAngle,
                  "RangeShifter": rs})
-
-
-    def _openRobustnessSettings(self):
-        dialog = RobustnessSettings(planEvaluation=False)
-        if (dialog.exec()):
-            self._robustParam = dialog.robustParam
-
-        self._updateRobustSettings()
-
-    def _updateRobustSettings(self):
-        if (self._robustParam.strategy == self._robustParam.Strategies.DISABLED):
-            self._robustParam.setText('Disabled')
-        else:
-            RobustSettings = ''
-            RobustSettings += 'Selection: error space<br>'
-            RobustSettings += 'Syst. setup: E<sub>S</sub> = ' + str(self._robustParam.systSetup) + ' mm<br>'
-            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.randSetup) + ' mm<br>'
-            RobustSettings += 'Syst. range: E<sub>R</sub> = ' + str(self._robustParam.systRange) + ' %'
-            self._robustSettingsLabel.setText(RobustSettings)
 
     def List_RightClick(self, pos, list_type):
         if list_type == 'beam':
