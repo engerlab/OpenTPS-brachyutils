@@ -204,10 +204,10 @@ class PlanOptiPanel(QWidget):
             subprocess.run(['xdg-open', PlanOptimizationConfig().configFile], check=True)
 
     def _run(self):
-        if self._spotPlacementBox:
+        if self._spotPlacementBox.isChecked():
             self._placeSpots()
 
-        if self._beamletBox:
+        if self._beamletBox.isChecked():
             self._computeBeamlets()
 
         self._optimize()

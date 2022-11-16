@@ -79,9 +79,13 @@ class DoseComputationPanel(QWidget):
         self._mcsquareConfigWidget = MCsquareConfigEditor(self)
         self.layout.addWidget(self._mcsquareConfigWidget)
 
-        self._runButton = QPushButton('Run')
-        self._runButton.clicked.connect(self._run)
+        self._runButton = QPushButton('Compute dose')
+        self._runButton.clicked.connect(self._computeDose)
         self.layout.addWidget(self._runButton)
+
+        self._beamletButton = QPushButton('Compute beamlets')
+        self._beamletButton.clicked.connect(self._computeBeamlets)
+        self.layout.addWidget(self._beamletButton)
 
         self.layout.addStretch()
 
@@ -248,7 +252,7 @@ class DoseComputationPanel(QWidget):
     def _handleROIChanged(self, roi):
         self._updateROIComboBox()
 
-    def _run(self):
+    def _computeDose(self):
         settings = DoseCalculationConfig()
 
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
@@ -265,4 +269,23 @@ class DoseComputationPanel(QWidget):
         doseCalculator.overwriteOutsideROI = self._selectedROI
 
         doseImage = doseCalculator.computeDose(self._selectedCT, self._selectedPlan)
+        doseImage.patient = self._selectedCT.patient
+
+    def _computeBeamlets(self):
+        settings = DoseCalculationConfig()
+
+        beamModel = mcsquareIO.readBDL(settings.bdlFile)
+        calibration = readScanner(settings.scannerFolder)
+
+        #        self._selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
+
+        doseCalculator = MCsquareDoseCalculator()
+
+        doseCalculator.beamModel = beamModel
+        self._selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
+        doseCalculator.nbPrimaries = self._primariesSpin.value()
+        doseCalculator.ctCalibration = calibration
+        doseCalculator.overwriteOutsideROI = self._selectedROI
+
+        doseImage = doseCalculator.computeBeamlets(self._selectedCT, self._selectedPlan)
         doseImage.patient = self._selectedCT.patient
