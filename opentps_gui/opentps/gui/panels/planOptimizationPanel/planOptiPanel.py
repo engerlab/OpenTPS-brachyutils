@@ -2,7 +2,8 @@ import subprocess
 import os
 import platform
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow, QTableWidget, \
+    QTableWidgetItem, QCheckBox
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.plan import ObjectivesList
@@ -11,7 +12,20 @@ from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data._patient import Patient
 from opentps.core.processing.planOptimization import optimizationWorkflows
 from opentps.core.processing.planOptimization.planOptimizationConfig import PlanOptimizationConfig
+from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
 from opentps.gui.panels.planOptimizationPanel.objectivesWindow import ObjectivesWindow
+
+
+class BeamletCalculationWindow(QMainWindow):
+    def __init__(self, viewController, parent=None):
+        super().__init__(parent)
+
+        self._viewController = viewController
+
+        self._doseComputationPanel = DoseComputationPanel(viewController)
+
+        self.setCentralWidget(self._doseComputationPanel)
+
 
 
 class PlanOptiPanel(QWidget):
@@ -28,7 +42,7 @@ class PlanOptiPanel(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        self._planStructureLabel = QLabel('Plan:')
+        self._planStructureLabel = QLabel('Plan design:')
         self.layout.addWidget(self._planStructureLabel)
         self._planStructureComboBox = QComboBox(self)
         self._planStructureComboBox.currentIndexChanged.connect(self._handlePlanStructureIndex)
@@ -40,18 +54,14 @@ class PlanOptiPanel(QWidget):
         self._ctComboBox.currentIndexChanged.connect(self._handleCTIndex)
         self.layout.addWidget(self._ctComboBox)
 
-        self._objectivesWidget = ObjectivesWidget(self._viewController)
-        self._objectivesWidget.setContentsMargins(0, 0, 0, 0)
-        self.layout.addWidget(self._objectivesWidget)
-
-        self._configButton = QPushButton('Open configuration')
-        self._configButton.clicked.connect(self._openConfig)
-        self.layout.addWidget(self._configButton)
-
         from opentps.gui.programSettingEditor import MCsquareConfigEditor
         self._mcsquareConfigWidget = MCsquareConfigEditor(self)
         self._mcsquareConfigWidget.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self._mcsquareConfigWidget)
+
+        self._objectivesWidget = ObjectivesWidget(self._viewController)
+        self._objectivesWidget.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(self._objectivesWidget)
 
         self.layout.addWidget(QLabel('Optimization algorithm:'))
         self._algoBox = QComboBox()
@@ -61,9 +71,23 @@ class PlanOptiPanel(QWidget):
         self._algoBox.addItem("Beamlet-based Scipy-lBFGS")
         self.layout.addWidget(self._algoBox)
 
-        self._runButton = QPushButton('Run')
+        self._configButton = QPushButton('Open configuration')
+        self._configButton.clicked.connect(self._openConfig)
+        self.layout.addWidget(self._configButton)
+
+        self._spotPlacementBox = QCheckBox('Place spots')
+        self._spotPlacementBox.setChecked(True)
+        self._beamletBox = QCheckBox('Compute beamlets')
+        self._beamletBox.setChecked(True)
+        self.layout.addWidget(self._spotPlacementBox)
+        self.layout.addWidget(self._beamletBox)
+
+        self._runButton = QPushButton('Optimize plan')
         self._runButton.clicked.connect(self._run)
         self.layout.addWidget(self._runButton)
+
+        self._beamletWindow = BeamletCalculationWindow(viewController, self)
+        self._beamletWindow.hide()
 
         self.layout.addStretch()
 
@@ -180,6 +204,22 @@ class PlanOptiPanel(QWidget):
             subprocess.run(['xdg-open', PlanOptimizationConfig().configFile], check=True)
 
     def _run(self):
+        if self._spotPlacementBox:
+            self._placeSpots()
+
+        if self._beamletBox:
+            self._computeBeamlets()
+
+        self._optimize()
+
+    def _placeSpots(self):
+        pass
+
+    def _computeBeamlets(self):
+        self._beamletWindow.setWindowTitle('Compute beamlets')
+        self._beamletWindow.show()
+
+    def _optimize(self):
         self._selectedPlanStructure.ct = self._selectedCT
         plan = RTPlan()
         plan.name = self._selectedPlanStructure.name
@@ -192,6 +232,7 @@ class PlanOptiPanel(QWidget):
         self._selectedPlanStructure.objectives = objectiveList
 
         optimizationWorkflows.optimizeIMPT(plan, self._selectedPlanStructure)
+
 
 class ObjectivesWidget(QWidget):
     DEFAULT_OBJECTIVES_TEXT = 'No objective defined yet'

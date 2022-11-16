@@ -16,7 +16,6 @@ import opentps.gui.res.icons as IconModule
 
 class ObjectivesWindow(QMainWindow):
     def __init__(self, viewController, parent=None):
-
         super().__init__(parent)
 
         self.objectivesModifiedEvent = Event()

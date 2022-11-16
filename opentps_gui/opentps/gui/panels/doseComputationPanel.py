@@ -254,7 +254,7 @@ class DoseComputationPanel(QWidget):
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)
 
-        self._selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
+#        self._selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
 
         doseCalculator = MCsquareDoseCalculator()
 
