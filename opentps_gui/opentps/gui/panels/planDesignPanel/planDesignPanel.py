@@ -147,20 +147,13 @@ class PlanDesignPanel(QWidget):
         rangeShifters = []
         AlignLayers = False
         for i in range(self._beams.count()):
-            BeamType = self.beamDescription[i]["BeamType"]
+            BeamType = self._beamDescription[i]["BeamType"]
             if (BeamType == "beam"):
-                beamNames.append(self.beamDescription[i]["BeamName"])
-                gantryAngles.append(self.beamDescription[i]["GantryAngle"])
-                couchAngles.append(self.beamDescription[i]["CouchAngle"])
-                RS_ID = self.beamDescription[i]["RangeShifter"]
-                if (RS_ID == "None"):
-                    RangeShifter = "None"
-                else:
-                    RangeShifter = next((RS for RS in beamModel.rangeShifters if RS.ID == RS_ID), -1)
-                    if (RangeShifter == -1):
-                        print("WARNING: Range shifter " + RS_ID + " was not found in the BDL.")
-                        RangeShifter = "None"
-                rangeShifters.append(RangeShifter)
+                beamNames.append(self._beamDescription[i]["BeamName"])
+                gantryAngles.append(self._beamDescription[i]["GantryAngle"])
+                couchAngles.append(self._beamDescription[i]["CouchAngle"])
+                rs = self._beamDescription[i]["RangeShifter"]
+                rangeShifters.append(rs)
 
         planDesign.gantryAngles = gantryAngles
         planDesign.beamNames = beamNames
@@ -183,12 +176,16 @@ class PlanDesignPanel(QWidget):
 
             if (RangeShifter == "None"):
                 RS_disp = ""
+                rs = None
             else:
                 RS_disp = ", RS"
+                rs = [rsElem for rsElem in RangeShifterList if rsElem.ID==RangeShifter][0]
+                if len(rs)==0:
+                    rs = None
             self._beams.addItem(BeamName + ":  G=" + str(GantryAngle) + "°,  C=" + str(CouchAngle) + "°" + RS_disp)
-            self.beamDescription.append(
+            self._beamDescription.append(
                 {"BeamType": "beam", "BeamName": BeamName, "GantryAngle": GantryAngle, "CouchAngle": CouchAngle,
-                 "RangeShifter": RangeShifter})
+                 "RangeShifter": rs})
 
 
     def _openRobustnessSettings(self):
@@ -229,5 +226,5 @@ class PlanDesignPanel(QWidget):
     def delete_item(self, list_type, row):
         if list_type == 'beam':
             self._beams.takeItem(row)
-            self.BeamDescription.pop(row)
+            self._beamDescription.pop(row)
 

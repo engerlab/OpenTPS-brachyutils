@@ -91,7 +91,6 @@ class ROIMask(Image3D):
 
         if not tryGPU:
             try:
-                logger.info('Using ITK to dilate mask   ')
                 if radius[0]==radius[1]==radius[2]:
                     radius = int(round(radius[0]))
                     self._dilateSITK(radius)

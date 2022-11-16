@@ -21,7 +21,6 @@ class DoseComputationPanel(QWidget):
         self._ctImages = []
         self._selectedCT = None
         self._plans = []
-        self._selectedPlan = None
         self._rois = []
         self._selectedROI = None
 
@@ -31,13 +30,11 @@ class DoseComputationPanel(QWidget):
         self._ctLabel = QLabel('CT:')
         self.layout.addWidget(self._ctLabel)
         self._ctComboBox = QComboBox(self)
-        self._ctComboBox.currentIndexChanged.connect(self._handleCTIndex)
         self.layout.addWidget(self._ctComboBox)
 
         self._planLabel = QLabel('plan:')
         self.layout.addWidget(self._planLabel)
         self._planComboBox = QComboBox(self)
-        self._planComboBox.currentIndexChanged.connect(self._handlePlanIndex)
         self.layout.addWidget(self._planComboBox)
 
         self._roiLabel = QLabel('Overwrite outside this ROI:')
@@ -92,11 +89,21 @@ class DoseComputationPanel(QWidget):
         self.setCurrentPatient(self._viewController.currentPatient)
         self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
 
-    def _handleCTIndex(self, *args):
-        self._selectedCT = self._ctImages[self._ctComboBox.currentIndex()]
+    @property
+    def selectedCT(self):
+        return self._ctImages[self._ctComboBox.currentIndex()]
 
-    def _handlePlanIndex(self, *args):
-        self._selectedPlan = self._plans[self._planComboBox.currentIndex()]
+    @selectedCT.setter
+    def selectedCT(self, ct):
+        self._ctComboBox.setCurrentIndex(self._ctImages.index(ct))
+
+    @property
+    def selectedPlan(self):
+        return self._plans[self._planComboBox.currentIndex()]
+
+    @selectedPlan.setter
+    def selectedPlan(self, plan):
+        self._planComboBox.setCurrentIndex(self._plans.index(plan))
 
     def _handleROIIndex(self, *args):
         self._selectedROI = self._rois[self._roiComboBox.currentIndex()]
@@ -138,7 +145,7 @@ class DoseComputationPanel(QWidget):
             self._addCT(ct)
 
         try:
-            currentIndex = self._ctImages.index(self._selectedCT)
+            currentIndex = self._ctImages.index(self.selectedCT)
             self._ctComboBox.setCurrentIndex(currentIndex)
         except:
             self._ctComboBox.setCurrentIndex(0)
@@ -161,12 +168,12 @@ class DoseComputationPanel(QWidget):
             self._addPlan(plan)
 
         try:
-            currentIndex = self._plans.index(self._selectedPlan)
+            currentIndex = self._plans.index(self.selectedPlan)
             self._planComboBox.setCurrentIndex(currentIndex)
         except:
             self._planComboBox.setCurrentIndex(0)
             if len(self._plans):
-                self._selectedPlan = self._plans[0]
+                self.selectedPlan = self._plans[0]
 
     def _updateROIComboBox(self):
         self._removeAllROIs()
@@ -214,16 +221,13 @@ class DoseComputationPanel(QWidget):
         roi.nameChangedSignal.connect(self._handleROIChanged)
 
     def _removeCT(self, ct:CTImage):
-        if ct==self._selectedCT:
+        if ct==self.selectedCT:
             self._selectedCT = None
 
         ct.nameChangedSignal.disconnect(self._handleCTChanged)
         self._ctComboBox.removeItem(self._ctComboBox.findData(ct))
 
     def _removePlan(self, plan:RTPlan):
-        if plan==self._selectedPlan:
-            self._selectedPlan = None
-
         plan.nameChangedSignal.disconnect(self._handlePlanChanged)
         self._planComboBox.removeItem(self._planComboBox.findData(plan))
 
@@ -258,18 +262,18 @@ class DoseComputationPanel(QWidget):
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)
 
-#        self._selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
+#        self.selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
 
         doseCalculator = MCsquareDoseCalculator()
 
         doseCalculator.beamModel = beamModel
-        self._selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
+        self.selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
         doseCalculator.nbPrimaries = self._primariesSpin.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._selectedROI
 
-        doseImage = doseCalculator.computeDose(self._selectedCT, self._selectedPlan)
-        doseImage.patient = self._selectedCT.patient
+        doseImage = doseCalculator.computeDose(self.selectedCT, self.selectedPlan)
+        doseImage.patient = self.selectedCT.patient
 
     def _computeBeamlets(self):
         settings = DoseCalculationConfig()
@@ -277,15 +281,15 @@ class DoseComputationPanel(QWidget):
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)
 
-        #        self._selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
+        #        self.selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
 
         doseCalculator = MCsquareDoseCalculator()
 
         doseCalculator.beamModel = beamModel
-        self._selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
+        self.selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
         doseCalculator.nbPrimaries = self._primariesSpin.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._selectedROI
 
-        doseImage = doseCalculator.computeBeamlets(self._selectedCT, self._selectedPlan)
-        doseImage.patient = self._selectedCT.patient
+        doseImage = doseCalculator.computeBeamlets(self.selectedCT, self.selectedPlan)
+        doseImage.patient = self.selectedCT.patient

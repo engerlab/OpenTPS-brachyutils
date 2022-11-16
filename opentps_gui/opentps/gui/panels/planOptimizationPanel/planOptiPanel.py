@@ -2,21 +2,23 @@ import subprocess
 import os
 import platform
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow, QTableWidget, \
-    QTableWidgetItem, QCheckBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow, QCheckBox, QDialog
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.plan import ObjectivesList
 from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data._patient import Patient
+from opentps.core.io import mcsquareIO
+from opentps.core.io.scannerReader import readScanner
+from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.planOptimization import optimizationWorkflows
 from opentps.core.processing.planOptimization.planOptimizationConfig import PlanOptimizationConfig
 from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
 from opentps.gui.panels.planOptimizationPanel.objectivesWindow import ObjectivesWindow
 
 
-class BeamletCalculationWindow(QMainWindow):
+class BeamletCalculationWindow(QDialog):
     def __init__(self, viewController, parent=None):
         super().__init__(parent)
 
@@ -24,8 +26,15 @@ class BeamletCalculationWindow(QMainWindow):
 
         self._doseComputationPanel = DoseComputationPanel(viewController)
 
-        self.setCentralWidget(self._doseComputationPanel)
+        self.layout = QVBoxLayout(self)
+        self.setLayout(self.layout)
+        self.layout.addWidget(self._doseComputationPanel)
 
+    def setCT(self, ct):
+        self._doseComputationPanel.selectedCT = ct
+
+    def setPlan(self, plan):
+        self._doseComputationPanel.selectedPlan = plan
 
 
 class PlanOptiPanel(QWidget):
@@ -39,7 +48,7 @@ class PlanOptiPanel(QWidget):
         self._ctImages = []
         self._planStructures = []
         self._selectedCT = None
-        self._selectedPlanStructure = None
+        self._selectedPlanStructure:PlanDesign = None
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
@@ -74,7 +83,7 @@ class PlanOptiPanel(QWidget):
         self._algoBox.currentIndexChanged.connect(self._handleAlgo)
         self.layout.addWidget(self._algoBox)
 
-        self._configButton = QPushButton('Open configuration')
+        self._configButton = QPushButton('Advanced configuration')
         self._configButton.clicked.connect(self._openConfig)
         self.layout.addWidget(self._configButton)
 
@@ -209,6 +218,14 @@ class PlanOptiPanel(QWidget):
             subprocess.run(['xdg-open', PlanOptimizationConfig().configFile], check=True)
 
     def _run(self):
+        settings = DoseCalculationConfig()
+        ctCalibration = readScanner(settings.scannerFolder)
+
+        self._selectedPlanStructure.ct = self._selectedCT
+        self._selectedPlanStructure.calibration = ctCalibration
+
+        self._setObjectives()
+
         if self._spotPlacementBox.isChecked():
             self._placeSpots()
 
@@ -217,9 +234,16 @@ class PlanOptiPanel(QWidget):
 
         self._optimize()
 
-    def _placeSpots(self):
-        pass
+    def _setObjectives(self):
+        objectiveList = ObjectivesList()
+        for obj in self._objectivesWidget.objectives:
+            objectiveList.append(obj)
 
+        self._selectedPlanStructure.objectives = objectiveList
+
+    def _placeSpots(self):
+        self._selectedPlanStructure.defineTargetMaskAndPrescription()
+        self._plan = self._selectedPlanStructure.buildPlan()  # Spot placement
 
     def _handleAlgo(self):
         if self._selectedAlgo == "Beamlet-free MCsquare":
@@ -232,19 +256,17 @@ class PlanOptiPanel(QWidget):
 
     def _computeBeamlets(self):
         self._beamletWindow.setWindowTitle('Compute beamlets')
-        self._beamletWindow.show()
+        self._beamletWindow.setCT(self._selectedPlanStructure.ct)
+        self._plan.patient = self._selectedPlanStructure.ct.patient
+        self._beamletWindow.setPlan(self._plan)
+        self._beamletWindow.exec()
+
+        self._selectedPlanStructure.scoringVoxelSpacing = self._selectedPlanStructure.beamlets.doseSpacing
 
     def _optimize(self):
-        self._selectedPlanStructure.ct = self._selectedCT
         plan = RTPlan()
         plan.name = self._selectedPlanStructure.name
         plan.patient = self._selectedPlanStructure.patient
-
-        objectiveList = ObjectivesList()
-        for obj in self._objectivesWidget.objectives:
-            objectiveList.append(obj)
-
-        self._selectedPlanStructure.objectives = objectiveList
 
         optimizationWorkflows.optimizeIMPT(plan, self._selectedPlanStructure)
 
