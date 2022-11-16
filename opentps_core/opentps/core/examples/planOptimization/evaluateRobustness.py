@@ -56,54 +56,34 @@ def run():
     mc2 = MCsquareDoseCalculator()
     mc2.beamModel = bdl
     mc2.nbPrimaries = 5e4
+    mc2.statUncertainty = 2.
     mc2.ctCalibration = ctCalibration
 
     # Load / Generate new plan
-    plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped.tps")
+    plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
 
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
     else:
-        # Design plan
-        beamNames = ["Beam1"]
-        gantryAngles = [0.]
-        couchAngles = [0.]
-        planInit = PlanDesign()
-        planInit.ct = ct
-        planInit.targetMask = roi
-        planInit.gantryAngles = gantryAngles
-        planInit.beamNames = beamNames
-        planInit.couchAngles = couchAngles
-        planInit.calibration = ctCalibration
-        planInit.spotSpacing = 5.0
-        planInit.layerSpacing = 5.0
-        planInit.targetMargin = 5.0
-
-        plan = planInit.buildPlan()  # Spot placement
-        plan.PlanName = "NewPlan"
-
-        beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
-        plan.planDesign.beamlets = beamlets
-        # mc2.computeBeamlets(ct, plan, output_path)
-        saveRTPlan(plan, plan_file)
+        print("You need to design and optimize a plan first - See SimpleOptimization script.") 
 
     # Load / Generate scenarios
-    scenario_folder = os.path.join(output_path,'RobustnessTest_Sep-23-2022_00-40-50')
+    scenario_folder = os.path.join(output_path,'RobustnessTest_Nov-16-2022_14-30-28_')
     if os.path.isdir(scenario_folder):
         scenarios = Robustness()
         scenarios.selectionStrategy = "Error"
-        scenarios.setupSystematicError = mc2._setupSystematicError
-        scenarios.setupRandomError = mc2._setupRandomError
-        scenarios.rangeSystematicError = mc2._rangeSystematicError
+        scenarios.setupSystematicError = mc2.setupSystematicError
+        scenarios.setupRandomError = mc2.setupRandomError
+        scenarios.rangeSystematicError = mc2.rangeSystematicError
         scenarios.load(scenario_folder)
     else:
         # MCsquare config for scenario dose computation
         mc2.nbPrimaries = 1e7
-        mc2._setupSystematicError = [5.0, 5.0, 5.0]  # mm
-        mc2._setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
-        mc2._rangeSystematicError = 3.0  # %
-        mc2._robustnessStrategy = "ErrorSpace_regular"
+        mc2.setupSystematicError = [5.0, 5.0, 5.0]  # mm
+        mc2.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
+        mc2.rangeSystematicError = 3.0  # %
+        mc2.robustnessStrategy = "ErrorSpace_regular"
         # run MCsquare simulation
         scenarios = mc2.computeRobustScenario(ct, plan, [roi])
         if not os.path.isdir(output_path):
