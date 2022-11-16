@@ -15,8 +15,9 @@ class ScipyOpt:
         self.meth = meth
         self.Nfeval = 1
         self.params = kwargs
+        self.name = meth
 
-    def solve(self, func, x0):
+    def solve(self, func, x0, bounds=None):
         def callbackF(Xi):
             logger.info('Iteration {} of Scipy-{}'.format(self.Nfeval, self.meth))
             logger.info('objective = {0:.6e}  '.format(func[0].eval(Xi)))
@@ -27,7 +28,7 @@ class ScipyOpt:
             logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
         res = scipy.optimize.minimize(func[0].eval, x0, method=self.meth, jac=func[0].grad, callback=callbackF,
                                       options={'disp': True, 'iprint': -1, 'maxiter': self.params.get('maxit', 100)},
-                                      bounds=Bounds(0., 9999.))
+                                      bounds=bounds)
 
         result = {'sol': res.x, 'crit': res.message, 'niter': res.nit, 'time': time.time() - startTime,
                   'objective': res.fun}

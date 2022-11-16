@@ -47,8 +47,11 @@ class DVHViewer(QWidget):
         self._dose = dose
 
         for dvh in self._dvhs:
-            dvh.dose = dose
-            dvh.computeDVH()
+            if self._dose is None:
+                self._dvhPlot.removeDVH(dvh)
+            else:
+                dvh.dose = dose
+                dvh.computeDVH()
 
         self.doseChangeEvent.emit(self._dose)
 
@@ -64,8 +67,11 @@ class DVHViewer(QWidget):
         self._dose2 = dose
 
         for dvh in self._dvhs2:
-            dvh.dose = dose
-            dvh.computeDVH()
+            if self._dose2 is None:
+                self._dvhPlot.removeDVH(dvh)
+            else:
+                dvh.dose = dose
+                dvh.computeDVH()
 
         self.dose2ChangeEvent.emit(self._dose2)
 
@@ -116,8 +122,8 @@ class DVHViewer(QWidget):
 
     def removeROI(self, roi:Union[ROIMask, ROIContour]):
         partialHandler = self._partialVisibilityhandlers[self._rois.index(roi)]
-        dvh = self._dvhs[self._rois.index(roi)]
-        dvh2 = self._dvhs2[self._rois.index(roi)]
+        roiIndex = self._rois.index(roi)
+        dvh = self._dvhs[roiIndex]
 
         # TODO a factory in dataForViewer would be nice because this small piece of code is often duplicated
         if isinstance(roi, ROIMask):
@@ -130,10 +136,15 @@ class DVHViewer(QWidget):
         roiForViewer.visibleChangedSignal.disconnect(partialHandler)
 
         self._dvhPlot.removeDVH(dvh)
-        self._dvhPlot.removeDVH(dvh2)
-        self._dvhs.remove(dvh)
-        self._dvhs2.remove(dvh2)
         self._rois.remove(roi)
+
+        dvh2Exists = len(self._dvhs2) > 0
+        if dvh2Exists:
+            dvh2 = self._dvhs2[roiIndex]
+            self._dvhPlot.removeDVH(dvh2)
+            self._dvhs2.remove(dvh2)
+        self._dvhs.remove(dvh)
+
         self._partialVisibilityhandlers.remove(partialHandler)
 
     def clear(self):
@@ -182,6 +193,10 @@ class DVHPlot(PlotWidget):
         self._referenceROIs.remove(self._referenceROIs[self._dvhs.index(dvh)])
         self._curves.remove(curve)
         self._dvhs.remove(dvh)
+
+    def clear(self):
+        for curve in self._curves:
+            curve.clear()
 
 class DVHCurve:
     def __init__(self, dvh:DVH, referenceROI:Union[ROIContour, ROIMask], parent=None, style=Qt.SolidLine):

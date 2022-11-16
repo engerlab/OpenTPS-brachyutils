@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from opentps.core.data.images import DoseImage
+from opentps.core.data.images import DoseImage, CTImage
 from opentps.core import Event
 from opentps.gui.mainWindow import MainWindow
 from opentps.gui.viewer.dataViewerComponents.profileWidget import ProfileWidget
@@ -72,6 +72,14 @@ class ViewController():
         if self.currentPatient is None:
             self.currentPatient = patient
 
+    def _displayCTOfCurrentPatient(self):
+        if self.currentPatient is None:
+            return
+
+        ct = self.currentPatient.getPatientDataOfType(CTImage)
+        if len(ct)>0:
+            self.mainImage = ct[0]
+
     def _handleRemovedPatient(self, patient):
         self._activePatients.remove(patient)
         self.patientRemovedSignal.emit(patient)
@@ -132,8 +140,25 @@ class ViewController():
 
     @currentPatient.setter
     def currentPatient(self, patient):
+        previousPatient = self._currentPatient
+        noPreviousPatient = previousPatient is None
+
+        if patient == previousPatient:
+            return
+
         self._currentPatient = patient
+
+        if noPreviousPatient:
+            self._displayCTOfCurrentPatient()
+            self._currentPatient.patientDataAddedSignal.connect(self._handleNewCTinFirstPatient)
+        else:
+            previousPatient.patientDataAddedSignal.disconnect(self._handleNewCTinFirstPatient)
+
         self.currentPatientChangedSignal.emit(self._currentPatient)
+
+    def _handleNewCTinFirstPatient(self, data):
+        if isinstance(data, CTImage):
+            self._displayCTOfCurrentPatient()
 
     @property
     def dropMode(self):
