@@ -51,8 +51,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._beamModel = None
         self._nbPrimaries = 0
         self._maxUncertainty = 2.0
-        self._independentScoringGrid = False
-        self._scoringVoxelSpacing = [2.0, 2.0, 2.0]
+        self._scoringVoxelSpacing = None
         self._simulationDirectory = ProgramSettings().simulationFolder
         self._simulationFolderName = 'MCsquare_simulation'
 
@@ -114,18 +113,19 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def independentScoringGrid(self) -> bool:
-        return self._independentScoringGrid
-
-    @independentScoringGrid.setter
-    def independentScoringGrid(self, independent: bool):
-        self._independentScoringGrid = independent
+        return not np.allclose(self._ct.spacing, self.scoringVoxelSpacing, atol=0.01)
 
     @property
     def scoringVoxelSpacing(self) -> Sequence[float]:
-        if self.independentScoringGrid:
+        if self._plan:
+            if self._plan.planDesign:
+                self._scoringVoxelSpacing = self._plan.planDesign.scoringVoxelSpacing
+                return self._scoringVoxelSpacing
+
+        if self._scoringVoxelSpacing is not None:
             return self._scoringVoxelSpacing
-        else:
-            return self._ct.spacing
+
+        return self._ct.spacing
 
     @scoringVoxelSpacing.setter
     def scoringVoxelSpacing(self, spacing: Union[float, Sequence[float]]):
@@ -133,6 +133,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._scoringVoxelSpacing = [spacing, spacing, spacing]
         else:
             self._scoringVoxelSpacing = spacing
+        if self._plan.planDesign:
+            self._plan.planDesign.scoringVoxelSpacing = self._scoringVoxelSpacing
 
     @property
     def scoringGridSize(self):
@@ -222,6 +224,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = self._setPlanWeightsTo1(plan)
         self._roi = roi
+        
         self._config = self._beamletComputationConfig
 
         self._writeFilesToSimuDir()
@@ -250,9 +253,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(self._beamletRescaling()), dtype=np.float32)))
 
         beamletDose.doseOrigin = self._ct.origin
+
         beamletDose.doseSpacing = self.scoringVoxelSpacing
         beamletDose.doseGridSize = self.scoringGridSize
-
         return beamletDose
 
     def computeBeamletsAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> Tuple[SparseBeamlets, SparseBeamlets]:
@@ -368,7 +371,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         else:
             fraction = plan.numberOfFractionsPlanned
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
-
+        dose.origin = self._ct.origin # to avoid middle of voxel correction from MCsquare calculation when independentScoringGrid is used
         return dose
 
     def _importLET(self) -> LETImage:
@@ -386,12 +389,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def _importBeamlets(self):
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _importBeamletsLET(self):
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _beamletRescaling(self) -> Sequence[float]:
@@ -560,7 +563,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         if self._computeLETDistribution > 0:
             config["LET_MHD_Output"] = True
 
-        if self._independentScoringGrid:
+        if self.independentScoringGrid:
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = [x / 10.0 for x in self.scoringVoxelSpacing]  # in cm
             config["Scoring_grid_size"] = self.scoringGridSize
