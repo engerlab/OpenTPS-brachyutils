@@ -12,6 +12,11 @@ class PatientDataComboBox(QComboBox):
 
         self.setPatient(patient)
 
+    def closeEvent(self, QCloseEvent):
+        self.setPatient(None)
+
+        super().closeEvent(QCloseEvent)
+
     def setPatient(self, patient:Patient):
         if not (self._patient is None):
             self._patient.patientDataAddedSignal.disconnect(self._handleDataAddedOrRemoved)
@@ -36,6 +41,8 @@ class PatientDataComboBox(QComboBox):
         self.setCurrentIndex(self._patientData.index(data))
 
     def _updateComboBox(self):
+        if self._checkIfSelfDeleted():
+            return
         self._removeAllData()
 
         for data in self._patient.getPatientDataOfType(self._patientDataType):
@@ -50,11 +57,17 @@ class PatientDataComboBox(QComboBox):
                 self.selectedData = self._patientData[0]
 
     def _addData(self, data:PatientData):
+        if self._checkIfSelfDeleted():
+            return
+
         self.addItem(data.name, data)
         self._patientData.append(data)
         data.nameChangedSignal.connect(self._handleDataChanged)
 
     def _removeData(self, data:PatientData):
+        if self._checkIfSelfDeleted():
+            return
+
         data.nameChangedSignal.disconnect(self._handleDataChanged)
         self.removeItem(self.findData(data))
         self._patientData.remove(data)
@@ -68,3 +81,12 @@ class PatientDataComboBox(QComboBox):
 
     def _handleDataChanged(self, data):
         self._updateComboBox()
+
+    def _checkIfSelfDeleted(self):
+        try:
+            self.findData(None)
+        except:
+            self.setPatient(None)
+            return True
+
+        return False
