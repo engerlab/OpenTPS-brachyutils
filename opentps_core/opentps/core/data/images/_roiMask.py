@@ -5,6 +5,7 @@ import math
 
 import numpy as np
 import scipy
+from opentps.core.processing.imageProcessing import sitkImageProcessing
 from scipy.ndimage import morphology
 
 import copy
@@ -85,9 +86,21 @@ class ROIMask(Image3D):
                 self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
                 logger.warning('cupy not used to dilate mask.')
-                self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
-        else:
-            self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
+                tryGPU = False
+
+        if not tryGPU:
+            try:
+                logger.info('Using ITK to dilate mask')
+                self._dilateSITK(radius)
+            except:
+                logger.warning('SITK not used to dilate mask.')
+                self._dilateScipy(filt)
+
+    def _dilateSITK(self, radius):
+        sitkImageProcessing.dilate(self, radius)
+
+    def _dilateScipy(self, filt):
+        self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
 
     def erode(self, radius=1.0, filt=None, tryGPU=True):
         if filt is None:

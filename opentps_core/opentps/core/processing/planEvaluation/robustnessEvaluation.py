@@ -9,6 +9,7 @@ import os
 
 
 from opentps.core.data._dvhBand import DVHBand
+from opentps.core.processing.imageProcessing import resampler3D
 
 from typing import TYPE_CHECKING
 
@@ -60,6 +61,8 @@ class Robustness:
         self.numScenarios += 1
 
     def setTarget(self, targetContour, targetPrescription):
+        if not(self.nominal.dose.hasSameGrid(targetContour)):
+            resampler3D.resampleImage3DOnImage3D(targetContour,self.nominal.dose, inPlace=True, fillValue=0.)
         self.target = targetContour
         self.targetPrescription = targetPrescription
         for dvh in self.nominal.dvh:

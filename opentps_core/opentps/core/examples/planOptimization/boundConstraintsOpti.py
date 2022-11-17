@@ -22,7 +22,7 @@ from opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D, resampleImage3D
-from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
+from opentps.core.processing.planOptimization.planOptimization import BoundConstraintsOptimizer, IMPTPlanOptimizer
 
 
 # Generic example: box of water with squared target
@@ -104,12 +104,12 @@ def run():
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
 
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
+    solver = BoundConstraintsOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50, bounds=(0.2, 50))
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
     # Save plan with updated spot weights
-    saveRTPlan(plan, plan_file)
+    # saveRTPlan(plan, plan_file)
 
     # MCsquare simulation
     #mc2.nbPrimaries = 1e7
