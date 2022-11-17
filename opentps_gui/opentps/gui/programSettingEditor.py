@@ -1,6 +1,7 @@
 import functools
 
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout, QCheckBox, \
+    QFrame, QGroupBox
 
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.gui.panels.mainToolbar import MainToolbar
@@ -53,11 +54,21 @@ class ProgramSettingEditor(QMainWindow):
         self._layout = QVBoxLayout()
         centralWidget.setLayout(self._layout)
 
+        progSettingsTxt = 'Main program settings are located in ' + self.programSettings.programSettingsFolder
+        self._progSettingsLabel = QLabel(self)
+        self._progSettingsLabel.setText(progSettingsTxt)
+        self._layout.addWidget(self._progSettingsLabel)
+
         self._workspaceField = EditableSetting("Workspace", str(self.programSettings.workspace), self.setWorkspace)
         self._layout.addWidget(self._workspaceField)
 
+        self._doseCalculationFrame = QGroupBox(self)
+        self._doseCalculationFrame.setTitle("Dose calculation settings")
+        doseCalcLayout = QVBoxLayout(self._doseCalculationFrame)
+        self._doseCalculationFrame.setLayout(doseCalcLayout)
+        self._layout.addWidget(self._doseCalculationFrame)
         self._machineParam = MCsquareConfigEditor()
-        self._layout.addWidget(self._machineParam)
+        doseCalcLayout.addWidget(self._machineParam)
 
         self._activeExtensions = ActiveExtensions(self.mainToolbar)
         self._layout.addWidget(self._activeExtensions)
