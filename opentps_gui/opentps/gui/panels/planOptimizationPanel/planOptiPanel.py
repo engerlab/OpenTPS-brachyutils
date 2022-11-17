@@ -9,8 +9,10 @@ from opentps.core.data.plan import ObjectivesList
 from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data._patient import Patient
+from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
+from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.planOptimization import optimizationWorkflows
 from opentps.core.processing.planOptimization.planOptimizationConfig import PlanOptimizationConfig
 from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
@@ -18,13 +20,28 @@ from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planOptimizationPanel.objectivesWindow import ObjectivesWindow
 
 
-class BeamletCalculationWindow(QDialog):
-    def __init__(self, viewController, parent=None):
+class mcsquareCalculationWindow(QDialog):
+    def __init__(self, viewController, parent=None, contours=None, beamlets=True):
         super().__init__(parent)
 
         self._viewController = viewController
+        self._contours = contours
+        self._beamlets = beamlets
 
         self._doseComputationPanel = DoseComputationPanel(viewController)
+
+        self._doseComputationPanel._runButton.hide()
+        self._doseComputationPanel._doseSpacingLabel.hide()
+        self._doseComputationPanel._mcsquareConfigWidget.hide()
+
+        if self._beamlets == True:
+            self._beamletButton = QPushButton('Compute beamlets')
+            self._beamletButton.clicked.connect(self._computeBeamlets)
+            self._doseComputationPanel.layout.addWidget(self._beamletButton)
+        else:
+            self._optimizeButton = QPushButton('Beamlet-free optimize')
+            self._optimizeButton.clicked.connect(self._optimizeBeamletFree)
+            self._doseComputationPanel.layout.addWidget(self._optimizeButton)
 
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
@@ -36,6 +53,42 @@ class BeamletCalculationWindow(QDialog):
     def setPlan(self, plan):
         self._doseComputationPanel.selectedPlan = plan
 
+    def _computeBeamlets(self):
+        settings = DoseCalculationConfig()
+
+        beamModel = mcsquareIO.readBDL(settings.bdlFile)
+        calibration = readScanner(settings.scannerFolder)
+
+        #        self.selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
+
+        doseCalculator = MCsquareDoseCalculator()
+
+        doseCalculator.beamModel = beamModel
+        self.selectedPlan.scoringVoxelSpacing = self._doseComputationPanel._doseSpacingSpin.value()
+        doseCalculator.nbPrimaries = self._doseComputationPanel._numProtons.value()
+        doseCalculator.statUncertainty = self._doseComputationPanel._statUncertainty.value()
+        doseCalculator.ctCalibration = calibration
+        doseCalculator.overwriteOutsideROI = self._doseComputationPanel._selectedROI
+
+        doseImage = doseCalculator.computeBeamlets(self._doseComputationPanel.selectedCT, self._doseComputationPanel.selectedPlan)
+        doseImage.patient = self.selectedCT.patient
+
+    def _optimizeBeamletFree(self):
+        settings = DoseCalculationConfig()
+
+        beamModel = mcsquareIO.readBDL(settings.bdlFile)
+        calibration = readScanner(settings.scannerFolder)
+
+        doseCalculator = MCsquareDoseCalculator()
+        doseCalculator.beamModel = beamModel
+        doseCalculator.nbPrimaries = self._doseComputationPanel._numProtons.value()
+        doseCalculator.ctCalibration = calibration
+
+        doseImage = doseCalculator.optimizeBeamletFree(self._doseComputationPanel.selectedCT,
+                                                       self._doseComputationPanel.selectedPlan,
+                                                       self._contours)
+        doseImage.patient = self._doseComputationPanel.selectedCT.patient
+
 
 class PlanOptiPanel(QWidget):
     _optiAlgos = ["Beamlet-free MCsquare", "Beamlet-based BFGS", "Beamlet-based L-BFGS", "Beamlet-based Scipy-lBFGS"]
@@ -43,7 +96,7 @@ class PlanOptiPanel(QWidget):
     def __init__(self, viewController):
         QWidget.__init__(self)
 
-        self._patient:Patient = None
+        self._patient: Patient = None
         self._viewController = viewController
 
         self.layout = QVBoxLayout()
@@ -51,18 +104,14 @@ class PlanOptiPanel(QWidget):
 
         self._planStructureLabel = QLabel('Plan design:')
         self.layout.addWidget(self._planStructureLabel)
-        self._planStructureComboBox = PatientDataComboBox(patientDataType=PlanDesign, patient=self._patient, parent=self)
+        self._planStructureComboBox = PatientDataComboBox(patientDataType=PlanDesign, patient=self._patient,
+                                                          parent=self)
         self.layout.addWidget(self._planStructureComboBox)
 
         self._ctLabel = QLabel('CT:')
         self.layout.addWidget(self._ctLabel)
         self._ctComboBox = PatientDataComboBox(patientDataType=CTImage, patient=self._patient, parent=self)
         self.layout.addWidget(self._ctComboBox)
-
-        from opentps.gui.programSettingEditor import MCsquareConfigEditor
-        self._mcsquareConfigWidget = MCsquareConfigEditor(self)
-        self._mcsquareConfigWidget.setContentsMargins(0, 0, 0, 0)
-        self.layout.addWidget(self._mcsquareConfigWidget)
 
         self._objectivesWidget = ObjectivesWidget(self._viewController)
         self._objectivesWidget.setContentsMargins(0, 0, 0, 0)
@@ -92,9 +141,6 @@ class PlanOptiPanel(QWidget):
         self._runButton.clicked.connect(self._run)
         self.layout.addWidget(self._runButton)
 
-        self._beamletWindow = BeamletCalculationWindow(viewController, self)
-        self._beamletWindow.hide()
-
         self.layout.addStretch()
 
         self.setCurrentPatient(self._viewController.currentPatient)
@@ -110,7 +156,7 @@ class PlanOptiPanel(QWidget):
     def selectedPlanStructure(self):
         return self._planStructureComboBox.selectedData
 
-    def setCurrentPatient(self, patient:Patient):
+    def setCurrentPatient(self, patient: Patient):
         self._planStructureComboBox.setPatient(patient)
         self._ctComboBox.setPatient(patient)
 
@@ -153,27 +199,40 @@ class PlanOptiPanel(QWidget):
     def _handleAlgo(self):
         if self._selectedAlgo == "Beamlet-free MCsquare":
             self._beamletBox.setEnabled(False)
+            self._configButton.setEnabled(False)
         else:
             self._beamletBox.setEnabled(True)
+
     @property
     def _selectedAlgo(self):
         return self._optiAlgos[self._algoBox.currentIndex()]
 
-    def _computeBeamlets(self):
-        self._beamletWindow.setWindowTitle('Compute beamlets')
-        self._beamletWindow.setCT(self.selectedPlanStructure.ct)
-        self._plan.patient = self.selectedPlanStructure.ct.patient
-        self._beamletWindow.setPlan(self._plan)
-        self._beamletWindow.exec()
-
-        self.selectedPlanStructure.scoringVoxelSpacing = self.selectedPlanStructure.beamlets.doseSpacing
-
     def _optimize(self):
-        plan = RTPlan()
-        plan.name = self.selectedPlanStructure.name
-        plan.patient = self.selectedPlanStructure.patient
 
-        optimizationWorkflows.optimizeIMPT(plan, self.selectedPlanStructure)
+        # create list of contours
+        objROINames = []
+        contours = []
+        for obj in self.selectedPlanStructure.objectives.fidObjList:
+            # remove duplicate
+            if obj.roiName not in objROINames:
+                objROINames.append(obj.roiName)
+                contours.append(obj.roi)
+
+        if self._selectedAlgo == "Beamlet-free MCsquare":
+            self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=False)
+            self._mcsquareWindow.setWindowTitle('Beamlet-free configuration')
+            self._mcsquareWindow.setCT(self.selectedPlanStructure.ct)
+            self._plan.patient = self.selectedPlanStructure.ct.patient
+            self._mcsquareWindow.setPlan(self._plan)
+            self._mcsquareWindow.exec()
+
+        else:
+            self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=True)
+            self._mcsquareWindow.setWindowTitle('Beamlet-based configuration')
+            self._mcsquareWindow.setCT(self.selectedPlanStructure.ct)
+            self._plan.patient = self.selectedPlanStructure.ct.patient
+            self._mcsquareWindow.setPlan(self._plan)
+            self._mcsquareWindow.exec()
 
 
 class ObjectivesWidget(QWidget):
@@ -212,13 +271,13 @@ class ObjectivesWidget(QWidget):
     def objectives(self):
         return self._roiWindow.getObjectiveTerms()
 
-    def setPatient(self, p:Patient):
+    def setPatient(self, p: Patient):
         self._roiWindow.patient = p
 
     def _showObjectives(self):
         objectives = self._roiWindow.getObjectiveTerms()
 
-        if len(objectives)<=0:
+        if len(objectives) <= 0:
             self._objectivesLabels.setText(self.DEFAULT_OBJECTIVES_TEXT)
             return
 
@@ -241,4 +300,3 @@ class ObjectivesWidget(QWidget):
 
     def _openObjectivePanel(self):
         self._roiWindow.show()
-

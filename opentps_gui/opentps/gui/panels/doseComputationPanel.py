@@ -43,6 +43,7 @@ class DoseComputationPanel(QWidget):
         self._roiComboBox.currentIndexChanged.connect(self._handleROIIndex)
         self.layout.addWidget(self._roiComboBox)
 
+        self.layout.addSpacing(15)
         self._doseSpacingLayout = QHBoxLayout()
         self.layout.addLayout(self._doseSpacingLayout)
 
@@ -58,31 +59,34 @@ class DoseComputationPanel(QWidget):
         self._doseSpacingLayout.addWidget(self._doseSpacingSpin)
         self._doseSpacingSpin.hide()
 
-
-        self._primariesLayout = QHBoxLayout()
-        self.layout.addLayout(self._primariesLayout)
-
-        self._primariesLabel = QLabel('Primaries:')
-        self.layout.addWidget(self._primariesLabel)
-        self._primariesSpin = QDoubleSpinBox()
-        self._primariesSpin.setGroupSeparatorShown(True)
-        self._primariesSpin.setRange(1000, 1e9)
-        self._primariesSpin.setSingleStep(1000)
-        self._primariesSpin.setValue(1e7)
-        self._primariesSpin.setDecimals(0)
-        self.layout.addWidget(self._primariesSpin)
+        self.layout.addSpacing(15)
+        self.layout.addWidget(QLabel('<b>Simulation statistics:</b>'))
+        self._numProtons = QDoubleSpinBox()
+        self._numProtons.setGroupSeparatorShown(True)
+        self._numProtons.setRange(0, 1e9)
+        self._numProtons.setSingleStep(1e6)
+        self._numProtons.setValue(1e7)
+        self._numProtons.setSuffix(" protons")
+        self.layout.addWidget(self._numProtons)
+        self._statUncertainty = QDoubleSpinBox()
+        self._statUncertainty.setGroupSeparatorShown(True)
+        self._statUncertainty.setRange(0.0, 100.0)
+        self._statUncertainty.setSingleStep(0.1)
+        self._statUncertainty.setValue(2.0)
+        self._statUncertainty.setSuffix("% uncertainty")
+        self.layout.addWidget(self._statUncertainty)
+        self.layout.addSpacing(15)
 
         from opentps.gui.programSettingEditor import MCsquareConfigEditor
         self._mcsquareConfigWidget = MCsquareConfigEditor(self)
         self.layout.addWidget(self._mcsquareConfigWidget)
 
+        self.layout.addSpacing(15)
         self._runButton = QPushButton('Compute dose')
         self._runButton.clicked.connect(self._computeDose)
         self.layout.addWidget(self._runButton)
 
-        self._beamletButton = QPushButton('Compute beamlets')
-        self._beamletButton.clicked.connect(self._computeBeamlets)
-        self.layout.addWidget(self._beamletButton)
+
 
         self.layout.addStretch()
 
@@ -189,28 +193,11 @@ class DoseComputationPanel(QWidget):
 
         doseCalculator.beamModel = beamModel
         self.selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
-        doseCalculator.nbPrimaries = self._primariesSpin.value()
+        doseCalculator.nbPrimaries = self._numProtons.value()
+        doseCalculator.statUncertainty = self._statUncertainty.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._selectedROI
 
         doseImage = doseCalculator.computeDose(self.selectedCT, self.selectedPlan)
         doseImage.patient = self.selectedCT.patient
 
-    def _computeBeamlets(self):
-        settings = DoseCalculationConfig()
-
-        beamModel = mcsquareIO.readBDL(settings.bdlFile)
-        calibration = readScanner(settings.scannerFolder)
-
-        #        self.selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
-
-        doseCalculator = MCsquareDoseCalculator()
-
-        doseCalculator.beamModel = beamModel
-        self.selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
-        doseCalculator.nbPrimaries = self._primariesSpin.value()
-        doseCalculator.ctCalibration = calibration
-        doseCalculator.overwriteOutsideROI = self._selectedROI
-
-        doseImage = doseCalculator.computeBeamlets(self.selectedCT, self.selectedPlan)
-        doseImage.patient = self.selectedCT.patient

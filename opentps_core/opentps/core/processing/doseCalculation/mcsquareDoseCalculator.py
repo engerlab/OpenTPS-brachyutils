@@ -115,7 +115,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def statUncertainty(self) -> float:
         return self._statUncertainty
 
-    @nbPrimaries.setter
+    @statUncertainty.setter
     def statUncertainty(self, uncertainty: float):
         self._statUncertainty = uncertainty
 
