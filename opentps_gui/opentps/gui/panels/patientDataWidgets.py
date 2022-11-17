@@ -34,22 +34,31 @@ class PatientDataComboBox(QComboBox):
 
     @property
     def selectedData(self):
+        if len(self._patientData)==0:
+            return
+
         return self._patientData[self.currentIndex()]
 
     @selectedData.setter
     def selectedData(self, data):
+        if len(self._patientData)==0:
+            return
+
         self.setCurrentIndex(self._patientData.index(data))
 
     def _updateComboBox(self):
         if self._checkIfSelfDeleted():
             return
+
+        selectedData = self.selectedData
+
         self._removeAllData()
 
         for data in self._patient.getPatientDataOfType(self._patientDataType):
             self._addData(data)
 
         try:
-            currentIndex = self._patientData.index(self.selectedData)
+            currentIndex = self._patientData.index(selectedData)
             self.setCurrentIndex(currentIndex)
         except:
             self.setCurrentIndex(0)
