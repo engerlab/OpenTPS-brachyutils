@@ -19,16 +19,16 @@ class PatientDataComboBox(QComboBox):
 
     def setPatient(self, patient:Patient):
         if not (self._patient is None):
-            self._patient.patientDataAddedSignal.disconnect(self._handleDataAddedOrRemoved)
-            self._patient.patientDataRemovedSignal.disconnect(self._handleDataAddedOrRemoved)
+            self._patient.patientDataAddedSignal.disconnect(self._addData)
+            self._patient.patientDataRemovedSignal.disconnect(self._removeData)
 
         self._patient = patient
 
         if self._patient is None:
             pass
         else:
-            self._patient.patientDataAddedSignal.connect(self._handleDataAddedOrRemoved)
-            self._patient.patientDataRemovedSignal.connect(self._handleDataAddedOrRemoved)
+            self._patient.patientDataAddedSignal.connect(self._addData)
+            self._patient.patientDataRemovedSignal.connect(self._removeData)
 
             self._updateComboBox()
 
@@ -44,7 +44,13 @@ class PatientDataComboBox(QComboBox):
         if len(self._patientData)==0:
             return
 
-        self.setCurrentIndex(self._patientData.index(data))
+        try:
+            currentIndex = self._patientData.index(data)
+            self.setCurrentIndex(currentIndex)
+        except:
+            self.setCurrentIndex(0)
+            if len(self._patientData):
+                self.selectedData = self._patientData[0]
 
     def _updateComboBox(self):
         if self._checkIfSelfDeleted():
@@ -57,16 +63,14 @@ class PatientDataComboBox(QComboBox):
         for data in self._patient.getPatientDataOfType(self._patientDataType):
             self._addData(data)
 
-        try:
-            currentIndex = self._patientData.index(selectedData)
-            self.setCurrentIndex(currentIndex)
-        except:
-            self.setCurrentIndex(0)
-            if len(self._patientData):
-                self.selectedData = self._patientData[0]
+        self.selectedData = selectedData
+
 
     def _addData(self, data:PatientData):
         if self._checkIfSelfDeleted():
+            return
+
+        if not(isinstance(data, self._patientDataType)):
             return
 
         self.addItem(data.name, data)
@@ -77,16 +81,20 @@ class PatientDataComboBox(QComboBox):
         if self._checkIfSelfDeleted():
             return
 
+        if not(isinstance(data, self._patientDataType)):
+            return
+
+        selectedData = self.selectedData
+
         data.nameChangedSignal.disconnect(self._handleDataChanged)
         self.removeItem(self.findData(data))
         self._patientData.remove(data)
 
+        self.selectedData = selectedData
+
     def _removeAllData(self):
         for data in self._patientData:
             self._removeData(data)
-
-    def _handleDataAddedOrRemoved(self, data):
-        self._updateComboBox()
 
     def _handleDataChanged(self, data):
         self._updateComboBox()
