@@ -50,7 +50,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
-        self._maxUncertainty = 2.0
+        self._statUncertainty = 0.0
         self._scoringVoxelSpacing = None
         self._simulationDirectory = ProgramSettings().simulationFolder
         self._simulationFolderName = 'MCsquare_simulation'
@@ -112,6 +112,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._nbPrimaries = int(primaries)
 
     @property
+    def statUncertainty(self) -> float:
+        return self._statUncertainty
+
+    @nbPrimaries.setter
+    def statUncertainty(self, uncertainty: float):
+        self._statUncertainty = uncertainty
+
+    @property
     def independentScoringGrid(self) -> bool:
         return not np.allclose(self._ct.spacing, self.scoringVoxelSpacing, atol=0.01)
 
@@ -133,8 +141,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._scoringVoxelSpacing = [spacing, spacing, spacing]
         else:
             self._scoringVoxelSpacing = spacing
-        if self._plan.planDesign:
-            self._plan.planDesign.scoringVoxelSpacing = self._scoringVoxelSpacing
 
     @property
     def scoringGridSize(self):
@@ -356,7 +362,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_win.bat"),
                                                     cwd=self._mcsquareSimuDir)
             else:
-                raise Exception('MCsquare opti not available on Windows.')
+                self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_opti_win.bat"),
+                                                    cwd=self._mcsquareSimuDir)
             self._subprocess.wait()
             if self._subprocessKilled:
                 self._subprocessKilled = False
@@ -549,7 +556,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config = MCsquareConfig()
 
         config["Num_Primaries"] = self._nbPrimaries
-        config["Stat_uncertainty"] = self._maxUncertainty
+        config["Stat_uncertainty"] = self._statUncertainty
         config["WorkDir"] = self._mcsquareSimuDir
         config["CT_File"] = self._ctFilePath
         config["ScannerDirectory"] = self._scannerFolder  # ??? Required???
@@ -604,7 +611,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
                 elif "10x more particles per batch" in line:
                     multiplier *= 10.0
-
         numParticles = int(batch * multiplier * self._nbPrimaries / 10.0)
         return numParticles, uncertainty
 
