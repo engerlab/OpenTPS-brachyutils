@@ -41,18 +41,6 @@ if __name__ == '__main__':
     dynMod = resample(dynMod, gridSize=(80, 50, 50))
     print('after resampling', dynMod.midp.origin, dynMod.midp.spacing, dynMod.midp.gridSize)
 
-    # # option 1
-    # for fieldIndex in range(len(dynMod.deformationList)):
-    #     print('Resample model field', fieldIndex)
-    #     dynMod.deformationList[fieldIndex] = resample(dynMod.deformationList[fieldIndex], gridSize=dynMod.midp.gridSize, tryGPU=True)
-    #     print('after resampling', dynMod.deformationList[fieldIndex].origin, dynMod.deformationList[fieldIndex].spacing, dynMod.deformationList[fieldIndex].gridSize)
-
-    # # option 2
-    # for fieldIndex in range(len(dynMod.deformationList)):
-    #     print('Resample model field', fieldIndex)
-    #     resample(dynMod.deformationList[fieldIndex], gridSize=dynMod.midp.gridSize, tryGPU=True, inPlace=True)
-    #     print('after resampling', dynMod.deformationList[fieldIndex].origin, dynMod.deformationList[fieldIndex].spacing, dynMod.deformationList[fieldIndex].gridSize)
-
     # option 3
     for field in dynMod.deformationList:
         print('Resample model field')
