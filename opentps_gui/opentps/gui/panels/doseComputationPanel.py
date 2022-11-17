@@ -60,12 +60,19 @@ class DoseComputationPanel(QWidget):
         self._doseSpacingSpin.hide()
 
         self.layout.addSpacing(15)
+        self._cropBLBox = QCheckBox('Crop Beamlets on ROI')
+        self._cropBLBox.setChecked(True)
+        self.layout.addWidget(self._cropBLBox)
+        self._cropBLBox.hide()
+
+        self.layout.addSpacing(15)
         self.layout.addWidget(QLabel('<b>Simulation statistics:</b>'))
         self._numProtons = QDoubleSpinBox()
         self._numProtons.setGroupSeparatorShown(True)
         self._numProtons.setRange(0, 1e9)
         self._numProtons.setSingleStep(1e6)
         self._numProtons.setValue(1e7)
+        self._numProtons.setDecimals(0)
         self._numProtons.setSuffix(" protons")
         self.layout.addWidget(self._numProtons)
         self._statUncertainty = QDoubleSpinBox()
@@ -197,7 +204,6 @@ class DoseComputationPanel(QWidget):
         doseCalculator.statUncertainty = self._statUncertainty.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._selectedROI
-
         doseImage = doseCalculator.computeDose(self.selectedCT, self.selectedPlan)
         doseImage.patient = self.selectedCT.patient
 
