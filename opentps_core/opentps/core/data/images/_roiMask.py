@@ -106,6 +106,27 @@ class ROIMask(Image3D):
     def _dilateScipy(self, filt):
         self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
 
+    def createMaskRings(self, nRings, radius):
+        """
+            Create a ring ROI to obtain nice gradient dose around the ROI
+            nRings: Number of rings to be created
+            radius: thickness of each ring in mm
+        """
+        rings = []
+        roiSizes = [self]
+        maskCopy = self.copy()
+
+        for i in range(nRings):
+            maskCopy.dilate(radius)
+            roiSizes.append(maskCopy.copy())
+
+        for i in range(nRings):
+            ringMask = self.copy()
+            ringMask.imageArray = np.logical_xor(roiSizes[i + 1].imageArray, roiSizes[i].imageArray)
+            ringMask.name = 'ring_' + str(i + 1)
+            rings.append(ringMask)
+        return rings
+
     def erode(self, radius=1.0, filt=None, tryGPU=True):
         if filt is None:
             radius = radius / np.array(self.spacing)
