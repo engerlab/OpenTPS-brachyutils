@@ -15,8 +15,8 @@ except:
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.processing.planOptimization.solvers import sparcling, \
     beamletFree
-from opentps.core.processing.planOptimization.solvers import lp, bfgs, localSearch
-from opentps.core.processing.planOptimization.solvers import mip, fista, gradientDescent
+from opentps.core.processing.planOptimization.solvers import bfgs, localSearch
+from opentps.core.processing.planOptimization.solvers import fista, gradientDescent
 from opentps.core.processing.planOptimization import planPreprocessing
 
 logger = logging.getLogger(__name__)
@@ -156,17 +156,18 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = gradientDescent.GradientDescent(**kwargs)
         elif method == 'BFGS':
             self.solver = bfgs.BFGS(**kwargs)
-        elif method == "lBFGS":
+        elif method == "LBFGS":
             self.solver = bfgs.LBFGS(**kwargs)
         elif method == "FISTA":
             self.solver = fista.FISTA(**kwargs)
         elif method == "BLFree":
             self.solver = beamletFree.BLFree(**kwargs)
         elif method == "LP":
+            from opentps.core.processing.planOptimization.solvers import lp
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
-                'Method {} is not implemented. Pick among ["Scipy-lBFGS", "Gradient", "BFGS", "FISTA"]'.format(
+                'Method {} is not implemented. Pick among ["Scipy-LBFGS", "Gradient", "BFGS", "FISTA"]'.format(
                     self.method))
 
 
@@ -235,6 +236,7 @@ class ARCPTPlanOptimizer(PlanOptimizer):
         elif method == 'LS':
             self.solver = localSearch.LS()
         elif method == 'MIP':
+            from opentps.core.processing.planOptimization.solvers import mip
             self.solver = mip.MIP(self.plan, **kwargs)
         elif method == 'SPArcling':
             try:
