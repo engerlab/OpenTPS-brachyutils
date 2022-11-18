@@ -1,9 +1,12 @@
+import copy
 import subprocess
 import os
 import platform
 import logging
 
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow, QCheckBox, QDialog
+import numpy as np
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow, QCheckBox, QDialog, \
+    QLineEdit
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.plan import ObjectivesList
@@ -155,6 +158,12 @@ class PlanOptiPanel(QWidget):
         self.layout.addWidget(self._spotPlacementBox)
         self.layout.addWidget(self._beamletBox)
 
+        self._planLabel = QLabel('plan name:')
+        self.layout.addWidget(self._planLabel)
+        self._planNameEdit = QLineEdit(self)
+        self._planNameEdit.setText('New plan')
+        self.layout.addWidget(self._planNameEdit)
+
         self._runButton = QPushButton('Optimize plan')
         self._runButton.clicked.connect(self._run)
         self.layout.addWidget(self._runButton)
@@ -204,8 +213,17 @@ class PlanOptiPanel(QWidget):
                 objROINames.append(obj.roiName)
                 contours.append(obj.roi)
 
+        self.selectedPlanStructure.defineTargetMaskAndPrescription()
+
         if self._spotPlacementBox.isChecked():
             self._placeSpots()
+
+        else:
+            self._plan = copy.deepcopy(self._plan)
+            self._plan.spotMUs = np.ones(self._plan.spotMUs.shape)
+            self._plan.planDesign = self.selectedPlanStructure
+
+        self._plan.name = self._planNameEdit.text()
 
         if self._beamletBox.isChecked() and self._beamletBox.isEnabled():
             self._computeBeamlets(contours)
@@ -220,8 +238,6 @@ class PlanOptiPanel(QWidget):
         self.selectedPlanStructure.objectives = objectiveList
 
     def _placeSpots(self):
-        self.selectedPlanStructure.defineTargetMaskAndPrescription()
-
         self._plan = self.selectedPlanStructure.buildPlan()  # Spot placement
 
     def _computeBeamlets(self, contours):

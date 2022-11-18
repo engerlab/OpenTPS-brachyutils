@@ -25,7 +25,7 @@ class PlanDesignPanel(QWidget):
         self._planLabel = QLabel('plan name:')
         self.layout.addWidget(self._planLabel)
         self._planNameEdit = QLineEdit(self)
-        self._planNameEdit.setText('New plan')
+        self._planNameEdit.setText('New plan design')
         self.layout.addWidget(self._planNameEdit)
 
         from opentps.gui.programSettingEditor import MCsquareConfigEditor
