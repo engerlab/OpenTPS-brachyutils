@@ -230,6 +230,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = plan
         self._roi = roi
+
+        self._plan.spotMUs = np.ones(self._plan.spotMUs.shape)
         
         self._config = self._beamletComputationConfig
 

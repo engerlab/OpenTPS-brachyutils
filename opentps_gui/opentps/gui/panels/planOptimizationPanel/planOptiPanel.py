@@ -223,6 +223,7 @@ class PlanOptiPanel(QWidget):
 
     def _placeSpots(self):
         self.selectedPlanStructure.defineTargetMaskAndPrescription()
+
         self._plan = self.selectedPlanStructure.buildPlan()  # Spot placement
 
     def _computeBeamlets(self, contours):
