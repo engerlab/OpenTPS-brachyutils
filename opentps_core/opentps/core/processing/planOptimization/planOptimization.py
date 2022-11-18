@@ -196,13 +196,13 @@ class BoundConstraintsOptimizer(PlanOptimizer):
         x0 = self.initializeWeights()
 
         if self.bounds[0] == 0:
-            result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds), maxit=self.opti_params.get('maxit', 100))
+            result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds), maxit=self.opti_params.get('maxit', 1000))
         else:
             if nIterations is not None:
                 nit1, nit2 = nIterations[0], nIterations[1]
             else:
-                nit1 = self.opti_params.get('maxit', 100) // 2
-                nit2 = self.opti_params.get('maxit', 100) // 2
+                nit1 = self.opti_params.get('maxit', 1000) // 2
+                nit2 = self.opti_params.get('maxit', 1000) // 2
             
             # First Optimization with lower bound = 0
             self.solver.params['maxit'] = nit1
