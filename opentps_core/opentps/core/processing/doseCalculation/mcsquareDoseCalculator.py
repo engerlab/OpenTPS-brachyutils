@@ -296,7 +296,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> DoseImage:
         self._ct = ct
-        self._plan = self._setPlanWeightsTo1(plan)
+        self._plan = plan
+        self._plan.spotMUs = np.ones(self._plan.spotMUs.shape)
         # Generate MCsquare configuration file
         self._config = self._beamletFreeOptiConfig
         # Export useful data
@@ -313,17 +314,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare(opti=True)
 
         # Import optimized plan
-        file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
+        file_path = os.path.join(self._workDir, "Optimized_Plan.txt")
         mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
+        doseImage = self._importDose(self._plan)
 
-        doseImage = self._importDose(plan)
         return doseImage
-
-    def _setPlanWeightsTo1(self, plan):
-        plan = copy.deepcopy(plan)
-        plan.spotMUs = np.ones(plan.spotMUs.shape)
-
-        return plan
 
     def _cleanDir(self, dirPath):
         if os.path.isdir(dirPath):
