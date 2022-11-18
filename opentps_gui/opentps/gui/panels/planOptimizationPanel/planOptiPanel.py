@@ -35,7 +35,7 @@ class mcsquareCalculationWindow(QDialog):
         self._doseComputationPanel = DoseComputationPanel(viewController)
 
         self._doseComputationPanel._runButton.hide()
-        self._doseComputationPanel._doseSpacingLabel.hide()
+        self._doseComputationPanel._doseSpacingLabel.show()
         self._doseComputationPanel._mcsquareConfigWidget.hide()
 
         if self._beamlets:
@@ -43,7 +43,6 @@ class mcsquareCalculationWindow(QDialog):
             self._doseComputationPanel._numProtons.setDecimals(0)
             self._doseComputationPanel._cropBLBox.show()
             if not(self._doseComputationPanel._cropBLBox.isChecked()):
-                print('hello')
                 self._contours = None
 
             self._beamletButton = QPushButton('Compute beamlets')
@@ -80,7 +79,6 @@ class mcsquareCalculationWindow(QDialog):
         doseCalculator.statUncertainty = self._doseComputationPanel._statUncertainty.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._doseComputationPanel._selectedROI
-        print('contours = ', self._contours)
         beamlets = doseCalculator.computeBeamlets(self._doseComputationPanel.selectedCT,
                                                    self._doseComputationPanel.selectedPlan, self._contours)
         self._doseComputationPanel.selectedPlan.planDesign.beamlets = beamlets
@@ -111,7 +109,7 @@ class PlanOptiPanel(QWidget):
         QWidget.__init__(self)
 
         self._patient: Patient = None
-        self.optiConfig = {"method": "Scipy-LBFGS", "maxIter": 100, "step": 0.02, "bounds": None}
+        self.optiConfig = {"method": "Scipy-LBFGS", "maxIter": 1000, "step": 0.02, "bounds": None}
 
         self._viewController = viewController
 
@@ -183,8 +181,8 @@ class PlanOptiPanel(QWidget):
         self._objectivesWidget.setPatient(patient)
 
     def _openConfig(self):
-        dialog = OptiSettingsDialog(self.optiConfig['method'])
-        if (dialog.exec()): self.optiConfig = dialog.optiParam
+        dialog = OptiSettingsDialog(self.optiConfig)
+        if dialog.exec(): dialog.optiParam
         logger.info('opti config = {}'.format(self.optiConfig))
         self._algoBox.setCurrentText(self.optiConfig['method'])
 
@@ -240,7 +238,11 @@ class PlanOptiPanel(QWidget):
             self._configButton.setEnabled(False)
         else:
             self._beamletBox.setEnabled(True)
-            self._configButton.setEnabled(True)
+            if self._selectedAlgo in ["Scipy-LBFGS", "Scipy-BFGS", "In-house Gradient", "In-house LBFGS", "In-house BFGS", "FISTA"]:
+                self._configButton.setEnabled(True)
+                self.optiConfig['method'] = self._selectedAlgo
+            else:
+                self._configButton.setEnabled(False)
 
     @property
     def _selectedAlgo(self):

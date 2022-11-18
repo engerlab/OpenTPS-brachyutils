@@ -3,9 +3,9 @@ from PyQt5.QtWidgets import *
 
 class OptiSettingsDialog(QDialog):
 
-    def __init__(self, method):
+    def __init__(self, optiParams):
 
-        self.optiParam = {'method': method}
+        self.optiParam = optiParams
 
         # initialize the window
         QDialog.__init__(self)
@@ -17,8 +17,8 @@ class OptiSettingsDialog(QDialog):
 
         self.layout.addWidget(QLabel('<b>Optimization algorithm:</b>'))
         self.algorithm = QComboBox()
-        self.algorithm.addItems(['Scipy-LBFGS', 'Scipy-BFGS', 'In-house BFGS', 'In-house lBFGS', 'FISTA'])
-
+        self.algorithm.addItems(['Scipy-LBFGS', 'Scipy-BFGS', 'In-house Gradient', 'In-house BFGS', 'In-house LBFGS', 'FISTA'])
+        self.algorithm.setCurrentText(self.optiParam['method'])
         self.layout.addWidget(self.algorithm)
 
         self.layout.addSpacing(20)
@@ -35,9 +35,9 @@ class OptiSettingsDialog(QDialog):
         self._maxIterLayout.addWidget(self._maxIterLabel)
         self._maxIterSpin = QDoubleSpinBox()
         self._maxIterSpin.setGroupSeparatorShown(True)
-        self._maxIterSpin.setRange(0, 1e4)
+        self._maxIterSpin.setRange(0, 1e6)
         self._maxIterSpin.setSingleStep(50)
-        self._maxIterSpin.setValue(50)
+        self._maxIterSpin.setValue(1000)
         self._maxIterSpin.setDecimals(0)
         self._maxIterLayout.addWidget(self._maxIterSpin)
 
@@ -75,8 +75,8 @@ class OptiSettingsDialog(QDialog):
         self._boundMaxSpin.setValue(999.)
         self._boundsLayout.addWidget(self._boundMaxSpin)
 
-
         self.algorithm.setCurrentText(self.optiParam['method'])
+        self.updateOptiParams()
 
         self.algorithm.currentIndexChanged.connect(self.updateOptiParams)
 
@@ -113,10 +113,11 @@ class OptiSettingsDialog(QDialog):
         try:
             if self._boundMinSpin.value() == 0. and self._boundMaxSpin.value() == 999.:
                 self.optiParam["bounds"] = None
-            self.optiParam["bounds"] = self._boundMinSpin.value(), self._boundMaxSpin.value()
+            else:
+                self.optiParam["bounds"] = self._boundMinSpin.value(), self._boundMaxSpin.value()
         except ValueError:
             self.optiParam["bounds"] = None
-
+        print
         self.optiParam["method"] = self.algorithm.currentText()
 
         self.accept()

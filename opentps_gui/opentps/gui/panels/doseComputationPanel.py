@@ -58,6 +58,7 @@ class DoseComputationPanel(QWidget):
         self._doseSpacingSpin.setSuffix(" mm")
         self._doseSpacingLayout.addWidget(self._doseSpacingSpin)
         self._doseSpacingSpin.hide()
+        self._doseSpacingLabel.hide()
 
         self.layout.addSpacing(15)
         self._cropBLBox = QCheckBox('Crop Beamlets on ROI')
