@@ -4,7 +4,7 @@ import pickle
 from typing import Sequence, Optional
 
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QMainWindow, QAction, QFileDialog, QToolBar
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QMainWindow, QAction, QFileDialog, QToolBar, QCheckBox
 
 from opentps.core.data.images import ROIMask
 from opentps.core.data.plan._objectivesList import FidObjective
@@ -77,9 +77,17 @@ class ROITable(QTableWidget):
     DEFAULT_WEIGHT = 1.
 
     def __init__(self, viewController, parent=None):
-        super().__init__(0, 7, parent)
+        super().__init__(0, 8, parent)
 
-        self.setHorizontalHeaderLabels(['ROI', 'W', 'Dmin', 'W', 'Dmax', 'W', 'Dmean'])
+        self.setHorizontalHeaderLabels(['ROI', 'Robust', 'Weight', 'Dmin', 'Weight', 'Dmax', 'Weight', 'Dmean'])
+        self._roiCol = 0
+        self._robustCol = 1
+        self._weightMinCol = 2
+        self._dMinCol = 3
+        self._weightMaxCol = 4
+        self._dMaxCol = 5
+        self._weightMeanCol = 6
+        self._dMeanCol = 7
 
         self.objectivesModifiedEvent = Event()
 
@@ -141,28 +149,28 @@ class ROITable(QTableWidget):
         i = 0
         for rtStruct in patient.rtStructs:
             for contour in rtStruct.contours:
-                newitem = QTableWidgetItem(contour.name)
-                self.setItem(i, 0, newitem)
-                self.setItem(i, 1, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
-                self.setItem(i, 2, QTableWidgetItem(str(self.DMIN_THRESH)))
-                self.setItem(i, 3, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
-                self.setItem(i, 4, QTableWidgetItem(str(self.DMAX_THRESH)))
-                self.setItem(i, 5, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
-                self.setItem(i, 6, QTableWidgetItem(str(self.DMEAN_THRESH)))
+                self.setItem(i, self._roiCol, QTableWidgetItem(contour.name))
+                self.setCellWidget(i, self._robustCol, QCheckBox(self))
+                self.setItem(i, self._weightMinCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(i, self._dMinCol, QTableWidgetItem(str(self.DMIN_THRESH)))
+                self.setItem(i, self._weightMaxCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(i, self._dMaxCol, QTableWidgetItem(str(self.DMAX_THRESH)))
+                self.setItem(i, self._weightMeanCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(i, self._dMeanCol, QTableWidgetItem(str(self.DMEAN_THRESH)))
 
                 self._rois.append(contour)
 
                 i += 1
 
         for roiMask in patient.roiMasks:
-            newitem = QTableWidgetItem(roiMask.name)
-            self.setItem(i, 0, newitem)
-            self.setItem(i, 1, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
-            self.setItem(i, 2, QTableWidgetItem(str(self.DMIN_THRESH)))
-            self.setItem(i, 3, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
-            self.setItem(i, 4, QTableWidgetItem(str(self.DMAX_THRESH)))
-            self.setItem(i, 5, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
-            self.setItem(i, 6, QTableWidgetItem(str(self.DMEAN_THRESH)))
+            self.setItem(i, self._roiCol, QTableWidgetItem(roiMask.name))
+            self.setCellWidget(i, self._robustCol, QCheckBox(self))
+            self.setItem(i, self._weightMinCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+            self.setItem(i, self._dMinCol, QTableWidgetItem(str(self.DMIN_THRESH)))
+            self.setItem(i, self._weightMaxCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+            self.setItem(i, self._dMaxCol, QTableWidgetItem(str(self.DMAX_THRESH)))
+            self.setItem(i, self._weightMeanCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+            self.setItem(i, self._dMeanCol, QTableWidgetItem(str(self.DMEAN_THRESH)))
 
             self._rois.append(roiMask)
 
@@ -176,24 +184,24 @@ class ROITable(QTableWidget):
 
             if obj.roi.name in roiNames:
                 if obj.metric == FidObjective.Metrics.DMIN:
-                    self.item(roiInd, 1).setText(str(obj.weight))
-                    self.item(roiInd, 2).setText(str(obj.limitValue))
+                    self.item(roiInd, self._weightMinCol).setText(str(obj.weight))
+                    self.item(roiInd, self._dMinCol).setText(str(obj.limitValue))
                 elif obj.metric == FidObjective.Metrics.DMAX:
-                    self.item(roiInd, 3).setText(str(obj.weight))
-                    self.item(roiInd, 4).setText(str(obj.limitValue))
+                    self.item(roiInd, self._weightMaxCol).setText(str(obj.weight))
+                    self.item(roiInd, self._dMaxCol).setText(str(obj.limitValue))
                 elif obj.metric == FidObjective.Metrics.DMEAN:
-                    self.item(roiInd, 5).setText(str(obj.weight))
-                    self.item(roiInd, 6).setText(str(obj.limitValue))
+                    self.item(roiInd, self._weightMeanCol).setText(str(obj.weight))
+                    self.item(roiInd, self._dMeanCol).setText(str(obj.limitValue))
                 else:
                     pass
                     #TODO: metrics not supported
             else:
-                self.item(roiInd, 1).setText(str(1))
-                self.item(roiInd, 2).setText(str(self.DMIN_THRESH))
-                self.item(roiInd, 3).setText(str(1))
-                self.item(roiInd, 4).setText(str(self.DMAX_THRESH))
-                self.item(roiInd, 5).setText(str(1))
-                self.item(roiInd, 6).setText(str(self.DMEAN_THRESH))
+                self.setItem(roiInd, self._weightMinCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(roiInd, self._dMinCol, QTableWidgetItem(str(self.DMIN_THRESH)))
+                self.setItem(roiInd, self._weightMaxCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(roiInd, self._dMaxCol, QTableWidgetItem(str(self.DMAX_THRESH)))
+                self.setItem(roiInd, self._weightMeanCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(roiInd, self._dMeanCol, QTableWidgetItem(str(self.DMEAN_THRESH)))
 
     def getTemplate(self) -> Sequence[FidObjective]:
         objctivesToSave = []
@@ -212,32 +220,37 @@ class ROITable(QTableWidget):
 
         for i, roi in enumerate(self._rois):
             # TODO How can this happen? It does happen when we load a new RTStruct for the same patient
-            if self.item(i, 2) is None:
+            if self.item(i, self._dMinCol) is None:
                 return terms
 
+            robust = self.cellWidget(i, self._robustCol).isChecked()
+
             # Dmin
-            dmin = float(self.item(i, 2).text())
+            dmin = float(self.item(i, self._dMinCol).text())
             if dmin > self.DMIN_THRESH:
                 obj = FidObjective(roi=roi)
                 obj.metric = obj.Metrics.DMIN
-                obj.weight = float(self.item(i, 1).text())
+                obj.weight = float(self.item(i, self._weightMinCol).text())
                 obj.limitValue = dmin
+                obj.robust = robust
                 terms.append(obj)
             # Dmax
-            dmax = float(self.item(i, 4).text())
+            dmax = float(self.item(i, self._dMaxCol).text())
             if dmax < self.DMAX_THRESH:
                 obj = FidObjective(roi=roi)
                 obj.metric = obj.Metrics.DMAX
-                obj.weight = float(self.item(i, 3).text())
+                obj.weight = float(self.item(i, self._weightMaxCol).text())
                 obj.limitValue = dmax
+                obj.robust = robust
                 terms.append(obj)
             # Dmean
-            dmean = float(self.item(i, 6).text())
+            dmean = float(self.item(i, self._dMeanCol).text())
             if dmean < self.DMEAN_THRESH:
                 obj = FidObjective(roi=roi)
                 obj.metric = obj.Metrics.DMEAN
-                obj.weight = float(self.item(i, 5).text())
+                obj.weight = float(self.item(i, self._weightMeanCol).text())
                 obj.limitValue = dmean
+                obj.robust = robust
                 terms.append(obj)
 
         return terms
@@ -247,15 +260,15 @@ class ROITable(QTableWidget):
 
         for i in range(len(self._rois)):
             # Dmin
-            dmin = float(self.item(i, 2).text())
+            dmin = float(self.item(i, self._dMinCol).text())
             if dmin > self.DMIN_THRESH:
                 rois.append(self._rois[i])
             # Dmax
-            dmax = float(self.item(i, 4).text())
+            dmax = float(self.item(i, self._dMaxCol).text())
             if dmax < self.DMAX_THRESH:
                 rois.append(self._rois[i])
             # Dmean
-            dmean = float(self.item(i, 6).text())
+            dmean = float(self.item(i, self._dMeanCol).text())
             if dmean < self.DMEAN_THRESH:
                 rois.append(self._rois[i])
 
