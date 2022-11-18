@@ -228,7 +228,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> SparseBeamlets:
         logger.info("Prepare MCsquare Beamlet calculation")
         self._ct = ct
-        self._plan = self._setPlanWeightsTo1(plan)
+        self._plan = plan
         self._roi = roi
         
         self._config = self._beamletComputationConfig
