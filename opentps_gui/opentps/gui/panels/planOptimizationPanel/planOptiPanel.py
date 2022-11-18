@@ -1,6 +1,7 @@
 import subprocess
 import os
 import platform
+import logging
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow, QCheckBox, QDialog
 
@@ -14,12 +15,14 @@ from opentps.core.io.scannerReader import readScanner
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.planOptimization import optimizationWorkflows
-from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
+from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer, BoundConstraintsOptimizer
 from opentps.core.processing.planOptimization.planOptimizationConfig import PlanOptimizationConfig
 from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
 from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planOptimizationPanel.objectivesWindow import ObjectivesWindow
+from opentps.gui.panels.planOptimizationPanel.optimizationSettings import OptiSettingsDialog
 
+logger = logging.getLogger(__name__)
 
 class mcsquareCalculationWindow(QDialog):
     def __init__(self, viewController, parent=None, contours=None, beamlets=True):
@@ -40,6 +43,7 @@ class mcsquareCalculationWindow(QDialog):
             self._doseComputationPanel._numProtons.setDecimals(0)
             self._doseComputationPanel._cropBLBox.show()
             if not(self._doseComputationPanel._cropBLBox.isChecked()):
+                print('hello')
                 self._contours = None
 
             self._beamletButton = QPushButton('Compute beamlets')
@@ -76,7 +80,7 @@ class mcsquareCalculationWindow(QDialog):
         doseCalculator.statUncertainty = self._doseComputationPanel._statUncertainty.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._doseComputationPanel._selectedROI
-
+        print('contours = ', self._contours)
         beamlets = doseCalculator.computeBeamlets(self._doseComputationPanel.selectedCT,
                                                    self._doseComputationPanel.selectedPlan, self._contours)
         self._doseComputationPanel.selectedPlan.planDesign.beamlets = beamlets
@@ -100,13 +104,15 @@ class mcsquareCalculationWindow(QDialog):
         self.accept()
 
 class PlanOptiPanel(QWidget):
-    _optiAlgos = ["Beamlet-free MCsquare", "Scipy-lBFGS", "Scipy-BFGS", "In-house Gradient", "In-house lBFGS", "In-house BFGS", "FISTA",
+    _optiAlgos = ["Beamlet-free MCsquare", "Scipy-LBFGS", "Scipy-BFGS", "In-house Gradient", "In-house LBFGS", "In-house BFGS", "FISTA",
                   "LP"]
 
     def __init__(self, viewController):
         QWidget.__init__(self)
 
         self._patient: Patient = None
+        self.optiConfig = {"method": "Scipy-LBFGS", "maxIter": 100, "step": 0.02, "bounds": None}
+
         self._viewController = viewController
 
         self.layout = QVBoxLayout()
@@ -177,10 +183,10 @@ class PlanOptiPanel(QWidget):
         self._objectivesWidget.setPatient(patient)
 
     def _openConfig(self):
-        if platform.system() == "Windows":
-            os.system("start " + PlanOptimizationConfig().configFile)
-        else:
-            subprocess.run(['xdg-open', PlanOptimizationConfig().configFile], check=True)
+        dialog = OptiSettingsDialog(self.optiConfig['method'])
+        if (dialog.exec()): self.optiConfig = dialog.optiParam
+        logger.info('opti config = {}'.format(self.optiConfig))
+        self._algoBox.setCurrentText(self.optiConfig['method'])
 
     def _run(self):
         settings = DoseCalculationConfig()
@@ -252,12 +258,12 @@ class PlanOptiPanel(QWidget):
         else:
             if self._selectedAlgo == "Scipy-BFGS":
                 method = 'Scipy-BFGS'
-            if self._selectedAlgo == "Scipy-lBFGS":
+            if self._selectedAlgo == "Scipy-LBFGS":
                 method = 'Scipy-LBFGS'
             elif self._selectedAlgo == "In-house BFGS":
                 method = 'BFGS'
-            elif self._selectedAlgo == "In-house lBFGS":
-                method = 'lBFGS'
+            elif self._selectedAlgo == "In-house LBFGS":
+                method = 'LBFGS'
             elif self._selectedAlgo == "In-house Gradient":
                 method = 'Gradient'
             elif self._selectedAlgo == "FISTA":
@@ -265,7 +271,10 @@ class PlanOptiPanel(QWidget):
             elif self._selectedAlgo == "LP":
                 method = 'LP'
 
-            solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxit=50)
+            if self.optiConfig['bounds']:
+                solver = BoundConstraintsOptimizer(self._plan, method, self.optiConfig['bounds'])
+            else:
+                solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxit=self.optiConfig['maxIter'])
             # Optimize treatment plan
             _, doseImage, _ = solver.optimize()
             doseImage.patient = self._mcsquareWindow._doseComputationPanel.selectedCT.patient
