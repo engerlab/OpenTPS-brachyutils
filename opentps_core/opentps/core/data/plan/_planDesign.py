@@ -36,8 +36,6 @@ class PlanDesign(PatientData):
         self.beamNames = []
         self.gantryAngles = []
         self.couchAngles = []
-        self.accumulatedLayer = 0
-        self.accumulatedSpot = 0
         self.rangeShifters: _rangeShifter = []
 
         self.objectives = ObjectivesList()
@@ -97,7 +95,7 @@ class PlanDesign(PatientData):
             if objective.metric == objective.Metrics.DMIN:
                 roi = objective.roi
 
-                self.objectives.targetPrescription = objective.limitValue  # TODO: User should enter this value
+                self.objectives.setTarget(objective.roiName, objective.limitValue)
 
                 if isinstance(roi, ROIContour):
                     mask = roi.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,

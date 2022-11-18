@@ -87,6 +87,9 @@ class BeamInitializer:
 
             # generate plan structure
             for energy in spotGrid["EnergyLayers"][s]:
+                if energy <=0:
+                    continue
+
                 layerFound = 0
                 for layer in self.beam.layers:
                     if abs(layer.nominalEnergy - energy) < 0.05:

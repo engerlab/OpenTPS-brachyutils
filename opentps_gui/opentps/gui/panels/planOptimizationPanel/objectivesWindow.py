@@ -16,7 +16,6 @@ import opentps.gui.res.icons as IconModule
 
 class ObjectivesWindow(QMainWindow):
     def __init__(self, viewController, parent=None):
-
         super().__init__(parent)
 
         self.objectivesModifiedEvent = Event()
@@ -74,10 +73,13 @@ class ObjectivesWindow(QMainWindow):
 class ROITable(QTableWidget):
     DMIN_THRESH = 0.
     DMAX_THRESH = 999.
+    DMEAN_THRESH = 999.
     DEFAULT_WEIGHT = 1.
 
     def __init__(self, viewController, parent=None):
-        super().__init__(100, 5, parent)
+        super().__init__(0, 7, parent)
+
+        self.setHorizontalHeaderLabels(['ROI', 'W', 'Dmin', 'W', 'Dmax', 'W', 'Dmean'])
 
         self.objectivesModifiedEvent = Event()
 
@@ -128,6 +130,13 @@ class ROITable(QTableWidget):
         if patient is None:
             return
 
+        rowCount = 0
+        for rtStruct in patient.rtStructs:
+            rowCount += len(rtStruct.contours)
+        rowCount += len(patient.roiMasks)
+
+        self.setRowCount(rowCount)
+
         self._rois = []
         i = 0
         for rtStruct in patient.rtStructs:
@@ -138,6 +147,8 @@ class ROITable(QTableWidget):
                 self.setItem(i, 2, QTableWidgetItem(str(self.DMIN_THRESH)))
                 self.setItem(i, 3, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
                 self.setItem(i, 4, QTableWidgetItem(str(self.DMAX_THRESH)))
+                self.setItem(i, 5, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+                self.setItem(i, 6, QTableWidgetItem(str(self.DMEAN_THRESH)))
 
                 self._rois.append(contour)
 
@@ -150,12 +161,12 @@ class ROITable(QTableWidget):
             self.setItem(i, 2, QTableWidgetItem(str(self.DMIN_THRESH)))
             self.setItem(i, 3, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
             self.setItem(i, 4, QTableWidgetItem(str(self.DMAX_THRESH)))
+            self.setItem(i, 5, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
+            self.setItem(i, 6, QTableWidgetItem(str(self.DMEAN_THRESH)))
 
             self._rois.append(roiMask)
 
             i += 1
-
-        self.setHorizontalHeaderLabels(['ROI', 'W', 'Dmin', 'W', 'Dmax'])
 
     def applyTemplate(self, template:Sequence[FidObjective]):
         roiNames = [roi.name for roi in self._rois]
@@ -170,6 +181,9 @@ class ROITable(QTableWidget):
                 elif obj.metric == FidObjective.Metrics.DMAX:
                     self.item(roiInd, 3).setText(str(obj.weight))
                     self.item(roiInd, 4).setText(str(obj.limitValue))
+                elif obj.metric == FidObjective.Metrics.DMEAN:
+                    self.item(roiInd, 5).setText(str(obj.weight))
+                    self.item(roiInd, 6).setText(str(obj.limitValue))
                 else:
                     pass
                     #TODO: metrics not supported
@@ -178,6 +192,8 @@ class ROITable(QTableWidget):
                 self.item(roiInd, 2).setText(str(self.DMIN_THRESH))
                 self.item(roiInd, 3).setText(str(1))
                 self.item(roiInd, 4).setText(str(self.DMAX_THRESH))
+                self.item(roiInd, 5).setText(str(1))
+                self.item(roiInd, 6).setText(str(self.DMEAN_THRESH))
 
     def getTemplate(self) -> Sequence[FidObjective]:
         objctivesToSave = []
@@ -215,6 +231,14 @@ class ROITable(QTableWidget):
                 obj.weight = float(self.item(i, 3).text())
                 obj.limitValue = dmax
                 terms.append(obj)
+            # Dmean
+            dmean = float(self.item(i, 6).text())
+            if dmean < self.DMEAN_THRESH:
+                obj = FidObjective(roi=roi)
+                obj.metric = obj.Metrics.DMEAN
+                obj.weight = float(self.item(i, 5).text())
+                obj.limitValue = dmean
+                terms.append(obj)
 
         return terms
 
@@ -229,6 +253,10 @@ class ROITable(QTableWidget):
             # Dmax
             dmax = float(self.item(i, 4).text())
             if dmax < self.DMAX_THRESH:
+                rois.append(self._rois[i])
+            # Dmean
+            dmean = float(self.item(i, 6).text())
+            if dmean < self.DMEAN_THRESH:
                 rois.append(self._rois[i])
 
         return rois
