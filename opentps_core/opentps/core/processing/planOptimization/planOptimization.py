@@ -162,6 +162,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = fista.FISTA(**kwargs)
         elif method == "LP":
             from opentps.core.processing.planOptimization.solvers import lp
+            self.xSquared = False
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
@@ -235,6 +236,7 @@ class ARCPTPlanOptimizer(PlanOptimizer):
             self.solver = localSearch.LS()
         elif method == 'MIP':
             from opentps.core.processing.planOptimization.solvers import mip
+            self.xSquared = False
             self.solver = mip.MIP(self.plan, **kwargs)
         elif method == 'SPArcling':
             try:
