@@ -7,6 +7,7 @@ try:
 except ModuleNotFoundError:
     logger.info('No module Gurobi found\n!Licence required!\nGet free Academic license on '
                 'https://www.gurobi.com/academia/academic-program-and-licenses/ ')
+    gp = None
 import numpy as np
 import time
 from random import choice
@@ -224,6 +225,8 @@ class LP:
             return result
 
     def createModel(self, name = "LP"):
+        if gp is None:
+            raise Exception("Third-party toolbox Gurobi must be installed and requires a license")
         model = gp.Model(name)
         model.ModelSense = GRB.MINIMIZE
         if self.groupSpots:
