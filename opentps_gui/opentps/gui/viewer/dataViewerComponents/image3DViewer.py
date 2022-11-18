@@ -97,6 +97,11 @@ class Image3DViewer(QWidget):
         self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
         self._renderWindow.AddRenderer(self._renderer)
 
+
+    def closeEvent(self, QCloseEvent):
+        self.close()
+        super().closeEvent()
+
     def close(self):
         if not (self._primaryImageLayer.image is None):
             self._primaryImageLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)

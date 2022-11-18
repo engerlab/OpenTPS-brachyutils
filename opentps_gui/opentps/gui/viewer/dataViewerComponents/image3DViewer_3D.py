@@ -50,6 +50,10 @@ class Image3DViewer_3D(QWidget):
         self._renderWindow.GetInteractor().SetInteractorStyle(self._iStyle)
         self._renderWindow.AddRenderer(self._renderer)
 
+    def closeEvent(self, QCloseEvent):
+        self.close()
+        super().closeEvent()
+        
     def close(self):
         self._rtPlanLayer.close()
         self._primaryImageLayer.close()
