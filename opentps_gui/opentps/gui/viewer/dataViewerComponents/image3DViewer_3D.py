@@ -52,8 +52,11 @@ class Image3DViewer_3D(QWidget):
 
     def closeEvent(self, QCloseEvent):
         self.close()
-        super().closeEvent()
-        
+        self._renderWindow.Finalize()
+        self._vtkWidget.close()
+        del self._renderWindow, self._vtkWidget
+        super().closeEvent(QCloseEvent)
+
     def close(self):
         self._rtPlanLayer.close()
         self._primaryImageLayer.close()

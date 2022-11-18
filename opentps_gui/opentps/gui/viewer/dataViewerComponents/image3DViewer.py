@@ -100,7 +100,10 @@ class Image3DViewer(QWidget):
 
     def closeEvent(self, QCloseEvent):
         self.close()
-        super().closeEvent()
+        self._renderWindow.Finalize()
+        self._vtkWidget.close()
+        del self._renderWindow, self._vtkWidget
+        super().closeEvent(QCloseEvent)
 
     def close(self):
         if not (self._primaryImageLayer.image is None):

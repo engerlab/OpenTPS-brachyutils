@@ -23,6 +23,12 @@ class DynamicImage2DViewer(Image2DViewer):
 
         self.loopStepNumber = 0
 
+    def closeEvent(self, QCloseEvent):
+        self.close()
+        self._renderWindow.Finalize()
+        self._vtkWidget.close()
+        del self._renderWindow, self._vtkWidget
+        super().closeEvent(QCloseEvent)
 
     @property
     def primaryImage(self):
