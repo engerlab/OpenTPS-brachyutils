@@ -117,7 +117,6 @@ class PlanOptiPanel(QWidget):
 
         self._patient: Patient = None
         self._optiConfig = {"method": "Scipy-LBFGS", "maxIter": 1000, "step": 0.02, "bounds": None}
-        self._robustOpti = False
 
         self._viewController = viewController
 
@@ -191,8 +190,6 @@ class PlanOptiPanel(QWidget):
         return self._planStructureComboBox.selectedData
 
     def _handlePlanStructure(self, *args):
-        if not (self.selectedPlanStructure is None):
-            print(self.selectedPlanStructure.name, self.selectedPlanStructure.robustness.selectionStrategy)
         self._objectivesWidget.planDesign = self.selectedPlanStructure
 
     def setCurrentPatient(self, patient: Patient):
@@ -249,14 +246,15 @@ class PlanOptiPanel(QWidget):
         self.selectedPlanStructure.objectives = objectiveList
         for obj in self.selectedPlanStructure.objectives.fidObjList:
             if obj.robust:
-                self._robustOpti = True
                 continue
 
     def _placeSpots(self):
         self._plan = self.selectedPlanStructure.buildPlan()  # Spot placement
 
     def _computeBeamlets(self, contours):
-        self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=True, robustOpti=self._robustOpti)
+        robusOpti = self.selectedPlanStructure.robustness.selectionStrategy != Robustness.Strategies.DISABLED
+
+        self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=True, robustOpti=robusOpti)
         self._mcsquareWindow.setWindowTitle('Beamlet-based configuration')
         self._mcsquareWindow.setCT(self.selectedPlanStructure.ct)
         self._plan.patient = self.selectedPlanStructure.ct.patient
@@ -361,8 +359,7 @@ class ObjectivesWidget(QWidget):
         self._planDesign = pd
 
         if not (self._planDesign is None):
-            print(self._planDesign.robustness.selectionStrategy)
-            self._roiWindow.robustnessEnabled = self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED
+            self._roiWindow.planDesign = self._planDesign
 
     def setPatient(self, p: Patient):
         self._roiWindow.patient = p
