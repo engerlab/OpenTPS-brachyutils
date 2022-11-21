@@ -47,6 +47,14 @@ class ObjectivesWindow(QMainWindow):
     def patient(self, p:Patient):
         self._roitTable.patient = p
 
+    @property
+    def robustnessEnabled(self):
+        return self._roitTable.robustnessEnabled
+
+    @robustnessEnabled.setter
+    def robustnessEnabled(self, enabled: bool):
+        self._roitTable.robustnessEnabled = enabled
+
     def getObjectiveTerms(self) -> Sequence[FidObjective]:
         return self._roitTable.getObjectiveTerms()
 
@@ -79,6 +87,9 @@ class ROITable(QTableWidget):
     def __init__(self, viewController, parent=None):
         super().__init__(0, 8, parent)
 
+        self.objectivesModifiedEvent = Event()
+        self.robustnessEnabledEvent = Event(bool)
+
         self.setHorizontalHeaderLabels(['ROI', 'Robust', 'Weight', 'Dmin', 'Weight', 'Dmax', 'Weight', 'Dmean'])
         self._roiCol = 0
         self._robustCol = 1
@@ -89,9 +100,8 @@ class ROITable(QTableWidget):
         self._weightMeanCol = 6
         self._dMeanCol = 7
 
-        self.objectivesModifiedEvent = Event()
-
         self._patient:Optional[Patient] = None
+        self._robustnessEnabled = True
         self._rois = []
 
         self._viewController = viewController
@@ -126,6 +136,22 @@ class ROITable(QTableWidget):
 
         self.updateTable()
 
+    @property
+    def robustnessEnabled(self):
+        return self._robustnessEnabled
+
+    @robustnessEnabled.setter
+    def robustnessEnabled(self, enabled: bool):
+        if self._robustnessEnabled == enabled:
+            return
+
+        for i, roi in enumerate(self._rois):
+            self.getCellWidget(i, self._robustCol).setChecked(False)
+            self.getCellWidget(i, self._robustCol).setEnabled(False)
+
+        self._robustnessEnabled = enabled
+        self.robustnessEnabledEvent.emit(self._robustnessEnabled)
+
     def updateTable(self, *args):
         self.reset()
         self._fillRoiTable()
@@ -150,7 +176,9 @@ class ROITable(QTableWidget):
         for rtStruct in patient.rtStructs:
             for contour in rtStruct.contours:
                 self.setItem(i, self._roiCol, QTableWidgetItem(contour.name))
-                self.setCellWidget(i, self._robustCol, QCheckBox(self))
+                robustCheckBox = QCheckBox(self)
+                robustCheckBox.setEnabled(self._robustnessEnabled)
+                self.setCellWidget(i, self._robustCol, robustCheckBox)
                 self.setItem(i, self._weightMinCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
                 self.setItem(i, self._dMinCol, QTableWidgetItem(str(self.DMIN_THRESH)))
                 self.setItem(i, self._weightMaxCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
@@ -164,7 +192,9 @@ class ROITable(QTableWidget):
 
         for roiMask in patient.roiMasks:
             self.setItem(i, self._roiCol, QTableWidgetItem(roiMask.name))
-            self.setCellWidget(i, self._robustCol, QCheckBox(self))
+            robustCheckBox = QCheckBox(self)
+            robustCheckBox.setEnabled(self._robustnessEnabled)
+            self.setCellWidget(i, self._robustCol, robustCheckBox)
             self.setItem(i, self._weightMinCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
             self.setItem(i, self._dMinCol, QTableWidgetItem(str(self.DMIN_THRESH)))
             self.setItem(i, self._weightMaxCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))

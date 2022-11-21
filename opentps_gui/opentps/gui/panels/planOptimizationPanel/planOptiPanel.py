@@ -1,25 +1,20 @@
 import copy
-import subprocess
-import os
-import platform
 import logging
 
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QMainWindow, QCheckBox, QDialog, \
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton, QCheckBox, QDialog, \
     QLineEdit
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.plan import ObjectivesList
 from opentps.core.data.plan._planDesign import PlanDesign
-from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data._patient import Patient
 from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from opentps.core.processing.planOptimization import optimizationWorkflows
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer, BoundConstraintsOptimizer
-from opentps.core.processing.planOptimization.planOptimizationConfig import PlanOptimizationConfig
 from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
 from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planOptimizationPanel.objectivesWindow import ObjectivesWindow
@@ -318,6 +313,8 @@ class ObjectivesWidget(QWidget):
     def __init__(self, viewController):
         QWidget.__init__(self)
 
+        self._planDesign = None
+
         self._roiWindow = ObjectivesWindow(viewController, self)
         self._roiWindow.setMinimumWidth(400)
         self._roiWindow.setMinimumHeight(400)
@@ -347,6 +344,15 @@ class ObjectivesWidget(QWidget):
     @property
     def objectives(self):
         return self._roiWindow.getObjectiveTerms()
+
+    @property
+    def planDesign(self):
+        return self._planDesign
+
+    @planDesign.setter
+    def planDesign(self, pd):
+        self._planDesign = pd
+        # self._roiWindow.robustnessEnabled = # From plan Design
 
     def setPatient(self, p: Patient):
         self._roiWindow.patient = p
