@@ -50,18 +50,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._mcsquareCTCalibration = None
         self._beamModel = None
         self._nbPrimaries = 0
-        self._maxUncertainty = 2.0
-        self._independentScoringGrid = False
-        self._scoringVoxelSpacing = [2.0, 2.0, 2.0]
+        self._statUncertainty = 0.0
+        self._scoringVoxelSpacing = None
         self._simulationDirectory = ProgramSettings().simulationFolder
         self._simulationFolderName = 'MCsquare_simulation'
-
-        # Robustness settings
-        self.robustnessStrategy = "Disabled"
-        self.setupSystematicError = [2.5, 2.5, 2.5]  # mm
-        self.setupRandomError = [1.0, 1.0, 1.0]  # mm
-        self.rangeSystematicError = 3.0  # %
-        self._numScenarios = None
 
         self._computeDVHOnly = 0
         self._computeLETDistribution = 0
@@ -79,13 +71,13 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def _sparseDoseFilePath(self):
-        if self.robustnessStrategy== "Disabled":
+        if self._plan.planDesign.robustness.selectionStrategy==self._plan.planDesign.robustness.Strategies.DISABLED:
             return os.path.join(self._workDir, "Sparse_Dose.txt")
         elif self._sparseDoseScenarioToRead==None:
             return os.path.join(self._workDir, "Sparse_Dose_Nominal.txt")
         else:
             return os.path.join(self._workDir, "Sparse_Dose_Scenario_" + str(self._sparseDoseScenarioToRead + 1) + "-" + str(
-                self._numScenarios) + ".txt")
+                self._plan.planDesign.robustness.numScenarios) + ".txt")
 
 
     @property
@@ -113,19 +105,28 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._nbPrimaries = int(primaries)
 
     @property
-    def independentScoringGrid(self) -> bool:
-        return self._independentScoringGrid
+    def statUncertainty(self) -> float:
+        return self._statUncertainty
 
-    @independentScoringGrid.setter
-    def independentScoringGrid(self, independent: bool):
-        self._independentScoringGrid = independent
+    @statUncertainty.setter
+    def statUncertainty(self, uncertainty: float):
+        self._statUncertainty = uncertainty
+
+    @property
+    def independentScoringGrid(self) -> bool:
+        return not np.allclose(self._ct.spacing, self.scoringVoxelSpacing, atol=0.01)
 
     @property
     def scoringVoxelSpacing(self) -> Sequence[float]:
-        if self.independentScoringGrid:
+        if self._plan:
+            if self._plan.planDesign:
+                self._scoringVoxelSpacing = self._plan.planDesign.scoringVoxelSpacing
+                return self._scoringVoxelSpacing
+
+        if self._scoringVoxelSpacing is not None:
             return self._scoringVoxelSpacing
-        else:
-            return self._ct.spacing
+
+        return self._ct.spacing
 
     @scoringVoxelSpacing.setter
     def scoringVoxelSpacing(self, spacing: Union[float, Sequence[float]]):
@@ -167,7 +168,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._cleanDir(self._workDir)
         self._startMCsquare()
 
-        mhdDose = self._importDose()
+        mhdDose = self._importDose(plan)
         return mhdDose
 
     def computeDoseAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = None) -> Tuple[DoseImage, LETImage]:
@@ -178,14 +179,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> Robustness:
         logger.info("Prepare MCsquare Robust Dose calculation")
-        scenarios = Robustness()
-        if self.robustnessStrategy == "DoseSpace":
-            scenarios.selectionStrategy = "Dosimetric"
-        else:
-            scenarios.selectionStrategy = "Error"
-        scenarios.setupSystematicError = self.setupSystematicError
-        scenarios.setupRandomError = self.setupRandomError
-        scenarios.rangeSystematicError = self.rangeSystematicError
+        scenarios = plan.planDesign.robustness
 
         self._ct = ct
         self._plan = plan
@@ -198,7 +192,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         # Start nominal simulation
         logger.info("Simulation of nominal scenario")
         self._startMCsquare()
-        dose = self._importDose()
+        dose = self._importDose(plan)
         scenarios.setNominal(dose, self._roi)
         # Use special config for robustness
         self._config = self._scenarioComputationConfig
@@ -208,11 +202,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         logger.info("Simulation of error scenarios")
         self._startMCsquare()
         # Import dose results
-        for s in range(self._numScenarios):
-            fileName = 'Dose_Scenario_' + str(s + 1) + '-' + str(self._numScenarios) + '.mhd'
+        for s in range(self._plan.planDesign.robustness.numScenarios):
+            fileName = 'Dose_Scenario_' + str(s + 1) + '-' + str(self._plan.planDesign.robustness.numScenarios) + '.mhd'
             self._doseFilePath = os.path.join(self._workDir, fileName)
             if os.path.isfile(self._doseFilePath):
-                dose = self._importDose()
+                dose = self._importDose(plan)
                 scenarios.addScenario(dose, self._roi)
 
         return scenarios
@@ -220,8 +214,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> SparseBeamlets:
         logger.info("Prepare MCsquare Beamlet calculation")
         self._ct = ct
-        self._plan = self._setPlanWeightsTo1(plan)
+        self._plan = plan
         self._roi = roi
+        
         self._config = self._beamletComputationConfig
 
         self._writeFilesToSimuDir()
@@ -250,9 +245,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(self._beamletRescaling()), dtype=np.float32)))
 
         beamletDose.doseOrigin = self._ct.origin
+
         beamletDose.doseSpacing = self.scoringVoxelSpacing
         beamletDose.doseGridSize = self.scoringGridSize
-
         return beamletDose
 
     def computeBeamletsAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> Tuple[SparseBeamlets, SparseBeamlets]:
@@ -273,13 +268,13 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             nominal.storeOnFS(outputBeamletFile)
 
         scenarios = []
-        for s in range(self._numScenarios):
+        for s in range(self._plan.planDesign.robustness.numScenarios):
             self._sparseDoseScenarioToRead = s
             scenario = self._importBeamlets()
             if not (storePath is None):
                 outputBeamletFile = os.path.join(storePath,
                                                  "BeamletMatrix_" + plan.seriesInstanceUID + "_Scenario_" + str(
-                                                     s + 1) + "-" + str(self._numScenarios) + ".blm")
+                                                     s + 1) + "-" + str(self._plan.planDesign.robustness.numScenarios) + ".blm")
                 scenario.storeOnFS(outputBeamletFile)
             scenarios.append(scenario)
 
@@ -287,7 +282,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> DoseImage:
         self._ct = ct
-        self._plan = self._setPlanWeightsTo1(plan)
+        self._plan = plan
+        self._plan.spotMUs = np.ones(self._plan.spotMUs.shape)
         # Generate MCsquare configuration file
         self._config = self._beamletFreeOptiConfig
         # Export useful data
@@ -304,17 +300,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._startMCsquare(opti=True)
 
         # Import optimized plan
-        file_path = os.path.join(self._mcsquareSimuDir, "Outputs", "Optimized_Plan.txt")
+        file_path = os.path.join(self._workDir, "Optimized_Plan.txt")
         mcsquareIO.updateWeightsFromPlanPencil(self._ct, self._plan, file_path, self.beamModel)
+        doseImage = self._importDose(self._plan)
 
-        doseImage = self._importDose(plan)
         return doseImage
-
-    def _setPlanWeightsTo1(self, plan):
-        plan = copy.deepcopy(plan)
-        plan.spotMUs = np.ones(plan.spotMUs.shape)
-
-        return plan
 
     def _cleanDir(self, dirPath):
         if os.path.isdir(dirPath):
@@ -353,7 +343,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_win.bat"),
                                                     cwd=self._mcsquareSimuDir)
             else:
-                raise Exception('MCsquare opti not available on Windows.')
+                self._subprocess = subprocess.Popen(os.path.join(self._mcsquareSimuDir, "MCsquare_opti_win.bat"),
+                                                    cwd=self._mcsquareSimuDir)
             self._subprocess.wait()
             if self._subprocessKilled:
                 self._subprocessKilled = False
@@ -368,7 +359,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         else:
             fraction = plan.numberOfFractionsPlanned
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
-
+        dose.origin = self._ct.origin # to avoid middle of voxel correction from MCsquare calculation when independentScoringGrid is used
         return dose
 
     def _importLET(self) -> LETImage:
@@ -386,12 +377,12 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def _importBeamlets(self):
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _importBeamletsLET(self):
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _beamletRescaling(self) -> Sequence[float]:
@@ -482,18 +473,18 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Compute_stat_uncertainty"] = False
         config["Robustness_Mode"] = True
         config["Simulate_nominal_plan"] = False
-        config["Systematic_Setup_Error"] = [self.setupSystematicError[0] / 10, self.setupSystematicError[1] / 10,
-                                            self.setupSystematicError[2] / 10]  # cm
-        config["Random_Setup_Error"] = [self.setupRandomError[0] / 10, self.setupRandomError[1] / 10,
-                                        self.setupRandomError[2] / 10]  # cm
-        config["Systematic_Range_Error"] = self.rangeSystematicError  # %
-        if self.robustnessStrategy == "DoseSpace":
+        config["Systematic_Setup_Error"] = [self._plan.planDesign.robustness.setupSystematicError[0] / 10, self._plan.planDesign.robustness.setupSystematicError[1] / 10,
+                                            self._plan.planDesign.robustness.setupSystematicError[2] / 10]  # cm
+        config["Random_Setup_Error"] = [self._plan.planDesign.robustness.setupRandomError[0] / 10, self._plan.planDesign.robustness.setupRandomError[1] / 10,
+                                        self._plan.planDesign.robustness.setupRandomError[2] / 10]  # cm
+        config["Systematic_Range_Error"] = self._plan.planDesign.robustness.rangeSystematicError  # %
+        if self._plan.planDesign.robustness.selectionStrategy == self._plan.planDesign.robustness.Strategies.DOSIMETRIC:
             config["Scenario_selection"] = "Random"
             config["Num_Random_Scenarios"] = 100
-            self._numScenarios = config["Num_Random_Scenarios"]
+            self._plan.planDesign.robustness.numScenarios = config["Num_Random_Scenarios"]
         else:
             config["Scenario_selection"] = "All"
-            self._numScenarios = 81
+            self._plan.planDesign.robustness.numScenarios = 81
 
         return config
 
@@ -510,23 +501,23 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config["Dose_Sparse_Threshold"] = 20000.0
         if self._computeLETDistribution > 0: config["LET_Sparse_Output"] = True
         # Robustness settings
-        if self.robustnessStrategy == "Disabled":
+        if self._plan.planDesign.robustness.selectionStrategy == self._plan.planDesign.robustness.Strategies.DISABLED:
             config["Robustness_Mode"] = False
         else:
             config["Robustness_Mode"] = True
             config["Simulate_nominal_plan"] = True
-            config["Systematic_Setup_Error"] = [self.setupSystematicError[0] / 10,
-                                                self.setupSystematicError[1] / 10,
-                                                self.setupSystematicError[2] / 10]  # cm
-            config["Random_Setup_Error"] = [self.setupRandomError[0] / 10, self.setupRandomError[1] / 10,
-                                            self.setupRandomError[2] / 10]  # cm
-            config["Systematic_Range_Error"] = self.rangeSystematicError  # %
+            config["Systematic_Setup_Error"] = [self._plan.planDesign.robustness.setupSystematicError[0] / 10,
+                                                self._plan.planDesign.robustness.setupSystematicError[1] / 10,
+                                                self._plan.planDesign.robustness.setupSystematicError[2] / 10]  # cm
+            config["Random_Setup_Error"] = [self._plan.planDesign.robustness.setupRandomError[0] / 10, self._plan.planDesign.robustness.setupRandomError[1] / 10,
+                                            self._plan.planDesign.robustness.setupRandomError[2] / 10]  # cm
+            config["Systematic_Range_Error"] = self._plan.planDesign.robustness.rangeSystematicError  # %
             config[
                 "Scenario_selection"] = "ReducedSet"  # "All" (81 scenarios), or "ReducedSet" (21 scenarios as in RayStation)
             if config["Scenario_selection"] == "All":
-                self._numScenarios = 81
+                self._plan.planDesign.robustness.numScenarios = 81
             else:
-                self._numScenarios = 21
+                self._plan.planDesign.robustness.numScenarios = 21
 
         return config
 
@@ -546,7 +537,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         config = MCsquareConfig()
 
         config["Num_Primaries"] = self._nbPrimaries
-        config["Stat_uncertainty"] = self._maxUncertainty
+        config["Stat_uncertainty"] = self._statUncertainty
         config["WorkDir"] = self._mcsquareSimuDir
         config["CT_File"] = self._ctFilePath
         config["ScannerDirectory"] = self._scannerFolder  # ??? Required???
@@ -560,7 +551,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         if self._computeLETDistribution > 0:
             config["LET_MHD_Output"] = True
 
-        if self._independentScoringGrid:
+        if self.independentScoringGrid:
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = [x / 10.0 for x in self.scoringVoxelSpacing]  # in cm
             config["Scoring_grid_size"] = self.scoringGridSize
@@ -601,7 +592,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
                 elif "10x more particles per batch" in line:
                     multiplier *= 10.0
-
         numParticles = int(batch * multiplier * self._nbPrimaries / 10.0)
         return numParticles, uncertainty
 
@@ -626,7 +616,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             resampledMask.patient = None
             roiResampled.append(resampledMask)
         self._roi = roiResampled
-        self._roi[0].patient = self._ct.patient
 
     def _createFolderIfNotExists(self, folder):
         folder = Path(folder)

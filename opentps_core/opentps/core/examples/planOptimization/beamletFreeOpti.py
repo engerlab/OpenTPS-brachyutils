@@ -3,7 +3,6 @@ import numpy as np
 
 from matplotlib import pyplot as plt
 
-import opentps.core.processing.imageProcessing.imageTransform3D
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import ROIMask
 from opentps.core.data.plan import ObjectivesList
@@ -58,23 +57,22 @@ def run():
     couchAngles = [0.]
 
     # Generate new plan
-    planInit = PlanDesign()
-    planInit.ct = ct
-    planInit.targetMask = roi
-    planInit.gantryAngles = gantryAngles
-    planInit.beamNames = beamNames
-    planInit.couchAngles = couchAngles
-    planInit.calibration = ctCalibration
-    planInit.spotSpacing = 5.0
-    planInit.layerSpacing = 5.0
-    planInit.targetMargin = 5.0
+    planDesign = PlanDesign()
+    planDesign.ct = ct
+    planDesign.targetMask = roi
+    planDesign.gantryAngles = gantryAngles
+    planDesign.beamNames = beamNames
+    planDesign.couchAngles = couchAngles
+    planDesign.calibration = ctCalibration
+    planDesign.spotSpacing = 5.0
+    planDesign.layerSpacing = 5.0
+    planDesign.targetMargin = 5.0
 
-    plan = planInit.buildPlan()  # Spot placement
+    plan = planDesign.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
     plan.planDesign.objectives = ObjectivesList()
     plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    plan.planDesign.objectives.setScoringParameters(ct)
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
@@ -93,7 +91,7 @@ def run():
     # center of mass
     roi = resampleImage3DOnImage3D(roi, ct)
     COM_coord = roi.centerOfMass
-    COM_index = opentps.core.processing.imageProcessing.imageTransform3D.getVoxelIndexFromPosition(COM_coord)
+    COM_index = roi.getVoxelIndexFromPosition(COM_coord)
     Z_coord = COM_index[2]
 
     img_ct = ct.imageArray[:, :, Z_coord].transpose(1, 0)

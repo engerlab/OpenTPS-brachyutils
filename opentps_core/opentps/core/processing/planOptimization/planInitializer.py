@@ -87,6 +87,9 @@ class BeamInitializer:
 
             # generate plan structure
             for energy in spotGrid["EnergyLayers"][s]:
+                if energy <=0:
+                    continue
+
                 layerFound = 0
                 for layer in self.beam.layers:
                     if abs(layer.nominalEnergy - energy) < 0.05:
@@ -177,6 +180,7 @@ class PlanInitializer:
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)
+        rspImage.patient = None
         self._beamInitializer.rspImage = rspImage
 
         imgBordersX = [rspImage.origin[0], rspImage.origin[0] + rspImage.gridSize[0] * rspImage.spacing[0]]

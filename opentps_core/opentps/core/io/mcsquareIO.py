@@ -35,7 +35,7 @@ from opentps.core.data.images import Image3D
 
 logger = logging.getLogger(__name__)
 
-def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIMask] = None):
+def readBeamlets(file_path, beamletRescaling:Sequence[float], origin, roi: Optional[ROIMask] = None):
     if (not file_path.endswith('.txt')):
         raise NameError('File ', file_path, ' is not a valid sparse matrix header')
 
@@ -52,7 +52,7 @@ def readBeamlets(file_path, beamletRescaling:Sequence[float], roi: Optional[ROIM
     beamletDose = SparseBeamlets()
     beamletDose.setUnitaryBeamlets(csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(beamletRescaling), dtype=np.float32)))
     beamletDose.beamletWeights = np.ones(header["NbrSpots"])
-    beamletDose.doseOrigin = header["Offset"]
+    beamletDose.doseOrigin = origin
     beamletDose.doseSpacing = header["VoxelSpacing"]
     beamletDose.doseGridSize = header["ImageSize"]
 
@@ -555,7 +555,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
 
         if not (beam.rangeShifter is None):
             if beam.rangeShifter.ID not in [rs.ID for rs in bdl.rangeShifters]:
-                raise Exception('Range shifter in plan not in BDL')
+                raise Exception('Range shifter with ID ' + beam.rangeShifter.ID + ' in plan not in BDL')
             else:
                 fid.write("###RangeShifterID\n")
                 fid.write("%s\n" % beam.rangeShifter.ID)
@@ -735,10 +735,21 @@ def writeBin(destFolder):
         shutil.copyfile(source_path, destination_path)
         shutil.copymode(source_path, destination_path)
 
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_win.bat")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_win.bat")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
         source_path = os.path.join(mcsquarePath, "MCsquare_win.exe")
         destination_path = os.path.join(destFolder, "MCsquare_win.exe")
         shutil.copyfile(source_path, destination_path)
         shutil.copymode(source_path, destination_path)
+
+        source_path = os.path.join(mcsquarePath, "MCsquare_opti_win.exe")
+        destination_path = os.path.join(destFolder, "MCsquare_opti_win.exe")
+        shutil.copyfile(source_path, destination_path)
+        shutil.copymode(source_path, destination_path)
+
 
         source_path = os.path.join(mcsquarePath, "libiomp5md.dll")
         destination_path = os.path.join(destFolder, "libiomp5md.dll")

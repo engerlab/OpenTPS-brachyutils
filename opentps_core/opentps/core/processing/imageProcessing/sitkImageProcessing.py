@@ -234,6 +234,22 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
 
     return tform, center, sitkImageToImage3D(moving_resampled)
 
+def dilate(image:Image3D, radius:float):
+    imgType = image.imageArray.dtype
+
+    img = image3DToSITK(image, type=np.int)
+
+    dilateFilter = sitk.BinaryDilateImageFilter()
+    dilateFilter.SetKernelType(sitk.sitkBall)
+    dilateFilter.SetKernelRadius(radius)
+    outImg = dilateFilter.Execute(img)
+
+    outData = np.array(sitk.GetArrayFromImage(outImg))
+    if imgType == bool:
+        outData[outData < 0.5] = 0
+    outData = outData.astype(imgType)
+    outData = np.swapaxes(outData, 0, 2)
+    image.imageArray = outData
 
 if __name__ == "__main__":
     data = np.random.randint(0, high=500, size=(216, 216, 216))

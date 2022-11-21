@@ -8,9 +8,13 @@ from opentps.core.data.plan._planIonLayer import PlanIonLayer
 from opentps.core.data.plan._planIonSpot import PlanIonSpot
 from opentps.core.data.plan._rtPlan import RTPlan
 
+'''
+Extend rtplan with attributs .layers and .spots to access directly global id and energy for each beam, layer and spot without looping. 
+'''
 
 def extendPlanLayers(plan: RTPlan) -> RTPlan:
-    outPlan = copy.deepcopy(plan)
+    plan._layers = []
+    plan._spots = []
 
     layerID = 0
     spotID = 0
@@ -31,13 +35,10 @@ def extendPlanLayers(plan: RTPlan) -> RTPlan:
                 spot.energy = outLayer.nominalEnergy
 
                 spotID += 1
-                outPlan.appendSpotAccum(spot)
+                plan._spots.append(spot)
 
             layerID += 1
-            outPlan.appendLayerAccum(outLayer)
-
-    return outPlan
-
+            plan._layers.append(outLayer)
 
 class ExtendedBeam(PlanIonBeam):
     def __init__(self):

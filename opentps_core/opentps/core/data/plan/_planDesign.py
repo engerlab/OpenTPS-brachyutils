@@ -2,6 +2,7 @@
 __all__ = ['PlanDesign']
 
 import logging
+from typing import Optional, Sequence, Union
 
 import numpy as np
 import pydicom
@@ -13,6 +14,7 @@ from opentps.core.data.plan import _rangeShifter
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data._patientData import PatientData
 from opentps.core.data.plan._objectivesList import ObjectivesList
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.planOptimization.planInitializer import PlanInitializer
 
 logger = logging.getLogger(__name__)
@@ -25,6 +27,7 @@ class PlanDesign(PatientData):
         self.spotSpacing = 5.0
         self.layerSpacing = 5.0
         self.targetMargin = 5.0
+        self._scoringVoxelSpacing = None
         self.targetMask: ROIMask = None
         self.proximalLayers = 1
         self.distalLayers = 1
@@ -34,18 +37,34 @@ class PlanDesign(PatientData):
         self.beamNames = []
         self.gantryAngles = []
         self.couchAngles = []
-        self.accumulatedLayer = 0
-        self.accumulatedSpot = 0
         self.rangeShifters: _rangeShifter = []
 
         self.objectives = ObjectivesList()
         self.beamlets = []
         self.beamletsLET = []
 
-        self.robustOpti = {"Strategy": "Disabled", "syst_setup": [0.0, 0.0, 0.0], "rand_setup": [0.0, 0.0, 0.0],
-                           "syst_range": 0.0}
-        self.scenarios = []
-        self.numScenarios = 0
+        self.robustness = Robustness()
+
+    @property
+    def scoringVoxelSpacing(self) -> Sequence[float]:
+        if self._scoringVoxelSpacing is not None:
+            return self._scoringVoxelSpacing
+        else:
+            return self.ct.spacing
+
+    @scoringVoxelSpacing.setter
+    def scoringVoxelSpacing(self, spacing: Union[float, Sequence[float]]):
+        if np.isscalar(spacing):
+            self._scoringVoxelSpacing = np.array([spacing, spacing, spacing])
+        else:
+            self._scoringVoxelSpacing = np.array(spacing)
+
+    @property
+    def scoringGridSize(self):
+        if self._scoringVoxelSpacing is not None:
+            return np.floor(self.ct.gridSize*self.ct.spacing/self.scoringVoxelSpacing).astype(int)
+        else:
+            return self.ct.gridSize
 
     def buildPlan(self):
         # Spot placement
@@ -74,7 +93,7 @@ class PlanDesign(PatientData):
             if objective.metric == objective.Metrics.DMIN:
                 roi = objective.roi
 
-                self.objectives.targetPrescription = objective.limitValue  # TODO: User should enter this value
+                self.objectives.setTarget(objective.roiName, objective.limitValue)
 
                 if isinstance(roi, ROIContour):
                     mask = roi.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
@@ -125,3 +144,18 @@ class PlanDesign(PatientData):
         initializer.targetMask = self.targetMask
         initializer.placeSpots(self.spotSpacing, self.layerSpacing, self.targetMargin, self.layersToSpacingAlignment,
                                self.proximalLayers, self.distalLayers)
+
+
+    def setScoringParameters(self, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None):
+        if scoringSpacing is None and scoringGridSize is not None:
+            self.scoringVoxelSpacing = self.ct.spacing*self.ct.gridSize/scoringGridSize
+        if scoringSpacing is not None and scoringGridSize is None:
+            self.scoringVoxelSpacing = scoringSpacing
+        if scoringSpacing is not None and scoringGridSize is not None:
+            raise Exception('Cannot set both scoring spacing and grid size at the same time.')
+        # scoringSpacing and scoringGridSize are None --> defaults to CT spacing and size
+
+
+        for objective in self.objectives.fidObjList:
+            objective._updateMaskVec(spacing=self.scoringVoxelSpacing, gridSize=self.scoringGridSize, origin=self.ct.origin)
+            
