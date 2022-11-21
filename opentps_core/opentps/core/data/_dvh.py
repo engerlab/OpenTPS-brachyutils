@@ -116,6 +116,7 @@ class DVH:
         roiMask = self._roiMask
         if not(self._doseImage.hasSameGrid(self._roiMask)):
             roiMask = resampler3D.resampleImage3DOnImage3D(self._roiMask, self._doseImage, inPlace=False, fillValue=0.)
+            roiMask.patient = None
         dose = self._doseImage.imageArray
         mask = roiMask.imageArray.astype(bool)
         spacing = self._doseImage.spacing
