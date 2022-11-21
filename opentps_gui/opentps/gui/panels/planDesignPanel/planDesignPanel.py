@@ -155,7 +155,7 @@ class PlanDesignPanel(QWidget):
         planDesign.couchAngles = couchAngles
         planDesign.rangeShifters = rangeShifters
 
-        planDesign.robustness = self._robustSettings
+        planDesign.robustness = self._robustSettings.robustness
 
     def add_new_beam(self):
         beam_number = self._beams.count()

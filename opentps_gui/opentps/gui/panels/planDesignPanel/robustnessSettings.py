@@ -21,16 +21,19 @@ class RobustnessSettings(QWidget):
         self.layout.addWidget(self._robustSettingsLabel)
 
         self._dialog = RobustnessSettingsDialog(planEvaluation=planEvaluation)
-        self._robustParam = self._dialog.robustess
+        self._robustParam = self._dialog.robustness
         self._updateRobustSettings()
 
     @property
-    def robustParam(self):
+    def robustness(self) -> Robustness:
         return self._robustParam
 
     def _openRobustnessSettings(self):
+        self._robustParam = Robustness()
+        self._dialog.robustness = self._robustParam
+
         if (self._dialog.exec()):
-            self._robustParam = self._dialog.robustess
+            self._robustParam = self._dialog.robustness
 
         self._updateRobustSettings()
 
@@ -79,15 +82,6 @@ class RobustnessSettingsDialog(QDialog):
                 ['Dosimetric space (statistical)', 'Error space (statistical)', 'Error space (regular)'])
         else:
             self._strategyBox.addItems(['Disabled', 'Error space (regular)'])
-
-        if (self._robustParam.selectionStrategy == Robustness.Strategies.DISABLED):
-            self._strategyBox.setCurrentText('Disabled')
-        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_REGULAR):
-            self._strategyBox.setCurrentText('Error space (regular)')
-        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_STAT):
-            self._strategyBox.setCurrentText('Error space (statistical)')
-        else:
-            self._strategyBox.setCurrentText('Dosimetric space (statistical)')
 
         self.main_layout.addWidget(self._strategyBox)
         self.main_layout.addSpacing(20)
@@ -169,11 +163,17 @@ class RobustnessSettingsDialog(QDialog):
         self.OkButton.clicked.connect(self.return_parameters)
         self.ButtonLayout.addWidget(self.OkButton)
 
+        self.updateRobustStrategy()
+
     @property
-    def robustess(self) -> Robustness:
+    def robustness(self) -> Robustness:
         self._updateRobustParam()
 
         return self._robustParam
+
+    @robustness.setter
+    def robustness(self, r:Robustness):
+        self._robustParam = r
 
     def _updateRobustParam(self):
         self._robustParam.setupSystematicError = [float(self.syst_setup_x.text()), float(self.syst_setup_y.text()),

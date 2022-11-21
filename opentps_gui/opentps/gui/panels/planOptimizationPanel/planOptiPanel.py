@@ -128,6 +128,7 @@ class PlanOptiPanel(QWidget):
         self.layout.addWidget(self._planStructureLabel)
         self._planStructureComboBox = PatientDataComboBox(patientDataType=PlanDesign, patient=self._patient,
                                                           parent=self)
+        self._planStructureComboBox.selectedDataEvent.connect(self._handlePlanStructure)
         self.layout.addWidget(self._planStructureComboBox)
 
         self._ctLabel = QLabel('CT:')
@@ -179,6 +180,7 @@ class PlanOptiPanel(QWidget):
         self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
 
         self._handleAlgo()
+        self._handlePlanStructure()
 
     @property
     def selectedCT(self):
@@ -187,6 +189,11 @@ class PlanOptiPanel(QWidget):
     @property
     def selectedPlanStructure(self):
         return self._planStructureComboBox.selectedData
+
+    def _handlePlanStructure(self, *args):
+        if not (self.selectedPlanStructure is None):
+            print(self.selectedPlanStructure.name, self.selectedPlanStructure.robustness.selectionStrategy)
+        self._objectivesWidget.planDesign = self.selectedPlanStructure
 
     def setCurrentPatient(self, patient: Patient):
         self._planStructureComboBox.setPatient(patient)
@@ -352,7 +359,10 @@ class ObjectivesWidget(QWidget):
     @planDesign.setter
     def planDesign(self, pd):
         self._planDesign = pd
-        # self._roiWindow.robustnessEnabled = # From plan Design
+
+        if not (self._planDesign is None):
+            print(self._planDesign.robustness.selectionStrategy)
+            self._roiWindow.robustnessEnabled = self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED
 
     def setPatient(self, p: Patient):
         self._roiWindow.patient = p
