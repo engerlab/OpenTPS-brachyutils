@@ -78,16 +78,16 @@ class PlanOptimizer:
         self.plan.planDesign.beamlets.setUnitaryBeamlets(beamletMatrix)
 
         if robust:
-            for s in range(len(self.plan.planDesign.scenarios)):
+            for s in range(len(self.plan.planDesign.robustness.scenarios)):
                 if use_MKL == 1:
                     beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                         sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
-                        self.plan.planDesign.scenarios[s].toSparseMatrix())
+                        self.plan.planDesign.robustness.scenarios[s].toSparseMatrix())
                 else:
                     beamletMatrix = sp.csc_matrix.dot(
                         sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
-                        self.plan.planDesign.scenarios[s].toSparseMatrix())
-                self.plan.planDesign.scenarios[s].setUnitaryBeamlets(beamletMatrix)
+                        self.plan.planDesign.robustness.scenarios[s].toSparseMatrix())
+                self.plan.planDesign.robustness.scenarios[s].setUnitaryBeamlets(beamletMatrix)
 
         objectiveFunction = DoseFidelity(self.plan, self.xSquared)
         self.functions.append(objectiveFunction)
@@ -119,8 +119,8 @@ class PlanOptimizer:
                 .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
 
         # unload scenario beamlets
-        for s in range(len(self.plan.planDesign.scenarios)):
-            self.plan.planDesign.scenarios[s].unload()
+        for s in range(len(self.plan.planDesign.robustness.scenarios)):
+            self.plan.planDesign.robustness.scenarios[s].unload()
 
         # total dose
         logger.info("Total dose calculation ...")
