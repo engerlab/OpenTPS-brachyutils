@@ -7,7 +7,6 @@ from opentps.core.data._patient import Patient
 from opentps.core.io import mcsquareIO
 from opentps.core.io.mcsquareIO import readBDL
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.gui.panels.planDesignPanel.beamDialog import BeamDialog
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
 
@@ -156,8 +155,7 @@ class PlanDesignPanel(QWidget):
         planDesign.couchAngles = couchAngles
         planDesign.rangeShifters = rangeShifters
 
-        self._robustSettings.robustParam = Robustness()
-        planDesign.robustness = self._robustSettings.robustParam
+        planDesign.robustness = self._robustSettings.robustness
 
     def add_new_beam(self):
         beam_number = self._beams.count()

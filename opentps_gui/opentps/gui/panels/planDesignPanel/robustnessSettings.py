@@ -21,21 +21,19 @@ class RobustnessSettings(QWidget):
         self.layout.addWidget(self._robustSettingsLabel)
 
         self._dialog = RobustnessSettingsDialog(planEvaluation=planEvaluation)
-        self._robustParam = self._dialog.robustess
+        self._robustParam = self._dialog.robustness
         self._updateRobustSettings()
 
     @property
-    def robustParam(self) -> Robustness:
+    def robustness(self) -> Robustness:
         return self._robustParam
 
-    @robustParam.setter
-    def robustParam(self, rp:Robustness):
-        self._robustParam = rp
-        self._dialog.robustess = self._robustParam
-
     def _openRobustnessSettings(self):
+        self._robustParam = Robustness()
+        self._dialog.robustness = self._robustParam
+
         if (self._dialog.exec()):
-            self._robustParam = self._dialog.robustess
+            self._robustParam = self._dialog.robustness
 
         self._updateRobustSettings()
 
@@ -165,38 +163,16 @@ class RobustnessSettingsDialog(QDialog):
         self.OkButton.clicked.connect(self.return_parameters)
         self.ButtonLayout.addWidget(self.OkButton)
 
-        self._updateValues()
-
-    def _updateValues(self):
-        if (self._robustParam.selectionStrategy == Robustness.Strategies.DISABLED):
-            self._strategyBox.setCurrentText('Disabled')
-        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_REGULAR):
-            self._strategyBox.setCurrentText('Error space (regular)')
-        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_STAT):
-            self._strategyBox.setCurrentText('Error space (statistical)')
-        else:
-            self._strategyBox.setCurrentText('Dosimetric space (statistical)')
-
-        self.syst_setup_x.setText(str(self._robustParam.setupSystematicError[0]))
-        self.syst_setup_y.setText(str(self._robustParam.setupSystematicError[1]))
-        self.syst_setup_z.setText(str(self._robustParam.setupSystematicError[2]))
-
-        self.rand_setup_x.setText(str(self._robustParam.setupRandomError[0]))
-        self.rand_setup_y.setText(str(self._robustParam.setupRandomError[1]))
-        self.rand_setup_z.setText(str(self._robustParam.setupRandomError[2]))
-
-        self.syst_range.setText(str(self._robustParam.rangeSystematicError))
-
-        #TODO other values to link
+        self.updateRobustStrategy()
 
     @property
-    def robustess(self) -> Robustness:
+    def robustness(self) -> Robustness:
         self._updateRobustParam()
 
         return self._robustParam
 
-    @robustess.setter
-    def robustess(self, r:Robustness):
+    @robustness.setter
+    def robustness(self, r:Robustness):
         self._robustParam = r
 
     def _updateRobustParam(self):

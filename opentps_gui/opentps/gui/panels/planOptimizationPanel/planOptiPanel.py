@@ -192,7 +192,7 @@ class PlanOptiPanel(QWidget):
 
     def _handlePlanStructure(self, *args):
         if not (self.selectedPlanStructure is None):
-            print(self.selectedPlanStructure.robustness, self.selectedPlanStructure.robustness.selectionStrategy)
+            print(self.selectedPlanStructure.name, self.selectedPlanStructure.robustness.selectionStrategy)
         self._objectivesWidget.planDesign = self.selectedPlanStructure
 
     def setCurrentPatient(self, patient: Patient):
