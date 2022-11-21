@@ -7,11 +7,13 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QMainWindow, QAction, QFileDialog, QToolBar, QCheckBox
 
 from opentps.core.data.images import ROIMask
-from opentps.core.data.plan._objectivesList import FidObjective
+from opentps.core.data.plan import PlanDesign
+from opentps.core.data.plan._objectivesList import FidObjective, ObjectivesList
 from opentps.core.data._patient import Patient
 from opentps.core import Event
 
 import opentps.gui.res.icons as IconModule
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 
 
 class ObjectivesWindow(QMainWindow):
@@ -47,6 +49,14 @@ class ObjectivesWindow(QMainWindow):
     def patient(self, p:Patient):
         self._roitTable.patient = p
 
+    @property
+    def planDesign(self) -> PlanDesign:
+        return self._roitTable.planDesign
+
+    @planDesign.setter
+    def planDesign(self, pd: PlanDesign):
+        self._roitTable.planDesign = pd
+
     def getObjectiveTerms(self) -> Sequence[FidObjective]:
         return self._roitTable.getObjectiveTerms()
 
@@ -79,6 +89,9 @@ class ROITable(QTableWidget):
     def __init__(self, viewController, parent=None):
         super().__init__(0, 8, parent)
 
+        self.objectivesModifiedEvent = Event()
+        self.robustnessEnabledEvent = Event(bool)
+
         self.setHorizontalHeaderLabels(['ROI', 'Robust', 'Weight', 'Dmin', 'Weight', 'Dmax', 'Weight', 'Dmean'])
         self._roiCol = 0
         self._robustCol = 1
@@ -89,9 +102,9 @@ class ROITable(QTableWidget):
         self._weightMeanCol = 6
         self._dMeanCol = 7
 
-        self.objectivesModifiedEvent = Event()
-
+        self._planDesign = None
         self._patient:Optional[Patient] = None
+        self._robustnessEnabled = True
         self._rois = []
 
         self._viewController = viewController
@@ -104,6 +117,17 @@ class ROITable(QTableWidget):
             self._patient.rtStructRemovedSignal.disconnect(self.updateTable)
 
         super().closeEvent(QCloseEvent)
+
+    @property
+    def planDesign(self) -> PlanDesign:
+        return self._planDesign
+
+    @planDesign.setter
+    def planDesign(self, pd:PlanDesign):
+        self.updateTable()
+        self._planDesign = pd
+        self.robustnessEnabled = self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED
+        self.applyTemplate(self._planDesign.objectives.fidObjList)
 
     @property
     def patient(self) -> Optional[Patient]:
@@ -125,6 +149,23 @@ class ROITable(QTableWidget):
             self._patient.rtStructRemovedSignal.connect(self.updateTable)
 
         self.updateTable()
+
+    @property
+    def robustnessEnabled(self):
+        return self._robustnessEnabled
+
+    @robustnessEnabled.setter
+    def robustnessEnabled(self, enabled: bool):
+        if self._robustnessEnabled == enabled:
+            return
+
+        for i, roi in enumerate(self._rois):
+            if not enabled:
+                self.cellWidget(i, self._robustCol).setChecked(False)
+            self.cellWidget(i, self._robustCol).setEnabled(enabled)
+
+        self._robustnessEnabled = enabled
+        self.robustnessEnabledEvent.emit(self._robustnessEnabled)
 
     def updateTable(self, *args):
         self.reset()
@@ -150,7 +191,9 @@ class ROITable(QTableWidget):
         for rtStruct in patient.rtStructs:
             for contour in rtStruct.contours:
                 self.setItem(i, self._roiCol, QTableWidgetItem(contour.name))
-                self.setCellWidget(i, self._robustCol, QCheckBox(self))
+                robustCheckBox = QCheckBox(self)
+                robustCheckBox.setEnabled(self._robustnessEnabled)
+                self.setCellWidget(i, self._robustCol, robustCheckBox)
                 self.setItem(i, self._weightMinCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
                 self.setItem(i, self._dMinCol, QTableWidgetItem(str(self.DMIN_THRESH)))
                 self.setItem(i, self._weightMaxCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
@@ -164,7 +207,9 @@ class ROITable(QTableWidget):
 
         for roiMask in patient.roiMasks:
             self.setItem(i, self._roiCol, QTableWidgetItem(roiMask.name))
-            self.setCellWidget(i, self._robustCol, QCheckBox(self))
+            robustCheckBox = QCheckBox(self)
+            robustCheckBox.setEnabled(self._robustnessEnabled)
+            self.setCellWidget(i, self._robustCol, robustCheckBox)
             self.setItem(i, self._weightMinCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
             self.setItem(i, self._dMinCol, QTableWidgetItem(str(self.DMIN_THRESH)))
             self.setItem(i, self._weightMaxCol, QTableWidgetItem(str(self.DEFAULT_WEIGHT)))
@@ -273,3 +318,10 @@ class ROITable(QTableWidget):
                 rois.append(self._rois[i])
 
         return rois
+
+    def _setObjectives(self):
+        objectiveList = ObjectivesList()
+        for obj in self._objectivesWidget.objectives:
+            objectiveList.append(obj)
+
+        self._planDesign.objectives = objectiveList

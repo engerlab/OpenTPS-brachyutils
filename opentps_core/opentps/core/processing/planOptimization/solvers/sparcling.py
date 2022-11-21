@@ -29,6 +29,8 @@ class SPArCling:
         if self.mode == "BLFree":
             raise NotImplementedError
         else:
+            raise NotImplementedError
+
             if self.coreOptimizer == "Scipy-LBFGS":
                 solver = bfgs.ScipyOpt('BFGS', **kwargs)
             elif self.coreOptimizer == 'Scipy-LBFGS':
@@ -43,43 +45,11 @@ class SPArCling:
                 solver = lp.LP(self.plan, **kwargs)
 
             # step 1: optimize initial plan
-            initialResult = solver.solve(func, x0)
+            #initialResult = solver.solve(func, x0)
 
 
     def splitBeams(self):
-        newBeams = []
-        for beam in self.plan.Beams:
-            # create sub-beams
-            beam1 = beam.__deepcopy__
-            beam1.gantryAngle = beam.gantryAngle - self.angularStep / 2
-            if beam1.gantryAngle < 0: beam1.gantryAngle += 360
-            if beam1.gantryAngle >= 360: beam1.gantryAngle -= 360
-            beam2 = beam.__deepcopy__
-            beam2.GantryAngle = beam.gantryAngle + self.angularStep / 2
-            if beam2.gantryAngle < 0: beam2.gantryAngle += 360
-            if beam2.gantryAngle >= 360: beam2.gantryAngle -= 360
-
-            if len(beam.layers) == 1:
-                layer = beam.layers[0].__deepcopy__
-                beam1.Layers[-1] = layer
-                layer2 = beam.layers[0].__deepcopy__
-                beam2.Layers[-1] = layer2
-
-            else:
-                MU1 = MU2 = 0
-                for j, layer in enumerate(beam.layers):
-                    if j < int(len(beam.layers) / 2):
-                        MU1 += sum(layer.ScanSpotMetersetWeights)
-                    else:
-                        MU2 += sum(layer.ScanSpotMetersetWeights)
-
-                beam1.Layers = beam.layers[:int(len(beam.layers) / 2)]
-                beam2.Layers = beam.layers[int(len(beam.layers) / 2): len(beam.layers)]
-
-            newBeams.append(beam1)
-            newBeams.append(beam2)
-
-        self.plan.Beams = newBeams
+        pass
 
     def removeLayers(self):
         # this function already exists in rtplan - might use it instead

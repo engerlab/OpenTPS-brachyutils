@@ -21,6 +21,10 @@ class ConvexSolver(object):
         self.step = step
         self.accel = baseAccel.Dummy() if accel is None else accel
         self.params = kwargs
+        self.params['dtol'] = self.params.get('dtol', None)
+        self.params['xtol'] = self.params.get('xtol', None)
+        self.params['atol'] = self.params.get('atol', None)
+        self.params['ftol'] = self.params.get('ftol', 1e-3)
 
     def solve(self, functions, x0):
         """
@@ -151,7 +155,6 @@ class ConvexSolver(object):
         """
         self.sol[:] = self.accel.update_sol(self, objective, niter)
         self.step = self.accel.update_step(self, objective, niter)
-        print(self.step)
         self._algo()
 
     def _algo(self):
