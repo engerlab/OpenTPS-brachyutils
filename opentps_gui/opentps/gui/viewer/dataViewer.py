@@ -135,7 +135,6 @@ class DataViewer(QWidget):
 
     def closeEvent(self, QCloseEvent):
         self.cachedStaticImage3DViewer.close()
-        return
         self.cachedStaticImage2DViewer.close()
         self.cachedStaticImage3DViewer_3D.close()
         self.cachedDynamicImage3DViewer.close()
