@@ -163,7 +163,7 @@ class RobustnessSettingsDialog(QDialog):
         self.ErrorLayout.addWidget(QLabel('%'), 7, 3)
         self.main_layout.addSpacing(30)
 
-        self._strategyBox.currentIndexChanged.connect(self.update_robust_strategy)
+        self._strategyBox.currentIndexChanged.connect(self.updateRobustStrategy)
         self.syst_setup_x.textChanged.connect(self.recompute_margin)
         self.syst_setup_y.textChanged.connect(self.recompute_margin)
         self.syst_setup_z.textChanged.connect(self.recompute_margin)
@@ -172,7 +172,7 @@ class RobustnessSettingsDialog(QDialog):
         self.rand_setup_z.textChanged.connect(self.recompute_margin)
         self.syst_range.textChanged.connect(self.recompute_margin)
         self.recompute_margin()
-        if (self._strategyBox.currentText() == 'Disabled'): self.update_robust_strategy()
+        if (self._strategyBox.currentText() == 'Disabled'): self.updateRobustStrategy()
 
         # buttons
         self.ButtonLayout = QHBoxLayout()
@@ -221,9 +221,9 @@ class RobustnessSettingsDialog(QDialog):
         elif strategy == RobustnessParameters.Strategies.ERRORSPACE_REGULAR:
             self._strategyBox.setCurrentText('Error space (regular)')
 
-        self.update_robust_strategy()
+        self.updateRobustStrategy()
 
-    def update_robust_strategy(self):
+    def updateRobustStrategy(self):
         if (self._strategyBox.currentText() == 'Disabled'):
             self.syst_setup_x.setEnabled(False)
             self.syst_setup_y.setEnabled(False)
