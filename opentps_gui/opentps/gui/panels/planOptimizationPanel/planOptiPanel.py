@@ -109,8 +109,8 @@ class mcsquareCalculationWindow(QDialog):
         self.accept()
 
 class PlanOptiPanel(QWidget):
-    _optiAlgos = ["Beamlet-free MCsquare", "Scipy-LBFGS", "Scipy-BFGS", "In-house Gradient", "In-house LBFGS", "In-house BFGS", "FISTA",
-                  "LP"]
+    _optiAlgos = ["Scipy-LBFGS (recommanded)", "Scipy-BFGS", "In-house Gradient", "In-house LBFGS", "In-house BFGS", "FISTA",
+                  "LP", "Beamlet-free MCsquare"]
 
     def __init__(self, viewController):
         QWidget.__init__(self)
@@ -262,7 +262,7 @@ class PlanOptiPanel(QWidget):
             self._configButton.setEnabled(False)
         else:
             self._beamletBox.setEnabled(True)
-            if self._selectedAlgo in ["Scipy-LBFGS", "Scipy-BFGS", "In-house Gradient", "In-house LBFGS", "In-house BFGS", "FISTA"]:
+            if self._selectedAlgo in ["Scipy-LBFGS (recommanded)", "Scipy-BFGS", "In-house Gradient", "In-house LBFGS", "In-house BFGS", "FISTA"]:
                 self._configButton.setEnabled(True)
                 self._optiConfig['method'] = self._selectedAlgo
             else:
@@ -285,7 +285,7 @@ class PlanOptiPanel(QWidget):
         else:
             if self._selectedAlgo == "Scipy-BFGS":
                 method = 'Scipy-BFGS'
-            if self._selectedAlgo == "Scipy-LBFGS":
+            if self._selectedAlgo == "Scipy-LBFGS (recommanded)":
                 method = 'Scipy-LBFGS'
             elif self._selectedAlgo == "In-house BFGS":
                 method = 'BFGS'
