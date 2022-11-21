@@ -100,9 +100,9 @@ class ThreeViewsGrid(QWidget):
         self.dropEvent = lambda event: self._dropEvent(event)
 
     def close(self):
-        self._viewer0.close()
-        self._viewer1.close()
-        self._viewer2.close()
+        self._viewer0.reset()
+        self._viewer1.reset()
+        self._viewer2.reset()
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():

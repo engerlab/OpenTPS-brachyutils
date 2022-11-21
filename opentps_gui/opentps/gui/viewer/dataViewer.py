@@ -133,6 +133,15 @@ class DataViewer(QWidget):
         # Logical control of the DataViewer is set here. We might want to move this to dedicated controller class
         self._initializeControl()
 
+    def closeEvent(self, QCloseEvent):
+        self.cachedStaticImage3DViewer.close()
+        return
+        self.cachedStaticImage2DViewer.close()
+        self.cachedStaticImage3DViewer_3D.close()
+        self.cachedDynamicImage3DViewer.close()
+        self.cachedDynamicImage2DViewer.close()
+        super().closeEvent(QCloseEvent)
+
     def _addViewersToLayout(self):
         self._mainLayout.addWidget(self._toolbar)
         self._mainLayout.addWidget(self._dynImage3DViewer)

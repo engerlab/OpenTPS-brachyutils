@@ -61,6 +61,10 @@ class GridFourElements(Grid):
 
         self._initializeViewers()
 
+    def closeEvent(self, QCloseEvent):
+
+        super().closeEvent(QCloseEvent)
+
     def _initializeViewers(self):
         # Fill grid elements with data viewers
         gridElement = DoseComparisonDataViewer(self._viewController)

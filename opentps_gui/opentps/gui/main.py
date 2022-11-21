@@ -39,5 +39,8 @@ def run():
     _viewController.mainWindow.show()
     app.exec_()
 
+    _viewController.mainWindow.close()
+    #del _viewController.mainWindow
+
 if __name__ == '__main__':
     run()

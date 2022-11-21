@@ -98,13 +98,17 @@ class Image2DViewer(QWidget):
         self._renderWindow.AddRenderer(self._renderer)
 
     def closeEvent(self, QCloseEvent):
-        self.close()
+        if self._closed:
+            return
+
+        self._closed = True
+        self.reset()
         self._renderWindow.Finalize()
         self._vtkWidget.close()
         del self._renderWindow, self._vtkWidget
         super().closeEvent(QCloseEvent)
 
-    def close(self):
+    def reset(self):
         if not (self._primaryImage2DLayer.image is None):
             self._primaryImage2DLayer.image.selectedPositionChangedSignal.disconnect(self._handlePosition)
             self._primaryImage2DLayer.image.nameChangedSignal.disconnect(self._setPrimaryName)
