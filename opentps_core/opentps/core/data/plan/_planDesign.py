@@ -14,6 +14,7 @@ from opentps.core.data.plan import _rangeShifter
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data._patientData import PatientData
 from opentps.core.data.plan._objectivesList import ObjectivesList
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.planOptimization.planInitializer import PlanInitializer
 
 logger = logging.getLogger(__name__)
@@ -42,8 +43,7 @@ class PlanDesign(PatientData):
         self.beamlets = []
         self.beamletsLET = []
 
-        self.robustOpti = {"Strategy": "Disabled", "syst_setup": [0.0, 0.0, 0.0], "rand_setup": [0.0, 0.0, 0.0],
-                           "syst_range": 0.0}
+        self.robustness = Robustness()
         self.scenarios = []
         self.numScenarios = 0
 

@@ -67,10 +67,7 @@ def run():
     mc2.beamModel = bdl
     mc2.nbPrimaries = 5e4
     mc2.ctCalibration = ctCalibration
-    mc2.setupSystematicError = [5.0, 5.0, 5.0]  # mm
-    mc2.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
-    mc2.rangeSystematicError = 3.0  # %
-    mc2.robustnessStrategy = "ErrorSpace_regular"
+
 
     # Load / Generate new plan
     plan_file = os.path.join(output_path, "RobustPlan_notCropped.tps")
@@ -85,6 +82,12 @@ def run():
         planDesign.beamNames = beamNames
         planDesign.couchAngles = couchAngles
         planDesign.calibration = ctCalibration
+        # Robustness settings
+        planDesign.robustness.setupSystematicError = [5.0, 5.0, 5.0]  # mm
+        planDesign.robustness.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
+        planDesign.robustness.rangeSystematicError = 3.0  # %
+        planDesign.robustness.robustnessStrategy = "ErrorSpace_regular"
+
         planDesign.spotSpacing = 7.0
         planDesign.layerSpacing = 6.0
         planDesign.targetMargin = max(planDesign.spotSpacing, planDesign.layerSpacing) + max(mc2.setupSystematicError)

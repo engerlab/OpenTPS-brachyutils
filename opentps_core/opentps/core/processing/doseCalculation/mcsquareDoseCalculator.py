@@ -186,14 +186,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> Robustness:
         logger.info("Prepare MCsquare Robust Dose calculation")
-        scenarios = Robustness()
-        if self.robustnessStrategy == "DoseSpace":
-            scenarios.selectionStrategy = "Dosimetric"
-        else:
-            scenarios.selectionStrategy = "Error"
-        scenarios.setupSystematicError = self.setupSystematicError
-        scenarios.setupRandomError = self.setupRandomError
-        scenarios.rangeSystematicError = self.rangeSystematicError
+        scenarios = plan.planDesign.robustness
 
         self._ct = ct
         self._plan = plan
