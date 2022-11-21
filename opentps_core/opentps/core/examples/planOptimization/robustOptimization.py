@@ -86,19 +86,19 @@ def run():
         planDesign.robustness.setupSystematicError = [5.0, 5.0, 5.0]  # mm
         planDesign.robustness.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
         planDesign.robustness.rangeSystematicError = 3.0  # %
-        planDesign.robustness.robustnessStrategy = "ErrorSpace_regular"
+        planDesign.robustness.selectionStrategy = planDesign.robustness.Strategies.ERRORSPACE_REGULAR
 
         planDesign.spotSpacing = 7.0
         planDesign.layerSpacing = 6.0
-        planDesign.targetMargin = max(planDesign.spotSpacing, planDesign.layerSpacing) + max(mc2.setupSystematicError)
+        planDesign.targetMargin = max(planDesign.spotSpacing, planDesign.layerSpacing) + max(planDesign.robustness.setupSystematicError)
 
         plan = planDesign.buildPlan()  # Spot placement
         plan.PlanName = "RobustPlan"
 
         nominal, scenarios = mc2.computeRobustScenarioBeamlets(ct, plan, roi=[roi], storePath=output_path)
         plan.planDesign.beamlets = nominal
-        plan.planDesign.scenarios = scenarios
-        plan.planDesign.numScenarios = len(scenarios)
+        plan.planDesign.robustness.scenarios = scenarios
+        plan.planDesign.robustness.numScenarios = len(scenarios)
 
         #saveRTPlan(plan, plan_file)
 

@@ -44,8 +44,6 @@ class PlanDesign(PatientData):
         self.beamletsLET = []
 
         self.robustness = Robustness()
-        self.scenarios = []
-        self.numScenarios = 0
 
     @property
     def scoringVoxelSpacing(self) -> Sequence[float]:

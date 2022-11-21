@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, pyqtSignal
 from opentps.core.data import Patient
 from opentps.core.data.plan import RTPlan
+from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
@@ -37,7 +38,7 @@ class PlanEvaluationPanel(QWidget):
         self.layout.addLayout(self.button_hLoayout)
         self.ComputeScenariosButton = QPushButton('Compute \n Scenarios')
         self.button_hLoayout.addWidget(self.ComputeScenariosButton)
-        self.ComputeScenariosButton.clicked.connect(self.compute_robustness_scenarios)
+        self.ComputeScenariosButton.clicked.connect(self.computeRobustnessScenarios)
         self.layout.addSpacing(40)
 
         self.layout.addWidget(QLabel('<b>Displayed dose:</b>'))
@@ -86,7 +87,7 @@ class PlanEvaluationPanel(QWidget):
     def selectedPlan(self):
         return self._planComboBox.selectedPlan
 
-    def compute_robustness_scenarios(self):
+    def computeRobustnessScenarios(self):
         # TODO: Take CT, target, etc. from plan.planDesign. Same for MC2 config
 
         # find selected CT image
@@ -109,31 +110,32 @@ class PlanEvaluationPanel(QWidget):
         AllContours = self.Patients.list[patient_id].RTstructs[struct_id].Contours
 
         # configure MCsquare module
-        mc2 = MCsquare()
-        mc2.BDL.selected_BDL = self.Dose_calculation_param["BDL"]
-        mc2.Scanner.selected_Scanner = self.Dose_calculation_param["Scanner"]
-        mc2.NumProtons = self.Dose_calculation_param["NumProtons"]
-        mc2.MaxUncertainty = self.Dose_calculation_param["MaxUncertainty"]
-        mc2.dose2water = self.Dose_calculation_param["dose2water"]
-        mc2.SetupSystematicError = self.RobustEval["syst_setup"]
-        mc2.SetupRandomError = self.RobustEval["rand_setup"]
-        mc2.RangeSystematicError = self.RobustEval["syst_range"]
+        doseCalculator = MCsquareDoseCalculator()
+        doseCalculator.BDL.selected_BDL = self.Dose_calculation_param["BDL"]
+        doseCalculator.Scanner.selected_Scanner = self.Dose_calculation_param["Scanner"]
+        doseCalculator.NumProtons = self.Dose_calculation_param["NumProtons"]
+        doseCalculator.MaxUncertainty = self.Dose_calculation_param["MaxUncertainty"]
+        doseCalculator.dose2water = self.Dose_calculation_param["dose2water"]
+        doseCalculator.SetupSystematicError = self.RobustEval["syst_setup"]
+        doseCalculator.SetupRandomError = self.RobustEval["rand_setup"]
+        doseCalculator.RangeSystematicError = self.RobustEval["syst_range"]
+
         if (self.RobustEval["Strategy"] == 'DoseSpace'):
-            mc2.Robustness_Strategy = "DoseSpace"
+            doseCalculator.Robustness_Strategy = "DoseSpace"
         elif (self.RobustEval["Strategy"] == 'ErrorSpace_stat'):
-            mc2.Robustness_Strategy = "ErrorSpace_stat"
+            doseCalculator.Robustness_Strategy = "ErrorSpace_stat"
         else:
-            mc2.Robustness_Strategy = "ErrorSpace_regular"
+            doseCalculator.Robustness_Strategy = "ErrorSpace_regular"
 
         # Crop CT image with contour:
         if (self.Dose_calculation_param["CropContour"] == "None"):
-            mc2.Crop_CT_contour = {}
+            doseCalculator.Crop_CT_contour = {}
         else:
             patient_id, struct_id, contour_id = self.Patients.find_contour(self.Dose_calculation_param["CropContour"])
-            mc2.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
+            doseCalculator.Crop_CT_contour = self.Patients.list[patient_id].RTstructs[struct_id].Contours[contour_id]
 
         # run MCsquare simulation
-        scenarios = mc2.MCsquare_RobustScenario_calculation(ct, plan, AllContours)
+        scenarios = doseCalculator.MCsquare_RobustScenario_calculation(ct, plan, AllContours)
 
         # save data
         output_path = os.path.join(self.data_path, "OpenTPS")

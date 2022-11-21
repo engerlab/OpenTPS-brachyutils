@@ -66,24 +66,25 @@ def run():
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
     else:
-        print("You need to design and optimize a plan first - See SimpleOptimization script.") 
+        print("You need to design and optimize a plan first - See SimpleOptimization or robustOptimization script.")
 
     # Load / Generate scenarios
     scenario_folder = os.path.join(output_path,'RobustnessTest_Nov-16-2022_14-30-28_')
     if os.path.isdir(scenario_folder):
         scenarios = Robustness()
         scenarios.selectionStrategy = Robustness.Strategies.ERRORSPACE_REGULAR
-        scenarios.setupSystematicError = mc2.setupSystematicError
-        scenarios.setupRandomError = mc2.setupRandomError
-        scenarios.rangeSystematicError = mc2.rangeSystematicError
+        scenarios.setupSystematicError = plan.planDesign.robustness.setupSystematicError
+        scenarios.setupRandomError = plan.planDesign.robustness.setupRandomError
+        scenarios.rangeSystematicError = plan.planDesign.robustness.rangeSystematicError
         scenarios.load(scenario_folder)
     else:
         # MCsquare config for scenario dose computation
         mc2.nbPrimaries = 1e7
-        mc2.setupSystematicError = [5.0, 5.0, 5.0]  # mm
-        mc2.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
-        mc2.rangeSystematicError = 3.0  # %
-        mc2.robustnessStrategy = "ErrorSpace_regular"
+        plan.planDesign.robustness = Robustness()
+        plan.planDesign.robustness.setupSystematicError = [5.0, 5.0, 5.0]  # mm
+        plan.planDesign.robustness.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
+        plan.planDesign.robustness.rangeSystematicError = 3.0  # %
+        plan.planDesign.robustness.selectionStrategy = Robustness.Strategies.ERRORSPACE_REGULAR
         # run MCsquare simulation
         scenarios = mc2.computeRobustScenario(ct, plan, [roi])
         if not os.path.isdir(output_path):
