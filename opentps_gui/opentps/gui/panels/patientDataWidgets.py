@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QComboBox
+from opentps.core import Event
 from opentps.core.data import Patient, PatientData
 
 
@@ -6,9 +7,16 @@ class PatientDataComboBox(QComboBox):
     def __init__(self, patientDataType, patient=None, parent=None):
         super().__init__(parent=parent)
 
+        self.selectedDataEvent = Event()
+
+        self._prevEventData = None
+
         self._patient = None
         self._patientDataType = patientDataType
         self._patientData = []
+
+        self.currentIndexChanged.connect(self._handleNewData)
+        self.currentTextChanged.connect(self._handleNewData)
 
         self.setPatient(patient)
 
@@ -16,6 +24,13 @@ class PatientDataComboBox(QComboBox):
         self.setPatient(None)
 
         super().closeEvent(QCloseEvent)
+
+    def _handleNewData(self):
+        if self._prevEventData == self.selectedData:
+            return
+
+        self._prevEventData = self.selectedData
+        self.selectedDataEvent.emit(self.selectedData)
 
     def setPatient(self, patient:Patient):
         if not (self._patient is None):
@@ -52,6 +67,8 @@ class PatientDataComboBox(QComboBox):
             if len(self._patientData):
                 self.selectedData = self._patientData[0]
 
+        self._handleNewData()
+
     def _updateComboBox(self):
         if self._checkIfSelfDeleted():
             return
@@ -76,6 +93,8 @@ class PatientDataComboBox(QComboBox):
         self.addItem(data.name, data)
         self._patientData.append(data)
         data.nameChangedSignal.connect(self._handleDataChanged)
+
+        self._handleNewData()
 
     def _removeData(self, data:PatientData):
         if self._checkIfSelfDeleted():

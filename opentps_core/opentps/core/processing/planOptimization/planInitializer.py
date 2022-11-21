@@ -180,6 +180,7 @@ class PlanInitializer:
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)
+        rspImage.patient = None
         self._beamInitializer.rspImage = rspImage
 
         imgBordersX = [rspImage.origin[0], rspImage.origin[0] + rspImage.gridSize[0] * rspImage.spacing[0]]

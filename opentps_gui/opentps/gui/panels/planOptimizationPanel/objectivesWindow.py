@@ -7,11 +7,13 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QMainWindow, QAction, QFileDialog, QToolBar, QCheckBox
 
 from opentps.core.data.images import ROIMask
-from opentps.core.data.plan._objectivesList import FidObjective
+from opentps.core.data.plan import PlanDesign
+from opentps.core.data.plan._objectivesList import FidObjective, ObjectivesList
 from opentps.core.data._patient import Patient
 from opentps.core import Event
 
 import opentps.gui.res.icons as IconModule
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 
 
 class ObjectivesWindow(QMainWindow):
@@ -48,12 +50,12 @@ class ObjectivesWindow(QMainWindow):
         self._roitTable.patient = p
 
     @property
-    def robustnessEnabled(self):
-        return self._roitTable.robustnessEnabled
+    def planDesign(self) -> PlanDesign:
+        return self._roitTable.planDesign
 
-    @robustnessEnabled.setter
-    def robustnessEnabled(self, enabled: bool):
-        self._roitTable.robustnessEnabled = enabled
+    @planDesign.setter
+    def planDesign(self, pd: PlanDesign):
+        self._roitTable.planDesign = pd
 
     def getObjectiveTerms(self) -> Sequence[FidObjective]:
         return self._roitTable.getObjectiveTerms()
@@ -100,6 +102,7 @@ class ROITable(QTableWidget):
         self._weightMeanCol = 6
         self._dMeanCol = 7
 
+        self._planDesign = None
         self._patient:Optional[Patient] = None
         self._robustnessEnabled = True
         self._rois = []
@@ -114,6 +117,17 @@ class ROITable(QTableWidget):
             self._patient.rtStructRemovedSignal.disconnect(self.updateTable)
 
         super().closeEvent(QCloseEvent)
+
+    @property
+    def planDesign(self) -> PlanDesign:
+        return self._planDesign
+
+    @planDesign.setter
+    def planDesign(self, pd:PlanDesign):
+        self.updateTable()
+        self._planDesign = pd
+        self.robustnessEnabled = self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED
+        self.applyTemplate(self._planDesign.objectives.fidObjList)
 
     @property
     def patient(self) -> Optional[Patient]:
@@ -146,8 +160,9 @@ class ROITable(QTableWidget):
             return
 
         for i, roi in enumerate(self._rois):
-            self.getCellWidget(i, self._robustCol).setChecked(False)
-            self.getCellWidget(i, self._robustCol).setEnabled(False)
+            if not enabled:
+                self.cellWidget(i, self._robustCol).setChecked(False)
+            self.cellWidget(i, self._robustCol).setEnabled(enabled)
 
         self._robustnessEnabled = enabled
         self.robustnessEnabledEvent.emit(self._robustnessEnabled)
@@ -303,3 +318,10 @@ class ROITable(QTableWidget):
                 rois.append(self._rois[i])
 
         return rois
+
+    def _setObjectives(self):
+        objectiveList = ObjectivesList()
+        for obj in self._objectivesWidget.objectives:
+            objectiveList.append(obj)
+
+        self._planDesign.objectives = objectiveList

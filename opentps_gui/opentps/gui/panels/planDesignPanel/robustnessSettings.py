@@ -1,8 +1,7 @@
-from enum import Enum
-from typing import Sequence
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 
 
 class RobustnessSettings(QWidget):
@@ -22,61 +21,50 @@ class RobustnessSettings(QWidget):
         self.layout.addWidget(self._robustSettingsLabel)
 
         self._dialog = RobustnessSettingsDialog(planEvaluation=planEvaluation)
-        self._robustParam = self._dialog.robustParam
+        self._robustParam = self._dialog.robustness
         self._updateRobustSettings()
 
     @property
-    def robustParam(self):
+    def robustness(self) -> Robustness:
         return self._robustParam
 
     def _openRobustnessSettings(self):
+        self._robustParam = Robustness()
+        self._dialog.robustness = self._robustParam
+
         if (self._dialog.exec()):
-            self._robustParam = self._dialog.robustParam
+            self._robustParam = self._dialog.robustness
 
         self._updateRobustSettings()
 
     def _updateRobustSettings(self):
         RobustSettings = ''
-        if (self._robustParam.strategy == self._robustParam.Strategies.DISABLED):
+        if (self._robustParam.selectionStrategy == self._robustParam.Strategies.DISABLED):
             RobustSettings = 'No robust settings'
-        elif (self._robustParam.strategy == self._robustParam.Strategies.ERRORSPACE_REGULAR):
+        elif (self._robustParam.selectionStrategy == self._robustParam.Strategies.ERRORSPACE_REGULAR):
             RobustSettings += '<b>Scenario</b>: '
             RobustSettings += 'Error space (regular)<br>'
-            RobustSettings += 'Syst. setup: E<sub>S</sub> = ' + str(self._robustParam.systSetup) + ' mm<br>'
-            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.randSetup) + ' mm<br>'
-            RobustSettings += 'Syst. range: E<sub>R</sub> = ' + str(self._robustParam.systRange) + ' %<br>'
-        elif (self._robustParam.strategy == self._robustParam.Strategies.ERRORSPACE_STAT):
+            RobustSettings += 'Syst. setup: E<sub>S</sub> = ' + str(self._robustParam.setupSystematicError) + ' mm<br>'
+            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.setupRandomError) + ' mm<br>'
+            RobustSettings += 'Syst. range: E<sub>R</sub> = ' + str(self._robustParam.rangeSystematicError) + ' %<br>'
+        elif (self._robustParam.selectionStrategy == self._robustParam.Strategies.ERRORSPACE_STAT):
             RobustSettings += '<b>Scenario</b>: '
             RobustSettings += 'Error space (statistical)<br>'
-            RobustSettings += 'Syst. setup: &Sigma;<sub>S</sub> = ' + str(self._robustParam.systSetup) + ' mm<br>'
-            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.randSetup) + ' mm<br>'
-            RobustSettings += 'Syst. range: &Sigma;<sub>R</sub> = ' + str(self._robustParam.systRange) + ' %<br>'
-        elif self._robustParam.strategy == self._robustParam.Strategies.DOSESPACE:
+            RobustSettings += 'Syst. setup: &Sigma;<sub>S</sub> = ' + str(self._robustParam.setupSystematicError) + ' mm<br>'
+            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.setupRandomError) + ' mm<br>'
+            RobustSettings += 'Syst. range: &Sigma;<sub>R</sub> = ' + str(self._robustParam.rangeSystematicError) + ' %<br>'
+        elif self._robustParam.selectionStrategy == self._robustParam.Strategies.DOSIMETRIC:
             RobustSettings += '<b>Scenario</b>: '
             RobustSettings += 'Dosimetric space (statistical)<br>'
-            RobustSettings += 'Syst. setup: &Sigma;<sub>S</sub> = ' + str(self._robustParam.systSetup) + ' mm<br>'
-            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.randSetup) + ' mm<br>'
-            RobustSettings += 'Syst. range: &Sigma;<sub>R</sub> = ' + str(self._robustParam.systRange) + ' %<br>'
+            RobustSettings += 'Syst. setup: &Sigma;<sub>S</sub> = ' + str(self._robustParam.setupSystematicError) + ' mm<br>'
+            RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.setupRandomError) + ' mm<br>'
+            RobustSettings += 'Syst. range: &Sigma;<sub>R</sub> = ' + str(self._robustParam.rangeSystematicError) + ' %<br>'
 
         self._robustSettingsLabel.setText(RobustSettings)
 
-class RobustnessParameters:
-    class Strategies(Enum):
-        DEFAULT = "DISABLED"
-        DISABLED = "DISABLED"
-        ERRORSPACE_REGULAR = "ERRORSPACE_REGULAR"
-        ERRORSPACE_STAT = "ERRORSPACE_STAT"
-        DOSESPACE = "DOSESPACE"
-
-    def __init__(self):
-        self.strategy = self.Strategies.DEFAULT
-        self.systSetup:Sequence[float] = [5., 5., 5.]
-        self.randSetup:Sequence[float] = [0., 0., 0.]
-        self.systRange:float = 3.
-
 class RobustnessSettingsDialog(QDialog):
     def __init__(self, planEvaluation=False):
-        self._robustParam = RobustnessParameters()
+        self._robustParam = Robustness()
 
         # initialize the window
         QDialog.__init__(self)
@@ -95,15 +83,6 @@ class RobustnessSettingsDialog(QDialog):
         else:
             self._strategyBox.addItems(['Disabled', 'Error space (regular)'])
 
-        if (self._robustParam.strategy == RobustnessParameters.Strategies.DISABLED):
-            self._strategyBox.setCurrentText('Disabled')
-        elif (self._robustParam.strategy == RobustnessParameters.Strategies.ERRORSPACE_REGULAR):
-            self._strategyBox.setCurrentText('Error space (regular)')
-        elif (self._robustParam.strategy == RobustnessParameters.Strategies.ERRORSPACE_STAT):
-            self._strategyBox.setCurrentText('Error space (statistical)')
-        else:
-            self._strategyBox.setCurrentText('Dosimetric space (statistical)')
-
         self.main_layout.addWidget(self._strategyBox)
         self.main_layout.addSpacing(20)
         self.ErrorLayout = QGridLayout()
@@ -116,26 +95,26 @@ class RobustnessSettingsDialog(QDialog):
         self.ErrorLayout.addWidget(QLabel('Systematic'), 1, 0)
         self.SigmaS_label = QLabel('&Sigma;<sub>S</sub>')
         self.ErrorLayout.addWidget(self.SigmaS_label, 1, 1)
-        self.syst_setup_x = QLineEdit(str(self._robustParam.systSetup[0]))
+        self.syst_setup_x = QLineEdit(str(self._robustParam.setupSystematicError[0]))
         self.syst_setup_x.setMaximumWidth(30)
         self.ErrorLayout.addWidget(self.syst_setup_x, 1, 2)
-        self.syst_setup_y = QLineEdit(str(self._robustParam.systSetup[1]))
+        self.syst_setup_y = QLineEdit(str(self._robustParam.setupSystematicError[1]))
         self.syst_setup_y.setMaximumWidth(30)
         self.ErrorLayout.addWidget(self.syst_setup_y, 1, 3)
-        self.syst_setup_z = QLineEdit(str(self._robustParam.systSetup[2]))
+        self.syst_setup_z = QLineEdit(str(self._robustParam.setupSystematicError[2]))
         self.syst_setup_z.setMaximumWidth(30)
         self.ErrorLayout.addWidget(self.syst_setup_z, 1, 4)
         self.ErrorLayout.addWidget(QLabel('mm'), 1, 5)
         self.ErrorLayout.addWidget(QLabel('Random'), 2, 0)
         self.sigmaS_label = QLabel('&sigma;<sub>S</sub>')
         self.ErrorLayout.addWidget(self.sigmaS_label, 2, 1)
-        self.rand_setup_x = QLineEdit(str(self._robustParam.randSetup[0]))
+        self.rand_setup_x = QLineEdit(str(self._robustParam.setupRandomError[0]))
         self.rand_setup_x.setMaximumWidth(30)
         self.ErrorLayout.addWidget(self.rand_setup_x, 2, 2)
-        self.rand_setup_y = QLineEdit(str(self._robustParam.randSetup[1]))
+        self.rand_setup_y = QLineEdit(str(self._robustParam.setupRandomError[1]))
         self.rand_setup_y.setMaximumWidth(30)
         self.ErrorLayout.addWidget(self.rand_setup_y, 2, 3)
-        self.rand_setup_z = QLineEdit(str(self._robustParam.randSetup[2]))
+        self.rand_setup_z = QLineEdit(str(self._robustParam.setupRandomError[2]))
         self.rand_setup_z.setMaximumWidth(30)
         self.ErrorLayout.addWidget(self.rand_setup_z, 2, 4)
         self.ErrorLayout.addWidget(QLabel('mm'), 2, 5)
@@ -153,7 +132,7 @@ class RobustnessSettingsDialog(QDialog):
         self.ErrorLayout.addWidget(QLabel('Systematic'), 6, 0)
         self.SigmaR_label = QLabel('&Sigma;<sub>R</sub>')
         self.ErrorLayout.addWidget(self.SigmaR_label, 6, 1)
-        self.syst_range = QLineEdit(str(self._robustParam.systRange))
+        self.syst_range = QLineEdit(str(self._robustParam.rangeSystematicError))
         self.syst_range.setMaximumWidth(30)
         self.ErrorLayout.addWidget(self.syst_range, 6, 2)
         self.ErrorLayout.addWidget(QLabel('%'), 6, 3)
@@ -163,7 +142,7 @@ class RobustnessSettingsDialog(QDialog):
         self.ErrorLayout.addWidget(QLabel('%'), 7, 3)
         self.main_layout.addSpacing(30)
 
-        self._strategyBox.currentIndexChanged.connect(self.update_robust_strategy)
+        self._strategyBox.currentIndexChanged.connect(self.updateRobustStrategy)
         self.syst_setup_x.textChanged.connect(self.recompute_margin)
         self.syst_setup_y.textChanged.connect(self.recompute_margin)
         self.syst_setup_z.textChanged.connect(self.recompute_margin)
@@ -172,7 +151,7 @@ class RobustnessSettingsDialog(QDialog):
         self.rand_setup_z.textChanged.connect(self.recompute_margin)
         self.syst_range.textChanged.connect(self.recompute_margin)
         self.recompute_margin()
-        if (self._strategyBox.currentText() == 'Disabled'): self.update_robust_strategy()
+        if (self._strategyBox.currentText() == 'Disabled'): self.updateRobustStrategy()
 
         # buttons
         self.ButtonLayout = QHBoxLayout()
@@ -184,46 +163,52 @@ class RobustnessSettingsDialog(QDialog):
         self.OkButton.clicked.connect(self.return_parameters)
         self.ButtonLayout.addWidget(self.OkButton)
 
+        self.updateRobustStrategy()
+
     @property
-    def robustParam(self):
+    def robustness(self) -> Robustness:
         self._updateRobustParam()
 
         return self._robustParam
 
+    @robustness.setter
+    def robustness(self, r:Robustness):
+        self._robustParam = r
+
     def _updateRobustParam(self):
-        self._robustParam.systSetup = [float(self.syst_setup_x.text()), float(self.syst_setup_y.text()),
-                                       float(self.syst_setup_z.text())]
-        self._robustParam.randSetup = [float(self.rand_setup_x.text()), float(self.rand_setup_y.text()),
-                                       float(self.rand_setup_z.text())]
-        self._robustParam.systRange = float(self.syst_range.text())
+        self._robustParam.setupSystematicError = [float(self.syst_setup_x.text()), float(self.syst_setup_y.text()),
+                                                  float(self.syst_setup_z.text())]
+        self._robustParam.setupRandomError = [float(self.rand_setup_x.text()), float(self.rand_setup_y.text()),
+                                              float(self.rand_setup_z.text())]
+        self._robustParam.rangeSystematicError = float(self.syst_range.text())
 
         if (self._strategyBox.currentText() == 'Disabled'):
-            self._robustParam.strategy = RobustnessParameters.Strategies.DISABLED
+            self._robustParam.selectionStrategy = Robustness.Strategies.DISABLED
         elif (self._strategyBox.currentText() == 'Dosimetric space (statistical)'):
-            self._robustParam.strategy = RobustnessParameters.Strategies.DOSESPACE
+            self._robustParam.selectionStrategy = Robustness.Strategies.DOSIMETRIC
         elif (self._strategyBox.currentText() == 'Error space (statistical)'):
-            self._robustParam.strategy = RobustnessParameters.Strategies.ERRORSPACE_STAT
+            self._robustParam.selectionStrategy = Robustness.Strategies.ERRORSPACE_STAT
         else:
-            self._robustParam.strategy = RobustnessParameters.Strategies.ERRORSPACE_REGULAR
+            self._robustParam.selectionStrategy = Robustness.Strategies.ERRORSPACE_REGULAR
 
     @property
     def robustStrategie(self):
-        return self._robustParam.strategy
+        return self._robustParam.selectionStrategy
 
     @robustStrategie.setter
     def robustStrategie(self, strategy):
-        if strategy == RobustnessParameters.Strategies.DISABLED:
+        if strategy == Robustness.Strategies.DISABLED:
             self._strategyBox.setCurrentText('Disabled')
-        elif strategy == RobustnessParameters.Strategies.DOSESPACE:
+        elif strategy == Robustness.Strategies.DOSIMETRIC:
             self._strategyBox.setCurrentText('Dosimetric space (statistical)')
-        elif strategy == RobustnessParameters.Strategies.ERRORSPACE_STAT:
+        elif strategy == Robustness.Strategies.ERRORSPACE_STAT:
             self._strategyBox.setCurrentText('Error space (statistical)')
-        elif strategy == RobustnessParameters.Strategies.ERRORSPACE_REGULAR:
+        elif strategy == Robustness.Strategies.ERRORSPACE_REGULAR:
             self._strategyBox.setCurrentText('Error space (regular)')
 
-        self.update_robust_strategy()
+        self.updateRobustStrategy()
 
-    def update_robust_strategy(self):
+    def updateRobustStrategy(self):
         if (self._strategyBox.currentText() == 'Disabled'):
             self.syst_setup_x.setEnabled(False)
             self.syst_setup_y.setEnabled(False)

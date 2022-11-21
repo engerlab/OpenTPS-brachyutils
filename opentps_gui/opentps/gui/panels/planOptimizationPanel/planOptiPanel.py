@@ -23,12 +23,13 @@ from opentps.gui.panels.planOptimizationPanel.optimizationSettings import OptiSe
 logger = logging.getLogger(__name__)
 
 class mcsquareCalculationWindow(QDialog):
-    def __init__(self, viewController, parent=None, contours=None, beamlets=True):
+    def __init__(self, viewController, parent=None, contours=None, beamlets=True, robustOpti = False):
         super().__init__(parent)
 
         self._viewController = viewController
         self._contours = contours
         self._beamlets = beamlets
+        self._robustOpti = robustOpti
 
         self._doseComputationPanel = DoseComputationPanel(viewController)
 
@@ -77,9 +78,17 @@ class mcsquareCalculationWindow(QDialog):
         doseCalculator.statUncertainty = self._doseComputationPanel._statUncertainty.value()
         doseCalculator.ctCalibration = calibration
         doseCalculator.overwriteOutsideROI = self._doseComputationPanel._selectedROI
-        beamlets = doseCalculator.computeBeamlets(self._doseComputationPanel.selectedCT,
+
+        if self._robustOpti:
+            nominal, scenarios = doseCalculator.computeRobustScenarioBeamlets(self._doseComputationPanel.selectedCT,
                                                    self._doseComputationPanel.selectedPlan, self._contours)
-        self._doseComputationPanel.selectedPlan.planDesign.beamlets = beamlets
+            self._doseComputationPanel.selectedPlan.planDesign.beamlets = nominal
+            self._doseComputationPanel.selectedPlan.planDesign.scenarios = scenarios
+            self._doseComputationPanel.selectedPlan.planDesign.numScenarios = len(scenarios)
+        else:
+            beamlets = doseCalculator.computeBeamlets(self._doseComputationPanel.selectedCT,
+                                                   self._doseComputationPanel.selectedPlan, self._contours)
+            self._doseComputationPanel.selectedPlan.planDesign.beamlets = beamlets
         self.accept()
 
     def _optimizeBeamletFree(self):
@@ -107,7 +116,7 @@ class PlanOptiPanel(QWidget):
         QWidget.__init__(self)
 
         self._patient: Patient = None
-        self.optiConfig = {"method": "Scipy-LBFGS", "maxIter": 1000, "step": 0.02, "bounds": None}
+        self._optiConfig = {"method": "Scipy-LBFGS", "maxIter": 1000, "step": 0.02, "bounds": None}
 
         self._viewController = viewController
 
@@ -118,6 +127,7 @@ class PlanOptiPanel(QWidget):
         self.layout.addWidget(self._planStructureLabel)
         self._planStructureComboBox = PatientDataComboBox(patientDataType=PlanDesign, patient=self._patient,
                                                           parent=self)
+        self._planStructureComboBox.selectedDataEvent.connect(self._handlePlanStructure)
         self.layout.addWidget(self._planStructureComboBox)
 
         self._ctLabel = QLabel('CT:')
@@ -169,6 +179,7 @@ class PlanOptiPanel(QWidget):
         self._viewController.currentPatientChangedSignal.connect(self.setCurrentPatient)
 
         self._handleAlgo()
+        self._handlePlanStructure()
 
     @property
     def selectedCT(self):
@@ -178,6 +189,9 @@ class PlanOptiPanel(QWidget):
     def selectedPlanStructure(self):
         return self._planStructureComboBox.selectedData
 
+    def _handlePlanStructure(self, *args):
+        self._objectivesWidget.planDesign = self.selectedPlanStructure
+
     def setCurrentPatient(self, patient: Patient):
         self._planStructureComboBox.setPatient(patient)
         self._ctComboBox.setPatient(patient)
@@ -185,10 +199,10 @@ class PlanOptiPanel(QWidget):
         self._objectivesWidget.setPatient(patient)
 
     def _openConfig(self):
-        dialog = OptiSettingsDialog(self.optiConfig)
+        dialog = OptiSettingsDialog(self._optiConfig)
         if dialog.exec(): dialog.optiParam
-        logger.info('opti config = {}'.format(self.optiConfig))
-        self._algoBox.setCurrentText(self.optiConfig['method'])
+        logger.info('opti config = {}'.format(self._optiConfig))
+        self._algoBox.setCurrentText(self._optiConfig['method'])
 
     def _run(self):
         settings = DoseCalculationConfig()
@@ -207,7 +221,6 @@ class PlanOptiPanel(QWidget):
             if obj.roiName not in objROINames:
                 objROINames.append(obj.roiName)
                 contours.append(obj.roi)
-
         self.selectedPlanStructure.defineTargetMaskAndPrescription()
 
         if self._spotPlacementBox.isChecked():
@@ -231,12 +244,17 @@ class PlanOptiPanel(QWidget):
             objectiveList.append(obj)
 
         self.selectedPlanStructure.objectives = objectiveList
+        for obj in self.selectedPlanStructure.objectives.fidObjList:
+            if obj.robust:
+                continue
 
     def _placeSpots(self):
         self._plan = self.selectedPlanStructure.buildPlan()  # Spot placement
 
     def _computeBeamlets(self, contours):
-        self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=True)
+        robusOpti = self.selectedPlanStructure.robustness.selectionStrategy != Robustness.Strategies.DISABLED
+
+        self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=True, robustOpti=robusOpti)
         self._mcsquareWindow.setWindowTitle('Beamlet-based configuration')
         self._mcsquareWindow.setCT(self.selectedPlanStructure.ct)
         self._plan.patient = self.selectedPlanStructure.ct.patient
@@ -251,7 +269,7 @@ class PlanOptiPanel(QWidget):
             self._beamletBox.setEnabled(True)
             if self._selectedAlgo in ["Scipy-LBFGS", "Scipy-BFGS", "In-house Gradient", "In-house LBFGS", "In-house BFGS", "FISTA"]:
                 self._configButton.setEnabled(True)
-                self.optiConfig['method'] = self._selectedAlgo
+                self._optiConfig['method'] = self._selectedAlgo
             else:
                 self._configButton.setEnabled(False)
 
@@ -285,10 +303,10 @@ class PlanOptiPanel(QWidget):
             elif self._selectedAlgo == "LP":
                 method = 'LP'
 
-            if self.optiConfig['bounds']:
-                solver = BoundConstraintsOptimizer(self._plan, method, self.optiConfig['bounds'])
+            if self._optiConfig['bounds']:
+                solver = BoundConstraintsOptimizer(self._plan, method, self._optiConfig['bounds'])
             else:
-                solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxit=self.optiConfig['maxIter'])
+                solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxit=self._optiConfig['maxIter'])
             # Optimize treatment plan
             _, doseImage, _ = solver.optimize()
             doseImage.patient = self._mcsquareWindow._doseComputationPanel.selectedCT.patient
@@ -339,7 +357,9 @@ class ObjectivesWidget(QWidget):
     @planDesign.setter
     def planDesign(self, pd):
         self._planDesign = pd
-        # self._roiWindow.robustnessEnabled = # From plan Design
+
+        if not (self._planDesign is None):
+            self._roiWindow.planDesign = self._planDesign
 
     def setPatient(self, p: Patient):
         self._roiWindow.patient = p
@@ -364,7 +384,11 @@ class ObjectivesWidget(QWidget):
             elif objective.metric == objective.Metrics.DMEAN:
                 objStr += "="
             objStr += str(objective.limitValue)
-            objStr += ' Gy\n'
+            objStr += ' Gy'
+
+            if objective.robust:
+                objStr += " (robust)\n"
+            else: objStr += '\n'
 
         self._objectivesLabels.setText(objStr)
 
