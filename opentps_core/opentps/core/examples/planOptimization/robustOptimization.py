@@ -97,8 +97,8 @@ def run():
 
         nominal, scenarios = mc2.computeRobustScenarioBeamlets(ct, plan, roi=[roi], storePath=output_path)
         plan.planDesign.beamlets = nominal
-        plan.planDesign.scenarios = scenarios
-        plan.planDesign.numScenarios = len(scenarios)
+        plan.planDesign.robustness.scenarios = scenarios
+        plan.planDesign.robustness.numScenarios = len(scenarios)
 
         #saveRTPlan(plan, plan_file)
 

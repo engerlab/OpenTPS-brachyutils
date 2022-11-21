@@ -66,7 +66,7 @@ def run():
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
     else:
-        print("You need to design and optimize a plan first - See SimpleOptimization script.") 
+        print("You need to design and optimize a plan first - See SimpleOptimization or robustOptimization script.")
 
     # Load / Generate scenarios
     scenario_folder = os.path.join(output_path,'RobustnessTest_Nov-16-2022_14-30-28_')

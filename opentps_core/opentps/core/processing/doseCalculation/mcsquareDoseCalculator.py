@@ -77,7 +77,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             return os.path.join(self._workDir, "Sparse_Dose_Nominal.txt")
         else:
             return os.path.join(self._workDir, "Sparse_Dose_Scenario_" + str(self._sparseDoseScenarioToRead + 1) + "-" + str(
-                self._numScenarios) + ".txt")
+                self._plan.planDesign.robustness.numScenarios) + ".txt")
 
 
     @property
@@ -202,8 +202,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         logger.info("Simulation of error scenarios")
         self._startMCsquare()
         # Import dose results
-        for s in range(self._numScenarios):
-            fileName = 'Dose_Scenario_' + str(s + 1) + '-' + str(self._numScenarios) + '.mhd'
+        for s in range(self._plan.planDesign.robustness.numScenarios):
+            fileName = 'Dose_Scenario_' + str(s + 1) + '-' + str(self._plan.planDesign.robustness.numScenarios) + '.mhd'
             self._doseFilePath = os.path.join(self._workDir, fileName)
             if os.path.isfile(self._doseFilePath):
                 dose = self._importDose(plan)
@@ -268,13 +268,13 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             nominal.storeOnFS(outputBeamletFile)
 
         scenarios = []
-        for s in range(self._numScenarios):
+        for s in range(self._plan.planDesign.robustness.numScenarios):
             self._sparseDoseScenarioToRead = s
             scenario = self._importBeamlets()
             if not (storePath is None):
                 outputBeamletFile = os.path.join(storePath,
                                                  "BeamletMatrix_" + plan.seriesInstanceUID + "_Scenario_" + str(
-                                                     s + 1) + "-" + str(self._numScenarios) + ".blm")
+                                                     s + 1) + "-" + str(self._plan.planDesign.robustness.numScenarios) + ".blm")
                 scenario.storeOnFS(outputBeamletFile)
             scenarios.append(scenario)
 
