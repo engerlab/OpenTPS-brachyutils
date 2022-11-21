@@ -12,7 +12,6 @@ tests/*
 scripts/
 tests/
 notebooks/
-*.txt
 version.py
 Perso/
 waldoScripts/
