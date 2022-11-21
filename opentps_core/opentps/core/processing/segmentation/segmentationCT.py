@@ -40,7 +40,7 @@ class SegmentationCT():
         # Body definition
         temp = body.copy()
         temp.erode(filt=compute3DStructuralElement([5, 5, 5], spacing=body.spacing))
-        temp.reset(filt=compute3DStructuralElement([10, 10, 10], spacing=body.spacing))
+        temp.close(filt=compute3DStructuralElement([10, 10, 10], spacing=body.spacing))
         body._imageArray = np.logical_and(np.logical_not(body.imageArray), np.logical_not(temp.imageArray))
         labels = stik.connectComponents(body)
         body._imageArray = labels.imageArray != 1
@@ -53,7 +53,7 @@ class SegmentationCT():
     def segmentBones(self, body=None):
 
         bones = seg.applyThreshold(self.ct, 200)
-        bones.reset(filt=compute3DStructuralElement([2, 2, 2], spacing=bones.spacing))
+        bones.close(filt=compute3DStructuralElement([2, 2, 2], spacing=bones.spacing))
         bones.open(filt=compute3DStructuralElement([3, 3, 3], spacing=bones.spacing))
         return bones
 
@@ -68,7 +68,7 @@ class SegmentationCT():
         lungs = seg.applyThreshold(self.ct, -950, thresholdMax=-350)
         lungs._imageArray = np.logical_and(lungs._imageArray,body.imageArray)
         lungs.open(filt=compute3DStructuralElement([3, 3, 4], spacing=lungs.spacing))
-        lungs.reset(filt=compute3DStructuralElement([3, 3, 4], spacing=lungs.spacing))
+        lungs.close(filt=compute3DStructuralElement([3, 3, 4], spacing=lungs.spacing))
 
         labels = stik.connectComponents(lungs)
         lungs._imageArray = np.logical_and(labels.imageArray >0, labels.imageArray <3)
