@@ -191,8 +191,6 @@ class PlanOptiPanel(QWidget):
         return self._planStructureComboBox.selectedData
 
     def _handlePlanStructure(self, *args):
-        if not (self.selectedPlanStructure is None):
-            print(self.selectedPlanStructure.name, self.selectedPlanStructure.robustness.selectionStrategy)
         self._objectivesWidget.planDesign = self.selectedPlanStructure
 
     def setCurrentPatient(self, patient: Patient):
@@ -306,7 +304,7 @@ class PlanOptiPanel(QWidget):
                 method = 'LP'
 
             if self._optiConfig['bounds']:
-                solver = BoundConstraintsOptimizer(self._plan, method, self._optiConfig['bounds'])
+                solver = BoundConstraintsOptimizer(method = method, plan = self._plan, bounds = self._optiConfig['bounds'], maxit=self._optiConfig['maxIter'])
             else:
                 solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxit=self._optiConfig['maxIter'])
             # Optimize treatment plan
@@ -361,7 +359,6 @@ class ObjectivesWidget(QWidget):
         self._planDesign = pd
 
         if not (self._planDesign is None):
-            print(self._planDesign.robustness.selectionStrategy)
             self._roiWindow.robustnessEnabled = self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED
 
     def setPatient(self, p: Patient):
