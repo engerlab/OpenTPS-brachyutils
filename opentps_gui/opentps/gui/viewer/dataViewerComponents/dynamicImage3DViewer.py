@@ -23,13 +23,6 @@ class DynamicImage3DViewer(Image3DViewer):
 
         self.loopStepNumber = 0
 
-    def closeEvent(self, QCloseEvent):
-        self.close()
-        self._renderWindow.Finalize()
-        self._vtkWidget.close()
-        del self._renderWindow, self._vtkWidget
-        super().closeEvent(QCloseEvent)
-
     @property
     def primaryImage(self):
         if self._primaryImageLayer.image is None:

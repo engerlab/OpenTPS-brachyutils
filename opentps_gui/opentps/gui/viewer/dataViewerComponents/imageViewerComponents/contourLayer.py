@@ -24,7 +24,7 @@ class ContourLayer:
 
     def close(self):
         for vtkContour in self._vtkContours:
-            vtkContour.close()
+            vtkContour.reset()
 
     @property
     def contours(self) -> Sequence[Union[ROIContourForViewer, ROIMaskForViewer]]:
