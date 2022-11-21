@@ -23,7 +23,7 @@ from opentps.gui.panels.planOptimizationPanel.optimizationSettings import OptiSe
 logger = logging.getLogger(__name__)
 
 class mcsquareCalculationWindow(QDialog):
-    def __init__(self, viewController, parent=None, contours=None, beamlets=True, robustOpti = False):
+    def __init__(self, viewController, parent=None, contours=None, beamlets=True, robustOpti=False):
         super().__init__(parent)
 
         self._viewController = viewController
@@ -34,10 +34,10 @@ class mcsquareCalculationWindow(QDialog):
         self._doseComputationPanel = DoseComputationPanel(viewController)
 
         self._doseComputationPanel._runButton.hide()
-        self._doseComputationPanel._doseSpacingLabel.show()
         self._doseComputationPanel._mcsquareConfigWidget.hide()
 
         if self._beamlets:
+            self._doseComputationPanel._doseSpacingLabel.show()
             self._doseComputationPanel._numProtons.setValue(5e4)
             self._doseComputationPanel._numProtons.setDecimals(0)
             self._doseComputationPanel._cropBLBox.show()
@@ -252,9 +252,9 @@ class PlanOptiPanel(QWidget):
         self._plan = self.selectedPlanStructure.buildPlan()  # Spot placement
 
     def _computeBeamlets(self, contours):
-        robusOpti = self.selectedPlanStructure.robustness.selectionStrategy != Robustness.Strategies.DISABLED
+        robustOpti = self.selectedPlanStructure.robustness.selectionStrategy != Robustness.Strategies.DISABLED
 
-        self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=True, robustOpti=robusOpti)
+        self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=True, robustOpti=robustOpti)
         self._mcsquareWindow.setWindowTitle('Beamlet-based configuration')
         self._mcsquareWindow.setCT(self.selectedPlanStructure.ct)
         self._plan.patient = self.selectedPlanStructure.ct.patient
@@ -278,6 +278,10 @@ class PlanOptiPanel(QWidget):
         return self._optiAlgos[self._algoBox.currentIndex()]
 
     def _optimize(self, contours):
+        # Check if robust optimization compatible with solver:
+        robustOpti = self.selectedPlanStructure.robustness.selectionStrategy != Robustness.Strategies.DISABLED
+        if robustOpti and self._selectedAlgo in ["Beamlet-free MCsquare", "FISTA", "LP"]:
+            raise NotImplementedError("Robust optimization is not supported for {} algorithm".format(self._selectedAlgo))
 
         if self._selectedAlgo == "Beamlet-free MCsquare":
             self._mcsquareWindow = mcsquareCalculationWindow(self._viewController, self, contours, beamlets=False)
