@@ -37,8 +37,11 @@ class PlanEvaluationPanel(QWidget):
         self.button_hLoayout = QHBoxLayout()
         self.layout.addLayout(self.button_hLoayout)
         self.ComputeScenariosButton = QPushButton('Compute \n Scenarios')
+        self.ComputeScenariosButton.setEnabled(False)
         self.button_hLoayout.addWidget(self.ComputeScenariosButton)
         self.ComputeScenariosButton.clicked.connect(self.computeRobustnessScenarios)
+        self.layout.addWidget(QLabel('<b>!!!Disabled (refactoring)!!!</b>'))
+        self.layout.addWidget(QLabel('<b>!!!Plan evaluation soon available!!!</b>'))
         self.layout.addSpacing(40)
 
         self.layout.addWidget(QLabel('<b>Displayed dose:</b>'))
