@@ -25,8 +25,13 @@ class RobustnessSettings(QWidget):
         self._updateRobustSettings()
 
     @property
-    def robustParam(self):
+    def robustParam(self) -> Robustness:
         return self._robustParam
+
+    @robustParam.setter
+    def robustParam(self, rp:Robustness):
+        self._robustParam = rp
+        self._dialog.robustess = self._robustParam
 
     def _openRobustnessSettings(self):
         if (self._dialog.exec()):
@@ -79,15 +84,6 @@ class RobustnessSettingsDialog(QDialog):
                 ['Dosimetric space (statistical)', 'Error space (statistical)', 'Error space (regular)'])
         else:
             self._strategyBox.addItems(['Disabled', 'Error space (regular)'])
-
-        if (self._robustParam.selectionStrategy == Robustness.Strategies.DISABLED):
-            self._strategyBox.setCurrentText('Disabled')
-        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_REGULAR):
-            self._strategyBox.setCurrentText('Error space (regular)')
-        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_STAT):
-            self._strategyBox.setCurrentText('Error space (statistical)')
-        else:
-            self._strategyBox.setCurrentText('Dosimetric space (statistical)')
 
         self.main_layout.addWidget(self._strategyBox)
         self.main_layout.addSpacing(20)
@@ -169,11 +165,39 @@ class RobustnessSettingsDialog(QDialog):
         self.OkButton.clicked.connect(self.return_parameters)
         self.ButtonLayout.addWidget(self.OkButton)
 
+        self._updateValues()
+
+    def _updateValues(self):
+        if (self._robustParam.selectionStrategy == Robustness.Strategies.DISABLED):
+            self._strategyBox.setCurrentText('Disabled')
+        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_REGULAR):
+            self._strategyBox.setCurrentText('Error space (regular)')
+        elif (self._robustParam.selectionStrategy == Robustness.Strategies.ERRORSPACE_STAT):
+            self._strategyBox.setCurrentText('Error space (statistical)')
+        else:
+            self._strategyBox.setCurrentText('Dosimetric space (statistical)')
+
+        self.syst_setup_x.setText(str(self._robustParam.setupSystematicError[0]))
+        self.syst_setup_y.setText(str(self._robustParam.setupSystematicError[1]))
+        self.syst_setup_z.setText(str(self._robustParam.setupSystematicError[2]))
+
+        self.rand_setup_x.setText(str(self._robustParam.setupRandomError[0]))
+        self.rand_setup_y.setText(str(self._robustParam.setupRandomError[1]))
+        self.rand_setup_z.setText(str(self._robustParam.setupRandomError[2]))
+
+        self.syst_range.setText(str(self._robustParam.rangeSystematicError))
+
+        #TODO other values to link
+
     @property
     def robustess(self) -> Robustness:
         self._updateRobustParam()
 
         return self._robustParam
+
+    @robustess.setter
+    def robustess(self, r:Robustness):
+        self._robustParam = r
 
     def _updateRobustParam(self):
         self._robustParam.setupSystematicError = [float(self.syst_setup_x.text()), float(self.syst_setup_y.text()),

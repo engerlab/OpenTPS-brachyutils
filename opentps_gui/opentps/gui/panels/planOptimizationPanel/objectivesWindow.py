@@ -146,8 +146,9 @@ class ROITable(QTableWidget):
             return
 
         for i, roi in enumerate(self._rois):
-            self.getCellWidget(i, self._robustCol).setChecked(False)
-            self.getCellWidget(i, self._robustCol).setEnabled(False)
+            if not enabled:
+                self.cellWidget(i, self._robustCol).setChecked(False)
+            self.cellWidget(i, self._robustCol).setEnabled(enabled)
 
         self._robustnessEnabled = enabled
         self.robustnessEnabledEvent.emit(self._robustnessEnabled)
