@@ -72,7 +72,7 @@ def run():
     scenario_folder = os.path.join(output_path,'RobustnessTest_Nov-16-2022_14-30-28_')
     if os.path.isdir(scenario_folder):
         scenarios = Robustness()
-        scenarios.selectionStrategy = "Error"
+        scenarios.selectionStrategy = Robustness.Strategies.ERRORSPACE_REGULAR
         scenarios.setupSystematicError = mc2.setupSystematicError
         scenarios.setupRandomError = mc2.setupRandomError
         scenarios.rangeSystematicError = mc2.rangeSystematicError

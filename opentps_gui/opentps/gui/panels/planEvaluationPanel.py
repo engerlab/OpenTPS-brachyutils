@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from opentps.core.data import Patient
 from opentps.core.data.plan import RTPlan
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
 
@@ -164,7 +165,7 @@ class PlanEvaluationPanel(QWidget):
 
         self.robustness_scenarios.DoseDistributionType = self.DisplayedDose.currentText()
 
-        if (self.robustness_scenarios.SelectionStrategy == "Dosimetric"):
+        if (self.robustness_scenarios.SelectionStrategy == Robustness.Strategies.DOSIMETRIC):
             self.robustness_scenarios.dosimetric_space_analysis(self.Metric.currentText(), CI, Target,
                                                                 TargetPrescription)
         else:
