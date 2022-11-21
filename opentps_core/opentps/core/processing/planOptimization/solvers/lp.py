@@ -7,10 +7,12 @@ try:
 except ModuleNotFoundError:
     logger.info('No module Gurobi found\n!Licence required!\nGet free Academic license on '
                 'https://www.gurobi.com/academia/academic-program-and-licenses/ ')
+    gp = None
 import numpy as np
 import time
 from random import choice
 from opentps.core.data.plan._rtPlan import RTPlan
+from opentps.core.data.plan import FidObjective
 from opentps.core.processing.planOptimization.tools import WeightStructure
 
 
@@ -68,6 +70,7 @@ class LP:
                 nSpots = self.solStruct.nSpots
 
             model = self.createModel()
+
             if n == 0:
                 model.setParam('TimeLimit', self.timeLimit)
             else:
@@ -97,6 +100,7 @@ class LP:
                 nIter = self.LNSNIter
                 if self.completeAfterLNS:
                     nIter += 1
+
                 for i in range(1, nIter + 1):
                     for constr in addedConstraints:
                         model.remove(constr)
@@ -153,7 +157,7 @@ class LP:
                             for k in range(self.solStruct.nSpots):
                                 self.xVars[k].Start = self.solStruct.x[k]
                     # optimize
-                    model.optimizeIMPT()
+                    model.optimize()
                     # model.optimize(mycallback)
                     status = model.Status
                     if status not in (GRB.INF_OR_UNBD, GRB.INFEASIBLE, GRB.UNBOUNDED):
@@ -163,25 +167,25 @@ class LP:
                             print("Time limit reached !")
 
                         print('Obj : {}'.format(model.objVal))
-                        for o, objective in enumerate(self.plan.objectives.fidObjList):
+                        for o, objective in enumerate(self.plan.planDesign.objectives.fidObjList):
                             if objective.kind == "Soft":
                                 names_to_retrieve = []
                                 M = len(np.nonzero(objective.maskVec)[0].tolist())
-                                if objective.metric == "Dmax" and objective.condition == "<":
+                                if objective.metric == FidObjective.Metrics.DMAX :
                                     name = objective.roiName.replace(" ", "_") + '_maxObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.weight / M))
-                                elif objective.metric == "Dmin" and objective.condition == ">":
+                                elif objective.metric == FidObjective.Metrics.DMIN :
                                     name = objective.roiName.replace(" ", "_") + '_minObj'
                                     names_to_retrieve = (f"{name}[{i}]" for i in range(M))
                                     vars_obj = [model.getVarByName(name).X for name in names_to_retrieve]
                                     print(
                                         " Objective #{}: ROI Name: {}, Objective value = {}, obj v * weight = {} ".format(
                                             o, name, sum(vars_obj), sum(vars_obj) * objective.weight / M))
-                                elif objective.metric == "Dmean" and objective.condition == "<":
+                                elif objective.metric == FidObjective.Metrics.DMEAN:
                                     name = objective.roiName.replace(" ", "_") + '_meanObj[0]'
                                     var_obj = model.getVarByName(name).X
                                     print(
@@ -221,6 +225,8 @@ class LP:
             return result
 
     def createModel(self, name = "LP"):
+        if gp is None:
+            raise Exception("Third-party toolbox Gurobi must be installed and requires a license")
         model = gp.Model(name)
         model.ModelSense = GRB.MINIMIZE
         if self.groupSpots:
@@ -237,7 +243,7 @@ class LP:
         else:
             N = self.plan.numberOfSpots
         fidelity = model.addMVar(1, name='fidelity')
-        for objective in self.plan.objectives.fidObjList:
+        for objective in self.plan.planDesign.objectives.fidObjList:
             M = len(np.nonzero(objective.maskVec)[0].tolist())
             print("ROI Name: {}, NNZ voxels= {}".format(objective.roiName, M))
             nnz = np.nonzero(objective.maskVec)[0].tolist()
@@ -248,7 +254,7 @@ class LP:
                 beamlets = self.solStruct.beamletMatrix[nnz,]
             dose = beamlets @ self.xVars
             p = np.ones((len(nnz),)) * objective.limitValue
-            if objective.metric == "Dmax" and objective.condition == "<":
+            if objective.metric == FidObjective.Metrics.DMAX:
                 if objective.kind == "Soft":
                     vmax = model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_maxObj')
                     model.addConstr((vmax >= dose - p), name=objective.roiName.replace(" ", "_") + "_maxConstr")
@@ -256,14 +262,14 @@ class LP:
                 else:
                     model.addConstr(dose <= p, name=objective.roiName.replace(" ", "_") + "_maxConstr")
 
-            elif objective.metric == "Dmin" and objective.condition == ">":
+            elif objective.metric == FidObjective.Metrics.DMIN:
                 if objective.kind == "Soft":
                     vmin = model.addMVar(M, lb=0, name=objective.roiName.replace(" ", "_") + '_minObj')
                     model.addConstr((vmin >= p - dose), name=objective.roiName.replace(" ", "_") + "_minConstr")
                     fidelity += vmin.sum() * (objective.weight / M)
                 else:
                     model.addConstr(dose >= p, name=objective.roiName.replace(" ", "_") + "_minConstr")
-            elif objective.metric == "Dmean" and objective.condition == "<":
+            elif objective.metric == FidObjective.Metrics.DMEAN:
                 vmean = model.addMVar((1,), lb=0, name=objective.roiName.replace(" ", "_") + '_meanObj')
                 aux = model.addMVar(M, name=objective.roiName.replace(" ", "_") + '_aux')
                 model.addConstr(aux == dose, name=objective.roiName.replace(" ", "_") + "_auxConstr")
@@ -271,6 +277,6 @@ class LP:
                                      name=objective.roiName.replace(" ", "_") + "_meanConstr")
                 fidelity += vmean * objective.weight
 
-            #model.setObjective(fidelity)
-        model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")
+        model.setObjective(fidelity)
+        #model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")
         return model

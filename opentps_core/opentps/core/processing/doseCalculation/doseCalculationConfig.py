@@ -4,6 +4,7 @@ import os
 
 import opentps.core.processing.doseCalculation.MCsquare.BDL as bdlModule
 import opentps.core.processing.doseCalculation.MCsquare.Scanners as ScannerModule
+from opentps.core import Event
 
 from opentps.core.utils.applicationConfig import AbstractApplicationConfig
 
@@ -15,6 +16,11 @@ logger = logging.getLogger(__name__)
 class DoseCalculationConfig(AbstractApplicationConfig):
     def __init__(self):
         super().__init__()
+
+        self.beamletPrimariesChangedSignal = Event(int)
+        self.finalDosePrimariesChangedSignal = Event(int)
+        self.bdlFileChangedSignal = Event(str)
+        self.scannerFolderChangedSignal = Event(str)
 
         self._writeAllFieldsIfNotAlready()
 
@@ -30,7 +36,11 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @beamletPrimaries.setter
     def beamletPrimaries(self, primaries:int):
+        if primaries==self.beamletPrimaries:
+            return
+
         self.setConfigField("MCsquare", "beamletPrimaries", int(primaries))
+        self.beamletPrimariesChangedSignal.emit(self.beamletPrimaries)
 
     @property
     def finalDosePrimaries(self) -> int:
@@ -38,11 +48,15 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @finalDosePrimaries.setter
     def finalDosePrimaries(self, primaries: int):
+        if primaries==self.finalDosePrimaries:
+            return
+
         self.setConfigField("MCsquare", "finalDosePrimaries", int(primaries))
+        self.finalDosePrimariesChangedSignal.emit(self.finalDosePrimaries)
 
     @property
     def _defaultBDLFile(self) -> str:
-        return bdlModule.__path__[0] + os.sep + 'BDL_default_DN_RangeShifter.txt'
+        return bdlModule.__path__[0] + os.sep + 'UMCG_P1_v2_RangeShifter.txt'
 
     @property
     def bdlFile(self) -> str:
@@ -50,7 +64,11 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @bdlFile.setter
     def bdlFile(self, path:str):
+        if path==self.bdlFile:
+            return
+
         self.setConfigField("MCsquare", "bdlFile", path)
+        self.bdlFileChangedSignal.emit(self.bdlFile)
 
     @property
     def _defaultScannerFolder(self) -> str:
@@ -62,4 +80,8 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @scannerFolder.setter
     def scannerFolder(self, path:str):
+        if path==self.scannerFolder:
+            return
+
         self.setConfigField("MCsquare", "scannerFolder", path)
+        self.scannerFolderChangedSignal.emit(self.scannerFolder)

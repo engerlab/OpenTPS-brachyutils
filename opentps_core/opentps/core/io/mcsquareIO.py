@@ -555,7 +555,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
 
         if not (beam.rangeShifter is None):
             if beam.rangeShifter.ID not in [rs.ID for rs in bdl.rangeShifters]:
-                raise Exception('Range shifter in plan not in BDL')
+                raise Exception('Range shifter with ID ' + beam.rangeShifter.ID + ' in plan not in BDL')
             else:
                 fid.write("###RangeShifterID\n")
                 fid.write("%s\n" % beam.rangeShifter.ID)

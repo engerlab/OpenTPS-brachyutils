@@ -57,18 +57,18 @@ def run():
     couchAngles = [0.]
 
     # Generate new plan
-    planInit = PlanDesign()
-    planInit.ct = ct
-    planInit.targetMask = roi
-    planInit.gantryAngles = gantryAngles
-    planInit.beamNames = beamNames
-    planInit.couchAngles = couchAngles
-    planInit.calibration = ctCalibration
-    planInit.spotSpacing = 5.0
-    planInit.layerSpacing = 5.0
-    planInit.targetMargin = 5.0
+    planDesign = PlanDesign()
+    planDesign.ct = ct
+    planDesign.targetMask = roi
+    planDesign.gantryAngles = gantryAngles
+    planDesign.beamNames = beamNames
+    planDesign.couchAngles = couchAngles
+    planDesign.calibration = ctCalibration
+    planDesign.spotSpacing = 5.0
+    planDesign.layerSpacing = 5.0
+    planDesign.targetMargin = 5.0
 
-    plan = planInit.buildPlan()  # Spot placement
+    plan = planDesign.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
     plan.planDesign.objectives = ObjectivesList()

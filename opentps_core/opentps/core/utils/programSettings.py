@@ -33,6 +33,10 @@ class ProgramSettings(metaclass=Singleton):
         self._config.read(self._configFile)
 
     @property
+    def programSettingsFolder(self):
+        return str(self._config_dir)
+
+    @property
     def workspace(self):
         return self._config["dir"]["workspace"]
 

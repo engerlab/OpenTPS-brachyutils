@@ -64,7 +64,7 @@ class ROIMask(Image3D):
     def copy(self):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
-    def dilate(self, radius=1.0, filt=None, tryGPU=True):
+    def dilate(self, radius=1.0, filt=None, tryGPU=False):
         if filt is None:
             radius = radius/np.array(self.spacing)
             if np.min(radius)<=0:
@@ -83,6 +83,7 @@ class ROIMask(Image3D):
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
+                logger.info('Using cupy to dilate mask   ')
                 self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
                 logger.warning('cupy not used to dilate mask.')
@@ -90,8 +91,11 @@ class ROIMask(Image3D):
 
         if not tryGPU:
             try:
-                logger.info('Using ITK to dilate mask')
-                self._dilateSITK(radius)
+                if radius[0]==radius[1]==radius[2]:
+                    radius = int(round(radius[0]))
+                    self._dilateSITK(radius)
+                else:
+                    raise ValueError('Radius must be a scalar for SITK')
             except:
                 logger.warning('SITK not used to dilate mask.')
                 self._dilateScipy(filt)
@@ -101,6 +105,27 @@ class ROIMask(Image3D):
 
     def _dilateScipy(self, filt):
         self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
+
+    def createMaskRings(self, nRings, radius):
+        """
+            Create a ring ROI to obtain nice gradient dose around the ROI
+            nRings: Number of rings to be created
+            radius: thickness of each ring in mm
+        """
+        rings = []
+        roiSizes = [self]
+        maskCopy = self.copy()
+
+        for i in range(nRings):
+            maskCopy.dilate(radius)
+            roiSizes.append(maskCopy.copy())
+
+        for i in range(nRings):
+            ringMask = self.copy()
+            ringMask.imageArray = np.logical_xor(roiSizes[i + 1].imageArray, roiSizes[i].imageArray)
+            ringMask.name = 'ring_' + str(i + 1)
+            rings.append(ringMask)
+        return rings
 
     def erode(self, radius=1.0, filt=None, tryGPU=True):
         if filt is None:
