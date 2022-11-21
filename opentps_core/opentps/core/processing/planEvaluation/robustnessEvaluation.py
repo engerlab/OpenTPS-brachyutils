@@ -66,7 +66,6 @@ class Robustness:
             np.float16)  # can be reduced to float16 because all metrics are already computed and it's only used for display
 
         self.scenarios.append(scenario)
-        self.numScenarios += 1
 
     def setTarget(self, targetContour, targetPrescription):
         if not(self.nominal.dose.hasSameGrid(targetContour)):
