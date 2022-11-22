@@ -606,14 +606,15 @@ def writeContours(contour: ROIMask, folder_path):
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
     # contour.imageArray = np.flip(contour.imageArray, (0,1))
-    contour.imageArray = np.flip(contour.imageArray, 0)
-    contour.imageArray = np.flip(contour.imageArray, 1)
+    contourCopy = contour.copy()
+    contourCopy.imageArray = np.flip(contourCopy.imageArray, 0)
+    contourCopy.imageArray = np.flip(contourCopy.imageArray, 1)
 
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
-    contourName = contour.name.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
+    contourName = contourCopy.name.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
     file_path = os.path.join(folder_path, contourName + ".mhd")
-    mhdIO.exportImageMHD(file_path, contour)
+    mhdIO.exportImageMHD(file_path, contourCopy)
 
 def writeObjectives(objectives: ObjectivesList, file_path):
     targetName = objectives.targetName.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
