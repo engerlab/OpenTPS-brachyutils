@@ -56,7 +56,7 @@ class DoseCalculationConfig(AbstractApplicationConfig):
 
     @property
     def _defaultBDLFile(self) -> str:
-        return bdlModule.__path__[0] + os.sep + 'UMCG_P1_v2_RangeShifter.txt'
+        return bdlModule.__path__[0] + os.sep + 'BDL_default_DN_RangeShifter.txt'
 
     @property
     def bdlFile(self) -> str:
