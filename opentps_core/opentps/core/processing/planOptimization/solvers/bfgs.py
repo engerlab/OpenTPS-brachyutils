@@ -15,7 +15,7 @@ class ScipyOpt:
         self.meth = meth
         self.Nfeval = 1
         self.params = kwargs
-        self.params['ftol'] = self.params.get('ftol', 2.220446049250313e-09)
+        self.params['ftol'] = self.params.get('ftol', 1e-06)
         self.params['gtol'] = self.params.get('gtol', 1e-05)
         self.params['maxit'] = self.params.get('maxit', 1000)
         self.name = meth

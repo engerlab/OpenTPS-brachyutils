@@ -81,8 +81,6 @@ def run():
     # MCsquare beamlet free planOptimization
     doseImage = mc2.optimizeBeamletFree(ct, plan, [roi])
     # Compute DVH
-    # must flip back because was flipped for compatibility with MCsquare planOptimization
-    roi.imageArray = np.flip(roi.imageArray, (0,1))
     target_DVH = DVH(roi, doseImage)
     print('D95 = ' + str(target_DVH.D95) + ' Gy')
     print('D5 = ' + str(target_DVH.D5) + ' Gy')
