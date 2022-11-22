@@ -18,7 +18,7 @@ from opentps.core.examples.syntheticData import*
 
 if __name__ == '__main__':
 
-    CT4D = createSynthetic4DCT(numberOfPhases=6)
+    CT4D = createSynthetic4DCT(numberOfPhases=10)
     # CT4D = resample(CT4D, gridSize=(80, 50, 50))
 
     plt.figure()
