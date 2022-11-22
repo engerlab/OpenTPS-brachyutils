@@ -68,12 +68,10 @@ class mcsquareCalculationWindow(QDialog):
         beamModel = mcsquareIO.readBDL(settings.bdlFile)
         calibration = readScanner(settings.scannerFolder)
 
-        #        self.selectedPlan.scoringVoxelSpacing = 3 * [self._doseSpacingSpin.value()]
-
         doseCalculator = MCsquareDoseCalculator()
 
         doseCalculator.beamModel = beamModel
-        self._doseComputationPanel.selectedPlan.scoringVoxelSpacing = self._doseComputationPanel._doseSpacingSpin.value()
+        self._doseComputationPanel.selectedPlan.planDesign.scoringVoxelSpacing = self._doseComputationPanel._doseSpacingSpin.value()
         doseCalculator.nbPrimaries = self._doseComputationPanel._numProtons.value()
         doseCalculator.statUncertainty = self._doseComputationPanel._statUncertainty.value()
         doseCalculator.ctCalibration = calibration
