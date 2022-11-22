@@ -10,7 +10,7 @@ import pydicom
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.data.plan import _rangeShifter
+from opentps.core.data.plan._rangeShifter import RangeShifter
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data._patientData import PatientData
 from opentps.core.data.plan._objectivesList import ObjectivesList
@@ -37,7 +37,7 @@ class PlanDesign(PatientData):
         self.beamNames = []
         self.gantryAngles = []
         self.couchAngles = []
-        self.rangeShifters: _rangeShifter = []
+        self.rangeShifters: RangeShifter = []
 
         self.objectives = ObjectivesList()
         self.beamlets = []
@@ -131,8 +131,7 @@ class PlanDesign(PatientData):
             else:
                 beam.name = 'B' + str(i)
             if self.rangeShifters and self.rangeShifters[i]:
-                beam.rangeShifter.ID = self.rangeShifters[i].ID
-                beam.rangeShifter.type = self.rangeShifters[i].type
+                beam.rangeShifter = self.rangeShifters[i]
 
             plan.appendBeam(beam)
 
