@@ -37,7 +37,7 @@ class PlanDesign(PatientData):
         self.beamNames = []
         self.gantryAngles = []
         self.couchAngles = []
-        self.rangeShifters: RangeShifter = []
+        self.rangeShifters: Sequence[RangeShifter] = []
 
         self.objectives = ObjectivesList()
         self.beamlets = []
