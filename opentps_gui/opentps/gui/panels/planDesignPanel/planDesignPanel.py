@@ -176,9 +176,11 @@ class PlanDesignPanel(QWidget):
                 rs = None
             else:
                 RS_disp = ", RS"
-                rs = [rsElem for rsElem in RangeShifterList if rsElem.ID==RangeShifter][0]
+                rs = [rsElem for rsElem in bdl.rangeShifters if rsElem.ID==RangeShifter]
                 if len(rs)==0:
                     rs = None
+                else:
+                    rs = rs[0]
             self._beams.addItem(BeamName + ":  G=" + str(GantryAngle) + "°,  C=" + str(CouchAngle) + "°" + RS_disp)
             self._beamDescription.append(
                 {"BeamType": "beam", "BeamName": BeamName, "GantryAngle": GantryAngle, "CouchAngle": CouchAngle,

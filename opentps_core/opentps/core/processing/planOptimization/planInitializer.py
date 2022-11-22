@@ -16,7 +16,6 @@ class BeamInitializer:
         self.spotSpacing = 5.
         self.layerSpacing = 2.
         self.targetMargin = 0.
-        self.rangeShifter = None
         self.beam = None
 
         self.calibration: AbstractCTCalibration = None
@@ -58,7 +57,7 @@ class BeamInitializer:
                 spotGrid["WET"].pop(s)
             else:
                 if self.beam.rangeShifter and self.beam.rangeShifter.WET > 0.0: spotGrid["WET"][
-                    s] += self.rangeShifter.WET
+                    s] += self.beam.rangeShifter.WET
                 if spotGrid["WET"][s] < minWET: minWET = spotGrid["WET"][s]
                 if self.layersToSpacingAlignment: minWET = round(minWET / self.layerSpacing) * self.layerSpacing
 
