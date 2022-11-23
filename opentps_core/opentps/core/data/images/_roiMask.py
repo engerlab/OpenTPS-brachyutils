@@ -90,13 +90,13 @@ class ROIMask(Image3D):
                 tryGPU = False
 
         if not tryGPU:
-            try:
+            '''try:
                 logger.info('Using SITK to dilate mask.')
                 radius = np.round(radius).astype(int).tolist()
                 self._dilateSITK(radius)
             except:
-                logger.warning('SITK not used to dilate mask.')
-                self._dilateScipy(filt)
+                logger.warning('SITK not used to dilate mask.')'''
+            self._dilateScipy(filt)
 
     def _dilateSITK(self, radius):
         sitkImageProcessing.dilate(self, radius)
