@@ -91,11 +91,8 @@ class ROIMask(Image3D):
 
         if not tryGPU:
             try:
-                if radius[0]==radius[1]==radius[2]:
-                    radius = int(round(radius[0]))
-                    self._dilateSITK(radius)
-                else:
-                    raise ValueError('Radius must be a scalar for SITK')
+                radius = np.round(radius).astype(int).tolist()
+                self._dilateSITK(radius)
             except:
                 logger.warning('SITK not used to dilate mask.')
                 self._dilateScipy(filt)
