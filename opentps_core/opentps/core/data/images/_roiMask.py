@@ -91,6 +91,7 @@ class ROIMask(Image3D):
 
         if not tryGPU:
             try:
+                logger.info('Using SITK to dilate mask.')
                 radius = np.round(radius).astype(int).tolist()
                 self._dilateSITK(radius)
             except:
