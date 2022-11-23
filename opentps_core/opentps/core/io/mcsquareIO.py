@@ -612,6 +612,7 @@ def writeContours(contour: ROIMask, folder_path):
 
     if not os.path.isdir(folder_path):
         os.mkdir(folder_path)
+    contourCopy.name = contour.name
     contourName = contourCopy.name.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
     file_path = os.path.join(folder_path, contourName + ".mhd")
     mhdIO.exportImageMHD(file_path, contourCopy)
