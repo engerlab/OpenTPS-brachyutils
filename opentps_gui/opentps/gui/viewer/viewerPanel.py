@@ -31,6 +31,10 @@ class ViewerPanel(QWidget):
 
         self._iniializeControl()
 
+    def closeEvent(self, QCloseEvent):
+        for element in self._viewerGrid.gridElements:
+            element.close()
+        super().closeEvent(QCloseEvent)
 
     def _dropEvent(self, e):
         if e.mimeData().hasText():

@@ -67,10 +67,7 @@ def run():
     mc2.beamModel = bdl
     mc2.nbPrimaries = 5e4
     mc2.ctCalibration = ctCalibration
-    mc2.setupSystematicError = [5.0, 5.0, 5.0]  # mm
-    mc2.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
-    mc2.rangeSystematicError = 3.0  # %
-    mc2.robustnessStrategy = "ErrorSpace_regular"
+
 
     # Load / Generate new plan
     plan_file = os.path.join(output_path, "RobustPlan_notCropped.tps")
@@ -78,24 +75,30 @@ def run():
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
     else:
-        planInit = PlanDesign()
-        planInit.ct = ct
-        planInit.targetMask = roi
-        planInit.gantryAngles = gantryAngles
-        planInit.beamNames = beamNames
-        planInit.couchAngles = couchAngles
-        planInit.calibration = ctCalibration
-        planInit.spotSpacing = 7.0
-        planInit.layerSpacing = 6.0
-        planInit.targetMargin = max(planInit.spotSpacing, planInit.layerSpacing) + max(mc2.setupSystematicError)
+        planDesign = PlanDesign()
+        planDesign.ct = ct
+        planDesign.targetMask = roi
+        planDesign.gantryAngles = gantryAngles
+        planDesign.beamNames = beamNames
+        planDesign.couchAngles = couchAngles
+        planDesign.calibration = ctCalibration
+        # Robustness settings
+        planDesign.robustness.setupSystematicError = [5.0, 5.0, 5.0]  # mm
+        planDesign.robustness.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
+        planDesign.robustness.rangeSystematicError = 3.0  # %
+        planDesign.robustness.selectionStrategy = planDesign.robustness.Strategies.ERRORSPACE_REGULAR
 
-        plan = planInit.buildPlan()  # Spot placement
+        planDesign.spotSpacing = 7.0
+        planDesign.layerSpacing = 6.0
+        planDesign.targetMargin = max(planDesign.spotSpacing, planDesign.layerSpacing) + max(planDesign.robustness.setupSystematicError)
+
+        plan = planDesign.buildPlan()  # Spot placement
         plan.PlanName = "RobustPlan"
 
         nominal, scenarios = mc2.computeRobustScenarioBeamlets(ct, plan, roi=[roi], storePath=output_path)
         plan.planDesign.beamlets = nominal
-        plan.planDesign.scenarios = scenarios
-        plan.planDesign.numScenarios = len(scenarios)
+        plan.planDesign.robustness.scenarios = scenarios
+        plan.planDesign.robustness.numScenarios = len(scenarios)
 
         #saveRTPlan(plan, plan_file)
 

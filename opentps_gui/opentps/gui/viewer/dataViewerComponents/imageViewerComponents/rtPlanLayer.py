@@ -116,7 +116,7 @@ class RTPlanLayer:
 
     def close(self):
         for bLayer in self._beamLayers:
-            bLayer.close()
+            bLayer.reset()
 
         self._beamLayers = []
 

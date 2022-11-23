@@ -13,26 +13,8 @@ class PlanOptimizationConfig(AbstractApplicationConfig):
         self._writeAllFieldsIfNotAlready()
 
     def _writeAllFieldsIfNotAlready(self):
-        self.beamletPrimaries
-        self.finalDosePrimaries
         self.imptSolver
         self.imptMaxIter
-
-    @property
-    def beamletPrimaries(self) -> int:
-        return int(self.getConfigField("MCsquare", "beamletPrimaries", int(1e4)))
-
-    @beamletPrimaries.setter
-    def beamletPrimaries(self, primaries:int):
-        self.setConfigField("MCsquare", "beamletPrimaries", int(primaries))
-
-    @property
-    def finalDosePrimaries(self) -> int:
-        return int(self.getConfigField("MCsquare", "finalDosePrimaries", int(1e8)))
-
-    @finalDosePrimaries.setter
-    def finalDosePrimaries(self, primaries: int):
-        self.setConfigField("MCsquare", "finalDosePrimaries", int(primaries))
 
     @property
     def imptSolver(self) -> str:

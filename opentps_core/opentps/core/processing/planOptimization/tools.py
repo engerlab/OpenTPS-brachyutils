@@ -2,6 +2,7 @@ import numpy as np
 import scipy.sparse as sp
 import pandas as pd
 
+from opentps.core.data import DVH
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
 from opentps.core.data.plan._planIonLayer import PlanIonLayer
 from opentps.core.data.plan._planIonSpot import PlanIonSpot
@@ -434,3 +435,79 @@ def getEnergyWeights(energyList):
                 energyWeights[nonZeroIndex] = 5.5
     finalEnergyWeights = np.where(energyWeights == 0, 1., energyWeights)
     return finalEnergyWeights
+
+
+def evaluateClinical(dose, contours, clinDict):
+    roi = clinDict['ROI']
+    metric = clinDict['Metric']
+    limit = clinDict['Limit']
+
+    condition = []
+    roiIndex = []
+    toRemove = []
+    L = []
+    for i in range(len(contours)):
+        L.append(contours[i].name)
+    for i in range(len(roi)):
+        if metric[i] == 'Dmin':
+            condition.append(">")
+        else:
+            condition.append("<")
+        try:
+            index_value = L.index(roi[i])
+        except ValueError:
+            index_value = -1
+        if index_value == -1:
+            toRemove.append(i)
+        else:
+            roiIndex.append(index_value)
+
+    for i in sorted(toRemove, reverse=True):
+        del (roi[i])
+        del (metric[i])
+        del (condition[i])
+        del (limit[i])
+
+    dash = '-' * 100
+    print(dash)
+    print('{:<15s}{:<10s}{:<8s}{:<8s}{:^8s}{:<8s}{:^8s}'.format("ROI", "Metric", "Limit", "D98/D2", "Passed", "D95/D5",
+                                                                "Passed"))
+    print(dash)
+
+    for i in range(len(roi)):
+        print('{:<15s}{:<10s}{:<8.2f}'.format(roi[i], metric[i], limit[i]), end="")
+        ROI_DVH = DVH(contours[roiIndex[i]], dose)
+        if metric[i] == "Dmin":
+            print('{:<8.2f}'.format(ROI_DVH.D98), end="")
+            if ROI_DVH.D98 > limit[i]:
+                print('{:^8s}'.format("1"), end="")
+            else:
+                print('{:^8s}'.format("0"), end="")
+            print('{:<8.2f}'.format(ROI_DVH.D95), end="")
+            if ROI_DVH.D95 > limit[i]:
+                print('{:^8s}'.format("1"))
+            else:
+                print('{:^8s}'.format("0"))
+        elif metric[i] == "Dmax":
+            print('{:<8.2f}'.format(ROI_DVH.D2), end="")
+            if ROI_DVH.D2 < limit[i]:
+                print('{:^8s}'.format("1"), end="")
+            else:
+                print('{:^8s}'.format("0"), end="")
+            print('{:<8.2f}'.format(ROI_DVH.D5), end="")
+            if ROI_DVH.D5 < limit[i]:
+                print('{:^8s}'.format("1"))
+            else:
+                print('{:^8s}'.format("0"))
+        elif metric[i] == "Dmean":
+            print('{:<8.2f}'.format(ROI_DVH.Dmean), end="")
+            if ROI_DVH.Dmean < limit[i]:
+                print('{:^8s}'.format("1"))
+            else:
+                print('{:^8s}'.format("0"))
+        else:
+            print('{:<8.2f}'.format(ROI_DVH.D003), end="")
+            if ROI_DVH.D003 < limit[i]:
+                print('{:^8s}'.format("1"))
+            else:
+                print('{:^8s}'.format("0"))

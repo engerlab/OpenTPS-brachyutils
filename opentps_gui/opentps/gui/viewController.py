@@ -51,6 +51,7 @@ class ViewController():
         self._selectedImage = None
         self._windowLevelEnabled = None
         self._displayLayout = ViewerPanel.LayoutTypes.DEFAULT
+        self.shownDataUIDsList = []  # this is to keep track of which data is currently shown, but not used yet
 
         self.dynamicDisplayController = DynamicDisplayController(self)
         self.mainWindow = MainWindow(self)
@@ -62,8 +63,6 @@ class ViewController():
 
         self._patientList.patientAddedSignal.connect(self._handleNewPatient)
         self._patientList.patientRemovedSignal.connect(self._handleRemovedPatient)
-
-        self.shownDataUIDsList = [] #this is to keep track of which data is currently shown, but not used yet
 
     def _handleNewPatient(self, patient):
         self._activePatients.append(patient)
