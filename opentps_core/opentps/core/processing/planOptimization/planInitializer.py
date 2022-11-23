@@ -16,7 +16,6 @@ class BeamInitializer:
         self.spotSpacing = 5.
         self.layerSpacing = 2.
         self.targetMargin = 0.
-        self.rangeShifter = None
         self.beam = None
 
         self.calibration: AbstractCTCalibration = None
@@ -58,7 +57,7 @@ class BeamInitializer:
                 spotGrid["WET"].pop(s)
             else:
                 if self.beam.rangeShifter and self.beam.rangeShifter.WET > 0.0: spotGrid["WET"][
-                    s] += self.rangeShifter.WET
+                    s] += self.beam.rangeShifter.WET
                 if spotGrid["WET"][s] < minWET: minWET = spotGrid["WET"][s]
                 if self.layersToSpacingAlignment: minWET = round(minWET / self.layerSpacing) * self.layerSpacing
 
@@ -87,6 +86,9 @@ class BeamInitializer:
 
             # generate plan structure
             for energy in spotGrid["EnergyLayers"][s]:
+                if energy <=0:
+                    continue
+
                 layerFound = 0
                 for layer in self.beam.layers:
                     if abs(layer.nominalEnergy - energy) < 0.05:
@@ -177,6 +179,7 @@ class PlanInitializer:
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)
+        rspImage.patient = None
         self._beamInitializer.rspImage = rspImage
 
         imgBordersX = [rspImage.origin[0], rspImage.origin[0] + rspImage.gridSize[0] * rspImage.spacing[0]]

@@ -17,9 +17,9 @@ class DoseFidelity(BaseFunc):
         self.list = plan.planDesign.objectives.fidObjList
         self.xSquare = xSquare
         self.beamlets = plan.planDesign.beamlets.toSparseMatrix()
-        if plan.planDesign.scenarios:
-            self.scenariosBL = [plan.planDesign.scenarios[s].toSparseMatrix() for s in
-                                range(len(plan.planDesign.scenarios))]
+        if plan.planDesign.robustness.scenarios:
+            self.scenariosBL = [plan.planDesign.robustness.scenarios[s].toSparseMatrix() for s in
+                                range(len(plan.planDesign.robustness.scenarios))]
         else:
             self.scenariosBL = []
 

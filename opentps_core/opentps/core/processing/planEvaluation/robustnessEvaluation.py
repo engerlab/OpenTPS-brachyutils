@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from typing import Union
 
 import numpy as np
@@ -20,8 +21,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 class Robustness:
+    class Strategies(Enum):
+        DEFAULT = "DISABLED"
+        DISABLED = "DISABLED"
+        ERRORSPACE_REGULAR = "ERRORSPACE_REGULAR"
+        ERRORSPACE_STAT = "ERRORSPACE_STAT"
+        DOSIMETRIC = "DOSIMETRIC"
+
     def __init__(self):
-        self.selectionStrategy = "Dosimetric"
+        self.selectionStrategy = self.Strategies.DEFAULT
         self.setupSystematicError = [1.6, 1.6, 1.6]  # mm
         self.setupRandomError = [1.4, 1.4, 1.4]  # mm
         self.rangeSystematicError = 1.6  # %
@@ -58,7 +66,6 @@ class Robustness:
             np.float16)  # can be reduced to float16 because all metrics are already computed and it's only used for display
 
         self.scenarios.append(scenario)
-        self.numScenarios += 1
 
     def setTarget(self, targetContour, targetPrescription):
         if not(self.nominal.dose.hasSameGrid(targetContour)):

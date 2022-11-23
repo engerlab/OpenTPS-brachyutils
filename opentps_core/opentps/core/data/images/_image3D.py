@@ -43,7 +43,7 @@ class Image3D(PatientData):
     @classmethod
     def fromImage3D(cls, image, **kwargs):
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
-               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient, 'name': image.name}
         dic.update(kwargs)
         return cls(**dic)
 
