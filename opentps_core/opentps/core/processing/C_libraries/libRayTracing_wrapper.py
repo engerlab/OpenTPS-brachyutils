@@ -222,7 +222,7 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
 
         # call C function
         libRaytracing.transport_spots_to_target(SPR.imageArray.astype(np.float32),
-                                                Target_mask.imageArray.astype(np.bool), Offset,
+                                                Target_mask.imageArray.astype(np.bool).flatten(), Offset,
                                                 PixelSpacing, GridSize, positions, WETs, direction, NumSpots)
 
         # post process results
@@ -313,7 +313,7 @@ def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET,
 
         # call C function
         libRaytracing.transport_spots_inside_target(SPR.imageArray.astype(np.float32),
-                                                    Target_mask.imageArray.astype(np.bool),
+                                                    Target_mask.imageArray.astype(np.bool).flatten(),
                                                     Offset,
                                                     PixelSpacing, GridSize, positions, WETs, Layers, direction,
                                                     NumSpots, max_number_layers, minWET, LayerSpacing)
@@ -499,6 +499,6 @@ def transport_spots_inside_target_map(SPR, Target_mask, SpotGrid, direction, min
         # interpolate layer map between spots
         ind = nd.distance_transform_edt(layer_maps[-1] < 0, return_distances=False, return_indices=True)
         data = layer_maps[-1][tuple(ind)]
-        data[~Target_mask] = -1
+        data[~Target_mask.imageArray] = -1
         # layer_maps[-1] = data
-        layer_maps[-1] = data[Target_mask]
+        layer_maps[-1] = data[Target_mask.imageArray]

@@ -175,7 +175,6 @@ class PlanInitializer:
 
         from opentps.core.data.images._rspImage import RSPImage
         roiDilated = ROIMask.fromImage3D(self.targetMask, patient=None)
-        roiDilated.dilate(radius=targetMargin)
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)

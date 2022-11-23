@@ -241,6 +241,7 @@ def dilate(image:Image3D, radius:Union[float, Sequence[float]]):
 
     dilateFilter = sitk.BinaryDilateImageFilter()
     dilateFilter.SetKernelType(sitk.sitkBall)
+    dilateFilter.SetBackgroundValue(0)
     dilateFilter.SetKernelRadius(radius)
     outImg = dilateFilter.Execute(img)
 
