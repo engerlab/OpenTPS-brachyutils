@@ -124,6 +124,13 @@ class ROITable(QTableWidget):
 
     @planDesign.setter
     def planDesign(self, pd:PlanDesign):
+        if self._planDesign is None:
+            robustnessChanged = True
+        else:
+            robustnessChanged = self.robustnessEnabled != (self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED)
+        if self._planDesign==pd and (not robustnessChanged):
+            return
+
         self.updateTable()
         self._planDesign = pd
         self.robustnessEnabled = self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED
