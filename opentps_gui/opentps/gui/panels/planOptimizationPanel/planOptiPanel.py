@@ -395,4 +395,5 @@ class ObjectivesWidget(QWidget):
         self._objectivesLabels.setText(objStr)
 
     def _openObjectivePanel(self):
+        self._roiWindow.planDesign = self.planDesign
         self._roiWindow.show()
