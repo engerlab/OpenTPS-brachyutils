@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from opentps.core.data.images import DoseImage
+from opentps.core.data.images import DoseImage, CTImage
 from opentps.core import Event
 from opentps.gui.mainWindow import MainWindow
 from opentps.gui.viewer.dataViewerComponents.profileWidget import ProfileWidget
@@ -51,6 +51,7 @@ class ViewController():
         self._selectedImage = None
         self._windowLevelEnabled = None
         self._displayLayout = ViewerPanel.LayoutTypes.DEFAULT
+        self.shownDataUIDsList = []  # this is to keep track of which data is currently shown, but not used yet
 
         self.dynamicDisplayController = DynamicDisplayController(self)
         self.mainWindow = MainWindow(self)
@@ -63,14 +64,20 @@ class ViewController():
         self._patientList.patientAddedSignal.connect(self._handleNewPatient)
         self._patientList.patientRemovedSignal.connect(self._handleRemovedPatient)
 
-        self.shownDataUIDsList = [] #this is to keep track of which data is currently shown, but not used yet
-
     def _handleNewPatient(self, patient):
         self._activePatients.append(patient)
         self.patientAddedSignal.emit(self._activePatients[-1])
 
         if self.currentPatient is None:
             self.currentPatient = patient
+
+    def _displayCTOfCurrentPatient(self):
+        if self.currentPatient is None:
+            return
+
+        ct = self.currentPatient.getPatientDataOfType(CTImage)
+        if len(ct)>0:
+            self.mainImage = ct[0]
 
     def _handleRemovedPatient(self, patient):
         self._activePatients.remove(patient)
@@ -132,8 +139,25 @@ class ViewController():
 
     @currentPatient.setter
     def currentPatient(self, patient):
+        previousPatient = self._currentPatient
+        noPreviousPatient = previousPatient is None
+
+        if patient == previousPatient:
+            return
+
         self._currentPatient = patient
+
+        if noPreviousPatient:
+            self._displayCTOfCurrentPatient()
+            self._currentPatient.patientDataAddedSignal.connect(self._handleNewCTinFirstPatient)
+        else:
+            previousPatient.patientDataAddedSignal.disconnect(self._handleNewCTinFirstPatient)
+
         self.currentPatientChangedSignal.emit(self._currentPatient)
+
+    def _handleNewCTinFirstPatient(self, data):
+        if isinstance(data, CTImage):
+            self._displayCTOfCurrentPatient()
 
     @property
     def dropMode(self):

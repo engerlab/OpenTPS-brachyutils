@@ -112,7 +112,7 @@ def configure(*args):
     mainParser.add_argument('-2', '--option2')
 
     try:
-        mainArgs = mainParser.parse_args(*args)
+        mainArgs = mainParser.parse_known_args(*args)
         # where did the value of each argument come from?
         logger.info("Option 1: {}".format(mainArgs.option1))
         logger.info("Option 2: {}".format(mainArgs.option2))

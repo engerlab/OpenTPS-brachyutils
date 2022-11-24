@@ -8,6 +8,15 @@ from opentps.core.data import PatientList
 from opentps.core.utils.programSettings import ProgramSettings
 from opentps.gui.viewController import ViewController
 
+
+def viewController():
+    # instantiate the main opentps_core window
+    viewController = ViewController(patientList)
+    viewController.mainConfig = mainConfig
+
+    return viewController
+
+
 options = loggingConfig.configure(sys.argv[1:])
 
 logger = logging.getLogger(__name__)
@@ -21,17 +30,17 @@ app = QApplication.instance()
 if not app:
     app = QApplication([])
 
-# instantiate the main opentps_core window
-viewController = ViewController(patientList)
-viewController.mainConfig = mainConfig
-mainWindow = viewController.mainWindow
 
 def run():
     # options = parseArgs(sys.argv[1:])
     logger.info("Start opentps gui")
 
-    mainWindow.show()
+    _viewController = viewController()
+    _viewController.mainWindow.show()
     app.exec_()
+
+    _viewController.mainWindow.close()
+    #del _viewController.mainWindow
 
 if __name__ == '__main__':
     run()

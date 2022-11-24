@@ -42,6 +42,11 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.statusBar)
         self.statusBar.show()
 
+    def closeEvent(self, QCloseEvent):
+        self.viewerPanel.close()
+        super().closeEvent(QCloseEvent)
+
+
     def setLateralToolbar(self, toolbar):
         self.mainLayout.addWidget(toolbar)
         toolbar.setFixedWidth(self.toolbox_width)

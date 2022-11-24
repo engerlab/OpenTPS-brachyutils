@@ -133,6 +133,14 @@ class DataViewer(QWidget):
         # Logical control of the DataViewer is set here. We might want to move this to dedicated controller class
         self._initializeControl()
 
+    def closeEvent(self, QCloseEvent):
+        self.cachedStaticImage3DViewer.close()
+        self.cachedStaticImage2DViewer.close()
+        self.cachedStaticImage3DViewer_3D.close()
+        self.cachedDynamicImage3DViewer.close()
+        self.cachedDynamicImage2DViewer.close()
+        super().closeEvent(QCloseEvent)
+
     def _addViewersToLayout(self):
         self._mainLayout.addWidget(self._toolbar)
         self._mainLayout.addWidget(self._dynImage3DViewer)
@@ -620,10 +628,7 @@ class DataViewer(QWidget):
             self.cachedStaticImage3DViewer_3D.update()
 
     def _setDVHDose(self, image:Optional[DoseImage]):
-        if image is None:
-            self.cachedStaticDVHViewer.clear()
-        else:
-            self.cachedStaticDVHViewer.dose = image
+        self.cachedStaticDVHViewer.dose = image
 
     def _removeImageFromViewers(self, image: Union[Image3D, ]):
         """

@@ -46,23 +46,6 @@ clean:
 #
 
 OPENTPSVER:=$(shell cd '..' ; $(PYTHON) -c "import version; print(version.git_revision[:10])" 2>/dev/null)
-GITVER ?= $(shell cd tools; $(PYTHON) -c "from version_utils import git_version; \
-				print(git_version('..')[0][:10])")
-
-version-check:
-ifeq "$(GITVER)" "Unknown"
-	# @echo sdist build with unlabeled sources
-else ifeq ("", "$(OPENTPSVER)")
-	@echo opentps not found, cannot build documentation without successful \"import opentps\"
-	@exit 1
-else ifneq ($(OPENTPSVER),$(GITVER))
-	@echo installed opentps $(OPENTPSVER) != current repo git version \'$(GITVER)\'
-	@echo use '"make dist"' or '"GITVER=$(OPENTPSVER) make $(MAKECMDGOALS) ..."'
-	@exit 1
-else
-	# for testing
-	# @echo installed opentps $(OPENTPSVER) matches git version $(GITVER); exit 1
-endif
 
 dist:
 	install -d build
