@@ -1,6 +1,7 @@
 import os
 import sys
 
+from opentps.core.io.dicomIO import writeRTPlan
 from opentps.core.processing.planOptimization.tools import evaluateClinical
 
 sys.path.append('..')
@@ -70,7 +71,7 @@ def run():
 
     # Load / Generate new plan
     plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
-
+    dcm_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.dcm")
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
@@ -107,7 +108,9 @@ def run():
     w, doseImage, ps = solver.optimize()
 
     # Save plan with updated spot weights
+    plan.patient = patient
     saveRTPlan(plan, plan_file)
+    writeRTPlan(plan, dcm_file)
 
     # MCsquare simulation
     # mc2.nbPrimaries = 1e7
