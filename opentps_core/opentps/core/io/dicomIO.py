@@ -592,6 +592,9 @@ def writeRTPlan(plan: RTPlan, filePath):
             dcm_layer.NominalBeamEnergy = layer.nominalEnergy
             dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
             dcm_layer.ScanSpotMetersetWeights = layer.spotMUs.tolist()
+            if type(dcm_layer.ScanSpotMetersetWeights) == float:
+                dcm_layer.NumberOfScanSpotPositions = 1
+            else: dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]
