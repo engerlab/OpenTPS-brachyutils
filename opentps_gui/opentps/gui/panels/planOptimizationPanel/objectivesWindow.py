@@ -92,7 +92,7 @@ class ROITable(QTableWidget):
         self.objectivesModifiedEvent = Event()
         self.robustnessEnabledEvent = Event(bool)
 
-        self.setHorizontalHeaderLabels(['ROI', 'Robust', 'Weight', 'Dmin', 'Weight', 'Dmax', 'Weight', 'Dmean'])
+        self.setHorizontalHeaderLabels(['ROI', 'Robust', 'Weight', 'Dmin (Gy)', 'Weight', 'Dmax (Gy)', 'Weight', 'Dmean (Gy)'])
         self._roiCol = 0
         self._robustCol = 1
         self._weightMinCol = 2
