@@ -71,7 +71,7 @@ def run():
 
     # Load / Generate new plan
     plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
-    dcm_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.dcm")
+
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
@@ -94,7 +94,7 @@ def run():
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
         plan.planDesign.beamlets = beamlets
         beamlets.storeOnFS(os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm"))
-
+        # Save plan with initial spot weights in serialized format (OpenTPS format)
         saveRTPlan(plan, plan_file)
 
     plan.planDesign.objectives = ObjectivesList()
@@ -107,9 +107,12 @@ def run():
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
-    # Save plan with updated spot weights
+    # Save plan with updated spot weights in serialized format (OpenTPS format)
+    plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
+    saveRTPlan(plan, plan_file_optimized)
+    # Save plan with updated spot weights in dicom format
     plan.patient = patient
-    saveRTPlan(plan, plan_file)
+    dcm_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
     writeRTPlan(plan, dcm_file)
 
     # MCsquare simulation
