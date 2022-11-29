@@ -167,11 +167,11 @@ class BDT:
             index_spot_scanAlgo = self.findSpotIndexJson(SA_layer,
                     original_layer._x[0],
                     original_layer._y[0], return_first=False)
-            factor = 1
             if isinstance(index_spot_scanAlgo, list):
-                factor = len(index_spot_scanAlgo)
-                index_spot_scanAlgo = index_spot_scanAlgo[0]
-            conversion_coeff = original_layer._mu[0] / (SA_layer['spot'][index_spot_scanAlgo]['charge'] * factor)
+                total_charge = sum([SA_layer['spot'][i]['charge'] for i in index_spot_scanAlgo])
+                conversion_coeff = original_layer._mu[0] / total_charge
+            else:
+                conversion_coeff = original_layer._mu[0] / (SA_layer['spot'][index_spot_scanAlgo]['charge'])
         elif self.gantry == 'POne':
             index_spot_scanAlgo = self.findSpotIndexJson(SA_layer,
                     original_layer._x[0],
