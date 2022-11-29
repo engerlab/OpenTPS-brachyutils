@@ -152,7 +152,7 @@ def run():
     ax[1].plot(target_DVH.histogram[0], target_DVH.histogram[1], label=target_DVH.name)
     ax[1].set_xlabel("Dose (Gy)")
     ax[1].set_ylabel("Volume (%)")
-    plt.grid(True)
+    ax[1].grid(True)
     ax[1].legend()
 
     convData = solver.getConvergenceData()
@@ -163,6 +163,7 @@ def run():
     ax2 = ax[2].twiny()
     ax2.set_xlabel('Iterations')
     ax2.set_xlim(0, convData['nIter'])
+    ax[2].grid(True)
 
     plt.show()
 
