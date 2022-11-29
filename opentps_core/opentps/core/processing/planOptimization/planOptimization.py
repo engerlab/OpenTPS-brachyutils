@@ -109,18 +109,18 @@ class PlanOptimizer:
         except:
             pass
 
-        weights = result['sol']
+        self.weights = result['sol']
         crit = result['crit']
-        niter = result['niter']
-        time = result['time']
-        cost = result['objective']
+        self.niter = result['niter']
+        self.time = result['time']
+        self.cost = result['objective']
 
-        if niter<=0:
+        if self.niter<=0:
             niter = 1
 
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
-                .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
+                .format(self.solver.__class__.__name__, self.niter, self.weights, self.cost, self.time, self.time / self.niter))
 
         # unload scenario beamlets
         for s in range(len(self.plan.planDesign.robustness.scenarios)):
@@ -129,9 +129,9 @@ class PlanOptimizer:
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.plan.spotMUs = np.square(weights).astype(np.float32)
+            self.plan.spotMUs = np.square(self.weights).astype(np.float32)
         else:
-            self.plan.spotMUs = weights.astype(np.float32)
+            self.plan.spotMUs = self.weights.astype(np.float32)
         
         threshold_MU = 1e-4
         MU_before_simplify = self.plan.spotMUs.copy()
@@ -146,26 +146,41 @@ class PlanOptimizer:
         totalDose = self.plan.planDesign.beamlets.toDoseImage()
         logger.info('Optimization done.')
 
-        return weights, totalDose, cost
+        return self.weights, totalDose, self.cost
+
+    def getConvergenceData(self, method):
+        dct = {}
+        if 'Scipy' in method:
+            dct['func_0'] = self.cost[:-1]
+        elif method == 'LP':
+            raise NotImplementedError('No convergence data is available for LP')
+        else:
+            nFunctions = len(self.cost[0])
+            for i in range(nFunctions):
+                dct['func_%s' % i] = [itm[i] for itm in self.cost[:-1]]
+        dct['time'] = self.time
+        dct['nIter'] = self.niter
+
+        return dct
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
     def __init__(self, method, plan:RTPlan, **kwargs):
         super().__init__(plan, **kwargs)
-
-        if method == 'Scipy-BFGS':
+        self.method = method
+        if self.method == 'Scipy-BFGS':
             self.solver = bfgs.ScipyOpt('BFGS', **kwargs)
-        elif method == 'Scipy-LBFGS':
+        elif self.method == 'Scipy-LBFGS':
             self.solver = bfgs.ScipyOpt('L-BFGS-B', **kwargs)
-        elif method == 'Gradient':
+        elif self.method == 'Gradient':
             self.solver = gradientDescent.GradientDescent(**kwargs)
-        elif method == 'BFGS':
+        elif self.method == 'BFGS':
             self.solver = bfgs.BFGS(**kwargs)
-        elif method == "LBFGS":
+        elif self.method == "LBFGS":
             self.solver = bfgs.LBFGS(**kwargs)
-        elif method == "FISTA":
+        elif self.method == "FISTA":
             self.solver = fista.FISTA(**kwargs)
-        elif method == "LP":
+        elif self.method == "LP":
             from opentps.core.processing.planOptimization.solvers import lp
             self.xSquared = False
             self.solver = lp.LP(self.plan, **kwargs)
@@ -173,6 +188,9 @@ class IMPTPlanOptimizer(PlanOptimizer):
             logger.error(
                 'Method {} is not implemented. Pick among ["Scipy-LBFGS", "Gradient", "BFGS", "FISTA"]'.format(
                     self.method))
+
+    def getConvergenceData(self):
+        return super().getConvergenceData(self.method)
 
 
 class BoundConstraintsOptimizer(PlanOptimizer):

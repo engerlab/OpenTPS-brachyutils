@@ -142,7 +142,7 @@ def run():
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
     # Display dose
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     ax[0].axes.get_xaxis().set_visible(False)
     ax[0].axes.get_yaxis().set_visible(False)
     ax[0].imshow(img_ct, cmap='gray')
@@ -153,7 +153,16 @@ def run():
     ax[1].set_xlabel("Dose (Gy)")
     ax[1].set_ylabel("Volume (%)")
     plt.grid(True)
-    plt.legend()
+    ax[1].legend()
+
+    convData = solver.getConvergenceData()
+    ax[2].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
+               label='Fidelity')
+    ax[2].set_xlabel('Time (s)')
+    ax[2].set_xlabel('Cost')
+    ax2 = ax[2].twiny()
+    ax2.set_xlabel('Iterations')
+    ax2.set_xlim(0, convData['nIter'])
 
     plt.show()
 
