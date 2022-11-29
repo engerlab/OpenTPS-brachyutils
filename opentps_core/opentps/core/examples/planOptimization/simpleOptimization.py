@@ -103,7 +103,7 @@ def run():
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
 
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
+    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
@@ -159,7 +159,8 @@ def run():
     ax[2].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
                label='Fidelity')
     ax[2].set_xlabel('Time (s)')
-    ax[2].set_xlabel('Cost')
+    ax[2].set_ylabel('Cost')
+    ax[2].set_yscale('symlog')
     ax2 = ax[2].twiny()
     ax2.set_xlabel('Iterations')
     ax2.set_xlim(0, convData['nIter'])
