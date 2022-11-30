@@ -1,6 +1,7 @@
 import os
 import sys
 
+from opentps.core.io.dicomIO import writeRTPlan
 from opentps.core.processing.planOptimization.tools import evaluateClinical
 
 sys.path.append('..')
@@ -93,7 +94,7 @@ def run():
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
         plan.planDesign.beamlets = beamlets
         beamlets.storeOnFS(os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm"))
-
+        # Save plan with initial spot weights in serialized format (OpenTPS format)
         saveRTPlan(plan, plan_file)
 
     plan.planDesign.objectives = ObjectivesList()
@@ -106,8 +107,13 @@ def run():
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
-    # Save plan with updated spot weights
-    saveRTPlan(plan, plan_file)
+    # Save plan with updated spot weights in serialized format (OpenTPS format)
+    plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
+    saveRTPlan(plan, plan_file_optimized)
+    # Save plan with updated spot weights in dicom format
+    plan.patient = patient
+    dcm_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTPlan(plan, dcm_file)
 
     # MCsquare simulation
     # mc2.nbPrimaries = 1e7
