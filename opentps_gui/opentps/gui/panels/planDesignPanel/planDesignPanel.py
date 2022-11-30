@@ -1,3 +1,6 @@
+import logging
+import time
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDoubleSpinBox, QListWidget, \
     QHBoxLayout, QMenu, QAction
@@ -10,6 +13,7 @@ from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCa
 from opentps.gui.panels.planDesignPanel.beamDialog import BeamDialog
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
 
+logger = logging.getLogger(__name__)
 
 class PlanDesignPanel(QWidget):
     def __init__(self, viewController):
@@ -123,6 +127,8 @@ class PlanDesignPanel(QWidget):
         self._patient = patient
 
     def _create(self):
+        logger.info('Plan is designed...')
+        start = time.time()
         planDesign = PlanDesign()
         planDesign.spotSpacing = self._spacingSpin.value()
         planDesign.layerSpacing = self._layerSpin.value()
@@ -156,6 +162,7 @@ class PlanDesignPanel(QWidget):
         planDesign.rangeShifters = rangeShifters
 
         planDesign.robustness = self._robustSettings.robustness
+        logger.info("New plan design created in {} sec".format(time.time() - start))
 
     def add_new_beam(self):
         beam_number = self._beams.count()

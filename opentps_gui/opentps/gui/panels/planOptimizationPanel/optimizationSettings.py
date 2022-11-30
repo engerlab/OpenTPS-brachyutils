@@ -17,7 +17,7 @@ class OptiSettingsDialog(QDialog):
 
         self.layout.addWidget(QLabel('<b>Optimization algorithm:</b>'))
         self.algorithm = QComboBox()
-        self.algorithm.addItems(['Scipy-LBFGS (recommanded)', 'Scipy-BFGS', 'In-house Gradient', 'In-house BFGS', 'In-house LBFGS', 'FISTA'])
+        self.algorithm.addItems(['Scipy-LBFGS (recommended)', 'Scipy-BFGS', 'In-house Gradient', 'In-house BFGS', 'In-house LBFGS', 'FISTA'])
         self.algorithm.setCurrentText(self.optiParam['method'])
         self.layout.addWidget(self.algorithm)
 
@@ -91,7 +91,7 @@ class OptiSettingsDialog(QDialog):
         self.buttonLayout.addWidget(self.okButton)
 
     def updateOptiParams(self):
-        if self.algorithm.currentText() == 'Scipy-LBFGS (recommanded)' or self.algorithm.currentText() == 'Scipy-BFGS':
+        if self.algorithm.currentText() == 'Scipy-LBFGS (recommended)' or self.algorithm.currentText() == 'Scipy-BFGS':
             self._stepSpin.setEnabled(False)
             self._boundMinSpin.setEnabled(True)
             self._boundMaxSpin.setEnabled(True)
