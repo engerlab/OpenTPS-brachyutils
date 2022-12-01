@@ -106,12 +106,11 @@ class BDT:
         """
         assert len(plan._beams[index_beam]._layers) == len(scanAlgo['layers'])
         burst_switching_time = 150
-        cumul_layer_time = 0
+        burst_start_time = 0.
         for l in range(len(plan._beams[index_beam]._layers)):
             assert 'bursts' in scanAlgo['layers'][l]
             original_layer = plan._beams[index_beam]._layers[l]
             SA_burst = scanAlgo['layers'][l]['bursts']
-            cumul_layer_time += float(scanAlgo['layers'][l]["switchingTime"])
 
             conversion_coeff = self.getChargeToMUConversion(original_layer, scanAlgo['layers'][l])
             original_layer._x = np.array([])
@@ -119,16 +118,18 @@ class BDT:
             original_layer._mu = np.array([])
             original_layer._timings = np.array([])
 
-            cumul_burst_time = 0.
-            for burst in SA_burst:
+            burst_start_time += float(scanAlgo['layers'][l]["switchingTime"])
+            N_bursts = len(SA_burst)
+            for b, burst in enumerate(SA_burst):
                 N = len(burst['spots'])
                 SA_x = np.array([burst['spots'][i]['clinicalX'] for i in range(N)])
                 SA_y = np.array([burst['spots'][i]['clinicalY'] for i in range(N)])
                 SA_w = np.array([burst['spots'][i]['targetCharge'] * conversion_coeff for i in range(N)])
                 SA_t = np.array([burst['spots'][i]['startTime'] for i in range(N)])
-                SA_t = (SA_t + cumul_burst_time + cumul_layer_time) / 1000
+                SA_t = (SA_t + burst_start_time) / 1000 # convert to seconds
                 original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t)
-                cumul_burst_time += burst_switching_time + burst['spots'][-1]['startTime'] + burst['spots'][-1]['duration']
+                bst = burst_switching_time if b<N_bursts-1 else 0.
+                burst_start_time += burst['spots'][-1]['startTime'] + burst['spots'][-1]['duration'] + bst
 
             # Reorder spots according to spot timings
             order = np.argsort(original_layer._timings)
