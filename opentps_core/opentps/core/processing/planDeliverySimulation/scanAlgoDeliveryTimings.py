@@ -73,7 +73,7 @@ class BDT:
                 SA_x = [SA_layer[i]['clinicalx'] for i in range(N)]
                 SA_y = [SA_layer[i]['clinicaly'] for i in range(N)]
                 SA_w = [SA_layer[i]['charge'] * conversion_coeff for i in range(N)]
-                SA_t = [SA_layer[i]['start'] for i in range(N)]
+                SA_t = [SA_layer[i]['start'] / 1000 for i in range(N)]
                 original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t)
             else:
                 original_layer._timings = np.zeros(len(SA_layer))
@@ -126,7 +126,7 @@ class BDT:
                 SA_y = np.array([burst['spots'][i]['clinicalY'] for i in range(N)])
                 SA_w = np.array([burst['spots'][i]['targetCharge'] * conversion_coeff for i in range(N)])
                 SA_t = np.array([burst['spots'][i]['startTime'] for i in range(N)])
-                SA_t = SA_t + cumul_burst_time
+                SA_t = (SA_t + cumul_burst_time + cumul_layer_time) / 1000
                 original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t)
                 cumul_burst_time += burst_switching_time + burst['spots'][-1]['startTime'] + burst['spots'][-1]['duration']
 
