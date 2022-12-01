@@ -86,6 +86,11 @@ class BDT:
             # Reorder spots according to spot timings
             order = np.argsort(original_layer._timings)
             original_layer.reorderSpots(order)
+            # Get duration of last spot in layer:
+            index_spot_scanAlgo = self.findSpotIndexJson(scanAlgo['layer'][l],
+                original_layer._x[-1],
+                original_layer._y[-1])
+            original_layer.lastSpotDuration = float(SA_layer[index_spot_scanAlgo]['duration']) / 1000
         return plan
 
 
@@ -130,6 +135,9 @@ class BDT:
                 original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t)
                 bst = burst_switching_time if b<N_bursts-1 else 0.
                 burst_start_time += burst['spots'][-1]['startTime'] + burst['spots'][-1]['duration'] + bst
+
+                if b == N_bursts - 1:
+                    original_layer.lastSpotDuration = float(burst['spots'][-1]['duration']) / 1000
 
             # Reorder spots according to spot timings
             order = np.argsort(original_layer._timings)
