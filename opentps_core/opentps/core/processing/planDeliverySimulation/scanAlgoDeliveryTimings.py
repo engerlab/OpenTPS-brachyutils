@@ -83,9 +83,9 @@ class BDT:
                         original_layer._y[s])
                     start_time = float(SA_layer[index_spot_scanAlgo]['start']) / 1000
                     original_layer._timings[s] = start_time
-                # Reorder spots according to spot timings
-                order = np.argsort(original_layer._timings)
-                original_layer.reorderSpots(order)
+            # Reorder spots according to spot timings
+            order = np.argsort(original_layer._timings)
+            original_layer.reorderSpots(order)
         return plan
 
 
@@ -130,6 +130,9 @@ class BDT:
                 original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t)
                 cumul_burst_time += burst_switching_time + burst['spots'][-1]['startTime'] + burst['spots'][-1]['duration']
 
+            # Reorder spots according to spot timings
+            order = np.argsort(original_layer._timings)
+            original_layer.reorderSpots(order)
         return plan
 
 
