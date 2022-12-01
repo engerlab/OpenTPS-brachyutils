@@ -2,6 +2,7 @@
 __all__ = ['PlanDesign']
 
 import logging
+import time
 from typing import Optional, Sequence, Union
 
 import numpy as np
@@ -67,6 +68,7 @@ class PlanDesign(PatientData):
             return self.ct.gridSize
 
     def buildPlan(self):
+        start = time.time()
         # Spot placement
         from opentps.core.data.plan import RTPlan
         plan = RTPlan("NewPlan")
@@ -76,12 +78,15 @@ class PlanDesign(PatientData):
         plan.radiationType = "Proton"
         plan.scanMode = "MODULATED"
         plan.treatmentMachineName = "Unknown"
-
+        logger.info('Building plan ...')
         self.createBeams(plan)
         self.initializeBeams(plan)
         plan.planDesign = self
         for beam in plan.beams:
             beam.reorderLayers('decreasing')
+
+        logger.info("New plan created in {} sec".format(time.time() - start))
+        logger.info("Number of spots: {}".format(plan.numberOfSpots))
 
         return plan
 

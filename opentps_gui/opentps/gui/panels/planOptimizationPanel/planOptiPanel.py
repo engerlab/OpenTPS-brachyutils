@@ -71,7 +71,8 @@ class mcsquareCalculationWindow(QDialog):
         doseCalculator = MCsquareDoseCalculator()
 
         doseCalculator.beamModel = beamModel
-        self._doseComputationPanel.selectedPlan.planDesign.scoringVoxelSpacing = self._doseComputationPanel._doseSpacingSpin.value()
+        if self._doseComputationPanel._doseSpacingLabel.isChecked():
+            self._doseComputationPanel.selectedPlan.planDesign.scoringVoxelSpacing = self._doseComputationPanel._doseSpacingSpin.value()
         doseCalculator.nbPrimaries = self._doseComputationPanel._numProtons.value()
         doseCalculator.statUncertainty = self._doseComputationPanel._statUncertainty.value()
         doseCalculator.ctCalibration = calibration

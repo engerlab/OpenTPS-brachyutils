@@ -93,6 +93,7 @@ class PlanOptimizer:
         self.functions.append(objectiveFunction)
 
     def optimize(self):
+        logger.info('Prepare optimization ...')
         self.plan.simplify() # make sure no duplicates
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
@@ -102,8 +103,11 @@ class PlanOptimizer:
 
     def postProcess(self, result):
         # Remove unnecessary attributs in plan
-        del self.plan._spots
-        del self.plan._layers
+        try:
+            del self.plan._spots
+            del self.plan._layers
+        except:
+            pass
 
         weights = result['sol']
         crit = result['crit']
@@ -140,6 +144,7 @@ class PlanOptimizer:
         self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
 
         totalDose = self.plan.planDesign.beamlets.toDoseImage()
+        logger.info('Optimization done.')
 
         return weights, totalDose, cost
 
