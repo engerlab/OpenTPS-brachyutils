@@ -1,3 +1,4 @@
+import logging
 import math
 
 import numpy as np
@@ -10,13 +11,13 @@ from opentps.core.processing.C_libraries.libRayTracing_wrapper import transport_
     transport_spots_inside_target
 from opentps.core.processing.rangeEnergy import energyToRange, rangeToEnergy
 
+logger = logging.getLogger(__name__)
 
 class BeamInitializer:
     def __init__(self):
         self.spotSpacing = 5.
         self.layerSpacing = 2.
         self.targetMargin = 0.
-        self.rangeShifter = None
         self.beam = None
 
         self.calibration: AbstractCTCalibration = None
@@ -58,7 +59,7 @@ class BeamInitializer:
                 spotGrid["WET"].pop(s)
             else:
                 if self.beam.rangeShifter and self.beam.rangeShifter.WET > 0.0: spotGrid["WET"][
-                    s] += self.rangeShifter.WET
+                    s] += self.beam.rangeShifter.WET
                 if spotGrid["WET"][s] < minWET: minWET = spotGrid["WET"][s]
                 if self.layersToSpacingAlignment: minWET = round(minWET / self.layerSpacing) * self.layerSpacing
 
@@ -87,6 +88,9 @@ class BeamInitializer:
 
             # generate plan structure
             for energy in spotGrid["EnergyLayers"][s]:
+                if energy <=0:
+                    continue
+
                 layerFound = 0
                 for layer in self.beam.layers:
                     if abs(layer.nominalEnergy - energy) < 0.05:
@@ -172,11 +176,14 @@ class PlanInitializer:
         self._beamInitializer.distalLayers = distalLayers
 
         from opentps.core.data.images._rspImage import RSPImage
+        logger.info('Target is dilated using a margin of {} mm. This process might take some time.'.format(targetMargin))
         roiDilated = ROIMask.fromImage3D(self.targetMask, patient=None)
         roiDilated.dilate(radius=targetMargin)
+        logger.info('Dilation done.')
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)
+        rspImage.patient = None
         self._beamInitializer.rspImage = rspImage
 
         imgBordersX = [rspImage.origin[0], rspImage.origin[0] + rspImage.gridSize[0] * rspImage.spacing[0]]

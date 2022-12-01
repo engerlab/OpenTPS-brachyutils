@@ -43,7 +43,7 @@ class Image3D(PatientData):
     @classmethod
     def fromImage3D(cls, image, **kwargs):
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
-               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
+               'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient, 'name': image.name}
         dic.update(kwargs)
         return cls(**dic)
 
@@ -172,7 +172,7 @@ class Image3D(PatientData):
             """
 
         from opentps.core.processing.imageProcessing.resampler3D import resampleImage3D
-        resampleImage3D(self, spacing, gridSize, origin, fillValue=fillValue, tryGPU=tryGPU, inPlace=True)
+        resampleImage3D(self, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue, tryGPU=tryGPU, inPlace=True, outputType=outputType)
 
     def getDataAtPosition(self, position: Sequence):
         voxelIndex = self.getVoxelIndexFromPosition(position)

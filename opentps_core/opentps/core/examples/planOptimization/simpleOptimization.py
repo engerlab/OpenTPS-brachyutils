@@ -1,8 +1,8 @@
-
-
-import math
 import os
 import sys
+
+from opentps.core.io.dicomIO import writeRTPlan
+from opentps.core.processing.planOptimization.tools import evaluateClinical
 
 sys.path.append('..')
 
@@ -42,7 +42,6 @@ def run():
     ct.name = 'CT'
     ct.patient = patient
 
-
     huAir = -1024.
     huWater = ctCalibration.convertRSP2HU(1.)
     data = huAir * np.ones((ctSize, ctSize, ctSize))
@@ -52,7 +51,7 @@ def run():
     roi = ROIMask()
     roi.patient = patient
     roi.name = 'TV'
-    roi.color = (255, 0, 0) # red
+    roi.color = (255, 0, 0)  # red
     data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
@@ -77,25 +76,25 @@ def run():
         plan = loadRTPlan(plan_file)
         print('Plan loaded')
     else:
-        planInit = PlanDesign()
-        planInit.ct = ct
-        planInit.targetMask = roi
-        planInit.gantryAngles = gantryAngles
-        planInit.beamNames = beamNames
-        planInit.couchAngles = couchAngles
-        planInit.calibration = ctCalibration
-        planInit.spotSpacing = 5.0
-        planInit.layerSpacing = 5.0
-        planInit.targetMargin = 5.0
-        planInit.scoringVoxelSpacing = [2, 2, 2]
+        planDesign = PlanDesign()
+        planDesign.ct = ct
+        planDesign.targetMask = roi
+        planDesign.gantryAngles = gantryAngles
+        planDesign.beamNames = beamNames
+        planDesign.couchAngles = couchAngles
+        planDesign.calibration = ctCalibration
+        planDesign.spotSpacing = 5.0
+        planDesign.layerSpacing = 5.0
+        planDesign.targetMargin = 5.0
+        planDesign.scoringVoxelSpacing = [2, 2, 2]
 
-        plan = planInit.buildPlan()  # Spot placement
+        plan = planDesign.buildPlan()  # Spot placement
         plan.PlanName = "NewPlan"
 
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
         plan.planDesign.beamlets = beamlets
         beamlets.storeOnFS(os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm"))
-
+        # Save plan with initial spot weights in serialized format (OpenTPS format)
         saveRTPlan(plan, plan_file)
 
     plan.planDesign.objectives = ObjectivesList()
@@ -108,18 +107,27 @@ def run():
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
-    # Save plan with updated spot weights
-    saveRTPlan(plan, plan_file)
+    # Save plan with updated spot weights in serialized format (OpenTPS format)
+    plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
+    saveRTPlan(plan, plan_file_optimized)
+    # Save plan with updated spot weights in dicom format
+    plan.patient = patient
+    dcm_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTPlan(plan, dcm_file)
 
     # MCsquare simulation
-    #mc2.nbPrimaries = 1e7
-    #doseImage = mc2.computeDose(ct, plan)
+    # mc2.nbPrimaries = 1e7
+    # doseImage = mc2.computeDose(ct, plan)
 
     # Compute DVH on resampled contour
     target_DVH = DVH(roi, doseImage)
-    print('D95 = ' + str(target_DVH.D95) + ' Gy')
-    print('D5 = ' + str(target_DVH.D5) + ' Gy')
     print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
+    clinROI = [roi.name, roi.name]
+    clinMetric = ["Dmin", "Dmax"]
+    clinLimit = [19., 21.]
+    clinObj = {'ROI': clinROI, 'Metric': clinMetric, 'Limit': clinLimit}
+    print('Clinical evaluation')
+    evaluateClinical(doseImage, [roi], clinObj)
 
     # center of mass
     roi = resampleImage3DOnImage3D(roi, ct)
@@ -135,8 +143,8 @@ def run():
 
     # Display dose
     fig, ax = plt.subplots(1, 2, figsize=(12, 5))
-    #ax[0].axes.get_xaxis().set_visible(False)
-    #ax[0].axes.get_yaxis().set_visible(False)
+    ax[0].axes.get_xaxis().set_visible(False)
+    ax[0].axes.get_yaxis().set_visible(False)
     ax[0].imshow(img_ct, cmap='gray')
     ax[0].imshow(img_mask, alpha=.2, cmap='binary')  # PTV
     dose = ax[0].imshow(img_dose, cmap='jet', alpha=.2)
@@ -148,6 +156,7 @@ def run():
     plt.legend()
 
     plt.show()
+
 
 if __name__ == "__main__":
     run()

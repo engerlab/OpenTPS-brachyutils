@@ -1,6 +1,7 @@
 import functools
 
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout, QCheckBox
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QLineEdit, QMainWindow, QWidget, QPushButton, QHBoxLayout, QCheckBox, \
+    QFrame, QGroupBox
 
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.gui.panels.mainToolbar import MainToolbar
@@ -12,6 +13,7 @@ class EditableSetting(QWidget):
         super().__init__(parent)
 
         self._mainLayout = QHBoxLayout(self)
+        self._mainLayout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._mainLayout)
 
         if not (property is None or property==""):
@@ -25,13 +27,16 @@ class EditableSetting(QWidget):
         self._validateButton.setText("Validate")
         self._validateButton.clicked.connect(lambda *args: action(self._nameLineEdit.text()))
 
-        self._nameLineEdit.setText(str(value))
+        self.setValue(value)
 
         if not (property is None or property == ""):
             self._txt.setBuddy(self._nameLineEdit)
 
         self._mainLayout.addWidget(self._nameLineEdit)
         self._mainLayout.addWidget(self._validateButton)
+
+    def setValue(self, value):
+        self._nameLineEdit.setText(str(value))
 
 class ProgramSettingEditor(QMainWindow):
     # singleton class!
@@ -49,11 +54,21 @@ class ProgramSettingEditor(QMainWindow):
         self._layout = QVBoxLayout()
         centralWidget.setLayout(self._layout)
 
+        progSettingsTxt = 'Main program settings are located in ' + self.programSettings.programSettingsFolder
+        self._progSettingsLabel = QLabel(self)
+        self._progSettingsLabel.setText(progSettingsTxt)
+        self._layout.addWidget(self._progSettingsLabel)
+
         self._workspaceField = EditableSetting("Workspace", str(self.programSettings.workspace), self.setWorkspace)
         self._layout.addWidget(self._workspaceField)
 
+        self._doseCalculationFrame = QGroupBox(self)
+        self._doseCalculationFrame.setTitle("Dose calculation settings")
+        doseCalcLayout = QVBoxLayout(self._doseCalculationFrame)
+        self._doseCalculationFrame.setLayout(doseCalcLayout)
+        self._layout.addWidget(self._doseCalculationFrame)
         self._machineParam = MCsquareConfigEditor()
-        self._layout.addWidget(self._machineParam)
+        doseCalcLayout.addWidget(self._machineParam)
 
         self._activeExtensions = ActiveExtensions(self.mainToolbar)
         self._layout.addWidget(self._activeExtensions)
@@ -103,19 +118,23 @@ class MCsquareConfigEditor(QWidget):
         self._dcConfig = DoseCalculationConfig()
 
         self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
 
         self._txt = QLabel(self)
-        self._txt.setText("Scanner folder")
+        self._txt.setText("Scanner folder:")
         self._layout.addWidget(self._txt)
         self._scannerField = EditableSetting("", str(self._dcConfig.scannerFolder), self._setScanner)
         self._layout.addWidget(self._scannerField)
 
         self._txt2 = QLabel(self)
-        self._txt2.setText("BDL file")
+        self._txt2.setText("BDL file:")
         self._layout.addWidget(self._txt2)
         self._bdlField = EditableSetting("", str(self._dcConfig.bdlFile), self._setBDL)
         self._layout.addWidget(self._bdlField)
+
+        self._dcConfig.scannerFolderChangedSignal.connect(self._scannerField.setValue)
+        self._dcConfig.bdlFileChangedSignal.connect(self._bdlField.setValue)
 
     def _setScanner(self, text):
         self._dcConfig.scannerFolder = text

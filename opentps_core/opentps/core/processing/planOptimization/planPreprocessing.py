@@ -40,7 +40,6 @@ def extendPlanLayers(plan: RTPlan) -> RTPlan:
             layerID += 1
             plan._layers.append(outLayer)
 
-
 class ExtendedBeam(PlanIonBeam):
     def __init__(self):
         super().__init__()

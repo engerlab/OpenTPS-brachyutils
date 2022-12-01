@@ -10,7 +10,8 @@ class ScanAlgoPlan:
             self.sort = sort_spots
             self.snoutextension = "430"
             self.gantryangle = str(beam.gantryAngle)
-            self.rangeshifterid = str(beam.rangeShifter.ID)
+            if beam.rangeShifter:
+                self.rangeshifterid = str(beam.rangeShifter.ID)
             self.ridgefilterid = ""
             self.rangecompensatorid = ""
             self.blockid = ""
@@ -32,7 +33,8 @@ class ScanAlgoPlan:
             self.snoutExtension = "430"
             self.gantryAngle = beam.gantryAngle
             self.beamGatingRequired = "false"
-            self.rangeShifterId = str(beam.rangeShifter.ID)
+            if beam.rangeShifter:
+                self.rangeShifterId = str(beam.rangeShifter.ID)
             self.ridgeFilterId = ""
             self.rangeCompensatorId = ""
             self.blockId = ""

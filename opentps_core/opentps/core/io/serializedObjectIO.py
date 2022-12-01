@@ -36,11 +36,11 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionari
 
     if type(dataList) != list:
         dataList = [dataList]
-
+        print("datalist",dataList)
     if dictionarized:
         for elementIdx in range(len(dataList)):
             dataList[elementIdx] = dictionarizeData(dataList[elementIdx])
-
+    
     if compressedBool:
         print('Compress and save serialized data structure in drive')
         with bz2.BZ2File(savingPath + '_compressed.pbz2', 'w') as f:
@@ -111,7 +111,7 @@ def saveRTPlan(plan, file_path):
         if plan.planDesign.beamletsLET:
             plan.planDesign.beamletsLET.unload()
 
-        for scenario in plan.planDesign.scenarios:
+        for scenario in plan.planDesign.robustness.scenarios:
             scenario.unload()
 
     with open(file_path, 'wb') as fid:
