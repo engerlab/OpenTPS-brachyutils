@@ -31,16 +31,16 @@ if not app:
     app = QApplication([])
 
 
-def run():
+def run(mainWindow):
     # options = parseArgs(sys.argv[1:])
     logger.info("Start opentps gui")
 
-    _viewController = viewController()
-    _viewController.mainWindow.show()
+    mainWindow.show()
     app.exec_()
 
-    _viewController.mainWindow.close()
-    #del _viewController.mainWindow
+    mainWindow.close()
+    #del mainWindow
 
 if __name__ == '__main__':
-    run()
+    _viewController = viewController()
+    run(_viewController.mainWindow)
