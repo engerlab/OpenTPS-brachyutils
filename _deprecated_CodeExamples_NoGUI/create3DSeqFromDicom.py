@@ -11,9 +11,9 @@ currentWorkingDir = os.getcwd()
 while not os.path.isfile(currentWorkingDir + '/main.py'): currentWorkingDir = os.path.dirname(currentWorkingDir)
 sys.path.append(currentWorkingDir)
 
-from opentps_core.opentps.core.IO import readData
-from opentps_core.opentps.core.data import Dynamic3DSequence
-from opentps_core.opentps.core.IO import saveSerializedObjects
+from opentps_core.opentps.core.io.dataLoader import readData
+from opentps_core.opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps_core.opentps.core.io.serializedObjectIO import saveSerializedObjects
 
 if __name__ == '__main__':
 

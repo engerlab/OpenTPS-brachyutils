@@ -334,7 +334,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         self._subprocessKilled = False
         logger.info("Start MCsquare simulation")
-        if platform.system() == "Linux":
+        if platform.system() == "Linux" or platform.system() == 'Darwin':
             if not opti:
                 self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
             else:

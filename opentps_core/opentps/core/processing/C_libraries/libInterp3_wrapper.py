@@ -32,6 +32,8 @@ def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0, tryGP
                                                                                           "libInterp3.so"))
       elif(platform.system() == "Windows"): libInterp3 = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(__file__),
                                                                                               "libInterp3.dll"))
+      elif (platform.system() == "Darwin"): libInterp3 = ctypes.cdll.LoadLibrary(os.path.join(os.path.dirname(__file__),
+                                                                                              "libInterp3MAC.so"))
       else: print("Error: not compatible with " + platform.system() + " system.")
       float_array = np.ctypeslib.ndpointer(dtype=np.float32)
       int_array = np.ctypeslib.ndpointer(dtype=np.int32)

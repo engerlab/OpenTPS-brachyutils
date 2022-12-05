@@ -71,6 +71,7 @@ def run():
     plan = planDesign.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
+
     plan.planDesign.objectives = ObjectivesList()
     plan.planDesign.objectives.setTarget(roi.name, 20.0)
     plan.planDesign.objectives.fidObjList = []
