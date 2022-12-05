@@ -26,6 +26,7 @@ from opentps.core.data.images import Image3D
 from opentps.core.data.images import ROIMask
 from opentps.core.data.MCsquare import BDL
 from opentps.core.data.plan import RTPlan
+from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data import ROIContour
 
 import opentps.core.io.mcsquareIO as mcsquareIO
@@ -216,7 +217,13 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = plan
         self._roi = roi
-        
+
+        if not self._plan.planDesign:
+            planDesign = PlanDesign()
+            planDesign.ct = ct
+            planDesign.targetMask = roi
+            self._plan.planDesign = planDesign
+            
         self._config = self._beamletComputationConfig
 
         self._writeFilesToSimuDir()

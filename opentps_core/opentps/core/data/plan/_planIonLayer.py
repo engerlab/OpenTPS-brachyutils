@@ -16,6 +16,7 @@ class PlanIonLayer:
         self._mu = np.array([])
         self._timings = np.array([])
         self.scalingFactor = 1.
+        self.lastSpotDuration = None # duration of irradiation (in seconds) of last spot in layer
 
         self.nominalEnergy: float = nominalEnergy
         self.numberOfPaintings: int = 1
