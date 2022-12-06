@@ -190,10 +190,19 @@ def connectComponents(image:Image3D):
 
 def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
 
-    rotAngleInRad = rotAngleInDeg*np.pi/180
+    rotAngleInRad = -rotAngleInDeg*np.pi/180
     r = R.from_rotvec(rotAngleInRad * np.roll(np.array([1, 0, 0]), rotAxis))
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
+
+def translateImage3DSitk(img3D, translationInMM, cval=-1000):
+
+    translationMatrix = np.array([[1, 0, 0, -translationInMM[0]],
+                                 [0, 1, 0, -translationInMM[1]],
+                                 [0, 0, 1, -translationInMM[2]],
+                                 [0, 0, 0, 1]]).astype(np.float)
+
+    applyTransform(img3D, translationMatrix, outputBox='same', fillValue=cval)
 
 def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
     initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)

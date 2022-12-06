@@ -5,6 +5,9 @@ __all__ = ['Transform3D']
 import logging
 import copy
 import math as m
+
+import numpy as np
+
 from opentps.core.data._patientData import PatientData
 
 logger = logging.getLogger(__name__)
@@ -56,7 +59,7 @@ class Transform3D(PatientData):
 
         return image
       
-    def getRotationAngles(self):
+    def getRotationAngles(self, inDegrees=False):
         """Returns the Euler angles in radians.
         
             Returns
@@ -69,8 +72,14 @@ class Transform3D(PatientData):
         sp = m.sin(eul1)
         cp = m.cos(eul1)
         eul2 = m.atan2(-R.item(2,0),cp*R.item(0,0)+sp*R.item(1,0))
-        eul3 = m.atan2(sp*R.item(0,2)-cp*R.item(1,2),cp*R.item(1,1)-sp*R.item(0,1)) 
-        return [eul3,eul2,eul1]
+        eul3 = m.atan2(sp*R.item(0,2)-cp*R.item(1,2),cp*R.item(1,1)-sp*R.item(0,1))
+
+        angleArray = np.array([eul3, eul2, eul1])
+
+        if inDegrees:
+            angleArray *= 180/np.pi
+
+        return angleArray
          
     def getTranslation(self):
         """Returns the translation.
