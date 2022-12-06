@@ -18,6 +18,7 @@ def translateCupy(dataArray, translationInPixels=[0, 0, 0], cval=-1000):
     -------
     ND numpy array, the translated data
     """
+    
     cupyArray = cupy.asarray(dataArray)
 
     if not (np.array(translationInPixels == np.array([0, 0, 0])).all() or np.array(translationInPixels == np.array([0, 0, 0, 0])).all()):

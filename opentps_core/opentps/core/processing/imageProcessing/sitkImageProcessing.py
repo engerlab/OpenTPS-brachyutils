@@ -161,6 +161,7 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
     outData = np.array(sitk.GetArrayFromImage(outImg))
     if imgType == bool:
+        print("cc")
         outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
     outData = np.swapaxes(outData, 0, 2)
@@ -192,7 +193,6 @@ def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
     r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
-
 
 def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
     initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)

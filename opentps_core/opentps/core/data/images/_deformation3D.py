@@ -147,14 +147,17 @@ class Deformation3D(Image3D):
                 type of the output.
             """
 
-        if not(self.velocity is None):
-            self.velocity.resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
-        if not(self.displacement is None):
-            self.displacement.resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
-        self.origin = list(origin)
-        self.spacing = list(spacing)
+        from opentps.core.processing.imageProcessing.resampler3D import resample
+        resample(self, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue, tryGPU=tryGPU, outputType=outputType, inPlace=True)
 
-    def deformImage(self, image, fillValue='closest', outputType=np.float32, tryGPU=True):
+        # if not(self.velocity is None):
+        #     self.velocity.resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+        # if not(self.displacement is None):
+        #     self.displacement.resample(spacing, gridSize, origin, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+        # self.origin = np.array(origin)
+        # self.spacing = np.array(spacing)
+
+    def deformImage(self, image, binarizeMask=True, fillValue='closest', outputType=np.float32, tryGPU=True):
         """Deform 3D image using linear interpolation.
 
             Parameters
@@ -191,7 +194,8 @@ class Deformation3D(Image3D):
             image.imageArray = field.warp(image.imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
 
-        if init_dtype == 'bool':
+        if init_dtype == 'bool' and binarizeMask==True:
+            
             testArray = image.imageArray
             testArray[testArray < 0.5] = 0
             testArray[testArray >= 0.5] = 1
