@@ -218,10 +218,13 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._plan = plan
         self._roi = roi
 
-        if not self._plan.planDesign:
+        self._plan.simplify(threshold=None) # make sure no spot duplicates
+
+        if not self._plan.planDesign: # external plan
             planDesign = PlanDesign()
             planDesign.ct = ct
             planDesign.targetMask = roi
+            planDesign.scoringVoxelSpacing = self.scoringVoxelSpacing
             self._plan.planDesign = planDesign
             
         self._config = self._beamletComputationConfig

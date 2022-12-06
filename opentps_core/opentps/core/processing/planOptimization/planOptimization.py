@@ -94,7 +94,6 @@ class PlanOptimizer:
 
     def optimize(self):
         logger.info('Prepare optimization ...')
-        self.plan.simplify() # make sure no duplicates
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
         # Optimization
@@ -196,7 +195,6 @@ class BoundConstraintsOptimizer(PlanOptimizer):
         return [(bound_min, bound_max)] * self.plan.planDesign.beamlets.shape[1]
 
     def optimize(self, nIterations=None):
-        self.plan.simplify() # make sure no duplicates
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
 
