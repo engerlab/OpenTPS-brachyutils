@@ -17,10 +17,12 @@ def run():
     fixed_img = np.full((100, 100, 100), -1000)
     fixed_img[15:50, 25:50, 25:75] = 0
     fixed = CTImage(imageArray=fixed_img, name='fixed', origin=[0, 0, 0], spacing=[1, 1, 1])
+
     moving_img = np.full((100, 100, 100), -1000)
     moving_img[30:65, 50:75, 25:75] = 0
     moving = CTImage(imageArray=moving_img, name='moving', origin=[0, 0, 0], spacing=[1, 1, 1])
-    rotateImage3DSitk(moving, rotAngleInDeg=15, rotAxis=2)
+
+    rotateImage3DSitk(moving, rotAngleInDeg=5, rotAxis=2)
 
     # PERFORM REGISTRATION
     start_time = time.time()

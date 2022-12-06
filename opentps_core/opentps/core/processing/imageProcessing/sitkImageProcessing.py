@@ -190,7 +190,8 @@ def connectComponents(image:Image3D):
 
 def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
 
-    r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
+    rotAngleInRad = rotAngleInDeg*np.pi/180
+    r = R.from_rotvec(rotAngleInRad * np.roll(np.array([1, 0, 0]), rotAxis))
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
 
@@ -208,7 +209,7 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
         registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
         registration_method.SetMetricSamplingPercentage(0.05, seed=76926294)
 
-    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=200)
+    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=1000)
     registration_method.SetOptimizerScalesFromPhysicalShift()
 
     registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4, 2, 1])
