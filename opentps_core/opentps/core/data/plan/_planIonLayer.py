@@ -256,7 +256,8 @@ class PlanIonLayer:
 
     def simplify(self, threshold: float = 0.0):
         self._fusionDuplicates()
-        self.removeZeroMUSpots(threshold)
+        if threshold is not None:
+            self.removeZeroMUSpots(threshold)
     
     def removeZeroMUSpots(self, threshold):
         index_to_keep = np.flatnonzero(self._mu > threshold)
