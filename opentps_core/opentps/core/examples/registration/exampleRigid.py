@@ -16,14 +16,10 @@ logger = logging.getLogger(__name__)
 def run():
 
     # GENERATE SYNTHETIC INPUT IMAGES
-    # fixed_img = np.full((100, 100, 100), -1000)
-    # fixed_img[15:40, 25:40, 25:75] = 0
-    # fixed = CTImage(imageArray=fixed_img, name='fixed', origin=[0, 0, 0], spacing=[1, 1, 1])
-
     fixed = createSynthetic3DCT()
-
     moving = copy.copy(fixed)
-    translateImage3DSitk(moving, [5, 0, 10])
+
+    translateImage3DSitk(moving, [15, 0, 10])
     rotateImage3DSitk(moving, rotAngleInDeg=3, rotAxis=1)
 
     # PERFORM REGISTRATION
@@ -31,17 +27,13 @@ def run():
     reg = RegistrationRigid(fixed, moving)
     transform = reg.compute()
 
-    print(transform.tform)
-    print('rotation in rad', transform.getRotationAngles())
-    print('rotation in deg', transform.getRotationAngles(inDegrees=True))
-    print('translation', transform.getTranslation())
-
     processing_time = time.time() - start_time
     print('Registration processing time was', processing_time, '\n')
+    print('Rotation in rad', transform.getRotationAngles())
+    print('Rotation in deg', transform.getRotationAngles(inDegrees=True))
+    print('Translation', transform.getTranslation())
 
-    x_slice = round(fixed.imageArray.shape[0] / 2) - 1
     y_slice = 95
-    z_slice = round(fixed.imageArray.shape[2] / 2) - 1
 
     deformedImage = reg.deformed
     resampledOnFixedGrid = resampleImage3DOnImage3D(deformedImage, fixedImage=fixed, fillValue=-1000)
