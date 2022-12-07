@@ -111,7 +111,7 @@ def saveRTPlan(plan, file_path):
         if plan.planDesign.beamletsLET:
             plan.planDesign.beamletsLET.unload()
 
-        for scenario in plan.planDesign.scenarios:
+        for scenario in plan.planDesign.robustness.scenarios:
             scenario.unload()
 
     with open(file_path, 'wb') as fid:

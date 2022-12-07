@@ -1,10 +1,16 @@
-from opentps.core.processing.planOptimization.solvers.beamletFree import BLFree
+from opentps.core.processing.planOptimization.solvers import bfgs, gradientDescent, lp
+from opentps.core.data.plan._planIonLayer import PlanIonLayer
+from opentps.core.data.plan._planIonBeam import PlanIonBeam
 
 
 class SPArCling:
-    def __init__(self, arcStart, arcStop, maxNSplitting, finalAngleStep, mode='BLFree', **kwargs):
+    def __init__(self, plan, arcStart, arcStop, maxNSplitting, finalAngleStep, mode='BLBased',
+                 coreOptimizer='Scipy-LBFGS',
+                 **kwargs):
         super(SPArCling, self).__init__(**kwargs)
+        self.plan = plan
         self.mode = mode
+        self.coreOptimizer = coreOptimizer
         self.arcStart = arcStart
         self.arcStop = arcStop
         self.maxNSplitting = maxNSplitting
@@ -18,22 +24,28 @@ class SPArCling:
         self.minTheta = min(self.theta1, self.theta2)
         self.theta0 = (1 / 2) * abs(self.theta1 - self.theta2) + self.minTheta
 
-    def solve(self):
-        # step 1: optimize initial plan
-        if self.mode == "beamletFree":
-            pass
+    def solve(self, func, x0, **kwargs):
+        # Pick beamlet-free or beamlet-based mode
+        if self.mode == "BLFree":
+            raise NotImplementedError
         else:
-            solver = IMPTPlanOptimizer(self.meth)
-            #w, doseVector, ps =
+            raise NotImplementedError
 
-        while self.angularStep > 1.5:
-            self.angularStep /= 2
-            self.splitBeams()
-            if self.mode == "beamletFree":
-                mhdDose = BLFree(self.ct, self.plan, self.contours)
+            if self.coreOptimizer == "Scipy-LBFGS":
+                solver = bfgs.ScipyOpt('BFGS', **kwargs)
+            elif self.coreOptimizer == 'Scipy-LBFGS':
+                solver = bfgs.ScipyOpt('L-BFGS-B', **kwargs)
+            elif self.coreOptimizer == 'Gradient':
+                solver = gradientDescent.GradientDescent(**kwargs)
+            elif self.coreOptimizer == 'BFGS':
+                solver = bfgs.BFGS(**kwargs)
+            elif self.coreOptimizer == "lBFGS":
+                solver = bfgs.LBFGS(**kwargs)
+            elif self.coreOptimizer == "LP":
+                solver = lp.LP(self.plan, **kwargs)
 
-            else:
-                pass
+            # step 1: optimize initial plan
+            #initialResult = solver.solve(func, x0)
 
 
     def splitBeams(self):

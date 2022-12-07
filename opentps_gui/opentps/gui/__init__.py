@@ -1,5 +1,5 @@
 
-from opentps.gui.main import run, patientList, mainWindow, viewController
+from opentps.gui.main import run, patientList, viewController
 
 import opentps.gui.panels as panels
 import opentps.gui.res as res

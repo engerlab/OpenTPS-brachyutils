@@ -571,13 +571,14 @@ def writeRTPlan(plan: RTPlan, filePath):
 
         dcm_beam.RangeShifterSequence = []
         dcm_rs = pydicom.dataset.Dataset()
-        dcm_rs.RangeShifterID = rangeShifter.ID
-        if rangeShifter.type == "binary":
-            dcm_rs.RangeShifterType = "BINARY"
-        elif rangeShifter.type == "analog":
-            dcm_rs.RangeShifterType = "ANALOG"
-        else:
-            print("ERROR: Unknown range shifter type: " + rangeShifter.type)
+        if not (rangeShifter is None):
+            dcm_rs.RangeShifterID = rangeShifter.ID
+            if rangeShifter.type == "binary":
+                dcm_rs.RangeShifterType = "BINARY"
+            elif rangeShifter.type == "analog":
+                dcm_rs.RangeShifterType = "ANALOG"
+            else:
+                print("ERROR: Unknown range shifter type: " + rangeShifter.type)
 
         dcm_beam.RangeShifterSequence.append(dcm_rs)
 
@@ -591,6 +592,9 @@ def writeRTPlan(plan: RTPlan, filePath):
             dcm_layer.NominalBeamEnergy = layer.nominalEnergy
             dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
             dcm_layer.ScanSpotMetersetWeights = layer.spotMUs.tolist()
+            if type(dcm_layer.ScanSpotMetersetWeights) == float:
+                dcm_layer.NumberOfScanSpotPositions = 1
+            else: dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]

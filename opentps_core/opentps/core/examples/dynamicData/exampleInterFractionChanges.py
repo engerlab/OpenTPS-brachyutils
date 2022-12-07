@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     ## paths selection ------------------------------------
     basePath = 'D:/ImageData/lung/Patient_12/1/FDG1/'
-    dataPath = basePath + 'dynModAndROIs_bodyCropped.p'
+    dataPath = basePath + 'dynModAndROIs.p'
     savingPath = basePath
 
     # organ = 'lung'
@@ -59,10 +59,14 @@ if __name__ == '__main__':
     marginInMM = [50, 0, 100]
 
     # interfraction changes parameters
-    baselineShift = [-5, 0, 3]
+    baselineShift = [-5, 0, 10]
+    # baselineShift = [0, 0, 0]
     translation = [-5, 3, 10]
+    # translation = [0, 0, 0]
     rotation = [0, 5, 0]
+    # rotation = [0, 0, 0]
     shrinkSize = [2, 2, 2]
+    # shrinkSize = [0, 0, 0]
 
     # GPU used
     usedGPU = 0
@@ -155,13 +159,13 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(1, 4)
     fig.suptitle('Example of baseline shift, translate, rotate and shrink')
     ax[0].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    # ax[0].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
-    ax[0].set_title('Initial image and target mask')
+    # ax[0].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5, cmap='Reds')
+    ax[0].set_title('Initial image')
     ax[1].imshow(shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    # ax[1].imshow(shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5)
-    ax[1].set_title('after inter fraction changes')
+    # ax[1].imshow(shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5, cmap='Reds')
+    ax[1].set_title('After inter fraction changes')
     ax[2].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    ax[2].set_title('image difference')
+    ax[2].set_title('Image difference')
     ax[3].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :])
-    ax[3].set_title('mask difference')
+    ax[3].set_title('Mask difference')
     plt.show()

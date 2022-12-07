@@ -23,7 +23,6 @@ class DynamicImage3DViewer(Image3DViewer):
 
         self.loopStepNumber = 0
 
-
     @property
     def primaryImage(self):
         if self._primaryImageLayer.image is None:

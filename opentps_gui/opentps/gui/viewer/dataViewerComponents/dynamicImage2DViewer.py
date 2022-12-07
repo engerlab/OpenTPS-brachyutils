@@ -23,7 +23,6 @@ class DynamicImage2DViewer(Image2DViewer):
 
         self.loopStepNumber = 0
 
-
     @property
     def primaryImage(self):
 

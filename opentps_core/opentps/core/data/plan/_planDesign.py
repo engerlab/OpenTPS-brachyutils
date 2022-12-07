@@ -2,6 +2,7 @@
 __all__ = ['PlanDesign']
 
 import logging
+import time
 from typing import Optional, Sequence, Union
 
 import numpy as np
@@ -10,10 +11,11 @@ import pydicom
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.data.plan import _rangeShifter
+from opentps.core.data.plan._rangeShifter import RangeShifter
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data._patientData import PatientData
 from opentps.core.data.plan._objectivesList import ObjectivesList
+from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.planOptimization.planInitializer import PlanInitializer
 
 logger = logging.getLogger(__name__)
@@ -36,18 +38,13 @@ class PlanDesign(PatientData):
         self.beamNames = []
         self.gantryAngles = []
         self.couchAngles = []
-        self.accumulatedLayer = 0
-        self.accumulatedSpot = 0
-        self.rangeShifters: _rangeShifter = []
+        self.rangeShifters: Sequence[RangeShifter] = []
 
         self.objectives = ObjectivesList()
         self.beamlets = []
         self.beamletsLET = []
 
-        self.robustOpti = {"Strategy": "Disabled", "syst_setup": [0.0, 0.0, 0.0], "rand_setup": [0.0, 0.0, 0.0],
-                           "syst_range": 0.0}
-        self.scenarios = []
-        self.numScenarios = 0
+        self.robustness = Robustness()
 
     @property
     def scoringVoxelSpacing(self) -> Sequence[float]:
@@ -71,6 +68,7 @@ class PlanDesign(PatientData):
             return self.ct.gridSize
 
     def buildPlan(self):
+        start = time.time()
         # Spot placement
         from opentps.core.data.plan import RTPlan
         plan = RTPlan("NewPlan")
@@ -80,12 +78,15 @@ class PlanDesign(PatientData):
         plan.radiationType = "Proton"
         plan.scanMode = "MODULATED"
         plan.treatmentMachineName = "Unknown"
-
+        logger.info('Building plan ...')
         self.createBeams(plan)
         self.initializeBeams(plan)
         plan.planDesign = self
         for beam in plan.beams:
             beam.reorderLayers('decreasing')
+
+        logger.info("New plan created in {} sec".format(time.time() - start))
+        logger.info("Number of spots: {}".format(plan.numberOfSpots))
 
         return plan
 
@@ -97,7 +98,7 @@ class PlanDesign(PatientData):
             if objective.metric == objective.Metrics.DMIN:
                 roi = objective.roi
 
-                self.objectives.targetPrescription = objective.limitValue  # TODO: User should enter this value
+                self.objectives.setTarget(objective.roiName, objective.limitValue)
 
                 if isinstance(roi, ROIContour):
                     mask = roi.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
@@ -135,8 +136,7 @@ class PlanDesign(PatientData):
             else:
                 beam.name = 'B' + str(i)
             if self.rangeShifters and self.rangeShifters[i]:
-                beam.rangeShifter.ID = self.rangeShifters[i].ID
-                beam.rangeShifter.type = self.rangeShifters[i].type
+                beam.rangeShifter = self.rangeShifters[i]
 
             plan.appendBeam(beam)
 

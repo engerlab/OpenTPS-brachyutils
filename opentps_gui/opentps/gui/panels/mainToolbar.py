@@ -10,6 +10,7 @@ from opentps.gui.panels.doseComparisonPanel import DoseComparisonPanel
 from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
 from opentps.gui.panels.patientDataPanel.patientDataPanel import PatientDataPanel
 from opentps.gui.panels.planDesignPanel.planDesignPanel import PlanDesignPanel
+from opentps.gui.panels.planEvaluationPanel import PlanEvaluationPanel
 from opentps.gui.panels.planOptimizationPanel.planOptiPanel import PlanOptiPanel
 from opentps.gui.panels.roiPanel import ROIPanel
 from opentps.gui.panels.scriptingPanel.scriptingPanel import ScriptingPanel
@@ -59,6 +60,8 @@ class MainToolbar(QToolBox):
         planOptiPanel.setMaximumWidth(self._maxWidth)
         dosePanel = DoseComputationPanel(self._viewController)
         dosePanel.setMaximumWidth(self._maxWidth)
+        planEvaluationPanel = PlanEvaluationPanel(self._viewController)
+        planEvaluationPanel.setEnabled(False)
         doseComparisonPanel = DoseComparisonPanel(self._viewController)
         scriptingPanel = ScriptingPanel()
         #breathingSignalPanel = BreathingSignalPanel(self._viewController)
@@ -68,8 +71,9 @@ class MainToolbar(QToolBox):
         self.addWidget(patientDataPanel, 'Patient data')
         self.addWidget(roiPanel, 'ROI')
         self.addWidget(planDesignPanel, 'Plan design')
-        self.addWidget(planOptiPanel, 'Plan planOptimization')
+        self.addWidget(planOptiPanel, 'Plan optimization')
         self.addWidget(dosePanel, 'Dose computation')
+        self.addWidget(planEvaluationPanel, "Plan evaluation")
         self.addWidget(doseComparisonPanel, 'Dose comparison')
         self.addWidget(scriptingPanel, 'Scripting')
 

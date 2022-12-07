@@ -190,9 +190,20 @@ def connectComponents(image:Image3D):
 
 def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
 
-    r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
-    imgCenter = [-0.5, 69.5, 51]#img3D.origin + img3D.gridSizeInWorldUnit / 2  
+    rotAngleInRad = -rotAngleInDeg*np.pi/180
+    r = R.from_rotvec(rotAngleInRad * np.roll(np.array([1, 0, 0]), rotAxis))
+    imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
+
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
+
+def translateImage3DSitk(img3D, translationInMM, cval=-1000):
+
+    translationMatrix = np.array([[1, 0, 0, -translationInMM[0]],
+                                 [0, 1, 0, -translationInMM[1]],
+                                 [0, 0, 1, -translationInMM[2]],
+                                 [0, 0, 0, 1]]).astype(np.float)
+
+    applyTransform(img3D, translationMatrix, outputBox='same', fillValue=cval)
 
 def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
     initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
@@ -208,7 +219,7 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
         registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
         registration_method.SetMetricSamplingPercentage(0.05, seed=76926294)
 
-    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=200)
+    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=1000)
     registration_method.SetOptimizerScalesFromPhysicalShift()
 
     registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4, 2, 1])
@@ -235,10 +246,10 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
 
     return tform, center, sitkImageToImage3D(moving_resampled)
 
-def dilate(image:Image3D, radius:float):
+def dilate(image:Image3D, radius:Union[float, Sequence[float]]):
     imgType = image.imageArray.dtype
 
-    img = image3DToSITK(image)
+    img = image3DToSITK(image, type=np.int)
 
     dilateFilter = sitk.BinaryDilateImageFilter()
     dilateFilter.SetKernelType(sitk.sitkBall)
@@ -251,7 +262,6 @@ def dilate(image:Image3D, radius:float):
     outData = outData.astype(imgType)
     outData = np.swapaxes(outData, 0, 2)
     image.imageArray = outData
-    
 
 if __name__ == "__main__":
     data = np.random.randint(0, high=500, size=(216, 216, 216))
