@@ -5,7 +5,7 @@ from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 
 ## ------------------------------------------------------------------------------------------------
-def translateCupy(dataArray, translationInPixels=[0, 0, 0], cval=-1000):
+def translateCupy(dataArray, mode='constant', translationInPixels=[0, 0, 0], cval=-1000):
     """
 
     Parameters
@@ -22,7 +22,7 @@ def translateCupy(dataArray, translationInPixels=[0, 0, 0], cval=-1000):
     cupyArray = cupy.asarray(dataArray)
 
     if not (np.array(translationInPixels == np.array([0, 0, 0])).all() or np.array(translationInPixels == np.array([0, 0, 0, 0])).all()):
-        cupyArray = cupyx.scipy.ndimage.shift(cupyArray, translationInPixels, mode='constant', cval=cval)
+        cupyArray = cupyx.scipy.ndimage.shift(cupyArray, translationInPixels, mode=mode, cval=cval)
 
     return cupy.asnumpy(cupyArray)
 
