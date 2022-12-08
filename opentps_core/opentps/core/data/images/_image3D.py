@@ -172,7 +172,7 @@ class Image3D(PatientData):
             """
 
         from opentps.core.processing.imageProcessing.resampler3D import resampleImage3D
-        resampleImage3D(self, spacing, gridSize, origin, fillValue=fillValue, tryGPU=tryGPU, inPlace=True)
+        resampleImage3D(self, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue, tryGPU=tryGPU, inPlace=True, outputType=outputType)
 
     def getDataAtPosition(self, position: Sequence):
         voxelIndex = self.getVoxelIndexFromPosition(position)

@@ -26,6 +26,7 @@ from opentps.core.data.images import Image3D
 from opentps.core.data.images import ROIMask
 from opentps.core.data.MCsquare import BDL
 from opentps.core.data.plan import RTPlan
+from opentps.core.data.plan._planDesign import PlanDesign
 from opentps.core.data import ROIContour
 
 import opentps.core.io.mcsquareIO as mcsquareIO
@@ -216,7 +217,16 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._ct = ct
         self._plan = plan
         self._roi = roi
-        
+
+        self._plan.simplify(threshold=None) # make sure no spot duplicates
+
+        if not self._plan.planDesign: # external plan
+            planDesign = PlanDesign()
+            planDesign.ct = ct
+            planDesign.targetMask = roi
+            planDesign.scoringVoxelSpacing = self.scoringVoxelSpacing
+            self._plan.planDesign = planDesign
+            
         self._config = self._beamletComputationConfig
 
         self._writeFilesToSimuDir()
@@ -327,7 +337,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
         self._subprocessKilled = False
         logger.info("Start MCsquare simulation")
-        if platform.system() == "Linux":
+        if platform.system() == "Linux" or platform.system() == 'Darwin':
             if not opti:
                 self._subprocess = subprocess.Popen(["sh", "MCsquare"], cwd=self._mcsquareSimuDir)
             else:

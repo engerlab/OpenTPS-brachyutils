@@ -16,6 +16,7 @@ class PlanIonLayer:
         self._mu = np.array([])
         self._timings = np.array([])
         self.scalingFactor = 1.
+        self.lastSpotDuration = None # duration of irradiation (in seconds) of last spot in layer
 
         self.nominalEnergy: float = nominalEnergy
         self.numberOfPaintings: int = 1
@@ -255,7 +256,8 @@ class PlanIonLayer:
 
     def simplify(self, threshold: float = 0.0):
         self._fusionDuplicates()
-        self.removeZeroMUSpots(threshold)
+        if threshold is not None:
+            self.removeZeroMUSpots(threshold)
     
     def removeZeroMUSpots(self, threshold):
         index_to_keep = np.flatnonzero(self._mu > threshold)
