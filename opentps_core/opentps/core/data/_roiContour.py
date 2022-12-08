@@ -1,3 +1,8 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from opentps.core.data.images import ROIMask
 
 __all__ = ['ROIContour']
 
@@ -7,7 +12,7 @@ from PIL import Image, ImageDraw
 import logging
 
 from opentps.core.data._patientData import PatientData
-from opentps.core.data.images._roiMask import ROIMask
+# from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core import Event
 

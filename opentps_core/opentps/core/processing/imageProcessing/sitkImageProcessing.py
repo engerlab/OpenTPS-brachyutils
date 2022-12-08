@@ -10,13 +10,17 @@ except:
 
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data.images._image3D import Image3D
+from opentps.core.data.images._vectorField3D import VectorField3D
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.data._transform3D import Transform3D
 
 
 def image3DToSITK(image:Image3D, type=np.float32):
 
     imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 2)
-
+    
     img = sitk.GetImageFromArray(imageData)
     img.SetOrigin(image.origin.tolist())
     img.SetSpacing(image.spacing.tolist())
@@ -115,11 +119,32 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray,
 
     return min_x, max_x, min_y, max_y, min_z, max_z
 
-def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
+def applyTransform(data, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
+    centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+
+    if isinstance(tform, Transform3D):
+        tform = tform.tform
+
+    if isinstance(data, Image3D):
+        if isinstance(data, VectorField3D):
+            applyTransformToVectorField(data, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+        else:
+            applyTransformToImage3D(data, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+
+    if isinstance(data, Dynamic3DSequence):
+        for image in data.dyn3DImageList:
+            applyTransformToImage3D(image, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+
+    if isinstance(data, Dynamic3DModel):
+        applyTransformToImage3D(data.midp, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+        for df in data.deformationList:
+            applyTransformToVectorField(df, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+def applyTransformToImage3D(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
     centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     imgType = image.imageArray.dtype
     
     img = image3DToSITK(image)
+    
     if tform.shape[1] == 4:
         translation = tform[0:-1, -1]
         tform = tform[0:-1, 0:-1]
@@ -160,13 +185,48 @@ def applyTransform(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBo
     reference_image.SetDirection(img.GetDirection())
     outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
     outData = np.array(sitk.GetArrayFromImage(outImg))
+
     if imgType == bool:
-        print("cc")
         outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
     outData = np.swapaxes(outData, 0, 2)
     image.imageArray = outData
     image.origin = output_origin
+
+def applyTransformToVectorField(vectField:VectorField3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
+    centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+
+    print('in sitk image proc, applyTransformToVectorField')
+
+    vectorFieldCompList = []
+    for i in range(3):
+        compImg = Image3D.fromImage3D(vectField)
+        compImg.imageArray = vectField.imageArray[:, :, :, i]
+        # import matplotlib.pyplot as plt
+        # print(compImg.origin)
+        # plt.figure()
+        # plt.imshow(compImg.imageArray[:,10,:])
+        # plt.show()
+        applyTransformToImage3D(compImg, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+        # print(compImg.origin)
+        # plt.figure()
+        # plt.imshow(compImg.imageArray[:, 10, :])
+        # plt.show()
+        vectorFieldCompList.append(compImg.imageArray)
+
+    vectField.imageArray = np.stack(vectorFieldCompList, axis=3)
+    vectField.origin = compImg.origin
+
+    if tform.shape[1] == 4:
+        tform = tform[0:-1, 0:-1]
+
+    r = R.from_matrix(tform)
+
+    flattenedVectorField = vectField.imageArray.reshape((vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
+    flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
+
+    vectField.imageArray = flattenedVectorField.reshape((vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
+
 
 def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     if tform.shape[1] == 4:
@@ -188,15 +248,33 @@ def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
 
-def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
+def rotateImage3DSitk(img3D, rotAngleInDeg, cval=-1000):
 
-    r = R.from_rotvec(rotAngleInDeg * np.roll(np.array([1, 0, 0]), rotAxis), degrees=True)
+    # print('in sitkImageProc in rotateImage3DSitk')
+    # print('rotAngleInDeg', rotAngleInDeg)
+    rotAngleInDeg = np.array(rotAngleInDeg)
+    rotAngleInRad = -rotAngleInDeg*np.pi/180
+    r = R.from_euler('XYZ', rotAngleInRad)
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
+
+    # print('r.as_matrix()', r.as_matrix())
+    # print('r.as_euler()', r.as_euler('zxy'))
+    # print('r.as_euler()', r.as_euler('XYZ', degrees=True))
+    # print('r.as_euler()', r.as_euler('ZYX'))
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
+
+def translateImage3DSitk(img3D, translationInMM, cval=-1000):
+
+    translationMatrix = np.array([[1, 0, 0, -translationInMM[0]],
+                                 [0, 1, 0, -translationInMM[1]],
+                                 [0, 0, 1, -translationInMM[2]],
+                                 [0, 0, 0, 1]]).astype(np.float)
+
+    applyTransform(img3D, translationMatrix, outputBox='same', fillValue=cval)
 
 def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
     initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
-
+    
     registration_method = sitk.ImageRegistrationMethod()
 
     if multimodal:
@@ -208,7 +286,7 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
         registration_method.SetMetricSamplingStrategy(registration_method.RANDOM)
         registration_method.SetMetricSamplingPercentage(0.05, seed=76926294)
 
-    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=200)
+    registration_method.SetOptimizerAsRegularStepGradientDescent(learningRate=1.0, minStep=1e-6, numberOfIterations=1000)
     registration_method.SetOptimizerScalesFromPhysicalShift()
 
     registration_method.SetShrinkFactorsPerLevel(shrinkFactors=[4, 2, 1])
@@ -217,16 +295,16 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
 
     registration_method.SetInterpolator(sitk.sitkLinear)
     registration_method.SetInitialTransform(initial_transform, inPlace=False)
-
+    
     composite_transform = registration_method.Execute(fixed_image, moving_image)
     moving_resampled = sitk.Resample(moving_image, fixed_image, composite_transform, sitk.sitkLinear, fillValue, moving_image.GetPixelID())
 
-    print(composite_transform)
     print('Final metric value: {0}'.format(registration_method.GetMetricValue()))
     print('Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
 
     final_transform = sitk.CompositeTransform(composite_transform).GetBackTransform()
     euler3d_transform = sitk.Euler3DTransform(final_transform)
+    euler3d_transform.SetComputeZYX(True)
     tform = np.zeros((4,4))
     tform[0:-1, -1] = euler3d_transform.GetTranslation()
     tform[0:-1, 0:-1] = np.array(euler3d_transform.GetMatrix()).reshape(3,3)
