@@ -1,15 +1,24 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from opentps.core.data.images import ROIMask
+
 import logging
 from math import pi, cos, sin
 from typing import Sequence, Optional, Union
 
 import numpy as np
 from numpy import linalg
+from scipy.spatial.transform import Rotation as R
 
 from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.processing.segmentation import segmentation3D
+
+
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +97,8 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
     outputBox = 'keepAll'
 
     if not (cropROI is None):
+        from opentps.core.data.images._roiMask import ROIMask
+
         outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
         cropROIBEV = ROIMask.fromImage3D(cropROI, patient=None)
         sitkImageProcessing.applyTransform(cropROIBEV, tform, fillValue=0)
@@ -222,3 +233,37 @@ def getVoxelIndexFromPosition(position, image3D):
     posInVoxels = np.round(np.divide(shiftedPosInMM, image3D.spacing)).astype(np.int)
 
     return posInVoxels
+
+
+def transform3DMatrixFromTranslationAndRotationsVectors(translation, rotation):
+    print('in image Transform3D translationAndRotationToTransform3D')
+
+    """
+
+    Parameters
+    ----------
+    translation
+    rotation
+
+    Returns
+    -------
+
+    """
+    rotAngleInDeg = np.array(rotation)
+    rotAngleInRad = -rotAngleInDeg * np.pi / 180
+    r = R.from_euler('XYZ', rotAngleInRad)
+
+    # print(type(r))
+    # print(r.as_matrix().shape)
+
+    translationMatrix = np.array([[1, 0, 0, -translation[0]],
+                                  [0, 1, 0, -translation[1]],
+                                  [0, 0, 1, -translation[2]],
+                                  [0, 0, 0, 1]]).astype(np.float)
+
+    # print(type(translationMatrix))
+    # print(translationMatrix.shape)
+
+    translationMatrix[0:3, 0:3] = r.as_matrix()
+
+    return translationMatrix
