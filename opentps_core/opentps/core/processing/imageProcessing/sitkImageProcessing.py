@@ -248,12 +248,19 @@ def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
 
-def rotateImage3DSitk(img3D, rotAngleInDeg=0, rotAxis=0, cval=-1000):
+def rotateImage3DSitk(img3D, rotAngleInDeg, cval=-1000):
 
+    # print('in sitkImageProc in rotateImage3DSitk')
+    # print('rotAngleInDeg', rotAngleInDeg)
+    rotAngleInDeg = np.array(rotAngleInDeg)
     rotAngleInRad = -rotAngleInDeg*np.pi/180
-    r = R.from_rotvec(rotAngleInRad * np.roll(np.array([1, 0, 0]), rotAxis))
+    r = R.from_euler('XYZ', rotAngleInRad)
     imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
 
+    # print('r.as_matrix()', r.as_matrix())
+    # print('r.as_euler()', r.as_euler('zxy'))
+    # print('r.as_euler()', r.as_euler('XYZ', degrees=True))
+    # print('r.as_euler()', r.as_euler('ZYX'))
     applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
 
 def translateImage3DSitk(img3D, translationInMM, cval=-1000):
