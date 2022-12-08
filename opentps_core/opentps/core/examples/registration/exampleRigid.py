@@ -6,6 +6,7 @@ import time
 import logging
 
 from opentps.core.data.images import CTImage
+from opentps.core.data._transform3D import Transform3D
 from opentps.core.processing.registration.registrationRigid import RegistrationRigid
 from opentps.core.examples.syntheticData import *
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
@@ -19,8 +20,13 @@ def run():
     fixed = createSynthetic3DCT()
     moving = copy.copy(fixed)
 
-    translateImage3DSitk(moving, [15, 0, 10])
-    rotateImage3DSitk(moving, rotAngleInDeg=3, rotAxis=1)
+    translation = np.array([15, 0, 10])
+    rotation = np.array([0, 5, 2])
+
+    translateImage3DSitk(moving, translation)
+    rotateImage3DSitk(moving, rotation)
+
+    print('moving min/max/mean', np.min(moving.imageArray), np.max(moving.imageArray), np.mean(moving.imageArray))
 
     # PERFORM REGISTRATION
     start_time = time.time()
@@ -29,15 +35,36 @@ def run():
 
     processing_time = time.time() - start_time
     print('Registration processing time was', processing_time, '\n')
-    print('Rotation in rad', transform.getRotationAngles())
     print('Rotation in deg', transform.getRotationAngles(inDegrees=True))
     print('Translation', transform.getTranslation())
 
-    y_slice = 95
-
+    ## Two ways of getting the deformed moving image
     deformedImage = reg.deformed
-    resampledOnFixedGrid = resampleImage3DOnImage3D(deformedImage, fixedImage=fixed, fillValue=-1000)
+    # deformedImage = transform.deformImage(moving)
 
+    ## Resample it to the same grid as the fixed image
+    resampledOnFixedGrid = resampleImage3DOnImage3D(deformedImage, fixedImage=fixed, fillValue=-1000)
+    print('resampledOnFixedGrid min/max/mean', np.min(resampledOnFixedGrid.imageArray), np.max(resampledOnFixedGrid.imageArray), np.mean(resampledOnFixedGrid.imageArray))
+
+    # COMPUTE IMAGE DIFFERENCE
+    diff_before = fixed.copy()
+    diff_before._imageArray = fixed.imageArray - moving.imageArray
+    diff_after = fixed.copy()
+    diff_after._imageArray = fixed.imageArray - resampledOnFixedGrid.imageArray
+
+    print('diff_before min/max/mean', np.min(diff_before.imageArray), np.max(diff_before.imageArray),
+          np.mean(diff_before.imageArray))
+    print('diff_after min/max/mean', np.min(diff_after.imageArray), np.max(diff_after.imageArray),
+          np.mean(diff_after.imageArray))
+
+    # CHECK RESULTS
+    diff_before_sum = abs(diff_before.imageArray.sum())
+    diff_after_sum = abs(diff_after.imageArray.sum())
+    print(diff_before_sum, diff_after_sum)
+    assert diff_before_sum - diff_after_sum > 0, f"Image difference is larger after registration"
+    # assert abs(diff_after.imageArray[27, 27, 27]) == 0, f"Wrong target voxel difference after registration {diff_after.imageArray[27, 27, 27]} (expected 0)"
+
+    y_slice = 95
     fig, ax = plt.subplots(2, 3)
     ax[0, 0].imshow(fixed.imageArray[:, y_slice, :])
     ax[0, 0].set_title('Fixed')
@@ -45,16 +72,18 @@ def run():
     ax[0, 1].imshow(moving.imageArray[:, y_slice, :])
     ax[0, 1].set_title('Moving')
     ax[0, 1].set_xlabel('Origin: ' + f'{moving.origin[0]}' + ',' + f'{moving.origin[1]}' + ',' + f'{moving.origin[2]}')
-    ax[0, 2].imshow(fixed.imageArray[:, y_slice, :]-moving.imageArray[:, y_slice, :])
-    ax[0, 2].set_title('Diff')
+    diffBef = ax[0, 2].imshow(diff_before.imageArray[:, y_slice, :], vmin=-2000, vmax=2000)
+    ax[0, 2].set_title('Diff before')
+    fig.colorbar(diffBef, ax=ax[0, 2])
     ax[1, 0].imshow(deformedImage.imageArray[:, y_slice, :])
     ax[1, 0].set_title('DeformedMoving')
     ax[1, 0].set_xlabel('Origin: ' + f'{deformedImage.origin[0]:.1f}' + ',' + f'{deformedImage.origin[1]:.1f}' + ',' + f'{deformedImage.origin[2]:.1f}')
     ax[1, 1].imshow(resampledOnFixedGrid.imageArray[:, y_slice, :])
     ax[1, 1].set_title('resampledOnFixedGrid')
     ax[1, 1].set_xlabel('Origin: ' + f'{resampledOnFixedGrid.origin[0]:.1f}' + ',' + f'{resampledOnFixedGrid.origin[1]:.1f}' + ',' + f'{resampledOnFixedGrid.origin[2]:.1f}')
-    ax[1, 2].imshow(fixed.imageArray[:, y_slice, :] - resampledOnFixedGrid.imageArray[:, y_slice, :])
-    ax[1, 2].set_title('Diff')
+    diffAft = ax[1, 2].imshow(diff_after.imageArray[:, y_slice, :], vmin=-2000, vmax=2000)
+    ax[1, 2].set_title('Diff after')
+    fig.colorbar(diffAft, ax=ax[1, 2])
     plt.show()
 
 if __name__ == "__main__":

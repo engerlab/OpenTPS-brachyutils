@@ -251,18 +251,18 @@ def transform3DMatrixFromTranslationAndRotationsVectors(translation, rotation):
     """
     rotAngleInDeg = np.array(rotation)
     rotAngleInRad = -rotAngleInDeg * np.pi / 180
-    r = R.from_euler('zyx', rotAngleInRad)
+    r = R.from_euler('XYZ', rotAngleInRad)
 
-    print(type(r))
-    print(r.as_matrix().shape)
+    # print(type(r))
+    # print(r.as_matrix().shape)
 
     translationMatrix = np.array([[1, 0, 0, -translation[0]],
                                   [0, 1, 0, -translation[1]],
                                   [0, 0, 1, -translation[2]],
                                   [0, 0, 0, 1]]).astype(np.float)
 
-    print(type(translationMatrix))
-    print(translationMatrix.shape)
+    # print(type(translationMatrix))
+    # print(translationMatrix.shape)
 
     translationMatrix[0:3, 0:3] = r.as_matrix()
 
