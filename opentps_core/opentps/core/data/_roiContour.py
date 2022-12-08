@@ -1,8 +1,8 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from opentps.core.data.images import ROIMask
+# from __future__ import annotations
+# from typing import TYPE_CHECKING
+#
+# if TYPE_CHECKING:
+#     from opentps.core.data.images import ROIMask
 
 __all__ = ['ROIContour']
 
@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw
 import logging
 
 from opentps.core.data._patientData import PatientData
-# from opentps.core.data.images._roiMask import ROIMask
+
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core import Event
 
@@ -27,7 +27,7 @@ class ROIContour(PatientData):
         self.referencedFrameOfReferenceUID = referencedFrameOfReferenceUID
         self.referencedSOPInstanceUIDs = []
         self.polygonMesh = []
-
+        # from opentps.core.data.images._roiMask import ROIMask
     @property
     def color(self):
         return self._displayColor
@@ -37,7 +37,7 @@ class ROIContour(PatientData):
         self._displayColor = color
         self.colorChangedSignal.emit(self._displayColor)
 
-    def getBinaryMask(self, origin=None, gridSize=None, spacing=None) -> ROIMask:
+    def getBinaryMask(self, origin=None, gridSize=None, spacing=None):
         minSpatialResolution = 1.
 
         contourOrigin = [0, 0, 0]
@@ -105,6 +105,7 @@ class ROIContour(PatientData):
             mask2D = np.array(img).transpose(1, 0)
             mask3D[:, :, sliceZ] = np.logical_xor(mask3D[:, :, sliceZ], mask2D)
 
+        from opentps.core.data.images._roiMask import ROIMask
         mask = ROIMask(imageArray=mask3D, name=self.name, origin=contourOrigin, spacing=contourSpacing,
                        displayColor=self._displayColor)
 
@@ -116,7 +117,7 @@ class ROIContour(PatientData):
 
         return mask
 
-    def getBinaryMask_old(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)) -> ROIMask:
+    def getBinaryMask_old(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
         """
         Convert the polygon mesh to a binary mask image.
 
@@ -162,7 +163,7 @@ class ROIContour(PatientData):
             mask2D = np.array(img).transpose(1, 0)
             # mask3D[:, :, sliceZ] = np.logical_xor(mask3D[:, :, sliceZ], mask2D)
             mask3D[:, :, sliceZ] = mask3D[:, :, sliceZ] - mask2D
-
+        from opentps.core.data.images._roiMask import ROIMask
         mask = ROIMask(imageArray=mask3D, name=self.name, origin=origin, spacing=spacing, displayColor=self._displayColor)
 
         return mask
@@ -174,7 +175,7 @@ class ROIContour(PatientData):
 
         return centerOfMass
 
-    def getBinaryContourMask(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)) -> ROIMask:
+    def getBinaryContourMask(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
         mask3D = np.zeros(gridSize, dtype=np.bool)
 
         for contourData in self.polygonMesh:
@@ -202,6 +203,7 @@ class ROIContour(PatientData):
             mask2D = np.array(img).transpose(1, 0)
             mask3D[:, :, sliceZ] = np.logical_or(mask3D[:, :, sliceZ], mask2D)
 
+        from opentps.core.data.images._roiMask import ROIMask
         contourMask = ROIMask(imageArray=mask3D, name=self.name, origin=origin, spacing=spacing,
                        displayColor=self._displayColor)
 
