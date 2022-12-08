@@ -16,13 +16,13 @@ def compareModels(model1, model2):
     print('Available ROIs for model 2')
     rtStruct2.print_ROINames()
     
-    dynMod1 = resample(dynMod1,spacing=[1,1,1])
-    dynMod2 = resample(dynMod2,spacing=[1,1,1])
+    dynMod1 = resample(dynMod1, spacing=[1, 1, 1])
+    dynMod2 = resample(dynMod2, spacing=[1, 1, 1])
     
     midP1 = dynMod1.midp
     midP2 = dynMod2.midp
     
-    translation, angles = getTranslationAndRotation(fixed=midP1,moving=midP2)
+    translation, angles = getTranslationAndRotation(fixed=midP1, moving=midP2)
     theta_x = angles[0]
     theta_y = angles[1]
     theta_z = angles[2]
