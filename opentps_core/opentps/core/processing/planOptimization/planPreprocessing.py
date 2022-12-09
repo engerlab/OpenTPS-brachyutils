@@ -85,7 +85,8 @@ class ExtendedPlanIonLayer(PlanIonLayer):
             spot = PlanIonSpot()
             newLayer._spots.append(spot)
 
-        newLayer._timings = np.array(layer._timings)
+        newLayer._startTime = np.array(layer._startTime)
+        newLayer._irradiationDuration = np.array(layer._irradiationDuration)
 
         return newLayer
 

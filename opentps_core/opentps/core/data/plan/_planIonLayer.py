@@ -14,9 +14,9 @@ class PlanIonLayer:
         self._x = np.array([])
         self._y = np.array([])
         self._mu = np.array([])
-        self._timings = np.array([])
+        self._startTime = np.array([])
+        self._irradiationDuration = np.array([])
         self.scalingFactor = 1.
-        self.lastSpotDuration = None # duration of irradiation (in seconds) of last spot in layer
 
         self.nominalEnergy: float = nominalEnergy
         self.numberOfPaintings: int = 1
@@ -48,7 +48,8 @@ class PlanIonLayer:
         self._x = np.array(otherLayer._x)
         self._y = np.array(otherLayer._y)
         self._mu = np.array(otherLayer._mu)
-        self._timings = np.array(otherLayer._timings)
+        self._startTime = np.array(otherLayer._startTime)
+        self._irradiationDuration = np.array(otherLayer._irradiationDuration)
 
         self.nominalEnergy = otherLayer.nominalEnergy
         self.numberOfPaintings = otherLayer.numberOfPaintings
@@ -92,18 +93,33 @@ class PlanIonLayer:
 
     @property
     def spotTimings(self) -> np.ndarray:
-        return np.array(self._timings)
+        return np.array(self._startTime)
 
     @spotTimings.setter
     def spotTimings(self, w: Sequence[float]):
         w = np.array(w)
 
-        if len(self._timings) != len(w):
+        if len(self._startTime) != len(w):
             raise ValueError(
                 "Length of provided spot timings is not correct. Provided: " + str(len(w)) + " - Expected: " + str(
-                    len(self._timings)))
+                    len(self._startTime)))
 
-        self._timings = w
+        self._startTime = w
+
+    @property
+    def spotIrradiationDurations(self) -> np.ndarray:
+        return np.array(self._irradiationDuration)
+
+    @spotIrradiationDurations.setter
+    def spotIrradiationDurations(self, w: Sequence[float]):
+        w = np.array(w)
+
+        if len(self._irradiationDuration) != len(w):
+            raise ValueError(
+                "Length of provided spot timings is not correct. Provided: " + str(len(w)) + " - Expected: " + str(
+                    len(self._irradiationDuration)))
+
+        self._irradiationDuration = w
 
     @property
     def meterset(self) -> float:
@@ -114,66 +130,76 @@ class PlanIonLayer:
         return len(self.spotMUs)
 
     def addToSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
-                  mu: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+                  mu: Union[float, Sequence[float]], startTime: Optional[Union[float, Sequence[float]]] = None,
+                  irradiationDuration: Optional[Union[float, Sequence[float]]] = None):
         if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
-                t = timing if timing is None else timing[i]
-                self._addToSinglepot(xElem, y[i], mu[i], t)
+                t = startTime if startTime is None else startTime[i]
+                d = irradiationDuration if irradiationDuration is None else irradiationDuration[i]
+                self._addToSinglepot(xElem, y[i], mu[i], t, d)
         else:
-            self._addToSinglepot(x, y, mu, timing)
+            self._addToSinglepot(x, y, mu, startTime, irradiationDuration)
 
-    def _addToSinglepot(self, x: float, y: float, mu: float, timing: Optional[float] = None):
+    def _addToSinglepot(self, x: float, y: float, mu: float, startTime: Optional[float] = None, irradiationDuration: Optional[float] = None):
         alreadyExists, where = self.spotDefinedInXY(x, y)
         if alreadyExists:
             self._mu[where] = self._mu[where] + mu
         else:
-            self._appendSingleSpot(x, y, mu, timing)
+            self._appendSingleSpot(x, y, mu, startTime, irradiationDuration)
 
     def appendSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
-                   mu: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+                   mu: Union[float, Sequence[float]], startTime: Optional[Union[float, Sequence[float]]] = None,
+                   irradiationDuration: Optional[Union[float, Sequence[float]]] = None):
         if not isinstance(x, Iterable): x = [x]
         if not isinstance(y, Iterable): y = [y]
         if not isinstance(mu, Iterable): mu = [mu]
-        if timing is not None and not isinstance(timing, Iterable): timing = [timing]
-
+        if startTime is not None and not isinstance(startTime, Iterable): startTime = [startTime]
+        if irradiationDuration is not None and not isinstance(irradiationDuration, Iterable): irradiationDuration = [irradiationDuration]
         for i, xElem in enumerate(x):
-            t = timing if timing is None else timing[i]
-            self._appendSingleSpot(xElem, y[i], mu[i], t)
+            t = startTime if startTime is None else startTime[i]
+            d = irradiationDuration if irradiationDuration is None else irradiationDuration[i]
+            self._appendSingleSpot(xElem, y[i], mu[i], t, d)
 
-    def _appendSingleSpot(self, x: float, y: float, mu: float, timing: Optional[float] = None):
+    def _appendSingleSpot(self, x: float, y: float, mu: float, startTime: Optional[float] = None, irradiationDuration: Optional[float] = None):
         alreadyExists, where = self.spotDefinedInXY(x, y)
         if alreadyExists:
-            if timing is None:  # possible to have two spots at the same location with different timings (e.g. bursts in synchrocyclotron)
+            if startTime is None:  # possible to have two spots at the same location with different timings (e.g. bursts in synchrocyclotron)
                 raise ValueError('Spot already exists in (x,y)')
             else:
-                if timing == self._timings[where]:
+                if startTime == self._startTime[where]:
                     raise ValueError('Spot already exists in (x,y,timing)')
 
         self._x = np.append(self._x, x)
         self._y = np.append(self._y, y)
         self._mu = np.append(self._mu, mu)
-        if timing is not None:
-            self._timings = np.append(self._timings, timing)
-            assert len(self._mu) == len(self._timings)
+        if startTime is not None:
+            self._startTime = np.append(self._startTime, startTime)
+            assert len(self._mu) == len(self._startTime)
+        if irradiationDuration is not None:
+            self._irradiationDuration = np.append(self._irradiationDuration, irradiationDuration)
+            assert len(self._mu) == len(self._irradiationDuration)           
 
     def setSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
-                mu: Union[float, Sequence[float]], timing: Optional[Union[float, Sequence[float]]] = None):
+                mu: Union[float, Sequence[float]], startTime: Optional[Union[float, Sequence[float]]] = None,
+                irradiationDuration: Optional[Union[float, Sequence[float]]] = None):
         if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
-                t = timing if timing is None else timing[i]
-                self._setSingleSpot(xElem, y[i], mu[i], t)
+                t = startTime if startTime is None else startTime[i]
+                d = irradiationDuration if irradiationDuration is None else irradiationDuration[i]
+                self._setSingleSpot(xElem, y[i], mu[i], t, d)
         else:
-            self._setSingleSpot(x, y, mu, timing)
+            self._setSingleSpot(x, y, mu, startTime, irradiationDuration)
 
-    def _setSingleSpot(self, x: float, y: float, mu: float, timing: Optional[float] = None):
+    def _setSingleSpot(self, x: float, y: float, mu: float, startTime: Optional[float] = None, irradiationDuration: Optional[float] = None):
         alreadyExists, spotPos = self.spotDefinedInXY(x, y)
         if alreadyExists:
             self._x[spotPos] = x
             self._y[spotPos] = y
             self._mu[spotPos] = mu
-            if timing is not None: self._timings[spotPos] = timing
+            if startTime is not None: self._startTime[spotPos] = startTime
+            if irradiationDuration is not None: self._irradiationDuration[spotPos] = irradiationDuration
         else:
-            self.appendSpot(x, y, mu, timing)
+            self.appendSpot(x, y, mu, startTime, irradiationDuration)
 
     def removeSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]]):
         _, spotPos = self.spotDefinedInXY(x, y)
@@ -181,8 +207,10 @@ class PlanIonLayer:
         self._x = np.delete(self._x, spotPos)
         self._y = np.delete(self._y, spotPos)
         self._mu = np.delete(self._mu, spotPos)
-        if len(self._timings) > 0:
-            self._timings = np.delete(self._timings, spotPos)
+        if len(self._startTime) > 0:
+            self._startTime = np.delete(self._startTime, spotPos)
+        if len(self._irradiationDuration) > 0:
+            self._irradiationDuration = np.delete(self._irradiationDuration, spotPos)
 
     def spotDefinedInXY(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]]) -> Tuple[bool, int]:
         if isinstance(x, Iterable):
@@ -240,8 +268,8 @@ class PlanIonLayer:
                                                                                       ::-1]
 
             elif order == 'timing':  # sort spots by increasing order of timings
-                assert len(self._timings) == len(self._mu)
-                order = np.argsort(self._timings)
+                assert len(self._startTime) == len(self._mu)
+                order = np.argsort(self._startTime)
             else:
                 raise ValueError(f"order method type {order} does not exist.")
 
@@ -251,8 +279,11 @@ class PlanIonLayer:
         self._x = np.array([self._x[i] for i in order])
         self._y = np.array([self._y[i] for i in order])
         self._mu = np.array([self._mu[i] for i in order])
-        if len(self._timings) == n:
-            self._timings = np.array([self._timings[i] for i in order])
+        if len(self._startTime) == n:
+            self._startTime = np.array([self._startTime[i] for i in order])
+        if len(self._irradiationDuration) == n:
+            self._irradiationDuration = np.array([self._irradiationDuration[i] for i in order])
+
 
     def simplify(self, threshold: float = 0.0):
         self._fusionDuplicates()
@@ -264,13 +295,17 @@ class PlanIonLayer:
         self._mu = np.array([self._mu[i] for i in range(len(self._mu)) if i in index_to_keep])
         self._x = np.array([self._x[i] for i in range(len(self._x)) if i in index_to_keep])
         self._y = np.array([self._y[i] for i in range(len(self._y)) if i in index_to_keep])
+        if len(self._startTime) > 0:
+            self._startTime = np.array([self._startTime[i] for i in range(len(self._startTime)) if i in index_to_keep])
+        if len(self._irradiationDuration) > 0:
+            self._irradiationDuration = np.array([self._irradiationDuration[i] for i in range(len(self._irradiationDuration)) if i in index_to_keep])
 
 
     def _fusionDuplicates(self):
         if len(self) > 1:
-            # If timing is not taken into account (self._timings is empty), two spots with the same location are considered duplicates
-            # If timing is taken into account (self._timings is not empty), two spots with the same location are considered duplicates only if their timing are equal
-            if len(self._timings)==0:
+            # If timing is not taken into account (self._startTime is empty), two spots with the same location are considered duplicates
+            # If timing is taken into account (self._startTime is not empty), two spots with the same location are considered duplicates only if their timing are equal
+            if len(self._startTime)==0:
                 unique_positions = [(self._x[0], self._y[0])]
                 ind = 1
                 while ind < len(self._x):
@@ -286,10 +321,10 @@ class PlanIonLayer:
                         unique_positions.append(current_position)
                         ind += 1
             else:
-                unique_positions = [(self._x[0], self._y[0], self._timings[0])]
+                unique_positions = [(self._x[0], self._y[0], self._startTime[0])]
                 ind = 1
                 while ind < len(self._x):
-                    current_position = (self._x[ind], self._y[ind], self._timings[ind])
+                    current_position = (self._x[ind], self._y[ind], self._startTime[ind])
                     if current_position in unique_positions:
                         #fusion
                         match_ind = unique_positions.index(current_position) # find index in unique positions
@@ -297,7 +332,9 @@ class PlanIonLayer:
                         self._x = np.delete(self._x, ind)
                         self._y = np.delete(self._y, ind)
                         self._mu = np.delete(self._mu, ind)
-                        self._timings = np.delete(self._timings, ind)
+                        self._startTime = np.delete(self._startTime, ind)
+                        if len(self._irradiationDuration) > 0:
+                            self._irradiationDuration = np.delete(self._irradiationDuration, ind)
                     else:
                         unique_positions.append(current_position)
                         ind += 1
@@ -310,7 +347,8 @@ class PlanIonLayer:
         layer._x = np.array([])
         layer._y = np.array([])
         layer._mu = np.array([])
-        layer._timings = np.array([])
+        layer._startTime = np.array([])
+        layer._irradiationDuration = np.array([])
         return layer
 
 
@@ -352,14 +390,14 @@ class PlanIonLayerTestCase(unittest.TestCase):
         x = 0
         y = 0
         mu = 0
-        timing = 0
-        layer.appendSpot(x, y, mu, timing)
+        startTime = 0
+        layer.appendSpot(x, y, mu, startTime)
 
         self.assertEqual(list(layer.spotXY), [(x, y)])
         self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
 
-        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, mu, timing))
+        self.assertRaises(Exception, lambda: layer.appendSpot(x, y, mu, startTime))
 
     def testSetSpot(self):
         layer = PlanIonLayer()
@@ -382,9 +420,9 @@ class PlanIonLayerTestCase(unittest.TestCase):
         x = 0
         y = 0
         mu = 0
-        timing = 0
+        startTime = 0
 
-        layer.setSpot(x, y, mu, timing)
+        layer.setSpot(x, y, mu, startTime)
         self.assertEqual(list(layer.spotXY), [(x, y)])
         self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
@@ -400,9 +438,9 @@ class PlanIonLayerTestCase(unittest.TestCase):
         x = 0
         y = 0
         mu = 0
-        timing = 0
+        startTime = 0
 
-        layer.setSpot(x, y, mu, timing)
+        layer.setSpot(x, y, mu, startTime)
         self.assertEqual(list(layer.spotXY), [(x, y)])
         self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
@@ -413,7 +451,7 @@ class PlanIonLayerTestCase(unittest.TestCase):
         np.testing.assert_array_equal(layer.spotMUs, np.array([]))
         np.testing.assert_array_equal(layer.spotTimings, np.array([]))
 
-        layer.setSpot(x, y, mu, timing)
+        layer.setSpot(x, y, mu, startTime)
         self.assertEqual(list(layer.spotXY), [(x, y)])
         self.assertEqual(layer.spotMUs, 0)
         self.assertEqual(layer.spotTimings, 0)
@@ -453,8 +491,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         x = [0, 1, 2, 3]
         y = [1, 2, 2, 0]
         mu = [0.2, 0.5, 0.3, 0.1]
-        timing = [3, 2, 5, 6]
-        layer.appendSpot(x, y, mu, timing)
+        startTime = [3, 2, 5, 6]
+        layer.appendSpot(x, y, mu, startTime)
         layer.reorderSpots(order='timing')
         np.testing.assert_array_equal(layer.spotX, [1, 0, 2, 3])
         np.testing.assert_array_equal(layer.spotY, [2, 1, 2, 0])
@@ -479,8 +517,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         x = [0, 2, 1, 3, 10, 4]
         y = [1, 2, 2, 0, 2, 5]
         mu = [0.2, 0.5, 0.3, 0.1, 0.2, 0.4]
-        timings = [1, 2, 3, 4, 2, 6]
-        layer.appendSpot(x, y, mu, timings)
+        startTimes = [1, 2, 3, 4, 2, 6]
+        layer.appendSpot(x, y, mu, startTimes)
         layer._x[4] = 2
 
         layer._fusionDuplicates()
