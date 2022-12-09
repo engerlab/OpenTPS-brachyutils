@@ -11,10 +11,10 @@ from opentps.gui.viewController import ViewController
 
 def viewController():
     # instantiate the main opentps_core window
-    viewController = ViewController(patientList)
-    viewController.mainConfig = mainConfig
+    _viewController = ViewController(patientList)
+    _viewController.mainConfig = mainConfig
 
-    return viewController
+    return _viewController
 
 
 options = loggingConfig.configure(sys.argv[1:])
@@ -30,8 +30,7 @@ app = QApplication.instance()
 if not app:
     app = QApplication([])
 
-
-def run(mainWindow):
+def runWithMainWindow(mainWindow):
     # options = parseArgs(sys.argv[1:])
     logger.info("Start opentps gui")
 
@@ -41,6 +40,9 @@ def run(mainWindow):
     mainWindow.close()
     #del mainWindow
 
-if __name__ == '__main__':
+def run():
     _viewController = viewController()
-    run(_viewController.mainWindow)
+    runWithMainWindow(_viewController.mainWindow)
+
+if __name__ == '__main__':
+    run()
