@@ -1,7 +1,7 @@
 from opentps.core.processing.registration.registrationRigid import RegistrationRigid
 
 
-def getTranslationAndRotation(fixed,moving):
+def getTranslationAndRotation(fixed, moving, transform=None):
     """Compute the translation and rotation between image1 and image2.
 
             Returns
@@ -9,8 +9,13 @@ def getTranslationAndRotation(fixed,moving):
             T: the translation in mm
             anglesArray: the array of angles in radians
             """
-    reg = RegistrationRigid(fixed=fixed, moving=moving)   
-    transform = reg.compute()
+
+    if transform==None:
+        print("Compute rigid registration for the models comparison")
+        reg = RegistrationRigid(fixed=fixed, moving=moving)
+        transform = reg.compute()
+    else:
+        print("Use other rigid registration")
     
     translation = transform.getTranslation()
     eulerAngles = transform.getRotationAngles()
@@ -18,6 +23,7 @@ def getTranslationAndRotation(fixed,moving):
     theta_y = eulerAngles[1]
     theta_z = eulerAngles[2]
     
-    anglesArray = [theta_x,theta_y,theta_z]
+    anglesArray = [theta_x, theta_y, theta_z]
     return translation, anglesArray
+
    

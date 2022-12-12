@@ -16,4 +16,4 @@ dataPath2 = basePath + organ + '/' + study + '/' + patientFolder + patientComple
 
 model1 = loadDataStructure(dataPath1)[0]
 model2 = loadDataStructure(dataPath2)[0]
-compareModels(model1,model2)
+compareModels(model1, model2, targetContourToUse1, targetContourToUse2)
