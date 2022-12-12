@@ -105,13 +105,33 @@ class RTPlan(PatientData):
     @spotTimings.setter
     def spotTimings(self, t: Sequence[float]):
         if len(t) != self.numberOfSpots:
-            raise ValueError(f'Cannot spot timings of size {len(t)} to size {self.numberOfSpots}')
+            raise ValueError(f'Cannot set spot timings of size {len(t)} to size {self.numberOfSpots}')
         t = np.array(t)
 
         ind = 0
         for beam in self._beams:
             beam.spotTimings = t[ind:ind + len(beam.spotTimings)]
             ind += len(beam.spotTimings)
+
+    @property
+    def spotIrradiationDurations(self) -> np.ndarray:
+        durations = np.array([])
+
+        for beam in self._beams:
+            durations = np.concatenate((durations, beam.spotIrradiationDurations))
+
+        return durations
+
+    @spotIrradiationDurations.setter
+    def spotIrradiationDurations(self, t: Sequence[float]):
+        if len(t) != self.numberOfSpots:
+            raise ValueError(f'Cannot set spot durations of size {len(t)} to size {self.numberOfSpots}')
+        t = np.array(t)
+
+        ind = 0
+        for beam in self._beams:
+            beam.spotIrradiationDurations = t[ind:ind + len(beam.spotIrradiationDurations)]
+            ind += len(beam.spotIrradiationDurations)
 
     @property
     def spotXY(self) -> np.ndarray:
@@ -231,9 +251,10 @@ class RTPlan(PatientData):
             index_layer = -1
         else:
             index_layer = current_energy_index[0]
-        t = None if len(layer._timings) == 0 else layer._timings[spot_index]
+        t = None if len(layer._startTime) == 0 else layer._startTime[spot_index]
+        d = None if len(layer._irradiationDuration) == 0 else layer._irradiationDuration[spot_index]
         self._beams[index_beam]._layers[index_layer].appendSpot(layer._x[spot_index], layer._y[spot_index],
-                                                                layer._mu[spot_index], t)
+                                                                layer._mu[spot_index], t, d)
 
     def appendLayer(self, beam: PlanIonBeam, layer: PlanIonLayer):
         gantry_angles = [] if self._beams == [] else [b.gantryAngle for b in self._beams]

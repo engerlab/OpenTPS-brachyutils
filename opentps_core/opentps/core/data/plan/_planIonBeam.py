@@ -117,6 +117,23 @@ class PlanIonBeam:
             ind += len(layer.spotTimings)
 
     @property
+    def spotIrradiationDurations(self):
+        durations = np.array([])
+        for layer in self._layers:
+            durations = np.concatenate((durations, layer.spotIrradiationDurations))
+
+        return durations
+
+    @spotIrradiationDurations.setter
+    def spotIrradiationDurations(self, t: Sequence[float]):
+        t = np.array(t)
+
+        ind = 0
+        for layer in self._layers:
+            layer.spotIrradiationDurations = t[ind:ind + len(layer.spotIrradiationDurations)]
+            ind += len(layer.spotIrradiationDurations)
+
+    @property
     def spotXY(self) -> np.ndarray:
         xy = np.array([])
         for layer in self._layers:
@@ -178,11 +195,16 @@ class PlanIonBeam:
                     self._layers[match_ind]._x = np.concatenate((self._layers[match_ind]._x, self._layers[ind]._x))
                     self._layers[match_ind]._y = np.concatenate((self._layers[match_ind]._y, self._layers[ind]._y))
                     self._layers[match_ind]._mu = np.concatenate((self._layers[match_ind]._mu, self._layers[ind]._mu))
-                    if len(self._layers[match_ind]._timings)>0 or len(self._layers[ind]._timings)>0:
+                    if len(self._layers[match_ind]._startTime)>0 or len(self._layers[ind]._startTime)>0:
                         #check both are non empty
-                        if len(self._layers[match_ind]._timings)==0 or len(self._layers[ind]._timings)==0:
+                        if len(self._layers[match_ind]._startTime)==0 or len(self._layers[ind]._startTime)==0:
                             print(f"When attempting to merge layers at energy {current_nominalEnergy}, one layer contain delivery timings while the other do not.")
-                        self._layers[match_ind]._timings = np.concatenate((self._layers[match_ind]._timings, self._layers[ind]._timings))
+                        self._layers[match_ind]._startTime = np.concatenate((self._layers[match_ind]._startTime, self._layers[ind]._startTime))
+                    if len(self._layers[match_ind]._irradiationDuration)>0 or len(self._layers[ind]._irradiationDuration)>0:
+                        #check both are non empty
+                        if len(self._layers[match_ind]._irradiationDuration)==0 or len(self._layers[ind]._irradiationDuration)==0:
+                            print(f"When attempting to merge layers at energy {current_nominalEnergy}, one layer contain irradiation durations while the other do not.")
+                        self._layers[match_ind]._irradiationDuration = np.concatenate((self._layers[match_ind]._irradiationDuration, self._layers[ind]._irradiationDuration))
                     self.removeLayer(self._layers[ind])
                 else:
                     unique_nominalEnergies.append(current_nominalEnergy)
