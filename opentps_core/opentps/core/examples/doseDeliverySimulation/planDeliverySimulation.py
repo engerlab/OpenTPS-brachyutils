@@ -47,7 +47,7 @@ print(model3D)
 PDS = PlanDeliverySimulation(plan, CT4D, model3D)
 
 ## 4D Dose simulation
-PDS.simulate4DDose()
+# PDS.simulate4DDose()
 
 ## 4D dynamic simulation
 PDS.simulate4DDynamicDose()
