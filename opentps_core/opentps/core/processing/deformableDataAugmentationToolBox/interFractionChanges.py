@@ -237,16 +237,11 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
 
             elif isinstance(data, ROIMask):
                 print('Rotate ROIMask of', rotationInDeg, 'degrees')
-                for i in range(3):
-                    if rotationInDeg[i] != 0:
-                        rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i, cval=0)
+                rotateImage3DSitk(data, rotationInDeg, cval=0)
 
             else:
                 print('Rotate Image3D of', rotationInDeg, 'degrees')
-                # data.imageArray = rotateCupy(data.imageArray, rotationInDeg=rotationInDeg)
-                for i in range(3):
-                    if rotationInDeg[i] != 0:
-                        rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i)
+                rotateImage3DSitk(data, rotationInDeg)
 
 ## --------------------------------------------------------------------------------------
 def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
