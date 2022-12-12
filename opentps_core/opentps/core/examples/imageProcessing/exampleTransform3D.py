@@ -93,7 +93,7 @@ def run():
 
     ## option 2
     translateImage3DSitk(moving, translation)
-    rotateImage3DSitk(moving, rotation)
+    rotateImage3DSitk(moving, rotation, center='imgCenter')
     # print('option 2')
     # print('---------------')
 
