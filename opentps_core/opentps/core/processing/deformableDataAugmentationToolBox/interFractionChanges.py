@@ -244,7 +244,7 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
                 rotateImage3DSitk(data, rotationInDeg)
 
 ## --------------------------------------------------------------------------------------
-def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
+def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0], center='scannerCenter'):
 
     """
 
@@ -261,14 +261,12 @@ def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
     print('Apply rotation to field imageArray', rotationInDeg)
     for i in range(3):
         if rotationInDeg[i] != 0:
-            rotateImage3DSitk(vectorField, rotAngleInDeg=rotationInDeg[i], rotAxis=i, cval=0)
+            rotateImage3DSitk(vectorField, rotationInDeg, cval=0, center=center)
 
     print('Apply rotation to field vectors', rotationInDeg)
-
     r = R.from_rotvec(rotationInDeg, degrees=True)
 
     flattenedVectorField = vectorField.imageArray.reshape((vectorField.gridSize[0] * vectorField.gridSize[1] * vectorField.gridSize[2], 3))
-
     flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
 
     vectorField.imageArray = flattenedVectorField.reshape((vectorField.gridSize[0], vectorField.gridSize[1], vectorField.gridSize[2], 3))

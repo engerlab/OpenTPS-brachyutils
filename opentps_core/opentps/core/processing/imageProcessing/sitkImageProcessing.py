@@ -248,7 +248,7 @@ def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
 
-def rotateImage3DSitk(img3D, rotAngleInDeg, cval=-1000):
+def rotateImage3DSitk(img3D, rotAngleInDeg, cval=-1000, center='imgCenter'):
 
     # print('in sitkImageProc in rotateImage3DSitk')
     # print('rotAngleInDeg', rotAngleInDeg)
