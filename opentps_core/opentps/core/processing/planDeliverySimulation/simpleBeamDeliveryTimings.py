@@ -22,6 +22,8 @@ class SimpleBeamDeliveryTimings:
             RTPlan with timings
         """
         plan = self.plan.copy()
+        if np.any(plan.spotMUs<0.01):
+            print("Warning: Plan contains spots MU < 0.01 --> Delivery timings might not be accurate.")
         if sort_spots:
             plan.reorderPlan()
 
@@ -29,6 +31,7 @@ class SimpleBeamDeliveryTimings:
             accumul_layer_time = 0.
             for l, layer in enumerate(beam.layers):
                 irradiationTime = self.computeIrradiationDuration(energy=layer.nominalEnergy, mu=layer.spotMUs)
+                irradiationTime = np.maximum(250e-6, irradiationTime) #minimum 250us for irradiation
                 layer._irradiationDuration = irradiationTime
                 x = layer.spotX
                 y = layer.spotY
