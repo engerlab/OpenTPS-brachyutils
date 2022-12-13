@@ -34,7 +34,7 @@ def run():
     processing_time = time.time() - start_time
     print('Registration processing time was', processing_time, '\n')
     print('Rotation in deg', transform.getRotationAngles(inDegrees=True))
-    print('Translation', transform.getTranslation())
+    print('Translation', transform.getTranslation(), '\n')
 
     ## Two ways of getting the deformed moving image
     deformedImage = reg.deformed
