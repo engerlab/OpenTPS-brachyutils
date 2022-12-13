@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class Transform3D(PatientData):
 
-    def __init__(self, tform=None, name="Transform", center=None):
+    def __init__(self, tform=None, name="Transform", center='imgCenter'):
         super().__init__(name=name)
 
         self.tform = tform
@@ -54,7 +54,8 @@ class Transform3D(PatientData):
 
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
-            sitkImageProcessing.applyTransform(image, self.tform, fillValue, centre=self.center)
+            sitkImageProcessing.applyTransform(image, self.tform, fillValue=fillValue, center=self.center)
+
         except:
             logger.info('Failed to use SITK transform. Abort.')
 
@@ -91,7 +92,7 @@ class Transform3D(PatientData):
             """
         return self.tform[0:-1, -1]
 
-    def initFromTranslationAndRotationVectors(self, translation, rotation):
+    def initFromTranslationAndRotationVectors(self, translation=[0, 0, 0], rotation=[0, 0, 0]):
         """
 
         Parameters
@@ -103,4 +104,4 @@ class Transform3D(PatientData):
         -------
 
         """
-        self.tform = transform3DMatrixFromTranslationAndRotationsVectors(translation, rotation)
+        self.tform = transform3DMatrixFromTranslationAndRotationsVectors(translation=translation, rotation=rotation)

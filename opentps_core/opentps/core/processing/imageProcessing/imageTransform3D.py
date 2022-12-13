@@ -235,8 +235,7 @@ def getVoxelIndexFromPosition(position, image3D):
     return posInVoxels
 
 
-def transform3DMatrixFromTranslationAndRotationsVectors(translation, rotation):
-    print('in image Transform3D translationAndRotationToTransform3D')
+def transform3DMatrixFromTranslationAndRotationsVectors(translation=[0, 0, 0], rotation=[0, 0, 0]):
 
     """
 
@@ -253,17 +252,11 @@ def transform3DMatrixFromTranslationAndRotationsVectors(translation, rotation):
     rotAngleInRad = -rotAngleInDeg * np.pi / 180
     r = R.from_euler('XYZ', rotAngleInRad)
 
-    # print(type(r))
-    # print(r.as_matrix().shape)
-
-    translationMatrix = np.array([[1, 0, 0, -translation[0]],
+    affineTransformMatrix = np.array([[1, 0, 0, -translation[0]],
                                   [0, 1, 0, -translation[1]],
                                   [0, 0, 1, -translation[2]],
                                   [0, 0, 0, 1]]).astype(np.float)
 
-    # print(type(translationMatrix))
-    # print(translationMatrix.shape)
+    affineTransformMatrix[0:3, 0:3] = r.as_matrix()
 
-    translationMatrix[0:3, 0:3] = r.as_matrix()
-
-    return translationMatrix
+    return affineTransformMatrix

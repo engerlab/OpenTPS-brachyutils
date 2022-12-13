@@ -31,37 +31,43 @@ def run():
     for pointIdx in range(len(pointList)):
         fieldFixed.imageArray[pointList[pointIdx][0], pointList[pointIdx][1], pointList[pointIdx][2]] = vectorList[pointIdx]
 
-    translation = np.array([-5, 0, -3])
-    rotation = np.array([0, 0, 0])
+    translation = np.array([0, 0, 0])
+    rotation = np.array([0, 10, 0])
 
     moving = copy.copy(fixed)
+    moving2 = copy.copy(fixed)
     fieldMoving = copy.copy(fieldFixed)
-
 
     ## Create a transform 3D
     print('Create a transform 3D')
     transform3D = Transform3D()
-    transform3D.initFromTranslationAndRotationVectors(translation, rotation)
-    print(transform3D.getTranslation())
-    print(transform3D.getRotationAngles(inDegrees=True))
-    print('---------------')
+    transform3D.initFromTranslationAndRotationVectors(translation=translation, rotation=rotation)
+    print('Translation', transform3D.getTranslation())
+    print('Rotation', transform3D.getRotationAngles(inDegrees=True))
+
+
     moving = transform3D.deformImage(moving)
+    print(fixed.origin, moving.origin)
     moving = resampleImage3DOnImage3D(moving, fixedImage=fixed, fillValue=-1000)
     print(fixed.origin, moving.origin)
     # translateImage3DSitk(moving, translationInMM=translation)
-
-
-
+    rotateImage3DSitk(moving2, rotAngleInDeg=rotation)
+    print(fixed.origin, moving2.origin)
+    
     compXFixed = fieldFixed.imageArray[:, y_slice, :, 0]
     compZFixed = fieldFixed.imageArray[:, y_slice, :, 2]
     compXMoving = fieldMoving.imageArray[:, y_slice, :, 0]
     compZMoving = fieldMoving.imageArray[:, y_slice, :, 2]
 
     # Plot X-Z field
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(1, 4)
     ax[0].imshow(fixed.imageArray[:, y_slice, :])
     # ax[0].quiver(compXFixed, compZFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
     ax[1].imshow(moving.imageArray[:, y_slice, :])
+    # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+    ax[2].imshow(moving2.imageArray[:, y_slice, :])
+    # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+    ax[3].imshow(moving.imageArray[:, y_slice, :] - moving2.imageArray[:, y_slice, :])
     # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
     plt.show()
 
@@ -92,24 +98,24 @@ def run():
     # plt.show()
 
     ## option 2
-    translateImage3DSitk(moving, translation)
-    rotateImage3DSitk(moving, rotation, center='imgCenter')
-    # print('option 2')
-    # print('---------------')
-
-    inverseTest = copy.copy(moving)
-    rotateImage3DSitk(inverseTest, -rotation)
-    translateImage3DSitk(inverseTest, -translation)
-    # y_slice = 95
-    plt.figure()
-    plt.imshow(fixed.imageArray[:, y_slice, :]-inverseTest.imageArray[:, y_slice, :])
-    plt.show()
-
-    transform3D = Transform3D()
-    transform3D.initFromTranslationAndRotationVectors(-translation, -rotation)
-    print(transform3D.tform)
-    print(transform3D.getTranslation())
-    print(transform3D.getRotationAngles(inDegrees=True))
+    # translateImage3DSitk(moving, translation)
+    # rotateImage3DSitk(moving, rotation, center=[0,0,0])
+    # # print('option 2')
+    # # print('---------------')
+    #
+    # inverseTest = copy.copy(moving)
+    # rotateImage3DSitk(inverseTest, -rotation)
+    # translateImage3DSitk(inverseTest, -translation)
+    # # y_slice = 95
+    # plt.figure()
+    # plt.imshow(fixed.imageArray[:, y_slice, :]-inverseTest.imageArray[:, y_slice, :])
+    # plt.show()
+    #
+    # transform3D = Transform3D()
+    # transform3D.initFromTranslationAndRotationVectors(-translation, -rotation)
+    # print(transform3D.tform)
+    # print(transform3D.getTranslation())
+    # print(transform3D.getRotationAngles(inDegrees=True))
 
     # # PERFORM REGISTRATION
     # start_time = time.time()

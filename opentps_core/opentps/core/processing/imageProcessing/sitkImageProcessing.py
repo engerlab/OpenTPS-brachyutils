@@ -14,6 +14,7 @@ from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data._transform3D import Transform3D
+from opentps.core.processing.imageProcessing.imageTransform3D import transform3DMatrixFromTranslationAndRotationsVectors
 
 
 def image3DToSITK(image:Image3D, type=np.float32):
@@ -90,7 +91,7 @@ def extremePoints(image:Image3D):
     return extreme_points
 
 def extremePointsAfterTransform(image:Image3D, tform:np.ndarray,
-                                centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+                                center: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     img = image3DToSITK(image)
 
     if tform.shape[1] == 4:
@@ -102,8 +103,8 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray,
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
-    if not (centre is None):
-        transform.SetCenter(centre)
+    if not (center is None):
+        transform.SetCenter(center)
 
     extreme_points = extremePoints(image)
 
@@ -120,29 +121,34 @@ def extremePointsAfterTransform(image:Image3D, tform:np.ndarray,
     return min_x, max_x, min_y, max_y, min_z, max_z
 
 def applyTransform(data, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
-    centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+    center: Optional[Union[Sequence[float], str]]='imgCenter', translation:Sequence[float]=[0, 0, 0]):
 
+    # print(type(data), data.imageArray.shape, type(tform), tform.shape)
+    print('in sitKImageProc applyTransform, center:', center)
     if isinstance(tform, Transform3D):
         tform = tform.tform
 
     if isinstance(data, Image3D):
+        print('in sitKImageProc applyTransform in if instance Image3D')
         if isinstance(data, VectorField3D):
-            applyTransformToVectorField(data, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+            applyTransformToVectorField(data, tform, fillValue=fillValue, outputBox=outputBox, center=center, translation=translation)
         else:
-            applyTransformToImage3D(data, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+            applyTransformToImage3D(data, tform, fillValue=fillValue, outputBox=outputBox, center=center, translation=translation)
 
     if isinstance(data, Dynamic3DSequence):
         for image in data.dyn3DImageList:
-            applyTransformToImage3D(image, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+            applyTransformToImage3D(image, tform, fillValue=fillValue, outputBox=outputBox, center=center, translation=translation)
 
     if isinstance(data, Dynamic3DModel):
-        applyTransformToImage3D(data.midp, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+        applyTransformToImage3D(data.midp, tform, fillValue=fillValue, outputBox=outputBox, center=center, translation=translation)
         for df in data.deformationList:
-            applyTransformToVectorField(df, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+            applyTransformToVectorField(df, tform, fillValue=fillValue, outputBox=outputBox, center=center, translation=translation)
+
+
 def applyTransformToImage3D(image:Image3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
-    centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+    center: Optional[Union[Sequence[float], str]]=None, translation:Sequence[float]=[0, 0, 0]):
     imgType = image.imageArray.dtype
-    
+
     img = image3DToSITK(image)
     
     if tform.shape[1] == 4:
@@ -155,8 +161,29 @@ def applyTransformToImage3D(image:Image3D, tform:np.ndarray, fillValue:float=0.,
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
 
-    if not (centre is None):
-        transform.SetCenter(centre)
+    print('center choice ---------------------', center)
+    if not (center is None):
+        if center == 'dicomCenter':
+            print('in elif dicomCenter')
+            center = np.array([0, 0, 0])
+            transform.SetCenter(center)
+        elif len(center) == 3 and (type(center[0]) == float or type(center[0]) == int):
+            print('in elif Sequence')
+            # center = np.array(center)
+            transform.SetCenter(center)
+        elif center == 'imgCorner':
+            print('in elif imgCorner')
+            center = image.origin
+            transform.SetCenter(center)
+        elif center == 'imgCenter':
+            print('in elif imgCenter')
+            center = image.origin + image.gridSizeInWorldUnit / 2
+            # transform.SetCenter(center)
+        else:
+            print('Rotation center not recognized, default value is used (image center)')
+            center = image.origin + image.gridSizeInWorldUnit / 2
+            transform.SetCenter(center)
+
 
     if outputBox == 'keepAll':
         min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tform, translation=translation)
@@ -194,7 +221,7 @@ def applyTransformToImage3D(image:Image3D, tform:np.ndarray, fillValue:float=0.,
     image.origin = output_origin
 
 def applyTransformToVectorField(vectField:VectorField3D, tform:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]='keepAll',
-    centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+    center: Optional[Union[Sequence[float], str]]='imgCenter', translation:Sequence[float]=[0, 0, 0]):
 
     print('in sitk image proc, applyTransformToVectorField')
 
@@ -207,7 +234,7 @@ def applyTransformToVectorField(vectField:VectorField3D, tform:np.ndarray, fillV
         # plt.figure()
         # plt.imshow(compImg.imageArray[:,10,:])
         # plt.show()
-        applyTransformToImage3D(compImg, tform, fillValue=fillValue, outputBox=outputBox, centre=centre, translation=translation)
+        applyTransformToImage3D(compImg, tform, fillValue=fillValue, outputBox=outputBox, center=center, translation=translation)
         # print(compImg.origin)
         # plt.figure()
         # plt.imshow(compImg.imageArray[:, 10, :])
@@ -228,7 +255,7 @@ def applyTransformToVectorField(vectField:VectorField3D, tform:np.ndarray, fillV
     vectField.imageArray = flattenedVectorField.reshape((vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
 
 
-def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, centre: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, center: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
     if tform.shape[1] == 4:
         translation = tform[0:-1, -1]
         tform = tform[0:-1, 0:-1]
@@ -237,8 +264,8 @@ def applyTransformToPoint(tform:np.ndarray, pnt:np.ndarray, centre: Optional[Seq
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
 
-    if not (centre is None):
-        transform.SetCenter(centre)
+    if not (center is None):
+        transform.SetCenter(center)
 
     inv_transform = transform.GetInverse()
 
@@ -250,27 +277,34 @@ def connectComponents(image:Image3D):
 
 def rotateImage3DSitk(img3D, rotAngleInDeg, cval=-1000, center='imgCenter'):
 
-    # print('in sitkImageProc in rotateImage3DSitk')
-    # print('rotAngleInDeg', rotAngleInDeg)
     rotAngleInDeg = np.array(rotAngleInDeg)
     rotAngleInRad = -rotAngleInDeg*np.pi/180
     r = R.from_euler('XYZ', rotAngleInRad)
-    imgCenter = img3D.origin + img3D.gridSizeInWorldUnit / 2
 
     # print('r.as_matrix()', r.as_matrix())
     # print('r.as_euler()', r.as_euler('zxy'))
     # print('r.as_euler()', r.as_euler('XYZ', degrees=True))
     # print('r.as_euler()', r.as_euler('ZYX'))
-    applyTransform(img3D, r.as_matrix(), outputBox='same', centre=imgCenter, fillValue=cval)
+
+    # affTransformMatrix = np.array([[1, 0, 0, 0],
+    #                                [0, 1, 0, 0],
+    #                                [0, 0, 1, 0],
+    #                                [0, 0, 0, 1]]).astype(np.float)
+    #
+    # affTransformMatrix[0:3, 0:3] = r.as_matrix()
+    affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(rotation=rotAngleInDeg)
+    applyTransform(img3D, affTransformMatrix, outputBox='same', center=center, fillValue=cval)
 
 def translateImage3DSitk(img3D, translationInMM, cval=-1000):
 
-    translationMatrix = np.array([[1, 0, 0, -translationInMM[0]],
-                                 [0, 1, 0, -translationInMM[1]],
-                                 [0, 0, 1, -translationInMM[2]],
-                                 [0, 0, 0, 1]]).astype(np.float)
+    # affTransformMatrix = np.array([[1, 0, 0, -translationInMM[0]],
+    #                              [0, 1, 0, -translationInMM[1]],
+    #                              [0, 0, 1, -translationInMM[2]],
+    #                              [0, 0, 0, 1]]).astype(np.float)
 
-    applyTransform(img3D, translationMatrix, outputBox='same', fillValue=cval)
+    affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(translation=translationInMM)
+
+    applyTransform(img3D, affTransformMatrix, outputBox='same', fillValue=cval)
 
 def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
     initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
