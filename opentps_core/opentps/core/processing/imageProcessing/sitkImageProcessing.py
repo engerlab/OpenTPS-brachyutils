@@ -124,12 +124,10 @@ def applyTransform(data, tform:np.ndarray, fillValue:float=0., outputBox:Optiona
     center: Optional[Union[Sequence[float], str]]='imgCenter', translation:Sequence[float]=[0, 0, 0]):
 
     # print(type(data), data.imageArray.shape, type(tform), tform.shape)
-    print('in sitKImageProc applyTransform, center:', center)
     if isinstance(tform, Transform3D):
         tform = tform.tform
 
     if isinstance(data, Image3D):
-        print('in sitKImageProc applyTransform in if instance Image3D')
         if isinstance(data, VectorField3D):
             applyTransformToVectorField(data, tform, fillValue=fillValue, outputBox=outputBox, center=center, translation=translation)
         else:
@@ -161,7 +159,6 @@ def applyTransformToImage3D(image:Image3D, tform:np.ndarray, fillValue:float=0.,
     transform.SetMatrix(tform.flatten())
     transform.Translate(translation)
 
-    print('center choice ---------------------', center)
     if not (center is None):
         if center == 'dicomCenter':
             print('in elif dicomCenter')
@@ -178,7 +175,7 @@ def applyTransformToImage3D(image:Image3D, tform:np.ndarray, fillValue:float=0.,
         elif center == 'imgCenter':
             print('in elif imgCenter')
             center = image.origin + image.gridSizeInWorldUnit / 2
-            # transform.SetCenter(center)
+            transform.SetCenter(center)
         else:
             print('Rotation center not recognized, default value is used (image center)')
             center = image.origin + image.gridSizeInWorldUnit / 2
@@ -275,36 +272,15 @@ def connectComponents(image:Image3D):
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
 
-def rotateImage3DSitk(img3D, rotAngleInDeg, cval=-1000, center='imgCenter'):
+def rotateImage3DSitk(img3D, rotAngleInDeg, cval=-1000, center='imgCenter', outputBox='keepAll'):
+    if not np.array(rotAngleInDeg == np.array([0, 0, 0])).all():
+        affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(rotation=rotAngleInDeg)
+        applyTransform(img3D, affTransformMatrix, center=center, fillValue=cval, outputBox=outputBox)
 
-    rotAngleInDeg = np.array(rotAngleInDeg)
-    rotAngleInRad = -rotAngleInDeg*np.pi/180
-    r = R.from_euler('XYZ', rotAngleInRad)
-
-    # print('r.as_matrix()', r.as_matrix())
-    # print('r.as_euler()', r.as_euler('zxy'))
-    # print('r.as_euler()', r.as_euler('XYZ', degrees=True))
-    # print('r.as_euler()', r.as_euler('ZYX'))
-
-    # affTransformMatrix = np.array([[1, 0, 0, 0],
-    #                                [0, 1, 0, 0],
-    #                                [0, 0, 1, 0],
-    #                                [0, 0, 0, 1]]).astype(np.float)
-    #
-    # affTransformMatrix[0:3, 0:3] = r.as_matrix()
-    affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(rotation=rotAngleInDeg)
-    applyTransform(img3D, affTransformMatrix, outputBox='same', center=center, fillValue=cval)
-
-def translateImage3DSitk(img3D, translationInMM, cval=-1000):
-
-    # affTransformMatrix = np.array([[1, 0, 0, -translationInMM[0]],
-    #                              [0, 1, 0, -translationInMM[1]],
-    #                              [0, 0, 1, -translationInMM[2]],
-    #                              [0, 0, 0, 1]]).astype(np.float)
-
-    affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(translation=translationInMM)
-
-    applyTransform(img3D, affTransformMatrix, outputBox='same', fillValue=cval)
+def translateImage3DSitk(img3D, translationInMM, cval=-1000, outputBox='keepAll'):
+    if not np.array(translationInMM == np.array([0, 0, 0])).all():
+        affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(translation=translationInMM)
+        applyTransform(img3D, affTransformMatrix, fillValue=cval, outputBox=outputBox)
 
 def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
     initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(), sitk.CenteredTransformInitializerFilter.GEOMETRY)
