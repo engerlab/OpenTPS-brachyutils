@@ -81,7 +81,7 @@ class Transform3D(PatientData):
         if inDegrees:
             angleArray *= 180/np.pi
 
-        return angleArray
+        return -angleArray
          
     def getTranslation(self):
         """Returns the translation.
@@ -90,7 +90,7 @@ class Transform3D(PatientData):
             -------                
                 list of 3 floats: the translation in the 3 directions [Tx,Ty,Tz].
             """
-        return self.tform[0:-1, -1]
+        return -self.tform[0:-1, -1]
 
     def initFromTranslationAndRotationVectors(self, translation=[0, 0, 0], rotation=[0, 0, 0]):
         """

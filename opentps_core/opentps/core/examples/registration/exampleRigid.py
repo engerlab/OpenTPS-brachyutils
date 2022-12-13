@@ -21,8 +21,9 @@ def run():
     translation = np.array([15, 0, 10])
     rotation = np.array([0, 5, 2])
 
-    translateImage3DSitk(moving, translation)
-    rotateImage3DSitk(moving, rotation)
+    translateImage3DSitk(moving, translation, outputBox='same')
+    rotateImage3DSitk(moving, rotation, outputBox='same')
+    # moving = resampleImage3DOnImage3D(moving, fixedImage=fixed, fillValue=-1000)
 
     # PERFORM REGISTRATION
     start_time = time.time()
