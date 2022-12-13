@@ -35,6 +35,7 @@ def run():
     rotation = np.array([0, 10, 0])
 
     moving = copy.copy(fixed)
+    moving2 = copy.copy(fixed)
     fieldMoving = copy.copy(fieldFixed)
 
     ## Create a transform 3D
@@ -45,23 +46,28 @@ def run():
     print('Rotation', transform3D.getRotationAngles(inDegrees=True))
 
 
-    # moving = transform3D.deformImage(moving)
-    # print(fixed.origin, moving.origin)
-    # moving = resampleImage3DOnImage3D(moving, fixedImage=fixed, fillValue=-1000)
-    # print(fixed.origin, moving.origin)
+    moving = transform3D.deformImage(moving)
+    print(fixed.origin, moving.origin)
+    moving = resampleImage3DOnImage3D(moving, fixedImage=fixed, fillValue=-1000)
+    print(fixed.origin, moving.origin)
     # translateImage3DSitk(moving, translationInMM=translation)
-    rotateImage3DSitk(moving, rotAngleInDeg=rotation)
-
+    rotateImage3DSitk(moving2, rotAngleInDeg=rotation)
+    print(fixed.origin, moving2.origin)
+    
     compXFixed = fieldFixed.imageArray[:, y_slice, :, 0]
     compZFixed = fieldFixed.imageArray[:, y_slice, :, 2]
     compXMoving = fieldMoving.imageArray[:, y_slice, :, 0]
     compZMoving = fieldMoving.imageArray[:, y_slice, :, 2]
 
     # Plot X-Z field
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(1, 4)
     ax[0].imshow(fixed.imageArray[:, y_slice, :])
     # ax[0].quiver(compXFixed, compZFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
     ax[1].imshow(moving.imageArray[:, y_slice, :])
+    # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+    ax[2].imshow(moving2.imageArray[:, y_slice, :])
+    # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+    ax[3].imshow(moving.imageArray[:, y_slice, :] - moving2.imageArray[:, y_slice, :])
     # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
     plt.show()
 

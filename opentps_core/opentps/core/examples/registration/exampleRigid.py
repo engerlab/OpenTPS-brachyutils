@@ -24,8 +24,6 @@ def run():
     translateImage3DSitk(moving, translation)
     rotateImage3DSitk(moving, rotation)
 
-    print('moving min/max/mean', np.min(moving.imageArray), np.max(moving.imageArray), np.mean(moving.imageArray))
-
     # PERFORM REGISTRATION
     start_time = time.time()
     reg = RegistrationRigid(fixed, moving)
@@ -33,8 +31,8 @@ def run():
 
     processing_time = time.time() - start_time
     print('Registration processing time was', processing_time, '\n')
-    print('Rotation in deg', transform.getRotationAngles(inDegrees=True))
     print('Translation', transform.getTranslation(), '\n')
+    print('Rotation in deg', transform.getRotationAngles(inDegrees=True))
 
     ## Two ways of getting the deformed moving image
     deformedImage = reg.deformed
@@ -42,7 +40,6 @@ def run():
 
     ## Resample it to the same grid as the fixed image
     resampledOnFixedGrid = resampleImage3DOnImage3D(deformedImage, fixedImage=fixed, fillValue=-1000)
-    print('resampledOnFixedGrid min/max/mean', np.min(resampledOnFixedGrid.imageArray), np.max(resampledOnFixedGrid.imageArray), np.mean(resampledOnFixedGrid.imageArray))
 
     # COMPUTE IMAGE DIFFERENCE
     diff_before = fixed.copy()
@@ -50,15 +47,9 @@ def run():
     diff_after = fixed.copy()
     diff_after._imageArray = fixed.imageArray - resampledOnFixedGrid.imageArray
 
-    print('diff_before min/max/mean', np.min(diff_before.imageArray), np.max(diff_before.imageArray),
-          np.mean(diff_before.imageArray))
-    print('diff_after min/max/mean', np.min(diff_after.imageArray), np.max(diff_after.imageArray),
-          np.mean(diff_after.imageArray))
-
     # CHECK RESULTS
     diff_before_sum = abs(diff_before.imageArray).sum()
     diff_after_sum = abs(diff_after.imageArray).sum()
-    print(diff_before_sum, diff_after_sum)
     assert diff_before_sum - diff_after_sum > 0, f"Image difference is larger after registration"
 
     y_slice = 95
