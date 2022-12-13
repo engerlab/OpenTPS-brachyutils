@@ -56,11 +56,10 @@ def run():
           np.mean(diff_after.imageArray))
 
     # CHECK RESULTS
-    diff_before_sum = abs(diff_before.imageArray.sum())
-    diff_after_sum = abs(diff_after.imageArray.sum())
+    diff_before_sum = abs(diff_before.imageArray).sum()
+    diff_after_sum = abs(diff_after.imageArray).sum()
     print(diff_before_sum, diff_after_sum)
-    # assert diff_before_sum - diff_after_sum > 0, f"Image difference is larger after registration"
-    # assert abs(diff_after.imageArray[27, 27, 27]) == 0, f"Wrong target voxel difference after registration {diff_after.imageArray[27, 27, 27]} (expected 0)"
+    assert diff_before_sum - diff_after_sum > 0, f"Image difference is larger after registration"
 
     y_slice = 95
     fig, ax = plt.subplots(2, 3)
