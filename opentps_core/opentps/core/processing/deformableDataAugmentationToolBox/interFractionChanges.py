@@ -7,7 +7,7 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.processing.imageProcessing.cupyImageProcessing import rotateCupy, translateCupy
-from opentps.core.processing.imageProcessing.sitkImageProcessing import rotateImage3DSitk
+from opentps.core.processing.imageProcessing.sitkImageProcessing import rotateData
 
 import copy
 from skimage.morphology import rectangle
@@ -237,11 +237,11 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
 
             elif isinstance(data, ROIMask):
                 print('Rotate ROIMask of', rotationInDeg, 'degrees')
-                rotateImage3DSitk(data, rotationInDeg, cval=0)
+                rotateData(data, rotationInDeg, cval=0)
 
             else:
                 print('Rotate Image3D of', rotationInDeg, 'degrees')
-                rotateImage3DSitk(data, rotationInDeg)
+                rotateData(data, rotationInDeg)
 
 ## --------------------------------------------------------------------------------------
 def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0], center='scannerCenter'):
@@ -261,7 +261,7 @@ def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0], center='scannerCe
     print('Apply rotation to field imageArray', rotationInDeg)
     for i in range(3):
         if rotationInDeg[i] != 0:
-            rotateImage3DSitk(vectorField, rotationInDeg, cval=0, center=center)
+            rotateData(vectorField, rotationInDeg, cval=0, center=center)
 
     print('Apply rotation to field vectors', rotationInDeg)
     r = R.from_rotvec(rotationInDeg, degrees=True)
