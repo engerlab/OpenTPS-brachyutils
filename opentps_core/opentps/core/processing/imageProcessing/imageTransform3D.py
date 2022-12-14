@@ -15,6 +15,7 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.processing.segmentation import segmentation3D
+from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
 
 
 
@@ -71,7 +72,7 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     outputBox = _cropBoxAfterTransform(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
 
-    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
+    sitkImageProcessing.applyTransform3D(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage
 
@@ -101,7 +102,7 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
 
         outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
         cropROIBEV = ROIMask.fromImage3D(cropROI, patient=None)
-        sitkImageProcessing.applyTransform(cropROIBEV, tform, fillValue=0)
+        sitkImageProcessing.applyTransform3D(cropROIBEV, tform, fillValue=0)
         cropROIBEV.imageArray = cropROIBEV.imageArray.astype(bool)
         roiBox = segmentation3D.getBoxAroundROI(cropROIBEV)
         if cropDim0:
@@ -124,7 +125,7 @@ def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequen
     tform = _forwardDicomToIECGantry(beam)
     tform = linalg.inv(tform)
 
-    return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
+    return sitkImageProcessing.applyTransform3DToPoint(tform, np.array((u, v, w)))
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
@@ -135,7 +136,7 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
     outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
 
     outImage = image.__class__.fromImage3D(image, patient = None)
-    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
+    sitkImageProcessing.applyTransform3D(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage
 
@@ -146,7 +147,7 @@ def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Seq
 
     tform = _forwardDicomToIECGantry(beam)
 
-    return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
+    return sitkImageProcessing.applyTransform3DToPoint(tform, np.array((u, v, w)))
 
 def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
     isocenter = beam.isocenterPosition
@@ -235,28 +236,51 @@ def getVoxelIndexFromPosition(position, image3D):
     return posInVoxels
 
 
-def transform3DMatrixFromTranslationAndRotationsVectors(translation=[0, 0, 0], rotation=[0, 0, 0]):
+def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotVec=[0, 0, 0]):
 
     """
 
     Parameters
     ----------
-    translation
-    rotation
+    transVec
+    rotVec
 
     Returns
     -------
 
     """
-    rotAngleInDeg = np.array(rotation)
+    rotAngleInDeg = np.array(rotVec)
     rotAngleInRad = -rotAngleInDeg * np.pi / 180
     r = R.from_euler('XYZ', rotAngleInRad)
 
-    affineTransformMatrix = np.array([[1, 0, 0, -translation[0]],
-                                  [0, 1, 0, -translation[1]],
-                                  [0, 0, 1, -translation[2]],
+    affineTransformMatrix = np.array([[1, 0, 0, -transVec[0]],
+                                  [0, 1, 0, -transVec[1]],
+                                  [0, 0, 1, -transVec[2]],
                                   [0, 0, 0, 1]]).astype(np.float)
 
     affineTransformMatrix[0:3, 0:3] = r.as_matrix()
 
     return affineTransformMatrix
+
+
+def translateData(data, translationInMM, outputBox='keepAll', fillValue=-1000, tryGPU=False):
+
+    if tryGPU:
+        print(NotImplementedError)
+    else:
+        sitkImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
+
+def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=-1000, rotCenter='imgCenter', tryGPU=False):
+
+    if tryGPU:
+        print(NotImplementedError)
+    else:
+        sitkImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter)
+
+def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=-1000, outputBox:Optional[Union[Sequence[float], str]]='keepAll',
+    rotCenter: Optional[Union[Sequence[float], str]]='imgCenter', translation:Sequence[float]=[0, 0, 0], tryGPU=False):
+
+    if tryGPU:
+        print(NotImplementedError)
+    else:
+        sitkImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
