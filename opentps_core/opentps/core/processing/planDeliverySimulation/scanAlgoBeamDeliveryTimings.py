@@ -5,7 +5,7 @@ from opentps.core.data.plan._scanAlgoPlan import ScanAlgoPlan
 from opentps.core.io.serializedObjectIO import saveRTPlan
 from opentps.core.processing.planDeliverySimulation.scanAlgoSimulationConfig import ScanAlgoSimulationConfig
 
-class BDT:
+class ScanAlgoBeamDeliveryTimings:
     """
     Beam Delivery Timings for ScanAlgo
     """

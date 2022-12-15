@@ -16,7 +16,8 @@ from pydicom.uid import generate_uid
 from opentps.core.data._rtStruct import ROIContour
 from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.io.dicomIO import readDicomDose, writeRTDose
-from opentps.core.processing.planDeliverySimulation.scanAlgoDeliveryTimings import BDT
+from opentps.core.processing.planDeliverySimulation.scanAlgoBeamDeliveryTimings import ScanAlgoBeamDeliveryTimings
+from opentps.core.processing.planDeliverySimulation.simpleBeamDeliveryTimings import SimpleBeamDeliveryTimings
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.io.dataLoader import readSingleData
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
@@ -29,7 +30,7 @@ class PlanDeliverySimulation():
     def __init__(self, plan:RTPlan, CT4D: Optional[Dynamic3DSequence]= None, 
     model3D: Optional[Dynamic3DModel]= None, deliverySimulationFolderName: Optional[str] = None,
     overwriteOutsideROI: Optional[ROIContour] = None, MCsquareSimulationPath: Optional[str] = None,
-    saveDosesToFile:bool =True, saveDosesInObject:bool =False):
+    saveDosesToFile:bool =True, saveDosesInObject:bool =False, deliveryModel = SimpleBeamDeliveryTimings):
         self.plan = plan
         self.CT4D = CT4D
         self.model3D = model3D
@@ -41,6 +42,7 @@ class PlanDeliverySimulation():
         self.dir_4DD = os.path.join(self.deliverySimulationPath, '4DD')
         self.dir_4DDD = os.path.join(self.deliverySimulationPath, '4DDD')
         if self.CT4D is not None and self.model3D is None:
+            print("Computing Mid-position CT and deformation fields...")
             self.model3D = Dynamic3DModel()
             self.model3D.name = 'MidP'
             self.model3D.seriesInstanceUID = generate_uid()
@@ -50,6 +52,7 @@ class PlanDeliverySimulation():
         self.computedDoses = []
         self.saveDosesToFile=saveDosesToFile
         self.saveDosesInObject=saveDosesInObject
+        self.deliveryModel = deliveryModel
 
     def simulate4DDose(self):
         """
@@ -99,8 +102,8 @@ class PlanDeliverySimulation():
         """
         # Check if plan contains delivery timings
         if len(self.plan.spotTimings)==0:
-            print('plan has no delivery timings. Querying ScanAlgo...')
-            bdt = BDT(self.plan)
+            print('plan has no delivery timings. Computing timings...')
+            bdt = self.deliveryModel(self.plan)
             self.plan = bdt.getPBSTimings(sort_spots="true")
         # plan.simplify()
             
@@ -223,7 +226,7 @@ class PlanDeliverySimulation():
         """
         if len(self.plan.spotTimings)==0:
             print('plan has no delivery timings. Querying ScanAlgo...')
-            bdt = BDT(self.plan)
+            bdt = self.deliveryModel(self.plan)
             self.plan = bdt.getPBSTimings(sort_spots="true")
         
         if output_dose_path is None:
@@ -336,7 +339,7 @@ class PlanDeliverySimulation():
         # continuous seq = 0. and end = 1.
         if len(self.plan.spotTimings)==0:
             print('plan has no delivery timings. Querying ScanAlgo...')
-            bdt = BDT(self.plan)
+            bdt = self.deliveryModel(self.plan)
             self.plan = bdt.getPBSTimings(sort_spots="true")
 
         # Iterate on spots from referencePlan and add each spot to a specific image of the continuous sequence:
