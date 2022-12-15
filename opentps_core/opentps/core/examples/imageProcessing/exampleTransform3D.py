@@ -37,7 +37,7 @@ def run():
     fieldMoving = copy.copy(fieldFixed)
 
     translation = np.array([0, 0, 0])
-    rotation = np.array([0, 20, 0])
+    rotation = np.array([0, -45, 0])
 
     ## Create a transform 3D
     print('Create a transform 3D')
@@ -83,9 +83,9 @@ def run():
     # Plot X-Z field
     fig, ax = plt.subplots(1, 2)
     ax[0].imshow(fixed.imageArray[:, y_slice, :])
-    ax[0].quiver(compXFixed, compZFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
+    # ax[0].quiver(compXFixed, compZFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
     ax[1].imshow(moving.imageArray[:, y_slice, :])
-    ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+    # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
     # ax[2].imshow(moving2.imageArray[:, y_slice, :])
     # # ax[1].quiver(compXMoving, compZMoving, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
     # ax[3].imshow(moving.imageArray[:, y_slice, :] - moving2.imageArray[:, y_slice, :])

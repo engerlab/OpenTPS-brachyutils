@@ -176,18 +176,14 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
     if not (rotCenter is None):
         if rotCenter == 'dicomCenter':
             rotCenter = [0, 0, 0]
-            print('in elif dicomCenter', type(rotCenter), rotCenter)
             transform.SetCenter(rotCenter)
         elif len(rotCenter) == 3 and (type(rotCenter[0]) == float or type(rotCenter[0]) == int):
-            print('in elif Sequence', type(rotCenter), rotCenter)
             transform.SetCenter(rotCenter)
         elif rotCenter == 'imgCorner':
             rotCenter = image.origin.astype(float)
-            print('in elif imgCorner', type(rotCenter), rotCenter)
             transform.SetCenter(rotCenter)
         elif rotCenter == 'imgCenter':
             rotCenter = image.origin + image.gridSizeInWorldUnit / 2
-            print('in elif imgCenter', type(rotCenter), rotCenter)
             transform.SetCenter(rotCenter)
         else:
             rotCenter = image.origin + image.gridSizeInWorldUnit / 2
