@@ -93,7 +93,7 @@ def extremePoints(image:Image3D):
     return extreme_points
 
 def extremePointsAfterTransform(image:Image3D, tformMatrix:np.ndarray,
-                                center: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+                                rotCenter: Optional[Union[Sequence[float], str]]= 'imgCenter', translation:Sequence[float]=[0, 0, 0]):
     img = image3DToSITK(image)
 
     if tformMatrix.shape[1] == 4:
@@ -105,8 +105,23 @@ def extremePointsAfterTransform(image:Image3D, tformMatrix:np.ndarray,
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(tformMatrix.flatten())
     transform.Translate(translation)
-    if not (center is None):
-        transform.SetCenter(center)
+
+    if not (rotCenter is None):
+        if rotCenter == 'dicomCenter':
+            rotCenter = np.array([0, 0, 0])
+            transform.SetCenter(rotCenter)
+        elif len(rotCenter) == 3 and (rotCenter.dtype == 'float64' or rotCenter.dtype == 'int'):
+            transform.SetCenter(rotCenter)
+        elif rotCenter == 'imgCorner':
+            rotCenter = image.origin.astype(float)
+            transform.SetCenter(rotCenter)
+        elif rotCenter == 'imgCenter':
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+            transform.SetCenter(rotCenter)
+        else:
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
+            transform.SetCenter(rotCenter)
 
     extreme_points = extremePoints(image)
 
@@ -125,7 +140,7 @@ def extremePointsAfterTransform(image:Image3D, tformMatrix:np.ndarray,
 def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
                      rotCenter: Optional[Union[Sequence[float], str]]= 'imgCenter', translation:Sequence[float]=[0, 0, 0]):
 
-    # print(type(data), data.imageArray.shape, type(tform), tform.shape)
+
     if isinstance(tformMatrix, Transform3D):
         tformMatrix = tformMatrix.tformMatrix
 
@@ -158,7 +173,8 @@ def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0., outputBox
     ## do we want a return here ?
 
 def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
-                              rotCenter: Optional[Union[Sequence[float], str]]=None, translation:Sequence[float]=[0, 0, 0]):
+                              rotCenter: Optional[Union[Sequence[float], str]]='imgCenter', translation:Sequence[float]=[0, 0, 0]):
+
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image)
@@ -175,9 +191,9 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
 
     if not (rotCenter is None):
         if rotCenter == 'dicomCenter':
-            rotCenter = [0, 0, 0]
+            rotCenter = np.array([0, 0, 0]).astype(float)
             transform.SetCenter(rotCenter)
-        elif len(rotCenter) == 3 and (type(rotCenter[0]) == float or type(rotCenter[0]) == int):
+        elif len(rotCenter) == 3 and (rotCenter.dtype == 'float64' or rotCenter.dtype == 'int'):
             transform.SetCenter(rotCenter)
         elif rotCenter == 'imgCorner':
             rotCenter = image.origin.astype(float)
@@ -192,7 +208,7 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
 
 
     if outputBox == 'keepAll':
-        min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tformMatrix, translation=translation)
+        min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tformMatrix, translation=translation, rotCenter=rotCenter)
 
         output_origin = [min_x, min_y, min_z]
         output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
@@ -228,8 +244,6 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
 
 def applyTransform3DToVectorField3D(vectField:VectorField3D, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
                                     rotCenter: Optional[Union[Sequence[float], str]]= 'imgCenter', translation:Sequence[float]=[0, 0, 0]):
-
-    print('in sitk image proc, applyTransformToVectorField')
 
     vectorFieldCompList = []
     for i in range(3):
