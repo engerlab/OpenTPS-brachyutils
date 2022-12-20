@@ -93,7 +93,7 @@ def run():
         scenarios.save(output_folder)
 
     # Robustness analysis
-    scenarios.analyzeErrorSpace("D95", roi, plan.planDesign.objectives.targetPrescription)
+    scenarios.analyzeErrorSpace(ct, "D95", roi, plan.planDesign.objectives.targetPrescription)
     scenarios.printInfo()
     scenarios.recomputeDVH([roi])
 
