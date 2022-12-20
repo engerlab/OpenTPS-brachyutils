@@ -82,7 +82,7 @@ class PlanDeliverySimulation():
             if self.saveDosesToFile: writeRTDose(dose, os.path.join(fx_dir, f"{dose.name}.dcm"))
             # Accumulate dose on MidP CT
             df = self.model3D.deformationList[p]
-            dose_MidP._imageArray += df.deformImage(dose)._imageArray
+            dose_MidP._imageArray += df.deformData(dose)._imageArray
         dose_MidP._imageArray /= len(self.CT4D)
 
         if self.saveDosesInObject: self.computedDoses.append(dose_MidP)
@@ -139,7 +139,7 @@ class PlanDeliverySimulation():
                 if self.saveDosesToFile: writeRTDose(dose, os.path.join(path_dose, f"{dose.name}.dcm"))
             # Accumulate dose on MidP CT
             df = self.model3D.deformationList[p]
-            dose_MidP._imageArray += df.deformImage(dose)._imageArray
+            dose_MidP._imageArray += df.deformData(dose)._imageArray
 
         if self.saveDosesInObject: self.computedDoses.append(dose_MidP)
         if self.saveDosesToFile:

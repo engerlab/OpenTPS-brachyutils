@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     defList = generateRandomDeformationsFromModel(dynMod, numberOfSamples=numberOfSamples, ampDistribution='gaussian')
     for deformation in defList:
-        imageList.append(deformation.deformImage(dynMod.midp, fillValue='closest', tryGPU=tryGPU))
+        imageList.append(deformation.deformData(dynMod.midp, fillValue='closest', tryGPU=tryGPU))
 
     print(len(imageList))
     print('first test done in ', np.round(time.time() - startTime, 2))

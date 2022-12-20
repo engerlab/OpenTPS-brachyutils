@@ -26,11 +26,11 @@ if __name__ == '__main__':
 
     # GENERATE ADDITIONAL PHASES
     df1, wm = generateDeformationFromTrackers(Model4D, [0, 0, 2/4, 2/4], [1, 1, 1, 1], trackers)
-    im1 = df1.deformImage(Model4D.midp, fillValue='closest')
+    im1 = df1.deformData(Model4D.midp, fillValue='closest')
     df2, wm = generateDeformationFromTrackers(Model4D, [0.5/4, 0.5/4, 1.5/4, 1.5/4], [1, 1, 1, 1], trackers)
-    im2 = df2.deformImage(Model4D.midp, fillValue='closest')
+    im2 = df2.deformData(Model4D.midp, fillValue='closest')
     df3 = generateDeformationFromTrackersAndWeightMaps(Model4D, [0, 0, 2/4, 2/4], [2, 2, 2, 2], wm)
-    im3 = df3.deformImage(Model4D.midp, fillValue='closest')
+    im3 = df3.deformData(Model4D.midp, fillValue='closest')
 
     # RESAMPLE WEIGHT MAPS TO IMAGE RESOLUTION
     for i in range(len(trackers)):

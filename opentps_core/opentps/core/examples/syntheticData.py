@@ -1,7 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 import math
+
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._roiMask import ROIMask
@@ -139,3 +138,5 @@ def getPhasesPositions(numberOfPhases, minValue, maxValue):
     posList = minValue + diff / 2 + cosList * diff / 2
 
     return posList.astype(np.uint8)
+
+
