@@ -15,7 +15,7 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.processing.segmentation import segmentation3D
-from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
+from opentps.core.processing.imageProcessing import sitkImageProcessing
 
 
 
