@@ -110,7 +110,8 @@ def extremePointsAfterTransform(image:Image3D, tformMatrix:np.ndarray,
         if rotCenter == 'dicomCenter':
             rotCenter = np.array([0, 0, 0])
             transform.SetCenter(rotCenter)
-        elif len(rotCenter) == 3 and (rotCenter.dtype == 'float64' or rotCenter.dtype == 'int'):
+        #elif len(rotCenter) == 3 and (rotCenter.dtype == 'float64' or rotCenter.dtype == 'int'):
+        elif len(rotCenter) == 3 and (isinstance(rotCenter[0], float) or isinstance(rotCenter[0], int)):
             transform.SetCenter(rotCenter)
         elif rotCenter == 'imgCorner':
             rotCenter = image.origin.astype(float)
@@ -190,10 +191,12 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
     transform.Translate(translation)
 
     if not (rotCenter is None):
+        print("rot", rotCenter)
         if rotCenter == 'dicomCenter':
             rotCenter = np.array([0, 0, 0]).astype(float)
             transform.SetCenter(rotCenter)
-        elif len(rotCenter) == 3 and (rotCenter.dtype == 'float64' or rotCenter.dtype == 'int'):
+        #elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
+        elif len(rotCenter) == 3 and (isinstance(rotCenter[0], float) or isinstance(rotCenter[0], int)):
             transform.SetCenter(rotCenter)
         elif rotCenter == 'imgCorner':
             rotCenter = image.origin.astype(float)
@@ -338,7 +341,7 @@ def register(fixed_image, moving_image, multimodal = True, fillValue:float=0.):
 
     print('Final metric value: {0}'.format(registration_method.GetMetricValue()))
     print('Optimizer\'s stopping condition, {0}'.format(registration_method.GetOptimizerStopConditionDescription()))
-
+    print(composite_transform)
     final_transform = sitk.CompositeTransform(composite_transform).GetBackTransform()
     euler3d_transform = sitk.Euler3DTransform(final_transform)
     euler3d_transform.SetComputeZYX(True)

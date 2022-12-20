@@ -1,7 +1,7 @@
 import math as m 
 import numpy as np
 
-from opentps.core.processing.imageProcessing.resampler3D import resample, resampleOnImage3D
+from opentps.core.processing.imageProcessing.resampler3D import resample, resampleOnImage3D, resampleImage3DOnImage3D
 from opentps.core.processing.registration.registrationRigid import RegistrationRigid
 from opentps.core.processing.dataComparison.image3DComparison import getTranslationAndRotation
 from opentps.core.processing.dataComparison.contourComparison import getBaselineShift
@@ -20,11 +20,13 @@ def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
     print('Available ROIs for model 2')
     rtStruct2.print_ROINames()
     
-    dynMod1 = resample(dynMod1, spacing=[1, 1, 1])
-    dynMod2 = resample(dynMod2, spacing=[1, 1, 1])
-    
+    dynMod1 = resample(dynMod1, spacing=[1, 1, 1], gridSize=dynMod1.midp.gridSize, origin=dynMod1.midp.origin)
+    dynMod2 = resample(dynMod2, spacing=[1, 1, 1], gridSize=dynMod1.midp.gridSize, origin=dynMod1.midp.origin)
+
     midP1 = dynMod1.midp
     midP2 = dynMod2.midp
+
+    #midP2 = resampleImage3DOnImage3D(midP2, fixedImage=midP1, fillValue=-1000)
 
     reg = RegistrationRigid(fixed=midP1, moving=midP2)
     transform = reg.compute()
