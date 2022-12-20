@@ -83,6 +83,6 @@ class RegistrationQuick(Registration):
         tform[0:-1, 0:-1] = np.eye(3)
 
         transform = Transform3D(tform=tform)
-        self.deformed = transform.deformData(self.moving, fillValue='closest')
+        self.deformed = transform.deformImage(self.moving, fillValue='closest')
         self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
         return transform

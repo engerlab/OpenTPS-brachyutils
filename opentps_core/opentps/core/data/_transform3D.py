@@ -32,6 +32,30 @@ class Transform3D(PatientData):
     def setCenter(self, center):
         self.rotCenter = center
 
+    def deformImage(self, data, fillValue=-1000, outputBox='keepAll', tryGPU=False):
+        """Transform 3D image using linear interpolation.
+
+            Parameters
+            ----------
+            data :
+                image to be deformed.
+            fillValue : scalar
+                interpolation value for locations outside the input voxel grid.
+
+            Returns
+            -------
+                Deformed image.
+            """
+
+        data = data.copy()
+
+        if fillValue == 'closest':
+            fillValue = float(data.min())
+
+        applyTransform3D(data, self.tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=self.rotCenter, tryGPU=tryGPU)
+
+        return data
+
     def deformData(self, data, fillValue=-1000, outputBox='keepAll', tryGPU=False):
         """Transform 3D image using linear interpolation.
 

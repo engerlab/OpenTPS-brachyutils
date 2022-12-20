@@ -11,7 +11,7 @@ def generateRandomImagesFromModel(model, numberOfSamples = 1, amplitudeRange = [
 
     deformationSampleList = generateRandomDeformationsFromModel(model, numberOfSamples=numberOfSamples, amplitudeRange=amplitudeRange, ampDistribution=ampDistribution)
     for deform in deformationSampleList:
-        im1 = deform.deformData(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
+        im1 = deform.deformImage(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
         sampleImageList.append(im1)
 
     return sampleImageList

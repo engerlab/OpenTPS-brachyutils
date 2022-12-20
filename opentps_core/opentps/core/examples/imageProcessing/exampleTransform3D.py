@@ -80,32 +80,32 @@ def run():
 
     ## ---------------------------------------------------------------------------------
 
-    # print(' --------------------- start test with model -----------------------------')
-    #
-    # CT4D = createSynthetic4DCT(numberOfPhases=4)
-    # # GENERATE MIDP
-    # fixedDynMod = Dynamic3DModel()
-    # fixedDynMod.computeMidPositionImage(CT4D, 0, tryGPU=True)
-    #
-    # print(fixedDynMod.midp.origin, fixedDynMod.midp.spacing, fixedDynMod.midp.gridSize)
-    # print('Resample model image')
-    # fixedDynMod = resample(fixedDynMod, gridSize=(80, 50, 50))
-    # print('after resampling', fixedDynMod.midp.origin, fixedDynMod.midp.spacing, fixedDynMod.midp.gridSize)
-    #
-    # # option 3
-    # for field in fixedDynMod.deformationList:
-    #     print('Resample model field')
-    #     field.resample(spacing=fixedDynMod.midp.spacing, gridSize=fixedDynMod.midp.gridSize, origin=fixedDynMod.midp.origin)
-    #     print('after resampling', field.origin, field.spacing, field.gridSize)
-    #
-    # showModelWithAnimatedFields(fixedDynMod)
-    #
-    # movingDynMod = copy.copy(fixedDynMod)
-    #
-    # rotateData(movingDynMod, rotAnglesInDeg=rotation, rotCenter=rotCenter, outputBox='same')
-    #
-    # showModelWithAnimatedFields(movingDynMod)
-    #
+    print(' --------------------- start test with model -----------------------------')
+
+    CT4D = createSynthetic4DCT(numberOfPhases=4)
+    # GENERATE MIDP
+    fixedDynMod = Dynamic3DModel()
+    fixedDynMod.computeMidPositionImage(CT4D, 0, tryGPU=True)
+
+    print(fixedDynMod.midp.origin, fixedDynMod.midp.spacing, fixedDynMod.midp.gridSize)
+    print('Resample model image')
+    fixedDynMod = resample(fixedDynMod, gridSize=(80, 50, 50))
+    print('after resampling', fixedDynMod.midp.origin, fixedDynMod.midp.spacing, fixedDynMod.midp.gridSize)
+
+    # option 3
+    for field in fixedDynMod.deformationList:
+        print('Resample model field')
+        field.resample(spacing=fixedDynMod.midp.spacing, gridSize=fixedDynMod.midp.gridSize, origin=fixedDynMod.midp.origin)
+        print('after resampling', field.origin, field.spacing, field.gridSize)
+
+    showModelWithAnimatedFields(fixedDynMod)
+
+    movingDynMod = copy.copy(fixedDynMod)
+
+    rotateData(movingDynMod, rotAnglesInDeg=rotation, rotCenter=rotCenter, outputBox='same')
+
+    showModelWithAnimatedFields(movingDynMod)
+
 
     ## ---------------------------------------------------------------------------------
     # GENERATE SYNTHETIC INPUT IMAGES

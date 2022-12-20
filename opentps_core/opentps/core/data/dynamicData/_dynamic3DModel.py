@@ -96,7 +96,7 @@ class Dynamic3DModel(PatientData):
             """
 
         field = self.generate3DDeformation(phase, amplitude)
-        return field.deformData(self.midp, fillValue='closest', tryGPU=tryGPU)
+        return field.deformImage(self.midp, fillValue='closest', tryGPU=tryGPU)
 
 
     def computeAllDisplacementFields(self): ## not working for now, the field.displacement is None after the function
