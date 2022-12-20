@@ -32,12 +32,12 @@ class Transform3D(PatientData):
     def setCenter(self, center):
         self.rotCenter = center
 
-    def deformImage(self, image, fillValue=-1000, outputBox='keepAll', tryGPU=False):
+    def deformData(self, data, fillValue=-1000, outputBox='keepAll', tryGPU=False):
         """Transform 3D image using linear interpolation.
 
             Parameters
             ----------
-            image :
+            data :
                 image to be deformed.
             fillValue : scalar
                 interpolation value for locations outside the input voxel grid.
@@ -47,14 +47,14 @@ class Transform3D(PatientData):
                 Deformed image.
             """
 
-        image = image.copy()
+        data = data.copy()
 
         if fillValue == 'closest':
-            fillValue = float(image.min())
+            fillValue = float(data.min())
 
-        applyTransform3D(image, self.tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=self.rotCenter, tryGPU=tryGPU)
+        applyTransform3D(data, self.tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=self.rotCenter, tryGPU=tryGPU)
 
-        return image
+        return data
       
     def getRotationAngles(self, inDegrees=False):
         """Returns the Euler angles in radians.

@@ -162,7 +162,10 @@ def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0., outputBox
     elif isinstance(data, Dynamic3DModel):
         applyTransform3DToImage3D(data.midp, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
         for df in data.deformationList:
-            applyTransform3DToVectorField3D(df, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
+            if df.velocity != None:
+                applyTransform3DToVectorField3D(df.velocity, tformMatrix, fillValue=0, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
+            if df.displacement != None:
+                applyTransform3DToVectorField3D(df.displacement, tformMatrix, fillValue=0, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
 
     elif isinstance(data, ROIContour):
         print(NotImplementedError)
@@ -270,7 +273,7 @@ def applyTransform3DToVectorField3D(vectField:VectorField3D, tformMatrix:np.ndar
     r = R.from_matrix(tformMatrix)
 
     flattenedVectorField = vectField.imageArray.reshape((vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
-    flattenedVectorField = r.apply(flattenedVectorField)
+    flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
 
     vectField.imageArray = flattenedVectorField.reshape((vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
 

@@ -53,8 +53,8 @@ def deformImageAndMask(img, ROIMask, deformation, tryGPU=True, GPUNumber=0):
         print('cupy not found.')
     
     startTime = time.time()
-    image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
-    mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
+    image = deformation.deformData(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
+    mask = deformation.deformData(ROIMask, fillValue='closest', tryGPU=tryGPU)
 
     centerOfMass3D = mask.centerOfMass
     

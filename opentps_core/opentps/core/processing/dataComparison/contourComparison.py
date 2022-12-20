@@ -1,6 +1,6 @@
 def getBaselineShift(fixedMask, movingMask, transform):
     cm1 = fixedMask.centerOfMass
-    deformedMask = transform.deformImage(movingMask)
+    deformedMask = transform.deformData(movingMask)
     cm2 = deformedMask.centerOfMass
 
     baselineShift = cm2 - cm1

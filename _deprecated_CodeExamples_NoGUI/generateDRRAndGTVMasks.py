@@ -91,9 +91,9 @@ if __name__ == '__main__':
         """
 
         print('Start deformations and projections for deformation', deformation.name)
-        image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
+        image = deformation.deformData(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
         # print(image.imageArray.shape, np.min(image.imageArray), np.max(image.imageArray), np.mean(image.imageArray))
-        mask = deformation.deformImage(ROIMask, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
+        mask = deformation.deformData(ROIMask, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
         centerOfMass3D = mask.centerOfMass
 
         DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)

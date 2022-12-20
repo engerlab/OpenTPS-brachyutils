@@ -69,7 +69,7 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
             deformation = model.generate3DDeformation(phaseList[0], amplitude=amplitudeList[0])
 
         ## apply the field to the midp image and give it a name
-        im1 = deformation.deformImage(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
+        im1 = deformation.deformData(model.midp, fillValue='closest', outputType=outputType, tryGPU=tryGPU)
         im1.name = dynseq.name + '_' + str(breathingSignalSampleIndex)
 
         ## add the image to the dynamic sequence
