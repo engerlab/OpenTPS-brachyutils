@@ -27,7 +27,7 @@ before_script:
   - pip3 install poetry
   - cd $CI_PROJECT_DIR/opentps_core
   - poetry install --no-root # install dependencies
-  #- apt-get update && apt-get install -y libgl1 # For PyQt5
+  - apt-get update && apt-get install -y libgl1 # For PyQt5
   #- apt-get install -y '^libxcb.*-dev' # For PyQt5
   - cd $CI_PROJECT_DIR/opentps_gui
   - poetry install --no-root # install dependencies
