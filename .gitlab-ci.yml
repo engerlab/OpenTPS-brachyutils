@@ -61,7 +61,7 @@ test_gui:
     - cd $CI_PROJECT_DIR/opentps_gui
     - poetry install --no-root # install dependencies
     - cd $CI_PROJECT_DIR/
-    - python3 CI/tests_gui.py
+    - python -m unittest discover opentps_gui
 
 docs:
   script:
