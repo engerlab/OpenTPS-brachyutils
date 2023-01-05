@@ -51,6 +51,18 @@ test:
     - cd $CI_PROJECT_DIR/
     - python3 CI/tests.py
 
+test_gui:
+  image: python:3.9
+  script:
+    - cd $CI_PROJECT_DIR
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
+    - cd $CI_PROJECT_DIR/opentps_core
+    - poetry install --no-root # install dependencies
+    - cd $CI_PROJECT_DIR/opentps_gui
+    - poetry install --no-root # install dependencies
+    - cd $CI_PROJECT_DIR/
+    - python3 CI/tests_gui.py
+
 docs:
   script:
     - pip install sphinx sphinx-rtd-theme
