@@ -6,6 +6,7 @@ image: python:latest
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  QT_QPA_PLATFORM: "offscreen"
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/topics/caching/
@@ -24,8 +25,6 @@ before_script:
   - virtualenv venv
   - source venv/bin/activate
   - pip3 install poetry
-  - cd $CI_PROJECT_DIR
-  - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
   - cd $CI_PROJECT_DIR/opentps_core
   - poetry install --no-root # install dependencies
   - cd $CI_PROJECT_DIR/opentps_gui
@@ -35,9 +34,9 @@ build:
   image: python:3.9
   script:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
-    - cd $PWD/opentps_core
+    - cd $CI_PROJECT_DIR/opentps_core
     - poetry build
-    - cd ../opentps_gui
+    - cd $CI_PROJECT_DIR/opentps_gui
     - poetry build
     #- pip install dist/*
   artifacts:
@@ -49,14 +48,14 @@ test:
   image: python:3.9
   script:
     - cd $CI_PROJECT_DIR/
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - python3 CI/tests.py
 
 test_gui:
   image: python:3.9
-  variables:
-    QT_QPA_PLATFORM: "offscreen"
   script:
     - cd $CI_PROJECT_DIR/
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - python -m unittest discover opentps_gui/opentps/gui
 
 docs:
