@@ -47,8 +47,6 @@ build:
 test:
   image: python:3.9
   script:
-    - echo "Installing libgl1"
-    - apt-get update && apt-get install libgl1
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - python3 CI/tests.py
@@ -56,9 +54,10 @@ test:
 test_gui:
   image: python:3.9
   script:
+    - apt-get update && apt-get install libgl1
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
-    #- python -m unittest discover opentps_gui/opentps/gui
+    - python -m unittest discover opentps_gui/opentps/gui
 
 docs:
   script:
