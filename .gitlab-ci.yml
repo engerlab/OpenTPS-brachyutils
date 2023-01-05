@@ -24,6 +24,12 @@ before_script:
   - virtualenv venv
   - source venv/bin/activate
   - pip3 install poetry
+  - cd $CI_PROJECT_DIR
+  - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
+  - cd $CI_PROJECT_DIR/opentps_core
+  - poetry install --no-root # install dependencies
+  - cd $CI_PROJECT_DIR/opentps_gui
+  - poetry install --no-root # install dependencies
 
 build:
   image: python:3.9
@@ -42,24 +48,14 @@ build:
 test:
   image: python:3.9
   script:
-    - cd $CI_PROJECT_DIR
-    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
-    - cd $CI_PROJECT_DIR/opentps_core
-    - poetry install --no-root # install dependencies
-    - cd $CI_PROJECT_DIR/opentps_gui
-    - poetry install --no-root # install dependencies
     - cd $CI_PROJECT_DIR/
     - python3 CI/tests.py
 
 test_gui:
   image: python:3.9
+  variables:
+    QT_QPA_PLATFORM: "offscreen"
   script:
-    - cd $CI_PROJECT_DIR
-    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
-    - cd $CI_PROJECT_DIR/opentps_core
-    - poetry install --no-root # install dependencies
-    - cd $CI_PROJECT_DIR/opentps_gui
-    - poetry install --no-root # install dependencies
     - cd $CI_PROJECT_DIR/
     - python -m unittest discover opentps_gui/opentps/gui
 
