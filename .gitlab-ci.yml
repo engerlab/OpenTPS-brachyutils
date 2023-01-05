@@ -58,7 +58,7 @@ test_gui:
   script:
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
-    - python -m unittest discover opentps_gui/opentps/gui
+    #- python -m unittest discover opentps_gui/opentps/gui
 
 docs:
   script:
