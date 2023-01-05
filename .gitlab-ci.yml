@@ -47,6 +47,7 @@ build:
 test:
   image: python:3.9
   script:
+    - echo "Installing libgl1"
     - apt-get update && apt-get install libgl1
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
