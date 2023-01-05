@@ -22,13 +22,13 @@ before_script:
   - python --version  # For debugging
   - pip install virtualenv
   - virtualenv venv
-  - virtualenv --clear venv
+  #- virtualenv --clear venv
   - source venv/bin/activate
   - pip3 install poetry
   - cd $CI_PROJECT_DIR/opentps_core
   - poetry install --no-root # install dependencies
-  - apt-get update && apt-get install -y libgl1 # For PyQt5
-  - apt-get install -y '^libxcb.*-dev' # For PyQt5
+  #- apt-get update && apt-get install -y libgl1 # For PyQt5
+  #- apt-get install -y '^libxcb.*-dev' # For PyQt5
   - cd $CI_PROJECT_DIR/opentps_gui
   - poetry install --no-root # install dependencies
 
@@ -58,6 +58,7 @@ test_gui:
   script:
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
+    - export QT_QPA_PLATFORM=offscreen
     - python -m unittest discover opentps_gui/opentps/gui
 
 docs:

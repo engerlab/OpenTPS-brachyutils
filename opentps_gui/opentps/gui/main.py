@@ -44,6 +44,9 @@ if __name__ == '__main__':
     run()
 
 class MainTestCase(unittest.TestCase):
+    def testViewController(self):
+        _viewController = viewController()
+
     def testRun(self):
         print("Testing main window with view controller")
         _viewController = viewController()
