@@ -7,6 +7,26 @@ from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
 from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 
+def uniqueColorLT(threshold:float, opacity:float, color:Sequence[float]) -> vtkCommonCore.vtkLookupTable:
+    table = vtkCommonCore.vtkLookupTable()
+    table.SetRange(threshold, threshold)  # image intensity range
+    table.SetValueRange(0.0, 1.0)  # from black to white
+    table.SetSaturationRange(0.0, 0.0)  # no color saturation
+    table.SetRampToLinear()
+
+    table.SetNumberOfTableValues(2)
+    table.SetTableValue(0, (color[0], color[1], color[2], opacity))
+    table.SetTableValue(1, (color[0], color[1], color[2], opacity))
+
+    table.SetBelowRangeColor(0, 0, 0, 0)
+    table.SetUseBelowRangeColor(True)
+    table.SetAboveRangeColor(color[0], color[1], color[2], opacity)
+    table.SetUseAboveRangeColor(True)
+    table.Build()
+
+    return table
+
+
 def fusionLT(range:Sequence[float], opacity:float, colormap:str) -> vtkCommonCore.vtkLookupTable:
     table = vtkCommonCore.vtkLookupTable()
     table.SetRange(range[0], range[1])  # image intensity range

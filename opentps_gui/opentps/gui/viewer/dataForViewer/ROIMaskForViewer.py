@@ -2,14 +2,15 @@ import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
 from opentps.core import Event
-from opentps.gui.viewer.dataForViewer.dataMultiton import DataMultiton
+from opentps.gui.viewer.dataForViewer.genericImageForViewer import GenericImageForViewer
+from opentps.gui.viewer.dataViewerComponents.imageViewerComponents import lookupTables
 
 
-class ROIMaskForViewer(DataMultiton):
+class ROIMaskForViewer(GenericImageForViewer):
     def __init__(self, roiContour):
         super().__init__(roiContour)
 
-        if hasattr(self, '_visible'):
+        if hasattr(self, '_dataImporter'):
             return
 
         self.visibleChangedSignal = Event(bool)
@@ -17,6 +18,8 @@ class ROIMaskForViewer(DataMultiton):
         self._dataImporter = vtkImageImport()
         self._visible = False
         self._vtkOutputPort = None
+
+        self.colorChangedSignal.connect(self._updateLT)
 
         self._updateVtkOutputPort()
 
@@ -31,6 +34,10 @@ class ROIMaskForViewer(DataMultiton):
     def visible(self, visible: bool):
         self._visible = visible
         self.visibleChangedSignal.emit(self._visible)
+
+    def _updateLT(self, *args):
+        self._lookupTable = lookupTables.uniqueColorLT(1, self.opacity, [self.color[0]/255, self.color[1]/255, self.color[2]/255])
+        self.lookupTableChangedSignal.emit(self._lookupTable)
 
     def _updateVtkOutputPort(self):
         if self._imageArray is None:
