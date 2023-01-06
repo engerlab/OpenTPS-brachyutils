@@ -391,6 +391,8 @@ class DataViewer(QWidget):
         self._currentViewer = self._staticImage3DViewer_3D
         self.dropEnabled = self._dropEnabled
 
+        self._viewController.showContourSignal.connect(self._currentViewer._contourLayer.setNewContour)
+
         # self._viewController.crossHairEnabledSignal.disconnect(self._dynImage3DViewer.setCrossHairEnabled)
         # self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage3DViewer.setProfileWidgetEnabled)
         # self._viewController.showContourSignal.disconnect(self._dynImage3DViewer._contourLayer.setNewContour)

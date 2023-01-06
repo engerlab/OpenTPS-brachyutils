@@ -11,6 +11,7 @@ from opentps.core.data.plan import RTPlan
 from opentps.core import Event
 from opentps.gui.viewer.dataForViewer.genericImageForViewer import GenericImageForViewer
 from opentps.gui.viewer.dataForViewer.image3DForViewer import Image3DForViewer
+from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.contourLayer_3D import ContourLayer_3D
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.primaryImage3DLayer_3D import PrimaryImage3DLayer_3D
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.rtplanLayer_3D import RTPlanLayer_3D
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.secondaryImage3DLayer_3D import SecondaryImage3DLayer_3D
@@ -35,6 +36,7 @@ class Image3DViewer_3D(QWidget):
 
         self._primaryImageLayer = PrimaryImage3DLayer_3D(self._renderer, self._renderWindow, self._iStyle)
         self._secondaryImageLayer = SecondaryImage3DLayer_3D(self._renderer, self._renderWindow, self._iStyle)
+        self._contourLayer = ContourLayer_3D(self._renderer, self._renderWindow, self._iStyle)
         self._rtPlanLayer = RTPlanLayer_3D(self._renderer, self._renderWindow)
 
 
@@ -65,6 +67,7 @@ class Image3DViewer_3D(QWidget):
 
     def reset(self):
         self._rtPlanLayer.close()
+        self._contourLayer.close()
         self._primaryImageLayer.close()
         self._secondaryImageLayer.close()
 
