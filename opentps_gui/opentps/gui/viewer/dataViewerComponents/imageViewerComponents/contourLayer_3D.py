@@ -53,7 +53,7 @@ class ContourLayer_3D:
             vtkContourObj.image = contour.asROIMaskForViewer()
         else:
             vtkContourObj.image = contour
-        
+
         self._vtkContours.append(vtkContourObj)
 
         partialHandler = partial(self._handleVisibilityChange, contour)
