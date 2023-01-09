@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from PyQt5.QtWidgets import *
 
@@ -6,6 +6,8 @@ import vtkmodules.vtkRenderingCore as vtkRenderingCore
 from vtkmodules import vtkInteractionStyle
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
+from opentps.core.data import ROIContour
+from opentps.core.data.images import ROIMask
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.plan import RTPlan
 from opentps.core import Event
@@ -74,6 +76,10 @@ class Image3DViewer_3D(QWidget):
     def show(self):
         super(Image3DViewer_3D, self).show()
         self.update()
+        self._primaryImageLayer.update()
+        self._secondaryImageLayer.update()
+        self._rtPlanLayer.update()
+        self._contourLayer.update()
 
     def update(self):
         self._primaryImageLayer.update()
@@ -148,3 +154,9 @@ class Image3DViewer_3D(QWidget):
 
         if self.isVisible():
             self.update()
+
+    def setNewContour(self, contour:Union[ROIContour, ROIMask]):
+        self._contourLayer.setNewContour(contour)
+
+        if self.isVisible():
+            self._contourLayer.update()

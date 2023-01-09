@@ -391,7 +391,7 @@ class DataViewer(QWidget):
         self._currentViewer = self._staticImage3DViewer_3D
         self.dropEnabled = self._dropEnabled
 
-        self._viewController.showContourSignal.connect(self._currentViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.connect(self._currentViewer.setNewContour)
 
         # self._viewController.crossHairEnabledSignal.disconnect(self._dynImage3DViewer.setCrossHairEnabled)
         # self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage3DViewer.setProfileWidgetEnabled)
@@ -411,36 +411,27 @@ class DataViewer(QWidget):
         self._viewController.windowLevelEnabledSignal.connect(self._staticImage2DViewer.setWWLEnabled)
 
     def _disconnectCurrentViewer(self):
-
         if self._currentViewer == self._staticImage3DViewer:
-
             self._viewController.crossHairEnabledSignal.disconnect(self._staticImage3DViewer.setCrossHairEnabled)
             self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImage3DViewer.setProfileWidgetEnabled)
             self._viewController.showContourSignal.disconnect(self._staticImage3DViewer._contourLayer.setNewContour)
             self._viewController.windowLevelEnabledSignal.disconnect(self._staticImage3DViewer.setWWLEnabled)
             self._viewController.showContourSignal.disconnect(self._dvhViewer.appendROI)
-
         elif self._currentViewer == self._dynImage3DViewer:
-
             self._viewController.crossHairEnabledSignal.disconnect(self._dynImage3DViewer.setCrossHairEnabled)
             self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage3DViewer.setProfileWidgetEnabled)
             self._viewController.showContourSignal.disconnect(self._dynImage3DViewer._contourLayer.setNewContour)
             self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage3DViewer.setWWLEnabled)
-
         elif self._currentViewer == self._staticImage2DViewer:
-
             self._viewController.crossHairEnabledSignal.disconnect(self._staticImage2DViewer.setCrossHairEnabled)
             self._viewController.profileWidgetEnabledSignal.disconnect(self._staticImage2DViewer.setProfileWidgetEnabled)
             self._viewController.showContourSignal.disconnect(self._staticImage2DViewer._contourLayer.setNewContour)
             self._viewController.windowLevelEnabledSignal.disconnect(self._staticImage2DViewer.setWWLEnabled)
-
         elif self._currentViewer == self._dynImage2DViewer:
-
             self._viewController.crossHairEnabledSignal.disconnect(self._dynImage2DViewer.setCrossHairEnabled)
             self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage2DViewer.setProfileWidgetEnabled)
             self._viewController.showContourSignal.disconnect(self._dynImage2DViewer._contourLayer.setNewContour)
             self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage2DViewer.setWWLEnabled)
-
         elif self._currentViewer == self._staticImage3DViewer_3D:
             pass
 

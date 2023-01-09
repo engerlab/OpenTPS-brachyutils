@@ -7,7 +7,6 @@ from opentps.core.data import ROIContour
 from opentps.core.data.images import ROIMask, Image3D
 from opentps.gui.viewer.dataForViewer.ROIContourForViewer import ROIContourForViewer
 from opentps.gui.viewer.dataForViewer.ROIMaskForViewer import ROIMaskForViewer
-from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.primaryImage3DLayer_3D import PrimaryImage3DLayer_3D
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.secondaryImage3DLayer_3D import \
     SecondaryImage3DLayer_3D
 
@@ -64,6 +63,10 @@ class ContourLayer_3D:
         contour.visibleChangedSignal.connect(partialHandler)
 
         self._renderWindow.Render()
+
+    def update(self):
+        for vtkContour in self._vtkContours:
+            vtkContour.update()
 
     def _handleVisibilityChange(self, contour:Union[ROIContourForViewer, ROIMaskForViewer], visible):
         if not contour.visible:
