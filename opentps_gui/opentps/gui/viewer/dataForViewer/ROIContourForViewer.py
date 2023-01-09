@@ -47,6 +47,10 @@ class ROIContourForViewer(DataMultiton):
     @visible.setter
     def visible(self, visible: bool):
         self._visible = visible
+
+        if not(self._mask is None):
+            self._mask.visible = visible
+
         self.visibleChangedSignal.emit(self._visible)
 
     def asROIMaskForViewer(self) -> ROIMaskForViewer:
