@@ -7,6 +7,7 @@ from opentps.core.data import ROIContour
 from opentps.core.data.images import ROIMask, Image3D
 from opentps.gui.viewer.dataForViewer.ROIContourForViewer import ROIContourForViewer
 from opentps.gui.viewer.dataForViewer.ROIMaskForViewer import ROIMaskForViewer
+from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.lookupTables import uniqueColorLTTo3DLT
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.secondaryImage3DLayer_3D import \
     SecondaryImage3DLayer_3D
 
@@ -96,4 +97,20 @@ class ContourLayer_3D:
 
 
 class MaskLayer_3D(SecondaryImage3DLayer_3D):
-    pass
+    def __init__(self, renderer, renderWindow, iStyle):
+        super().__init__(renderer, renderWindow, iStyle)
+
+        self._volumeProperty = vtkRenderingCore.vtkVolumeProperty()
+        self._volumeProperty.SetInterpolationTypeToLinear()
+        self._volumeProperty.ShadeOn()
+        self._volumeProperty.SetAmbient(0.4)
+        self._volumeProperty.SetDiffuse(0.6)
+        self._volumeProperty.SetSpecular(0.2)
+
+    def _updateLookupTable(self, lt):
+        volumeColor, volumeScalarOpacity, volumeGradientOpacity = uniqueColorLTTo3DLT(lt)
+        self._volumeProperty.SetColor(volumeColor)
+        self._volumeProperty.SetScalarOpacity(volumeScalarOpacity)
+        self._volumeProperty.SetGradientOpacity(volumeGradientOpacity)
+
+        self._renderWindow.Render()
