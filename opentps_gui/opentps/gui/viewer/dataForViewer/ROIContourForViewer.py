@@ -10,7 +10,7 @@ class ROIContourForViewer(DataMultiton):
     def __init__(self, roiContour):
         super().__init__(roiContour)
 
-        if hasattr(self, '_visible'):
+        if hasattr(self, '_dataImporter'):
             return
 
         self.visibleChangedSignal = Event(bool)
@@ -34,6 +34,9 @@ class ROIContourForViewer(DataMultiton):
 
     @referenceImage.setter
     def referenceImage(self, image: Image3D):
+        if image==self._referenceImage:
+            return
+
         self._referenceImage = image
         self._updateMask()
 
@@ -45,6 +48,9 @@ class ROIContourForViewer(DataMultiton):
     def visible(self, visible: bool):
         self._visible = visible
         self.visibleChangedSignal.emit(self._visible)
+
+    def asROIMaskForViewer(self) -> ROIMaskForViewer:
+        return ROIMaskForViewer(self._mask)
 
     def _updateMask(self):
         if self._referenceImage is None:
@@ -71,4 +77,4 @@ class ROIContourForViewer(DataMultiton):
         if self._mask is None:
             return None
 
-        return ROIMaskForViewer(self._mask).vtkOutputPort
+        return self.asROIMaskForViewer().vtkOutputPort

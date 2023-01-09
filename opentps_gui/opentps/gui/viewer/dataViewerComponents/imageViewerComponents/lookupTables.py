@@ -9,13 +9,13 @@ from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 def uniqueColorLT(threshold:float, opacity:float, color:Sequence[float]) -> vtkCommonCore.vtkLookupTable:
     table = vtkCommonCore.vtkLookupTable()
-    table.SetRange(threshold, threshold)  # image intensity range
+    table.SetRange(threshold-1., threshold)  # image intensity range
     table.SetValueRange(0.0, 1.0)  # from black to white
     table.SetSaturationRange(0.0, 0.0)  # no color saturation
     table.SetRampToLinear()
 
     table.SetNumberOfTableValues(2)
-    table.SetTableValue(0, (color[0], color[1], color[2], opacity))
+    table.SetTableValue(0, (0, 0, 0, 0))
     table.SetTableValue(1, (color[0], color[1], color[2], opacity))
 
     table.SetBelowRangeColor(0, 0, 0, 0)

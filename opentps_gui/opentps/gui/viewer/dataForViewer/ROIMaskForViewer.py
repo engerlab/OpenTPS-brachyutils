@@ -36,7 +36,7 @@ class ROIMaskForViewer(GenericImageForViewer):
         self.visibleChangedSignal.emit(self._visible)
 
     def _updateLT(self, *args):
-        self._lookupTable = lookupTables.uniqueColorLT(1, self.opacity, [self.color[0]/255, self.color[1]/255, self.color[2]/255])
+        self._lookupTable = lookupTables.uniqueColorLT(1., self.opacity, [self.color[0]/255, self.color[1]/255, self.color[2]/255])
         self.lookupTableChangedSignal.emit(self._lookupTable)
 
     def _updateVtkOutputPort(self):

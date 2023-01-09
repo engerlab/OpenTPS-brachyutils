@@ -8,6 +8,8 @@ from opentps.core.data.images import ROIMask, Image3D
 from opentps.gui.viewer.dataForViewer.ROIContourForViewer import ROIContourForViewer
 from opentps.gui.viewer.dataForViewer.ROIMaskForViewer import ROIMaskForViewer
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.primaryImage3DLayer_3D import PrimaryImage3DLayer_3D
+from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.secondaryImage3DLayer_3D import \
+    SecondaryImage3DLayer_3D
 
 
 class ContourLayer_3D:
@@ -42,14 +44,20 @@ class ContourLayer_3D:
         if not contour.visible:
             return
 
-        contour.referenceImage = self.referenceImage
+        #contour.referenceImage = self.referenceImage
 
         self._contours.append(contour)
 
         vtkContourObj = MaskLayer_3D(self._renderer, self._renderWindow, self._iStyle)
-        vtkContourObj.image = contour
 
-        self._renderer.AddActor(vtkContourObj.actor)
+        if isinstance(contour, ROIContourForViewer):
+            vtkContourObj.image = contour.asROIMaskForViewer()
+        else:
+            vtkContourObj.image = contour
+
+        vtkContourObj.update()
+
+        self._vtkContours.append(vtkContourObj)
 
         partialHandler = partial(self._handleVisibilityChange, contour)
         self._partialHandlers.append(partialHandler)
@@ -86,17 +94,5 @@ class ContourLayer_3D:
             contour.referenceImage = self._referenceImage
 
 
-class MaskLayer_3D(PrimaryImage3DLayer_3D):
-    def __init__(self, renderer, renderWindow, iStyle):
-        super().__init__(renderer, renderWindow, iStyle)
-
-        self._volumeProperty = vtkRenderingCore.vtkVolumeProperty()
-        self._volumeProperty.SetInterpolationTypeToLinear()
-        self._volumeProperty.ShadeOn()
-        self._volumeProperty.SetAmbient(0.4)
-        self._volumeProperty.SetDiffuse(0.6)
-        self._volumeProperty.SetSpecular(0.2)
-
-    @property
-    def actor(self):
-        return self._mainActor
+class MaskLayer_3D(SecondaryImage3DLayer_3D):
+    pass
