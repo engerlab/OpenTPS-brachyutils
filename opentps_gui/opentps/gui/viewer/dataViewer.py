@@ -341,18 +341,16 @@ class DataViewer(QWidget):
         self._currentViewer.show()
 
     def _setCurrentViewerToDynamicImage3DViewer(self):
-
         self._disconnectCurrentViewer()
         self._currentViewer = self._dynImage3DViewer
         self.dropEnabled = self._dropEnabled
 
-        self._viewController.crossHairEnabledSignal.connect(self._dynImage3DViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.connect(self._dynImage3DViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.connect(self._dynImage3DViewer._contourLayer.setNewContour)
-        self._viewController.windowLevelEnabledSignal.connect(self._dynImage3DViewer.setWWLEnabled)
+        self._viewController.crossHairEnabledSignal.connectIfNotAlready(self._dynImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connectIfNotAlready(self._dynImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connectIfNotAlready(self._dynImage3DViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.connectIfNotAlready(self._dynImage3DViewer.setWWLEnabled)
 
     def _setCurrentViewerToDynamicImage2DViewer(self):
-
         self._disconnectCurrentViewer()
         self._currentViewer = self._dynImage2DViewer
         self.dropEnabled = self._dropEnabled
@@ -363,13 +361,12 @@ class DataViewer(QWidget):
         # self._viewController.showContourSignal.disconnect(self._dvhViewer.appendROI)
         # self._viewController.windowLevelEnabledSignal.disconnect(self._staticImage3DViewer.setWWLEnabled)
 
-        self._viewController.crossHairEnabledSignal.connect(self._dynImage2DViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.connect(self._dynImage2DViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.connect(self._dynImage2DViewer._contourLayer.setNewContour)
-        self._viewController.windowLevelEnabledSignal.connect(self._dynImage2DViewer.setWWLEnabled)
+        self._viewController.crossHairEnabledSignal.connectIfNotAlready(self._dynImage2DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connectIfNotAlready(self._dynImage2DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connectIfNotAlready(self._dynImage2DViewer._contourLayer.setNewContour)
+        self._viewController.windowLevelEnabledSignal.connectIfNotAlready(self._dynImage2DViewer.setWWLEnabled)
 
     def _setCurrentViewerToStaticImage3DViewer(self):
-
         self._disconnectCurrentViewer()
         self._currentViewer = self._staticImage3DViewer
         self.dropEnabled = self._dropEnabled
@@ -379,19 +376,18 @@ class DataViewer(QWidget):
         # self._viewController.showContourSignal.disconnect(self._dynImage3DViewer._contourLayer.setNewContour)
         # self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage3DViewer.setWWLEnabled)
 
-        self._viewController.crossHairEnabledSignal.connect(self._staticImage3DViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.connect(self._staticImage3DViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.connect(self._staticImage3DViewer._contourLayer.setNewContour)
-        self._viewController.showContourSignal.connect(self._dvhViewer.appendROI)
-        self._viewController.windowLevelEnabledSignal.connect(self._staticImage3DViewer.setWWLEnabled)
+        self._viewController.crossHairEnabledSignal.connectIfNotAlready(self._staticImage3DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connectIfNotAlready(self._staticImage3DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connectIfNotAlready(self._staticImage3DViewer._contourLayer.setNewContour)
+        self._viewController.showContourSignal.connectIfNotAlready(self._dvhViewer.appendROI)
+        self._viewController.windowLevelEnabledSignal.connectIfNotAlready(self._staticImage3DViewer.setWWLEnabled)
 
     def _setCurrentViewerToStaticImage3DViewer_3D(self):
-
         self._disconnectCurrentViewer()
         self._currentViewer = self._staticImage3DViewer_3D
         self.dropEnabled = self._dropEnabled
 
-        self._viewController.showContourSignal.connect(self._currentViewer.setNewContour)
+        self._viewController.showContourSignal.connectIfNotAlready(self._currentViewer.setNewContour)
 
         # self._viewController.crossHairEnabledSignal.disconnect(self._dynImage3DViewer.setCrossHairEnabled)
         # self._viewController.profileWidgetEnabledSignal.disconnect(self._dynImage3DViewer.setProfileWidgetEnabled)
@@ -399,16 +395,15 @@ class DataViewer(QWidget):
         # self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage3DViewer.setWWLEnabled)
 
     def _setCurrentViewerToStaticImage2DViewer(self):
-
         self._disconnectCurrentViewer()
         self._currentViewer = self._staticImage2DViewer
         self.dropEnabled = self._dropEnabled
 
-        self._viewController.crossHairEnabledSignal.connect(self._staticImage2DViewer.setCrossHairEnabled)
-        self._viewController.profileWidgetEnabledSignal.connect(self._staticImage2DViewer.setProfileWidgetEnabled)
-        self._viewController.showContourSignal.connect(self._staticImage2DViewer._contourLayer.setNewContour)
-        # self._viewController.showContourSignal.connect(self._dvhViewer.appendROI)
-        self._viewController.windowLevelEnabledSignal.connect(self._staticImage2DViewer.setWWLEnabled)
+        self._viewController.crossHairEnabledSignal.connectIfNotAlready(self._staticImage2DViewer.setCrossHairEnabled)
+        self._viewController.profileWidgetEnabledSignal.connectIfNotAlready(self._staticImage2DViewer.setProfileWidgetEnabled)
+        self._viewController.showContourSignal.connectIfNotAlready(self._staticImage2DViewer._contourLayer.setNewContour)
+        # self._viewController.showContourSignal.connectIfNotAlready(self._dvhViewer.appendROI)
+        self._viewController.windowLevelEnabledSignal.connectIfNotAlready(self._staticImage2DViewer.setWWLEnabled)
 
     def _disconnectCurrentViewer(self):
         if self._currentViewer == self._staticImage3DViewer:
@@ -433,7 +428,7 @@ class DataViewer(QWidget):
             self._viewController.showContourSignal.disconnect(self._dynImage2DViewer._contourLayer.setNewContour)
             self._viewController.windowLevelEnabledSignal.disconnect(self._dynImage2DViewer.setWWLEnabled)
         elif self._currentViewer == self._staticImage3DViewer_3D:
-            pass
+            self._viewController.showContourSignal.disconnect(self._currentViewer.setNewContour)
 
 
     @property
@@ -486,14 +481,14 @@ class DataViewer(QWidget):
         self._imageViewerActions.addToToolbar(self._toolbar)
         self._dvhViewerActions.addToToolbar(self._toolbar)
 
-        self.displayTypeChangedSignal.connect(self._handleDisplayTypeChange)
+        self.displayTypeChangedSignal.connectIfNotAlready(self._handleDisplayTypeChange)
 
-        self._viewController.independentViewsEnabledSignal.connect(self.enableDrop)
-        self._viewController.mainImageChangedSignal.connect(self._setMainImageAnSwitchDisplayModeAndType)
-        self._viewController.secondaryImageChangedSignal.connect(self._setSecondaryImage)
-        self._viewController.planChangedSignal.connect(self._setPlan)
-        self._viewController.dropModeSignal.connect(self._setDropMode)
-        self._viewController.droppedDataSignal.connect(self._setDroppedData)
+        self._viewController.independentViewsEnabledSignal.connectIfNotAlready(self.enableDrop)
+        self._viewController.mainImageChangedSignal.connectIfNotAlready(self._setMainImageAnSwitchDisplayModeAndType)
+        self._viewController.secondaryImageChangedSignal.connectIfNotAlready(self._setSecondaryImage)
+        self._viewController.planChangedSignal.connectIfNotAlready(self._setPlan)
+        self._viewController.dropModeSignal.connectIfNotAlready(self._setDropMode)
+        self._viewController.droppedDataSignal.connectIfNotAlready(self._setDroppedData)
 
         self.enableDrop(self._viewController.independentViewsEnabled)
 
@@ -515,8 +510,8 @@ class DataViewer(QWidget):
         if enabled:
             # It might seems weird to have a signal connected within the class but it is if someday we want to move the logical part out of this class.
             # See also comment on dropEnabled : Should we implement drop directly in ImageViewer?
-            self.droppedImageSignal.connect(self._setDroppedData)
-            self.droppedPlanSignal.connect(self._setPlan)
+            self.droppedImageSignal.connectIfNotAlready(self._setDroppedData)
+            self.droppedPlanSignal.connectIfNotAlready(self._setPlan)
         else:
             self.droppedImageSignal.disconnect(self._setDroppedData)
             self.droppedPlanSignal.disconnect(self._setPlan)
@@ -595,7 +590,7 @@ class DataViewer(QWidget):
             raise ValueError('Image type not supported')
 
         if not image is None and not image.patient is None:
-            image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
+            image.patient.imageRemovedSignal.connectIfNotAlready(self._removeImageFromViewers)
 
     def _setSecondaryImage(self, image: Optional[Image3D]):
         """
@@ -608,7 +603,7 @@ class DataViewer(QWidget):
             if oldImage is None:
                 return
         elif not (image.patient is None):
-            image.patient.imageRemovedSignal.connect(self._removeImageFromViewers)
+            image.patient.imageRemovedSignal.connectIfNotAlready(self._removeImageFromViewers)
 
         self.cachedStaticImage3DViewer.secondaryImage = image
         self.cachedStaticImage3DViewer_3D.secondaryImage = image
