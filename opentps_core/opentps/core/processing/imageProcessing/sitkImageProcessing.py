@@ -95,8 +95,9 @@ def extremePoints(image:Image3D):
 
 def _parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]],  image:Image3D):
     rotCenter = np.array([0, 0, 0]).astype(float)
+
     if not (rotCenterArg is None):
-        if rotCenterArg == 'dicomCenter':
+        if rotCenterArg == 'dicomOrigin':
             rotCenter = np.array([0, 0, 0]).astype(float)
         # elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
         elif len(rotCenterArg) == 3 and (isinstance(rotCenterArg[0], float) or isinstance(rotCenterArg[0], int)):
@@ -181,7 +182,7 @@ def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0., outputBox
     ## do we want a return here ?
 
 def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
-                              rotCenter: Optional[Union[Sequence[float], str]]='imgCenter', translation:Sequence[float]=[0, 0, 0]):
+                              rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0]):
 
     imgType = image.imageArray.dtype
 
@@ -236,7 +237,7 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
     image.origin = output_origin
 
 def applyTransform3DToVectorField3D(vectField:VectorField3D, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
-                                    rotCenter: Optional[Union[Sequence[float], str]]=None, translation:Sequence[float]=[0, 0, 0]):
+                                    rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0]):
 
     vectorFieldCompList = []
     for i in range(3):
@@ -268,7 +269,7 @@ def applyTransform3DToVectorField3D(vectField:VectorField3D, tformMatrix:np.ndar
     vectField.imageArray = flattenedVectorField.reshape((vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
 
 
-def applyTransform3DToPoint(tformMatrix:np.ndarray, pnt:np.ndarray, rotCenter: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+def applyTransform3DToPoint(tformMatrix:np.ndarray, pnt:np.ndarray, rotCenter: Optional[Sequence[float]]=[0, 0, 0], translation:Sequence[float]=[0, 0, 0]):
     if tformMatrix.shape[1] == 4:
         translation = tformMatrix[0:-1, -1]
         tformMatrix = tformMatrix[0:-1, 0:-1]
@@ -277,8 +278,7 @@ def applyTransform3DToPoint(tformMatrix:np.ndarray, pnt:np.ndarray, rotCenter: O
     transform.SetMatrix(tformMatrix.flatten())
     transform.Translate(translation)
 
-    if not (rotCenter is None):
-        transform.SetCenter(rotCenter)
+    transform.SetCenter(rotCenter)
 
     inv_transform = transform.GetInverse()
 
