@@ -6,7 +6,7 @@ from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.processing.imageProcessing.cupyImageProcessing import rotateCupy, translateCupy
+from opentps.core.processing.imageProcessing.cupyImageProcessing import rotateData, translateData
 from opentps.core.processing.imageProcessing.sitkImageProcessing import rotateData
 
 import copy
@@ -315,7 +315,7 @@ def translateData(data, binarizeMask=True, mode='constant', translationInMM=[0, 
             if isinstance(data, VectorField3D):
                 print('Translate VectorField3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
                 translationInPixels = np.append(translationInPixels, [0])
-                data.imageArray = translateCupy(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
+                data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
                 # data.imageArray = translateAndRotate3DVectorFields(data.imageArray, translation=translationInPixels)
                 # # Plot X-Z field
                 # fig, ax = plt.subplots(3, 3)
@@ -337,13 +337,13 @@ def translateData(data, binarizeMask=True, mode='constant', translationInMM=[0, 
             elif isinstance(data, ROIMask):
                 print('Translate ROIMask of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
                 data.imageArray = data.imageArray.astype(np.float)
-                data.imageArray = translateCupy(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
+                data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
                 if binarizeMask:
                     data.imageArray = data.imageArray > 0.5
 
             else:
                 print('Translate Image3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
-                data.imageArray = translateCupy(data.imageArray, mode=mode, translationInPixels=translationInPixels)
+                data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels)
 
 
 
@@ -367,8 +367,8 @@ def translateAndRotate3DVectorFields(vectorField, translation=[0, 0, 0, 0], rota
     if not (np.array(translation == np.array([0, 0, 0])).all() and np.array(rotation == np.array([0, 0, 0])).all()):
         print('in translateAndRotate3DVectorFields in if not')
 
-        vectorField = translateCupy(vectorField, translationInPixels=translation, cval=0)
-        vectorField = rotateCupy(vectorField, rotationInDeg=rotation, cval=0)
+        vectorField = translateData(vectorField, translationInPixels=translation, cval=0)
+        vectorField = rotateData(vectorField, rotationInDeg=rotation, cval=0)
 
 
     if not np.array(rotation == np.array([0, 0, 0])).all():

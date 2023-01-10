@@ -15,7 +15,7 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.processing.segmentation import segmentation3D
-from opentps.core.processing.imageProcessing import sitkImageProcessing
+from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
 
 
 
@@ -266,7 +266,7 @@ def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotV
 def translateData(data, translationInMM, outputBox='keepAll', fillValue=-1000, tryGPU=False):
 
     if tryGPU:
-        print(NotImplementedError)
+        cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
     else:
         sitkImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
 
@@ -274,6 +274,7 @@ def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=-1000, rotCe
 
     if tryGPU:
         print(NotImplementedError)
+
     else:
         sitkImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter)
 

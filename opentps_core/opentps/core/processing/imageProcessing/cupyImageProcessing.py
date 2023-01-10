@@ -3,22 +3,27 @@ import cupy
 import cupyx
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
+from opentps.core.processing.imageProcessing.imageTransform3D import transform3DMatrixFromTranslationAndRotationsVectors
 
 ## ------------------------------------------------------------------------------------------------
-def translateCupy(dataArray, mode='constant', translationInPixels=[0, 0, 0], cval=-1000):
+def translateData(data, translationInMM, fillValue=-1000, outputBox='keepAll'):
     """
 
     Parameters
     ----------
-    dataArray : ND numpy array, the data to translate
-    translationInPixels : sequence of the translation in pixels in the 3 direction [X, Y, Z]
-    cval : the value to fill the data for points coming, after translation, from outside the image
-
+    data :
+    translationInMM : sequence of the translation in millimeters in the 3 direction [X, Y, Z]
+    fillValue : the value to fill the data for points coming, after translation, from outside the image
+    outputBox : the cube in space represented by the result after translation
     Returns
     -------
-    ND numpy array, the translated data
+    the translated data
     """
-    
+
+    if not np.array(translationInMM == np.array([0, 0, 0])).all():
+        affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=translationInMM)
+        applyTransform3D(data, affTransformMatrix, fillValue=fillValue, outputBox=outputBox)
+
     cupyArray = cupy.asarray(dataArray)
 
     if not (np.array(translationInPixels == np.array([0, 0, 0])).all() or np.array(translationInPixels == np.array([0, 0, 0, 0])).all()):
@@ -27,7 +32,7 @@ def translateCupy(dataArray, mode='constant', translationInPixels=[0, 0, 0], cva
     return cupy.asnumpy(cupyArray)
 
 ## ------------------------------------------------------------------------------------------------
-def rotateCupy(dataArray, rotationInDeg=[0, 0, 0], cval=-1000):
+def rotateData(dataArray, rotationInDeg=[0, 0, 0], cval=-1000):
     """
 
     Parameters
@@ -59,6 +64,165 @@ def rotateCupy(dataArray, rotationInDeg=[0, 0, 0], cval=-1000):
             cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, rotationInDeg[2], axes=[0, 1], reshape=False, mode='constant', cval=cval)
 
     return cupy.asnumpy(cupyArray)
+
+
+def applyTransform3D(data, tformMatrix: np.ndarray, fillValue: float = 0.,
+                     outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
+                     rotCenter: Optional[Union[Sequence[float], str]] = 'imgCenter',
+                     translation: Sequence[float] = [0, 0, 0]):
+    if isinstance(tformMatrix, Transform3D):
+        tformMatrix = tformMatrix.tformMatrix
+
+    if isinstance(data, Image3D):
+
+        from opentps.core.data.images._roiMask import ROIMask
+
+        if isinstance(data, VectorField3D):
+            applyTransform3DToVectorField3D(data, tformMatrix, fillValue=0, outputBox=outputBox, rotCenter=rotCenter,
+                                            translation=translation)
+        elif isinstance(data, ROIMask):
+            applyTransform3DToImage3D(data, tformMatrix, fillValue=0, outputBox=outputBox, rotCenter=rotCenter,
+                                      translation=translation)
+        else:
+            applyTransform3DToImage3D(data, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                      translation=translation)
+
+    elif isinstance(data, Dynamic3DSequence):
+        for image in data.dyn3DImageList:
+            applyTransform3DToImage3D(image, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                      translation=translation)
+
+    elif isinstance(data, Dynamic3DModel):
+        applyTransform3DToImage3D(data.midp, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                  translation=translation)
+        for df in data.deformationList:
+            if df.velocity != None:
+                applyTransform3DToVectorField3D(df.velocity, tformMatrix, fillValue=0, outputBox=outputBox,
+                                                rotCenter=rotCenter, translation=translation)
+            if df.displacement != None:
+                applyTransform3DToVectorField3D(df.displacement, tformMatrix, fillValue=0, outputBox=outputBox,
+                                                rotCenter=rotCenter, translation=translation)
+
+    elif isinstance(data, ROIContour):
+        print(NotImplementedError)
+
+    else:
+        print('sitkImageProcessing.applyTransform3D not implemented on', type(data), 'yet. Abort')
+
+    ## do we want a return here ?
+
+
+def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue: float = 0.,
+                              outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
+                              rotCenter: Optional[Union[Sequence[float], str]] = 'imgCenter',
+                              translation: Sequence[float] = [0, 0, 0]):
+    imgType = image.imageArray.dtype
+
+    img = image3DToSITK(image)
+
+    if tformMatrix.shape[1] == 4:
+        translation = tformMatrix[0:-1, -1]
+        tformMatrix = tformMatrix[0:-1, 0:-1]
+
+    dimension = img.GetDimension()
+
+    transform = sitk.AffineTransform(dimension)
+    transform.SetMatrix(tformMatrix.flatten())
+    transform.Translate(translation)
+
+    if not (rotCenter is None):
+        print("rot", rotCenter)
+        if rotCenter == 'dicomCenter':
+            rotCenter = np.array([0, 0, 0]).astype(float)
+            transform.SetCenter(rotCenter)
+        # elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
+        elif len(rotCenter) == 3 and (isinstance(rotCenter[0], float) or isinstance(rotCenter[0], int)):
+            transform.SetCenter(rotCenter)
+        elif rotCenter == 'imgCorner':
+            rotCenter = image.origin.astype(float)
+            transform.SetCenter(rotCenter)
+        elif rotCenter == 'imgCenter':
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+            transform.SetCenter(rotCenter)
+        else:
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
+            transform.SetCenter(rotCenter)
+
+    if outputBox == 'keepAll':
+        min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tformMatrix,
+                                                                               translation=translation,
+                                                                               rotCenter=rotCenter)
+
+        output_origin = [min_x, min_y, min_z]
+        output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
+                       int((max_z - min_z) / image.spacing[2]) + 1]
+    elif outputBox == 'same':
+        output_origin = image.origin.tolist()
+        output_size = image.gridSize.astype(int).tolist()
+    else:
+        min_x = outputBox[0]
+        max_x = outputBox[1]
+        min_y = outputBox[2]
+        max_y = outputBox[3]
+        min_z = outputBox[4]
+        max_z = outputBox[5]
+
+        output_origin = [min_x, min_y, min_z]
+        output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
+                       int((max_z - min_z) / image.spacing[2]) + 1]
+
+    reference_image = sitk.Image(output_size, img.GetPixelIDValue())
+    reference_image.SetOrigin(output_origin)
+    reference_image.SetSpacing(image.spacing.tolist())
+    reference_image.SetDirection(img.GetDirection())
+    outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
+    outData = np.array(sitk.GetArrayFromImage(outImg))
+
+    if imgType == bool:
+        outData[outData < 0.5] = 0
+    outData = outData.astype(imgType)
+    outData = np.swapaxes(outData, 0, 2)
+    image.imageArray = outData
+    image.origin = output_origin
+
+
+def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.ndarray, fillValue: float = 0.,
+                                    outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
+                                    rotCenter: Optional[Union[Sequence[float], str]] = 'imgCenter',
+                                    translation: Sequence[float] = [0, 0, 0]):
+    vectorFieldCompList = []
+    for i in range(3):
+        compImg = Image3D.fromImage3D(vectField)
+        compImg.imageArray = vectField.imageArray[:, :, :, i]
+        # import matplotlib.pyplot as plt
+        # print(compImg.origin)
+        # plt.figure()
+        # plt.imshow(compImg.imageArray[:,10,:])
+        # plt.show()
+        applyTransform3DToImage3D(compImg, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                  translation=translation)
+        # print(compImg.origin)
+        # plt.figure()
+        # plt.imshow(compImg.imageArray[:, 10, :])
+        # plt.show()
+        vectorFieldCompList.append(compImg.imageArray)
+
+    vectField.imageArray = np.stack(vectorFieldCompList, axis=3)
+    vectField.origin = compImg.origin
+
+    if tformMatrix.shape[1] == 4:
+        tformMatrix = tformMatrix[0:-1, 0:-1]
+
+    r = R.from_matrix(tformMatrix)
+
+    flattenedVectorField = vectField.imageArray.reshape(
+        (vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
+    flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
+
+    vectField.imageArray = flattenedVectorField.reshape(
+        (vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
+
 
 ## ------------------------------------------------------------------------------------------------
 def affineTransformCupy(img, matrix, cval=-1000):
