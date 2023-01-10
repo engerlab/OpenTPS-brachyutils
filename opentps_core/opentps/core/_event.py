@@ -47,6 +47,10 @@ class Event:
         """
         self._slots.append(slot)
 
+    def connectIfNotAlready(self, slot):
+        if not(slot in self._slots):
+            self._slots.append(slot)
+
 
     def disconnect(self, slot):
         """
