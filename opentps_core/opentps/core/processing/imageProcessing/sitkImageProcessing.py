@@ -92,8 +92,28 @@ def extremePoints(image:Image3D):
 
     return extreme_points
 
+
+def _parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]],  image:Image3D):
+    rotCenter = np.array([0, 0, 0]).astype(float)
+
+    if not (rotCenterArg is None):
+        if rotCenterArg == 'dicomOrigin':
+            rotCenter = np.array([0, 0, 0]).astype(float)
+        # elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
+        elif len(rotCenterArg) == 3 and (isinstance(rotCenterArg[0], float) or isinstance(rotCenterArg[0], int)):
+            rotCenter = rotCenterArg
+        elif rotCenterArg == 'imgCorner':
+            rotCenter = image.origin.astype(float)
+        elif rotCenterArg == 'imgCenter':
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+        else:
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
+
+    return rotCenter
+
 def extremePointsAfterTransform(image:Image3D, tformMatrix:np.ndarray,
-                                rotCenter: Optional[Union[Sequence[float], str]]= 'imgCenter', translation:Sequence[float]=[0, 0, 0]):
+                                rotCenter: Optional[Union[Sequence[float], str]]= 'dicomOrigin', translation:Sequence[float]=[0, 0, 0]):
     img = image3DToSITK(image)
 
     if tformMatrix.shape[1] == 4:
@@ -106,23 +126,8 @@ def extremePointsAfterTransform(image:Image3D, tformMatrix:np.ndarray,
     transform.SetMatrix(tformMatrix.flatten())
     transform.Translate(translation)
 
-    if not (rotCenter is None):
-        if rotCenter == 'dicomCenter':
-            rotCenter = np.array([0, 0, 0])
-            transform.SetCenter(rotCenter)
-        #elif len(rotCenter) == 3 and (rotCenter.dtype == 'float64' or rotCenter.dtype == 'int'):
-        elif len(rotCenter) == 3 and (isinstance(rotCenter[0], float) or isinstance(rotCenter[0], int)):
-            transform.SetCenter(rotCenter)
-        elif rotCenter == 'imgCorner':
-            rotCenter = image.origin.astype(float)
-            transform.SetCenter(rotCenter)
-        elif rotCenter == 'imgCenter':
-            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
-            transform.SetCenter(rotCenter)
-        else:
-            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
-            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
-            transform.SetCenter(rotCenter)
+    rotCenter = _parseRotCenter(rotCenter, image)
+    transform.SetCenter(rotCenter)
 
     extreme_points = extremePoints(image)
 
@@ -139,7 +144,7 @@ def extremePointsAfterTransform(image:Image3D, tformMatrix:np.ndarray,
     return min_x, max_x, min_y, max_y, min_z, max_z
 
 def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
-                     rotCenter: Optional[Union[Sequence[float], str]]= 'imgCenter', translation:Sequence[float]=[0, 0, 0]):
+                     rotCenter: Optional[Union[Sequence[float], str]]= 'dicomOrigin', translation:Sequence[float]=[0, 0, 0]):
 
 
     if isinstance(tformMatrix, Transform3D):
@@ -177,7 +182,7 @@ def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0., outputBox
     ## do we want a return here ?
 
 def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
-                              rotCenter: Optional[Union[Sequence[float], str]]='imgCenter', translation:Sequence[float]=[0, 0, 0]):
+                              rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0]):
 
     imgType = image.imageArray.dtype
 
@@ -193,28 +198,11 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
     transform.SetMatrix(tformMatrix.flatten())
     transform.Translate(translation)
 
-    if not (rotCenter is None):
-        print("rot", rotCenter)
-        if rotCenter == 'dicomCenter':
-            rotCenter = np.array([0, 0, 0]).astype(float)
-            transform.SetCenter(rotCenter)
-        #elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
-        elif len(rotCenter) == 3 and (isinstance(rotCenter[0], float) or isinstance(rotCenter[0], int)):
-            transform.SetCenter(rotCenter)
-        elif rotCenter == 'imgCorner':
-            rotCenter = image.origin.astype(float)
-            transform.SetCenter(rotCenter)
-        elif rotCenter == 'imgCenter':
-            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
-            transform.SetCenter(rotCenter)
-        else:
-            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
-            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
-            transform.SetCenter(rotCenter)
-
+    rotCenter = _parseRotCenter(rotCenter, image)
+    transform.SetCenter(rotCenter)
 
     if outputBox == 'keepAll':
-        min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tformMatrix, translation=translation, rotCenter=rotCenter)
+        min_x, max_x, min_y, max_y, min_z, max_z = extremePointsAfterTransform(image, tformMatrix, rotCenter=rotCenter, translation=translation)
 
         output_origin = [min_x, min_y, min_z]
         output_size = [int((max_x - min_x) / image.spacing[0]) + 1, int((max_y - min_y) / image.spacing[1]) + 1,
@@ -249,7 +237,7 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
     image.origin = output_origin
 
 def applyTransform3DToVectorField3D(vectField:VectorField3D, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
-                                    rotCenter: Optional[Union[Sequence[float], str]]= 'imgCenter', translation:Sequence[float]=[0, 0, 0]):
+                                    rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0]):
 
     vectorFieldCompList = []
     for i in range(3):
@@ -281,7 +269,7 @@ def applyTransform3DToVectorField3D(vectField:VectorField3D, tformMatrix:np.ndar
     vectField.imageArray = flattenedVectorField.reshape((vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
 
 
-def applyTransform3DToPoint(tformMatrix:np.ndarray, pnt:np.ndarray, rotCenter: Optional[Sequence[float]]=None, translation:Sequence[float]=[0, 0, 0]):
+def applyTransform3DToPoint(tformMatrix:np.ndarray, pnt:np.ndarray, rotCenter: Optional[Sequence[float]]=[0, 0, 0], translation:Sequence[float]=[0, 0, 0]):
     if tformMatrix.shape[1] == 4:
         translation = tformMatrix[0:-1, -1]
         tformMatrix = tformMatrix[0:-1, 0:-1]
@@ -290,8 +278,7 @@ def applyTransform3DToPoint(tformMatrix:np.ndarray, pnt:np.ndarray, rotCenter: O
     transform.SetMatrix(tformMatrix.flatten())
     transform.Translate(translation)
 
-    if not (rotCenter is None):
-        transform.SetCenter(rotCenter)
+    transform.SetCenter(rotCenter)
 
     inv_transform = transform.GetInverse()
 
