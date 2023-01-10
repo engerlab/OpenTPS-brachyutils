@@ -249,7 +249,7 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
     image.origin = output_origin
 
 def applyTransform3DToVectorField3D(vectField:VectorField3D, tformMatrix:np.ndarray, fillValue:float=0., outputBox:Optional[Union[Sequence[float], str]]= 'keepAll',
-                                    rotCenter: Optional[Union[Sequence[float], str]]= 'imgCenter', translation:Sequence[float]=[0, 0, 0]):
+                                    rotCenter: Optional[Union[Sequence[float], str]]=None, translation:Sequence[float]=[0, 0, 0]):
 
     vectorFieldCompList = []
     for i in range(3):
