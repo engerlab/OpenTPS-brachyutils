@@ -1,7 +1,7 @@
-def getBaselineShift(fixedMask, movingMask, transform):
+def getBaselineShift(movingMask, fixedMask, transform):
     cm1 = fixedMask.centerOfMass
     deformedMask = transform.deformImage(movingMask)
     cm2 = deformedMask.centerOfMass
 
-    baselineShift = cm2 - cm1
+    baselineShift = cm1 - cm2
     return baselineShift

@@ -6,10 +6,11 @@ study = 'FDGorFAZA_study'
 patientFolder = 'Patient_12'
 basePath = '/data/WalBan/'
 dataName = 'dynModAndROIs.p'
-patientComplement1 = '/1/FDG1'
-patientComplement2 = '/2/FDG2'
-targetContourToUse1 = 'gtv t'
-targetContourToUse2 = 'GTVp'
+#pour le patient 12, il faut changer l'ordre chronologique car le masque au temps 1 est plus petit qu'au temps 2
+patientComplement1 = '/2/FDG2'
+patientComplement2 = '/1/FDG1'
+targetContourToUse1 = 'GTVp'
+targetContourToUse2 = 'gtv t'
 
 dataPath1 = basePath + organ + '/' + study + '/' + patientFolder + patientComplement1 + '/' + dataName
 dataPath2 = basePath + organ + '/' + study + '/' + patientFolder + patientComplement2 + '/' + dataName

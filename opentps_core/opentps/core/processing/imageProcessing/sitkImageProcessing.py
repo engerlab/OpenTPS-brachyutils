@@ -194,7 +194,6 @@ def applyTransform3DToImage3D(image:Image3D, tformMatrix:np.ndarray, fillValue:f
     transform.Translate(translation)
 
     if not (rotCenter is None):
-        print("rot", rotCenter)
         if rotCenter == 'dicomCenter':
             rotCenter = np.array([0, 0, 0]).astype(float)
             transform.SetCenter(rotCenter)
