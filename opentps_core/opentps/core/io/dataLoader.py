@@ -7,9 +7,11 @@ import logging
 from opentps.core.data._patientData import PatientData
 from opentps.core.data._patient import Patient
 from opentps.core.data._patientList import PatientList
-from opentps.core.io.dicomIO import readDicomCT, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
+from opentps.core.io.dicomIO import readDicomCT, readDicomMRI, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
 from opentps.core.io import mhdIO
 from opentps.core.io.serializedObjectIO import loadDataStructure
+
+logger = logging.getLogger(__name__)
 
 def loadData(patientList:PatientList, dataPath:str, maxDepth=-1, ignoreExistingData:bool=True, importInPatient:Optional[Patient]=None):
     #TODO: implement ignoreExistingData
@@ -88,6 +90,7 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
 
     # read Dicom files
     dicomCT = {}
+    dicomMRI = {}
     for filePath in fileLists["Dicom"]:
         dcm = pydicom.dcmread(filePath)
 
@@ -109,7 +112,7 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
             for txtFilePathIndex, txtFilePath in enumerate(fileLists["txt"]):
                 if txtFilePath.endswith('breathingPeriod.txt'):
                     if os.path.dirname(txtFilePath) == os.path.dirname(filePath) or os.path.dirname(txtFilePath) == os.path.dirname(os.path.dirname(filePath)):
-                        print('IN IF', txtFilePath)
+                        print('In Data loader IN IF', txtFilePath)
                         dynSeriesIndex = txtFilePathIndex
                         ## associer la slice à une série 4D
 
@@ -120,6 +123,20 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
                     newCT = 0
             if newCT == 1:
                 dicomCT[dcm.SeriesInstanceUID] = [dynSeriesIndex, filePath]
+        
+        # Dicom MRI
+        elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.4":
+            # Dicom MRI are not loaded directly. All slices must first be classified according to SeriesInstanceUID.
+            newMRI = 1
+            dynSeriesIndex = -1
+            for key in dicomMRI:
+                #print(key)
+                if key == dcm.SeriesInstanceUID:
+                    dicomMRI[dcm.SeriesInstanceUID].append(filePath)
+                    newMRI = 0
+
+            if newMRI == 1:
+                dicomMRI[dcm.SeriesInstanceUID] = [dynSeriesIndex, filePath]
 
         # Dicom dose
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.2":
@@ -145,10 +162,17 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
 
     # import Dicom CT images
     for key in dicomCT:
-        print('in dataLoader readData, for key in dicomCT', key)
-        print(dicomCT[key][0])
+        logger.debug('in dataLoader readData, for key in dicomCT {}'.format(key))
+        logger.debug(dicomCT[key][0])
         ct = readDicomCT(dicomCT[key][1:])
         dataList.append(ct)
+
+    # import Dicom MR images
+    for key in dicomMRI:
+        logger.debug('in dataLoader readData, for key in dicomMRI {}'.format(key))
+        logger.debug(dicomMRI[key][0])
+        mri = readDicomMRI(dicomMRI[key][1:])
+        dataList.append(mri)
 
     # read MHD images
     for filePath in fileLists["MHD"]:
@@ -295,7 +319,6 @@ def listAllFiles(inputPaths, maxDepth=-1):
         "Serialized": [],
         "txt": []
     }
-
     # if inputPaths is a list of path, then iteratively call this function with each path of the list
     if(isinstance(inputPaths, list)):
         for path in inputPaths:
