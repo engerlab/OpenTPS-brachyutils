@@ -3,7 +3,17 @@ import cupy
 import cupyx
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
-from opentps.core.processing.imageProcessing.imageTransform3D import transform3DMatrixFromTranslationAndRotationsVectors
+
+from typing import Optional, Sequence, Union
+
+from opentps.core.data.images._image3D import Image3D
+from opentps.core.data.images._vectorField3D import VectorField3D
+
+from opentps.core.data._roiContour import ROIContour
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+# from opentps.core.data._transform3D import Transform3D
+
 
 ## ------------------------------------------------------------------------------------------------
 def translateData(data, translationInMM, fillValue=-1000, outputBox='keepAll'):
@@ -21,6 +31,8 @@ def translateData(data, translationInMM, fillValue=-1000, outputBox='keepAll'):
     """
 
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
+        from opentps.core.processing.imageProcessing.imageTransform3D import \
+            transform3DMatrixFromTranslationAndRotationsVectors
         affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=translationInMM)
         applyTransform3D(data, affTransformMatrix, fillValue=fillValue, outputBox=outputBox)
 
