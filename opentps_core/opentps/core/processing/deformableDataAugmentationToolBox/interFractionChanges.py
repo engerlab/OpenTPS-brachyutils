@@ -177,221 +177,221 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
     else:
         return model, organMask
 
-## ------------------------------------------------------------------------------------------------
-def rotateData(data, rotationInDeg=[0, 0, 0]):
-
-    """
-
-    Parameters
-    ----------
-    data
-    rotationInDeg
-
-    Returns
-    -------
-
-    """
-
-    rotationInDeg = np.array(rotationInDeg)
-    if not np.array(rotationInDeg == np.array([0, 0, 0])).all():
-
-        if isinstance(data, Dynamic3DModel):
-            print('Rotate the Dynamic3DModel of', rotationInDeg, 'degrees')
-            print('Rotate dynamic 3D model - midp image')
-            rotateData(data.midp, rotationInDeg=rotationInDeg)
-            
-            for field in data.deformationList:
-                if field.velocity != None:
-                    print('Rotate dynamic 3D model - velocity field')
-                    rotateData(field.velocity, rotationInDeg=rotationInDeg)
-                if field.displacement != None:
-                    print('Rotate dynamic 3D model - displacement field')
-                    rotateData(field.displacement, rotationInDeg=rotationInDeg)
-
-        if isinstance(data, Dynamic3DSequence):
-            print('Rotate the Dynamic3DSequence of', rotationInDeg, 'degrees')
-            for image3D in data.dyn3DImageList:
-                rotateData(image3D, rotationInDeg=rotationInDeg)
-
-        if isinstance(data, Image3D):
-
-            if isinstance(data, VectorField3D):
-
-                rotate3DVectorFields(data, rotationInDeg=rotationInDeg)
-                # # Plot X-Z field
-                # fig, ax = plt.subplots(3, 3)
-                # y_slice = 100
-                # compX = data.imageArray[:, y_slice, :, 0]
-                # compZ = data.imageArray[:, y_slice, :, 2]
-                # compZ[0, 0] = 1
-                # ax[1, 0].imshow(reg.deformed.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=vmin, vmax=vmax)
-                # ax[1, 0].quiver(compX.T[::1, ::1], compZ.T[::1, ::1], alpha=0.2, color='red', angles='xy', scale_units='xy', scale=1)
-                # ax[1, 0].set_xlabel('x')
-                # ax[1, 0].set_ylabel('z')
-                # ax[1, 1].imshow(diff_before.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
-                # ax[1, 1].set_xlabel('x')
-                # ax[1, 1].set_ylabel('z')
-                # ax[1, 2].imshow(diff_after.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
-                # ax[1, 2].set_xlabel('x')
-                # ax[1, 2].set_ylabel('z')
-
-            elif isinstance(data, ROIMask):
-                print('Rotate ROIMask of', rotationInDeg, 'degrees')
-                rotateData(data, rotationInDeg, cval=0)
-
-            else:
-                print('Rotate Image3D of', rotationInDeg, 'degrees')
-                rotateData(data, rotationInDeg)
-
-## --------------------------------------------------------------------------------------
-def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0], center='scannerCenter'):
-
-    """
-
-    Parameters
-    ----------
-    vectorField
-    rotationInDeg
-
-    Returns
-    -------
-
-    """
-
-    print('Apply rotation to field imageArray', rotationInDeg)
-    for i in range(3):
-        if rotationInDeg[i] != 0:
-            rotateData(vectorField, rotationInDeg, cval=0, center=center)
-
-    print('Apply rotation to field vectors', rotationInDeg)
-    r = R.from_rotvec(rotationInDeg, degrees=True)
-
-    flattenedVectorField = vectorField.imageArray.reshape((vectorField.gridSize[0] * vectorField.gridSize[1] * vectorField.gridSize[2], 3))
-    flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
-
-    vectorField.imageArray = flattenedVectorField.reshape((vectorField.gridSize[0], vectorField.gridSize[1], vectorField.gridSize[2], 3))
-
-
-## --------------------------------------------------------------------------------------
-def translateData(data, binarizeMask=True, mode='constant', translationInMM=[0, 0, 0], cval=-1000):
-
-    """
-
-    Parameters
-    ----------
-    data
-    translationInMM
-    cval
-
-    Returns
-    -------
-
-    """
-
-    if not np.array(translationInMM == np.array([0, 0, 0])).all():
-        translationInMM = np.array(translationInMM)
-
-        if isinstance(data, Dynamic3DModel):
-            print('Translate Dynamic3DModel of', translationInMM, 'mm')
-            print('Translate dynamic 3D model - midp image')
-            translateData(data.midp, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
-            
-            for field in data.deformationList:
-                if field.velocity != None:
-                    print('Translate dynamic 3D model - velocity field')
-                    translateData(field.velocity, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
-                if field.displacement != None:
-                    print('Translate dynamic 3D model - displacement field')
-                    translateData(field.displacement, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
-
-        if isinstance(data, Dynamic3DSequence):
-            print('Translate Dynamic3DSequence of', translationInMM, 'mm')
-            for image3D in data.dyn3DImageList:
-                translateData(image3D, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
-
-        if isinstance(data, Image3D):
-            
-            translationInPixels = translationInMM / data.spacing
-            if isinstance(data, VectorField3D):
-                print('Translate VectorField3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
-                translationInPixels = np.append(translationInPixels, [0])
-                data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
-                # data.imageArray = translateAndRotate3DVectorFields(data.imageArray, translation=translationInPixels)
-                # # Plot X-Z field
-                # fig, ax = plt.subplots(3, 3)
-                # y_slice = 100
-                # compX = data.imageArray[:, y_slice, :, 0]
-                # compZ = data.imageArray[:, y_slice, :, 2]
-                # compZ[0, 0] = 1
-                # ax[1, 0].imshow(reg.deformed.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=vmin, vmax=vmax)
-                # ax[1, 0].quiver(compX.T[::1, ::1], compZ.T[::1, ::1], alpha=0.2, color='red', angles='xy', scale_units='xy', scale=1)
-                # ax[1, 0].set_xlabel('x')
-                # ax[1, 0].set_ylabel('z')
-                # ax[1, 1].imshow(diff_before.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
-                # ax[1, 1].set_xlabel('x')
-                # ax[1, 1].set_ylabel('z')
-                # ax[1, 2].imshow(diff_after.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
-                # ax[1, 2].set_xlabel('x')
-                # ax[1, 2].set_ylabel('z')
-
-            elif isinstance(data, ROIMask):
-                print('Translate ROIMask of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
-                data.imageArray = data.imageArray.astype(np.float)
-                data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
-                if binarizeMask:
-                    data.imageArray = data.imageArray > 0.5
-
-            else:
-                print('Translate Image3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
-                data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels)
-
-
-
-
-
-def translateAndRotate3DVectorFields(vectorField, translation=[0, 0, 0, 0], rotation=[0, 0, 0]):
-
-    """
-
-    Parameters
-    ----------
-    vectorField
-    translation
-    rotation
-
-    Returns
-    -------
-
-    """
-
-    if not (np.array(translation == np.array([0, 0, 0])).all() and np.array(rotation == np.array([0, 0, 0])).all()):
-        print('in translateAndRotate3DVectorFields in if not')
-
-        vectorField = translateData(vectorField, translationInPixels=translation, cval=0)
-        vectorField = rotateData(vectorField, rotationInDeg=rotation, cval=0)
-
-
-    if not np.array(rotation == np.array([0, 0, 0])).all():
-        print('Apply rotation to vectors', rotation)
-
-
-        r = R.from_rotvec(rotation, degrees=True)
-
-        flattenedVectorField = vectorField.reshape((vectorField.shape[0] * vectorField.shape[1] * vectorField.shape[2], 3))
-        # voxel = 4000
-        # print(flattenedVectorField.shape)
-        # print(flattenedVectorField[voxel])
-
-        flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
-
-        # print(flattenedVectorField.shape)
-        # print(flattenedVectorField[voxel])
-
-        vectorField = flattenedVectorField.reshape((vectorField.shape[0], vectorField.shape[1], vectorField.shape[2], 3))
-        # print(vectorField.shape)
-
-    print('!!! after vector rot', vectorField[15, 10, 10])
-    # print('in translateAndRotate3DVectorFields after', vectorField[10, 10, 10])
-
-    return vectorField
-
+# ## ------------------------------------------------------------------------------------------------
+# def rotateData(data, rotationInDeg=[0, 0, 0]):
+#
+#     """
+#
+#     Parameters
+#     ----------
+#     data
+#     rotationInDeg
+#
+#     Returns
+#     -------
+#
+#     """
+#
+#     rotationInDeg = np.array(rotationInDeg)
+#     if not np.array(rotationInDeg == np.array([0, 0, 0])).all():
+#
+#         if isinstance(data, Dynamic3DModel):
+#             print('Rotate the Dynamic3DModel of', rotationInDeg, 'degrees')
+#             print('Rotate dynamic 3D model - midp image')
+#             rotateData(data.midp, rotationInDeg=rotationInDeg)
+#
+#             for field in data.deformationList:
+#                 if field.velocity != None:
+#                     print('Rotate dynamic 3D model - velocity field')
+#                     rotateData(field.velocity, rotationInDeg=rotationInDeg)
+#                 if field.displacement != None:
+#                     print('Rotate dynamic 3D model - displacement field')
+#                     rotateData(field.displacement, rotationInDeg=rotationInDeg)
+#
+#         if isinstance(data, Dynamic3DSequence):
+#             print('Rotate the Dynamic3DSequence of', rotationInDeg, 'degrees')
+#             for image3D in data.dyn3DImageList:
+#                 rotateData(image3D, rotationInDeg=rotationInDeg)
+#
+#         if isinstance(data, Image3D):
+#
+#             if isinstance(data, VectorField3D):
+#
+#                 rotate3DVectorFields(data, rotationInDeg=rotationInDeg)
+#                 # # Plot X-Z field
+#                 # fig, ax = plt.subplots(3, 3)
+#                 # y_slice = 100
+#                 # compX = data.imageArray[:, y_slice, :, 0]
+#                 # compZ = data.imageArray[:, y_slice, :, 2]
+#                 # compZ[0, 0] = 1
+#                 # ax[1, 0].imshow(reg.deformed.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=vmin, vmax=vmax)
+#                 # ax[1, 0].quiver(compX.T[::1, ::1], compZ.T[::1, ::1], alpha=0.2, color='red', angles='xy', scale_units='xy', scale=1)
+#                 # ax[1, 0].set_xlabel('x')
+#                 # ax[1, 0].set_ylabel('z')
+#                 # ax[1, 1].imshow(diff_before.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
+#                 # ax[1, 1].set_xlabel('x')
+#                 # ax[1, 1].set_ylabel('z')
+#                 # ax[1, 2].imshow(diff_after.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
+#                 # ax[1, 2].set_xlabel('x')
+#                 # ax[1, 2].set_ylabel('z')
+#
+#             elif isinstance(data, ROIMask):
+#                 print('Rotate ROIMask of', rotationInDeg, 'degrees')
+#                 rotateData(data, rotationInDeg, cval=0)
+#
+#             else:
+#                 print('Rotate Image3D of', rotationInDeg, 'degrees')
+#                 rotateData(data, rotationInDeg)
+#
+# ## --------------------------------------------------------------------------------------
+# def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0], center='scannerCenter'):
+#
+#     """
+#
+#     Parameters
+#     ----------
+#     vectorField
+#     rotationInDeg
+#
+#     Returns
+#     -------
+#
+#     """
+#
+#     print('Apply rotation to field imageArray', rotationInDeg)
+#     for i in range(3):
+#         if rotationInDeg[i] != 0:
+#             rotateData(vectorField, rotationInDeg, cval=0, center=center)
+#
+#     print('Apply rotation to field vectors', rotationInDeg)
+#     r = R.from_rotvec(rotationInDeg, degrees=True)
+#
+#     flattenedVectorField = vectorField.imageArray.reshape((vectorField.gridSize[0] * vectorField.gridSize[1] * vectorField.gridSize[2], 3))
+#     flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
+#
+#     vectorField.imageArray = flattenedVectorField.reshape((vectorField.gridSize[0], vectorField.gridSize[1], vectorField.gridSize[2], 3))
+#
+#
+# ## --------------------------------------------------------------------------------------
+# def translateData(data, binarizeMask=True, mode='constant', translationInMM=[0, 0, 0], cval=-1000):
+#
+#     """
+#
+#     Parameters
+#     ----------
+#     data
+#     translationInMM
+#     cval
+#
+#     Returns
+#     -------
+#
+#     """
+#
+#     if not np.array(translationInMM == np.array([0, 0, 0])).all():
+#         translationInMM = np.array(translationInMM)
+#
+#         if isinstance(data, Dynamic3DModel):
+#             print('Translate Dynamic3DModel of', translationInMM, 'mm')
+#             print('Translate dynamic 3D model - midp image')
+#             translateData(data.midp, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
+#
+#             for field in data.deformationList:
+#                 if field.velocity != None:
+#                     print('Translate dynamic 3D model - velocity field')
+#                     translateData(field.velocity, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
+#                 if field.displacement != None:
+#                     print('Translate dynamic 3D model - displacement field')
+#                     translateData(field.displacement, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
+#
+#         if isinstance(data, Dynamic3DSequence):
+#             print('Translate Dynamic3DSequence of', translationInMM, 'mm')
+#             for image3D in data.dyn3DImageList:
+#                 translateData(image3D, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
+#
+#         if isinstance(data, Image3D):
+#
+#             translationInPixels = translationInMM / data.spacing
+#             if isinstance(data, VectorField3D):
+#                 print('Translate VectorField3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
+#                 translationInPixels = np.append(translationInPixels, [0])
+#                 data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
+#                 # data.imageArray = translateAndRotate3DVectorFields(data.imageArray, translation=translationInPixels)
+#                 # # Plot X-Z field
+#                 # fig, ax = plt.subplots(3, 3)
+#                 # y_slice = 100
+#                 # compX = data.imageArray[:, y_slice, :, 0]
+#                 # compZ = data.imageArray[:, y_slice, :, 2]
+#                 # compZ[0, 0] = 1
+#                 # ax[1, 0].imshow(reg.deformed.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=vmin, vmax=vmax)
+#                 # ax[1, 0].quiver(compX.T[::1, ::1], compZ.T[::1, ::1], alpha=0.2, color='red', angles='xy', scale_units='xy', scale=1)
+#                 # ax[1, 0].set_xlabel('x')
+#                 # ax[1, 0].set_ylabel('z')
+#                 # ax[1, 1].imshow(diff_before.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
+#                 # ax[1, 1].set_xlabel('x')
+#                 # ax[1, 1].set_ylabel('z')
+#                 # ax[1, 2].imshow(diff_after.imageArray[:, y_slice, :].T[::1, ::1], cmap='gray', origin='upper', vmin=2 * vmin, vmax=2 * vmax)
+#                 # ax[1, 2].set_xlabel('x')
+#                 # ax[1, 2].set_ylabel('z')
+#
+#             elif isinstance(data, ROIMask):
+#                 print('Translate ROIMask of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
+#                 data.imageArray = data.imageArray.astype(np.float)
+#                 data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
+#                 if binarizeMask:
+#                     data.imageArray = data.imageArray > 0.5
+#
+#             else:
+#                 print('Translate Image3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
+#                 data.imageArray = translateData(data.imageArray, mode=mode, translationInPixels=translationInPixels)
+#
+#
+#
+#
+#
+# def translateAndRotate3DVectorFields(vectorField, translation=[0, 0, 0, 0], rotation=[0, 0, 0]):
+#
+#     """
+#
+#     Parameters
+#     ----------
+#     vectorField
+#     translation
+#     rotation
+#
+#     Returns
+#     -------
+#
+#     """
+#
+#     if not (np.array(translation == np.array([0, 0, 0])).all() and np.array(rotation == np.array([0, 0, 0])).all()):
+#         print('in translateAndRotate3DVectorFields in if not')
+#
+#         vectorField = translateData(vectorField, translationInPixels=translation, cval=0)
+#         vectorField = rotateData(vectorField, rotationInDeg=rotation, cval=0)
+#
+#
+#     if not np.array(rotation == np.array([0, 0, 0])).all():
+#         print('Apply rotation to vectors', rotation)
+#
+#
+#         r = R.from_rotvec(rotation, degrees=True)
+#
+#         flattenedVectorField = vectorField.reshape((vectorField.shape[0] * vectorField.shape[1] * vectorField.shape[2], 3))
+#         # voxel = 4000
+#         # print(flattenedVectorField.shape)
+#         # print(flattenedVectorField[voxel])
+#
+#         flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
+#
+#         # print(flattenedVectorField.shape)
+#         # print(flattenedVectorField[voxel])
+#
+#         vectorField = flattenedVectorField.reshape((vectorField.shape[0], vectorField.shape[1], vectorField.shape[2], 3))
+#         # print(vectorField.shape)
+#
+#     print('!!! after vector rot', vectorField[15, 10, 10])
+#     # print('in translateAndRotate3DVectorFields after', vectorField[10, 10, 10])
+#
+#     return vectorField
+#

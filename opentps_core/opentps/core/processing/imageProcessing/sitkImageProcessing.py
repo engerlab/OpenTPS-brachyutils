@@ -16,7 +16,8 @@ from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data._transform3D import Transform3D
-from opentps.core.processing.imageProcessing.imageTransform3D import transform3DMatrixFromTranslationAndRotationsVectors
+from opentps.core.processing.imageProcessing.imageTransform3D import \
+    transform3DMatrixFromTranslationAndRotationsVectors, parseRotCenter
 
 
 def image3DToSITK(image: Image3D, type=np.float32):
@@ -99,26 +100,6 @@ def extremePoints(image: Image3D):
     return extreme_points
 
 
-def _parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]], image: Image3D):
-    rotCenter = np.array([0, 0, 0]).astype(float)
-
-    if not (rotCenterArg is None):
-        if rotCenterArg == 'dicomOrigin':
-            rotCenter = np.array([0, 0, 0]).astype(float)
-        # elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
-        elif len(rotCenterArg) == 3 and (isinstance(rotCenterArg[0], float) or isinstance(rotCenterArg[0], int)):
-            rotCenter = rotCenterArg
-        elif rotCenterArg == 'imgCorner':
-            rotCenter = image.origin.astype(float)
-        elif rotCenterArg == 'imgCenter':
-            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
-        else:
-            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
-            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
-
-    return rotCenter
-
-
 def extremePointsAfterTransform(image: Image3D, tformMatrix: np.ndarray,
                                 rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                                 translation: Sequence[float] = [0, 0, 0]):
@@ -134,7 +115,7 @@ def extremePointsAfterTransform(image: Image3D, tformMatrix: np.ndarray,
     transform.SetMatrix(tformMatrix.flatten())
     transform.Translate(translation)
 
-    rotCenter = _parseRotCenter(rotCenter, image)
+    rotCenter = parseRotCenter(rotCenter, image)
     transform.SetCenter(rotCenter)
 
     extreme_points = extremePoints(image)
@@ -216,7 +197,7 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
     transform.SetMatrix(tformMatrix.flatten())
     transform.Translate(translation)
 
-    rotCenter = _parseRotCenter(rotCenter, image)
+    rotCenter = parseRotCenter(rotCenter, image)
     transform.SetCenter(rotCenter)
 
     if outputBox == 'keepAll':

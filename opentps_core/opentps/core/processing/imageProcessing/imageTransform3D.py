@@ -1,7 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union, Sequence
+
 if TYPE_CHECKING:
-    from opentps.core.data.images import ROIMask
+    from opentps.core.data.images import ROIMask, Image3D
 
 import logging
 from math import pi, cos, sin
@@ -10,10 +11,17 @@ from typing import Sequence, Optional, Union
 import numpy as np
 from numpy import linalg
 from scipy.spatial.transform import Rotation as R
+import copy
 
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
+# from opentps.core.data._roiContour import ROIContour
+# from opentps.core.data.images._image3D import Image3D
+from opentps.core.data.images._vectorField3D import VectorField3D
+
 from opentps.core.data._roiContour import ROIContour
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.processing.segmentation import segmentation3D
 from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
 
@@ -263,18 +271,28 @@ def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotV
     return affineTransformMatrix
 
 
+def getTtransformMatrixInPixels(transformMatrixInMM, spacing):
+
+    transformMatrixInPixels = copy.copy(transformMatrixInMM)
+    for i in range(3):
+        transformMatrixInPixels[i, 3] = transformMatrixInPixels[i, 3] /spacing[i]
+
+    return transformMatrixInPixels
+
 def translateData(data, translationInMM, outputBox='keepAll', fillValue=-1000, tryGPU=False):
 
-    if tryGPU:
-        cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
+    if outputBox == 'keepAll':
+        translateDataByChangingOrigin(data, translationInMM)
     else:
-        sitkImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
+        if tryGPU:
+            cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
+        else:
+            sitkImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
 
 def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=-1000, rotCenter='imgCenter', tryGPU=False):
 
     if tryGPU:
-        print(NotImplementedError)
-
+        cupyImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter)
     else:
         sitkImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter)
 
@@ -285,3 +303,49 @@ def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=-1000, output
         print(NotImplementedError)
     else:
         sitkImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
+
+
+def parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]], image: Image3D):
+    rotCenter = np.array([0, 0, 0]).astype(float)
+
+    if not (rotCenterArg is None):
+        if rotCenterArg == 'dicomOrigin':
+            rotCenter = np.array([0, 0, 0]).astype(float)
+        # elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
+        elif len(rotCenterArg) == 3 and (isinstance(rotCenterArg[0], float) or isinstance(rotCenterArg[0], int)):
+            rotCenter = rotCenterArg
+        elif rotCenterArg == 'imgCorner':
+            rotCenter = image.origin.astype(float)
+        elif rotCenterArg == 'imgCenter':
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+        else:
+            rotCenter = image.origin + image.gridSizeInWorldUnit / 2
+            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
+
+    return rotCenter
+
+
+def translateDataByChangingOrigin(data, translationInMM):
+
+    print('in imageTransform3D, translateDataByChangingOrigin')
+
+    if isinstance(data, Image3D):
+        data.origin += np.array(translationInMM)
+
+    elif isinstance(data, Dynamic3DSequence):
+        for image in data.dyn3DImageList:
+            image.origin += np.array(translationInMM)
+
+    elif isinstance(data, Dynamic3DModel):
+        data.midp.origin += np.array(translationInMM)
+        for df in data.deformationList:
+            if df.velocity != None:
+                df.origin += np.array(translationInMM)
+            if df.displacement != None:
+                df.origin += np.array(translationInMM)
+
+    elif isinstance(data, ROIContour):
+        print(NotImplementedError)
+
+    else:
+        print('translateDataByChangingOrigin not implemented on', type(data), 'yet. Abort')
