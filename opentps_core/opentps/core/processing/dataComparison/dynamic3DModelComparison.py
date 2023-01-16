@@ -7,6 +7,7 @@ from opentps.core.processing.imageProcessing.resampler3D import resample, resamp
 from opentps.core.processing.registration.registrationRigid import RegistrationRigid
 from opentps.core.processing.dataComparison.image3DComparison import getTranslationAndRotation
 from opentps.core.processing.dataComparison.contourComparison import getBaselineShift
+from opentps.core.data._transform3D import Transform3D
 from opentps.core.processing.dataComparison.testShrink import eval
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
 def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
@@ -21,9 +22,6 @@ def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
 
     print('Available ROIs for model 2')
     rtStruct2.print_ROINames()
-
-    print("modele 1 avant resampling", dynMod1.midp.origin, dynMod1.midp.spacing, dynMod1.midp.gridSize)
-    print("modele 2 avant resampling", dynMod2.midp.origin, dynMod2.midp.spacing, dynMod2.midp.gridSize)
     """
     plt.figure(figsize=(15,8))
     fig, ax = plt.subplots(1, 4, figsize=(15, 8))
@@ -41,17 +39,24 @@ def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
     ax[3].set_title('MidP2 apres resampling')
     plt.show()
     """
+    print("modele 1 avant resampling", dynMod1.midp.origin, dynMod1.midp.spacing, dynMod1.midp.gridSize)
+    print("modele 2 avant resampling", dynMod2.midp.origin, dynMod2.midp.spacing, dynMod2.midp.gridSize)
 
+    dynMod1 = resample(dynMod1, spacing=dynMod2.midp.spacing, origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize, fillValue=-1000)
+    #dynMod2 = resample(dynMod2, spacing=[1,1,1], origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize, fillValue=-1000)
     midP1 = dynMod1.midp
     midP2 = dynMod2.midp
+    #midP1 = resampleImage3DOnImage3D(image=midP1, fixedImage=midP2, fillValue=-1000)
 
-    midP1 = resampleImage3DOnImage3D(image=midP1, fixedImage=midP2, fillValue=-1000)
+    dynMod1.midp = midP1
+    print("new midP", dynMod1.midp.origin, dynMod1.midp.spacing, dynMod1.midp.gridSize)
     print("modele 1 apres resampling", dynMod1.midp.origin, dynMod1.midp.spacing, dynMod1.midp.gridSize)
     print("modele 2 apres resampling", dynMod2.midp.origin, dynMod2.midp.spacing, dynMod2.midp.gridSize)
+
     reg = RegistrationRigid(fixed=midP2, moving=midP1)
     transform = reg.compute()
 
-    translation, angles = getTranslationAndRotation(fixed=midP2, moving=midP1)#, transform=transform)
+    translation, angles = getTranslationAndRotation(fixed=midP2, moving=midP1, transform=transform)
     theta_x = angles[0]
     theta_y = angles[1]
     theta_z = angles[2]
@@ -70,4 +75,11 @@ def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
     baselineShift = getBaselineShift(movingMask=GTVMask1, fixedMask=GTVMask2, transform=transform)
     print("baseline shift", baselineShift)
 
-
+    print("test matrix sitk")
+    rotationArray = np.array([(180 / m.pi) * theta_x, (180 / m.pi) * theta_y, (180 / m.pi) * theta_z])
+    rotCenter = 'imgCenter'
+    transform3D = Transform3D()
+    transform3D.initFromTranslationAndRotationVectors(transVec=translation, rotVec=rotationArray)
+    transform3D.setCenter(rotCenter)
+    print(transform3D.tformMatrix)
+    print(transform3D.rotCenter)
