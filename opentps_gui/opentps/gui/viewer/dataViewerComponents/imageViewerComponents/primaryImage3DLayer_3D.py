@@ -55,6 +55,9 @@ class PrimaryImage3DLayer_3D:
         self._imageToBeSet = image
 
     def _setImage(self, image:Optional[GenericImageForViewer]):
+        if self._image == self._imageToBeSet:
+            return
+
         self._image = image
 
         self._disconnectAll()
