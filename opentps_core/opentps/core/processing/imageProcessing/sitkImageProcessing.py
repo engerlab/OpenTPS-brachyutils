@@ -17,7 +17,7 @@ from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data._transform3D import Transform3D
 from opentps.core.processing.imageProcessing.imageTransform3D import \
-    transform3DMatrixFromTranslationAndRotationsVectors, parseRotCenter
+    transform3DMatrixFromTranslationAndRotationsVectors, parseRotCenter, rotateVectorsInPlace
 
 
 def image3DToSITK(image: Image3D, type=np.float32):
@@ -245,33 +245,25 @@ def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.nd
     for i in range(3):
         compImg = Image3D.fromImage3D(vectField)
         compImg.imageArray = vectField.imageArray[:, :, :, i]
-        # import matplotlib.pyplot as plt
-        # print(compImg.origin)
-        # plt.figure()
-        # plt.imshow(compImg.imageArray[:,10,:])
-        # plt.show()
         applyTransform3DToImage3D(compImg, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
                                   translation=translation)
-        # print(compImg.origin)
-        # plt.figure()
-        # plt.imshow(compImg.imageArray[:, 10, :])
-        # plt.show()
         vectorFieldCompList.append(compImg.imageArray)
 
     vectField.imageArray = np.stack(vectorFieldCompList, axis=3)
     vectField.origin = compImg.origin
 
-    if tformMatrix.shape[1] == 4:
-        tformMatrix = tformMatrix[0:-1, 0:-1]
-
-    r = R.from_matrix(tformMatrix)
-
-    flattenedVectorField = vectField.imageArray.reshape(
-        (vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
-    flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
-
-    vectField.imageArray = flattenedVectorField.reshape(
-        (vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
+    rotateVectorsInPlace(vectField, tformMatrix)
+    # if tformMatrix.shape[1] == 4:
+    #     tformMatrix = tformMatrix[0:-1, 0:-1]
+    #
+    # r = R.from_matrix(tformMatrix)
+    #
+    # flattenedVectorField = vectField.imageArray.reshape(
+    #     (vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
+    # flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
+    #
+    # vectField.imageArray = flattenedVectorField.reshape(
+    #     (vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
 
 
 def applyTransform3DToPoint(tformMatrix: np.ndarray, pnt: np.ndarray, rotCenter: Optional[Sequence[float]] = [0, 0, 0],
