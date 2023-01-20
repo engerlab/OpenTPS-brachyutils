@@ -1,6 +1,10 @@
 import numpy as np
-import cupy
-import cupyx
+try:
+    import cupy
+    import cupyx
+    # cupy.cuda.Device(0).use()
+except:
+    print('Warning: cupy not found.')
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 
