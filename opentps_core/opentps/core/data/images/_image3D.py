@@ -184,6 +184,8 @@ class Image3D(PatientData):
         positionInMM = np.array(position)
         shiftedPosInMM = positionInMM - self.origin
         posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
+        if np.any(np.logical_or(posInVoxels < 0, posInVoxels > (self.gridSize - 1))):
+            raise ValueError('Voxel position requested is outside of the domain of the image')
 
         return posInVoxels
 
