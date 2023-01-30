@@ -1,24 +1,19 @@
 import numpy as np
+from scipy.spatial.transform import Rotation as R
+import matplotlib.pyplot as plt
+from typing import Optional, Sequence, Union
+
 try:
     import cupy
     import cupyx
-    # cupy.cuda.Device(0).use()
 except:
     print('Warning: cupy not found.')
-from scipy.spatial.transform import Rotation as R
-import matplotlib.pyplot as plt
-
-from typing import Optional, Sequence, Union
-
+    
 from opentps.core.data.images._image3D import Image3D
-
 from opentps.core.data.images._vectorField3D import VectorField3D
-
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
-# from opentps.core.data._transform3D import Transform3D
-
 
 
 
