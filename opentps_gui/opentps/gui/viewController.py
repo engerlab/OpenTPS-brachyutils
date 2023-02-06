@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from opentps.core.data.images import DoseImage, CTImage
+from opentps.core.data.images import DoseImage, CTImage, MRImage
 from opentps.core import Event
 from opentps.gui.mainWindow import MainWindow
 from opentps.gui.viewer.dataViewerComponents.profileWidget import ProfileWidget
@@ -79,6 +79,15 @@ class ViewController():
         if len(ct)>0:
             self.mainImage = ct[0]
 
+    def _displayMRIOfCurrentPatient(self):
+        if self.currentPatient is None:
+            return
+
+        mri = self.currentPatient.getPatientDataOfType(MRImage)
+        if len(mri)>0:
+            self.mainImage = mri[0]
+
+
     def _handleRemovedPatient(self, patient):
         self._activePatients.remove(patient)
         self.patientRemovedSignal.emit(patient)
@@ -149,15 +158,22 @@ class ViewController():
 
         if noPreviousPatient:
             self._displayCTOfCurrentPatient()
+            self._displayMRIOfCurrentPatient()
             self._currentPatient.patientDataAddedSignal.connect(self._handleNewCTinFirstPatient)
+            self._currentPatient.patientDataAddedSignal.connect(self._handleNewMRIinFirstPatient)
         else:
             previousPatient.patientDataAddedSignal.disconnect(self._handleNewCTinFirstPatient)
+            previousPatient.patientDataAddedSignal.disconnect(self._handleNewMRIinFirstPatient)
 
         self.currentPatientChangedSignal.emit(self._currentPatient)
 
     def _handleNewCTinFirstPatient(self, data):
         if isinstance(data, CTImage):
             self._displayCTOfCurrentPatient()
+    
+    def _handleNewMRIinFirstPatient(self, data):
+        if isinstance(data, MRImage):
+            self._displayMRIOfCurrentPatient()
 
     @property
     def dropMode(self):

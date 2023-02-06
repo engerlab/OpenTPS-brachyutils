@@ -9,7 +9,7 @@ import math as m
 import numpy as np
 
 from opentps.core.data._patientData import PatientData
-from opentps.core.processing.imageProcessing.imageTransform3D import transform3DMatrixFromTranslationAndRotationsVectors, applyTransform3D
+from opentps.core.processing.imageProcessing.imageTransform3D import transform3DMatrixFromTranslationAndRotationsVectors, applyTransform3D, translateDataByChangingOrigin
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class Transform3D(PatientData):
 
         return data
 
-    def deformData(self, data, fillValue=-1000, outputBox='keepAll', tryGPU=False):
+    def deformData(self, data, fillValue=0, outputBox='keepAll', tryGPU=False):
         """Transform 3D image using linear interpolation.
 
             Parameters
@@ -76,7 +76,10 @@ class Transform3D(PatientData):
         if fillValue == 'closest':
             fillValue = float(data.min())
 
-        applyTransform3D(data, self.tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=self.rotCenter, tryGPU=tryGPU)
+        if np.array(self.getRotationAngles() == np.array([0, 0, 0])).all() and outputBox == 'keepAll':
+            translateDataByChangingOrigin(data, self.getTranslation())
+        else:
+            applyTransform3D(data, self.tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=self.rotCenter, tryGPU=tryGPU)
 
         return data
       
