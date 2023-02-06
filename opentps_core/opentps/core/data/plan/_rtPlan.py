@@ -137,7 +137,7 @@ class RTPlan(PatientData):
     def spotXY(self) -> np.ndarray:
         xy = np.array([])
         for beam in self._beams:
-            beamXY = list(beam.spotXY)
+            beamXY = beam.spotXY
             if len(beamXY) <= 0:
                 continue
 
