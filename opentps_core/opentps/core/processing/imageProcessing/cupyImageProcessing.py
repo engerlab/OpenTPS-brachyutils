@@ -1,24 +1,19 @@
 import numpy as np
+from scipy.spatial.transform import Rotation as R
+import matplotlib.pyplot as plt
+from typing import Optional, Sequence, Union
+
 try:
     import cupy
     import cupyx
-    # cupy.cuda.Device(0).use()
 except:
     print('Warning: cupy not found.')
-from scipy.spatial.transform import Rotation as R
-import matplotlib.pyplot as plt
-
-from typing import Optional, Sequence, Union
-
+    
 from opentps.core.data.images._image3D import Image3D
-
 from opentps.core.data.images._vectorField3D import VectorField3D
-
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
-# from opentps.core.data._transform3D import Transform3D
-
 
 
 
@@ -101,7 +96,6 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll'):
         # applyTransform3D(data, affTransformMatrix, rotCenter=rotCenter, fillValue=fillValue, outputBox=outputBox)
 
 ## ------------------------------------------------------------------------------------------------
-
 def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
 
     if data.spacing[0] != data.spacing[1] or data.spacing[1] != data.spacing[2] or data.spacing[2] != data.spacing[0]:
@@ -226,7 +220,7 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
     from opentps.core.processing.imageProcessing.imageTransform3D import parseRotCenter
     rotCenter = parseRotCenter(rotCenter, image)
 
-    cupyImg = cupyx.scipy.ndimage.affine_transform(cupyImg, cupyTformMatrix, order=3, mode='constant', cval=fillValue, prefilter=True, texture_memory=False)
+    cupyImg = cupyx.scipy.ndimage.affine_transform(cupyImg, cupyTformMatrix, order=3, mode='constant', cval=fillValue)
 
     outData = cupy.asnumpy(cupyImg)
 
