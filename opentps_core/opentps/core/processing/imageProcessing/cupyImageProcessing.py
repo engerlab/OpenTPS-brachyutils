@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 from typing import Optional, Sequence, Union
@@ -14,9 +15,9 @@ from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.processing.imageProcessing.resampler3D import resample
 
-
-
+logger = logging.getLogger(__name__)
 ## ------------------------------------------------------------------------------------------------
 def translateData(data, translationInMM, fillValue=0, outputBox='keepAll'):
     """
@@ -100,8 +101,9 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll'):
 def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
 
     if data.spacing[0] != data.spacing[1] or data.spacing[1] != data.spacing[2] or data.spacing[2] != data.spacing[0]:
-        print('Warning, the rotation of data using Cupy does not take into account heterogeneous spacing for now.\n'
-              'Resampling to homogeneous spacing is recommended.')
+        initialSpacing = data.spacing
+        data = resample(data, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)])
+        logger.info("The rotation of data using Cupy does not take into account heterogeneous spacing. Resampling in homogeneous spacing is done.")
 
     cupyArray = cupy.asarray(data.imageArray)
 
@@ -124,6 +126,9 @@ def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAl
 
     data.imageArray = cupy.asnumpy(cupyArray)
 
+    if data.spacing[0] != data.spacing[1] or data.spacing[1] != data.spacing[2] or data.spacing[2] != data.spacing[0]:
+        data = resample(data, spacing=initialSpacing)
+        logger.info("Resampling in the initial spacing is done.")
     return data
 
 ## ------------------------------------------------------------------------------------------------
