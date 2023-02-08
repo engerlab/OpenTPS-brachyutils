@@ -126,7 +126,7 @@ def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAl
 
     data.imageArray = cupy.asnumpy(cupyArray)
 
-    if data.spacing[0] != data.spacing[1] or data.spacing[1] != data.spacing[2] or data.spacing[2] != data.spacing[0]:
+    if data.spacing[0] != initialSpacing[0] or data.spacing[1] != initialSpacing[1] or data.spacing[2] != initialSpacing[0]:
         data = resample(data, spacing=initialSpacing)
         logger.info("Resampling in the initial spacing is done.")
     return data
