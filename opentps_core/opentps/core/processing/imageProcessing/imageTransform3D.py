@@ -272,7 +272,7 @@ def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotV
 
 ##---------------------------------------------------------------------------------------------------
 def rotateVectorsInPlace(vectField, rotationArrayOrMatrix):
-
+    print("in vector in place", vectField.spacing)
     if rotationArrayOrMatrix.ndim == 1:
         r = R.from_rotvec(rotationArrayOrMatrix, degrees=True)
     elif rotationArrayOrMatrix.ndim == 2:

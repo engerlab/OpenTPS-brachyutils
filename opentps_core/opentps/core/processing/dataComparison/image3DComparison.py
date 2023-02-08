@@ -14,8 +14,6 @@ def getTranslationAndRotation(fixed, moving, transform=None):
         print("Compute rigid registration for the models comparison")
         reg = RegistrationRigid(fixed=fixed, moving=moving)
         transform = reg.compute()
-    else:
-        print("Use other rigid registration")
     
     translation = transform.getTranslation()
     eulerAngles = transform.getRotationAngles()

@@ -36,7 +36,6 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
     from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 
     if isinstance(data, Deformation3D):
-
         if not(data.velocity is None):
             resampleImage3D(data.velocity, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
                             outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
