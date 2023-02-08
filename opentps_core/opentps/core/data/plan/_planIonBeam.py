@@ -137,7 +137,7 @@ class PlanIonBeam:
     def spotXY(self) -> np.ndarray:
         xy = np.array([])
         for layer in self._layers:
-            layerXY = list(layer.spotXY)
+            layerXY = layer.spotXY
             if len(layerXY) <= 0:
                 continue
 
