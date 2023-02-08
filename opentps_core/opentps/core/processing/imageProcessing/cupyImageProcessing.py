@@ -96,7 +96,6 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll'):
         # applyTransform3D(data, affTransformMatrix, rotCenter=rotCenter, fillValue=fillValue, outputBox=outputBox)
 
 ## ------------------------------------------------------------------------------------------------
-
 def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
 
     if data.spacing[0] != data.spacing[1] or data.spacing[1] != data.spacing[2] or data.spacing[2] != data.spacing[0]:
@@ -221,7 +220,7 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
     from opentps.core.processing.imageProcessing.imageTransform3D import parseRotCenter
     rotCenter = parseRotCenter(rotCenter, image)
 
-    cupyImg = cupyx.scipy.ndimage.affine_transform(cupyImg, cupyTformMatrix, order=3, mode='constant', cval=fillValue, prefilter=True, texture_memory=False)
+    cupyImg = cupyx.scipy.ndimage.affine_transform(cupyImg, cupyTformMatrix, order=3, mode='constant', cval=fillValue)
 
     outData = cupy.asnumpy(cupyImg)
 

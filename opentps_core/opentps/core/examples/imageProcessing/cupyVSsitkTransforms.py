@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 def run():
 
     imgSize = [19, 19, 19]
-
+    imgSpacing = [1, 1, 2]
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed = CTImage()
-    fixed.spacing = np.array([1, 1, 1])
+    fixed.spacing = np.array(imgSpacing)
     fixed.imageArray = np.full(imgSize, -1000)
     fixed.imageArray[11:16, 6:14, 11:14] = 100.0
 
@@ -30,13 +30,14 @@ def run():
 
     fieldFixed = VectorField3D()
     fieldFixed.imageArray = np.zeros((imgSize[0], imgSize[1], imgSize[2], 3))
+    fieldFixed.spacing = np.array(imgSpacing)
     vectorList = [np.array([2, 3, 4]), np.array([0, 3, 4]), np.array([7, 3, 3]), np.array([2, 0, 0])]
     for pointIdx in range(len(pointList)):
         fieldFixed.imageArray[pointList[pointIdx][0], pointList[pointIdx][1], pointList[pointIdx][2]] = vectorList[
             pointIdx]
 
-    translation = np.array([-2, 0, -5])
-    rotation = np.array([0, 20, 0])
+    translation = np.array([-2, 0, -10])
+    rotation = np.array([0, 0, 0])
     rotCenter = 'imgCenter'
     outputBox = 'same'
 
