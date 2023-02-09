@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+from scipy.ndimage.morphology import binary_dilation
+import numpy as np
 
 def showModelWithAnimatedFields(model):
 
@@ -25,3 +26,11 @@ def showModelWithAnimatedFields(model):
     
     # anim.save('D:/anim.gif')
     plt.show()
+
+
+def show2DMaskBorder(filledMaskSlice, color='red'):
+
+    dilatedROI = binary_dilation(filledMaskSlice)
+    border = np.logical_xor(dilatedROI, filledMaskSlice)
+
+    return border

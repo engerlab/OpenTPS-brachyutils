@@ -288,7 +288,7 @@ def connectComponents(image: Image3D):
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
 
 
-def rotateData(data, rotAnglesInDeg, fillValue=-1000, rotCenter='imgCenter', outputBox='keepAll'):
+def rotateData(data, rotAnglesInDeg, fillValue=0, rotCenter='imgCenter', outputBox='keepAll'):
     if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
         affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(rotVec=rotAnglesInDeg)
         applyTransform3D(data, affTransformMatrix, rotCenter=rotCenter, fillValue=fillValue, outputBox=outputBox)
@@ -296,7 +296,7 @@ def rotateData(data, rotAnglesInDeg, fillValue=-1000, rotCenter='imgCenter', out
     ## do we want a return here ?
 
 
-def translateData(data, translationInMM, fillValue=-1000, outputBox='keepAll'):
+def translateData(data, translationInMM, fillValue=0, outputBox='keepAll'):
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
         affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=translationInMM)
         applyTransform3D(data, affTransformMatrix, fillValue=fillValue, outputBox=outputBox)
