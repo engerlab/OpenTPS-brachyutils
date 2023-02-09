@@ -24,31 +24,33 @@ from opentps.core.processing.imageProcessing.resampler3D import crop3DDataAround
 from opentps.core.processing.segmentation.segmentation3D import getBoxAroundROI
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
 from opentps.core.processing.imageProcessing.imageTransform3D import rotateData, translateData, applyTransform3D
+from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
 
 if __name__ == '__main__':
 
     ## paths selection ------------------------------------
-    basePath = 'D:/ImageData/lung/Patient_12/1/FDG1/'
-    dataPath = basePath + 'dynModAndROIs.p'
-    savingPath = basePath
+    #basePath = 'D:/ImageData/lung/Patient_12/1/FDG1/'
+    #dataPath = basePath + 'dynModAndROIs.p'
+    #savingPath = basePath
 
-    # organ = 'lung'
-    # patientFolder = 'Patient_4'
-    # patientComplement = '/1/FDG1'
-    # basePath = '/DATA2/public/'
+    organ = 'lung'
+    studyFolder = 'FDGorFAZA_study/'
+    patientFolder = 'Patient_4'
+    patientComplement = '/1/FDG1'
+    basePath = '/DATA2/public/'
     #
-    # resultFolder = '/test10/'
-    # resultDataFolder = 'data/'
+    resultFolder = '/test/'
+    resultDataFolder = 'data/'
     #
-    # dataPath = basePath + organ + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
-    # savingPath = basePath + organ + '/' + patientFolder + patientComplement + resultFolder
+    dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    savingPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + resultFolder
 
 
 
     # parameters selection ------------------------------------
-    bodyContourToUse = 'patient'
-    targetContourToUse = 'gtv t'
-    lungContourToUse = 'r lung'
+    bodyContourToUse = 'Body'
+    targetContourToUse = 'GTV T'
+    lungContourToUse = 'R lung'
 
     # bodyContourToUse = 'Body'
     # targetContourToUse = 'GTV T'
@@ -149,6 +151,9 @@ if __name__ == '__main__':
     shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
+    resampleImage3DOnImage3D(shrinkedDynMod.midp, dynModCopy.midp, inPlace=True)
+    resampleImage3DOnImage3D(shrinkedOrganMask, GTVMaskCopy, inPlace=True)
+
     print('-' * 50)
 
     stopTime = time.time()
@@ -159,14 +164,14 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(1, 4)
     fig.suptitle('Example of baseline shift, translate, rotate and shrink')
-    ax[0].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[0].imshow(np.rot90(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     # ax[0].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5, cmap='Reds')
     ax[0].set_title('Initial image')
-    ax[1].imshow(shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[1].imshow(np.rot90(shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     # ax[1].imshow(shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5, cmap='Reds')
     ax[1].set_title('After inter fraction changes')
-    ax[2].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[2].imshow(np.rot90(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     ax[2].set_title('Image difference')
-    ax[3].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[3].imshow(np.rot90(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     ax[3].set_title('Mask difference')
     plt.show()
