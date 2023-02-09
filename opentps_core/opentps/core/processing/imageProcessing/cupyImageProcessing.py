@@ -3,6 +3,7 @@ import logging
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 from typing import Optional, Sequence, Union
+import copy
 
 try:
     import cupy
@@ -37,7 +38,6 @@ def translateData(data, translationInMM, fillValue=0, outputBox='keepAll'):
         from opentps.core.processing.imageProcessing.imageTransform3D import \
             transform3DMatrixFromTranslationAndRotationsVectors
         affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=translationInMM)
-        # affTransformMatrixInPixels = getTtransformMatrixInPixels(affTransformMatrixInMM)
         applyTransform3D(data, affTransformMatrix, fillValue=fillValue, outputBox=outputBox)
 
 ## ------------------------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll'):
 def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
 
     if data.spacing[0] != data.spacing[1] or data.spacing[1] != data.spacing[2] or data.spacing[2] != data.spacing[0]:
-        initialSpacing = data.spacing
+        initialSpacing = copy.copy(data.spacing)
         data = resample(data, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)])
         logger.info("The rotation of data using Cupy does not take into account heterogeneous spacing. Resampling in homogeneous spacing is done.")
 
