@@ -206,15 +206,28 @@ class ROIMask(Image3D):
         else:
             self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
 
-    def getBinaryContourMask(self):
-        dilatedROI = ROIMask.fromImage3D(self)
-        dilatedROI.imageArray = np.array(dilatedROI.imageArray)
-        dilatedROI.dilate(radius=dilatedROI.spacing)
-        imageArray = np.logical_xor(dilatedROI.imageArray, self.imageArray)
 
-        dilatedROI.imageArray = imageArray
+    def getBinaryContourMask(self, internalBorder=False):
 
-        return dilatedROI
+        if internalBorder:
+            erodedROI = ROIMask.fromImage3D(self)
+            erodedROI.imageArray = np.array(erodedROI.imageArray)
+            erodedROI.erode(radius=erodedROI.spacing)
+            imageArray = np.logical_xor(erodedROI.imageArray, self.imageArray)
+
+            erodedROI.imageArray = imageArray
+
+            return erodedROI
+
+        else:
+            dilatedROI = ROIMask.fromImage3D(self)
+            dilatedROI.imageArray = np.array(dilatedROI.imageArray)
+            dilatedROI.dilate(radius=dilatedROI.spacing)
+            imageArray = np.logical_xor(dilatedROI.imageArray, self.imageArray)
+
+            dilatedROI.imageArray = imageArray
+
+            return dilatedROI
 
 
     def getROIContour(self):

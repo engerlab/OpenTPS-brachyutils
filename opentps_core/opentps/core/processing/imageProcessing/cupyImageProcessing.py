@@ -97,14 +97,19 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll'):
         # applyTransform3D(data, affTransformMatrix, rotCenter=rotCenter, fillValue=fillValue, outputBox=outputBox)
 
 ## ------------------------------------------------------------------------------------------------
-def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
+def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
 
-    if data.spacing[0] != data.spacing[1] or data.spacing[1] != data.spacing[2] or data.spacing[2] != data.spacing[0]:
-        initialSpacing = copy.copy(data.spacing)
-        data = resample(data, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)])
+    if image.spacing[0] != image.spacing[1] or image.spacing[1] != image.spacing[2] or image.spacing[2] != image.spacing[0]:
+        initialSpacing = copy.copy(image.spacing)
+        image = resample(image, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)])
         logger.info("The rotation of data using Cupy does not take into account heterogeneous spacing. Resampling in homogeneous spacing is done.")
 
-    cupyArray = cupy.asarray(data.imageArray)
+    imgType = copy.copy(image.imageArray.dtype)
+
+    if imgType == bool:
+        image.imageArray = image.imageArray.astype(np.float)
+
+    cupyArray = cupy.asarray(image.imageArray)
 
     if outputBox == 'same':
         reshape = False
@@ -123,12 +128,18 @@ def rotateImage3D(data, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAl
         # print('Apply rotation around Z', rotAnglesInDeg[2])
         cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[2], axes=[0, 1], reshape=reshape, mode='constant', cval=fillValue)
 
-    data.imageArray = cupy.asnumpy(cupyArray)
+    outData = cupy.asnumpy(cupyArray)
 
-    if data.spacing[0] != initialSpacing[0] or data.spacing[1] != initialSpacing[1] or data.spacing[2] != initialSpacing[0]:
-        data = resample(data, spacing=initialSpacing)
+    if imgType == bool:
+        outData[outData < 0.5] = 0
+    outData = outData.astype(imgType)
+    image.imageArray = outData
+
+    if image.spacing[0] != initialSpacing[0] or image.spacing[1] != initialSpacing[1] or image.spacing[2] != initialSpacing[2]:
+        image = resample(image, spacing=initialSpacing)
         logger.info("Resampling in the initial spacing is done.")
-    return data
+
+    return image
 
 ## ------------------------------------------------------------------------------------------------
 def rotate3DVectorFields(vectorField, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
@@ -207,7 +218,10 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
                               rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                               translation: Sequence[float] = [0, 0, 0]):
 
-    imgType = image.imageArray.dtype
+    imgType = copy.copy(image.imageArray.dtype)
+
+    if imgType == bool:
+        image.imageArray = image.imageArray.astype(np.float)
 
     if tformMatrix.shape[1] == 3:
         completeMatrix = np.zeros((4, 4))
