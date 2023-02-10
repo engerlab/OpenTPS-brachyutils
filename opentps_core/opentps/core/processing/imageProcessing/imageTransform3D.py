@@ -294,22 +294,22 @@ def getTtransformMatrixInPixels(transformMatrixInMM, spacing):
     return transformMatrixInPixels
 
 ##---------------------------------------------------------------------------------------------------
-def translateData(data, translationInMM, outputBox='keepAll', fillValue=0, tryGPU=False):
+def translateData(data, translationInMM, outputBox='keepAll', fillValue=0, tryGPU=False, interpOrder=1):
 
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
         if outputBox == 'keepAll':
             translateDataByChangingOrigin(data, translationInMM)
         else:
             if tryGPU:
-                cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
+                cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder)
             else:
                 sitkImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
 
 ##---------------------------------------------------------------------------------------------------
-def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter='dicomOrigin', tryGPU=False):
+def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter='dicomOrigin', tryGPU=False, interpOrder=1):
     if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
         if tryGPU:
-            cupyImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox)
+            cupyImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder)
         else:
             sitkImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter)
 

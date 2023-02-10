@@ -17,13 +17,14 @@ logger = logging.getLogger(__name__)
 def run():
 
     imgSize = [40, 40, 40]
-    imgSpacing = [1, 1, 1]
+    imgSpacing = [1, 1, 2]
     objectBorder = [[21, 33], [int(imgSize[1]/4), 3*int(imgSize[1]/4)], [21, 34]]
 
     translation = np.array([-10.22, 0, -14.56])
     rotation = np.array([0, 30, 0])
     rotCenter = 'imgCenter'
     outputBox = 'same'
+    interpOrder = 1
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed = CTImage()
@@ -142,9 +143,9 @@ def run():
     maskMovingSitk = copy.deepcopy(maskFixed)
 
     print('Moving with translateData')
-    translateData(movingCupy, translationInMM=translation, outputBox=outputBox, fillValue=-1000, tryGPU=True)
-    translateData(fieldMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True)
-    translateData(maskMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True)
+    translateData(movingCupy, translationInMM=translation, outputBox=outputBox, fillValue=-1000, tryGPU=True, interpOrder=interpOrder)
+    translateData(fieldMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=interpOrder)
+    translateData(maskMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=interpOrder)
 
     translateData(movingSitk, translationInMM=translation, outputBox=outputBox, fillValue=-1000)
     translateData(fieldMovingSitk, translationInMM=translation, outputBox=outputBox)
@@ -164,9 +165,9 @@ def run():
     maskMovingSitk = copy.deepcopy(maskFixed)
 
     print('Moving with rotateData')
-    rotateData(movingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter, tryGPU=True)
-    rotateData(fieldMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True)
-    rotateData(maskMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True)
+    rotateData(movingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter, tryGPU=True, interpOrder=interpOrder)
+    rotateData(fieldMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=interpOrder)
+    rotateData(maskMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=interpOrder)
 
     rotateData(movingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter)
     rotateData(fieldMovingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter)
