@@ -34,3 +34,4 @@ def show2DMaskBorder(filledMaskSlice, color='red'):
     border = np.logical_xor(dilatedROI, filledMaskSlice)
 
     return border
+

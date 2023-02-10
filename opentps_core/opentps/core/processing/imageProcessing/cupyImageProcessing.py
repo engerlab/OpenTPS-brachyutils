@@ -97,10 +97,12 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll'):
         # applyTransform3D(data, affTransformMatrix, rotCenter=rotCenter, fillValue=fillValue, outputBox=outputBox)
 
 ## ------------------------------------------------------------------------------------------------
-def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll'):
+def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll', interpOrder=1):
 
+    resampled = False
     if image.spacing[0] != image.spacing[1] or image.spacing[1] != image.spacing[2] or image.spacing[2] != image.spacing[0]:
         initialSpacing = copy.copy(image.spacing)
+        resampled = True
         image = resample(image, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)])
         logger.info("The rotation of data using Cupy does not take into account heterogeneous spacing. Resampling in homogeneous spacing is done.")
 
@@ -120,13 +122,13 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
 
     if rotAnglesInDeg[0] != 0:
         # print('Apply rotation around X', rotAnglesInDeg[0])
-        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[0], axes=[1, 2], reshape=reshape, mode='constant', cval=fillValue)
+        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[0], axes=[1, 2], order=interpOrder, reshape=reshape, mode='constant', cval=fillValue)
     if rotAnglesInDeg[1] != 0:
         # print('Apply rotation around Y', rotAnglesInDeg[1])
-        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[1], axes=[0, 2], reshape=reshape, mode='constant', cval=fillValue)
+        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[1], axes=[0, 2], order=interpOrder, reshape=reshape, mode='constant', cval=fillValue)
     if rotAnglesInDeg[2] != 0:
         # print('Apply rotation around Z', rotAnglesInDeg[2])
-        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[2], axes=[0, 1], reshape=reshape, mode='constant', cval=fillValue)
+        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[2], axes=[0, 1], order=interpOrder, reshape=reshape, mode='constant', cval=fillValue)
 
     outData = cupy.asnumpy(cupyArray)
 
@@ -135,7 +137,7 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
     outData = outData.astype(imgType)
     image.imageArray = outData
 
-    if image.spacing[0] != initialSpacing[0] or image.spacing[1] != initialSpacing[1] or image.spacing[2] != initialSpacing[2]:
+    if resampled:
         image = resample(image, spacing=initialSpacing)
         logger.info("Resampling in the initial spacing is done.")
 
@@ -216,7 +218,7 @@ def applyTransform3D(data, tformMatrix: np.ndarray, fillValue: float = 0.,
 def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue: float = 0.,
                               outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
                               rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
-                              translation: Sequence[float] = [0, 0, 0]):
+                              translation: Sequence[float] = [0, 0, 0], interpOrder=1):
 
     imgType = copy.copy(image.imageArray.dtype)
 
@@ -239,7 +241,7 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
     from opentps.core.processing.imageProcessing.imageTransform3D import parseRotCenter
     rotCenter = parseRotCenter(rotCenter, image)
 
-    cupyImg = cupyx.scipy.ndimage.affine_transform(cupyImg, cupyTformMatrix, order=3, mode='constant', cval=fillValue)
+    cupyImg = cupyx.scipy.ndimage.affine_transform(cupyImg, cupyTformMatrix, order=interpOrder, mode='constant', cval=fillValue)
 
     outData = cupy.asnumpy(cupyImg)
 

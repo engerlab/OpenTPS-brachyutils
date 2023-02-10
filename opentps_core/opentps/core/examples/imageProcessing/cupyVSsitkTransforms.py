@@ -16,18 +16,14 @@ logger = logging.getLogger(__name__)
 
 def run():
 
-    imgSize = [19, 19, 19]
-    imgSpacing = [1, 1, 2]
-    objectBorder = [[11, 16], [6, 14], [11, 14]]
+    imgSize = [40, 40, 40]
+    imgSpacing = [1, 1, 1]
+    objectBorder = [[21, 33], [int(imgSize[1]/4), 3*int(imgSize[1]/4)], [21, 34]]
 
-    translation = np.array([-2, 0, -5.34])
-    rotation = np.array([0, 0, 0])
+    translation = np.array([-10.22, 0, -14.56])
+    rotation = np.array([0, 30, 0])
     rotCenter = 'imgCenter'
     outputBox = 'same'
-
-    showImage = True
-    showField = True
-    showMask = True
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed = CTImage()
@@ -37,23 +33,72 @@ def run():
                     objectBorder[1][0]: objectBorder[1][1],
                     objectBorder[2][0]: objectBorder[2][1]] = 100.0
 
-    y_slice = 10
-    pointList = [[11, y_slice, 13], [15, y_slice, 11], [12, y_slice, 12], [11, y_slice, 11]]
+    y_slice = int(imgSize[1]/2)
+    pointList = [[objectBorder[0][0], y_slice, objectBorder[2][1]-1],
+                 [objectBorder[0][1]-1, y_slice, objectBorder[2][0]],
+                 [objectBorder[0][0]+1, y_slice, objectBorder[2][0]+1],
+                 [objectBorder[0][0], y_slice, objectBorder[2][0]]]
 
     fieldFixed = VectorField3D()
     fieldFixed.imageArray = np.zeros((imgSize[0], imgSize[1], imgSize[2], 3))
     fieldFixed.spacing = np.array(imgSpacing)
-    vectorList = [np.array([2, 3, 4]), np.array([0, 3, 4]), np.array([7, 3, 3]), np.array([2, 0, 0])]
+    vectorList = [np.array([4, 6, 8]), np.array([0, 6, 8]), np.array([14, 6, 6]), np.array([6, 0, 0])]
     for pointIdx in range(len(pointList)):
         fieldFixed.imageArray[pointList[pointIdx][0], pointList[pointIdx][1], pointList[pointIdx][2]] = vectorList[
             pointIdx]
 
     maskFixed = ROIMask()
     maskFixed.spacing = np.array(imgSpacing)
-    maskFixed.imageArray = np.zeros(imgSize).astype(np.bool)
+    maskFixed.imageArray = np.zeros(imgSize).astype(bool)
     maskFixed.imageArray[objectBorder[0][0]: objectBorder[0][1],
                         objectBorder[1][0]: objectBorder[1][1],
                         objectBorder[2][0]: objectBorder[2][1]] = True
+
+
+    ## this function is just to see the results
+    def showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
+                                  maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle, showImage=True,
+                                  showField=True, showMask=True, ):
+
+        compXFixed = fieldFixed.imageArray[:, y_slice, :, 0]
+        compZFixed = fieldFixed.imageArray[:, y_slice, :, 2]
+        compXMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 0]
+        compZMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 2]
+        compXMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 0]
+        compZMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 2]
+
+        fig, ax = plt.subplots(2, 3)
+        fig.suptitle(figTitle)
+
+        if showImage:
+            ax[0, 0].imshow(fixed.imageArray[:, y_slice, :])
+            ax[0, 1].imshow(movingCupy.imageArray[:, y_slice, :])
+            ax[0, 2].imshow(movingSitk.imageArray[:, y_slice, :])
+            ax[1, 0].imshow(movingCupy.imageArray[:, y_slice, :] - movingSitk.imageArray[:, y_slice, :])
+            ax[1, 0].set_xlabel('Img diff')
+        if showField:
+            ax[0, 0].quiver(compZFixed, compXFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[0, 1].quiver(compZMovingCupy, compXMovingCupy, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[0, 2].quiver(compZMovingSITK, compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[1, 1].quiver(compZMovingCupy - compZMovingSITK, compXMovingCupy - compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[1, 1].set_xlabel('Field diff')
+        if showMask:
+            ax[0, 0].imshow(maskFixed.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[0, 1].imshow(maskMovingCupy.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[0, 2].imshow(maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[1, 2].imshow(maskMovingCupy.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :] ^ maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[1, 2].set_xlabel('Mask diff')
+
+        ax[0, 0].set_title('Fixed')
+        ax[0, 0].set_xlabel(f"{fixed.origin}\n{fixed.spacing}\n{fixed.gridSize}")
+        ax[0, 1].set_title('Moving Cupy')
+        ax[0, 1].set_xlabel(f"{movingCupy.origin}\n{movingCupy.spacing}\n{movingCupy.gridSize}")
+        ax[0, 2].set_title('Moving SITK')
+        ax[0, 2].set_xlabel(f"{movingSitk.origin}\n{movingSitk.spacing}\n{movingSitk.gridSize}")
+
+        plt.show()
+    ## -----------------------------------------------------------------------------------------------
+
 
     ## Test using a Transform3D ---------------------------------------------------------------------
     print('-' * 40)
@@ -82,44 +127,9 @@ def run():
     fieldMovingSitk = transform3D.deformData(fieldMovingSitk, outputBox=outputBox)
     maskMovingSitk = transform3D.deformData(maskMovingSitk, outputBox=outputBox)
 
-    compXFixed = fieldFixed.imageArray[:, y_slice, :, 0]
-    compZFixed = fieldFixed.imageArray[:, y_slice, :, 2]
-    compXMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 0]
-    compZMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 2]
-    compXMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 0]
-    compZMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 2]
+    showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
+                                  maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle='Test using a Transform3D')
 
-    # Plot X-Z field
-    fig, ax = plt.subplots(2, 3)
-    fig.suptitle('Test using a Transform3D')
-
-    if showImage:
-        ax[0, 0].imshow(fixed.imageArray[:, y_slice, :])
-        ax[0, 1].imshow(movingCupy.imageArray[:, y_slice, :])
-        ax[0, 2].imshow(movingSitk.imageArray[:, y_slice, :])
-        ax[1, 0].imshow(movingCupy.imageArray[:, y_slice, :] - movingSitk.imageArray[:, y_slice, :])
-        ax[1, 0].set_title('Img diff')
-    if showField:
-        ax[0, 0].quiver(compZFixed, compXFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
-        ax[0, 1].quiver(compZMovingCupy, compXMovingCupy, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
-        ax[0, 2].quiver(compZMovingSITK, compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
-        ax[1, 1].quiver(compZMovingCupy - compZMovingSITK, compXMovingCupy - compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
-        ax[1, 1].set_title('Field diff')
-    if showMask:
-        ax[0, 0].imshow(maskFixed.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-        ax[0, 1].imshow(maskMovingCupy.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-        ax[0, 2].imshow(maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-        ax[1, 2].imshow(maskMovingCupy.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :] ^ maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-        ax[1, 2].set_title('Mask diff')
-
-    ax[0, 0].set_title('Fixed')
-    ax[0, 0].set_xlabel(f"{fixed.origin}\n{fixed.spacing}\n{fixed.gridSize}")
-    ax[0, 1].set_title('Moving Cupy')
-    ax[0, 1].set_xlabel(f"{movingCupy.origin}\n{movingCupy.spacing}\n{movingCupy.gridSize}")
-    ax[0, 2].set_title('Moving SITK')
-    ax[0, 2].set_xlabel(f"{movingSitk.origin}\n{movingSitk.spacing}\n{movingSitk.gridSize}")
-
-    plt.show()
 
     ## Test using translateData ---------------------------------------------------------------------
     print('-' * 40)
@@ -128,46 +138,20 @@ def run():
     movingSitk = copy.deepcopy(fixed)
     fieldMovingCupy = copy.deepcopy(fieldFixed)
     fieldMovingSitk = copy.deepcopy(fieldFixed)
+    maskMovingCupy = copy.deepcopy(maskFixed)
+    maskMovingSitk = copy.deepcopy(maskFixed)
 
     print('Moving with translateData')
     translateData(movingCupy, translationInMM=translation, outputBox=outputBox, fillValue=-1000, tryGPU=True)
-    translateData(fieldMovingCupy, translationInMM=translation, outputBox=outputBox, fillValue=0, tryGPU=True)
+    translateData(fieldMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True)
+    translateData(maskMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True)
 
     translateData(movingSitk, translationInMM=translation, outputBox=outputBox, fillValue=-1000)
-    translateData(fieldMovingSitk, translationInMM=translation, outputBox=outputBox, fillValue=0)
+    translateData(fieldMovingSitk, translationInMM=translation, outputBox=outputBox)
+    translateData(maskMovingSitk, translationInMM=translation, outputBox=outputBox)
 
-    compXFixed = fieldFixed.imageArray[:, y_slice, :, 0]
-    compZFixed = fieldFixed.imageArray[:, y_slice, :, 2]
-    compXMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 0]
-    compZMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 2]
-    compXMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 0]
-    compZMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 2]
-
-    # Plot X-Z field
-    fig, ax = plt.subplots(1, 4)
-    fig.suptitle('Test using translateData')
-
-    ax[0].set_title('Fixed')
-    ax[0].imshow(fixed.imageArray[:, y_slice, :])
-    ax[0].quiver(compZFixed, compXFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
-    ax[0].set_xlabel(f"{fixed.origin}\n{fixed.spacing}\n{fixed.gridSize}")
-
-    ax[1].set_title('Moving Cupy')
-    ax[1].imshow(movingCupy.imageArray[:, y_slice, :])
-    ax[1].quiver(compZMovingCupy, compXMovingCupy, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2,
-                 width=.010)
-    ax[1].set_xlabel(f"{movingCupy.origin}\n{movingCupy.spacing}\n{movingCupy.gridSize}")
-
-    ax[2].set_title('Moving SITK')
-    ax[2].imshow(movingSitk.imageArray[:, y_slice, :])
-    ax[2].quiver(compZMovingSITK, compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2,
-                 width=.010)
-    ax[2].set_xlabel(f"{movingSitk.origin}\n{movingSitk.spacing}\n{movingSitk.gridSize}")
-
-    ax[3].set_title('Img diff')
-    ax[3].imshow(movingCupy.imageArray[:, y_slice, :] - movingSitk.imageArray[:, y_slice, :])
-
-    plt.show()
+    showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
+                              maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle='Test using translateData')
 
     ## Test using rotateData ---------------------------------------------------------------------
     print('-' * 40)
@@ -176,48 +160,22 @@ def run():
     movingSitk = copy.deepcopy(fixed)
     fieldMovingCupy = copy.deepcopy(fieldFixed)
     fieldMovingSitk = copy.deepcopy(fieldFixed)
+    maskMovingCupy = copy.deepcopy(maskFixed)
+    maskMovingSitk = copy.deepcopy(maskFixed)
 
     print('Moving with rotateData')
     rotateData(movingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter, tryGPU=True)
-    rotateData(fieldMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=0, rotCenter=rotCenter, tryGPU=True)
+    rotateData(fieldMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True)
+    rotateData(maskMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True)
 
     rotateData(movingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter)
-    rotateData(fieldMovingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=0, rotCenter=rotCenter)
+    rotateData(fieldMovingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter)
+    rotateData(maskMovingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter)
 
-    compXFixed = fieldFixed.imageArray[:, y_slice, :, 0]
-    compZFixed = fieldFixed.imageArray[:, y_slice, :, 2]
-    compXMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 0]
-    compZMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 2]
-    compXMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 0]
-    compZMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 2]
-
-    # Plot X-Z field
-    fig, ax = plt.subplots(1, 4)
-    fig.suptitle('Test using rotateData')
-
-    ax[0].set_title('Fixed')
-    ax[0].imshow(fixed.imageArray[:, y_slice, :])
-    ax[0].quiver(compZFixed, compXFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
-    ax[0].set_xlabel(f"{fixed.origin}\n{fixed.spacing}\n{fixed.gridSize}")
-
-    ax[1].set_title('Moving Cupy')
-    ax[1].imshow(movingCupy.imageArray[:, y_slice, :])
-    ax[1].quiver(compZMovingCupy, compXMovingCupy, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2,
-                 width=.010)
-    ax[1].set_xlabel(f"{movingCupy.origin}\n{movingCupy.spacing}\n{movingCupy.gridSize}")
-
-    ax[2].set_title('Moving SITK')
-    ax[2].imshow(movingSitk.imageArray[:, y_slice, :])
-    ax[2].quiver(compZMovingSITK, compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2,
-                 width=.010)
-    ax[2].set_xlabel(f"{movingSitk.origin}\n{movingSitk.spacing}\n{movingSitk.gridSize}")
-
-    ax[3].set_title('Img diff')
-    ax[3].imshow(movingCupy.imageArray[:, y_slice, :] - movingSitk.imageArray[:, y_slice, :])
-
-    plt.show()
-
-
+    showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
+                              maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle='Test using rotateData')
 
 if __name__ == "__main__":
     run()
+
+
