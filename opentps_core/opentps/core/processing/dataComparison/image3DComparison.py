@@ -11,7 +11,7 @@ def getTranslationAndRotation(fixed, moving, transform=None):
             """
 
     if transform==None:
-        print("Compute rigid registration for the models comparison")
+        print("Compute rigid registration for the image comparison")
         reg = RegistrationRigid(fixed=fixed, moving=moving)
         transform = reg.compute()
     
@@ -24,4 +24,3 @@ def getTranslationAndRotation(fixed, moving, transform=None):
     anglesArray = [theta_x, theta_y, theta_z]
     return translation, anglesArray
 
-   

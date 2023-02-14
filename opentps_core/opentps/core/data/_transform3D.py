@@ -32,7 +32,7 @@ class Transform3D(PatientData):
     def setCenter(self, center):
         self.rotCenter = center
 
-    def deformImage(self, data, fillValue=-1000, outputBox='keepAll', tryGPU=False):
+    def deformImage(self, data, fillValue=0, outputBox='keepAll', tryGPU=False):
         """Transform 3D image using linear interpolation.
 
             Parameters
