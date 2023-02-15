@@ -13,6 +13,8 @@ from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctio
 
 def compareModels(dynMod1, dynMod2, structList1=[], structList2=[], fixedModel=1):
 
+    results = []
+
     if fixedModel == 1:
         fixedModel = dynMod1
         movingModel = dynMod2
@@ -28,34 +30,35 @@ def compareModels(dynMod1, dynMod2, structList1=[], structList2=[], fixedModel=1
     print('Rigid Registration between the two model midp images...')
     reg = RegistrationRigid(fixed=fixedModel.midp, moving=movingModel.midp)
     transform = reg.compute()
+    results.append(transform)
     translation = transform.getTranslation()
     rotationInDeg = transform.getRotationAngles(inDegrees=True)
     print('Rigid Registration Done')
     print('Transform3D translation:', translation)
     print('Transform3D rotation in degrees:', rotationInDeg)
 
-    movingModel = resample(movingModel, spacing=fixedModel.midp.spacing, origin=fixedModel.midp.origin, gridSize=fixedModel.midp.gridSize, fillValue=-1000)
-    movingMidPCopy = copy.copy(movingModel.midp)
-    movingMidPDeformed = transform.deformData(movingMidPCopy, outputBox='same')
+    # movingModel = resample(movingModel, spacing=fixedModel.midp.spacing, origin=fixedModel.midp.origin, gridSize=fixedModel.midp.gridSize, fillValue=-1000)
+    # movingMidPCopy = copy.copy(movingModel.midp)
+    # movingMidPDeformed = transform.deformData(movingMidPCopy, outputBox='same')
 
-    ySlice = 241
-
-    fig, ax = plt.subplots(2, 3, figsize=(15, 8))
-    fig.suptitle(f'Rigid registration results: translation={translation} / rotation in degrees={rotationInDeg}')
-    ax[0, 0].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :]))
-    ax[0, 0].set_title('Fixed')
-    ax[0, 0].set_xlabel(f"{fixedModel.midp.origin}\n{fixedModel.midp.spacing}\n{fixedModel.midp.gridSize}")
-    ax[0, 1].imshow(np.rot90(movingModel.midp.imageArray[:, ySlice, :]))
-    ax[0, 1].set_title('Moving')
-    ax[0, 1].set_xlabel(f"{movingModel.midp.origin}\n{movingModel.midp.spacing}\n{movingModel.midp.gridSize}")
-    ax[0, 2].imshow(np.rot90(movingMidPDeformed.imageArray[:, ySlice, :]))
-    ax[0, 2].set_title('Moving deformed using the Transform3D from the rigid reg')
-    ax[0, 2].set_xlabel(f"{movingMidPDeformed.origin}\n{movingMidPDeformed.spacing}\n{movingMidPDeformed.gridSize}")
-    ax[1, 0].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :] - movingModel.midp.imageArray[:, ySlice, :]))
-    ax[1, 0].set_title('MidP diff before')
-    ax[1, 1].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :] - movingMidPDeformed.imageArray[:, ySlice, :]))
-    ax[1, 1].set_title('MidP diff after')
-    plt.show()
+    # ySlice = 250
+    #
+    # fig, ax = plt.subplots(2, 3, figsize=(15, 8))
+    # fig.suptitle(f'Rigid registration results: translation={translation} / rotation in degrees={rotationInDeg}')
+    # ax[0, 0].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :]))
+    # ax[0, 0].set_title('Fixed')
+    # ax[0, 0].set_xlabel(f"{fixedModel.midp.origin}\n{fixedModel.midp.spacing}\n{fixedModel.midp.gridSize}")
+    # ax[0, 1].imshow(np.rot90(movingModel.midp.imageArray[:, ySlice, :]))
+    # ax[0, 1].set_title('Moving')
+    # ax[0, 1].set_xlabel(f"{movingModel.midp.origin}\n{movingModel.midp.spacing}\n{movingModel.midp.gridSize}")
+    # ax[0, 2].imshow(np.rot90(movingMidPDeformed.imageArray[:, ySlice, :]))
+    # ax[0, 2].set_title('Moving deformed using the Transform3D from the rigid reg')
+    # ax[0, 2].set_xlabel(f"{movingMidPDeformed.origin}\n{movingMidPDeformed.spacing}\n{movingMidPDeformed.gridSize}")
+    # ax[1, 0].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :] - movingModel.midp.imageArray[:, ySlice, :]))
+    # ax[1, 0].set_title('MidP diff before')
+    # ax[1, 1].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :] - movingMidPDeformed.imageArray[:, ySlice, :]))
+    # ax[1, 1].set_title('MidP diff after')
+    # plt.show()
 
     if len(fixedMaskNameList) != len(movingMaskNameList):
         print('The two struct lists have not the same lenght, abort the mask comparison')
@@ -66,6 +69,7 @@ def compareModels(dynMod1, dynMod2, structList1=[], structList2=[], fixedModel=1
             masksProps = compareMasks(fixedMask, movingMask)
             deformedMovingMask = transform.deformImage(movingMask)
             baselineShift = getBaselineShift(movingMask, fixedMask, transform=transform)
+            results.append(baselineShift)
+            print("baseline shift", baselineShift)
 
-    print("baseline shift", baselineShift)
-
+    return results

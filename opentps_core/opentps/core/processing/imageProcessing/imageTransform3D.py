@@ -315,10 +315,10 @@ def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter
 
 ##---------------------------------------------------------------------------------------------------
 def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0, outputBox:Optional[Union[Sequence[float], str]]='keepAll',
-    rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0], tryGPU=False):
+    rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0], tryGPU=False, interpOrder=1):
 
     if tryGPU:
-        cupyImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
+        cupyImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation, interpOrder=interpOrder)
     else:
         sitkImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
 
