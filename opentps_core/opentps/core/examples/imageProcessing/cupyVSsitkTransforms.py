@@ -26,9 +26,9 @@ def run():
     outputBox = 'same'
     # interpOrder = 1
 
-    showImage = False
+    showImage = True
     showField = True
-    showMask = False
+    showMask = True
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed = CTImage()
