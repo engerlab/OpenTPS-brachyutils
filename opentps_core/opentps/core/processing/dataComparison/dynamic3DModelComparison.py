@@ -10,6 +10,7 @@ from opentps.core.processing.dataComparison.contourComparison import getBaseline
 from opentps.core.data._transform3D import Transform3D
 from opentps.core.processing.dataComparison.testShrink import eval
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
+from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
 def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
     dynMod1 = model1.getPatientDataOfType("Dynamic3DModel")[0]
     rtStruct1 = model1.getPatientDataOfType("RTStruct")[0]
@@ -71,10 +72,13 @@ def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
     gtvContour2 = rtStruct2.getContourByName(targetContourToUse2)
     GTVMask2 = gtvContour2.getBinaryMask(origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize,
                                         spacing=dynMod2.midp.spacing)
+
+    deformedModel1 = transform.deformImage(dynMod1)
     deformedMask1 = transform.deformImage(GTVMask1)
     baselineShift = getBaselineShift(movingMask=GTVMask1, fixedMask=GTVMask2, transform=transform)
     print("baseline shift", baselineShift)
-
+    deformedModel1, deformedMask1 = applyBaselineShift(deformedModel1, deformedMask1, baselineShift, tryGPU=True)
+    """
     print("test matrix sitk")
     rotationArray = np.array([(180 / m.pi) * theta_x, (180 / m.pi) * theta_y, (180 / m.pi) * theta_z])
     rotCenter = 'imgCenter'
@@ -83,3 +87,4 @@ def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
     transform3D.setCenter(rotCenter)
     print(transform3D.tformMatrix)
     print(transform3D.rotCenter)
+    """

@@ -49,13 +49,13 @@ def getBoxAroundROI(ROI) -> Sequence[Sequence[float]]:
                   [np.min(ones[1]), np.max(ones[1])],
                   [np.min(ones[2]), np.max(ones[2])]]
 
-    print('ROI box in voxels:', boxInVoxel)
+    logger.info(f'ROI box in voxels: {boxInVoxel}')
 
     boxInUniversalCoords = []
     for i in range(3):
         boxInUniversalCoords.append([ROI.origin[i] + (boxInVoxel[i][0] * ROI.spacing[i]), ROI.origin[i] + (boxInVoxel[i][1] * ROI.spacing[i])])
 
-    print('ROI box in scanner coordinates:', boxInUniversalCoords)
+    logger.info(f'ROI box in scanner coordinates: {boxInUniversalCoords}')
 
     return boxInUniversalCoords
 

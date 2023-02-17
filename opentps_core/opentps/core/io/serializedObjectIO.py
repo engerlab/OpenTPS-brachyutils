@@ -5,7 +5,7 @@ import bz2
 import _pickle as cPickle
 import pickle
 import os
-
+import logging
 import matplotlib.pyplot as plt
 
 from opentps.core.data.plan._rtPlan import RTPlan
@@ -15,10 +15,10 @@ from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data._patient import Patient
 
+
+
+logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------------------------------
-
-
-
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
     if splitPatientsBool:
         patientList = [[patient] for patient in patientList]
@@ -42,12 +42,12 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionari
             dataList[elementIdx] = dictionarizeData(dataList[elementIdx])
     
     if compressedBool:
-        print('Compress and save serialized data structure in drive')
+        logger.info("Compress and save serialized data structure in drive")
         with bz2.BZ2File(savingPath + '_compressed.pbz2', 'w') as f:
             cPickle.dump(dataList, f)
 
     else:
-        print('Save serialized data structure in drive')
+        logger.info("Save serialized data structure in drive")
         # basic version
         # pickle.dump(self.Patients, open(savingPath + ".p", "wb"), protocol=4)
 
@@ -58,7 +58,7 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionari
             for idx in range(0, len(bytes_out), max_bytes):
                 f_out.write(bytes_out[idx:idx + max_bytes])
 
-    print('Serialized data structure saved in drive:', savingPath + ".p")
+    logger.info(f'Serialized data structure saved in drive: {savingPath} .p')
 
 
 
@@ -86,11 +86,12 @@ def loadDataStructure(filePath):
         dataList = bz2.BZ2File(filePath, 'rb')
         dataList = cPickle.load(dataList)
 
-    print('Serialized data list of', len(dataList), 'items loaded')
+    logger.info(f'Serialized data list of {len(dataList)} items loaded')
     for itemIndex, item in enumerate(dataList):
         if type(item) == dict:
             dataList[itemIndex] = unDictionarize(dataList[itemIndex])
-        print(itemIndex + 1, type(item))
+        #print(itemIndex + 1, type(item))
+        logger.info(f'{itemIndex + 1}, {type(item)}')
 
     return dataList
 

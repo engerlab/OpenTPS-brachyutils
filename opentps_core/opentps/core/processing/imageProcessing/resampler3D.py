@@ -347,13 +347,13 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
 
     for i in range(3):
         if marginInMM[i] < 0:
-            print('In crop3DDataAroundBox, negative margins not allowed')
+            logger.warning('In crop3DDataAroundBox, negative margins not allowed. The margin is set to 0.')
             marginInMM[i] = 0
 
     from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 
     if isinstance(data, Image3D):
-        print('Before crop image 3D origin and grid size:', data.origin, data.gridSize)
+        logger.info(f'Before crop image 3D origin and grid size: {data.origin}, {data.gridSize}')
 
         ## get the box in voxels with a min/max check to limit the box to the image border (that could be reached with the margin)
         XIndexInVoxels = [max(0, int(np.round((box[0][0] - marginInMM[0] - data.origin[0]) / data.spacing[0]))),
@@ -373,23 +373,22 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
 
         data.origin = origin
 
-        print('After crop origin and grid size:', data.origin, data.gridSize)
+        logger.info(f'After crop origin and grid size: {data.origin}, {data.gridSize}')
 
     elif isinstance(data, Dynamic3DModel):
-        print('Crop dynamic 3D model')
-        print('Crop dynamic 3D model - midp image')
+        logger.info('Crop dynamic 3D model')
+        logger.info('Crop dynamic 3D model - midp image')
         crop3DDataAroundBox(data.midp, box, marginInMM=marginInMM)
         for field in data.deformationList:
             if field.velocity != None:
-                print('Crop dynamic 3D model - velocity field')
+                logger.info('Crop dynamic 3D model - velocity field')
                 crop3DDataAroundBox(field.velocity, box, marginInMM=marginInMM)
             if field.displacement != None:
-                print('Crop dynamic 3D model - displacement field')
+                logger.info('Crop dynamic 3D model - displacement field')
                 crop3DDataAroundBox(field.displacement, box, marginInMM=marginInMM)
 
 
     elif isinstance(data, Dynamic3DSequence):
-        print('Crop dynamic 3D sequence')
-
+        logger.info('Crop dynamic 3D sequence')
         for image3D in data.dyn3DImageList:
             crop3DDataAroundBox(image3D, box, marginInMM=marginInMM)

@@ -61,20 +61,20 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll', interpOrd
     if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
 
         if isinstance(data, Dynamic3DModel):
-            print('Rotate the Dynamic3DModel of', rotAnglesInDeg, 'degrees')
-            print('Rotate dynamic 3D model - midp image')
+            logger.info(f'Rotate the Dynamic3DModel of {rotAnglesInDeg} degrees')
+            logger.info('Rotate dynamic 3D model - midp image')
             rotateData(data.midp, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder)
 
             for field in data.deformationList:
                 if field.velocity != None:
-                    print('Rotate dynamic 3D model - velocity field')
+                    logger.info('Rotate dynamic 3D model - velocity field')
                     rotateData(field.velocity, rotAnglesInDeg=rotAnglesInDeg, fillValue=0, outputBox=outputBox, interpOrder=interpOrder)
                 if field.displacement != None:
-                    print('Rotate dynamic 3D model - displacement field')
+                    logger.info('Rotate dynamic 3D model - displacement field')
                     rotateData(field.displacement, rotAnglesInDeg=rotAnglesInDeg, fillValue=0, outputBox=outputBox, interpOrder=interpOrder)
 
         elif isinstance(data, Dynamic3DSequence):
-            print('Rotate Dynamic3DSequence of', rotAnglesInDeg, 'degrees')
+            logger.info(f'Rotate Dynamic3DSequence of {rotAnglesInDeg} degrees')
             for image3D in data.dyn3DImageList:
                 rotateData(image3D, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder)
 
@@ -83,15 +83,15 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll', interpOrd
             from opentps.core.data.images._roiMask import ROIMask
 
             if isinstance(data, VectorField3D):
-                print('Rotate VectorField3D of', rotAnglesInDeg, 'degrees')
+                logger.info(f'Rotate VectorField3D of {rotAnglesInDeg} degrees')
                 rotate3DVectorFields(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=0,  outputBox=outputBox, interpOrder=interpOrder)
 
             elif isinstance(data, ROIMask):
-                print('Rotate ROIMask of', rotAnglesInDeg, 'degrees')
+                logger.info(f'Rotate ROIMask of {rotAnglesInDeg} degrees')
                 rotateImage3D(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=0,  outputBox=outputBox, interpOrder=interpOrder)
 
             else:
-                print('Rotate Image3D of', rotAnglesInDeg, 'degrees')
+                logger.info(f'Rotate Image3D of {rotAnglesInDeg} degrees')
                 rotateImage3D(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue,  outputBox=outputBox, interpOrder=interpOrder)
 
         # affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(rotVec=rotAnglesInDeg)
@@ -103,6 +103,8 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
     resampled = False
     if image.spacing[0] != image.spacing[1] or image.spacing[1] != image.spacing[2] or image.spacing[2] != image.spacing[0]:
         initialSpacing = copy.copy(image.spacing)
+        initialGridSize = copy.copy(image.gridSize)
+        initialOrigin = copy.copy(image.origin)
         resampled = True
         resample(image, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)], inPlace=True)
         logger.info("The rotation of data using Cupy does not take into account heterogeneous spacing. Resampling in homogeneous spacing is done.")
@@ -117,9 +119,8 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
     if outputBox == 'same':
         reshape = False
     elif outputBox == 'keepAll':
-        print('cupyImageProcessing.rotateImage3D does not work with outputBox="keepAll" for now, "same" is used instead.')
-        ## the origin of the image must be adapted in this case
-        reshape = False
+        logger.error("cupyImageProcessing.rotateImage3D does not work with outputBox=keepAll for now. Abort.")
+        raise NotImplementedError
 
     if rotAnglesInDeg[0] != 0:
         # print('Apply rotation around X', rotAnglesInDeg[0])
@@ -139,7 +140,7 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
     image.imageArray = outData
 
     if resampled:
-        resample(image, spacing=initialSpacing, inPlace=True)
+        resample(image, origin=initialOrigin, gridSize=initialGridSize, spacing=initialSpacing, inPlace=True)
         logger.info("Resampling in the initial spacing is applied after rotation")
 
 ## ------------------------------------------------------------------------------------------------
@@ -157,10 +158,10 @@ def rotate3DVectorFields(vectorField, rotAnglesInDeg=[0, 0, 0], fillValue=0, out
 
     """
 
-    print('Apply rotation to field imageArray', rotAnglesInDeg)
+    logger.info(f'Apply rotation of {rotAnglesInDeg} degrees to field imageArray')
     rotateImage3D(vectorField, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder)
 
-    print('Apply rotation to field vectors', rotAnglesInDeg)
+    logger.info(f'Apply rotation of {rotAnglesInDeg} degrees to field vectors')
     from opentps.core.processing.imageProcessing.imageTransform3D import rotateVectorsInPlace
     rotateVectorsInPlace(vectorField, -rotAnglesInDeg)
 
@@ -207,10 +208,11 @@ def applyTransform3D(data, tformMatrix: np.ndarray, fillValue: float = 0.,
                                                 rotCenter=rotCenter, translation=translation, interpOrder=interpOrder)
 
     elif isinstance(data, ROIContour):
-        print(NotImplementedError)
+        raise NotImplementedError
 
     else:
-        print('cupyImageProcessing.applyTransform3D not implemented on', type(data), 'yet. Abort')
+        logger.error(f'cupyImageProcessing.applyTransform3D not implemented on {type(data)} yet. Abort')
+        raise NotImplementedError
 
     ## do we want a return here ?
 
@@ -285,6 +287,8 @@ def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.nd
 ## ------------------------------------------------------------------------------------------------
 def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
     """
+
+    DOES NOT WORK FOR NOW
     WIP
     Parameters
     ----------
@@ -327,7 +331,6 @@ def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
     # print(coordsVector[:10])
     # np.stack((a, b), axis=-1)
 
-    print('ici')
     print(rotatedCoordsMatrix.shape)
     print(img.imageArray.shape)
     # rotatedCoordsAndValue = np.concatenate((rotatedCoordsMatrix, img.imageArray))
