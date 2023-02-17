@@ -24,7 +24,11 @@ def run():
     rotation = np.array([0, 30, 0])
     rotCenter = 'imgCenter'
     outputBox = 'same'
-    interpOrder = 1
+    # interpOrder = 1
+
+    showImage = True
+    showField = True
+    showMask = True
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed = CTImage()
@@ -57,45 +61,58 @@ def run():
 
 
     ## this function is just to see the results
-    def showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
-                                  maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle, showImage=True,
+    def showImagesAndFieldAndMask(fixed, movingCupy1, movingCupy3, movingSitk, fieldFixed, fieldMovingCupy1, fieldMovingCupy3, fieldMovingSitk,
+                                  maskFixed, maskMovingCupy1, maskMovingCupy3, maskMovingSitk, y_slice, figTitle, showImage=True,
                                   showField=True, showMask=True, ):
 
         compXFixed = fieldFixed.imageArray[:, y_slice, :, 0]
         compZFixed = fieldFixed.imageArray[:, y_slice, :, 2]
-        compXMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 0]
-        compZMovingCupy = fieldMovingCupy.imageArray[:, y_slice, :, 2]
+        compXMovingCupy1 = fieldMovingCupy1.imageArray[:, y_slice, :, 0]
+        compZMovingCupy1 = fieldMovingCupy1.imageArray[:, y_slice, :, 2]
+        compXMovingCupy3 = fieldMovingCupy3.imageArray[:, y_slice, :, 0]
+        compZMovingCupy3 = fieldMovingCupy3.imageArray[:, y_slice, :, 2]
         compXMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 0]
         compZMovingSITK = fieldMovingSitk.imageArray[:, y_slice, :, 2]
 
-        fig, ax = plt.subplots(2, 3)
+        fig, ax = plt.subplots(3, 4)
         fig.suptitle(figTitle)
 
         if showImage:
             ax[0, 0].imshow(fixed.imageArray[:, y_slice, :])
-            ax[0, 1].imshow(movingCupy.imageArray[:, y_slice, :])
-            ax[0, 2].imshow(movingSitk.imageArray[:, y_slice, :])
-            ax[1, 0].imshow(movingCupy.imageArray[:, y_slice, :] - movingSitk.imageArray[:, y_slice, :])
-            ax[1, 0].set_xlabel('Img diff')
+            ax[0, 1].imshow(movingCupy1.imageArray[:, y_slice, :])
+            ax[0, 2].imshow(movingCupy3.imageArray[:, y_slice, :])
+            ax[0, 3].imshow(movingSitk.imageArray[:, y_slice, :])
+            ax[1, 0].imshow(movingCupy1.imageArray[:, y_slice, :] - movingSitk.imageArray[:, y_slice, :])
+            ax[1, 0].set_xlabel('Img diff cupy1-sitk')
+            ax[1, 1].imshow(movingCupy1.imageArray[:, y_slice, :] - movingCupy3.imageArray[:, y_slice, :])
+            ax[1, 1].set_xlabel('Img diff cupy1-cupy3')
         if showField:
             ax[0, 0].quiver(compZFixed, compXFixed, alpha=0.5, color='red', angles='xy', scale_units='xy', scale=2, width=.010)
-            ax[0, 1].quiver(compZMovingCupy, compXMovingCupy, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
-            ax[0, 2].quiver(compZMovingSITK, compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
-            ax[1, 1].quiver(compZMovingCupy - compZMovingSITK, compXMovingCupy - compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
-            ax[1, 1].set_xlabel('Field diff')
+            ax[0, 1].quiver(compZMovingCupy1, compXMovingCupy1, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[0, 2].quiver(compZMovingCupy3, compXMovingCupy3, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[0, 3].quiver(compZMovingSITK, compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[1, 2].quiver(compZMovingCupy1 - compZMovingSITK, compXMovingCupy1 - compXMovingSITK, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[1, 2].set_xlabel('Field diff cupy1-sitk')
+            ax[1, 3].quiver(compZMovingCupy1 - compZMovingCupy3, compXMovingCupy1 - compXMovingCupy3, alpha=0.5, color='green', angles='xy', scale_units='xy', scale=2, width=.010)
+            ax[1, 3].set_xlabel('Field diff cupy1-cupy3')
         if showMask:
             ax[0, 0].imshow(maskFixed.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-            ax[0, 1].imshow(maskMovingCupy.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-            ax[0, 2].imshow(maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-            ax[1, 2].imshow(maskMovingCupy.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :] ^ maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
-            ax[1, 2].set_xlabel('Mask diff')
+            ax[0, 1].imshow(maskMovingCupy1.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[0, 2].imshow(maskMovingCupy3.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[0, 3].imshow(maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[2, 0].imshow(maskMovingCupy1.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :] ^ maskMovingSitk.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[2, 0].set_xlabel('Mask diff cupy1-sitk')
+            ax[2, 1].imshow(maskMovingCupy1.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice,:] ^ maskMovingCupy3.getBinaryContourMask(internalBorder=True).imageArray[:, y_slice, :], alpha=0.5, cmap='Reds')
+            ax[2, 1].set_xlabel('Mask diff cupy1-cupy3')
 
         ax[0, 0].set_title('Fixed')
         ax[0, 0].set_xlabel(f"{fixed.origin}\n{fixed.spacing}\n{fixed.gridSize}")
-        ax[0, 1].set_title('Moving Cupy')
-        ax[0, 1].set_xlabel(f"{movingCupy.origin}\n{movingCupy.spacing}\n{movingCupy.gridSize}")
-        ax[0, 2].set_title('Moving SITK')
-        ax[0, 2].set_xlabel(f"{movingSitk.origin}\n{movingSitk.spacing}\n{movingSitk.gridSize}")
+        ax[0, 1].set_title('Moving Cupy1')
+        ax[0, 1].set_xlabel(f"{movingCupy1.origin}\n{movingCupy1.spacing}\n{movingCupy1.gridSize}")
+        ax[0, 2].set_title('Moving Cupy3')
+        ax[0, 2].set_xlabel(f"{movingCupy3.origin}\n{movingCupy3.spacing}\n{movingCupy3.gridSize}")
+        ax[0, 3].set_title('Moving SITK')
+        ax[0, 3].set_xlabel(f"{movingSitk.origin}\n{movingSitk.spacing}\n{movingSitk.gridSize}")
 
         plt.show()
     ## -----------------------------------------------------------------------------------------------
@@ -104,11 +121,14 @@ def run():
     ## Test using a Transform3D ---------------------------------------------------------------------
     print('-' * 40)
 
-    movingCupy = copy.deepcopy(fixed)
+    movingCupy1 = copy.deepcopy(fixed)
+    movingCupy3 = copy.deepcopy(fixed)
     movingSitk = copy.deepcopy(fixed)
-    fieldMovingCupy = copy.deepcopy(fieldFixed)
+    fieldMovingCupy1 = copy.deepcopy(fieldFixed)
+    fieldMovingCupy3 = copy.deepcopy(fieldFixed)
     fieldMovingSitk = copy.deepcopy(fieldFixed)
-    maskMovingCupy = copy.deepcopy(maskFixed)
+    maskMovingCupy1 = copy.deepcopy(maskFixed)
+    maskMovingCupy3 = copy.deepcopy(maskFixed)
     maskMovingSitk = copy.deepcopy(maskFixed)
 
     ## Create a transform 3D
@@ -120,61 +140,88 @@ def run():
     print('Rotation', transform3D.getRotationAngles(inDegrees=True))
 
     print('Moving with transform3D')
-    movingCupy = transform3D.deformData(movingCupy, outputBox=outputBox, fillValue=-1000, tryGPU=True)
-    fieldMovingCupy = transform3D.deformData(fieldMovingCupy, outputBox=outputBox, tryGPU=True)
-    maskMovingCupy = transform3D.deformData(maskMovingCupy, outputBox=outputBox, tryGPU=True)
+    movingCupy1 = transform3D.deformData(movingCupy1, outputBox=outputBox, fillValue=-1000, tryGPU=True, interpOrder=1)
+    fieldMovingCupy1 = transform3D.deformData(fieldMovingCupy1, outputBox=outputBox, tryGPU=True, interpOrder=1)
+    maskMovingCupy1 = transform3D.deformData(maskMovingCupy1, outputBox=outputBox, tryGPU=True, interpOrder=1)
+
+    movingCupy3 = transform3D.deformData(movingCupy3, outputBox=outputBox, fillValue=-1000, tryGPU=True, interpOrder=3)
+    fieldMovingCupy3 = transform3D.deformData(fieldMovingCupy3, outputBox=outputBox, tryGPU=True, interpOrder=3)
+    maskMovingCupy3 = transform3D.deformData(maskMovingCupy3, outputBox=outputBox, tryGPU=True, interpOrder=3)
 
     movingSitk = transform3D.deformData(movingSitk, outputBox=outputBox, fillValue=-1000)
     fieldMovingSitk = transform3D.deformData(fieldMovingSitk, outputBox=outputBox)
     maskMovingSitk = transform3D.deformData(maskMovingSitk, outputBox=outputBox)
 
-    showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
-                                  maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle='Test using a Transform3D')
-
+    showImagesAndFieldAndMask(fixed, movingCupy1, movingCupy3, movingSitk, fieldFixed, fieldMovingCupy1,
+                              fieldMovingCupy3, fieldMovingSitk,
+                              maskFixed, maskMovingCupy1, maskMovingCupy3, maskMovingSitk, y_slice,
+                              figTitle='Test using a Transform3D', showField=showField, showImage=showImage,
+                              showMask=showMask)
 
     ## Test using translateData ---------------------------------------------------------------------
     print('-' * 40)
 
-    movingCupy = copy.deepcopy(fixed)
+    movingCupy1 = copy.deepcopy(fixed)
+    movingCupy3 = copy.deepcopy(fixed)
     movingSitk = copy.deepcopy(fixed)
-    fieldMovingCupy = copy.deepcopy(fieldFixed)
+    fieldMovingCupy1 = copy.deepcopy(fieldFixed)
+    fieldMovingCupy3 = copy.deepcopy(fieldFixed)
     fieldMovingSitk = copy.deepcopy(fieldFixed)
-    maskMovingCupy = copy.deepcopy(maskFixed)
+    maskMovingCupy1 = copy.deepcopy(maskFixed)
+    maskMovingCupy3 = copy.deepcopy(maskFixed)
     maskMovingSitk = copy.deepcopy(maskFixed)
 
     print('Moving with translateData')
-    translateData(movingCupy, translationInMM=translation, outputBox=outputBox, fillValue=-1000, tryGPU=True, interpOrder=interpOrder)
-    translateData(fieldMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=interpOrder)
-    translateData(maskMovingCupy, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=interpOrder)
+    translateData(movingCupy1, translationInMM=translation, outputBox=outputBox, fillValue=-1000, tryGPU=True, interpOrder=1)
+    translateData(fieldMovingCupy1, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=1)
+    translateData(maskMovingCupy1, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=1)
+
+    translateData(movingCupy3, translationInMM=translation, outputBox=outputBox, fillValue=-1000, tryGPU=True, interpOrder=3)
+    translateData(fieldMovingCupy3, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=3)
+    translateData(maskMovingCupy3, translationInMM=translation, outputBox=outputBox, tryGPU=True, interpOrder=3)
 
     translateData(movingSitk, translationInMM=translation, outputBox=outputBox, fillValue=-1000)
     translateData(fieldMovingSitk, translationInMM=translation, outputBox=outputBox)
     translateData(maskMovingSitk, translationInMM=translation, outputBox=outputBox)
 
-    showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
-                              maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle='Test using translateData')
+    showImagesAndFieldAndMask(fixed, movingCupy1, movingCupy3, movingSitk, fieldFixed, fieldMovingCupy1,
+                              fieldMovingCupy3, fieldMovingSitk,
+                              maskFixed, maskMovingCupy1, maskMovingCupy3, maskMovingSitk, y_slice,
+                              figTitle='Test using translateData', showField=showField, showImage=showImage,
+                              showMask=showMask)
 
     ## Test using rotateData ---------------------------------------------------------------------
     print('-' * 40)
 
-    movingCupy = copy.deepcopy(fixed)
+    movingCupy1 = copy.deepcopy(fixed)
+    movingCupy3 = copy.deepcopy(fixed)
     movingSitk = copy.deepcopy(fixed)
-    fieldMovingCupy = copy.deepcopy(fieldFixed)
+    fieldMovingCupy1 = copy.deepcopy(fieldFixed)
+    fieldMovingCupy3 = copy.deepcopy(fieldFixed)
     fieldMovingSitk = copy.deepcopy(fieldFixed)
-    maskMovingCupy = copy.deepcopy(maskFixed)
+    maskMovingCupy1 = copy.deepcopy(maskFixed)
+    maskMovingCupy3 = copy.deepcopy(maskFixed)
     maskMovingSitk = copy.deepcopy(maskFixed)
 
     print('Moving with rotateData')
-    rotateData(movingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter, tryGPU=True, interpOrder=interpOrder)
-    rotateData(fieldMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=interpOrder)
-    rotateData(maskMovingCupy, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=interpOrder)
+    rotateData(movingCupy1, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter, tryGPU=True, interpOrder=1)
+    rotateData(fieldMovingCupy1, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=1)
+    rotateData(maskMovingCupy1, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=1)
+
+    rotateData(movingCupy3, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter, tryGPU=True, interpOrder=3)
+    rotateData(fieldMovingCupy3, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=3)
+    rotateData(maskMovingCupy3, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter, tryGPU=True, interpOrder=3)
 
     rotateData(movingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, fillValue=-1000, rotCenter=rotCenter)
     rotateData(fieldMovingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter)
     rotateData(maskMovingSitk, rotAnglesInDeg=rotation, outputBox=outputBox, rotCenter=rotCenter)
 
-    showImagesAndFieldAndMask(fixed, movingCupy, movingSitk, fieldFixed, fieldMovingCupy, fieldMovingSitk,
-                              maskFixed, maskMovingCupy, maskMovingSitk, y_slice, figTitle='Test using rotateData')
+    showImagesAndFieldAndMask(fixed, movingCupy1, movingCupy3, movingSitk, fieldFixed, fieldMovingCupy1,
+                              fieldMovingCupy3, fieldMovingSitk,
+                              maskFixed, maskMovingCupy1, maskMovingCupy3, maskMovingSitk, y_slice,
+                              figTitle='Test using rotateData', showField=showField, showImage=showImage,
+                              showMask=showMask)
+
 
 if __name__ == "__main__":
     run()

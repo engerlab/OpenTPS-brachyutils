@@ -10,11 +10,12 @@ logger = logging.getLogger(__name__)
 
 class Dynamic3DModel(PatientData):
 
-    def __init__(self, name="new3DModel", midp=None, deformationList=[]):
+    def __init__(self, name="new3DModel", midp=None, deformationList=[], maskList=[]):
         super().__init__()
         self.name = name
         self.midp = midp
         self.deformationList = deformationList
+        self.maskList = maskList
 
     def copy(self):
         return Dynamic3DModel(midp=self.midp, deformationList=self.deformationList)
@@ -111,9 +112,17 @@ class Dynamic3DModel(PatientData):
         field.displacement = field.velocity.exponentiateField()
 
 
-    def dumpableCopy(self):
+    # def dumpableCopy(self):
+    #
+    #     dumpableDefList = [deformation.dumpableCopy() for deformation in self.deformationList]
+    #     dumpableModel = Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
+    #     dumpableModel.patient = self.patient
+    #     return dumpableModel
 
-        dumpableDefList = [deformation.dumpableCopy() for deformation in self.deformationList]
-        dumpableModel = Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
-        dumpableModel.patient = self.patient
-        return dumpableModel
+    def getMaskByName(self, name):
+
+        for mask in self.maskList:
+            if mask.name == name:
+                return mask
+
+        print('No mask with this name found in the model')

@@ -2,17 +2,16 @@
 __all__ = ['ROIMask']
 
 import math
-
 import numpy as np
 import scipy
-from opentps.core.processing.imageProcessing import sitkImageProcessing
 from scipy.ndimage import morphology
-
 import copy
 import logging
 
 from opentps.core.data.images._image3D import Image3D
 from opentps.core import Event
+from opentps.core.processing.imageProcessing import sitkImageProcessing
+from opentps.core.processing.imageProcessing import roiMasksProcessing
 
 
 try:
@@ -60,6 +59,9 @@ class ROIMask(Image3D):
     def centerOfMass(self) -> np.ndarray:
         COM = np.array(scipy.ndimage.measurements.center_of_mass(self._imageArray))
         return (COM * self.spacing) + self.origin
+
+    def getVolume(self, inVoxels=False):
+        return roiMasksProcessing.getMaskVolume(self, inVoxels=inVoxels)
 
     def copy(self):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)

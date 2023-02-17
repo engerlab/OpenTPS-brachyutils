@@ -1,90 +1,78 @@
 import math as m
-
 import matplotlib.pyplot as plt
 import numpy as np
+import copy
 
 from opentps.core.processing.imageProcessing.resampler3D import resample, resampleOnImage3D, resampleImage3DOnImage3D
 from opentps.core.processing.registration.registrationRigid import RegistrationRigid
 from opentps.core.processing.dataComparison.image3DComparison import getTranslationAndRotation
-from opentps.core.processing.dataComparison.contourComparison import getBaselineShift
+from opentps.core.processing.dataComparison.contourComparison import getBaselineShift, compareMasks
 from opentps.core.data._transform3D import Transform3D
 from opentps.core.processing.dataComparison.testShrink import eval
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
 from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
-def compareModels(model1, model2, targetContourToUse1, targetContourToUse2):
-    dynMod1 = model1.getPatientDataOfType("Dynamic3DModel")[0]
-    rtStruct1 = model1.getPatientDataOfType("RTStruct")[0]
 
-    print('Available ROIs for model 1')
-    rtStruct1.print_ROINames()
+def compareModels(dynMod1, dynMod2, structList1=[], structList2=[], fixedModel=1):
 
-    dynMod2 = model2.getPatientDataOfType("Dynamic3DModel")[0]
-    rtStruct2 = model2.getPatientDataOfType("RTStruct")[0]
+    results = []
 
-    print('Available ROIs for model 2')
-    rtStruct2.print_ROINames()
-    """
-    plt.figure(figsize=(15,8))
-    fig, ax = plt.subplots(1, 4, figsize=(15, 8))
-    ax[0].imshow(dynMod1.midp.imageArray[:, 241, :].T)
-    ax[0].set_title('MidP1 avant resampling')
-    ax[1].imshow(dynMod2.midp.imageArray[:, 241, :].T)
-    ax[1].set_title('MidP2 avant resampling')
+    if fixedModel == 1:
+        fixedModel = dynMod1
+        movingModel = dynMod2
+        fixedMaskNameList = structList1
+        movingMaskNameList = structList2
+    else:
+        fixedModel = dynMod2
+        movingModel = dynMod1
+        fixedMaskNameList = structList2
+        movingMaskNameList = structList1
 
-    dynMod1 = resample(dynMod1, spacing=[1, 1, 1], origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize)
-    dynMod2 = resample(dynMod2, spacing=[1, 1, 1], origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize)
-
-    ax[2].imshow(dynMod1.midp.imageArray[:, 282, :].T)
-    ax[2].set_title('MidP1 apres resampling')
-    ax[3].imshow(dynMod2.midp.imageArray[:, 282, :].T)
-    ax[3].set_title('MidP2 apres resampling')
-    plt.show()
-    """
-    print("modele 1 avant resampling", dynMod1.midp.origin, dynMod1.midp.spacing, dynMod1.midp.gridSize)
-    print("modele 2 avant resampling", dynMod2.midp.origin, dynMod2.midp.spacing, dynMod2.midp.gridSize)
-
-    dynMod1 = resample(dynMod1, spacing=dynMod2.midp.spacing, origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize, fillValue=-1000)
-    #dynMod2 = resample(dynMod2, spacing=[1,1,1], origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize, fillValue=-1000)
-    midP1 = dynMod1.midp
-    midP2 = dynMod2.midp
-    #midP1 = resampleImage3DOnImage3D(image=midP1, fixedImage=midP2, fillValue=-1000)
-
-    dynMod1.midp = midP1
-    print("new midP", dynMod1.midp.origin, dynMod1.midp.spacing, dynMod1.midp.gridSize)
-    print("modele 1 apres resampling", dynMod1.midp.origin, dynMod1.midp.spacing, dynMod1.midp.gridSize)
-    print("modele 2 apres resampling", dynMod2.midp.origin, dynMod2.midp.spacing, dynMod2.midp.gridSize)
-
-    reg = RegistrationRigid(fixed=midP2, moving=midP1)
+    print('Start comparison between the two models with fixed model:', fixedModel.name, 'and moving model:', movingModel.name)
+    print('Rigid Registration between the two model midp images...')
+    reg = RegistrationRigid(fixed=fixedModel.midp, moving=movingModel.midp)
     transform = reg.compute()
+    results.append(transform)
+    translation = transform.getTranslation()
+    rotationInDeg = transform.getRotationAngles(inDegrees=True)
+    print('Rigid Registration Done')
+    print('Transform3D translation:', translation)
+    print('Transform3D rotation in degrees:', rotationInDeg)
 
-    translation, angles = getTranslationAndRotation(fixed=midP2, moving=midP1, transform=transform)
-    theta_x = angles[0]
-    theta_y = angles[1]
-    theta_z = angles[2]
+    # movingModel = resample(movingModel, spacing=fixedModel.midp.spacing, origin=fixedModel.midp.origin, gridSize=fixedModel.midp.gridSize, fillValue=-1000)
+    # movingMidPCopy = copy.copy(movingModel.midp)
+    # movingMidPDeformed = transform.deformData(movingMidPCopy, outputBox='same')
 
-    print("Rx,Ry,Rz in degrees: ", (180 / m.pi) * theta_x,(180 / m.pi) * theta_y,(180 / m.pi) * theta_z)
-    print("translation: ", translation)
+    # ySlice = 250
+    #
+    # fig, ax = plt.subplots(2, 3, figsize=(15, 8))
+    # fig.suptitle(f'Rigid registration results: translation={translation} / rotation in degrees={rotationInDeg}')
+    # ax[0, 0].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :]))
+    # ax[0, 0].set_title('Fixed')
+    # ax[0, 0].set_xlabel(f"{fixedModel.midp.origin}\n{fixedModel.midp.spacing}\n{fixedModel.midp.gridSize}")
+    # ax[0, 1].imshow(np.rot90(movingModel.midp.imageArray[:, ySlice, :]))
+    # ax[0, 1].set_title('Moving')
+    # ax[0, 1].set_xlabel(f"{movingModel.midp.origin}\n{movingModel.midp.spacing}\n{movingModel.midp.gridSize}")
+    # ax[0, 2].imshow(np.rot90(movingMidPDeformed.imageArray[:, ySlice, :]))
+    # ax[0, 2].set_title('Moving deformed using the Transform3D from the rigid reg')
+    # ax[0, 2].set_xlabel(f"{movingMidPDeformed.origin}\n{movingMidPDeformed.spacing}\n{movingMidPDeformed.gridSize}")
+    # ax[1, 0].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :] - movingModel.midp.imageArray[:, ySlice, :]))
+    # ax[1, 0].set_title('MidP diff before')
+    # ax[1, 1].imshow(np.rot90(fixedModel.midp.imageArray[:, ySlice, :] - movingMidPDeformed.imageArray[:, ySlice, :]))
+    # ax[1, 1].set_title('MidP diff after')
+    # plt.show()
 
-    gtvContour1 = rtStruct1.getContourByName(targetContourToUse1)
-    GTVMask1 = gtvContour1.getBinaryMask(origin=dynMod1.midp.origin, gridSize=dynMod1.midp.gridSize,
-                                        spacing=dynMod1.midp.spacing)
+    if len(fixedMaskNameList) != len(movingMaskNameList):
+        print('The two struct lists have not the same lenght, abort the mask comparison')
+    else:
+        for maskIdx in range(len(fixedMaskNameList)):
+            fixedMask = fixedModel.getMaskByName(fixedMaskNameList[maskIdx])
+            movingMask = movingModel.getMaskByName(movingMaskNameList[maskIdx])
+            masksProps = compareMasks(fixedMask, movingMask)
+            deformedMovingMask = transform.deformImage(movingMask)
+            baselineShift = getBaselineShift(movingMask, fixedMask, transform=transform)
+            results.append(baselineShift)
+            print("baseline shift", baselineShift)
 
-    gtvContour2 = rtStruct2.getContourByName(targetContourToUse2)
-    GTVMask2 = gtvContour2.getBinaryMask(origin=dynMod2.midp.origin, gridSize=dynMod2.midp.gridSize,
-                                        spacing=dynMod2.midp.spacing)
 
-    deformedModel1 = transform.deformImage(dynMod1)
-    deformedMask1 = transform.deformImage(GTVMask1)
-    baselineShift = getBaselineShift(movingMask=GTVMask1, fixedMask=GTVMask2, transform=transform)
-    print("baseline shift", baselineShift)
-    deformedModel1, deformedMask1 = applyBaselineShift(deformedModel1, deformedMask1, baselineShift, tryGPU=True)
-    """
-    print("test matrix sitk")
-    rotationArray = np.array([(180 / m.pi) * theta_x, (180 / m.pi) * theta_y, (180 / m.pi) * theta_z])
-    rotCenter = 'imgCenter'
-    transform3D = Transform3D()
-    transform3D.initFromTranslationAndRotationVectors(transVec=translation, rotVec=rotationArray)
-    transform3D.setCenter(rotCenter)
-    print(transform3D.tformMatrix)
-    print(transform3D.rotCenter)
-    """
+    return results
+

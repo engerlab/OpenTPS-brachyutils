@@ -90,7 +90,8 @@ def loadDataStructure(filePath):
     for itemIndex, item in enumerate(dataList):
         if type(item) == dict:
             dataList[itemIndex] = unDictionarize(dataList[itemIndex])
-        #print(itemIndex + 1, type(item))
+        else:
+            dataList[itemIndex] = copyIntoNewObject(dataList[itemIndex])
         logger.info(f'{itemIndex + 1}, {type(item)}')
 
     return dataList
@@ -258,4 +259,14 @@ def unDictionarize(dataDict):
 
     return data
 
+def copyIntoNewObject(sourceObject):
 
+    #print('in serializedObjectIO loadINtoNewObject')
+
+    classOfSource = sourceObject.__class__
+    newObject = classOfSource()
+
+    for att, value in sourceObject.__dict__.items():
+        setattr(newObject, att, value)
+
+    return newObject
