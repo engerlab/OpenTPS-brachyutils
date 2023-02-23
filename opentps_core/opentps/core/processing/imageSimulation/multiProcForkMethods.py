@@ -84,7 +84,7 @@ def DRRsBinarizeAndCrop(image, mask, projectionAngle=0, projectionAxis='Z', outp
     del mask  # to release the RAM
 
     # return [DRR, DRRMask]
-    print('DRR projection done in', time.time() - startTime)
+    logger.info(f'DRR projection done in {time.time() - startTime}')
     return [DRR, binaryDRRMask, centerOfMass]
 
 ## ------------------------------------------------------------------------------------

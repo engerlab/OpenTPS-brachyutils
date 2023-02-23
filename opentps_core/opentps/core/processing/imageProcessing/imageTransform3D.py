@@ -294,31 +294,31 @@ def getTtransformMatrixInPixels(transformMatrixInMM, spacing):
     return transformMatrixInPixels
 
 ##---------------------------------------------------------------------------------------------------
-def translateData(data, translationInMM, outputBox='keepAll', fillValue=0, tryGPU=False, interpOrder=1):
+def translateData(data, translationInMM, outputBox='keepAll', fillValue=0, tryGPU=False, interpOrder=1, mode='constant'):
 
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
         if outputBox == 'keepAll':
             translateDataByChangingOrigin(data, translationInMM)
         else:
             if tryGPU:
-                cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder)
+                cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
             else:
                 sitkImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
 
 ##---------------------------------------------------------------------------------------------------
-def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter='dicomOrigin', tryGPU=False, interpOrder=1):
+def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter='dicomOrigin', tryGPU=False, interpOrder=1, mode='constant'):
     if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
         if tryGPU:
-            cupyImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder)
+            cupyImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
         else:
             sitkImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter)
 
 ##---------------------------------------------------------------------------------------------------
 def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0, outputBox:Optional[Union[Sequence[float], str]]='keepAll',
-    rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0], tryGPU=False, interpOrder=1):
+    rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0], tryGPU=False, interpOrder=1, mode='constant'):
 
     if tryGPU:
-        cupyImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation, interpOrder=interpOrder)
+        cupyImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation, interpOrder=interpOrder, mode=mode)
     else:
         sitkImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
 
