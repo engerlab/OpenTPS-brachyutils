@@ -239,7 +239,7 @@ def getVoxelIndexFromPosition(position, image3D):
     """
     positionInMM = np.array(position)
     shiftedPosInMM = positionInMM - image3D.origin
-    posInVoxels = np.round(np.divide(shiftedPosInMM, image3D.spacing)).astype(np.int)
+    posInVoxels = np.round(np.divide(shiftedPosInMM, image3D.spacing)).astype(int)
 
     return posInVoxels
 

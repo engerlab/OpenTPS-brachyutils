@@ -93,7 +93,7 @@ class Image2D(PatientData):
     def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
         positionInMM = np.array(position)
         shiftedPosInMM = positionInMM - self.origin
-        posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(np.int)
+        posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(int)
         if np.any(np.logical_or(posInVoxels < 0, posInVoxels > (self.gridSize - 1))):
             raise ValueError('Voxel position requested is outside of the domain of the image')
 
