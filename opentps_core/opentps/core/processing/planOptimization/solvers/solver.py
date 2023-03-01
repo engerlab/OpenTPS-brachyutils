@@ -1,5 +1,6 @@
 # Copyright (c) 2014, EPFL LTS2
 # All rights reserved.
+import json
 import logging
 import time
 
@@ -15,6 +16,7 @@ class ConvexSolver(object):
     def __init__(self, step=0.1, accel=None, **kwargs):
         self.nonSmoothFuns = []
         self.smoothFuns = []
+        self.fidCost = []
         self.sol = None
         if step < 0:
             logger.error('Step should be a positive number.')
@@ -120,12 +122,16 @@ class ConvexSolver(object):
         logger.info('Best Iteration # {} with f(x) = {}'.format(bestIter, bestCost))
 
         # Returned dictionary.
-        result = {'sol': self.sol,
+        result = {'sol': self.sol.tolist(),
                   'solver': self.__class__.__name__,
                   'crit': crit,
                   'niter': niter,
                   'time': time.time() - startTime,
                   'objective': objective}
+
+        if self.params['output'] is not None:
+            with open(self.params['output'], 'w') as f:
+                json.dump(result, f)
 
         # Solver specific post-processing (e.g. delete references).
         self.post()

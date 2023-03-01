@@ -7,6 +7,47 @@ from vtkmodules.vtkCommonDataModel import vtkPiecewiseFunction
 from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
 
 
+def uniqueColorLT(threshold:float, opacity:float, color:Sequence[float]) -> vtkCommonCore.vtkLookupTable:
+    table = vtkCommonCore.vtkLookupTable()
+    table.SetRange(threshold-1., threshold)  # image intensity range
+    table.SetValueRange(0.0, 1.0)  # from black to white
+    table.SetSaturationRange(0.0, 0.0)  # no color saturation
+    table.SetRampToLinear()
+
+    table.SetNumberOfTableValues(2)
+    table.SetTableValue(0, (0, 0, 0, 0))
+    table.SetTableValue(1, (color[0], color[1], color[2], opacity))
+
+    table.SetBelowRangeColor(0, 0, 0, 0)
+    table.SetUseBelowRangeColor(True)
+    table.SetAboveRangeColor(color[0], color[1], color[2], opacity)
+    table.SetUseAboveRangeColor(True)
+    table.Build()
+
+    return table
+
+def uniqueColorLTTo3DLT(lt:vtkCommonCore.vtkLookupTable) -> Tuple[vtkColorTransferFunction, vtkPiecewiseFunction, vtkPiecewiseFunction]:
+    rangeVal = lt.GetRange()
+    opacity = lt.GetOpacity(rangeVal[1])
+
+    volumeColor = vtkColorTransferFunction()
+    volumeScalarOpacity = vtkPiecewiseFunction()
+    volumeGradientOpacity = vtkPiecewiseFunction()
+
+    volumeScalarOpacity.AddPoint(rangeVal[0], 0.)
+    volumeScalarOpacity.AddPoint(rangeVal[1], opacity)
+
+    volumeGradientOpacity.AddPoint(rangeVal[0], 0.)
+    volumeGradientOpacity.AddPoint(rangeVal[1], opacity)
+
+    tableVals = np.linspace(rangeVal[0], rangeVal[1], lt.GetNumberOfTableValues())
+    for i in range(lt.GetNumberOfTableValues()):
+        tbVal = lt.GetTableValue(i)
+        volumeColor.AddRGBPoint(tableVals[i], tbVal[0], tbVal[1], tbVal[2])
+
+    return volumeColor, volumeScalarOpacity, volumeGradientOpacity
+
+
 def fusionLT(range:Sequence[float], opacity:float, colormap:str) -> vtkCommonCore.vtkLookupTable:
     table = vtkCommonCore.vtkLookupTable()
     table.SetRange(range[0], range[1])  # image intensity range
@@ -54,20 +95,22 @@ def grayLT(range) -> vtkCommonCore.vtkLookupTable:
 
 def fusionLTTo3DLT(lt:vtkCommonCore.vtkLookupTable) -> Tuple[vtkColorTransferFunction, vtkPiecewiseFunction, vtkPiecewiseFunction]:
     rangeVal = lt.GetRange()
+    opacity0 = lt.GetOpacity(0)
+    opacity1 = lt.GetOpacity(1)
 
     volumeColor = vtkColorTransferFunction()
     volumeScalarOpacity = vtkPiecewiseFunction()
     volumeGradientOpacity = vtkPiecewiseFunction()
 
-    volumeScalarOpacity.AddPoint(rangeVal[0], 0)
-    volumeScalarOpacity.AddPoint((rangeVal[0]+rangeVal[1])/.2, 0.0)
-    volumeScalarOpacity.AddPoint(3*(rangeVal[0] + rangeVal[1]) /4. , 0.5)
-    volumeScalarOpacity.AddPoint(rangeVal[1], 1.)
+    volumeScalarOpacity.AddPoint(rangeVal[0], opacity0)
+    volumeScalarOpacity.AddPoint((rangeVal[0]+rangeVal[1])/.2, opacity0)
+    volumeScalarOpacity.AddPoint(3*(rangeVal[0] + rangeVal[1]) /4. , opacity1/2.)
+    volumeScalarOpacity.AddPoint(rangeVal[1], opacity1)
 
-    volumeGradientOpacity.AddPoint(rangeVal[0], 0.1)
-    volumeGradientOpacity.AddPoint((rangeVal[0]+rangeVal[1])/2, 0.25)
-    volumeGradientOpacity.AddPoint(3*(rangeVal[0] + rangeVal[1]) /4. , 0.5)
-    volumeGradientOpacity.AddPoint(rangeVal[1], 1.)
+    volumeGradientOpacity.AddPoint(rangeVal[0], opacity1)
+    volumeGradientOpacity.AddPoint((rangeVal[0]+rangeVal[1])/2, opacity1/4.)
+    volumeGradientOpacity.AddPoint(3*(rangeVal[0] + rangeVal[1]) /4. , opacity1/2.)
+    volumeGradientOpacity.AddPoint(rangeVal[1], opacity1)
 
     tableVals = np.linspace(rangeVal[0], rangeVal[1], lt.GetNumberOfTableValues())
     for i in range(lt.GetNumberOfTableValues()):

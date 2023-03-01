@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def compute3DStructuralElement(radiusXYZ, spacing=[1,1,1]):
+    
     radiusXYZ = np.divide(radiusXYZ,spacing)
     filt = np.zeros((2*np.ceil(radiusXYZ[0]).astype(int)+1, 2*np.ceil(radiusXYZ[1]).astype(int)+1, 2*np.ceil(radiusXYZ[2]).astype(int)+1))
     center = (np.ceil(radiusXYZ[0]), np.ceil(radiusXYZ[1]), np.ceil(radiusXYZ[2]))

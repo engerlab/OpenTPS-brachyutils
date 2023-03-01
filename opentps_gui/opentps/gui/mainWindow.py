@@ -42,6 +42,10 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self.statusBar)
         self.statusBar.show()
 
+    @property
+    def viewController(self):
+        return self._viewControler
+
     def closeEvent(self, QCloseEvent):
         self.viewerPanel.close()
         super().closeEvent(QCloseEvent)

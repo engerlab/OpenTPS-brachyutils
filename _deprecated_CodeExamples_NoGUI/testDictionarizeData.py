@@ -13,7 +13,6 @@ from opentps.core.io.serializedObjectIO import saveSerializedObjects
 if __name__ == '__main__':
 
     # Get the current working directory, its parent, then add the testData folder at the end of it
-    testDataPath = os.path.join(Path(os.getcwd()).parent.absolute(), 'testData/')
     dataPath = "D:/openTPSTestData"
     print(dataPath)
     dataList = readData(dataPath)
@@ -26,11 +25,11 @@ if __name__ == '__main__':
     # print(dataDict.keys())
     # print(dataDict['dataType'])
 
-    dataPath = "D:/testSavedDictList"
-    saveSerializedObjects(dataList, dataPath, dictionarized=True)
+    # dataPath = "D:/testSavedDictList"
+    # saveSerializedObjects(dataList, dataPath, dictionarized=True)
 
-    dataPath = "D:/testSavedDictList.p"
-    dataList = readData(dataPath)
+    # dataPath = "D:/testSavedDictList.p"
+    # dataList = readData(dataPath)
 
     print(type(dataList[0]))
 

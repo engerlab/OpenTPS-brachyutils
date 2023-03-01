@@ -92,7 +92,7 @@ class ROITable(QTableWidget):
         self.objectivesModifiedEvent = Event()
         self.robustnessEnabledEvent = Event(bool)
 
-        self.setHorizontalHeaderLabels(['ROI', 'Robust', 'Weight', 'Dmin', 'Weight', 'Dmax', 'Weight', 'Dmean'])
+        self.setHorizontalHeaderLabels(['ROI', 'Robust', 'Weight', 'Dmin (Gy)', 'Weight', 'Dmax (Gy)', 'Weight', 'Dmean (Gy)'])
         self._roiCol = 0
         self._robustCol = 1
         self._weightMinCol = 2
@@ -124,6 +124,13 @@ class ROITable(QTableWidget):
 
     @planDesign.setter
     def planDesign(self, pd:PlanDesign):
+        if self._planDesign is None:
+            robustnessChanged = True
+        else:
+            robustnessChanged = self.robustnessEnabled != (self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED)
+        if self._planDesign==pd and (not robustnessChanged):
+            return
+
         self.updateTable()
         self._planDesign = pd
         self.robustnessEnabled = self._planDesign.robustness.selectionStrategy != Robustness.Strategies.DISABLED

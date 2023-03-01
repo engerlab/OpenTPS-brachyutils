@@ -24,9 +24,9 @@ class VectorField3D(Image3D):
     def __str__(self):
         return "Vector field: " + self.seriesInstanceUID
 
-    @classmethod
-    def fromImage3D(cls, image: Image3D):
-        return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
+    # @classmethod --> this does nothing more than the parent class for now
+    # def fromImage3D(cls, image: Image3D):
+    #     return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
 
     def copy(self):
         return VectorField3D(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)

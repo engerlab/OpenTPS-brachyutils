@@ -1,8 +1,8 @@
-import numpy as np
 from vtkmodules.vtkIOImage import vtkImageImport
 
 from opentps.core.data.images._image3D import Image3D
 from opentps.core import Event
+from opentps.gui.viewer.dataForViewer.ROIMaskForViewer import ROIMaskForViewer
 from opentps.gui.viewer.dataForViewer.dataMultiton import DataMultiton
 
 
@@ -10,7 +10,7 @@ class ROIContourForViewer(DataMultiton):
     def __init__(self, roiContour):
         super().__init__(roiContour)
 
-        if hasattr(self, '_visible'):
+        if hasattr(self, '_dataImporter'):
             return
 
         self.visibleChangedSignal = Event(bool)
@@ -19,8 +19,11 @@ class ROIContourForViewer(DataMultiton):
         self._referenceImage = None
         self._visible = False
         self._vtkOutputPort = None
+        self._mask = None
 
-        self._updateVtkOutputPort()
+        self.colorChangedSignal.connect(self._updateMask)
+
+        self._updateMask()
 
     def __setattr__(self, key, value):
         super().__setattr__(key, value)
@@ -31,8 +34,11 @@ class ROIContourForViewer(DataMultiton):
 
     @referenceImage.setter
     def referenceImage(self, image: Image3D):
+        if image==self._referenceImage:
+            return
+
         self._referenceImage = image
-        self._updateVtkOutputPort()
+        self._updateMask()
 
     @property
     def visible(self) -> bool:
@@ -41,35 +47,38 @@ class ROIContourForViewer(DataMultiton):
     @visible.setter
     def visible(self, visible: bool):
         self._visible = visible
+
+        if not(self._mask is None):
+            self._mask.visible = visible
+
         self.visibleChangedSignal.emit(self._visible)
 
-    def _updateVtkOutputPort(self):
+    def asROIMaskForViewer(self) -> ROIMaskForViewer:
+        return ROIMaskForViewer(self._mask)
+
+    def _updateMask(self):
         if self._referenceImage is None:
+            self._mask = None
             return
 
         referenceShape = self.referenceImage.gridSize
         referenceOrigin = self.referenceImage.origin
         referenceSpacing = self.referenceImage.spacing
 
-        mask = self.getBinaryMask(origin=referenceOrigin, gridSize=referenceShape,
-                                           spacing=referenceSpacing)
-        maskData = mask._imageArray
-        maskData = np.swapaxes(maskData, 0, 2)
-        num_array = np.array(np.ravel(maskData), dtype=np.float32)
+        mask = self.getBinaryMask(origin=referenceOrigin, gridSize=referenceShape, spacing=referenceSpacing)
 
-        self._dataImporter.SetNumberOfScalarComponents(1)
-        self._dataImporter.SetDataScalarTypeToFloat()
-
-        self._dataImporter.SetDataExtent(0, referenceShape[0] - 1, 0, referenceShape[1] - 1, 0, referenceShape[2] - 1)
-        self._dataImporter.SetWholeExtent(0, referenceShape[0] - 1, 0, referenceShape[1] - 1, 0, referenceShape[2] - 1)
-        self._dataImporter.SetDataSpacing(referenceSpacing[0], referenceSpacing[1], referenceSpacing[2])
-        self._dataImporter.SetDataOrigin(referenceOrigin[0], referenceOrigin[1], referenceOrigin[2])
-
-        data_string = num_array.tobytes()
-        self._dataImporter.CopyImportVoidPointer(data_string, len(data_string))
-
-        self._vtkOutputPort = self._dataImporter.GetOutputPort()
+        if self._mask is None:
+            self._mask = mask
+        else:
+            self._mask.color = mask.color
+            self._mask.imageArray = mask.imageArray
+            self._mask.origin = mask.origin
+            self._mask.spacing = mask.spacing
+            self._mask.name = mask.name
 
     @property
     def vtkOutputPort(self):
-        return self._vtkOutputPort
+        if self._mask is None:
+            return None
+
+        return self.asROIMaskForViewer().vtkOutputPort

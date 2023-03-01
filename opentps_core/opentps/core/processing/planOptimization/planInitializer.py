@@ -1,3 +1,4 @@
+import logging
 import math
 
 import numpy as np
@@ -10,6 +11,7 @@ from opentps.core.processing.C_libraries.libRayTracing_wrapper import transport_
     transport_spots_inside_target
 from opentps.core.processing.rangeEnergy import energyToRange, rangeToEnergy
 
+logger = logging.getLogger(__name__)
 
 class BeamInitializer:
     def __init__(self):
@@ -174,7 +176,9 @@ class PlanInitializer:
         self._beamInitializer.distalLayers = distalLayers
 
         from opentps.core.data.images._rspImage import RSPImage
+        logger.info('Target is dilated using a margin of {} mm. This process might take some time.'.format(targetMargin))
         roiDilated = ROIMask.fromImage3D(self.targetMask, patient=None)
+
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)

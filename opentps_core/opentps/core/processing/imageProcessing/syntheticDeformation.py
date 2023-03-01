@@ -12,8 +12,8 @@ from opentps.core.processing.segmentation.segmentationCT import compute3DStructu
 logger = logging.getLogger(__name__)
 
 
-def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
-
+def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True, binarizeMask = True):
+    
     if not np.array(shift == np.array([0, 0, 0])).all(): ## check if there is a shift to apply
 
         if isinstance(inputData, Dynamic3DModel):
@@ -33,6 +33,7 @@ def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
         maskFixed = maskMoving.copy()
         for i in range(3):
             maskFixed.origin[i] += shift[i]
+        
         resampler3D.resampleImage3DOnImage3D(maskFixed, image, inPlace=True, fillValue=0)
         maskFixed._imageArray = np.logical_or(maskFixed.imageArray, maskMoving.imageArray)
 
@@ -54,8 +55,10 @@ def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
             for i in range(len(model.deformationList)):
                 model.deformationList[i].setVelocity(deformation.deformImage(inputData.deformationList[i].velocity, fillValue='closest', tryGPU=tryGPU))
             model.midp = deformation.deformImage(image, fillValue='closest', tryGPU=tryGPU)
-            return model, deformation.deformImage(mask, fillValue='closest', tryGPU=tryGPU)
+            print("1")
+            return model, deformation.deformImage(mask, binarizeMask=binarizeMask, fillValue='closest', tryGPU=tryGPU)
         else:
+            print("2")
             return deformation.deformImage(image, fillValue='closest', tryGPU=tryGPU), deformation.deformImage(mask, fillValue='closest', tryGPU=tryGPU)
     else:
         if isinstance(inputData, Dynamic3DModel):

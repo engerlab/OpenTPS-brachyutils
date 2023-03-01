@@ -7,7 +7,7 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.processing.imageProcessing.cupyImageProcessing import rotateCupy, translateCupy
-from opentps.core.processing.imageProcessing.sitkImageProcessing import rotateImage3DSitk
+from opentps.core.processing.imageProcessing.sitkImageProcessing import rotateData
 
 import copy
 from skimage.morphology import rectangle
@@ -237,19 +237,14 @@ def rotateData(data, rotationInDeg=[0, 0, 0]):
 
             elif isinstance(data, ROIMask):
                 print('Rotate ROIMask of', rotationInDeg, 'degrees')
-                for i in range(3):
-                    if rotationInDeg[i] != 0:
-                        rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i, cval=0)
+                rotateData(data, rotationInDeg, cval=0)
 
             else:
                 print('Rotate Image3D of', rotationInDeg, 'degrees')
-                # data.imageArray = rotateCupy(data.imageArray, rotationInDeg=rotationInDeg)
-                for i in range(3):
-                    if rotationInDeg[i] != 0:
-                        rotateImage3DSitk(data, rotAngleInDeg=rotationInDeg[i], rotAxis=i)
+                rotateData(data, rotationInDeg)
 
 ## --------------------------------------------------------------------------------------
-def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
+def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0], center='scannerCenter'):
 
     """
 
@@ -266,21 +261,19 @@ def rotate3DVectorFields(vectorField, rotationInDeg=[0, 0, 0]):
     print('Apply rotation to field imageArray', rotationInDeg)
     for i in range(3):
         if rotationInDeg[i] != 0:
-            rotateImage3DSitk(vectorField, rotAngleInDeg=rotationInDeg[i], rotAxis=i, cval=0)
+            rotateData(vectorField, rotationInDeg, cval=0, center=center)
 
     print('Apply rotation to field vectors', rotationInDeg)
-
     r = R.from_rotvec(rotationInDeg, degrees=True)
 
     flattenedVectorField = vectorField.imageArray.reshape((vectorField.gridSize[0] * vectorField.gridSize[1] * vectorField.gridSize[2], 3))
-
     flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
 
     vectorField.imageArray = flattenedVectorField.reshape((vectorField.gridSize[0], vectorField.gridSize[1], vectorField.gridSize[2], 3))
 
 
 ## --------------------------------------------------------------------------------------
-def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
+def translateData(data, binarizeMask=True, mode='constant', translationInMM=[0, 0, 0], cval=-1000):
 
     """
 
@@ -296,35 +289,33 @@ def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
     """
 
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
-
         translationInMM = np.array(translationInMM)
 
         if isinstance(data, Dynamic3DModel):
             print('Translate Dynamic3DModel of', translationInMM, 'mm')
             print('Translate dynamic 3D model - midp image')
-            translateData(data.midp, translationInMM=translationInMM)
-
+            translateData(data.midp, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
+            
             for field in data.deformationList:
                 if field.velocity != None:
                     print('Translate dynamic 3D model - velocity field')
-                    translateData(field.velocity, translationInMM=translationInMM)
+                    translateData(field.velocity, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
                 if field.displacement != None:
                     print('Translate dynamic 3D model - displacement field')
-                    translateData(field.displacement,  translationInMM=translationInMM)
+                    translateData(field.displacement, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
 
         if isinstance(data, Dynamic3DSequence):
             print('Translate Dynamic3DSequence of', translationInMM, 'mm')
             for image3D in data.dyn3DImageList:
-                translateData(image3D, translationInMM=translationInMM)
+                translateData(image3D, binarizeMask=binarizeMask, mode=mode, translationInMM=translationInMM)
 
         if isinstance(data, Image3D):
-
+            
             translationInPixels = translationInMM / data.spacing
-
             if isinstance(data, VectorField3D):
                 print('Translate VectorField3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
                 translationInPixels = np.append(translationInPixels, [0])
-                data.imageArray = translateCupy(data.imageArray, translationInPixels=translationInPixels, cval=0)
+                data.imageArray = translateCupy(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
                 # data.imageArray = translateAndRotate3DVectorFields(data.imageArray, translation=translationInPixels)
                 # # Plot X-Z field
                 # fig, ax = plt.subplots(3, 3)
@@ -346,12 +337,13 @@ def translateData(data, translationInMM=[0, 0, 0], cval=-1000):
             elif isinstance(data, ROIMask):
                 print('Translate ROIMask of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
                 data.imageArray = data.imageArray.astype(np.float)
-                data.imageArray = translateCupy(data.imageArray, translationInPixels=translationInPixels, cval=0)
-                data.imageArray = data.imageArray > 0.5
+                data.imageArray = translateCupy(data.imageArray, mode=mode, translationInPixels=translationInPixels, cval=0)
+                if binarizeMask:
+                    data.imageArray = data.imageArray > 0.5
 
             else:
                 print('Translate Image3D of', translationInMM, 'mm, --> translation In Pixels', translationInPixels, 'pixels')
-                data.imageArray = translateCupy(data.imageArray, translationInPixels=translationInPixels)
+                data.imageArray = translateCupy(data.imageArray, mode=mode, translationInPixels=translationInPixels)
 
 
 

@@ -1,6 +1,7 @@
 import os
 import sys
 
+from opentps.core.io.dicomIO import writeRTPlan
 from opentps.core.processing.planOptimization.tools import evaluateClinical
 
 sys.path.append('..')
@@ -93,7 +94,7 @@ def run():
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
         plan.planDesign.beamlets = beamlets
         beamlets.storeOnFS(os.path.join(output_path, "BeamletMatrix_" + plan.seriesInstanceUID + ".blm"))
-
+        # Save plan with initial spot weights in serialized format (OpenTPS format)
         saveRTPlan(plan, plan_file)
 
     plan.planDesign.objectives = ObjectivesList()
@@ -102,12 +103,17 @@ def run():
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
 
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
+    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
-    # Save plan with updated spot weights
-    saveRTPlan(plan, plan_file)
+    # Save plan with updated spot weights in serialized format (OpenTPS format)
+    plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
+    saveRTPlan(plan, plan_file_optimized)
+    # Save plan with updated spot weights in dicom format
+    plan.patient = patient
+    dcm_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTPlan(plan, dcm_file)
 
     # MCsquare simulation
     # mc2.nbPrimaries = 1e7
@@ -136,7 +142,7 @@ def run():
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
     # Display dose
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     ax[0].axes.get_xaxis().set_visible(False)
     ax[0].axes.get_yaxis().set_visible(False)
     ax[0].imshow(img_ct, cmap='gray')
@@ -146,8 +152,19 @@ def run():
     ax[1].plot(target_DVH.histogram[0], target_DVH.histogram[1], label=target_DVH.name)
     ax[1].set_xlabel("Dose (Gy)")
     ax[1].set_ylabel("Volume (%)")
-    plt.grid(True)
-    plt.legend()
+    ax[1].grid(True)
+    ax[1].legend()
+
+    convData = solver.getConvergenceData()
+    ax[2].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
+               label='Fidelity')
+    ax[2].set_xlabel('Time (s)')
+    ax[2].set_ylabel('Cost')
+    ax[2].set_yscale('symlog')
+    ax2 = ax[2].twiny()
+    ax2.set_xlabel('Iterations')
+    ax2.set_xlim(0, convData['nIter'])
+    ax[2].grid(True)
 
     plt.show()
 

@@ -1,9 +1,8 @@
 import logging
-import sys
+import unittest
 
 from PyQt5.QtWidgets import QApplication
 
-from opentps.core import loggingConfig
 from opentps.core.data import PatientList
 from opentps.core.utils.programSettings import ProgramSettings
 from opentps.gui.viewController import ViewController
@@ -11,13 +10,10 @@ from opentps.gui.viewController import ViewController
 
 def viewController():
     # instantiate the main opentps_core window
-    viewController = ViewController(patientList)
-    viewController.mainConfig = mainConfig
+    _viewController = ViewController(patientList)
+    _viewController.mainConfig = mainConfig
 
-    return viewController
-
-
-options = loggingConfig.configure(sys.argv[1:])
+    return _viewController
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +26,29 @@ app = QApplication.instance()
 if not app:
     app = QApplication([])
 
-
-def run():
+def runWithMainWindow(mainWindow):
     # options = parseArgs(sys.argv[1:])
     logger.info("Start opentps gui")
 
-    _viewController = viewController()
-    _viewController.mainWindow.show()
+    mainWindow.show()
     app.exec_()
 
-    _viewController.mainWindow.close()
-    #del _viewController.mainWindow
+    mainWindow.close()
+    #del mainWindow
+
+def run():
+    _viewController = viewController()
+    runWithMainWindow(_viewController.mainWindow)
 
 if __name__ == '__main__':
     run()
+
+class MainTestCase(unittest.TestCase):
+    def testViewController(self):
+        _viewController = viewController()
+
+    def testRun(self):
+        print("Testing main window with view controller")
+        _viewController = viewController()
+        _viewController.mainWindow.show()
+        _viewController.mainWindow.close()

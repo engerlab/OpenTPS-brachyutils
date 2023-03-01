@@ -22,6 +22,8 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif (platform.system() == "Windows"):
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
+        elif (platform.system() == "Darwin"):
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracingMAC.so")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -113,6 +115,8 @@ def compute_position_from_range(SPR, spot_positions, spot_directions, spot_range
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
+        elif (platform.system() == "Darwin"):
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracingMAC.so")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -201,6 +205,8 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
+        elif (platform.system() == "Darwin"):
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracingMAC.so")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -289,6 +295,8 @@ def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET,
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
+        elif (platform.system() == "Darwin"):
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracingMAC.so")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
@@ -396,6 +404,8 @@ def transport_spots_inside_target_map(SPR, Target_mask, SpotGrid, direction, min
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.so")
         elif platform.system() == "Windows":
             libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracing.dll")
+        elif (platform.system() == "Darwin"):
+            libRaytracing = ctypes.cdll.LoadLibrary(clibraries.__path__[0] + os.sep + "libRayTracingMAC.so")
         else:
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
