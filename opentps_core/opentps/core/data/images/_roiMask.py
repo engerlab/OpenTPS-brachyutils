@@ -78,7 +78,7 @@ class ROIMask(Image3D):
                         x = j - math.floor(diameter[1] / 2)
                         z = k - math.floor(diameter[2] / 2)
                         if (
-                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[2] ** 2 <= 1):  # generate ellipsoid structuring element
+                                y ** 2 / radius[0] ** 2 + x ** 2 / radius[1] ** 2 + z ** 2 / radius[2] ** 2 <= 1):  # generate ellipsoid structuring element
                             filt[i, j, k] = True
 
         if self._imageArray.size > 1e5 and tryGPU:
