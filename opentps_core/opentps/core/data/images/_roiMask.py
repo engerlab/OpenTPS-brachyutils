@@ -65,10 +65,21 @@ class ROIMask(Image3D):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
     def dilate(self, radius=1.0, filt=None, tryGPU=False):
-        if filt is None:
-            radius = radius/np.array(self.spacing)
-            if np.min(radius)<=0:
+        radius = radius/np.array(self.spacing)
+        if np.min(radius)<=0:
+            return
+        
+        if not (self._imageArray.size > 1e5 and tryGPU):
+            try:
+                logger.info('Using SITK to dilate mask.')
+                radius = np.round(radius).astype(int).tolist()
+                self._dilateSITK(radius)
                 return
+            except:
+                pass
+
+        # use either cupy or scipy
+        if filt is None:
             diameter = np.ceil(radius).astype(int) * 2 + 1
             filt = np.zeros(tuple(diameter)).astype(bool)
             for i in range(diameter[0]):
@@ -86,7 +97,7 @@ class ROIMask(Image3D):
                 logger.info('Using cupy to dilate mask   ')
                 self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
-                logger.warning('cupy not used to dilate mask.')
+                logger.warning('cupy not used to dilate mask. Scipy is used instead')
                 tryGPU = False
 
         else:
