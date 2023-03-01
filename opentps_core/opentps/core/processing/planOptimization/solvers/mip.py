@@ -58,7 +58,7 @@ class MIP(LP):
 
          # Linear model
         eRaw = []
-        eID = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2), dtype=np.int) * (-1)
+        eID = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2), dtype=int) * (-1)
         for i in range(len(ESCost)):
             for j in range(len(ESCost[i])):
                 if ESCost[i][j] >= 0:
