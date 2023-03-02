@@ -67,8 +67,7 @@ class ROIMask(Image3D):
     def dilate(self, radius=1.0, filt=None, tryGPU=False):
         if filt is None:
             radius = radius/np.array(self.spacing)
-            if np.min(radius)<=0:
-                return
+
             diameter = np.ceil(radius).astype(int) * 2 + 1
             filt = np.zeros(tuple(diameter)).astype(bool)
             for i in range(diameter[0]):
