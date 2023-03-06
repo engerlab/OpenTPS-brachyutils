@@ -351,7 +351,7 @@ def register(fixed_image, moving_image, multimodal=True, fillValue: float = 0.):
 def dilate(image: Image3D, radius: Union[float, Sequence[float]]):
     imgType = image.imageArray.dtype
 
-    img = image3DToSITK(image, type=np.int)
+    img = image3DToSITK(image, type=int)
 
     dilateFilter = sitk.BinaryDilateImageFilter()
     dilateFilter.SetKernelType(sitk.sitkBall)
