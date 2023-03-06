@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import time
 import os
 import sys
+import cProfile as profile
+pr = profile.Profile()
+pr.enable()
 
 currentWorkingDir = os.getcwd()
 print('currentWorkingDir :', currentWorkingDir)
@@ -44,7 +47,6 @@ if __name__ == '__main__':
     #
     dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
     savingPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + resultFolder
-
 
 
     # parameters selection ------------------------------------
@@ -175,3 +177,6 @@ if __name__ == '__main__':
     ax[3].imshow(np.rot90(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     ax[3].set_title('Mask difference')
     plt.show()
+
+    pr.disable()
+    pr.print_stats(sort='time')
