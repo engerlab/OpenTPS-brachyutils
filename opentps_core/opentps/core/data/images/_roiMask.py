@@ -65,8 +65,19 @@ class ROIMask(Image3D):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
     def dilate(self, radius=1.0, filt=None, tryGPU=False):
+        """
+                Dilates the binary mask image using a 3D ellipsoid structuring element.
+
+                Args:
+                - radius: float or 3-tuple of floats, the radii of the ellipsoid in each dimension. Default is 1.0.
+                - filt: np.array of bools, the structuring element to use for dilation. Default is None.
+                - tryGPU: bool, whether to attempt to use the GPU for dilation using the CuPy library. Default is False.
+
+                Returns:
+                - None
+                """
         if filt is None:
-            radius = radius/np.array(self.spacing)
+            radius = radius / np.array(self.spacing)
 
             diameter = np.ceil(radius).astype(int) * 2 + 1
             filt = np.zeros(tuple(diameter)).astype(bool)
@@ -77,13 +88,16 @@ class ROIMask(Image3D):
                         x = j - math.floor(diameter[1] / 2)
                         z = k - math.floor(diameter[2] / 2)
                         if (
-                                y ** 2 / radius[0] ** 2 + x ** 2 / radius[1] ** 2 + z ** 2 / radius[2] ** 2 <= 1):  # generate ellipsoid structuring element
+                                # We get a warning here for null radius but we want to allow them!
+                                y ** 2 / radius[0] ** 2 + x ** 2 / radius[1] ** 2 + z ** 2 / radius[
+                            2] ** 2 <= 1):  # generate ellipsoid structuring element
                             filt[i, j, k] = True
 
         if self._imageArray.size > 1e5 and tryGPU:
             try:
                 logger.info('Using cupy to dilate mask   ')
-                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
+                self._imageArray = cupy.asnumpy(
+                    cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
                 logger.warning('cupy not used to dilate mask.')
                 tryGPU = False
