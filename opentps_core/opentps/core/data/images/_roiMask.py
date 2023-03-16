@@ -76,8 +76,9 @@ class ROIMask(Image3D):
         Returns:
         - None
         """
+
         if filt is None:
-            radius = radius/np.array(self.spacing)
+            radius = radius / np.array(self.spacing)
 
             diameter = np.ceil(radius).astype(int) * 2 + 1
             filt = np.zeros(tuple(diameter)).astype(bool)
@@ -95,7 +96,8 @@ class ROIMask(Image3D):
         if self._imageArray.size > 1e5 and tryGPU:
             try:
                 logger.info('Using cupy to dilate mask   ')
-                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
+                self._imageArray = cupy.asnumpy(
+                    cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
                 logger.warning('cupy not used to dilate mask.')
                 tryGPU = False

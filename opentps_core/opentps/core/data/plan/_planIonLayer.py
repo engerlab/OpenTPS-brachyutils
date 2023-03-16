@@ -58,15 +58,15 @@ class PlanIonLayer:
 
     @property
     def spotX(self) -> Sequence[float]:
-        return [x for x in self._x]
+        return self._x
 
     @property
     def spotY(self) -> Sequence[float]:
-        return [y for y in self._y]
+        return self._y
 
     @property
     def spotXY(self) -> Iterable[Tuple[float, float]]:
-        return zip(self._x, self._y)
+        return np.column_stack((self._x, self._y))
 
     @property
     def spotMUs(self) -> np.ndarray:

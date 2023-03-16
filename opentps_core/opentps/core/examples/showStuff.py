@@ -22,5 +22,5 @@ def showModelWithAnimatedFields(model):
         plt.quiver(compZ[::5, ::5], compX[::5, ::5], alpha=0.2, color='red', angles='xy', scale_units='xy', scale=5)
 
     anim = FuncAnimation(fig, updateAnim, frames=len(model.deformationList), interval=300)
-    anim.save('D:/anim.gif')
+    # anim.save('D:/anim.gif')
     plt.show()
