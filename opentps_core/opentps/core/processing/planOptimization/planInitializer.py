@@ -179,7 +179,7 @@ class PlanInitializer:
         logger.info('Target is dilated using a margin of {} mm. This process might take some time.'.format(targetMargin))
         roiDilated = ROIMask.fromImage3D(self.targetMask, patient=None)
         roiDilated.dilate(radius=targetMargin)
-        logger.info('Dilation done.')
+
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)

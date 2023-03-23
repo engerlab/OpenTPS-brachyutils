@@ -6,6 +6,7 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.images._vectorField3D import VectorField3D
 
+logger = logging.getLogger(__name__)
 
 def importImageMHD(headerFile):
     """
@@ -222,7 +223,7 @@ def readBinaryMHD(inputPath, metaData=None):
     fileName, fileExtension = os.path.splitext(outputFile)
 
     if not os.path.isfile(inputPath):
-        logging.error("ERROR: file " + inputPath + " not found!")
+        logger.error("ERROR: file " + inputPath + " not found!")
         return None
 
     if metaData == None:
@@ -281,7 +282,7 @@ def writeHeaderMHD(outputPath, metaData=None):
         metaData["ElementDataFile"] = rawFile
 
     # Write header file
-    logging.info("Write MHD file: " + mhdPath)
+    logger.info("Write MHD file: " + mhdPath)
     with open(mhdPath, "w") as fid:
         for key in metaData:
             fid.write(key + " = ")

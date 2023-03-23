@@ -22,16 +22,23 @@ before_script:
   - python --version  # For debugging
   - pip install virtualenv
   - virtualenv venv
+  #- virtualenv --clear venv
   - source venv/bin/activate
   - pip3 install poetry
+  - cd $CI_PROJECT_DIR/opentps_core
+  - poetry install --no-root # install dependencies
+  - apt-get update && apt-get install -y libgl1 # For PyQt5
+  #- apt-get install -y '^libxcb.*-dev' # For PyQt5
+  - cd $CI_PROJECT_DIR/opentps_gui
+  - poetry install --no-root # install dependencies
 
 build:
   image: python:3.9
   script:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
-    - cd $PWD/opentps_core
+    - cd $CI_PROJECT_DIR/opentps_core
     - poetry build
-    - cd ../opentps_gui
+    - cd $CI_PROJECT_DIR/opentps_gui
     - poetry build
     #- pip install dist/*
   artifacts:
@@ -42,14 +49,17 @@ build:
 test:
   image: python:3.9
   script:
-    - cd $CI_PROJECT_DIR
-    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
-    - cd $CI_PROJECT_DIR/opentps_core
-    - poetry install --no-root # install dependencies
-    - cd $CI_PROJECT_DIR/opentps_gui
-    - poetry install --no-root # install dependencies
     - cd $CI_PROJECT_DIR/
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - python3 CI/tests.py
+
+test_gui:
+  image: python:3.9
+  script:
+    - cd $CI_PROJECT_DIR/
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
+    - export QT_QPA_PLATFORM=offscreen
+    - python -m unittest discover opentps_gui/opentps/gui
 
 docs:
   script:
