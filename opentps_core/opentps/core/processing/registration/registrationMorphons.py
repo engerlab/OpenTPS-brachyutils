@@ -5,17 +5,18 @@ import logging
 import multiprocessing as mp
 from functools import partial
 
+logger = logging.getLogger(__name__)
+
 try:
     import cupy
     import cupyx.scipy.signal
 except:
-    print('cupy not found.')
+    logger.warning('cupy not found.')
 
 from opentps.core.data.images._deformation3D import Deformation3D
 from opentps.core.processing.registration.registration import Registration
 import opentps.core.processing.imageProcessing.filter3D as imageFilter3D
 
-logger = logging.getLogger(__name__)
 
 
 def morphonsConv(im, k):
