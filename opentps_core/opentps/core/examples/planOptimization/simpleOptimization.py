@@ -1,14 +1,12 @@
 import os
+import logging
+import numpy as np
+from matplotlib import pyplot as plt
 import sys
+sys.path.append('..')
 
 from opentps.core.io.dicomIO import writeRTPlan
 from opentps.core.processing.planOptimization.tools import evaluateClinical
-
-sys.path.append('..')
-
-import numpy as np
-from matplotlib import pyplot as plt
-
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import ROIMask
 from opentps.core.data.plan import ObjectivesList
@@ -24,11 +22,12 @@ from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsqu
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D, resampleImage3D
 from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
 
+logger = logging.getLogger(__name__)
 
 # Generic example: box of water with squared target
 def run():
     output_path = os.getcwd()
-    print('Files will be stored in ' + output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
 
     ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
@@ -74,7 +73,7 @@ def run():
 
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
-        print('Plan loaded')
+        logger.info('Plan loaded')
     else:
         planDesign = PlanDesign()
         planDesign.ct = ct
