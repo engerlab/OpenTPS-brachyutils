@@ -46,7 +46,6 @@ def run():
     data = huAir * np.ones((ctSize, ctSize, ctSize))
     data[:, 50:, :] = huWater
     ct.imageArray = data
-    ct.spacing = [2, 2, 1]
 
     roi = ROIMask()
     roi.patient = patient
@@ -55,7 +54,6 @@ def run():
     data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
-    roi.spacing = [2, 2, 1]
 
     # Design plan
     beamNames = ["Beam1"]
