@@ -50,7 +50,7 @@ def deformImageAndMask(img, ROIMask, deformation, tryGPU=True, GPUNumber=0):
         import cupy
         cupy.cuda.Device(GPUNumber).use()
     except:
-        print('cupy not found.')
+        logger.warning('cupy not found.')
     
     startTime = time.time()
     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)

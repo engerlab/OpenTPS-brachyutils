@@ -180,8 +180,6 @@ class PlanInitializer:
         roiDilated = ROIMask.fromImage3D(self.targetMask, patient=None)
         roiDilated.dilate(radius=targetMargin)
 
-        roiDilated.dilate(radius=targetMargin)
-
         self._beamInitializer.targetMask = roiDilated
 
         rspImage = RSPImage.fromCT(self.ct, self.ctCalibration, energy=100.)

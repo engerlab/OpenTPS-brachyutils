@@ -1,10 +1,13 @@
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 try:
     import cupy
     import cupyx
     # cupy.cuda.Device(0).use()
 except:
-    print('Warning: cupy not found.')
+    logger.warning('cupy not found.')
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 

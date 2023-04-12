@@ -8,7 +8,7 @@ from opentps.core.processing.planOptimization.objectives.doseFidelity import Dos
 
 try:
     import sparse_dot_mkl
-    use_MKL = 1
+    use_MKL = 0
 except:
     use_MKL = 0
 
