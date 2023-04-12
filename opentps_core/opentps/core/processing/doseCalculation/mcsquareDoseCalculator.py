@@ -72,7 +72,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def _sparseDoseFilePath(self):
-        if self._plan.planDesign.robustness.selectionStrategy==self._plan.planDesign.robustness.Strategies.DISABLED:
+        if (self._plan.planDesign is None) or self._plan.planDesign.robustness.selectionStrategy==self._plan.planDesign.robustness.Strategies.DISABLED:
             return os.path.join(self._workDir, "Sparse_Dose.txt")
         elif self._sparseDoseScenarioToRead==None:
             return os.path.join(self._workDir, "Sparse_Dose_Nominal.txt")

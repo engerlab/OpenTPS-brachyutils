@@ -91,7 +91,7 @@ class ROIMask(Image3D):
                             2] ** 2 <= 1):  # generate ellipsoid structuring element
 
                             filt[i, j, k] = True
-            return filt 
+            return filt
 
         if filt is None:
             radius = radius / np.array(self.spacing)
@@ -100,7 +100,7 @@ class ROIMask(Image3D):
         if self._imageArray.size > 1e5 and tryGPU:
             try:
                 logger.info('Using cupy to dilate mask   ')
-                filt = buildFilter(radius) 
+                filt = buildFilter(radius)
                 self._imageArray = cupy.asnumpy(
                     cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
             except:
@@ -116,7 +116,7 @@ class ROIMask(Image3D):
                 self._dilateSITK(radiusSITK)
             except:
                 logger.warning('Scipy used to dilate mask.')
-                filt = buildFilter(radius) 
+                filt = buildFilter(radius)
                 self._dilateScipy(filt)
 
     def _dilateSITK(self, radius):

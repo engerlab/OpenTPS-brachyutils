@@ -118,6 +118,16 @@ class RayStationDensity2Material:
         return self._materials
 
     def _load(self, materialFile):
+        with open(materialFile, 'r') as file:
+            for line in file:
+                if re.search(r'Material', line):
+                    self._loadFormat2(materialFile)
+                    return
+                elif re.search(r'gr/cm3', line):
+                    self._loadFormat1(materialFile)
+                    return
+
+    def _loadFormat1(self, materialFile):
         # Read material file
         densities = []
         materials = []
@@ -143,6 +153,37 @@ class RayStationDensity2Material:
                         foundMaterial = False
                         continue
                     material.appendElement(float(lineSplit[3]), float(lineSplit[2]), float(lineSplit[1]))
+
+        self.setDensities(densities)
+        self.setMaterials(materials)
+
+    def _loadFormat2(self, materialFile):
+        # Read material file
+        densities = []
+        materials = []
+
+        foundMaterial = False
+        with open(materialFile, 'r') as file:
+            for line in file:
+                if len(line) == 0:
+                    foundMaterial = False
+                    continue
+
+                if re.search(r'index', line):
+                    foundMaterial = True
+                    lineSplit = line.split()
+                    material = RayStationMaterial(density=float(lineSplit[7]), I=float(lineSplit[14]))
+                    densities.append(float(lineSplit[7]))
+                    materials.append(material)
+                    continue
+
+                if foundMaterial:
+                    lineSplit = line.split()
+                    if len(lineSplit) < 4:
+                        foundMaterial = False
+                        continue
+                    if re.search(r'weigth', line):
+                        material.appendElement(float(lineSplit[10]), float(lineSplit[6]), float(lineSplit[3]))
 
         self.setDensities(densities)
         self.setMaterials(materials)

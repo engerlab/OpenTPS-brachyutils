@@ -123,10 +123,10 @@ def extremePointsAfterTransform(image: Image3D, tformMatrix: np.ndarray,
     inv_transform = transform.GetInverse()
 
     extreme_points_transformed = [inv_transform.TransformPoint(pnt) for pnt in extreme_points]
-    min_x = min(extreme_points_transformed)[0]
+    min_x = min(extreme_points_transformed, key=lambda p: p[0])[0]
     min_y = min(extreme_points_transformed, key=lambda p: p[1])[1]
     min_z = min(extreme_points_transformed, key=lambda p: p[2])[2]
-    max_x = max(extreme_points_transformed)[0]
+    max_x = max(extreme_points_transformed, key=lambda p: p[0])[0]
     max_y = max(extreme_points_transformed, key=lambda p: p[1])[1]
     max_z = max(extreme_points_transformed, key=lambda p: p[2])[2]
 

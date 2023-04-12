@@ -31,6 +31,7 @@ class PlanOptimizer:
         self.opti_params = kwargs
         self.functions = []
         self._xSquared = True
+        self.threshold_MU = 1e-4
 
     @property
     def xSquared(self):
@@ -132,12 +133,11 @@ class PlanOptimizer:
         else:
             self.plan.spotMUs = self.weights.astype(np.float32)
         
-        threshold_MU = 1e-4
         MU_before_simplify = self.plan.spotMUs.copy()
-        self.plan.simplify(threshold=threshold_MU) # remove zero MU spots
+        self.plan.simplify(threshold=self.threshold_MU) # remove zero MU spots
         if self.plan.planDesign.beamlets.shape[1] != len(self.plan.spotMUs):
             # Beamlet matrix has not removed zero weight column
-            ind_to_keep = MU_before_simplify > threshold_MU
+            ind_to_keep = MU_before_simplify > self.threshold_MU
             assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
         self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs

@@ -84,11 +84,13 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     return outImage
 
-def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
+def _cropBox(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
     outputBox = "keepAll"
 
     if not (cropROI is None):
-        outputBox = sitkImageProcessing.extremePoints(cropROI)
+        outputBox = sitkImageProcessing.extremePointsAfterTransform(image, tform)
+        outputBox = [elem for elem in outputBox]
+
         roiBox = segmentation3D.getBoxAroundROI(cropROI)
         if cropDim0:
             outputBox[0] = roiBox[0][0]
@@ -141,7 +143,7 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     tform = _forwardDicomToIECGantry(beam)
 
-    outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
+    outputBox = _cropBox(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
 
     outImage = image.__class__.fromImage3D(image, patient = None)
     sitkImageProcessing.applyTransform3D(outImage, tform, fillValue=fillValue, outputBox=outputBox)
