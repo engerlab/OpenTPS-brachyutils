@@ -18,11 +18,12 @@ print('currentWorkingDir :', currentWorkingDir)
 sys.path.append(os.path.dirname(currentWorkingDir))
 
 from opentps.core.io.serializedObjectIO import loadDataStructure
-from opentps.core.processing.deformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
+from opentps.core.processing.deformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan
 from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
 from opentps.core.processing.imageProcessing.resampler3D import crop3DDataAroundBox
 from opentps.core.processing.segmentation.segmentation3D import getBoxAroundROI
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
+from opentps.core.processing.imageProcessing.imageTransform3D import rotateData, translateData, applyTransform3D
 
 if __name__ == '__main__':
 
@@ -141,8 +142,8 @@ if __name__ == '__main__':
     translateData(GTVMask, translationInMM=translation)
 
     print('-'*50)
-    rotateData(dynMod, rotationInDeg=rotation)
-    rotateData(GTVMask, rotationInDeg=rotation)
+    rotateData(dynMod, rotAnglesInDeg=rotation)
+    rotateData(GTVMask, rotAnglesInDeg=rotation)
 
     print('-' * 50)
     shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)

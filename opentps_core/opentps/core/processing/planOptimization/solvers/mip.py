@@ -8,7 +8,8 @@ try:
     import gurobipy as gp
     from gurobipy import GRB
 except ModuleNotFoundError:
-    logger.info('No module Gurobi found\n!Licence required!\nGet free Academic license on '
+    logger.warning("Ignore the following warning if not using Gurobi linear optimizer. Gurobi not required for most features provided in OpenTPS")
+    logger.warning('No module Gurobi found\n!Licence required!\nGet free Academic license on '
                 'https://www.gurobi.com/academia/academic-program-and-licenses/ ')
 import numpy as np
 
@@ -58,7 +59,7 @@ class MIP(LP):
 
          # Linear model
         eRaw = []
-        eID = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2), dtype=np.int) * (-1)
+        eID = np.ones((self.solStruct.nLayers + 2, self.solStruct.nLayers + 2), dtype=int) * (-1)
         for i in range(len(ESCost)):
             for j in range(len(ESCost[i])):
                 if ESCost[i][j] >= 0:

@@ -11,7 +11,7 @@ from scipy.sparse import csc_matrix
 try:
     import sparse_dot_mkl
 
-    use_MKL = 1
+    use_MKL = 0
 except:
     use_MKL = 0
 
