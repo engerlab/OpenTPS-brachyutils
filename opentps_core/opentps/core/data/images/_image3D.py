@@ -190,6 +190,7 @@ class Image3D(PatientData):
         return posInVoxels
 
     def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        index = np.array(index)
         if np.any(np.logical_or(index < 0, index > (self.gridSize - 1))):
             raise ValueError('Voxel position requested is outside of the domain of the image')
         return self.origin + np.array(index).astype(dtype=float)*self.spacing

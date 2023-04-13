@@ -62,7 +62,6 @@ class ROIMask(Image3D):
     def erodeMask(self, radius=1.0, struct=None, tryGPU=True):
         roiMasksProcessing.erodeMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
-
     def createMaskRings(self, nRings, radius):
         """
             Create a ring ROI to obtain nice gradient dose around the ROI
