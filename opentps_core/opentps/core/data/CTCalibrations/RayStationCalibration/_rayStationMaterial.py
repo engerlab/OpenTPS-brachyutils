@@ -28,7 +28,7 @@ class RayStationMaterial:
     def __init__(self, density=None, I=None):
         self._As = []
         if density<=0:
-            self._density = 1e-12
+            self._density = 0.0001
         else:
             self._density = density
         self._I = I

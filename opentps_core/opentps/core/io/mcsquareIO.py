@@ -274,12 +274,7 @@ def readMCsquarePlan(ct: CTImage, file_path):
 
                 plan.beams[-1].mcsquareIsocenter = iso
 
-                # convert isocenter in dicom coordinates
-                iso[1] = ct.gridSize[1] * ct.spacing[1] - iso[1]
-                iso[0] = iso[0] + ct.angles[0] - ct.spacing[0] / 2
-                iso[1] = iso[1] + ct.angles[1] - ct.spacing[1] / 2
-                iso[2] = iso[2] + ct.angles[2] - ct.spacing[2] / 2
-                plan.beams[-1].isocenterPosition = iso
+                plan.beams[-1].isocenterPosition = _mcsquareToDicom(iso, ct.origin, ct.spacing, ct.gridSize)
 
             elif line == "###RangeShifterID":
                 plan.beams[-1].rangeShifter.ID = f.readline().replace('\r', '').replace('\n', '').replace('\t', '')
@@ -659,6 +654,16 @@ def _dicomIsocenterToMCsquare(isocenter, ctImagePositionPatient, ctPixelSpacing,
     MCsquareIsocenter1 = ctGridSize[1] * ctPixelSpacing[1] - MCsquareIsocenter1  # flip coordinates in Y direction
 
     return (MCsquareIsocenter0, MCsquareIsocenter1, MCsquareIsocenter2)
+
+def _mcsquareToDicom(isocenter, ctImagePositionPatient, ctPixelSpacing, ctGridSize):
+    MCsquareIsocenter0 = isocenter[0] + ctImagePositionPatient[0] - ctPixelSpacing[0] / 2  # change coordinates (origin is now in the corner of the image)
+    MCsquareIsocenter1 = ctGridSize[1] * ctPixelSpacing[1] - isocenter[1]  # flip coordinates in Y direction
+    MCsquareIsocenter1 = MCsquareIsocenter1 + ctImagePositionPatient[1] + ctPixelSpacing[1] / 2
+    MCsquareIsocenter2 = isocenter[2] + ctImagePositionPatient[2] - ctPixelSpacing[2] / 2
+
+
+    return (MCsquareIsocenter0, MCsquareIsocenter1, MCsquareIsocenter2)
+
 
 
 def writeBin(destFolder):
