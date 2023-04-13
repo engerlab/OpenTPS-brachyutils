@@ -5,12 +5,17 @@ __all__ = ['PlanIonLayer']
 import copy
 import unittest
 from typing import Iterable, Union, Sequence, Optional, Tuple
-
 import numpy as np
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from opentps.core.data.plan._planIonSpot import PlanIonSpot
 
 
 class PlanIonLayer:
     def __init__(self, nominalEnergy: float = 0.0):
+
+        self._spots: Sequence[PlanIonSpot] = []
         self._x = np.array([])
         self._y = np.array([])
         self._mu = np.array([])
@@ -22,6 +27,8 @@ class PlanIonLayer:
         self.numberOfPaintings: int = 1
         self.rangeShifterSettings: RangeShifterSettings = RangeShifterSettings()
         self.seriesInstanceUID = ""
+        self.spotsPeakPosInDcmCoords = []
+        self.spotsPeakPosInTargetSystem = []
 
     def __len__(self):
         return len(self._mu)
@@ -55,6 +62,11 @@ class PlanIonLayer:
         self.numberOfPaintings = otherLayer.numberOfPaintings
         self.rangeShifterSettings = otherLayer.rangeShifterSettings.__deepcopy__(memodict)
         self.seriesInstanceUID = otherLayer.seriesInstanceUID
+
+    @property
+    def spots(self):
+        # For backwards compatibility but we can now access each layer with indexing brackets
+        return [spot for spot in self._spots]
 
     @property
     def spotX(self) -> Sequence[float]:

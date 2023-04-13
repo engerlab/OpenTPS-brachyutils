@@ -21,8 +21,7 @@ print('currentWorkingDir :', currentWorkingDir)
 sys.path.append(os.path.dirname(currentWorkingDir))
 
 from opentps.core.io.serializedObjectIO import loadDataStructure
-from opentps.core.processing.deformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan
-from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
+from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift, shrinkOrgan
 from opentps.core.processing.imageProcessing.resampler3D import crop3DDataAroundBox
 from opentps.core.processing.segmentation.segmentation3D import getBoxAroundROI
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
@@ -45,7 +44,8 @@ if __name__ == '__main__':
     resultFolder = '/test/'
     resultDataFolder = 'data/'
     #
-    dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    #dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
     savingPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + resultFolder
 
 
@@ -65,12 +65,12 @@ if __name__ == '__main__':
 
     # interfraction changes parameters
     baselineShift = [-5, 0, 10]
-    # baselineShift = [0, 0, 0]
+    baselineShift = [0, 0, 0]
     translation = [-5, 3, 10]
-    # translation = [0, 0, 0]
+    translation = [0, 0, 0]
     rotation = [0, 5, 0]
-    # rotation = [0, 0, 0]
-    shrinkSize = [2, 2, 2]
+    rotation = [0, 0, 0]
+    shrinkSize = [5, 5, 4]
     # shrinkSize = [0, 0, 0]
 
     # GPU used
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     rotateData(GTVMask, rotAnglesInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
+    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize, tryGPU=False)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     resampleImage3DOnImage3D(shrinkedDynMod.midp, dynModCopy.midp, inPlace=True)
@@ -179,4 +179,4 @@ if __name__ == '__main__':
     plt.show()
 
     pr.disable()
-    pr.print_stats(sort='time')
+    # pr.print_stats(sort='time')

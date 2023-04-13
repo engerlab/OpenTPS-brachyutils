@@ -1,15 +1,17 @@
 import numpy as np
-import logging
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 from typing import Optional, Sequence, Union
 import copy
+import logging
+logger = logging.getLogger(__name__)
 
 try:
     import cupy
     import cupyx
 except:
-    print('Warning: cupy not found.')
+    logger.warning("Module cupy not installed")
+    pass
     
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._vectorField3D import VectorField3D
@@ -17,8 +19,8 @@ from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.processing.imageProcessing.resampler3D import resample
+from opentps.core.processing.imageProcessing.roiMasksProcessing import buildStructElem
 
-logger = logging.getLogger(__name__)
 ## ------------------------------------------------------------------------------------------------
 def translateData(data, translationInMM, fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
     """
@@ -353,3 +355,50 @@ def resampleCupy():
     """
 
     return NotImplementedError
+
+def dilateMask(mask, radius=1.0, struct=None, inPlace=True):
+
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy
+
+def erodeMask(mask, radius=1.0, struct=None, inPlace=True):
+
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy
+
+def openMask(mask, radius=1.0, struct=None, inPlace=True):
+
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_opening(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_opening(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy
+
+def closeMask(mask, radius=1.0, struct=None, inPlace=True):
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_closing(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_closing(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy

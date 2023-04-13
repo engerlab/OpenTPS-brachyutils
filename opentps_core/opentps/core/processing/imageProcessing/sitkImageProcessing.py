@@ -253,17 +253,6 @@ def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.nd
     vectField.origin = compImg.origin
 
     rotateVectorsInPlace(vectField, tformMatrix)
-    # if tformMatrix.shape[1] == 4:
-    #     tformMatrix = tformMatrix[0:-1, 0:-1]
-    #
-    # r = R.from_matrix(tformMatrix)
-    #
-    # flattenedVectorField = vectField.imageArray.reshape(
-    #     (vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
-    # flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
-    #
-    # vectField.imageArray = flattenedVectorField.reshape(
-    #     (vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
 
 
 def applyTransform3DToPoint(tformMatrix: np.ndarray, pnt: np.ndarray, rotCenter: Optional[Sequence[float]] = [0, 0, 0],
@@ -348,7 +337,7 @@ def register(fixed_image, moving_image, multimodal=True, fillValue: float = 0.):
     return tformMatrix, rotCenter, sitkImageToImage3D(moving_resampled)
 
 
-def dilate(image: Image3D, radius: Union[float, Sequence[float]]):
+def dilateMask(image: Image3D, radius: Union[float, Sequence[float]]):
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image, type=int)
