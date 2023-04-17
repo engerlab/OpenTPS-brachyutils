@@ -32,7 +32,11 @@ def multiProcDeform(deformationList, dynMod, GTVMask, ncore=None, GPUNumber=0):
         executor.shutdown(wait=False)
         
     else:
-        logger.error("Too many cores asked. The machine has less logical cores.")
+        logger.warning("Too many cores asked. The machine has less logical cores. It will use the number of logical cores of the machine.")
+        with concurrent.futures.ProcessPoolExecutor(max_workers=nbrCore) as executor:
+            results = executor.map(deformImageAndMask, imgList, maskList, deformationList, tryGPUList, GPUNumberList)
+            resultDeformImageAndMask += results
+        executor.shutdown(wait=False)
         
     return resultDeformImageAndMask
 
@@ -55,10 +59,8 @@ def deformImageAndMask(img, ROIMask, deformation, tryGPU=True, GPUNumber=0):
     startTime = time.time()
     image = deformation.deformImage(img, fillValue='closest', outputType=np.int16, tryGPU=tryGPU)
     mask = deformation.deformImage(ROIMask, fillValue='closest', tryGPU=tryGPU)
-
     centerOfMass3D = mask.centerOfMass
-    
-    print('Image and mask deformed in', time.time() - startTime)
+    logger.info(f'Image and mask deformed in {time.time() - startTime}')
     return [image, mask, centerOfMass3D]
 
 ## ----------------------------------------------------------------------------------------

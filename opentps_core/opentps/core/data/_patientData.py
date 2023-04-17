@@ -81,7 +81,6 @@ class PatientData:
     def getTypeAsString(self) -> str:
         return self.__class__.__name__
 
-
 class EventTestCase(unittest.TestCase):
     def testProperties(self):
         name = 'name'
