@@ -9,6 +9,7 @@ except:
     print('No module SimpleITK found')
 
 from opentps.core.processing.imageProcessing import resampler3D
+from opentps.core.data.images._image2D import Image2D
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._vectorField3D import VectorField3D
 
@@ -18,6 +19,29 @@ from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data._transform3D import Transform3D
 from opentps.core.processing.imageProcessing.imageTransform3D import \
     transform3DMatrixFromTranslationAndRotationsVectors, parseRotCenter, rotateVectorsInPlace
+
+
+
+def imageToSITK(image:Union[Image2D, Image3D], type=np.float32):
+    if isinstance(image, Image2D):
+        return image2DToSITK(image, type)
+    elif isinstance(image, Image3D):
+        return  image3DToSITK(image, type)
+    else:
+        raise ValueError(image.__class__.__name__ + ' is not a valid type.')
+
+
+def image2DToSITK(image: Image2D, type=np.float32):
+    imageData = image.imageArray.astype(type)
+    imageData = np.swapaxes(imageData, 0, 1)
+
+    img = sitk.GetImageFromArray(imageData)
+    img.SetOrigin(image.origin.tolist())
+    img.SetSpacing(image.spacing.tolist())
+
+    # TODO SetDirection from angles but it is not clear how angles is defined
+
+    return img
 
 
 def image3DToSITK(image: Image3D, type=np.float32):
@@ -42,6 +66,16 @@ def sitkImageToImage3D(sitkImage: sitk.Image, type=float):
     return image
 
 
+def sitkImageToImage2D(sitkImage: sitk.Image, type=float):
+    imageArray = np.array(sitk.GetArrayFromImage(sitkImage)).astype(type)
+    imageArray = np.swapaxes(imageArray, 0, 1)
+
+    image = Image2D(imageArray=imageArray, origin=sitkImage.GetOrigin(), spacing=sitkImage.GetSpacing())
+    # TODO SetDirection from angles but it is not clear how angles is defined
+
+    return image
+
+
 def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarray] = None,
            newShape: Optional[np.ndarray] = None, fillValue: float = 0.):
     # print('in sitkImageProcessing resize', type(image))
@@ -57,7 +91,7 @@ def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarra
     newShape = np.ceil(newShape).astype(int)
 
     imgType = image.imageArray.dtype
-    img = image3DToSITK(image)
+    img = imageToSITK(image)
     dimension = img.GetDimension()
     reference_image = sitk.Image(newShape.tolist(), img.GetPixelIDValue())
     reference_image.SetDirection(img.GetDirection())
@@ -74,7 +108,7 @@ def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarra
         outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
 
-    outData = np.swapaxes(outData, 0, 2)
+    outData = np.swapaxes(outData, 0, dimension-1)
 
     image.imageArray = outData
     image.origin = newOrigin
