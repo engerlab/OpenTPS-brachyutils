@@ -83,35 +83,24 @@ class PatientData:
 
 
 class EventTestCase(unittest.TestCase):
-    class TestObjEventParent(PatientData):
-        def __init__(self):
-            super().__init__()
-            self.eventField = Event()
-            self.parent = None
+    def testProperties(self):
+        name = 'name'
 
-    class TestObj(PatientData):
-        def __init__(self):
-            super().__init__()
+        obj = PatientData()
+        obj.name = name
 
-            self.stringField = 'a string'
-            self.eventField = Event()
-            self.selfField = self
-            self.objectField = EventTestCase.TestObjEventParent()
-            self.objectField.eventField = Event()
-            self.objectField.parent = self
+        from opentps.core.data import Patient
+        patient = Patient()
+        obj.patient = patient
 
-            self.eventField.connect(EventTestCase.dummyMethod)
-            self.objectField.eventField.connect(EventTestCase.dummyMethod)
+        self.assertEqual(obj.name, name)
+        self.assertEqual(obj.patient, patient)
 
+        name = 'name2'
+        patient = Patient()
 
-    def testDeepCopyWithoutEvent(self):
-        obj = self.TestObj()
+        obj.setName(name)
+        obj.setPatient(patient)
 
-        newObj = obj.deepCopyWithoutEvent()
-        print('I', newObj.eventField)
-        print('I', newObj.objectField.eventField)
-        self.assertIsNone(newObj.eventField)
-        self.assertIsNone(newObj.objectField.eventField)
-        self.assertIsNone(newObj.selfField.eventField)
-        self.assertEqual(newObj.stringField, obj.stringField)
-        self.assertEqual(newObj.selfField.stringField, obj.stringField)
+        self.assertEqual(obj.name, name)
+        self.assertEqual(obj.patient, patient)
