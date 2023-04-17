@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # translation = [0, 0, 0]
     rotation = [0, 5, 0]
     # rotation = [0, 0, 0]
-    shrinkSize = [4, 5, 3]
+    shrinkSize = [4, 5, 0]
     # shrinkSize = [0, 0, 0]
 
     # GPU used
@@ -86,7 +86,6 @@ if __name__ == '__main__':
 
     gtvContour = rtStruct.getContourByName(targetContourToUse)
     GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
-    GTVMask = roi
     gtvBox = getBoxAroundROI(GTVMask)
     GTVCenterOfMass = gtvContour.getCenterOfMass(dynMod.midp.origin, dynMod.midp.gridSize, dynMod.midp.spacing)
     GTVCenterOfMassInVoxels = getVoxelIndexFromPosition(GTVCenterOfMass, dynMod.midp)
