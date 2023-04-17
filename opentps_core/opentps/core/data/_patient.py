@@ -173,7 +173,7 @@ class Patient:
         return dumpablePatientCopy
 
 class EventTestCase(unittest.TestCase):
-    def testProperties(self):
+    def testPropertiesAndAccessMethods(self):
         name = 'name'
 
         obj = Patient()
@@ -206,4 +206,3 @@ class EventTestCase(unittest.TestCase):
         obj.removePatientDataList([data1, data2])
         self.assertFalse(obj.hasPatientData(data1))
         self.assertFalse(obj.hasPatientData(data2))
-        
