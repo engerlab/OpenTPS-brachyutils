@@ -1,6 +1,7 @@
 
 __all__ = ['Patient']
 
+import unittest
 from typing import Union, Sequence
 
 from opentps.core.data.images._image3D import Image3D
@@ -170,3 +171,39 @@ class Patient:
             dumpablePatientCopy._patientData.append(data.dumpableCopy())
 
         return dumpablePatientCopy
+
+class EventTestCase(unittest.TestCase):
+    def testProperties(self):
+        name = 'name'
+
+        obj = Patient()
+        obj.name = name
+        self.assertEqual(obj.name, name)
+
+        from opentps.core.data import PatientData
+        data1 = PatientData()
+        data2 = PatientData()
+        obj.appendPatientData(data1)
+        obj.appendPatientData(data2)
+        data = obj.patientData
+        self.assertTrue(data1 in data)
+        self.assertTrue(data2 in data)
+        self.assertTrue(obj.hasPatientData(data1))
+        self.assertTrue(obj.hasPatientData(data2))
+
+        obj.removePatientData(data2)
+        data = obj.patientData
+        self.assertTrue(data1 in data)
+        self.assertFalse(data2 in data)
+        self.assertTrue(obj.hasPatientData(data1))
+        self.assertFalse(obj.hasPatientData(data2))
+
+        obj.removePatientData(data1)
+        obj.appendPatientDataList([data1, data2])
+        self.assertTrue(obj.hasPatientData(data1))
+        self.assertTrue(obj.hasPatientData(data2))
+
+        obj.removePatientDataList([data1, data2])
+        self.assertFalse(obj.hasPatientData(data1))
+        self.assertFalse(obj.hasPatientData(data2))
+        
