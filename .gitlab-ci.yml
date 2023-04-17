@@ -79,4 +79,4 @@ unittest_core:
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core/opentps"
     - cd $CI_PROJECT_DIR/opentps_core/opentps
     - touch __init__.py # because unittests does not work on namespace package
-    - python3 -m unittest discover opentps/core
+    - python3 -m unittest discover .
