@@ -64,7 +64,7 @@ class SegmentationCT():
             body = self.segmentBody()
         else:
             body = body.copy()
-        body.dilateMask(filt=compute3DStructuralElement([4, 4, 4], spacing=body.spacing))
+        body.dilateMask(struct=compute3DStructuralElement([4, 4, 4], spacing=body.spacing))
 
         lungs = seg.applyThreshold(self.ct, -950, thresholdMax=-350)
         lungs._imageArray = np.logical_and(lungs._imageArray,body.imageArray)
