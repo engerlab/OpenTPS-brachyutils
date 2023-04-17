@@ -1,5 +1,4 @@
-import cupy
-import cupyx.scipy.ndimage
+
 import numpy as np
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
@@ -31,6 +30,12 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2]):
     -------
 
     """
+
+    try:
+        import cupy
+        import cupyx.scipy.ndimage
+    except:
+        raise Exception("Cupy not found but is mandatory for this function.")
 
     organCOM = organMask.centerOfMass
     if not np.array(shrinkSize == np.array([0, 0, 0])).all():
