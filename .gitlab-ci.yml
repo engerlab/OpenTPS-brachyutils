@@ -78,5 +78,5 @@ unittest_core:
     - cd $CI_PROJECT_DIR/opentps_core/
     - touch opentps/__init__.py # because unittests does not work on namespace package
     - touch __init__.py # because unittests does not work on namespace package
-    - python3 -m unittest discover ./opentps
-    - ls
+    - python3 -m unittest discover -s ./opentps -p '.py'
+    
