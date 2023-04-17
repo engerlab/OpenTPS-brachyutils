@@ -27,27 +27,21 @@ from opentps.core.processing.segmentation.segmentation3D import getBoxAroundROI
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
 from opentps.core.processing.imageProcessing.imageTransform3D import rotateData, translateData, applyTransform3D
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
+from opentps.core.examples.syntheticData import createSynthetic4DCT
 
 if __name__ == '__main__':
 
     ## paths selection ------------------------------------
-    #basePath = 'D:/ImageData/lung/Patient_12/1/FDG1/'
-    #dataPath = basePath + 'dynModAndROIs.p'
-    #savingPath = basePath
-
     organ = 'lung'
     studyFolder = 'FDGorFAZA_study/'
     patientFolder = 'Patient_4'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
-    #
-    resultFolder = '/test/'
-    resultDataFolder = 'data/'
-    #
     #dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
-    dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
-    savingPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + resultFolder
 
+    dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
+
+    # ctList, roiList = createSynthetic4DCT(returnTumorMask=True)
 
     # parameters selection ------------------------------------
     bodyContourToUse = 'Body'
@@ -65,12 +59,12 @@ if __name__ == '__main__':
 
     # interfraction changes parameters
     baselineShift = [-5, 0, 10]
-    baselineShift = [0, 0, 0]
+    # baselineShift = [0, 0, 0]
     translation = [-5, 3, 10]
-    translation = [0, 0, 0]
+    # translation = [0, 0, 0]
     rotation = [0, 5, 0]
-    rotation = [0, 0, 0]
-    shrinkSize = [5, 5, 4]
+    # rotation = [0, 0, 0]
+    shrinkSize = [4, 5, 3]
     # shrinkSize = [0, 0, 0]
 
     # GPU used
@@ -92,6 +86,7 @@ if __name__ == '__main__':
 
     gtvContour = rtStruct.getContourByName(targetContourToUse)
     GTVMask = gtvContour.getBinaryMask(origin=dynMod.midp.origin, gridSize=dynMod.midp.gridSize, spacing=dynMod.midp.spacing)
+    GTVMask = roi
     gtvBox = getBoxAroundROI(GTVMask)
     GTVCenterOfMass = gtvContour.getCenterOfMass(dynMod.midp.origin, dynMod.midp.gridSize, dynMod.midp.spacing)
     GTVCenterOfMassInVoxels = getVoxelIndexFromPosition(GTVCenterOfMass, dynMod.midp)

@@ -1,6 +1,9 @@
 import numpy as np
 import math
 from scipy.ndimage import morphology
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import copy
 import logging
 logger = logging.getLogger(__name__)
 
@@ -21,18 +24,29 @@ def buildStructElem(radius):
     diameter = np.ceil(radius).astype(int) * 2 + 1
     struct = np.zeros(tuple(diameter)).astype(bool)
 
+    ellipsoidRadius = copy.copy(radius)
+    for dimIdx in range(len(ellipsoidRadius)):
+        if ellipsoidRadius[dimIdx] == 0:
+            ellipsoidRadius[dimIdx] = 1
+
     for i in range(diameter[0]):
         for j in range(diameter[1]):
             for k in range(diameter[2]):
                 y = i - math.floor(diameter[0] / 2)
                 x = j - math.floor(diameter[1] / 2)
                 z = k - math.floor(diameter[2] / 2)
-                if (
-                        # We get a warning here for null radius but we want to allow them!
-                        y ** 2 / radius[0] ** 2 + x ** 2 / radius[1] ** 2 + z ** 2 / radius[
-                    2] ** 2 <= 1):  # generate ellipsoid structuring element
-
+                # generate ellipsoid structuring element
+                if (y ** 2 / ellipsoidRadius[0] ** 2 + x ** 2 / ellipsoidRadius[1] ** 2 + z ** 2 / ellipsoidRadius[2] ** 2 <= 1):
                     struct[i, j, k] = True
+
+    # testEllipsoid = skimage.draw.ellipsoid(5, 1, 7, levelset=False)
+
+    # ## to visualize the used structural element
+    # fig = plt.figure(figsize=(8, 8))
+    # ax = fig.add_subplot(1, 1, 1, projection=Axes3D.name)
+    # ax.voxels(struct)
+    # plt.show()
+
     return struct
 
 def dilateMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):

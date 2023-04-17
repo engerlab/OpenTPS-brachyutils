@@ -4,8 +4,6 @@ import cupy
 import cupyx.scipy
 import numpy as np
 import logging
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 # from skimage.morphology import rectangle
 
 from opentps.core.data.images._roiMask import ROIMask
@@ -128,12 +126,6 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2], tryGPU=True):
             # get the structural elements used for the erosion and dilation
             structuralElementErosionXYZ = buildStructElem(shrinkSizeInVoxels)
             structuralElementDilationXYZ = buildStructElem(1.0)
-
-            ## to visualize the used structural element
-            # fig = plt.figure(figsize=(8, 8))
-            # ax = fig.add_subplot(1, 1, 1, projection=Axes3D.name)
-            # ax.voxels(structuralElementErosionXYZ)
-            # plt.show()
 
             ## apply an erosion and dilation
             erodedOrganMask = organMask.copy()
