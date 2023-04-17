@@ -33,6 +33,7 @@ def imageToSITK(image:Union[Image2D, Image3D], type=np.float32):
 
 def image2DToSITK(image: Image2D, type=np.float32):
     imageData = image.imageArray.astype(type)
+    imageData = np.swapaxes(imageData, 0, 1)
 
     img = sitk.GetImageFromArray(imageData)
     img.SetOrigin(image.origin.tolist())
@@ -67,6 +68,7 @@ def sitkImageToImage3D(sitkImage: sitk.Image, type=float):
 
 def sitkImageToImage2D(sitkImage: sitk.Image, type=float):
     imageArray = np.array(sitk.GetArrayFromImage(sitkImage)).astype(type)
+    imageArray = np.swapaxes(imageArray, 0, 1)
 
     image = Image2D(imageArray=imageArray, origin=sitkImage.GetOrigin(), spacing=sitkImage.GetSpacing())
     # TODO SetDirection from angles but it is not clear how angles is defined
@@ -106,8 +108,7 @@ def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarra
         outData[outData < 0.5] = 0
     outData = outData.astype(imgType)
 
-    if dimension>2:
-        outData = np.swapaxes(outData, 0, 2)
+    outData = np.swapaxes(outData, 0, dimension-1)
 
     image.imageArray = outData
     image.origin = newOrigin

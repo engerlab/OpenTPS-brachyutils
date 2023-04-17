@@ -108,3 +108,24 @@ class Image2D(PatientData):
         x = self.origin[0] + np.arange(self.gridSize[0]) * self.spacing[0]
         y = self.origin[1] + np.arange(self.gridSize[1]) * self.spacing[1]
         return np.meshgrid(x,y, indexing='ij')
+
+    def hasSameGrid(self, otherImage) -> bool:
+        """Check whether the voxel grid is the same as the voxel grid of another image given as input.
+
+            Parameters
+            ----------
+            otherImage : numpy array
+                image to which the voxel grid is compared.
+
+            Returns
+            -------
+            bool
+                True if grids are identical, False otherwise.
+            """
+
+        if (np.array_equal(self.gridSize, otherImage.gridSize) and
+                np.allclose(self._origin, otherImage._origin, atol=0.01) and
+                np.allclose(self._spacing, otherImage.spacing, atol=0.01)):
+            return True
+        else:
+            return False
