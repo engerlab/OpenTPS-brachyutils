@@ -222,7 +222,7 @@ class PlanIonBeam:
 class PlanIonLayerBeamCase(unittest.TestCase):
     def testFusionDuplicates(self):
         from opentps.core.data.plan import PlanIonLayer
-        
+
         beam = PlanIonBeam()
         beam.gantryAngle = 0
         beam.couchAngle = 0

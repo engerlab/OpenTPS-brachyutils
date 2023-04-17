@@ -379,8 +379,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         mu = 0
         layer.appendSpot(x, y, mu)
 
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
 
         self.assertRaises(Exception, lambda: layer.appendSpot(x, y, mu))
 
