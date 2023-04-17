@@ -1,28 +1,17 @@
 
 __all__ = ['ROIMask']
 
-import math
-
 import numpy as np
 import scipy
-from opentps.core.processing.imageProcessing import sitkImageProcessing
-from scipy.ndimage import morphology
-
 import copy
 import logging
 
 from opentps.core.data.images._image3D import Image3D
 from opentps.core import Event
+from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
+from opentps.core.processing.imageProcessing import roiMasksProcessing
 
 logger = logging.getLogger(__name__)
-
-try:
-    import cupy
-    import cupyx.scipy.ndimage
-except:
-    logger.warning("Module cupy not installed")
-    pass
-
 
 
 class ROIMask(Image3D):
@@ -61,69 +50,17 @@ class ROIMask(Image3D):
         COM = np.array(scipy.ndimage.measurements.center_of_mass(self._imageArray))
         return (COM * self.spacing) + self.origin
 
+    def getVolume(self, inVoxels=False):
+        return roiMasksProcessing.getMaskVolume(self, inVoxels=inVoxels)
+
     def copy(self):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
-    def dilate(self, radius=1.0, filt=None, tryGPU=False):
-        """
-                Dilates the binary mask image using a 3D ellipsoid structuring element.
+    def dilateMask(self, radius=1.0, struct=None, tryGPU=True):
+        roiMasksProcessing.dilateMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
-                Args:
-                - radius: float or 3-tuple of floats, the radii of the ellipsoid in each dimension. Default is 1.0.
-                - filt: np.array of bools, the structuring element to use for dilation. Default is None.
-                - tryGPU: bool, whether to attempt to use the GPU for dilation using the CuPy library. Default is False.
-
-                Returns:
-                - None
-                """
-        def buildFilter(radius):
-            diameter = np.ceil(radius).astype(int) * 2 + 1
-            filt = np.zeros(tuple(diameter)).astype(bool)
-            for i in range(diameter[0]):
-                for j in range(diameter[1]):
-                    for k in range(diameter[2]):
-                        y = i - math.floor(diameter[0] / 2)
-                        x = j - math.floor(diameter[1] / 2)
-                        z = k - math.floor(diameter[2] / 2)
-                        if (
-                                # We get a warning here for null radius but we want to allow them!
-                                y ** 2 / radius[0] ** 2 + x ** 2 / radius[1] ** 2 + z ** 2 / radius[
-                            2] ** 2 <= 1):  # generate ellipsoid structuring element
-
-                            filt[i, j, k] = True
-            return filt
-
-        if filt is None:
-            radius = radius / np.array(self.spacing)
-
-
-        if self._imageArray.size > 1e5 and tryGPU:
-            try:
-                logger.info('Using cupy to dilate mask   ')
-                filt = buildFilter(radius)
-                self._imageArray = cupy.asnumpy(
-                    cupyx.scipy.ndimage.binary_dilation(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
-            except:
-                logger.warning('cupy not used to dilate mask.')
-                tryGPU = False
-        else:
-            tryGPU = False
-
-        if not tryGPU:
-            try:
-                logger.info('Using SITK to dilate mask.')
-                radiusSITK = np.round(radius).astype(int).tolist()
-                self._dilateSITK(radiusSITK)
-            except:
-                logger.warning('Scipy used to dilate mask.')
-                filt = buildFilter(radius)
-                self._dilateScipy(filt)
-
-    def _dilateSITK(self, radius):
-        sitkImageProcessing.dilate(self, radius)
-
-    def _dilateScipy(self, filt):
-        self._imageArray = morphology.binary_dilation(self._imageArray, structure=filt)
+    def erodeMask(self, radius=1.0, struct=None, tryGPU=True):
+        roiMasksProcessing.erodeMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
     def createMaskRings(self, nRings, radius):
         """
@@ -136,7 +73,7 @@ class ROIMask(Image3D):
         maskCopy = self.copy()
 
         for i in range(nRings):
-            maskCopy.dilate(radius)
+            maskCopy.dilateMask(radius)
             roiSizes.append(maskCopy.copy())
 
         for i in range(nRings):
@@ -146,96 +83,35 @@ class ROIMask(Image3D):
             rings.append(ringMask)
         return rings
 
-    def erode(self, radius=1.0, filt=None, tryGPU=True):
-        if filt is None:
-            radius = radius / np.array(self.spacing)
-            if np.min(radius) <= 0:
-                return
-            diameter = np.ceil(radius).astype(int) * 2 + 1
-            filt = np.zeros(tuple(diameter)).astype(bool)
-            for i in range(diameter[0]):
-                for j in range(diameter[1]):
-                    for k in range(diameter[2]):
-                        y = i - math.floor(diameter[0] / 2)
-                        x = j - math.floor(diameter[1] / 2)
-                        z = k - math.floor(diameter[2] / 2)
-                        if (
-                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[
-                            2] ** 2 <= 1):  # generate ellipsoid structuring element
-                            filt[i, j, k] = True
 
-        if self._imageArray.size > 1e5 and tryGPU:
-            try:
-                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
-            except:
-                logger.warning('cupy not used to erode mask.')
-                self._imageArray = morphology.binary_erosion(self._imageArray, structure=filt)
+    def openMask(self, radius=1.0, struct=None, tryGPU=True):
+        roiMasksProcessing.openMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
+
+    def closeMask(self, radius=1.0, struct=None, tryGPU=True):
+        roiMasksProcessing.closeMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
+
+
+    def getBinaryContourMask(self, internalBorder=False):
+
+        if internalBorder:
+            erodedROI = ROIMask.fromImage3D(self)
+            erodedROI.imageArray = np.array(erodedROI.imageArray)
+            erodedROI.erodeMask(radius=erodedROI.spacing)
+            imageArray = np.logical_xor(erodedROI.imageArray, self.imageArray)
+
+            erodedROI.imageArray = imageArray
+
+            return erodedROI
+
         else:
-            self._imageArray = morphology.binary_erosion(self._imageArray, structure=filt)
+            dilatedROI = ROIMask.fromImage3D(self)
+            dilatedROI.imageArray = np.array(dilatedROI.imageArray)
+            dilatedROI.dilateMask(radius=dilatedROI.spacing)
+            imageArray = np.logical_xor(dilatedROI.imageArray, self.imageArray)
 
-    def open(self, radius=1.0, filt=None, tryGPU=True):
-        if filt is None:
-            radius = radius / np.array(self.spacing)
-            if np.min(radius) <= 0:
-                return
-            diameter = np.ceil(radius).astype(int) * 2 + 1
-            filt = np.zeros(tuple(diameter)).astype(bool)
-            for i in range(diameter[0]):
-                for j in range(diameter[1]):
-                    for k in range(diameter[2]):
-                        y = i - math.floor(diameter[0] / 2)
-                        x = j - math.floor(diameter[1] / 2)
-                        z = k - math.floor(diameter[2] / 2)
-                        if (
-                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[
-                            2] ** 2 <= 1):  # generate ellipsoid structuring element
-                            filt[i, j, k] = True
+            dilatedROI.imageArray = imageArray
 
-        if self._imageArray.size > 1e5 and tryGPU:
-            try:
-                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_opening(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
-            except:
-                logger.warning('cupy not used to open mask.')
-                self._imageArray = morphology.binary_opening(self._imageArray, structure=filt)
-        else:
-            self._imageArray = morphology.binary_opening(self._imageArray, structure=filt)
-
-    def close(self, radius=1.0, filt=None, tryGPU=True):
-        if filt is None:
-            radius = radius / np.array(self.spacing)
-            if np.min(radius) <= 0:
-                return
-            diameter = np.ceil(radius).astype(int) * 2 + 1
-            filt = np.zeros(tuple(diameter)).astype(bool)
-            for i in range(diameter[0]):
-                for j in range(diameter[1]):
-                    for k in range(diameter[2]):
-                        y = i - math.floor(diameter[0] / 2)
-                        x = j - math.floor(diameter[1] / 2)
-                        z = k - math.floor(diameter[2] / 2)
-                        if (
-                                y ** 2 / radius[1] ** 2 + x ** 2 / radius[0] ** 2 + z ** 2 / radius[
-                            2] ** 2 <= 1):  # generate ellipsoid structuring element
-                            filt[i, j, k] = True
-
-        if self._imageArray.size > 1e5 and tryGPU:
-            try:
-                self._imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_closing(cupy.asarray(self._imageArray), structure=cupy.asarray(filt)))
-            except:
-                logger.warning('cupy not used to close mask.')
-                self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
-        else:
-            self._imageArray = morphology.binary_closing(self._imageArray, structure=filt)
-
-    def getBinaryContourMask(self):
-        dilatedROI = ROIMask.fromImage3D(self)
-        dilatedROI.imageArray = np.array(dilatedROI.imageArray)
-        dilatedROI.dilate(radius=dilatedROI.spacing)
-        imageArray = np.logical_xor(dilatedROI.imageArray, self.imageArray)
-
-        dilatedROI.imageArray = imageArray
-
-        return dilatedROI
+            return dilatedROI
 
 
     def getROIContour(self):

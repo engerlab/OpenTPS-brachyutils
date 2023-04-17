@@ -5,12 +5,12 @@ from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMolecule impo
 
 
 class RangeShifter:
-    def __init__(self):
+    def __init__(self, material='PMMA', density=1.0, WET=40.0, type='binary'):
         self.ID = ''
-        self.type = ''
-        self.material:MCsquareMolecule = None
-        self.density = 0.0
-        self.WET = 0.0
+        self.type = type
+        self.material:MCsquareMolecule = material
+        self.density = density
+        self.WET = WET
 
     def __str__(self):
         s = ''

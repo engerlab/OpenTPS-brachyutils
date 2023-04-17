@@ -157,7 +157,7 @@ class Deformation3D(Image3D):
         # self.origin = np.array(origin)
         # self.spacing = np.array(spacing)
 
-    def deformImage(self, image, binarizeMask=True, fillValue='closest', outputType=np.float32, tryGPU=True):
+    def deformImage(self, image, fillValue='closest', outputType=np.float32, tryGPU=True):
         """Deform 3D image using linear interpolation.
 
             Parameters
@@ -195,7 +195,7 @@ class Deformation3D(Image3D):
             image.imageArray = field.warp(image.imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
 
-        if init_dtype == 'bool' and binarizeMask==True:
+        if init_dtype == 'bool':
             
             testArray = image.imageArray
             testArray[testArray < 0.5] = 0

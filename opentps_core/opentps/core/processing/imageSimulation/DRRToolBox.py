@@ -1,13 +1,14 @@
 import math
-import logging
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 from opentps.core.data.dynamicData._dynamic2DSequence import Dynamic2DSequence
 from opentps.core.data.images._projections import DRR
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwardProjectionTigre
-
-logger = logging.getLogger(__name__)
+from opentps.core.processing.imageSimulation.ForwardProjectorTomopy import forwardProjectionTomopy
 
 def getImageInCorrectOrientation(imageArray, orientation):
 
@@ -21,24 +22,17 @@ def getImageInCorrectOrientation(imageArray, orientation):
     return imageToUse
 
 
-def forwardProjection(image, angle, axis='Z'):
+def forwardProjection(image, angleInDeg=0, axis='Z', library='tomopy', nCores=1):
 
-    angleInRad = angle * 2 * math.pi / 360
-    library = 'tomopy'
+    angleInRad = angleInDeg * 2 * math.pi / 360
 
     if library == 'tomopy':
         img3DArrayOriented = getImageInCorrectOrientation(image.imageArray, axis)
-        try:
-            import tomopy       ## this way the import is done multiple times in the case of a DRRSet or DRRSequence creation, not sure it's the best idea
-            drrImage = tomopy.project(img3DArrayOriented, angleInRad, ncore=2)[0]
+        drrImage = forwardProjectionTomopy(img3DArrayOriented, angleInRad, nCores=nCores)
 
-            # drrImage = tomopy.sim.project.add_gaussian(drrImage, mean=0, std=1)
-            return drrImage
-        except:
-            library = 'tigre'
-            logger.warning("No module tomopy available. Try tigre instead.")
+        return drrImage
 
-    if library == 'tigre':
+    elif library == 'tigre':
         try:
             drrImage = forwardProjectionTigre(image, angleInRad, axis)[0]
             return drrImage
@@ -46,7 +40,7 @@ def forwardProjection(image, angle, axis='Z'):
             logger.error("Could not simulate projection using tigre.")
 
 
-def computeDRRSet(image, angleAndAxisList, sourceImageName=''):
+def computeDRRSet(image, angleAndAxisList, sourceImageName='', library='tomopy', nCores=1):
 
     """
     if image is a CTImage, this should copy the patient info and image ID to be given to the XRayImage
@@ -70,7 +64,7 @@ def computeDRRSet(image, angleAndAxisList, sourceImageName=''):
     for angleAndAxe in angleAndAxisList:
 
         drr = DRR(name='DRR_' + nameToUse + '_' + str(angleAndAxe[1]) + '_' + str(angleAndAxe[0]), sourceImage=image.seriesInstanceUID)
-        drr.imageArray = forwardProjection(image, angleAndAxe[0], angleAndAxe[1])
+        drr.imageArray = forwardProjection(image, angleInDeg=angleAndAxe[0], axis=angleAndAxe[1], library=library, nCores=nCores)
         drr.projectionAngle = angleAndAxe[0]
         drr.rotationAxis = angleAndAxe[1]
 
@@ -79,7 +73,7 @@ def computeDRRSet(image, angleAndAxisList, sourceImageName=''):
     return DRRSet
 
 
-def computeDRRSequence(dynamic3DSequence, angleAndOriList):
+def computeDRRSequence(dynamic3DSequence, angleAndOriList, library='tomopy', nCores=1):
     """
     compute a DRR Set for each image in a list
     """
@@ -91,14 +85,14 @@ def computeDRRSequence(dynamic3DSequence, angleAndOriList):
 
     DRRSetSequence = []
     for imageIndex, image in enumerate(imageList):
-        DRRSetSequence.append(computeDRRSet(image, angleAndOriList, sourceImageName=str(imageIndex)))
+        DRRSetSequence.append(computeDRRSet(image, angleAndOriList, sourceImageName=str(imageIndex), library=library, nCores=nCores))
 
     return DRRSetSequence
 
 
-def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList):
+def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList, library='tomopy', nCores=1):
 
-    drrSetSequence = computeDRRSequence(dynamic3DSequence, angleAndAxeList)
+    drrSetSequence = computeDRRSequence(dynamic3DSequence, angleAndAxeList, library=library, nCores=nCores)
     numberOfImageInSet = len(drrSetSequence[0])
 
     dyn2DSeqList = []
@@ -118,7 +112,4 @@ def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList):
         dyn2DSeqList[imageInSetIndex].timingsList = dynamic3DSequence.timingsList
         dyn2DSeqList[imageInSetIndex].dyn2DImageList = DRRList
 
-
     return dyn2DSeqList
-
-# *(360/(2*math.pi))

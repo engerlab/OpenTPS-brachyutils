@@ -6,7 +6,7 @@ from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._roiMask import ROIMask
 
 
-def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], returnTumorMask = False):
+def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], spacing=[1, 1, 2], returnTumorMask = False):
     # GENERATE SYNTHETIC CT IMAGE
     # background
     im = np.full((170, 170, 100), -1000)
@@ -21,12 +21,12 @@ def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], returnTumo
     im[80:90, 95:105, :] = 800
     # couch
     im[:, 130:135, :] = 100
-    ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=[1, 1, 2])
+    ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=spacing)
 
     if returnTumorMask:
         mask = np.full((170, 170, 100), 0)
-        mask[targetPos[0]:targetPos[0]+10, targetPos[1]:targetPos[1]+10, targetPos[2]:targetPos[2]+10] = 1
-        roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=[1, 1, 2])
+        mask[targetPos[0]-5:targetPos[0]+5, targetPos[1]-5:targetPos[1]+5, targetPos[2]-5:targetPos[2]+5] = 1
+        roi = ROIMask(imageArray=mask, origin=[0, 0, 0], spacing=spacing)
 
         return ct, roi
 
@@ -34,7 +34,7 @@ def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], returnTumo
         return ct
 
 
-def createSynthetic4DCT(numberOfPhases = 4, returnTumorMasks = False):
+def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks = False):
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = Dynamic3DSequence()
@@ -93,13 +93,13 @@ def createSynthetic4DCT(numberOfPhases = 4, returnTumorMasks = False):
     if returnTumorMasks:
         maskList = []
         for phaseIndex in range(numberOfPhases):
-            phase,  mask = createSynthetic3DCT(targetPos=[xPosList[phaseIndex], 95, zPosList[phaseIndex]], diaphragmPos=diaphPosList[phaseIndex], returnTumorMask=returnTumorMasks)
+            phase,  mask = createSynthetic3DCT(targetPos=[xPosList[phaseIndex], 95, zPosList[phaseIndex]], diaphragmPos=diaphPosList[phaseIndex], spacing=spacing, returnTumorMask=returnTumorMasks)
             phaseList.append(phase)
             maskList.append(mask)
 
     else:
         for phaseIndex in range(numberOfPhases):
-            phase = createSynthetic3DCT(targetPos=[xPosList[phaseIndex], 95, zPosList[phaseIndex]], diaphragmPos=diaphPosList[phaseIndex])
+            phase = createSynthetic3DCT(targetPos=[xPosList[phaseIndex], 95, zPosList[phaseIndex]], diaphragmPos=diaphPosList[phaseIndex], spacing=spacing)
             phaseList.append(phase)
 
     CT4D.dyn3DImageList = phaseList

@@ -115,7 +115,6 @@ class PatientData:
     def getTypeAsString(self) -> str:
         return self.__class__.__name__
 
-
 class EventTestCase(unittest.TestCase):
     class TestObjEventParent(PatientData):
         def __init__(self):
