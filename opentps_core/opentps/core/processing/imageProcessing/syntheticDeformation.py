@@ -130,8 +130,8 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2], tryGPU=True):
             ## apply an erosion and dilation
             erodedOrganMask = organMask.copy()
             dilatedOrganMask = organMask.copy()
-            erodedOrganMask.erodeMask(struct=structuralElementErosionXYZ)
-            dilatedOrganMask.dilateMask(struct=structuralElementDilationXYZ)
+            erodedOrganMask.erodeMask(struct=structuralElementErosionXYZ, tryGPU=tryGPU)
+            dilatedOrganMask.dilateMask(struct=structuralElementDilationXYZ, tryGPU=tryGPU)
             erodedOrganMask = erodedOrganMask.imageArray
             dilatedOrganMask = dilatedOrganMask.imageArray
 

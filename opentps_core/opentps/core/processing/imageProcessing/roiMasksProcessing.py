@@ -129,8 +129,8 @@ def erodeMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
 
     if maskCopy.imageArray.size > 1e5 and tryGPU:
         try:
+            cupyImageProcessing.erodeMask(maskCopy, radius=radius, struct=struct)
             logger.info('Using cupy to erode mask')
-            cupyImageProcessing.dilateMask(maskCopy, radius=radius, struct=struct)
         except:
             logger.warning('Cupy not working to erode mask.')
             tryGPU = False
@@ -138,7 +138,7 @@ def erodeMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
         tryGPU = False
 
     if not tryGPU:
-        logger.warning('Scipy used to erode mask.')
+        logger.info('Scipy used to erode mask.')
         erodeMaskScipy(maskCopy, radius=radius, struct=struct)
 
     if not inPlace:
