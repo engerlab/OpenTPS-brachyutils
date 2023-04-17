@@ -37,9 +37,9 @@ if __name__ == '__main__':
     patientFolder = 'Patient_4'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
-    #dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
 
-    dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
+    # dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
 
     # ctList, roiList = createSynthetic4DCT(returnTumorMask=True)
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     # translation = [0, 0, 0]
     rotation = [0, 5, 0]
     # rotation = [0, 0, 0]
-    shrinkSize = [4, 5, 0]
+    shrinkSize = [8, 5, 2]
     # shrinkSize = [0, 0, 0]
 
     # GPU used
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     rotateData(GTVMask, rotAnglesInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize, tryGPU=False)
+    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
     resampleImage3DOnImage3D(shrinkedDynMod.midp, dynModCopy.midp, inPlace=True)
