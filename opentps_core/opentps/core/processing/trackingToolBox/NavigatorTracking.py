@@ -1,9 +1,6 @@
 import numpy as np
 import math
 from scipy.ndimage.interpolation import rotate
-from skimage.filters import threshold_otsu
-from skimage.morphology import remove_small_objects
-from skimage.measure import label, regionprops
 import copy
 
 
@@ -15,6 +12,10 @@ def oneDimensionNavThreshold(videoData, nav, gama, bins):
     Use Otsu's thresholding method to select a threshold and mask the new ...
     """
 
+    from skimage.filters import threshold_otsu
+    from skimage.morphology import remove_small_objects
+    from skimage.measure import label, regionprops
+    
     #start = time.time()
 
     X1 = int(round(nav[2][0] * videoData["imageArrayList"][0].shape[1]))
