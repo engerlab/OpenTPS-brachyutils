@@ -1,7 +1,8 @@
 
 __all__ = ['PatientList']
 
-
+import functools
+import unittest
 from typing import Sequence
 
 from opentps.core.data._patient import Patient
@@ -72,3 +73,27 @@ class PatientList():
             dumpablePatientListCopy._patients.append(patient.dumpableCopy())
 
         return dumpablePatientListCopy()
+
+class EventTestCase(unittest.TestCase):
+    def testPropertiesAndAccessMethods(self):
+        from opentps.core.data import Patient
+        patient = Patient()
+
+        obj = PatientList()
+        obj.patientAddedSignal.connect(functools.partial(self._assertPatientAdded, patient))
+        obj.patientRemovedSignal.connect(functools.partial(self._assertPatientRemoved, patient))
+
+        obj.append(patient)
+        self.assertEqual(obj.patients[0], patient)
+        self.assertEqual(obj.getIndex(patient), 0)
+
+        obj.remove(patient)
+        with self.assertRaises(ValueError) as cm:
+            obj.getIndex(patient)
+        self.assertEqual(len(obj.patients), 0)
+
+    def _assertPatientAdded(self, refPatient, patient):
+        self.assertEqual(refPatient, patient)
+
+    def _assertPatientRemoved(self, refPatient, patient):
+        self.assertEqual(refPatient, patient)

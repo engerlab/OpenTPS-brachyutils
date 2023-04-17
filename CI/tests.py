@@ -1,5 +1,7 @@
 
 import os
+import unittest
+
 import numpy as np
 
 from opentps.core.data import PatientList
@@ -36,6 +38,8 @@ def checkNoInit():
 print('TEST')
 
 checkNoInit()
+
+# Examples
 exampleMorphons.run()
 exampleSegmentation.run()
 

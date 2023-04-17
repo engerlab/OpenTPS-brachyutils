@@ -283,6 +283,8 @@ class RTPlan(PatientData):
 
 class PlanIonLayerTestCase(unittest.TestCase):
     def testLen(self):
+        from opentps.core.data.plan import PlanIonBeam, PlanIonLayer
+
         plan = RTPlan()
         beam = PlanIonBeam()
         layer = PlanIonLayer(nominalEnergy=100.)
@@ -297,6 +299,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         self.assertEqual(len(plan), 0)
 
     def testLenWithTimings(self):
+        from opentps.core.data.plan import PlanIonBeam, PlanIonLayer
+
         plan = RTPlan()
         beam = PlanIonBeam()
         layer = PlanIonLayer(nominalEnergy=100.)
@@ -311,6 +315,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         self.assertEqual(len(plan), 0)
 
     def testReorderPlan(self):
+        from opentps.core.data.plan import PlanIonBeam, PlanIonLayer
+
         plan = RTPlan()
         beam = PlanIonBeam()
         layer = PlanIonLayer(nominalEnergy=100.)
@@ -344,6 +350,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(layer0.spotMUs, np.array([0.1, 0.2, 0.5, 0.3]))
 
     def testFusionDuplicates(self):
+        from opentps.core.data.plan import PlanIonBeam, PlanIonLayer
+
         plan = RTPlan()
         beam1 = PlanIonBeam()
         beam1.gantryAngle = 0
@@ -382,6 +390,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         np.testing.assert_array_almost_equal(plan._beams[0]._layers[1].spotMUs, np.array([0.3, 0.6, 0.4, 0.2]))
 
     def testSimplify(self):
+        from opentps.core.data.plan import PlanIonBeam, PlanIonLayer
+
         plan = RTPlan()
         beam1 = PlanIonBeam()
         beam1.gantryAngle = 0

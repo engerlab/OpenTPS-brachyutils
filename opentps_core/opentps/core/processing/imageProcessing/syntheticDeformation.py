@@ -1,7 +1,5 @@
 import copy
 
-import cupy
-import cupyx.scipy
 import numpy as np
 import logging
 # from skimage.morphology import rectangle
@@ -20,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
-    
+    import cupy
+    import cupyx.scipy
+
     if not np.array(shift == np.array([0, 0, 0])).all(): ## check if there is a shift to apply
 
         if isinstance(inputData, Dynamic3DModel):
@@ -96,6 +96,9 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2], tryGPU=True):
     -------
 
     """
+
+    import cupy
+    import cupyx.scipy
 
     organCOM = organMask.centerOfMass
     if not np.array(shrinkSize == np.array([0, 0, 0])).all():
