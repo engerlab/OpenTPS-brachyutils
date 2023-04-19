@@ -2,15 +2,9 @@ import numpy as np
 import scipy.ndimage
 import logging
 
-try:
-    import cupy
-    import cupyx.scipy.ndimage
-except:
-    pass
-
 logger = logging.getLogger(__name__)
 
-
+from opentps.core.processing.imageProcessing import cupyImageProcessing
 def gaussConv(data, sigma, truncate=2.5, mode="reflect", tryGPU=True):
     """Apply Gaussian convolution on input data.
 
@@ -29,10 +23,9 @@ def gaussConv(data, sigma, truncate=2.5, mode="reflect", tryGPU=True):
 
     if data.size > 1e6 and tryGPU:
         try:
-            return cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupy.asarray(data), sigma=sigma, truncate=truncate, mode=mode))
+            return cupyImageProcessing.gaussianSmoothing(data, sigma=sigma, truncate=truncate, mode=mode)
         except:
             logger.warning('cupy not used for gaussian smoothing.')
-            # print('cupy not used for gaussian smoothing.')
 
     return scipy.ndimage.gaussian_filter(data, sigma=sigma, truncate=truncate, mode=mode)
 

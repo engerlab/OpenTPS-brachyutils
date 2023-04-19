@@ -1,10 +1,7 @@
 import copy
-
-import cupy
-import cupyx.scipy
 import numpy as np
 import logging
-# from skimage.morphology import rectangle
+logger = logging.getLogger(__name__)
 
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data._roiContour import ROIContour
@@ -15,8 +12,7 @@ from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.processing.imageProcessing.imageTransform3D import getVoxelIndexFromPosition
 from opentps.core.processing.segmentation.segmentationCT import compute3DStructuralElement
 from opentps.core.processing.imageProcessing.roiMasksProcessing import buildStructElem
-
-logger = logging.getLogger(__name__)
+from opentps.core.processing.imageProcessing.filter3D import gaussConv
 
 
 def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
@@ -193,8 +189,7 @@ def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2], tryGPU=True):
                 newArray[point[0], point[1], point[2]] = newValue
 
             ## smooth the result
-            cupyNewImg = cupy.asarray(newArray)
-            smoothedImg = cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupyNewImg, 1))
+            smoothedImg = gaussConv(newArray, sigma=1, tryGPU=tryGPU)
 
             ## replace the target area with the smoothed img
             newImage = copy.deepcopy(model.midp.imageArray)

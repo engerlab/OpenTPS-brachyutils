@@ -10,7 +10,7 @@ try:
     import cupy
     import cupyx
 except:
-    logger.warning("Module cupy not installed")
+    logger.warning("Cannot import Cupy module")
     pass
     
 from opentps.core.data.images._image3D import Image3D
@@ -18,7 +18,6 @@ from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
-from opentps.core.processing.imageProcessing.resampler3D import resample
 from opentps.core.processing.imageProcessing.roiMasksProcessing import buildStructElem
 
 ## ------------------------------------------------------------------------------------------------
@@ -108,6 +107,7 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
         initialGridSize = copy.copy(image.gridSize)
         initialOrigin = copy.copy(image.origin)
         resampled = True
+        from opentps.core.processing.imageProcessing.resampler3D import resample
         resample(image, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)], inPlace=True)
         logger.info("The rotation of data using Cupy does not take into account heterogeneous spacing. Resampling in homogeneous spacing is done.")
 
@@ -402,3 +402,8 @@ def closeMask(mask, radius=1.0, struct=None, inPlace=True):
         maskCopy = mask.copy()
         maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_closing(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
         return maskCopy
+
+def gaussianSmoothing(imgArray, sigma=1, truncate=2.5, mode="reflect"):
+    cupyNewImg = cupy.asarray(imgArray)
+    smoothedImg = cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupyNewImg, sigma=sigma, truncate=truncate, mode=mode))
+    return smoothedImg

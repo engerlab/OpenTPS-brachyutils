@@ -37,9 +37,9 @@ if __name__ == '__main__':
     patientFolder = 'Patient_4'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
-    dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    # dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
 
-    # dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
+    dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
 
     # ctList, roiList = createSynthetic4DCT(returnTumorMask=True)
 
