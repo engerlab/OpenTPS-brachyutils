@@ -391,8 +391,8 @@ class PlanIonLayerTestCase(unittest.TestCase):
         mu = 0
         layer.appendSpot(x, y, mu)
 
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
 
         self.assertRaises(Exception, lambda: layer.appendSpot(x, y, mu))
 
@@ -405,9 +405,9 @@ class PlanIonLayerTestCase(unittest.TestCase):
         startTime = 0
         layer.appendSpot(x, y, mu, startTime)
 
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
-        self.assertEqual(layer.spotTimings, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
+        np.testing.assert_array_equal(layer.spotTimings, [0])
 
         self.assertRaises(Exception, lambda: layer.appendSpot(x, y, mu, startTime))
 
@@ -419,12 +419,12 @@ class PlanIonLayerTestCase(unittest.TestCase):
         mu = 0
 
         layer.setSpot(x, y, mu)
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
 
         layer.setSpot(x, y, mu)
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
 
     def testSetSpotWithTiming(self):
         layer = PlanIonLayer()
@@ -435,14 +435,14 @@ class PlanIonLayerTestCase(unittest.TestCase):
         startTime = 0
 
         layer.setSpot(x, y, mu, startTime)
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
-        self.assertEqual(layer.spotTimings, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
+        np.testing.assert_array_equal(layer.spotTimings, [0])
 
         layer.setSpot(x, y, mu)
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
-        self.assertEqual(layer.spotTimings, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
+        np.testing.assert_array_equal(layer.spotTimings, [0])
 
     def testRemoveSpot(self):
         layer = PlanIonLayer()
@@ -453,9 +453,9 @@ class PlanIonLayerTestCase(unittest.TestCase):
         startTime = 0
 
         layer.setSpot(x, y, mu, startTime)
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
-        self.assertEqual(layer.spotTimings, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
+        np.testing.assert_array_equal(layer.spotTimings, [0])
 
         layer.removeSpot(x, y)
 
@@ -464,9 +464,9 @@ class PlanIonLayerTestCase(unittest.TestCase):
         np.testing.assert_array_equal(layer.spotTimings, np.array([]))
 
         layer.setSpot(x, y, mu, startTime)
-        self.assertEqual(list(layer.spotXY), [(x, y)])
-        self.assertEqual(layer.spotMUs, 0)
-        self.assertEqual(layer.spotTimings, 0)
+        np.testing.assert_array_equal(list(layer.spotXY), [(x, y)])
+        np.testing.assert_array_equal(layer.spotMUs, [0])
+        np.testing.assert_array_equal(layer.spotTimings, [0])
 
     def testSpotDefinedInXY(self):
         layer = PlanIonLayer()

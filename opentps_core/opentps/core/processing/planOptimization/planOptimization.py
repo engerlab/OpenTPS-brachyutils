@@ -8,7 +8,7 @@ from opentps.core.processing.planOptimization.objectives.doseFidelity import Dos
 
 try:
     import sparse_dot_mkl
-    use_MKL = 0
+    use_MKL = 0 # Currently deactivated on purpose because sparse_dot_mkl generates seg fault
 except:
     use_MKL = 0
 

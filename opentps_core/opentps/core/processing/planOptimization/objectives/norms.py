@@ -6,7 +6,13 @@ import logging
 from numbers import Number
 import math
 
-import sparse_dot_mkl
+import scipy as sp
+
+try:
+    import sparse_dot_mkl
+    use_MKL = False # Currently deactivated on purpose because sparse_dot_mkl generates seg fault
+except:
+    use_MKL = False
 
 from opentps.core.processing.planOptimization import tools
 from opentps.core.processing.planOptimization.objectives.baseFunction import BaseFunc
@@ -161,7 +167,11 @@ class NormL21(Norm):
                 scale = 1 / energyWeight
         elif scale_reg == "wenbo":
             arrayWithOnes = np.ones(len(x1D[group]))
-            beamDoseTarget = sparse_dot_mkl.dot_product_mkl(self.BLTarget[:, group], arrayWithOnes.astype(np.float32))
+            if use_MKL:
+                beamDoseTarget = sparse_dot_mkl.dot_product_mkl(self.BLTarget[:, group], arrayWithOnes.astype(np.float32))
+            else:
+                beamDoseTarget = sp.dot_product_mkl(self.BLTarget[:, group],
+                                                                arrayWithOnes.astype(np.float32))
             scale = np.sqrt(la.norm(beamDoseTarget) / self.struct.nSpotsInLayer[index])
         else:
             logger.error(
