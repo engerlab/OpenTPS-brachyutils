@@ -37,9 +37,9 @@ if __name__ == '__main__':
     patientFolder = 'Patient_4'
     patientComplement = '/1/FDG1'
     basePath = '/DATA2/public/'
-    dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
+    # dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
 
-    # dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
+    dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
 
     # ctList, roiList = createSynthetic4DCT(returnTumorMask=True)
 
@@ -68,6 +68,7 @@ if __name__ == '__main__':
     # shrinkSize = [0, 0, 0]
 
     # GPU used
+    tryGPU = True
     usedGPU = 0
 
     try:
@@ -131,24 +132,24 @@ if __name__ == '__main__':
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
         print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
-        dynMod, GTVMask = applyBaselineShift(dynMod, GTVMask, baselineShift)
+        dynMod, GTVMask = applyBaselineShift(dynMod, GTVMask, baselineShift, tryGPU=tryGPU)
     else:
         print('Not implemented in this script --> must use the get contour by name function')
 
     print('-' * 50)
-    translateData(dynMod, translationInMM=translation)
-    translateData(GTVMask, translationInMM=translation)
+    translateData(dynMod, translationInMM=translation, tryGPU=tryGPU)
+    translateData(GTVMask, translationInMM=translation, tryGPU=tryGPU)
 
     print('-'*50)
     rotateData(dynMod, rotAnglesInDeg=rotation)
     rotateData(GTVMask, rotAnglesInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
+    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize, tryGPU=tryGPU)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
 
-    resampleImage3DOnImage3D(shrinkedDynMod.midp, dynModCopy.midp, inPlace=True)
-    resampleImage3DOnImage3D(shrinkedOrganMask, GTVMaskCopy, inPlace=True)
+    resampleImage3DOnImage3D(shrinkedDynMod.midp, dynModCopy.midp, inPlace=True, tryGPU=tryGPU)
+    resampleImage3DOnImage3D(shrinkedOrganMask, GTVMaskCopy, inPlace=True, tryGPU=tryGPU)
 
     print('-' * 50)
 
