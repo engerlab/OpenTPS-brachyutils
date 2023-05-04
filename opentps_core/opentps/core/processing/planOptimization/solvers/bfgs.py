@@ -30,6 +30,7 @@ class ScipyOpt:
             self.Nfeval += 1
 
         startTime = time.time()
+
         cost = [func[0].eval(x0)]
         if 'GRAD' not in func[0].cap(x0):
             logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))

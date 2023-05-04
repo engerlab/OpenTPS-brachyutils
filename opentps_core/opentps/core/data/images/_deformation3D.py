@@ -206,6 +206,12 @@ class Deformation3D(Image3D):
 
         return image
 
+    def inverse(self):
+        if self.displacement is not None:
+            self.displacement = None
+        if self.velocity is not None:
+            self.velocity.imageArray = -self.velocity.imageArray
+
     def dumpableCopy(self):
         dumpableDef = Deformation3D(imageArray=self.imageArray, name=self.name, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, velocity=self.velocity, displacement=self.displacement)
         # dumpableDef.patient = self.patient
