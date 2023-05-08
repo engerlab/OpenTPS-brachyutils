@@ -207,9 +207,12 @@ class Deformation3D(Image3D):
         return image
 
     def inverse(self):
-        if self.displacement is not None:
-            self.displacement = None
-        if self.velocity is not None:
+        if self.velocity is None:
+            logger.error("Inversing a Deformation3D without the velocity field is not possible for now.")
+        else:
+            if self.displacement is not None:
+                self.displacement = None
+
             self.velocity.imageArray = -self.velocity.imageArray
 
     def dumpableCopy(self):
