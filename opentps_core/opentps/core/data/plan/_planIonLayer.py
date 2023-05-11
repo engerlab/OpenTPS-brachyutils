@@ -42,27 +42,6 @@ class PlanIonLayer:
             s += str(xyAndMU)
         return s
 
-    def __deepcopy__(self, memodict={}):
-        newLayer = PlanIonLayer()
-
-        memodict[id(self)] = newLayer
-
-        newLayer._deepCopyProperties(self, memodict)
-
-        return newLayer
-
-    def _deepCopyProperties(self, otherLayer, memodict):
-        self._x = np.array(otherLayer._x)
-        self._y = np.array(otherLayer._y)
-        self._mu = np.array(otherLayer._mu)
-        self._startTime = np.array(otherLayer._startTime)
-        self._irradiationDuration = np.array(otherLayer._irradiationDuration)
-
-        self.nominalEnergy = otherLayer.nominalEnergy
-        self.numberOfPaintings = otherLayer.numberOfPaintings
-        self.rangeShifterSettings = otherLayer.rangeShifterSettings.__deepcopy__(memodict)
-        self.seriesInstanceUID = otherLayer.seriesInstanceUID
-
     @property
     def spots(self):
         # For backwards compatibility but we can now access each layer with indexing brackets
