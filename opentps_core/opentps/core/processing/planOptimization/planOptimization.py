@@ -31,7 +31,7 @@ class PlanOptimizer:
         self.opti_params = kwargs
         self.functions = []
         self._xSquared = True
-        self.threshold_MU = 1e-4
+        self.thresholdSpotRemoval = 1e-6 # remove all spots below this value after optimization from the plan and beamlet matrix
 
     @property
     def xSquared(self):
@@ -134,10 +134,10 @@ class PlanOptimizer:
             self.plan.spotMUs = self.weights.astype(np.float32)
         
         MU_before_simplify = self.plan.spotMUs.copy()
-        self.plan.simplify(threshold=self.threshold_MU) # remove zero MU spots
+        self.plan.simplify(threshold=self.thresholdSpotRemoval) # remove spots below self.thresholdSpotRemoval
         if self.plan.planDesign.beamlets.shape[1] != len(self.plan.spotMUs):
             # Beamlet matrix has not removed zero weight column
-            ind_to_keep = MU_before_simplify > self.threshold_MU
+            ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
             assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
         self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
@@ -218,6 +218,8 @@ class BoundConstraintsOptimizer(PlanOptimizer):
 
         if self.bounds[0] == 0:
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds), maxit=self.opti_params.get('maxit', 1000))
+        elif self.bounds[0] < 0:
+            raise ValueError("Bounds cannot be negative")
         else:
             if nIterations is not None:
                 nit1, nit2 = nIterations[0], nIterations[1]
@@ -239,11 +241,12 @@ class BoundConstraintsOptimizer(PlanOptimizer):
             # second optimization with lower bound = self.bounds[0]
             self.solver.params['maxit'] = nit2
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds))
-            result_weights = np.zeros(ind_to_keep.shape, dtype=np.float32)
+            result_weights = np.zeros(ind_to_keep.shape, dtype=np.float32) # reintroduce filtered spots at zero MU
             result_weights[ind_to_keep] = result['sol']
             result['sol'] = result_weights
 
-        
+            self.thresholdSpotRemoval = 1e-6 # zero spot MUs are removed in the postProcess with plan.simplify(self.thresholdSpotRemoval)
+
         return self.postProcess(result)
     
 
