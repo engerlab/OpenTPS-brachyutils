@@ -44,27 +44,6 @@ class PlanIonBeam:
 
         return s
 
-    def __deepcopy__(self, memodict={}):
-        newBeam = PlanIonBeam()
-
-        memodict[id(self)] = newBeam
-
-        newBeam._deepCopyProperties(self, memodict)
-
-        return newBeam
-
-    def _deepCopyProperties(self, otherBeam, memodict):
-        self._layers = [layer.__deepcopy__(memodict) for layer in otherBeam._layers]
-
-        self.name = otherBeam.name
-        self.isocenterPosition = np.array(otherBeam.isocenterPosition)
-        self.gantryAngle = otherBeam.gantryAngle
-        self.couchAngle = otherBeam.couchAngle
-        self.id = otherBeam.id
-        self.rangeShifter = copy.deepcopy(otherBeam.rangeShifter, memodict)
-        self.seriesInstanceUID = otherBeam.seriesInstanceUID
-
-
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
         # For backwards compatibility but we can now access each layer with indexing brackets
