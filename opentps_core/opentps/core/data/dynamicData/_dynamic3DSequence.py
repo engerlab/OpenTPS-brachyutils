@@ -58,7 +58,7 @@ class Dynamic3DSequence(PatientData):
 
     def prepareTimings(self):
         numberOfImages = len(self.dyn3DImageList)
-        self.timingsList = np.linspace(0, 4000, numberOfImages + 1)
+        self.timingsList = np.linspace(0, self.breathingPeriod, numberOfImages + 1)
         # print('in dynamic3DSequence prepareTimings', self.timingsList)
 
 
