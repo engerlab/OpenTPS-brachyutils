@@ -56,7 +56,7 @@ class ROIMask(Image3D):
     def copy(self):
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
-    def dilateMask(self, radius=1.0, struct=None, tryGPU=True):
+    def dilateMask(self, radius=1.0, struct=None, tryGPU=False):
         roiMasksProcessing.dilateMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
     def erodeMask(self, radius=1.0, struct=None, tryGPU=True):
