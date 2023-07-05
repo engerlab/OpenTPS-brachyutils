@@ -1,0 +1,3 @@
+The electro magnetic interactions will be correctly simulated in MCsquare because the physical parameters (stopping pow, radiation length, ...) are computed using the full material composition.
+The composition in the Material-Properties.dat is used by MCsqaure ONLY to compute the nuclear interactions. However, as the cross section of the Sb is not available in the material list of MCsquare and as the proportion is small,
+it is ignored.

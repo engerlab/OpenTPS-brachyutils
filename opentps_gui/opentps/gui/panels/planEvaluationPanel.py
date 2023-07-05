@@ -68,9 +68,9 @@ class PlanEvaluationPanel(QWidget):
         self.CI_label = QLabel('<b>Confidence interval:</b>')
         self.layout.addWidget(self.CI_label)
         self.CI = QSlider(Qt.Horizontal)
-        self.CI.setMinimum(0.0)
-        self.CI.setMaximum(100.0)
-        self.CI.setValue(90.0)
+        self.CI.setMinimum(0)
+        self.CI.setMaximum(100)
+        self.CI.setValue(90)
         self.layout.addWidget(self.CI)
         self.layout.addStretch()
 
