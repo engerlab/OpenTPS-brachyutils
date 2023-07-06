@@ -66,6 +66,7 @@ test_gui:
   image: python:3.9
   script:
     - pip show SimpleITK
+    - pip show vtk
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - export QT_QPA_PLATFORM=offscreen
