@@ -44,7 +44,6 @@ build:
   image: python:3.9
   script:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
-    - pip show SimpleITK
     - cd $CI_PROJECT_DIR/opentps_core
     - $POETRY_HOME/bin/poetry build
     - cd $CI_PROJECT_DIR/opentps_gui
@@ -58,6 +57,7 @@ build:
 test_core:
   image: python:3.9
   script:
+    - pip show SimpleITK
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - python3 CI/tests.py
@@ -65,6 +65,7 @@ test_core:
 test_gui:
   image: python:3.9
   script:
+    - pip show SimpleITK
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - export QT_QPA_PLATFORM=offscreen
