@@ -846,7 +846,8 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     meta = pydicom.Dataset()
     meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2' # CT Image Storage
     meta.MediaStorageSOPInstanceUID = SOPInstanceUID
-    meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'  # modified
+    # meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'  # modified
+    meta.ImplementationClassUID = '1.3.6.1.4.1.9590.100.1.0.100.4.0'
     # meta.FileMetaInformationGroupLength =
     # meta.FileMetaInformationVersion =
     # meta.ImplementationVersionName = 
@@ -856,7 +857,8 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file = pydicom.dataset.FileDataset(outputFolderPath, {}, file_meta=meta, preamble=b"\0" * 128)
     dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
     dcm_file.SOPInstanceUID = SOPInstanceUID
-    dcm_file.ImageType = ['ORIGINAL', 'PRIMARY', 'AXIAL']
+    # dcm_file.ImageType = ['ORIGINAL', 'PRIMARY', 'AXIAL']
+    dcm_file.ImageType = ['DERIVED', 'SECONDARY', 'AXIAL']
     # dcm_file.ImplementationVersionName =
     # dcm_file.SpecificCharacterSet =
     # dcm_file.AccessionNumber =
@@ -898,7 +900,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
     dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
     dcm_file.Modality = 'CT'
-    dcm_file.ModalitiesInStudy = 'CT'
+    # dcm_file.ModalitiesInStudy = 'CT'
     dcm_file.Manufacturer = 'OpenTPS'
     # dcm_file.InstitutionName = ''
     # dcm_file.ReferringPhysicianName = ''
@@ -909,11 +911,11 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # dcm_file.InstitutionalDepartmentName = 'RADIOTHERAPY'
     # dcm_file.OperatorsName = ''
     # dcm_file.ManufacturerModelName = ''
-    dcm_file.ScanOptions = 'HELICAL_CT'
+    # dcm_file.ScanOptions = 'HELICAL_CT'
 
-    dcm_file.SliceThickness = ct.spacing[2]
+    dcm_file.SliceThickness = str(ct.spacing[2])
     # dcm_file.KVP = '120.0'
-    dcm_file.SpacingBetweenSlices = ct.spacing[2]
+    dcm_file.SpacingBetweenSlices = str(ct.spacing[2])
     # dcm_file.DataCollectionDiameter = '550.0'
     # dcm_file.DeviceSerialNumber = ''
     # dcm_file.SoftwareVersions = ''
@@ -931,13 +933,15 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # dcm_file.CTDIvol = 
 
     dcm_file.SeriesInstanceUID = ct.seriesInstanceUID
+    # dcm_file.SeriesInstanceUID = pydicom.uid.generate_uid()
     dcm_file.SeriesNumber = ''
     # dcm_file.AcquisitionNumber = '4'
-    dcm_file.PatientOrientation = '' #['L', 'P']
+    # dcm_file.PatientOrientation = '' #['L', 'P']
     dcm_file.ImagePositionPatient = list(ct.origin)
     dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
                                         0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
     dcm_file.FrameOfReferenceUID = ct.frameOfReferenceUID
+    # dcm_file.FrameOfReferenceUID = pydicom.uid.generate_uid()
     # dcm_file.PositionReferenceIndicator = ''
     # dcm_file.NumberOfStudyRelatedInstances = ''
     # dcm_file.RespiratoryIntervalTime = 
@@ -951,7 +955,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.HighBit = 15
     dcm_file.PixelRepresentation = 1
     # dcm_file.WindowCenter = '40.0'
-    # dcm_file.WindowWidth = '450.0'
+    # dcm_file.WindowWidth = '400.0'
 
     # Rescale image intensities
     RescaleSlope = 1
@@ -971,8 +975,8 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # Reduce 'rounding' errors...
     outdata = np.round(outdata)
     # Update dicom tags
-    dcm_file.RescaleSlope = RescaleSlope
-    dcm_file.RescaleIntercept = RescaleIntercept
+    dcm_file.RescaleSlope = str(RescaleSlope)
+    dcm_file.RescaleIntercept = str(RescaleIntercept)
 
     # dcm_file.ScheduledProcedureStepStartDate = ''
     # dcm_file.ScheduledProcedureStepStartTime = ''
@@ -982,7 +986,8 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # dcm_file.PerformedProcedureStepStartTime = ''
     # dcm_file.PerformedProcedureStepID = ''
     # dcm_file.ConfidentialityCode = ''
-    dcm_file.ContentLabel = ct.name
+    # dcm_file.ContentLabel = ct.name
+    dcm_file.ContentLabel = 'CT'
     dcm_file.ContentDescription = ''
     # dcm_file.StructureSetLabel = ''
     # dcm_file.StructureSetDate = ''
@@ -998,8 +1003,8 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     for slice in range(ct.gridSize[2]):
         dcm_slice = copy.deepcopy(dcm_file)
         dcm_slice.ImagePositionPatient[2] = slice*ct.spacing[2]+ct.origin[2]
-        dcm_slice.SliceLocation = slice*ct.spacing[2]+ct.origin[2]
-        dcm_slice.InstanceNumber = slice+1
+        dcm_slice.SliceLocation = str(slice*ct.spacing[2]+ct.origin[2])
+        dcm_slice.InstanceNumber = str(slice+1)
 
         # dcm_slice.SmallestImagePixelValue = np.min(outdata[:,:,slice]).astype(np.int16)
         # dcm_slice.LargestImagePixelValue  = np.max(outdata[:,:,slice]).astype(np.int16)
