@@ -44,6 +44,7 @@ build:
   image: python:3.9
   script:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
+    - pip show SimpleITK
     - cd $CI_PROJECT_DIR/opentps_core
     - $POETRY_HOME/bin/poetry build
     - cd $CI_PROJECT_DIR/opentps_gui
