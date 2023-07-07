@@ -13,6 +13,7 @@ variables:
 # If you want to also cache the installed packages, you have to install
 # them in a virtualenv and cache it as well.
 cache:
+  # https://docs.gitlab.com/ee/ci/caching/#share-caches-between-jobs-in-the-same-branch
   key: $CI_COMMIT_REF_SLUG
   paths:
     - .cache/pip
