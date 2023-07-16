@@ -8,6 +8,6 @@ if not defined CONDA_PREFIX (
 
 call conda activate OpenTPS
 
-set PYTHONPATH=%~dp0opentps_core;%~dp0opentps_gui
+set "PYTHONPATH=%~dp0opentps_core;%~dp0opentps_gui"
 
-python %~dp0opentps_gui\opentps\gui\main.py
+python "%~dp0opentps_gui\opentps\gui\main.py"

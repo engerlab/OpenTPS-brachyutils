@@ -13,6 +13,8 @@ variables:
 # If you want to also cache the installed packages, you have to install
 # them in a virtualenv and cache it as well.
 cache:
+  # https://docs.gitlab.com/ee/ci/caching/#share-caches-between-jobs-in-the-same-branch
+  key: $CI_COMMIT_REF_SLUG
   paths:
     - .cache/pip
     - venv/
@@ -21,25 +23,33 @@ cache:
 before_script:
   - python --version  # For debugging
   - pip install virtualenv
+# install poetry in separate venv
+  - export POETRY_HOME=/opt/poetry
+  - virtualenv $POETRY_HOME
+  - source $POETRY_HOME/bin/activate
+  - $POETRY_HOME/bin/pip install poetry==1.2.0
+  - $POETRY_HOME/bin/poetry --version
+# create environment for project
   - virtualenv venv
   #- virtualenv --clear venv
   - source venv/bin/activate
-  - pip3 install poetry
+  #- pip3 install poetry
+  - $POETRY_HOME/bin/poetry --version
   - cd $CI_PROJECT_DIR/opentps_core
-  - poetry install --no-root # install dependencies
+  - $POETRY_HOME/bin/poetry install --no-root # install dependencies
   - apt-get update && apt-get install -y libgl1 # For PyQt5
   #- apt-get install -y '^libxcb.*-dev' # For PyQt5
   - cd $CI_PROJECT_DIR/opentps_gui
-  - poetry install --no-root # install dependencies
+  - $POETRY_HOME/bin/poetry install --no-root # install dependencies
 
 build:
   image: python:3.9
   script:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
     - cd $CI_PROJECT_DIR/opentps_core
-    - poetry build
+    - $POETRY_HOME/bin/poetry build
     - cd $CI_PROJECT_DIR/opentps_gui
-    - poetry build
+    - $POETRY_HOME/bin/poetry build
     #- pip install dist/*
   artifacts:
     paths:
@@ -49,6 +59,7 @@ build:
 test_core:
   image: python:3.9
   script:
+    - pip show SimpleITK
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - python3 CI/tests.py
@@ -56,6 +67,8 @@ test_core:
 test_gui:
   image: python:3.9
   script:
+    - pip show SimpleITK
+    - pip show vtk
     - cd $CI_PROJECT_DIR/
     - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
     - export QT_QPA_PLATFORM=offscreen
