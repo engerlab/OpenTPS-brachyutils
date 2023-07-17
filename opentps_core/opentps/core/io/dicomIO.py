@@ -114,7 +114,7 @@ def readDicomMRI(dcmFiles):
     sliceLocation = np.zeros(len(dcmFiles), dtype='float')
     firstdcm = dcmFiles[0]
     if hasattr(firstdcm,'RescaleSlope') == False:
-        logging.warning('-WARNING- no RescaleSlope, image could be wrong')
+        logging.warning('no RescaleSlope, image could be wrong')
         for i in range(len(dcmFiles)):
             dcm = pydicom.dcmread(dcmFiles[i])
             sliceLocation[i] = float(dcm.ImagePositionPatient[2])
