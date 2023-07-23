@@ -2,7 +2,7 @@
 [tool.poetry]
 name = "opentps-gui"
 homepage = "http://opentps.org/"
-version = "1.0.4"
+version = "1.0.5"
 readme = "README.md"
 license = "GPLv3"
 description = "Open source TPS for advanced proton therapy"
