@@ -230,8 +230,9 @@ class BoundConstraintsOptimizer(PlanOptimizer):
             # First Optimization with lower bound = 0
             self.solver.params['maxit'] = nit1
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver((0, self.bounds[1])))
-            x0 = result['sol']
-            ind_to_keep = x0 >= self.bounds[0]
+            x0 = np.array(result['sol'])
+            ind_to_keep = np.full(x0.shape,False)
+            ind_to_keep[x0 >= self.bounds[0]] = True
             x0 = x0[ind_to_keep]
             self.functions = [] # to avoid a beamlet copy with different size
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
