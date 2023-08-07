@@ -140,6 +140,7 @@ class PlanOptimizer:
             ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
             assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+            self.weights = np.array(self.weights)[ind_to_keep]
         self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
 
         totalDose = self.plan.planDesign.beamlets.toDoseImage()
