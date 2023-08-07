@@ -186,7 +186,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
-                'Method {} is not implemented. Pick among ["Scipy-LBFGS", "Gradient", "BFGS", "FISTA"]'.format(
+                'Method {} is not implemented. Pick among ["Scipy-BFGS", "Scipy-LBFGS", "Gradient", "BFGS", "LBFGS", "FISTA", "LP]'.format(
                     self.method))
 
     def getConvergenceData(self):
