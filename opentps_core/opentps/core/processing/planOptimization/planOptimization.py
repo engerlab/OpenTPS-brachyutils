@@ -140,6 +140,7 @@ class PlanOptimizer:
             ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
             assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+            self.weights = np.array(self.weights)[ind_to_keep]
         self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
 
         totalDose = self.plan.planDesign.beamlets.toDoseImage()
@@ -185,7 +186,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
-                'Method {} is not implemented. Pick among ["Scipy-LBFGS", "Gradient", "BFGS", "FISTA"]'.format(
+                'Method {} is not implemented. Pick among ["Scipy-BFGS", "Scipy-LBFGS", "Gradient", "BFGS", "LBFGS", "FISTA", "LP]'.format(
                     self.method))
 
     def getConvergenceData(self):
