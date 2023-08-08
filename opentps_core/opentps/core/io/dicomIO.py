@@ -112,12 +112,20 @@ def readDicomMRI(dcmFiles):
     images = []
     sopInstanceUIDs = []
     sliceLocation = np.zeros(len(dcmFiles), dtype='float')
-
-    for i in range(len(dcmFiles)):
-        dcm = pydicom.dcmread(dcmFiles[i])
-        sliceLocation[i] = float(dcm.ImagePositionPatient[2])
-        images.append(dcm.pixel_array * dcm.RescaleSlope + dcm.RescaleIntercept)
-        sopInstanceUIDs.append(dcm.SOPInstanceUID)
+    firstdcm = dcmFiles[0]
+    if hasattr(firstdcm,'RescaleSlope') == False:
+        logging.warning('no RescaleSlope, image could be wrong')
+        for i in range(len(dcmFiles)):
+            dcm = pydicom.dcmread(dcmFiles[i])
+            sliceLocation[i] = float(dcm.ImagePositionPatient[2])
+            images.append(dcm.pixel_array)
+            sopInstanceUIDs.append(dcm.SOPInstanceUID)
+    else :
+        for i in range(len(dcmFiles)):
+            dcm = pydicom.dcmread(dcmFiles[i])
+            sliceLocation[i] = float(dcm.ImagePositionPatient[2])
+            images.append(dcm.pixel_array * dcm.RescaleSlope + dcm.RescaleIntercept)
+            sopInstanceUIDs.append(dcm.SOPInstanceUID)       
 
     # sort slices according to their location in order to reconstruct the 3d image
     sortIndex = np.argsort(sliceLocation)
