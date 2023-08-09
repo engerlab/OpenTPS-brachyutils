@@ -340,7 +340,7 @@ def readDicomStruct(dcmFile):
         dcmContour = dcm.ROIContourSequence[referencedRoiId]
 
         if not hasattr(dcmContour, 'ContourSequence'):
-            logging.warning("This structure has no attribute ContourSequence. Skipping...")
+            logging.warning("This structure [ ", dcmStruct.ROIName ," ]has no attribute ContourSequence. Skipping ...")
             continue
 
         # Create ROIContour object
