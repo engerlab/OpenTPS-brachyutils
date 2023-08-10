@@ -12,7 +12,20 @@ from opentps.core.data.images._ctImage import CTImage
 
 
 class RTStruct(PatientData):
+    """
+    Class for storing RTStruct data. Inherits from PatientData.
 
+    Parameters
+    ----------
+    name : str
+        Name of the RTStruct
+    seriesInstanceUID : str
+        Series Instance UID of the RTStruct
+    sopInstanceUID : str
+        SOP Instance UID of the RTStruct
+    contours : list
+        List of ROIContour objects
+    """
     def __init__(self, name="RT-struct", seriesInstanceUID="", sopInstanceUID=""):
         super().__init__(name=name, seriesInstanceUID=seriesInstanceUID)
 
@@ -23,12 +36,40 @@ class RTStruct(PatientData):
         self.sopInstanceUID = sopInstanceUID
 
     def __str__(self):
+        """
+        Returns a string representation of the RTStruct.
+
+        Returns
+        -------
+        str
+            String representation of the RTStruct
+        """
         return "RTstruct " + self.seriesInstanceUID
 
     def __getitem__(self, item):
+        """
+        Returns the ROIContour at index item.
+
+        Parameters
+        ----------
+        item : int
+            Index of the ROIContour to return
+        Returns
+        -------
+        ROIContour
+            ROIContour at index item
+        """
         return self._contours[item]
 
     def __len__(self):
+        """
+        Returns the number of ROIContours in the RTStruct.
+
+        Returns
+        -------
+        int
+            Number of ROIContours in the RTStruct
+        """
         return len(self._contours)
 
     @property
@@ -73,6 +114,9 @@ class RTStruct(PatientData):
         print(f'No contour with name {contour_name} found in the list of contours')
 
     def print_ROINames(self):
+        """
+        Print the names of the ROIContours in the RTStruct.
+        """
         print("\nRT Struct UID: " + self.seriesInstanceUID)
         count = -1
         for contour in self._contours:

@@ -18,6 +18,25 @@ from opentps.core import Event
 
 
 class ROIContour(PatientData):
+    """
+    Class for storing a ROI contour. The contour is stored as a list of polygon meshes. Each polygon mesh is a list of
+    coordinates (x,y,z) of the vertices of the polygon. The coordinates are in the patient coordinate system.
+    A ROI contour can be converted to a binary mask image using the getBinaryMask() method.
+
+    Parameters
+    ----------
+    name: str
+        Name of the ROI contour.
+    color: tuple
+        Display color of the ROI contour.
+    referencedFrameOfReferenceUID: str
+        UID of the frame of reference that the ROI contour is referenced to.
+    referencedSOPInstanceUIDs: list
+        List of SOP instance UIDs of the images that the ROI contour is referenced to.
+    polygonMesh: list
+        List of polygon meshes that define the ROI contour. Each polygon mesh is a list of coordinates (x,y,z) of the
+        vertices of the polygon. The coordinates are in the patient coordinate system.
+    """
     def __init__(self, name="ROI contour", displayColor=(0,0,0), referencedFrameOfReferenceUID=None):
         super().__init__(name=name)
 
@@ -38,6 +57,23 @@ class ROIContour(PatientData):
         self.colorChangedSignal.emit(self._displayColor)
 
     def getBinaryMask(self, origin=None, gridSize=None, spacing=None):
+        """
+        Convert the ROI contour to a binary mask image.
+
+        Parameters
+        ---------
+        origin: array    (optional)
+            Origin of the binary mask image.
+        gridSize: array    (optional)
+            Grid size of the binary mask image.
+        spacing: array    (optional)
+            Voxel spacing of the binary mask image.
+
+        Returns
+        -------
+        mask: ROIMask
+            Binary mask image.
+        """
         minSpatialResolution = 1.
 
         contourOrigin = [0, 0, 0]
@@ -169,6 +205,23 @@ class ROIContour(PatientData):
         return mask
 
     def getCenterOfMass(self, origin, gridSize, spacing):
+        """
+        Calculate the center of mass of the contour
+
+        Parameters
+        ----------
+        origin: array
+            Origin coordinates of the generated mask image
+        gridSize: array
+            Number of voxels in each dimension of the generated mask image
+        spacing: array
+            Spacing between voxels of the generated mask image
+
+        Returns
+        --------
+        centerOfMass: array
+            Center of mass of the contour
+        """
 
         tempMask = self.getBinaryMask(origin=origin, gridSize=gridSize, spacing=spacing)
         centerOfMass = tempMask.centerOfMass
@@ -176,6 +229,23 @@ class ROIContour(PatientData):
         return centerOfMass
 
     def getBinaryContourMask(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
+        """
+        Convert the polygon mesh to a binary mask image.
+
+        Parameters
+        ----------
+        origin: tuple
+            Origin coordinates of the generated mask image
+        gridSize: tuple
+            Number of voxels in each dimension of the generated mask image
+        spacing: tuple
+            Spacing between voxels of the generated mask image
+
+        Returns
+        -------
+        mask: roiMask object
+            The function returns the binary mask of the contou
+        """
         mask3D = np.zeros(gridSize, dtype=np.bool)
 
         for contourData in self.polygonMesh:
