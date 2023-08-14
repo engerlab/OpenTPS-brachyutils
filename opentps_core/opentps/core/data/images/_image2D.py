@@ -12,6 +12,26 @@ from opentps.core import Event
 
 
 class Image2D(PatientData):
+    """
+    Class for 2D images. Inherits from PatientData.
+
+    Attributes
+    ----------
+    name : str (default: "2D Image")
+        Name of the image.
+    imageArray : numpy array
+        2D numpy array containing the image data.
+    origin : numpy array (default: (0,0,0))
+        1x3 numpy array containing the origin of the image.
+    spacing : numpy array (default: (1,1))
+        1x2 numpy array containing the spacing of the image in mm.
+    angles : numpy array (default: (0,0,0))
+        1x3 numpy array containing the angles of the image.
+    gridSize : numpy array
+        1x2 numpy array containing the size of the image in voxels.
+    gridSizeInWorldUnit : numpy array
+        1x2 numpy array containing the size of the image in mm.
+    """
     def __init__(self, imageArray=None, name="2D Image", origin=(0, 0, 0), spacing=(1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
         self.dataChangedSignal = Event()
 
@@ -32,6 +52,28 @@ class Image2D(PatientData):
     # This is different from deepcopy because image can be a subclass of image2D but the method always returns an Image2D
     @classmethod
     def fromImage2D(cls, image, **kwargs):
+        """
+        Creates a new Image2D from an existing Image2D.
+
+        Parameters
+        ----------
+        image : Image2D
+            Image2D to copy.
+        kwargs : dict (optional)
+            Keyword arguments to be passed to the constructor.
+            - imageArray : numpy.ndarray
+                Image array of the image.
+            - origin : tuple of float
+                Origin of the image.
+            - spacing : tuple of float
+                Spacing of the image.
+            - angles : tuple of float
+                Angles of the image.
+            - seriesInstanceUID : str
+                Series instance UID of the image.
+            - patient : Patient
+                Patient object of the image.
+        """
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
         dic.update(kwargs)
@@ -85,12 +127,43 @@ class Image2D(PatientData):
         return self.gridSize * self.spacing
 
     def getDataAtPosition(self, position:Sequence):
+        """
+        Returns the data from the image array at a given position in the image.
+
+        Parameters
+        ----------
+        position : tuple of float
+            Position in the image in mm.
+
+        Returns
+        -------
+        dataNumpy : numpy.ndarray
+            Data from the image array at the given position.
+        """
         voxelIndex = self.getVoxelIndexFromPosition(position)
         dataNumpy = self.imageArray[voxelIndex[0], voxelIndex[1]]
 
         return dataNumpy
 
     def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
+        """
+        Returns the voxel index of a given position in the image.
+
+        Parameters
+        ----------
+        position : tuple of float
+            Position in the image in mm.
+
+        Returns
+        -------
+        voxelIndex : tuple of int
+            Voxel index of the given position.
+
+        Raises
+        ------
+        ValueError
+            If the voxel index is outside of the image.
+        """
         positionInMM = np.array(position)
         shiftedPosInMM = positionInMM - self.origin
         posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(int)
@@ -100,28 +173,55 @@ class Image2D(PatientData):
         return posInVoxels
 
     def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        """
+        Returns the position in the image of a given voxel index.
+
+        Parameters
+        ----------
+        index : tuple of int
+            Voxel index in the image.
+
+        Returns
+        -------
+        position : tuple of float
+            Position in the image in mm.
+
+        Raises
+        ------
+        ValueError
+            If the voxel index is outside of the image.
+        """
         if np.any(np.logical_or(index < 0, index > (self.gridSize - 1))):
             raise ValueError('Voxel position requested is outside of the domain of the image')
         return self.origin + np.array(index).astype(dtype=float)*self.spacing
 
     def getMeshGridPositions(self) -> np.ndarray:
+        """
+        Returns the meshgrid of the image in mm.
+
+        Returns
+        -------
+        meshgrid : numpy.ndarray
+            Meshgrid of the image in mm.
+        """
         x = self.origin[0] + np.arange(self.gridSize[0]) * self.spacing[0]
         y = self.origin[1] + np.arange(self.gridSize[1]) * self.spacing[1]
         return np.meshgrid(x,y, indexing='ij')
 
     def hasSameGrid(self, otherImage) -> bool:
-        """Check whether the voxel grid is the same as the voxel grid of another image given as input.
+        """
+        Check whether the voxel grid is the same as the voxel grid of another image given as input.
 
-            Parameters
-            ----------
-            otherImage : numpy array
-                image to which the voxel grid is compared.
+        Parameters
+        ----------
+        otherImage : numpy array
+            image to which the voxel grid is compared.
 
-            Returns
-            -------
-            bool
-                True if grids are identical, False otherwise.
-            """
+        Returns
+        -------
+        bool
+            True if grids are identical, False otherwise.
+        """
 
         if (np.array_equal(self.gridSize, otherImage.gridSize) and
                 np.allclose(self._origin, otherImage._origin, atol=0.01) and

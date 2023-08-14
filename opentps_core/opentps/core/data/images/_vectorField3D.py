@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 
 
 class VectorField3D(Image3D):
+    """
+    Class for 3D vector fields. Inherits from Image3D.
+
+    Attributes
+    ----------
+    name : str (default: "Vector Field")
+        Name of the vector field.
+    gridSize : tuple of int
+        Size of the voxel grid.
+    """
 
     def __init__(self, imageArray=None, name="Vector Field", origin=(0, 0, 0), spacing=(1, 1, 1),
                  angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
@@ -29,16 +39,25 @@ class VectorField3D(Image3D):
     #     return cls(imageArray=copy.deepcopy(image.imageArray), origin=image.origin, spacing=image.spacing, angles=image.angles, seriesInstanceUID=image.seriesInstanceUID)
 
     def copy(self):
+        """
+        Create a copy of the vector field.
+
+        Returns
+        -------
+        VectorField3D
+            Copy of the vector field.
+        """
         return VectorField3D(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     def initFromImage(self, image):
-        """Initialize vector field using the voxel grid of the input image.
+        """
+        Initialize vector field using the voxel grid of the input image.
 
-            Parameters
-            ----------
-            image : numpy array
-                image from which the voxel grid is copied.
-            """
+        Parameters
+        ----------
+        image : Image3D
+            image from which the voxel grid is copied.
+        """
 
         # print('in vectorField3D initFromImage --> this if-fix is not ideal and should be changed. The issue comes from the gridSize which is a parameter ')
         # if image.__class__ == "CTImage":
@@ -50,14 +69,19 @@ class VectorField3D(Image3D):
         self.spacing = image._spacing
 
     def warp(self, data, fillValue='closest', outputType=np.float32, tryGPU=True):
-        """Warp 3D data using linear interpolation.
+        """
+        Warp 3D data using linear interpolation.
 
         Parameters
         ----------
         data : numpy array
             data to be warped.
-        fillValue : scalar
-            interpolation value for locations outside the input voxel grid.
+        fillValue : scalar or 'closest' (default: 'closest')
+            interpolation value for locations outside the input voxel grid. If 'closest', the closest voxel value is used.
+        outputType : numpy type (default: np.float32)
+            output data type.
+        tryGPU : bool (default: True)
+            if True, try to use GPU for warping.
 
         Returns
         -------
@@ -68,8 +92,15 @@ class VectorField3D(Image3D):
         return resampler3D.warp(data, self._imageArray, self.spacing, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
     def exponentiateField(self, outputType=np.float32, tryGPU=True):
+        """
+        Exponentiate the vector field (e.g. to convert velocity in to displacement).
 
-        """Exponentiate the vector field (e.g. to convert velocity in to displacement).
+        Parameters
+        ----------
+        outputType : numpy type (default: np.float32)
+            output data type.
+        tryGPU : bool (default: True)
+            if True, try to use GPU for warping.
 
         Returns
         -------
@@ -97,7 +128,8 @@ class VectorField3D(Image3D):
         return displacement
 
     def computeFieldNorm(self):
-        """Compute the voxel-wise norm of the vector field.
+        """
+        Compute the voxel-wise norm of the vector field.
 
         Returns
         -------
@@ -109,12 +141,13 @@ class VectorField3D(Image3D):
 
     @property
     def gridSize(self):
-        """Compute the voxel grid size of the deformation.
+        """
+        Compute the voxel grid size of the deformation.
 
-            Returns
-            -------
-            np.array
-                Grid size of velocity field and/or displacement field.
-            """
+        Returns
+        -------
+        np.array
+            Grid size of velocity field and/or displacement field.
+        """
 
         return np.array([self._imageArray.shape[0:3]])[0]
