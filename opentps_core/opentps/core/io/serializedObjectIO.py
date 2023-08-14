@@ -20,6 +20,9 @@ from opentps.core.data._patient import Patient
 logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------------------------------
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
+    """
+    Save a data structure in the
+    """
     if splitPatientsBool:
         patientList = [[patient] for patient in patientList]
         for patient in patientList:
@@ -107,6 +110,16 @@ def loadSerializedObject(filePath):
 
 
 def saveRTPlan(plan, file_path):
+    """
+    Save the RTPlan object in a file
+
+    Parameters
+    ----------
+    plan : RTPlan
+        The RTPlan object to save
+    file_path : str
+        The path of the file where to save the RTPlan object
+    """
     if plan.planDesign:
         if plan.planDesign.beamlets:
             plan.planDesign.beamlets.unload()
@@ -121,6 +134,19 @@ def saveRTPlan(plan, file_path):
 
 
 def loadRTPlan(file_path):
+    """
+    Load a RTPlan object from a file
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file to load the RTPlan
+
+    Returns
+    -------
+    plan:RTPlan
+        The RTPlan object loaded from the file
+    """
     with open(file_path, 'rb') as fid:
         tmp = pickle.load(fid)
 
@@ -130,17 +156,60 @@ def loadRTPlan(file_path):
 
 
 def saveBeamlets(beamlets, file_path):
+    """
+    Save the beamlets object in a file
+
+    Parameters
+    ----------
+    beamlets : SparseBeamlets
+        The beamlets object to save
+    file_path : str
+        The path of the file where to save the beamlets object
+    """
     beamlets.storeOnFS(file_path)
 
 def loadBeamlets(file_path):
+    """
+    Load a beamlets object from a file
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file to load the beamlets
+
+    Returns
+    -------
+    beamlets:SparseBeamlets
+        The beamlets object loaded from the file
+    """
     from opentps.core.data._sparseBeamlets import SparseBeamlets
     return loadData(file_path, SparseBeamlets)
 
 def saveData(data, file_path):
+    """
+    Save the data object in a file (pickle)
+
+    Parameters
+    ----------
+    data : object
+        The data object to save
+    file_path : str
+        The path of the file where to save the data object
+    """
     with open(file_path, 'wb') as fid:
         pickle.dump(data.__dict__, fid, protocol=4)
 
 def loadData(file_path, cls):
+    """
+    Load a data object from a file (pickle)
+
+    Parameters
+    ----------
+    file_path : str
+        The path of the file to load the data
+    cls : class
+        The class of the data object to load
+    """
     with open(file_path, 'rb') as fid:
         tmp = pickle.load(fid)
     data = cls()
@@ -260,6 +329,19 @@ def unDictionarize(dataDict):
     return data
 
 def copyIntoNewObject(sourceObject):
+    """
+    Copy the content of a source object into a new object of the same class
+
+    Parameters
+    ----------
+    sourceObject : object
+        The object to copy
+
+    Returns
+    -------
+    newObject : object
+        The new object with the same content as the source object
+    """
 
     #print('in serializedObjectIO loadINtoNewObject')
 

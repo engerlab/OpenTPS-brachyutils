@@ -414,6 +414,19 @@ def readDicomVectorField(dcmFile):
 
 
 def readDicomPlan(dcmFile) -> RTPlan:
+    """
+    Read a Dicom plan file and generate a RTPlan object.
+
+    Parameters
+    ----------
+    dcmFile: str
+        Path of the Dicom plan file.
+
+    Returns
+    -------
+    plan: RTPlan object
+        The function returns the imported plan
+    """
     dcm = pydicom.dcmread(dcmFile)
 
     # collect patient information
@@ -620,6 +633,17 @@ def readDicomPlan(dcmFile) -> RTPlan:
 
 
 def writeRTPlan(plan: RTPlan, filePath):
+    """
+    Write a RTPlan object to a dicom file
+
+    Parameters
+    ----------
+    plan : RTPlan
+        the RTPlan object to be written.
+    filePath : str
+        path to the dicom file
+
+    """
     SOPInstanceUID = pydicom.uid.generate_uid()
 
     # meta data
@@ -740,6 +764,16 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.save_as(filePath)
 
 def writeRTDose(dose:DoseImage, outputFile):
+    """
+    Write a dose image to a DICOM RTDOSE file
+
+    Parameters
+    ----------
+    dose : DoseImage
+        The dose image to write in the Dicom file
+    outputFile : str
+        The path to the output file
+    """
     SOPInstanceUID = pydicom.uid.generate_uid()
 
     # meta data
@@ -842,6 +876,17 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.save_as(outputFile)
 
 def writeDicomCT(ct: CTImage, outputFolderPath:str):
+    """
+    Write a CTImage object to a dicom file
+
+    Parameters
+    ----------
+    ct : CTImage
+        CTImage object to be written
+    outputFolderPath : str
+        folder path where the dicom file will be written
+
+    """
     if not os.path.exists(outputFolderPath):
         os.mkdir(outputFolderPath)
     folder_name = os.path.split(outputFolderPath)[-1]

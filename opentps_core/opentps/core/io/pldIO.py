@@ -8,6 +8,16 @@ from opentps.core.data.plan._planIonLayer import PlanIonLayer
 logger = logging.getLogger(__name__)
 
 def exportPlanPLD(plan:RTPlan, outputPath:str):
+    """
+    Export a plan to PLD format
+
+    Parameters
+    ----------
+    plan:RTPlan
+        The RTplan to export
+    outputPath:str
+        The path to the output file
+    """
 
     plan.simplify(threshold=0.01) # remove MU lower than 0.01 MU
     plan.spotMUs = np.around(plan.spotMUs, 2)
@@ -32,6 +42,19 @@ def exportPlanPLD(plan:RTPlan, outputPath:str):
 
 
 def importPlanPLD(inputPath:str):
+    """
+    Import a plan from PLD format
+
+    Parameters
+    ----------
+    inputPath:str
+        The path to the input file
+
+    Returns
+    -------
+    plan:RTPlan
+        The RTplan
+    """
     plan = RTPlan()
     with open(inputPath, "r") as fid:
         for line in fid:
