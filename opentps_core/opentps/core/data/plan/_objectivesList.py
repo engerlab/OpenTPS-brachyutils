@@ -21,7 +21,8 @@ class ObjectivesList:
     This class is used to store the objectives of a plan.
     A plan can have multiple objectives.
     An objective can be a Fidelity Objective or an Exotic Objective.
-    Attributes:
+
+    Attributes
     ----------
     fidObjList: list of FidObjective
         list of Fidelity Objectives
@@ -41,7 +42,8 @@ class ObjectivesList:
     def setTarget(self, roiName, prescription):
         """
         Set the target name and prescription dose.
-        Arguments:
+
+        Parameters
         ----------
         roiName: str
             name of the target
@@ -54,11 +56,13 @@ class ObjectivesList:
     def append(self, objective):
         """
         Append an objective to the list.
-        Arguments:
+
+        Parameters
         ----------
         objective: FidObjective or ExoticObjective
             objective to append
-        Raises:
+
+        Raises
         -------
         ValueError
             if the objective is not a FidObjective or an ExoticObjective
@@ -73,7 +77,8 @@ class ObjectivesList:
     def addFidObjective(self, roi, metric, limitValue, weight, kind="Soft", robust=False):
         """
         Add a Fidelity Objective to the list.
-        Arguments:
+
+        Parameters
         ----------
         roi: ROIContour or ROIMask
             region of interest
@@ -87,7 +92,8 @@ class ObjectivesList:
             kind of the objective : "Soft" or "Hard"
         robust: bool (default: False)
             if True, the objective is robust
-        Raises:
+
+        Raises
         -------
         ValueError
             if the metric is not supported
@@ -112,7 +118,8 @@ class ObjectivesList:
     def addExoticObjective(self, weight):
         """
         Add an Exotic Objective to the list.
-        Arguments:
+
+        Parameters
         ----------
         weight: float
             weight of the objective
@@ -125,7 +132,8 @@ class ObjectivesList:
 class FidObjective:
     """
     This class is used to store a Fidelity Objective.
-    Attributes:
+
+    Attributes
     ----------
     metric: FitObjective.Metrics
         metric to use for the objective
@@ -192,7 +200,8 @@ class FidObjective:
 class ExoticObjective:
     """
     This class is used to store an Exotic Objective.
-    Attributes:
+
+    Attributes
     ----------
     weight: 
         weight of the objective

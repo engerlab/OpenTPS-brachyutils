@@ -66,8 +66,13 @@ class Transform3D(PatientData):
         ----------
         data :
             image to be deformed.
-        fillValue : scalar
-            interpolation value for locations outside the input voxel grid.
+        fillValue : scalar or 'closest' (default: 0)
+            interpolation value for locations outside the input voxel grid. If 'closest', the closest voxel value will
+            be used.
+        outputBox : string or list of 6 floats (default: 'keepAll')
+            'keepAll' or 'same' or [xMin, xMax, yMin, yMax, zMin, zMax]. If 'keepAll', the output image will be large
+            enough to contain the entire input image. If 'same', the output image will have the same size and origin as the input
+            image. If a list of 6 floats, the output image will have the specified size.
 
         Returns
         -------
