@@ -9,6 +9,16 @@ from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial impo
 
 
 class MCsquareMolecule(MCsquareMaterial):
+    """
+    Class for MCsquare molecules. Inherits from MCsquareMaterial.
+
+    Attributes
+    ----------
+    MCsquareElements : list of MCsquareElement
+        List of elements in the molecule.
+    weights : list of float
+        List of weights of the elements in the molecule.
+    """
     def __init__(self, density=0.0, electronDensity=0.0, name=None, number=0, sp=None, radiationLength=0.0, MCsquareElements=None, weights=None):
         super().__init__(density=density, electronDensity=electronDensity, name=name, number=number, sp=sp, radiationLength=radiationLength)
         self.MCsquareElements = MCsquareElements
@@ -18,10 +28,36 @@ class MCsquareMolecule(MCsquareMaterial):
         return self.mcsquareFormatted()
 
     def stoppingPower(self, energy:float=100.) -> float:
+        """
+        Get stopping power of the material.
+
+        Parameters
+        ----------
+        energy : float (default 100.)
+            Energy in MeV.
+
+        Returns
+        -------
+        s : float
+            Stopping power in MeV cm2/g at the given energy.
+        """
         e, s = self.sp.toList()
         return np.interp(energy, e, s)
 
     def mcsquareFormatted(self, materialNamesOrderedForPrinting):
+        """
+        Get molecule data in MCsquare format.
+
+        Parameters
+        ----------
+        materialNamesOrderedForPrinting : list of str
+            List of material names ordered for printing.
+
+        Returns
+        -------
+        s : str
+            Molecule data in MCsquare format.
+        """
         s = 'Name ' + self.name + '\n'
         s += 'Molecular_Weight 	0.0 		 # N.C.\n'
         s += 'Density ' + str(self.density) + " # in g/cm3 \n"
@@ -39,6 +75,21 @@ class MCsquareMolecule(MCsquareMaterial):
 
     @classmethod
     def load(cls, materialNb, materialsPath='default'):
+        """
+        Load molecule from file.
+
+        Parameters
+        ----------
+        materialNb : int
+            Number of the material.
+        materialsPath : str (default 'default')
+            Path to materials folder. If 'default', the default path is used.
+
+        Returns
+        -------
+        self : MCsquareMolecule
+            The loaded molecule.
+        """
         moleculePath = MCsquareMaterial.getFolderFromMaterialNumber(materialNb, materialsPath)
 
         self = cls()
