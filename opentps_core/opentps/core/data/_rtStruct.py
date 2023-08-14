@@ -80,6 +80,19 @@ class RTStruct(PatientData):
             print('  [' + str(count) + ']  ' + contour.name)
 
     def make1ContourFromSeveral(self, contour_names:str, ct:CTImage) -> ROIContour:
+        """
+        Draw 1 ROIContour from the names of several ROI contour to be used in dose computation
+
+        Parameters
+        -------------
+        contour_names : str
+            Names of the contours we want to add
+        ct: CT image of the patient
+
+        Returns
+        ----------
+        ROIContour: The addition of all the contours.
+        """
         contour_names = contour_names.split(' ')
         final_mask = ROIMask(name='all_target', origin=ct.origin, spacing=ct.spacing, patient=self.patient)
         final_mask.imageArray = np.full(ct.imageArray.shape,False)
