@@ -6,6 +6,10 @@ import os
 
 
 class MCsquareConfig:
+    """
+    Class to configure the MCsquare dose calculator. MCsquare is configured by a dictionary of key-value pairs.
+    For the different parameters and their usage take a look at the ConfigTemplate.txt file in the opentps.core.data.MCsquare directory.
+    """
   def __init__(self):
     ### Initialize MCsquare config with default values
     self.config = {}
@@ -118,6 +122,14 @@ class MCsquareConfig:
     return self.mcsquareFormatted()
 
   def mcsquareFormatted(self) -> str:
+    """
+    Returns the configuration file in the format used by MCsquare
+
+    Returns
+    -------
+    Template : str
+        Configuration file in the format used by MCsquare
+    """
     Module_folder = os.path.dirname(os.path.realpath(__file__))
     fid = open(os.path.join(Module_folder, "ConfigTemplate.txt"), 'r')
     Template = fid.read()

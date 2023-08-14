@@ -16,10 +16,47 @@ logger = logging.getLogger(__name__)
 
 
 def euclidean_dist(v1, v2):
+    """
+    Compute the euclidean distance between two vectors.
+
+    Parameters
+    ----------
+    v1 : numpy array
+        First vector.
+    v2 : numpy array
+        Second vector.
+
+    Returns
+    -------
+    float
+        Euclidean distance between the two vectors.
+    """
     return sum((p-q)**2 for p, q in zip(v1, v2)) ** .5
 
 
 class Image3D(PatientData):
+    """
+    Class for 3D images. Inherits from PatientData and its attributes.
+
+    Attributes
+    ----------
+    name : str (default: '3D Image')
+        Name of the image.
+    imageArray : numpy array
+        3D array containing the image data.
+    origin : numpy array (default: (0, 0, 0))
+        3D array containing the origin of the image.
+    spacing : numpy array (default: (1, 1, 1))
+        3D array containing the spacing of the image.
+    angles : numpy array (default: (0, 0, 0))
+        3D array containing the angles of the image.
+    gridSize : numpy array
+        3D array containing the grid size of the image.
+    gridSizeInWorldUnit : numpy array
+        3D array containing the grid size of the image in world units.
+    numberOfVoxels : int
+        Number of voxels in the image.
+    """
     def __init__(self, imageArray=None, name="3D Image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), seriesInstanceUID=None, patient=None):
         self.dataChangedSignal = Event()
 
@@ -42,12 +79,47 @@ class Image3D(PatientData):
     # This is different from deepcopy because image can be a subclass of image3D but the method always returns an Image3D
     @classmethod
     def fromImage3D(cls, image, **kwargs):
+        """
+        Create a new Image3D from an existing Image3D.
+
+        Parameters
+        ----------
+        image : Image3D
+            Image to copy.
+        kwargs : dict (optional)
+            Additional keyword arguments to pass to the constructor.
+            - imageArray : numpy.ndarray
+                Image array of the image.
+            - origin : tuple of float
+                Origin of the image.
+            - spacing : tuple of float
+                Spacing of the image.
+            - angles : tuple of float
+                Angles of the image.
+            - seriesInstanceUID : str
+                Series instance UID of the image.
+            - patient : Patient
+                Patient object of the image.
+
+        Returns
+        -------
+        Image3D
+            New Image3D object.
+        """
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient, 'name': image.name}
         dic.update(kwargs)
         return cls(**dic)
 
     def copy(self):
+        """
+        Create a copy of the image.
+
+        Returns
+        -------
+        Image3D
+            Copy of the image.
+        """
         return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
     @property
@@ -175,12 +247,38 @@ class Image3D(PatientData):
         resampleImage3D(self, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue, tryGPU=tryGPU, inPlace=True, outputType=outputType)
 
     def getDataAtPosition(self, position: Sequence):
+        """
+        Get the data value of the image array at a given position in the image.
+
+        Parameters
+        ----------
+        position : Sequence
+            Position in the image.
+
+        Returns
+        -------
+        np.ndarray
+            Data value of the image array at the given position.
+        """
         voxelIndex = self.getVoxelIndexFromPosition(position)
         dataNumpy = self.imageArray[voxelIndex[0], voxelIndex[1], voxelIndex[2]]
 
         return dataNumpy
 
     def getVoxelIndexFromPosition(self, position:Sequence[float]) -> Sequence[float]:
+        """
+        Get the voxel index of the image array at a given position in the image.
+
+        Parameters
+        ----------
+        position : Sequence[float]
+            Position in the image.
+
+        Returns
+        -------
+        Sequence[float]
+            Voxel index of the image array at the given position.
+        """
         positionInMM = np.array(position)
         shiftedPosInMM = positionInMM - self.origin
         posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(int)
@@ -190,19 +288,56 @@ class Image3D(PatientData):
         return posInVoxels
 
     def getPositionFromVoxelIndex(self, index:Sequence[int]) -> Sequence[float]:
+        """
+        Get the position in the image from a given voxel index.
+
+        Parameters
+        ----------
+        index : Sequence[int]
+            Voxel index in the image.
+
+        Returns
+        -------
+        Sequence[float]
+            Position in the image from the given voxel index.
+        """
         index = np.array(index)
         if np.any(np.logical_or(index < 0, index > (self.gridSize - 1))):
             raise ValueError('Voxel position requested is outside of the domain of the image')
         return self.origin + np.array(index).astype(dtype=float)*self.spacing
 
     def getMeshGridPositions(self) -> np.ndarray:
+        """
+        Get the mesh grid positions of the image in mm.
+
+        Returns
+        -------
+        np.ndarray
+            Mesh grid positions of the image in mm.
+        """
         x = self.origin[0] + np.arange(self.gridSize[0]) * self.spacing[0]
         y = self.origin[1] + np.arange(self.gridSize[1]) * self.spacing[1]
         z = self.origin[2] + np.arange(self.gridSize[2]) * self.spacing[2]
         return np.meshgrid(x,y,z, indexing='ij')
 
     def min(self):
+        """
+        Get the minimum value of the image array.
+
+        Returns
+        -------
+        float
+            Minimum value of the image array.
+        """
         return self._imageArray.min()
 
     def max(self):
+        """
+        Get the maximum value of the image array.
+
+        Returns
+        -------
+        float
+            Maximum value of the image array.
+        """
         return self._imageArray.max()

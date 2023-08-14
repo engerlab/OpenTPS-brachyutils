@@ -23,6 +23,24 @@ logger = logging.getLogger(__name__)
 
 
 class SparseBeamlets(PatientData):
+    """
+    Class for storing sparse beamlet data. Inherits from PatientData.
+
+    Parameters
+    ----------
+    beamletWeights : list
+        List of beamlet weights
+    doseOrigin : tuple
+        Origin of the dose grid
+    doseSpacing : tuple
+        Spacing of the dose grid
+    doseGridSize : tuple
+        Size of the dose grid
+    doseOrientation : tuple
+        Orientation of the dose grid
+    shape : tuple
+        Shape of the sparse beamlet matrix
+    """
     def __init__(self):
         super().__init__()
 
@@ -80,14 +98,38 @@ class SparseBeamlets(PatientData):
         self._orientation = orientation
 
     def setSpatialReferencingFromImage(self, image: Image3D):
+        """
+        Sets the spatial referencing of the sparse beamlet matrix from an image
+
+        Parameters
+        ---------
+        image : Image3D
+            Image to use for spatial referencing
+        """
         self.doseOrigin = image.origin
         self.doseSpacing = image.spacing
         self.doseOrientation = image.angles
 
     def setUnitaryBeamlets(self, beamlets: csc_matrix):
+        """
+        Sets the sparse beamlets matrix
+
+        Parameters
+        ---------
+        beamlets : csc_matrix
+            Sparse beamlets matrix
+        """
         self._sparseBeamlets = beamlets
 
     def toDoseImage(self) -> DoseImage:
+        """
+        Converts the sparse beamlets matrix to a dose image
+
+        Returns
+        -------
+        DoseImage
+            The dose image
+        """
         weights = np.array(self._weights, dtype=np.float32)
         if use_MKL == 1:
             totalDose = sparse_dot_mkl.dot_product_mkl(self._sparseBeamlets, weights)
@@ -105,19 +147,36 @@ class SparseBeamlets(PatientData):
         return doseImage
 
     def toSparseMatrix(self) -> csc_matrix:
+        """
+        Convert the sparse beamlets matrix (attribute) to a csc_matrix type
+
+        Returns
+        -------
+        csc_matrix
+            The sparse beamlets matrix
+        """
         if self._sparseBeamlets is None and not(self._savedBeamletFile is None):
             self.reloadFromFS()
         return self._sparseBeamlets
 
     def reloadFromFS(self):
+        """
+        Reloads the sparse beamlets matrix from the file system
+        """
         with open(self._savedBeamletFile, 'rb') as fid:
             tmp = pickle.load(fid)
         self.__dict__.update(tmp)
 
     def storeOnFS(self, filePath):
+        """
+        Stores the sparse beamlets matrix on the file system
+        """
         self._savedBeamletFile = filePath
         saveData(self, self._savedBeamletFile)
         self.unload()
 
     def unload(self):
+        """
+        Unloads the sparse beamlets matrix from memory
+        """
         self._sparseBeamlets = None

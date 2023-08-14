@@ -18,6 +18,42 @@ if TYPE_CHECKING:
 
 
 class PlanIonBeam:
+    """
+    This class is used to store the information of an ion beam.
+
+    Attributes
+    ----------
+    layers: list of PlanIonLayer
+        list of layers
+    name: str
+        name of the beam
+    isocenterPosition: list of float (default: [0, 0, 0])
+        isocenter position of the beam
+    mcsquareIsocenter: list of float (default: [0, 0, 0])
+        isocenter position of the beam for MCSquare
+    gantryAngle: float (default: 0.0)
+        gantry angle of the beam
+    couchAngle: float (default: 0.0)
+        couch angle of the beam
+    id: int (default: 0)
+        id of the beam
+    rangeShifter: RangeShifter (optional)
+        range shifter of the beam
+    seriesInstanceUID: str
+        series instance UID of the beam
+    spotMUs: list of float
+        list of spot MUs
+    spotIrradiationTimes: list of float
+        list of spot irradiation times
+    spotXY: np.ndarray
+        array of spot XY positions
+    spotTimes: np.ndarray
+        array of spot times
+    numberSpots: int
+        number of spots
+    meterset: float
+        meterset of the beam
+    """
     def __init__(self):
         self._layers:Sequence[PlanIonLayer] = []
 
@@ -31,12 +67,41 @@ class PlanIonBeam:
         self.seriesInstanceUID = ""
 
     def __getitem__(self, layerNb) -> PlanIonLayer:
+        """
+        Get the layer at the given index.
+
+        Parameters
+        ----------
+        layerNb: int
+            index of the layer
+
+        Returns
+        ----------
+        layer: PlanIonLayer
+            layer at the given index
+        """
         return self._layers[layerNb]
 
     def __len__(self):
+        """
+        Get the number of layers.
+
+        Returns
+        ----------
+        nbLayers: int
+            number of layers
+        """
         return len(self._layers)
 
     def __str__(self):
+        """
+        Get the string representation of the layers.
+
+        Returns
+        ----------
+        s: str
+            string representation of the layers
+        """
         s = ''
         for layer in self._layers:
             s += 'Layer\n'
@@ -50,9 +115,24 @@ class PlanIonBeam:
         return [layer for layer in self._layers]
 
     def appendLayer(self, layer: PlanIonLayer):
+        """
+        Append a layer to the list of layers.
+
+        Parameters
+        ----------
+        layer: PlanIonLayer
+            layer to append
+        """
         self._layers.append(layer)
 
     def removeLayer(self, layer: Union[PlanIonLayer, Sequence[PlanIonLayer]]):
+        """
+        Remove a layer from the list of layers.
+        Arguments:
+        ----------
+        layer: PlanIonLayer or list of PlanIonLayer
+            layer to remove
+        """
         if isinstance(layer, Sequence):
             layers = layer
             for layer in layers:
@@ -136,6 +216,14 @@ class PlanIonBeam:
         return np.sum(np.array([layer.numberOfSpots for layer in self._layers]))
 
     def simplify(self, threshold: float = 0.0):
+        """
+        Simplify the layers by removing spots with a weight below the given threshold.
+
+        Parameters
+        ----------
+        threshold: float (default: 0.0)
+            threshold below which spots are removed
+        """
         self._fusionDuplicates()
 
         for layer in self._layers:
@@ -146,6 +234,15 @@ class PlanIonBeam:
         
 
     def reorderLayers(self, order: Optional[Union[str, Sequence[int]]] = 'decreasing'):
+        """
+        Reorder the layers.
+
+        Parameters
+        ----------
+        order: str or list of int (default: 'decreasing')
+            order of the layers. If 'decreasing' or 'scanAlgo', the layers are ordered by decreasing nominal energy.
+            If a list of int, the layers are ordered according to the list.
+        """
         if type(order) is str:
             if order == 'decreasing' or order == 'scanAlgo':
                 order = np.argsort([layer.nominalEnergy for layer in self._layers])[::-1]
@@ -193,6 +290,9 @@ class PlanIonBeam:
         return copy.deepcopy(self)
 
     def createEmptyBeamWithSameMetaData(self):
+        """
+        Create an empty beam with the same metadata (gantry angle, couch angle, etc.).
+        """
         beam = self.copy()
         beam._layers = []
         return beam
