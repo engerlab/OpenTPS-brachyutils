@@ -204,7 +204,8 @@ class PlanDesign(PatientData):
     def initializeBeams(self, plan):
         """
         Initializes the beams of the plan
-        Arguments:
+
+        Parameters
         ----------
         plan: RTPlan
             plan

@@ -128,7 +128,8 @@ class PlanIonBeam:
     def removeLayer(self, layer: Union[PlanIonLayer, Sequence[PlanIonLayer]]):
         """
         Remove a layer from the list of layers.
-        Arguments:
+
+        Parameters
         ----------
         layer: PlanIonLayer or list of PlanIonLayer
             layer to remove

@@ -354,7 +354,7 @@ class PlanIonLayer:
         """
         Reorders the spots in the layer.
 
-        Arguments
+        Parameters
         ----------
         order: str or Sequence[int]
             the way the spots are sorted.

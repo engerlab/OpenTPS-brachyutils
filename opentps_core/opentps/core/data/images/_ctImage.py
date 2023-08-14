@@ -11,7 +11,7 @@ class CTImage(Image3D):
     """
     Class for CT images. Inherits from Image3D and all its attributes.
 
-    Attributes:
+    Attributes
     ----------
     name : str (default: "CT image")
         Name of the image.
@@ -39,7 +39,7 @@ class CTImage(Image3D):
         """
         Creates a CTImage from an Image3D object.
 
-        Parameters:
+        Parameters
         ----------
         image : Image3D
             Image3D object to be converted.
@@ -58,7 +58,7 @@ class CTImage(Image3D):
             - patient : Patient
                 Patient object of the image.
 
-        Returns:
+        Returns
         -------
         CTImage
             The created CTImage object.
@@ -72,7 +72,7 @@ class CTImage(Image3D):
         """
         Returns a copy of the CTImage object.
 
-        Returns:
+        Returns
         -------
         CTImage
         """
