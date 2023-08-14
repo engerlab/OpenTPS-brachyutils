@@ -88,18 +88,18 @@ class Image3D(PatientData):
             Image to copy.
         kwargs : dict (optional)
             Additional keyword arguments to pass to the constructor.
-            - imageArray : numpy.ndarray
-                Image array of the image.
-            - origin : tuple of float
-                Origin of the image.
-            - spacing : tuple of float
-                Spacing of the image.
-            - angles : tuple of float
-                Angles of the image.
-            - seriesInstanceUID : str
-                Series instance UID of the image.
-            - patient : Patient
-                Patient object of the image.
+                - imageArray : numpy.ndarray
+                    Image array of the image.
+                - origin : tuple of float
+                    Origin of the image.
+                - spacing : tuple of float
+                    Spacing of the image.
+                - angles : tuple of float
+                    Angles of the image.
+                - seriesInstanceUID : str
+                    Series instance UID of the image.
+                - patient : Patient
+                    Patient object of the image.
 
         Returns
         -------

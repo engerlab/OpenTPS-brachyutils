@@ -249,10 +249,10 @@ class RTPlan(PatientData):
             If a list of int, the layers are ordered according to the list.
         order_spots: str or Sequence[int] (default: 'scanAlgo')
             the way the spots are sorted.
-            If str, the following options are available:
-                - 'scanAlgo': the way scanAlgo sort spots in a serpentine fashion
-                - 'timing': sort according to the start time of the spots
-            If Sequence[int], the spots a reordered according to the order of the indices
+                If str, the following options are available:
+                    - 'scanAlgo': the way scanAlgo sort spots in a serpentine fashion
+                    - 'timing': sort according to the start time of the spots
+                If Sequence[int], the spots a reordered according to the order of the indices
         """
         for beam in self._beams:
             beam.reorderLayers(order_layers)

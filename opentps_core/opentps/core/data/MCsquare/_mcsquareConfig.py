@@ -6,10 +6,10 @@ import os
 
 
 class MCsquareConfig:
-    """
-    Class to configure the MCsquare dose calculator. MCsquare is configured by a dictionary of key-value pairs.
-    For the different parameters and their usage take a look at the ConfigTemplate.txt file in the opentps.core.data.MCsquare directory.
-    """
+  """
+  Class to configure the MCsquare dose calculator. MCsquare is configured by a dictionary of key-value pairs.
+  For the different parameters and their usage take a look at the ConfigTemplate.txt file in the opentps.core.data.MCsquare directory.
+  """
   def __init__(self):
     ### Initialize MCsquare config with default values
     self.config = {}

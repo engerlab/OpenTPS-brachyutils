@@ -61,18 +61,18 @@ class Image2D(PatientData):
             Image2D to copy.
         kwargs : dict (optional)
             Keyword arguments to be passed to the constructor.
-            - imageArray : numpy.ndarray
-                Image array of the image.
-            - origin : tuple of float
-                Origin of the image.
-            - spacing : tuple of float
-                Spacing of the image.
-            - angles : tuple of float
-                Angles of the image.
-            - seriesInstanceUID : str
-                Series instance UID of the image.
-            - patient : Patient
-                Patient object of the image.
+                - imageArray : numpy.ndarray
+                    Image array of the image.
+                - origin : tuple of float
+                    Origin of the image.
+                - spacing : tuple of float
+                    Spacing of the image.
+                - angles : tuple of float
+                    Angles of the image.
+                - seriesInstanceUID : str
+                    Series instance UID of the image.
+                - patient : Patient
+                    Patient object of the image.
         """
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
