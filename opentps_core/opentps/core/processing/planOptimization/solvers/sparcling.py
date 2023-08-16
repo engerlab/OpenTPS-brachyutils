@@ -4,6 +4,38 @@ from opentps.core.data.plan._planIonBeam import PlanIonBeam
 
 
 class SPArCling:
+    """
+    SPArCling is a solver for the spot-scanning Poron Arc Therapy (SPArC) problem.
+
+    Attributes
+    ----------
+    plan : Plan
+        The plan to be optimized.
+    arcStart : float
+        The start angle of the arc.
+    arcStop : float
+        The stop angle of the arc.
+    maxNSplitting : int
+        The maximum number of splitting steps.
+    finalAngleStep : float
+        The final angle step.
+    mode : str (default: 'BLBased')
+        The mode of the solver.
+    coreOptimizer : str (default: 'Scipy-LBFGS')
+        The core optimizer to be used.
+    M : int (default: 2)
+        The number of beams to be used.
+    angularStep : float
+        The angular step.
+    theta1 : float
+        The first theta.
+    theta2 : float
+        The second theta.
+    minTheta : float
+        The minimum theta.
+    theta0 : float
+
+    """
     def __init__(self, plan, arcStart, arcStop, maxNSplitting, finalAngleStep, mode='BLBased',
                  coreOptimizer='Scipy-LBFGS',
                  **kwargs):
@@ -25,6 +57,21 @@ class SPArCling:
         self.theta0 = (1 / 2) * abs(self.theta1 - self.theta2) + self.minTheta
 
     def solve(self, func, x0, **kwargs):
+        """
+        Solves the SPArCling problem.
+
+        !!! This function is not finished yet !!!
+
+        Parameters
+        ----------
+        func : function
+            The function to be optimized.
+        x0 : ndarray
+            The initial guess.
+        kwargs : dict
+            Additional keyword arguments.
+        """
+        # TODO: implement this function
         # Pick beamlet-free or beamlet-based mode
         if self.mode == "BLFree":
             raise NotImplementedError

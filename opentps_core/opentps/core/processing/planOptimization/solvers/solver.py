@@ -12,6 +12,36 @@ logger = logging.getLogger(__name__)
 
 
 class ConvexSolver(object):
+    """
+    ConvexSolver is the base class for all convex solvers.
+    This part of the code comes from the EPFL LTS2 convex optimization toolbox.
+
+    Attributes
+    ----------
+    step : float (default: 0.1)
+        The step size.
+    accel : Accel (default: None)
+        The acceleration scheme.
+    params : dict
+        The parameters for the solver.
+        The paremeters are:
+            dtol : float (default: None)
+                Tolerance for termination by the change of the cost function.
+            xtol : float (default: None)
+                Tolerance for termination by the change of the solution.
+            atol : float (default: None)
+                Tolerance for termination by the cost function.
+            ftol : float (default: 1e-03)
+                Tolerance for termination by the relative change of the cost function.
+    non_smooth_funs : list
+        The list of non-smooth functions.
+    smooth_funs : list
+        The list of smooth functions.
+    fid_cost : list
+        The list of the cost function values.
+    sol : ndarray
+        The solution.
+    """
 
     def __init__(self, step=0.1, accel=None, **kwargs):
         self.nonSmoothFuns = []
@@ -32,12 +62,32 @@ class ConvexSolver(object):
         """
         Solve an planOptimization problem whose objective function is the sum of some
         convex functions.
-        Inputs:
-        - functions: list of convex functions to minimize (objects must implement the "pyopti.functions.func.eval"
-        and/or pyopti.functions.func.prox methods, required by some solvers).
-        - x0: initial weight vector
-        - solver: solver class instance.If no solver object are provided, a standard one will be chosen
-          given the number of convex function objects and their implemented methods.
+
+        Parameters
+        ----------
+        functions : list
+            list of convex functions to minimize (objects must implement the "pyopti.functions.func.eval"
+            and/or pyopti.functions.func.prox methods, required by some solvers).
+        x0 : ndarray
+            initial weight vector
+
+        Returns
+        -------
+        result : dict
+            The result of the planOptimization.
+            The keys are:
+                sol : list
+                    The solution.
+                solver : str
+                    The name of the solver.
+                crit : str
+                    The termination criterion.
+                niter : int
+                    The number of iterations.
+                time : float
+                    The time of the planOptimization.
+                objective : list
+                    The value of the objective function at each iteration.
         """
 
         # Add a second dummy convex function if only one function is provided.
@@ -144,6 +194,13 @@ class ConvexSolver(object):
         functions split in two lists:
         - self.smoothFuns : functions involved in gradient steps
         - self.nonSmoothFuns : functions involved in proximal steps
+
+        Parameters
+        ----------
+        functions : list
+            list of convex functions to minimize
+        x0 : ndarray
+            initial weight vector
         """
         self.sol = np.asarray(x0)
         self.smoothFuns = []
@@ -158,6 +215,13 @@ class ConvexSolver(object):
         """
         Call the solver iterative algorithm and the provided acceleration
         scheme
+
+        Parameters
+        ----------
+        objective : list
+            The value of the objective function at each iteration.
+        niter : int
+            The number of iterations.
         """
         self.sol[:] = self.accel.update_sol(self, objective, niter)
         self.step = self.accel.update_step(self, objective, niter)
@@ -183,6 +247,16 @@ class ConvexSolver(object):
         """
         Return the objective function at x.
         Necessitate `solver._pre(...)` to be run first.
+
+        Parameters
+        ----------
+        x : ndarray
+            The point at which the objective function is evaluated.
+
+        Returns
+        -------
+        obj : list
+            The value of the objective function at x.
         """
         return self._objective(x)
 

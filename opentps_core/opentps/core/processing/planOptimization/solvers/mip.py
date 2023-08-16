@@ -15,6 +15,31 @@ import numpy as np
 
 
 class MIP(LP):
+    """
+    Mixed Integer Programming solver for the sequencing problem. The solver is based on the Gurobi solver. Inherit from LP.
+
+    Parameters
+    ----------
+    plan : RTPlan
+        The plan to be optimized
+    **kwargs
+        Additional parameters for the solver.
+        Arguments are:
+        - max_switch_ups : int
+            Maximum number of energy layer switches. If -1, the number of switches is not limited
+        - EL_cost : bool
+            If True, the energy layer switch costs are taken into account
+        - ES_up_weight : float
+            Weight of the energy layer switch costs in the objective function
+    max_switch_ups : int (default: -1)
+        Maximum number of energy layer switches. If -1, the number of switches is not limited
+    no_EL_cost : bool (default: False)
+        If True, the energy layer switch costs are not taken into account
+    machine : bool (default: False)
+        If True, the energy layer switch costs are calculated based on the machine
+    time_weight : float (default: -1)
+        Weight of the energy layer switch costs in the objective function
+    """
     def __init__(self, plan: RTPlan, **kwargs):
         super().__init__(plan, **kwargs)
         params = kwargs
@@ -29,6 +54,19 @@ class MIP(LP):
         if self.noELCost: print("Warning: EL switch costs are taken into account")
 
     def createModel(self, name = "MIP"):
+        """
+        Create the model for the MIP solver. Inherit from LP.createModel().
+
+        Parameters
+        ----------
+        name : str (default: "MIP")
+            Name of the model
+
+        Returns
+        -------
+        model : gurobipy.Model
+            The model for the MIP solver
+        """
         model = super().createModel(name)
 
         # Energy sequencing

@@ -17,6 +17,14 @@ class Backtracking(Dummy):
         sequence formed by successive step sizes. In other words, it
         establishes the relation `step_new = eta * step_old`.
         Default is 0.5.
+    Inherits from Dummy.
+    Code from EPFL LTS2 toolbox.
+
+    Attributes
+    ----------
+    eta : float
+        A number between 0 and 1 representing the ratio of the geometric
+        sequence formed by successive step sizes.
     """
     def __init__(self, eta=0.5, **kwargs):
         if (eta > 1) or (eta <= 0):

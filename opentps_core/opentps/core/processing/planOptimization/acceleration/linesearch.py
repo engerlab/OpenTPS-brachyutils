@@ -10,13 +10,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 class LineSearch(Dummy):
-    r"""
+    """
     Backtracking lines earch acceleration based on the Armijo–Goldstein condition,
     is a line search method to determine the amount to move along a given search direction.
     It starts withca relatively large estimate of the step size for movement along
     the search direction, and iteratively shrinking the step size (i.e., "backtracking")
     until a decrease of the objective function is observed that adequately corresponds
     to the decrease that is expected, based on the local gradient of the objective function.
+    Inheriting from Dummy. Code from EPFL LTS2 toolbox.
+
     Parameters
     ----------
     c1 : float
