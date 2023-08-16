@@ -8,6 +8,21 @@ logger = logging.getLogger(__name__)
 
 
 def compute3DStructuralElement(radiusXYZ, spacing=[1,1,1]):
+    """
+    Compute a 3D structural element for morphological operations (e.g. dilation, erosion).
+
+    Parameters
+    ----------
+    radiusXYZ : list
+        The radius of the structural element in each direction
+    spacing : list
+        The spacing of the image in each direction (default: [1,1,1])
+
+    Returns
+    ----------
+    filt : bool numpy array
+        The structural element (bool mask)
+    """
     
     radiusXYZ = np.divide(radiusXYZ,spacing)
     filt = np.zeros((2*np.ceil(radiusXYZ[0]).astype(int)+1, 2*np.ceil(radiusXYZ[1]).astype(int)+1, 2*np.ceil(radiusXYZ[2]).astype(int)+1))
@@ -20,11 +35,32 @@ def compute3DStructuralElement(radiusXYZ, spacing=[1,1,1]):
     return filt
 
 class SegmentationCT():
+    """
+    Class for CT segmentation
+
+    Parameters
+    ----------
+    ct : Image3D
+        The CT image to be segmented
+
+    Attributes
+    ----------
+    ct : Image3D
+        The CT image to be segmented
+    """
 
     def __init__(self, ct):
         self.ct = ct
 
     def segmentBody(self):
+        """
+        Segment the body from the CT image
+
+        Returns
+        ----------
+        body : Image3D
+            The body mask (bool mask)
+        """
 
         # Air detection
         body = seg.applyThreshold(self.ct, -750)
@@ -52,14 +88,38 @@ class SegmentationCT():
         return body
 
     def segmentBones(self, body=None):
+        """
+        Segment the bones from the CT image
 
+        Parameters
+        ----------
+        body : Image3D
+            The body mask (bool mask)
+
+        Returns
+        ----------
+        bones : Image3D
+            The bones mask (bool mask)
+        """
         bones = seg.applyThreshold(self.ct, 200)
         bones.closeMask(struct=compute3DStructuralElement([2, 2, 2], spacing=bones.spacing))
         bones.openMask(struct=compute3DStructuralElement([3, 3, 3], spacing=bones.spacing))
         return bones
 
     def segmentLungs(self, body=None):
+        """
+        Segment the lungs from the CT image
 
+        Parameters
+        ----------
+        body : Image3D
+            The body mask (bool mask)
+
+        Returns
+        ----------
+        lungs : Image3D
+            The lungs mask (bool mask)
+        """
         if body is None:
             body = self.segmentBody()
         else:
