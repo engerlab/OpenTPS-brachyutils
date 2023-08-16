@@ -12,6 +12,20 @@ from opentps.core.processing.planOptimization.objectives.baseFunction import Bas
 
 
 class DoseFidelity(BaseFunc):
+    """
+    Dose fidelity objective class. Inherits from BaseFunc.
+
+    Attributes
+    ----------
+    list : list
+        List of objectives
+    xSquare : bool
+        If true, the weights are squared. If false, the weights are not squared.
+    beamlets : sparse matrix
+        Beamlet matrix
+    scenariosBL : list
+        List of scenarios
+    """
     def __init__(self, plan, xSquare=True):
         super(DoseFidelity, self).__init__()
         self.list = plan.planDesign.objectives.fidObjList
@@ -25,6 +39,23 @@ class DoseFidelity(BaseFunc):
 
 
     def computeFidelityFunction(self, x, returnWorstCase=False):
+        """
+        Computes the fidelity function.
+
+        Parameters
+        ----------
+        x : array
+            Weights
+        returnWorstCase : bool
+            If true, the worst case scenario is returned. If false, the nominal scenario is returned.
+
+        Returns
+        -------
+        fTot : float
+            Fidelity function value
+        worstCase : int (only if robust objectives are present)
+            Worst case scenario index (-1 for nominal)
+        """
         if self.xSquare:
             weights = np.square(x).astype(np.float32)
         else:
@@ -103,6 +134,24 @@ class DoseFidelity(BaseFunc):
                 max(scenarioList)) - 1  # returns id of the worst case scenario (-1 for nominal)
 
     def computeFidelityGradient(self, x):
+        """
+        Computes the fidelity gradient.
+
+        Parameters
+        ----------
+        x : array
+            Weights
+
+        Returns
+        -------
+        dfTot : array
+            Fidelity gradient
+
+        Raises
+        ------
+        Exception
+            If the objective metric is not supported.
+        """
         # get worst case scenario
         if self.scenariosBL:
             fTot, worstCase = self.computeFidelityFunction(x, returnWorstCase=True)

@@ -131,7 +131,8 @@ class RTStruct(PatientData):
         -------------
         contour_names : str
             Names of the contours we want to add
-        ct: CT image of the patient
+        ct: CTImage
+            CT image of the patient
 
         Returns
         ----------

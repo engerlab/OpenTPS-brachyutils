@@ -18,6 +18,44 @@ from opentps.core.processing.planOptimization.tools import WeightStructure
 
 
 class LP:
+    """
+    LP is a wrapper for the Gurobi linear optimizer.
+
+    Attributes
+    ----------
+    plan : RTPlan
+        The plan to be optimized.
+    solStruct : WeightStructure
+        The structure of the solution.
+    xVars : list
+        The list of the variables.
+    fidWeight : float (default: 1)
+        The weight for the dose fidelity term.
+    LNSNIter : int (default: 0)
+        The number of LNS iterations.
+    LNSPercentLayers : float (default: -1)
+        The percentage of layers to be optimized in each LNS iteration.
+    completeAfterLNS : bool (default: True)
+        If True, the optimization is completed after the LNS iterations.
+    LNSPercentLayersInc : float (default: 0)
+        The increment of the percentage of layers to be optimized in each LNS iteration.
+    groupSpotsInit : int (default: 0)
+        The number of spots to be grouped in the first iteration.
+    groupSpotsIter : int (default: 0)
+        The number of iterations for the spot grouping.
+    completeAfterGroup : bool (default: True)
+        If True, the optimization is completed after the spot grouping iterations.
+    groupSpots : bool (default: False)
+        If True, the spots are grouped.
+    M : int (default: 20)
+        The maximum number of MU per spot.
+    timeLimit : int (default: 300)
+        The time limit for the optimization.
+    inputf : str (default: None)
+        The name of the input file.
+    solFile : str (default: None)
+        The name of the solution file.
+    """
     def __init__(self, plan: RTPlan, **kwargs):
         self.plan = plan
         self.solStruct = WeightStructure(plan)
@@ -50,6 +88,34 @@ class LP:
         self.solFile = params.get('solFile', None)
 
     def solve(self, func, x0, **kwargs):
+        """
+        Solves the planOptimization problem using the Gurobi linear optimizer.
+
+        Parameters
+        ----------
+        func : list of functions
+            The functions to be optimized.
+        x0 : list
+            The initial guess.
+        kwargs : dict
+            The parameters for the Gurobi linear optimizer.
+
+        Returns
+        -------
+        result : dict
+            The result of the planOptimization.
+            The keys are:
+                sol : list
+                    The solution.
+                crit : str
+                    The termination criterion.
+                niter : int
+                    The number of iterations.
+                time : float
+                    The time.
+                objective : float
+                    The objective function value.
+        """
         startTime = time.time()
         self.solStruct.x = x0
         g = 1
@@ -226,6 +292,19 @@ class LP:
             return result
 
     def createModel(self, name = "LP"):
+        """
+        Creates the Gurobi model.
+
+        Parameters
+        ----------
+        name : str (default: "LP")
+            The name of the model.
+
+        Returns
+        -------
+        model : Gurobi model
+            The Gurobi model.
+        """
         if gp is None:
             raise Exception("Third-party toolbox Gurobi must be installed and requires a license")
         model = gp.Model(name)

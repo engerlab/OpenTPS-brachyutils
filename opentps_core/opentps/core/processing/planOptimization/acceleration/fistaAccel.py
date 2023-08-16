@@ -11,7 +11,13 @@ from opentps.core.processing.planOptimization.acceleration.backtracking import B
 
 class FistaAccel(Dummy):
     """
-    acceleration scheme for forward-backward solvers.
+    acceleration scheme for forward-backward solvers. Inherit from Dummy.
+    Code from EPFL LTS2 toolbox.
+
+    Attributes
+    ----------
+    t : float
+        Restart variable t
     """
 
     def __init__(self, **kwargs):
@@ -39,6 +45,8 @@ class FistaBacktracking(Backtracking, FistaAccel):
     For details about the acceleration scheme and backtracking strategy, see A. Beck and M. Teboulle,
     "A fast iterative shrinkage-thresholding algorithm for linear inverse problems",
     SIAM Journal on Imaging Sciences, vol. 2, no. 1, pp. 183–202, 2009.
+    Inherit from Backtracking and FistaAccel.
+    Code from EPFL LTS2 toolbox.
     """
 
     def __init__(self, eta=0.5, **kwargs):
