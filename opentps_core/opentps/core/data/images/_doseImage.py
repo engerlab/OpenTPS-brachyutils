@@ -38,7 +38,7 @@ class DoseImage(Image3D):
         """
         Creates a DoseImage from an Image3D object.
 
-        Parameters:
+        Parameters
         ----------
         image : Image3D
             Image3D object to be converted.
@@ -57,7 +57,7 @@ class DoseImage(Image3D):
             - patient : Patient
                 Patient object of the image.
 
-        Returns:
+        Returns
         --------
         DoseImage
             DoseImage object.
@@ -76,7 +76,7 @@ class DoseImage(Image3D):
         """
         Returns a copy of the DoseImage object.
 
-        Returns:
+        Returns
         --------
         DoseImage
             Copy of the DoseImage object.
@@ -92,7 +92,7 @@ class DoseImage(Image3D):
         """
         Returns a dumpable copy of the DoseImage object.
 
-        Returns:
+        Returns
         --------
         DoseImage
             Dumpable copy of the DoseImage object.
@@ -106,24 +106,24 @@ class DoseImage(Image3D):
         """
         Creates an empty DoseImage with the same meta data as the given Image3D object.
 
-        Parameters:
+        Parameters
         ----------
         image : Image3D
             Image3D object to be converted.
         kwargs : dict (optional)
             Additional keyword arguments.
-            - imageArray : numpy.ndarray
-                Image array of the image.
-            - origin : tuple of float
-                Origin of the image.
-            - spacing : tuple of float
-                Spacing of the image.
-            - angles : tuple of float
-                Angles of the image.
-            - seriesInstanceUID : str
-                Series instance UID of the image.
-            - patient : Patient
-                Patient object of the image.
+                - imageArray : numpy.ndarray
+                    Image array of the image.
+                - origin : tuple of float
+                    Origin of the image.
+                - spacing : tuple of float
+                    Spacing of the image.
+                - angles : tuple of float
+                    Angles of the image.
+                - seriesInstanceUID : str
+                    Series instance UID of the image.
+                - patient : Patient
+                    Patient object of the image.
         """
         dic = {'imageArray': np.zeros_like(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}

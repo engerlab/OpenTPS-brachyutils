@@ -13,6 +13,17 @@ import opentps.core.processing.doseCalculation.MCsquare as MCsquareModule
 
 
 class MCsquareHU2Material:
+    """
+    Class for converting HU to MCsquare material
+
+    Attributes
+    ----------
+    !! USED ONLY AT INITIALIZATION !!
+    fromFile : tuple
+        Path to the file containing the HU to mass density conversion table and path to the materials folder.
+    piecewiseTable : tuple
+        Tuple containing the HU to mass density conversion table.
+    """
     def __init__(self, piecewiseTable=(None, None), fromFile=(None, 'default')):
         self.__hu = piecewiseTable[0]
         self.__materials = piecewiseTable[1]
@@ -25,6 +36,21 @@ class MCsquareHU2Material:
 
     @classmethod
     def fromFiles(cls, huMaterialFile, materialsPath='default'):
+        """
+        Create a MCsquareHU2Material object from a file.
+
+        Parameters
+        ----------
+        huMaterialFile : str
+            Path to the file containing the HU to mass density conversion table.
+        materialsPath : str
+            Path to the materials folder.
+
+        Returns
+        -------
+        MCsquareHU2Material
+            The MCsquareHU2Material object.
+        """
         newObj = cls()
         newObj._initializeFromFiles(huMaterialFile, materialsPath)
 
@@ -34,6 +60,16 @@ class MCsquareHU2Material:
         self.__load(huMaterialFile, materialsPath=materialsPath)
 
     def addEntry(self, hu:float, material:MCsquareMolecule):
+        """
+        Add an entry to the HU to material conversion table.
+
+        Parameters
+        ----------
+        hu : float
+            HU value.
+        material : MCsquareMolecule
+            Material.
+        """
         self.__hu = np.append(self.__hu, hu)
         self.__materials = np.append(self.__materials, material)
 
@@ -46,6 +82,14 @@ class MCsquareHU2Material:
         self.__materials = self.__materials[ind]
 
     def mcsquareFormatted(self):
+        """
+        Returns the HU to material conversion table in MCsquare format.
+
+        Returns
+        -------
+        str
+            The HU to material conversion table in MCsquare format.
+        """
         mats = self.allMaterialsAndElements()
         matNames = [mat.name for mat in mats]
 
@@ -57,6 +101,21 @@ class MCsquareHU2Material:
         return s
 
     def convertHU2SP(self, hu:Union[float, np.ndarray], energy:float = 100.) ->  Union[float, np.ndarray]:
+        """
+        Convert HU to stopping power.
+
+        Parameters
+        ----------
+        hu : float or np.ndarray
+            HU value(s).
+        energy : float (default = 100.)
+            Energy in MeV.
+
+        Returns
+        -------
+        float or np.ndarray
+            The stopping power value(s).
+        """
         huIsScalar = not isinstance(hu, np.ndarray)
 
         if huIsScalar:
@@ -94,6 +153,21 @@ class MCsquareHU2Material:
         return np.reshape(sp, huShape)
 
     def convertSP2HU(self, sp:Union[float, np.ndarray], energy:float = 100.) ->  Union[float, np.ndarray]:
+        """
+        Convert stopping power to HU.
+
+        Parameters
+        ----------
+        sp : float or np.ndarray
+            Stopping power value(s).
+        energy : float (default = 100.)
+            Energy in MeV.
+
+        Returns
+        -------
+        float or np.ndarray
+            The HU value(s).
+        """
         spIsScalar = not isinstance(sp, np.ndarray)
 
         if spIsScalar:
@@ -149,6 +223,16 @@ class MCsquareHU2Material:
                     self.__materials.append(material)
 
     def write(self, folderPath, huMaterialFile):
+        """
+        Write the HU to material conversion table to a file.
+
+        Parameters
+        ----------
+        folderPath : str
+            Path to the folder where the materials will be written.
+        huMaterialFile : str
+            Path to the file where the HU to material conversion table will be written.
+        """
         self._writeHU2MaterialFile(huMaterialFile)
         self._copyDefaultMaterials(folderPath)
         self._writeMaterials(folderPath)
@@ -190,6 +274,14 @@ class MCsquareHU2Material:
                 f.write(str(i+1) + ' ' + mat.name + '\n')
 
     def materialsOrderedForPrinting(self):
+        """
+        Returns the materials in the order they should be printed in the MCsquare list.dat file.
+
+        Returns
+        -------
+        list
+            The materials in the order they should be printed in the MCsquare list.dat file.
+        """
         materials = self.allMaterialsAndElements()
         defaultMats = MCsquareMaterial.getMaterialList('default')
 
@@ -205,6 +297,14 @@ class MCsquareHU2Material:
         return orderMaterials
 
     def allMaterialsAndElements(self):
+        """
+        Returns all materials and elements in the HU to material conversion table.
+
+        Returns
+        -------
+        list
+            All materials and elements in the HU to material conversion table sorted by number.
+        """
         materials = []
         for material in self.__materials:
             materials.append(material)

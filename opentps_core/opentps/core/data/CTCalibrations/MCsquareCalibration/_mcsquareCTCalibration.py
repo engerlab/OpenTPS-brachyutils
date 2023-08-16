@@ -14,6 +14,9 @@ from opentps.core.data.CTCalibrations._piecewiseHU2Density import PiecewiseHU2De
 
 
 class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquareHU2Material):
+    """
+    Class for the CT calibration for MCsquare. Inherits from AbstractCTCalibration, PiecewiseHU2Density and MCsquareHU2Material.
+    """
     def __init__(self, hu2densityTable=(None, None), hu2materialTable=(None, None), fromFiles=(None, None, 'default')):
         PiecewiseHU2Density.__init__(self, piecewiseTable=hu2densityTable, fromFile=fromFiles[0])
         MCsquareHU2Material.__init__(self, piecewiseTable=hu2materialTable, fromFile=(fromFiles[1], fromFiles[2]))
@@ -28,6 +31,23 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
 
     @classmethod
     def fromFiles(cls, huDensityFile, huMaterialFile, materialsPath='default'):
+        """
+        Create a MCsquareCTCalibration object from files.
+
+        Parameters
+        ----------
+        huDensityFile : str
+            Path to the file containing the HU to mass density conversion table.
+        huMaterialFile : str
+            Path to the file containing the HU to material conversion table.
+        materialsPath : str (optional, default='default')
+            Path to the folder containing the material files. Default is 'default' which means that the default materials folder of MCsquare will be used.
+
+        Returns
+        -------
+        MCsquareCTCalibration
+            The MCsquareCTCalibration object.
+        """
         newObj = cls()
 
         newObj._initializeFromFile(huDensityFile)
@@ -36,29 +56,125 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         return newObj
 
     def addEntry(self, hu:float, density:Optional[float], material:Optional[MCsquareMolecule]):
+        """
+        Add an entry to the HU to mass density and HU to material conversion tables. Either density or material must be None, and the other must be a valid value.
+
+        Parameters
+        ----------
+        hu : float
+            The HU value.
+        density : float (optional)
+            The mass density value.
+        material : MCsquareMolecule (optional)
+            The material.
+        """
         if not (density is None):
             PiecewiseHU2Density.addEntry(self, hu, density)
         if not(material is None):
             MCsquareHU2Material.addEntry(self, hu, material)
 
     def convertHU2MassDensity(self, hu):
+        """
+        Convert HU to mass density.
+
+        Parameters
+        ----------
+        hu : float or array_like
+            The HU value(s).
+
+        Returns
+        -------
+        float or array_like
+            The mass density value(s).
+        """
         return PiecewiseHU2Density.convertHU2MassDensity(self, hu)
 
     def convertHU2RSP(self, hu, energy=100):
+        """
+        Convert HU to relative stopping power.
+
+        Parameters
+        ----------
+        hu : float or array_like
+            The HU value(s).
+        energy : float (default=100)
+            The energy of the proton beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The relative stopping power value(s).
+        """
         densities = self.convertHU2MassDensity(hu)
         return densities*self.convertHU2SP(hu, energy=energy)/self.waterSP(energy=energy)
 
     def waterSP(self, energy:float=100.) -> float:
+        """
+        Get the stopping power of water at a given energy.
+
+        Parameters
+        ----------
+        energy : float (default=100)
+            The energy of the proton beam in MeV.
+
+        Returns
+        -------
+        float
+            The stopping power of water at the given energy.
+        """
         material = MCsquareMolecule.load(17, 'default') # 17 is the ID of Water. This is hard-coded in MCsquare
         return material.stoppingPower(energy)
 
     def convertMassDensity2HU(self, density):
+        """
+        Convert mass density to HU.
+
+        Parameters
+        ----------
+        density : float or array_like
+            The mass density value(s).
+
+        Returns
+        -------
+        float or array_like
+            The HU value(s).
+        """
         return PiecewiseHU2Density.convertMassDensity2HU(self, density)
 
     def convertMassDensity2RSP(self, density, energy=100):
+        """
+        Convert mass density to relative stopping power.
+
+        Parameters
+        ----------
+        density : float or array_like
+            The mass density value(s).
+        energy : float (default=100)
+            The energy of the proton beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The relative stopping power value(s).
+        """
         return self.convertHU2RSP(self.convertMassDensity2HU(density), energy=energy)
 
     def convertRSP2HU(self, rsp, energy=100):
+        """
+        Convert relative stopping power to HU.
+
+        Parameters
+        ----------
+        rsp : float or array_like
+            The relative stopping power value(s).
+        energy : float (default=100)
+            The energy of the proton beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The HU value(s).
+        """
         hu_ref, rsp_ref = self._getBijectiveHU2RSP(energy=energy)
 
         density = interpolate.interp1d(rsp_ref, hu_ref, kind='linear', fill_value='extrapolate')
@@ -82,14 +198,57 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         return (hu_ref, rsp_ref)
 
     def convertRSP2MassDensity(self, rsp, energy=100):
+        """
+        Convert relative stopping power to mass density.
+
+        Parameters
+        ----------
+        rsp : float or array_like
+            The relative stopping power value(s).
+        energy : float (default=100)
+            The energy of the proton beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The mass density value(s).
+        """
         return self.convertHU2MassDensity(self.convertRSP2HU(rsp, energy=energy))
 
     def write(self, scannerPath, materialPath):
+        """
+        Write the HU to mass density and HU to material conversion tables to files.
+
+        Parameters
+        ----------
+        scannerPath : str
+            Path to the folder to write the HU to mass density conversion table to.
+        materialPath : str
+            Path to the folder to write the HU to material conversion table to.
+        """
         PiecewiseHU2Density.write(self, os.path.join(scannerPath, 'HU_Density_Conversion.txt'))
         MCsquareHU2Material.write(self, materialPath, os.path.join(scannerPath, 'HU_Material_Conversion.txt'))
 
     @classmethod
     def fromCTCalibration(cls, ctCalibration: AbstractCTCalibration):
+        """
+        Create a MCsquareCTCalibration object from a AbstractCTCalibration object (RayStationCalibration).
+
+        Parameters
+        ----------
+        ctCalibration : AbstractCTCalibration
+            The AbstractCTCalibration object.
+
+        Returns
+        -------
+        MCsquareCTCalibration
+            The MCsquareCTCalibration object.
+
+        Raises
+        ------
+        NotImplementedError
+            If the conversion is not implemented.
+        """
         from opentps.core.data.CTCalibrations.RayStationCalibration._rayStationCTCalibration import RayStationCTCalibration
 
         if isinstance(ctCalibration, RayStationCTCalibration):

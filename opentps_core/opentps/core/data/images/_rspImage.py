@@ -18,7 +18,7 @@ class RSPImage(Image3D):
     """
     Class for Relative Stopping Power images. Inherits from Image3D.
 
-    Attributes:
+    Attributes
     ----------
     name : str (default: "RSP image")
         Name of the image.
@@ -47,24 +47,24 @@ class RSPImage(Image3D):
         """
         Create a new RSPImage from an Image3D object.
 
-        Parameters:
+        Parameters
         ----------
         image : Image3D
             Image3D object.
         kwargs : dict (optional)
             Additional keyword arguments.
-            - imageArray : numpy.ndarray
-                Image array of the image.
-            - origin : tuple of float
-                Origin of the image.
-            - spacing : tuple of float
-                Spacing of the image.
-            - angles : tuple of float
-                Angles of the image.
-            - seriesInstanceUID : str
-                Series instance UID of the image.
-            - patient : Patient
-                Patient object of the image.
+                - imageArray : numpy.ndarray
+                    Image array of the image.
+                - origin : tuple of float
+                    Origin of the image.
+                - spacing : tuple of float
+                    Spacing of the image.
+                - angles : tuple of float
+                    Angles of the image.
+                - seriesInstanceUID : str
+                    Series instance UID of the image.
+                - patient : Patient
+                    Patient object of the image.
         """
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
@@ -76,7 +76,7 @@ class RSPImage(Image3D):
         """
         Create a new RSPImage from a CTImage object by converting the Housefield units to relative stopping power according to the calibration.
 
-        Parameters:
+        Parameters
         ----------
         ct : CTImage
             CTImage object.
@@ -85,7 +85,7 @@ class RSPImage(Image3D):
         energy : float (default: 100.)
             Energy of the beam in MeV.
 
-        Returns:
+        Returns
         -------
         RSPImage
             RSPImage object.
@@ -99,13 +99,13 @@ class RSPImage(Image3D):
         """
         Compute the cumulative water equivalent path length (WEPL) of the image.
 
-        Parameters:
+        Parameters
         ----------
         beam : PlanIonBeam (optional)
             Ion beam object.
         roi : ROICountour or ROIMask (optional)
 
-        Returns:
+        Returns
         -------
         Image3D
             Image3D object.
@@ -129,12 +129,12 @@ class RSPImage(Image3D):
         """
         Get the stopping power ratio at a given position. If the position is outside the image, the SPR is set to 0.001.
 
-        Parameters:
+        Parameters
         ----------
         position : tuple of float
             Position in mm.
 
-        Returns:
+        Returns
         -------
         float
             Stopping power ratio.

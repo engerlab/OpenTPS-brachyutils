@@ -10,7 +10,7 @@ class MRImage(Image3D):
     """
     Class for MR images. Inherits from Image3D.
 
-    Attributes:
+    Attributes
     ----------
     name : str (default: "MR image")
         Name of the image.
@@ -86,26 +86,26 @@ class MRImage(Image3D):
         """
         Creates a MRImage from an Image3D.
 
-        Parameters:
+        Parameters
         ----------
         image : Image3D
             Image3D to be converted to MRImage.
         kwargs : dict (optional)
             Additional keyword arguments.
-            - imageArray : numpy.ndarray
-                Image array of the image.
-            - origin : tuple of float
-                Origin of the image.
-            - spacing : tuple of float
-                Spacing of the image.
-            - angles : tuple of float
-                Angles of the image.
-            - seriesInstanceUID : str
-                Series instance UID of the image.
-            - patient : Patient
-                Patient object of the image.
+                - imageArray : numpy.ndarray
+                    Image array of the image.
+                - origin : tuple of float
+                    Origin of the image.
+                - spacing : tuple of float
+                    Spacing of the image.
+                - angles : tuple of float
+                    Angles of the image.
+                - seriesInstanceUID : str
+                    Series instance UID of the image.
+                - patient : Patient
+                    Patient object of the image.
 
-        Returns:
+        Returns
         -------
         MRImage
             MRImage created from the Image3D.
@@ -119,7 +119,7 @@ class MRImage(Image3D):
         """
         Creates a copy of the MRImage.
 
-        Returns:
+        Returns
         -------
         MRImage
             Copy of the MRImage.
