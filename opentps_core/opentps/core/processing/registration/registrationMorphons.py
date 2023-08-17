@@ -56,7 +56,23 @@ def applyMorphonsKernels(image, k, is_fixed=1, tryGPU=True):
 
 
 class RegistrationMorphons(Registration):
+    """
+    Class for performing registration using morphons kernels. inherited from Registration class.
 
+    Attributes
+    ----------
+    fixed : Image3D
+        Fixed image.
+    moving : Image3D
+        Moving image.
+    baseResolution : float
+        Base resolution for registration.
+    nbProcesses : int
+        Number of processes to use for registration.
+    tryGPU : bool
+        Try to use GPU for registration.
+
+    """
     def __init__(self, fixed, moving, baseResolution=2.5, nbProcesses=-1, tryGPU=True):
 
         Registration.__init__(self, fixed, moving)
