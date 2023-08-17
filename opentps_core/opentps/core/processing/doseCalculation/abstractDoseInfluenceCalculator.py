@@ -11,6 +11,9 @@ from opentps.core import Event
 __all__ = ['AbstractDoseInfluenceCalculator']
 
 class AbstractDoseInfluenceCalculator:
+    """
+    Abstract class for dose influence calculation
+    """
     def __init__(self):
         self.progressEvent = Event(ProgressInfo)
 

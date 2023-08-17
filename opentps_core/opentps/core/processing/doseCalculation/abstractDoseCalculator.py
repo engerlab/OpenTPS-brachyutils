@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     from opentps.core.data.plan._rtPlan import RTPlan
 
 class AbstractDoseCalculator:
+    """
+    Abstract class for dose calculation
+    """
     def __init__(self):
         self.progressEvent = Event(ProgressInfo)
 
@@ -41,6 +44,10 @@ class AbstractDoseCalculator:
         raise NotImplementedError()
 
 class ProgressInfo:
+    """
+    Progress information for dose calculation
+    /!\ Not implemented yet
+    """
     class Status(Enum):
         RUNNING = 'RUNNING'
         IDLE = 'IDLE'
