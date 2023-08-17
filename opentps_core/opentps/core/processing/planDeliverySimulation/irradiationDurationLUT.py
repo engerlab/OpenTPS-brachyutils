@@ -10,6 +10,20 @@ logger = logging.getLogger(__name__)
 
 
 class IrradiationDurationLUT(AbstractApplicationConfig):
+    """
+    Irradiation Duration look-up table (LUT).
+
+    Attributes
+    ----------
+    LUTFile : str
+        The LUT file.
+    LUT : np.array
+        The LUT.
+    nominalEnergy : np.array
+        The nominal energy.
+    duration : np.array
+        The duration.
+    """
     def __init__(self):
         super().__init__()
         self._LUT = None

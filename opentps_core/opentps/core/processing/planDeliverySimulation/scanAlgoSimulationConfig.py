@@ -8,6 +8,16 @@ logger = logging.getLogger(__name__)
 
 
 class ScanAlgoSimulationConfig(AbstractApplicationConfig):
+    """
+    This class is used to read and write the configuration of the scan algorithm simulation.
+
+    Attributes
+    ----------
+    gantry : str
+        The type of gantry used for the simulation.
+    gateway : str
+        The IP address of the gateway used for the simulation.
+    """
     def __init__(self):
         super().__init__()
 
