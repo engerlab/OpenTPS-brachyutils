@@ -186,7 +186,8 @@ def readDicomMRI(dcmFiles):
     if hasattr(dcm, 'RepetitionTime'):
         image.repetitionTime = float(dcm.RepetitionTime)
     if hasattr(dcm, 'EchoTime'):
-        image.echoTime = float(dcm.EchoTime)
+        if dcm.EchoTime is not None:
+            image.echoTime = float(dcm.EchoTime)
     if hasattr(dcm, 'NumberOfAverages'):
         image.nAverages = float(dcm.NumberOfAverages)
     if hasattr(dcm, 'ImagingFrequency'):
@@ -200,7 +201,8 @@ def readDicomMRI(dcmFiles):
     if hasattr(dcm, 'NumberOfPhaseEncodingSteps'):
         image.nPhaseSteps = int(dcm.NumberOfPhaseEncodingSteps)
     if hasattr(dcm, 'EchoTrainLength'):
-        image.echoTrainLength = int(dcm.EchoTrainLength)
+        if dcm.EchoTrainLength is not None:
+            image.echoTrainLength = int(dcm.EchoTrainLength)
     if hasattr(dcm, 'FlipAngle'):
         image.flipAngle = float(dcm.FlipAngle)
     if hasattr(dcm, 'SAR'):
@@ -340,7 +342,7 @@ def readDicomStruct(dcmFile):
         dcmContour = dcm.ROIContourSequence[referencedRoiId]
 
         if not hasattr(dcmContour, 'ContourSequence'):
-            logging.warning("This structure has no attribute ContourSequence. Skipping...")
+            logging.warning("This structure [ ", dcmStruct.ROIName ," ]has no attribute ContourSequence. Skipping ...")
             continue
 
         # Create ROIContour object
