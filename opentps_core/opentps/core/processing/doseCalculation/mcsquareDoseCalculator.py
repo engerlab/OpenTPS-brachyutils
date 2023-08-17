@@ -39,6 +39,51 @@ logger = logging.getLogger(__name__)
 
 
 class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalculator):
+    """
+    Class for Monte Carlo dose calculation using MCsquare.
+    This class is a wrapper for the MCsquare dose calculation engine.
+
+    Attributes
+    ----------
+    _ctCalibration : AbstractCTCalibration
+        CT calibration (Optional)
+    _ct : Image3D
+        the CT image of the patient (Optional)
+    _plan : RTPlan
+        Treatment plan (Optional)
+    _roi : ROIMask
+        ROI mask
+    _config : MCsquareConfig
+        MCsquare configuration
+    _mcsquareCTCalibration : BDL
+        MCsquare CT calibration
+    _beamModel : BDL
+        MCsquare beam model
+    _nbPrimaries : int
+        Number of primaries proton
+    _statUncertainty : float
+        Statistical uncertainty for MCsquare
+    _scoringVoxelSpacing : float
+        Scoring voxel spacing of dose image
+    _simulationDirectory : str
+        Simulation directory path
+    _simulationFolderName : str
+        Simulation folder name
+    _computeDVHOnly : int
+        Compute DVH only (True if > 0)
+    _computeLETDistribution : int
+        Compute Linear Energy transfer (LET) distribution in the patient (True if > 0)
+    _subprocess : subprocess.Popen
+        Subprocess if used
+    _subprocessKilled : bool
+        Subprocess killed (if subprocess is used)
+    _sparseLETFilePath : str
+        Sparse LET file path
+    _sparseDoseFilePath : str
+        Sparse dose file path
+    _sparseDoseScenarioToRead : int
+        Sparse dose scenario to read
+    """
     def __init__(self):
         AbstractMCDoseCalculator.__init__(self)
         AbstractDoseInfluenceCalculator.__init__(self)
@@ -159,6 +204,24 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._subprocess = None
 
     def computeDose(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = None) -> DoseImage:
+        """
+        Compute dose distribution in the patient using MCsquare
+
+        Parameters
+        ----------
+        ct : CTImage
+            CT image of the patient
+        plan : RTPlan
+            RT plan
+        roi : Optional[Sequence[ROIContour]], optional
+            ROI contours, by default None
+
+        Returns
+        -------
+        DoseImage
+            Dose distribution with same grid size and spacing as the CT image
+
+        """
         logger.info("Prepare MCsquare Dose calculation")
         self._ct = ct
         self._plan = plan
@@ -173,12 +236,46 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return mhdDose
 
     def computeDoseAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[ROIContour]] = None) -> Tuple[DoseImage, LETImage]:
+        """
+        Compute dose and LET distribution in the patient using MCsquare
+
+        Parameters
+        ----------
+        ct : CTImage
+            CT image of the patient
+        plan : RTPlan
+            RT plan
+        roi : Optional[Sequence[ROIContour]], optional
+            ROI contours, by default None
+
+        Returns
+        -------
+        Tuple[DoseImage, LETImage]
+            Dose and LET distribution with same grid size and spacing as the CT image
+        """
         self._computeLETDistribution = True
         dose = self.computeDose(ct, plan, roi)
         let = self._importLET()
         return dose, let
 
     def computeRobustScenario(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> Robustness:
+        """
+        Compute robustness scenario using MCsquare
+
+        Parameters
+        ----------
+        ct : CTImage
+            CT image of the patient
+        plan : RTPlan
+            RT plan
+        roi : [Sequence[Union[ROIContour, ROIMask]]]
+            ROI contours or masks
+
+        Returns
+        -------
+        scenarios:Robustness
+            Robustness with nominal and error scenarios
+        """
         logger.info("Prepare MCsquare Robust Dose calculation")
         scenarios = plan.planDesign.robustness
 
@@ -213,6 +310,23 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return scenarios
 
     def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> SparseBeamlets:
+        """
+        Compute beamlets using MCsquare
+
+        Parameters
+        ----------
+        ct : CTImage
+            CT image of the patient
+        plan : RTPlan
+            RT plan
+        roi : Optional[Sequence[Union[ROIContour, ROIMask]]], optional
+            ROI contours or masks, by default None
+
+        Returns
+        -------
+        beamletDose:SparseBeamlets
+            Beamlets dose with same grid size and spacing as the CT image
+        """
         logger.info("Prepare MCsquare Beamlet calculation")
         self._ct = ct
         self._plan = copy.deepcopy(plan)
@@ -244,6 +358,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return beamletDose
 
     def _computeBeamletsLinux(self):
+        """
+        Compute beamlets using MCsquare on Linux
+
+        Returns
+        -------
+        beamletDose:SparseBeamlets
+            Beamlets dose with same grid size and spacing as the CT image
+        """
         os.environ['MCsquare_Materials_Dir'] = self._materialFolder
         nVoxels = self.scoringGridSize[0]*self.scoringGridSize[1]*self.scoringGridSize[2]
 
@@ -262,6 +384,25 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return beamletDose
 
     def computeBeamletsAndLET(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> Tuple[SparseBeamlets, SparseBeamlets]:
+        """
+        Compute beamlets and LET using MCsquare
+
+        Parameters
+        ----------
+        ct : CTImage
+            CT image of the patient
+        plan : RTPlan
+            RT plan
+        roi : Optional[Sequence[Union[ROIContour, ROIMask]]], optional
+            ROI contours or masks, by default None
+
+        Returns
+        -------
+        beamletDose:SparseBeamlets
+            Beamlets dose with same grid size and spacing as the CT image
+        beamletLET:SparseBeamlets
+            Beamlets LET with same grid size and spacing as the CT image
+        """
         self._computeLETDistribution = True
 
         beamletDose = self.computeBeamlets(ct, plan, roi)
@@ -272,6 +413,27 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def computeRobustScenarioBeamlets(self, ct:CTImage, plan:RTPlan, \
                                       roi:Optional[Sequence[Union[ROIContour, ROIMask]]]=None, storePath:Optional[str] = None) \
             -> Tuple[SparseBeamlets, Sequence[SparseBeamlets]]:
+        """
+        Compute nominal and error scenarios beamlets using MCsquare
+
+        Parameters
+        ----------
+        ct : CTImage
+            CT image of the patient
+        plan : RTPlan
+            RT plan
+        roi : Optional[Sequence[Union[ROIContour, ROIMask]]], optional
+            ROI contours or masks, by default None
+        storePath : Optional[str], optional
+            Path to store the beamlets, by default None
+
+        Returns
+        -------
+        nominal:SparseBeamlets
+            Nominal beamlets dose with same grid size and spacing as the CT image
+        scenarios:Sequence[SparseBeamlets]
+            Error scenarios beamlets dose with same grid size and spacing as the CT image
+        """
 
         nominal = self.computeBeamlets(ct, plan, roi)
         if not (storePath is None):
@@ -292,6 +454,23 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return nominal, scenarios
 
     def optimizeBeamletFree(self, ct: CTImage, plan: RTPlan, roi: [Sequence[Union[ROIContour, ROIMask]]]) -> DoseImage:
+        """
+        Optimize weights using beamlet free optimization
+
+        Parameters
+        ----------
+        ct : CTImage
+            CT image of the patient
+        plan : RTPlan
+            RT plan
+        roi : [Sequence[Union[ROIContour, ROIMask]]]
+            ROI contours or masks
+
+        Returns
+        -------
+        DoseImage:doseImage
+            Optimized dose
+        """
         self._ct = ct
         self._plan = plan
         self._plan.spotMUs = np.ones(self._plan.spotMUs.shape)
@@ -318,10 +497,21 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return doseImage
 
     def _cleanDir(self, dirPath):
+        """
+        Clean given directory
+
+        Parameters
+        ----------
+        dirPath : str
+            Path to the directory to clean
+        """
         if os.path.isdir(dirPath):
             shutil.rmtree(dirPath)
 
     def _writeFilesToSimuDir(self):
+        """
+        Write all files needed for MCsquare simulation in the simulation directory
+        """
         self._cleanDir(self._materialFolder)
         self._cleanDir(self._scannerFolder)
 
@@ -333,6 +523,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         mcsquareIO.writeBin(self._mcsquareSimuDir)
 
     def _startMCsquare(self, opti=False):
+        """
+        Start MCsquare simulation
+        """
         if not (self._subprocess is None):
             raise Exception("MCsquare already running")
 
@@ -363,6 +556,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._subprocess = None
 
     def _importDose(self, plan:RTPlan = None) -> DoseImage:
+        """
+        Import dose from MCsquare simulation
+
+        Parameters
+        ----------
+        plan : RTPlan (optional)
+            RT plan (default is None)
+        """
         dose = mcsquareIO.readDose(self._doseFilePath)
         dose.patient = self._ct.patient
         if plan is None:
@@ -374,10 +575,27 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return dose
 
     def _importLET(self) -> LETImage:
+        """
+        Import LET from MCsquare simulation
+
+        Returns
+        -------
+        LETImage
+            LET image computed by MCsquare
+        """
         from opentps.core.data.images import LETImage
         return LETImage.fromImage3D(mcsquareIO.readMCsquareMHD(self._letFilePath))
 
     def _deliveredProtons(self) -> float:
+        """
+        Compute the number of protons delivered in the plan
+
+        Returns
+        -------
+        deliveredProtons float
+            Number of protons delivered in the plan
+
+        """
         deliveredProtons = 0.
         for beam in self._plan:
             for layer in beam:
@@ -387,16 +605,40 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return deliveredProtons
 
     def _importBeamlets(self):
+        """
+        Import beamlets from MCsquare simulation
+
+        Returns
+        -------
+        beamletDose : BeamletDose
+            Beamlet dose computed by MCsquare
+        """
         self._resampleROI()
         beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _importBeamletsLET(self):
+        """
+        Import beamlets LET from MCsquare simulation
+
+        Returns
+        -------
+        beamletDose : BeamletDose
+            Beamlet LET computed by MCsquare
+        """
         self._resampleROI()
         beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
         return beamletDose
 
     def _beamletRescaling(self) -> Sequence[float]:
+        """
+        Compute the beamlet rescaling factors
+
+        Returns
+        -------
+        beamletRescaling : Sequence[float]
+            Beamlet rescaling factors
+        """
         beamletRescaling = []
         for beam in self._plan:
             for layer in beam:
@@ -581,6 +823,16 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return config
 
     def getSimulationProgress(self):
+        """
+        Get the number of simulated particles and the uncertainty
+
+        Returns
+        -------
+        numParticles : int
+            Number of simulated particles
+        uncertainty : float
+            Uncertainty (%)
+        """
         progressionFile = os.path.join(self._workDir, "Simulation_progress.txt")
 
         simulationStarted = 0
@@ -607,6 +859,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         return numParticles, uncertainty
 
     def _resampleROI(self):
+        """
+        Resample the ROI to the scoring grid
+        """
         if self._roi is None or not self._roi:
             return
 
@@ -629,6 +884,14 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._roi = roiResampled
 
     def _createFolderIfNotExists(self, folder):
+        """
+        Create a folder if it does not exist
+
+        Parameters
+        ----------
+        folder : str
+            Folder path
+        """
         folder = Path(folder)
 
         if not folder.is_dir():
