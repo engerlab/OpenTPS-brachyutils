@@ -13,6 +13,28 @@ from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctio
 from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
 
 def compareModels(dynMod1, dynMod2, structList1=[], structList2=[], fixedModel=1):
+    """
+    Compare two dynamic 3D models by registering them and comparing the masks
+
+    Parameters
+    ----------
+    dynMod1 : Dynamic3DModel
+        First dynamic 3D model to compare
+    dynMod2 : Dynamic3DModel
+        Second dynamic 3D model to compare
+    structList1 : list of str
+        List of the names of the structures to compare from the first model
+    structList2 : list of str
+        List of the names of the structures to compare from the second model
+    fixedModel : int
+        1 if the first model is the fixed model, 2 if the second model is the fixed model
+
+    Returns
+    -------
+    results : list
+        List of the baseline shifts between the masks of the two models. The first element is the Transform3D object
+        from the rigid registration between the two models.
+    """
 
     results = []
 
