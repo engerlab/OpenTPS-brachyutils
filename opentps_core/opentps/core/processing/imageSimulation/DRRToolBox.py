@@ -11,6 +11,22 @@ from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwar
 from opentps.core.processing.imageSimulation.ForwardProjectorTomopy import forwardProjectionTomopy
 
 def getImageInCorrectOrientation(imageArray, orientation):
+    """
+    This function takes an image array and an orientation and returns the image array in the correct orientation.
+    The orientation is given as a string, either 'X', 'Y' or 'Z'.
+
+    Parameters
+    ----------
+    imageArray : numpy array
+        The image array to be rotated.
+    orientation : string
+        The orientation of the image array. Either 'X', 'Y' or 'Z'.
+
+    Returns
+    -------
+    imageToUse : numpy array
+        The image array in the correct orientation.
+    """
 
     if orientation == 'Z':
         imageToUse = imageArray.transpose(2, 1, 0)
@@ -23,6 +39,27 @@ def getImageInCorrectOrientation(imageArray, orientation):
 
 
 def forwardProjection(image, angleInDeg=0, axis='Z', library='tomopy', nCores=1):
+    """
+    This function takes an image and an angle and returns the forward projection of the image at the given angle.
+
+    Parameters
+    ----------
+    image : CTImage or numpy array
+        The image to be projected.
+    angleInDeg : float
+        The angle at which the image should be projected.
+    axis : string
+        The axis around which the image should be rotated. Either 'X', 'Y' or 'Z'.
+    library : string
+        The library to be used for the forward projection. Either 'tomopy' or 'tigre'.
+    nCores : int
+        The number of cores to be used for the forward projection.
+
+    Returns
+    -------
+    drrImage : numpy array
+        The forward projection of the image at the given angle.
+    """
 
     angleInRad = angleInDeg * 2 * math.pi / 360
 
@@ -44,7 +81,25 @@ def computeDRRSet(image, angleAndAxisList, sourceImageName='', library='tomopy',
 
     """
     if image is a CTImage, this should copy the patient info and image ID to be given to the XRayImage
-    else (if it is a numpy array), it should be set to None or created
+    else (if it is a numpy array), it should be set to None or created.
+
+    Parameters
+    ----------
+    image : CTImage or numpy array
+        The image to be projected.
+    angleAndAxisList : list
+        A list of tuples containing the angles and axes at which the image should be projected.
+    sourceImageName : string
+        The name of the image to be projected.
+    library : string
+        The library to be used for the forward projection. Either 'tomopy' or 'tigre'.
+    nCores : int
+        The number of cores to be used for the forward projection.
+
+    Returns
+    -------
+    DRRSet : list
+        A list of DRRs.
     """
 
     if not type(angleAndAxisList) == list:
@@ -76,6 +131,22 @@ def computeDRRSet(image, angleAndAxisList, sourceImageName='', library='tomopy',
 def computeDRRSequence(dynamic3DSequence, angleAndOriList, library='tomopy', nCores=1):
     """
     compute a DRR Set for each image in a list
+
+    Parameters
+    ----------
+    dynamic3DSequence : Dynamic3DSequence or list
+        The dynamic 3D sequence to be projected.
+    angleAndOriList : list
+        A list of tuples containing the angles and axes at which the image should be projected.
+    library : string
+        The library to be used for the forward projection. Either 'tomopy' or 'tigre'.
+    nCores : int
+        The number of cores to be used for the forward projection.
+
+    Returns
+    -------
+    DRRSetSequence : list
+        A list of DRR sets.
     """
 
     if isinstance(dynamic3DSequence, Dynamic3DSequence):
@@ -91,6 +162,25 @@ def computeDRRSequence(dynamic3DSequence, angleAndOriList, library='tomopy', nCo
 
 
 def createDRRDynamic2DSequences(dynamic3DSequence, angleAndAxeList, library='tomopy', nCores=1):
+    """
+    create a DRR Dynamic2DSequence for each image in a list
+
+    Parameters
+    ----------
+    dynamic3DSequence : Dynamic3DSequence or list
+        The dynamic 3D sequence to be projected.
+    angleAndAxeList : list
+        A list of tuples containing the angles and axes at which the image should be projected.
+    library : string
+        The library to be used for the forward projection. Either 'tomopy' or 'tigre'.
+    nCores : int
+        The number of cores to be used for the forward projection.
+
+    Returns
+    -------
+    dyn2DSeqList : list
+        A list of DRR Dynamic2DSequences.
+    """
 
     drrSetSequence = computeDRRSequence(dynamic3DSequence, angleAndAxeList, library=library, nCores=nCores)
     numberOfImageInSet = len(drrSetSequence[0])

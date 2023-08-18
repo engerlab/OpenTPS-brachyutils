@@ -17,6 +17,27 @@ except:
 
 
 def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0, tryGPU=True):
+  """
+    Interpolate a 3D image using trilinear interpolation.
+
+    Parameters
+    ----------
+    image : numpy.ndarray
+        3D image to be interpolated.
+    gridSize : tuple
+        Size of the 3D image.
+    interpolatedPoints : numpy.ndarray
+        3D coordinates of the points to be interpolated.
+    fillValue : float, optional
+        Value to be used for points outside the image. The default is 0.
+    tryGPU : bool, optional
+        Try to use GPU for interpolation. The default is True.
+
+    Returns
+    -------
+    interpolatedImage : numpy.ndarray
+        Interpolated image.
+  """
 
   interpolatedImage = None
 
