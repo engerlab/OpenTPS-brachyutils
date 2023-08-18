@@ -15,5 +15,7 @@ notebooks/
 version.py
 Perso/
 waldoScripts/
-.idea/
+testData/*
+OpenTPS_venv/*
+
 opentps_core/opentps/core/Processing/DoseCalculation/MCsquare/BDL/UMCG_P1_v2_RangeShifter.txt

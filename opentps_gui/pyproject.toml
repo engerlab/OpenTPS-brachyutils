@@ -29,6 +29,7 @@ SimpleITK = "^2.2.1"
 sparse-dot-mkl = "^0.8.3"
 setuptools = "^67.8.0" # Required for local testing with python -m pip install -e .
 pandas = "^1.5.3"
+scikit-image = "*"
 
 [tool.poetry.dev-dependencies]
 

@@ -26,6 +26,7 @@ pip3 install sparse_dot_mkl
 pip3 install vtk
 pip3 install SimpleITK
 pip3 install pandas
+pip3 install scikit-image
 
 pip3 install tensorflow
 pip3 install keras
