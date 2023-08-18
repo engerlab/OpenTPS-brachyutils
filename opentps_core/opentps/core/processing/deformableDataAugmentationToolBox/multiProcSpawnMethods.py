@@ -7,6 +7,27 @@ import concurrent
 logger = logging.getLogger(__name__)
 
 def multiProcDeform(deformationList, dynMod, GTVMask, ncore=None, GPUNumber=0):
+    """
+    Deform images and masks in parallel using multiprocessing.spawn method.
+
+    Parameters
+    ----------
+    deformationList : list of Deformation objects
+        List of Deformation objects containing the deformation fields.
+    dynMod : CTImage object
+        CTImage object to deform.
+    GTVMask : ROIMask object
+        ROIMask object to deform.
+    ncore : int, optional
+        Number of logical cores to use. If None, all logical cores are used. The default is None.
+    GPUNumber : int, optional
+        Number of the GPU to use. If None, the CPU is used. The default is 0.
+
+    Returns
+    -------
+    resultDeformImageAndMask : list of CTImage and ROIMask objects
+        List of deformed CTImage and ROIMask objects.
+    """
     imgList = [dynMod.midp for i in range(len(deformationList))]
     maskList = [GTVMask for i in range(len(deformationList))]
     tryGPUList = [True for i in range(len(deformationList))]
