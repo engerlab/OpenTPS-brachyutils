@@ -10,6 +10,16 @@ logger = logging.getLogger(__name__)
 from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
 
 def getMaskVolume(mask, inVoxels=False):
+    """
+    Returns the volume of the mask in mm^3 or in voxels, depending on the inVoxels argument.
+
+    parameters
+    ----------
+    mask: ROImask
+     The mask to get the volume of.
+    inVoxels: bool, optional
+        Whether to return the volume in voxels(True) or in mm^3(False). Default is False.
+    """
     volumeInvoxels = np.count_nonzero(mask.imageArray > 0)
     if inVoxels:
         return volumeInvoxels
@@ -18,6 +28,19 @@ def getMaskVolume(mask, inVoxels=False):
         return volumeInMMCube
 
 def buildStructElem(radius):
+    """
+    Builds a 3D ellipsoid structuring element with the given radius in each dimension.
+
+    parameters
+    ----------
+    radius: float or 3-tuple of floats
+        The radii in mm of the ellipsoid in each dimension. If a single float is given, the same radius is used in all dimensions.
+
+    returns
+    -------
+    struct: numpy.ndarray
+        The 3D ellipsoid structuring element.
+    """
 
     if type(radius) == float or type(radius) == int:
         radius = np.array([radius, radius, radius])
@@ -94,7 +117,25 @@ def dilateMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
         return maskCopy
 
 def dilateMaskScipy(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    Dilates the binary mask image using either a 3D ellipsoid structuring element build from radius,
+    or a given structural element (struct).
 
+    parameters
+    ----------
+    mask: ROImask
+        The mask to dilate.
+    radius: float or 3-tuple of floats
+        The radii in mm of the ellipsoid in each dimension. Default is 1.0.
+    struct: np.array of bools, optional
+        The structuring element to use for dilation. If given, the radius is not used. Default is None.
+    inPlace: bool, optional
+        Whether to dilate the mask in place or to return a new dilated mask. Default is True.
+
+    returns
+    -------
+    None if inPlace = True, a new dilated mask if inPlace = False
+    """
     if struct is None:
         radius = radius / np.array(mask.spacing)
         struct = buildStructElem(radius)
@@ -145,7 +186,21 @@ def erodeMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
         return maskCopy
 
 def erodeMaskScipy(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    Erodes the binary mask image using either a 3D ellipsoid structuring element build from radius,
+    or a given structural element (struct).
 
+    parameters
+    ----------
+    mask: ROImask
+        The mask to erode.
+    radius: float or 3-tuple of floats
+        The radii in mm of the ellipsoid in each dimension. Default is 1.0.
+    struct: np.array of bools, optional
+        The structuring element to use for erosion. If given, the radius is not used. Default is None.
+    inPlace: bool, optional
+        Whether to erode the mask in place or to return a new eroded mask. Default is True.
+    """
     if struct is None:
         radius = radius / np.array(mask.spacing)
         struct = buildStructElem(radius)
@@ -157,6 +212,27 @@ def erodeMaskScipy(mask, radius=1.0, struct=None, inPlace=True):
         return maskCopy
 
 def openMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
+    """
+    Opens the binary mask image using either a 3D ellipsoid structuring element build from radius,
+    or a given structural element (struct).
+
+    parameters
+    ----------
+    mask: ROImask
+        The mask to open.
+    radius: float or 3-tuple of floats
+        The radii in mm of the ellipsoid in each dimension. Default is 1.0.
+    struct: np.array of bools, optional
+        The structuring element to use for opening. If given, the radius is not used. Default is None.
+    inPlace: bool, optional
+        Whether to open the mask in place or to return a new opened mask. Default is True.
+    tryGPU: bool, optional
+        Whether to attempt to use the GPU for opening using the CuPy library. Default is False.
+
+    returns
+    -------
+    None if inPlace = True, a new opened mask if inPlace = False
+    """
 
     if not inPlace:
         maskCopy = mask.copy()
@@ -179,6 +255,10 @@ def openMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
         openMaskScipy(maskCopy, radius=radius, struct=struct)
 
 def openMaskScipy(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    Opens the binary mask image using scipy.morphology with either a 3D ellipsoid structuring element build from radius,
+    or a given structural element (struct).
+    """
 
     if struct is None:
         radius = radius / np.array(mask.spacing)
@@ -191,6 +271,23 @@ def openMaskScipy(mask, radius=1.0, struct=None, inPlace=True):
         return maskCopy
 
 def closeMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
+    """
+    Closes the binary mask image using either a 3D ellipsoid structuring element build from radius,
+    or a given structural element (struct).
+
+    parameters
+    ----------
+    mask: ROImask
+        The mask to close.
+    radius: float or 3-tuple of floats
+        The radii in mm of the ellipsoid in each dimension. Default is 1.0.
+    struct: np.array of bools, optional
+        The structuring element to use for closing. If given, the radius is not used. Default is None.
+    inPlace: bool, optional
+        Whether to close the mask in place or to return a new closed mask. Default is True.
+    tryGPU: bool, optional
+        Whether to attempt to use the GPU for closing using the CuPy library. Default is False.
+    """
     if not inPlace:
         maskCopy = mask.copy()
     else:
@@ -212,6 +309,25 @@ def closeMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
         closeMaskScipy(maskCopy, radius=radius, struct=struct)
 
 def closeMaskScipy(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    Closes the binary mask image using scipy.morphology with either a 3D ellipsoid structuring element build from radius,
+    or a given structural element (struct).
+
+    parameters
+    ----------
+    mask: ROImask
+        The mask to close.
+    radius: float or 3-tuple of floats
+        The radii in mm of the ellipsoid in each dimension. Default is 1.0.
+    struct: np.array of bools, optional
+        The structuring element to use for closing. If given, the radius is not used. Default is None.
+    inPlace: bool, optional
+        Whether to close the mask in place or to return a new closed mask. Default is True.
+
+    returns
+    -------
+    None if inPlace = True, a new closed mask if inPlace = False
+    """
 
     if struct is None:
         radius = radius / np.array(mask.spacing)

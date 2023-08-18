@@ -21,7 +21,18 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------------------------------
 def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatientsBool=False):
     """
-    Save a data structure in the
+    Save OpenTPS data structures of a list of patient in the hard drive
+
+    Parameters
+    ----------
+    patientList : list
+        List of patients to save
+    savingPath : str
+        Path where to save the data structure
+    compressedBool : bool, optional
+        If True, the data structure is compressed before saving. The default is False.
+    splitPatientsBool : bool, optional
+        If True, each patient is saved in a separate file. The default is False.
     """
     if splitPatientsBool:
         patientList = [[patient] for patient in patientList]
@@ -36,6 +47,22 @@ def saveDataStructure(patientList, savingPath, compressedBool=False, splitPatien
 # ---------------------------------------------------------------------------------------------------
 def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionarized=False):
 
+    """
+    Save a list of OpenTPS objects in the hard drive
+
+    Parameters
+    ----------
+    dataList : list
+        List of OpenTPS objects to save
+    savingPath : str
+        Path where to save the data structures
+    compressedBool : bool, optional
+        If True, the data structure is compressed before saving. The default is False.
+    dictionarized : bool, optional
+        If True, the data structure is dictionarized before saving to avoid loss
+         of information over long-term storage due to class objects modifications.
+         The default is False.
+    """
 
     if type(dataList) != list:
         dataList = [dataList]
@@ -67,6 +94,19 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionari
 
 # ---------------------------------------------------------------------------------------------------
 def loadDataStructure(filePath):
+    """
+    Load a OpenTPS data structure from the hard drive
+
+    Parameters
+    ----------
+    filePath : str
+        Path where to load the data structure
+
+    Returns
+    -------
+    dataList : list
+        List of OpenTPS objects loaded.
+    """
     if filePath.endswith('.p') or filePath.endswith('.pkl') or filePath.endswith('.pickle'):
         # option using basic pickle function
         # self.Patients.list.append(pickle.load(open(dictFilePath, "rb")).list[0])
@@ -103,6 +143,7 @@ def loadDataStructure(filePath):
 # ---------------------------------------------------------------------------------------------------
 def loadSerializedObject(filePath):
     """
+    TODO: to be implemented
     to do in the same way as for saving (object - structure)
     """
     pass
@@ -218,6 +259,19 @@ def loadData(file_path, cls):
 
 
 def dictionarizeData(data):
+    """
+    Convert an OpenTPS object into a dictionary
+
+    Parameters
+    ----------
+    data : object
+        The OpenTPS object to convert
+
+    Returns
+    -------
+    newDict : dict
+        The dictionary containing the data of the OpenTPS object
+    """
 
     print('Dictionarize data -', data.getTypeAsString())
     newDict = {}
@@ -278,6 +332,19 @@ def dictionarizeData(data):
     return newDict
 
 def unDictionarize(dataDict):
+    """
+    Convert a dictionary into an OpenTPS object
+
+    Parameters
+    ----------
+    dataDict : dict
+        The dictionary containing the data of the OpenTPS object
+
+    Returns
+    -------
+    data : object
+        The OpenTPS object
+    """
 
     print('Read data under dict Format -', dataDict['dataType'])
     data = None

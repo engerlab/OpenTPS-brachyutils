@@ -16,6 +16,29 @@ from opentps.core.processing.imageProcessing.filter3D import gaussConv
 
 
 def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
+    """
+    apply a baseline shift to the image and the ROI
+
+    Parameters
+    ----------
+    inputData : Dynamic3DModel or Image3D
+        the image to deform
+    ROI : ROIContour or ROIMask
+        the ROI to deform
+    shift : np.array
+        the shift to apply in mm
+    sigma : float
+        the sigma of the gaussian used to smooth the deformation
+    tryGPU : bool
+        if True, try to use the GPU
+
+    Returns
+    -------
+    Dynamic3DModel or Image3D
+        the deformed image
+    ROIContour or ROIMask
+        the deformed ROI
+    """
     
     if not np.array(shift == np.array([0, 0, 0])).all(): ## check if there is a shift to apply
 
@@ -69,6 +92,23 @@ def applyBaselineShift(inputData, ROI, shift, sigma=2, tryGPU=True):
 
 
 def forceShiftInMask(deformation,mask,shift):
+    """
+    force the deformation to be 0 in the mask
+
+    Parameters
+    ----------
+    deformation : Deformation3D
+        the deformation to modify
+    mask : ROIMask
+        the mask to use
+    shift : np.array
+        the shift to apply (same as the one applied to the image)
+
+    Returns
+    -------
+    Deformation3D
+        the modified deformation
+    """
 
     for i in range(3):
         temp = deformation.velocity.imageArray[:, :, :, i]
@@ -81,16 +121,25 @@ def forceShiftInMask(deformation,mask,shift):
 def shrinkOrgan(model, organMask, shrinkSize = [2, 2, 2], tryGPU=True):
 
     """
+    shrink the organ mask by a given size
 
     Parameters
     ----------
-    model
-    organMask
-    shrinkSize
+    model : Dynamic3DModel
+        the model to modify
+    organMask : ROIMask
+        the organ mask to shrink
+    shrinkSize : list
+        the size of the shrink in mm in each direction (x, y, z)
+    tryGPU : bool
+        if True, try to use the GPU
 
     Returns
     -------
-
+    Dynamic3DModel
+        the modified model
+    ROIMask
+        the modified organ mask
     """
 
     organCOM = organMask.centerOfMass
