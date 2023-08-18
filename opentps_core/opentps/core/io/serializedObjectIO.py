@@ -143,7 +143,7 @@ def loadDataStructure(filePath):
 # ---------------------------------------------------------------------------------------------------
 def loadSerializedObject(filePath):
     """
-    TODO: to be implemented
+    TODO
     to do in the same way as for saving (object - structure)
     """
     pass
