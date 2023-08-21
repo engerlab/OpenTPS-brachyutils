@@ -1,0 +1,12 @@
+Name 			Tusk
+Molecular_Weight 	0.0 		 # N.C.
+Density 		1.19000000 	 # in g/cm3 
+Electron_Density 	3.90468e+23 	 # in cm-3 
+Radiation_Length 	38.844682 	 # in g/cm2 
+
+Nuclear_Data 		Mixture 3 	# mixture with 3 components
+
+		# 	Label 	Name 		fraction by mass (in %)
+Mixture_Component	1 	hydrogen	9.964653 
+Mixture_Component	2 	carbon		69.541673 
+Mixture_Component	4 	oxygen		20.493675 
