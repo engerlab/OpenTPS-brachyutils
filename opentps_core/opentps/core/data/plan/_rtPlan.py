@@ -39,7 +39,6 @@ class RTPlan(PatientData):
 
         self.planDesign = None
 
-        self.approxSpotsPeakPosList = None
 
         super().__init__(name=name, patient=patient)
 

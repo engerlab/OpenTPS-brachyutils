@@ -29,6 +29,7 @@ class PlanIonBeam:
         self.id = 0
         self.rangeShifter: Optional[RangeShifter] = None
         self.seriesInstanceUID = ""
+        self.approxSpotsPeakPosList = None
 
     def __getitem__(self, layerNb) -> PlanIonLayer:
         return self._layers[layerNb]
