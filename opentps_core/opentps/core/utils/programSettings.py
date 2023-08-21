@@ -18,6 +18,32 @@ class Singleton(type):
         return cls._instances[cls]
 
 class ProgramSettings(metaclass=Singleton):
+    """
+    This class is a singleton and should be used to get the program settings.
+
+    The program settings are stored in a config file in the user's config directory.
+
+    The config file is created if it does not exist.
+
+    Attributes
+    ----------
+    programSettingsFolder : str
+        The folder where the program settings are stored.
+    workspace : str
+        The folder where the workspace is located.
+    startScriptFolder : str
+        The folder where the start scripts are located.
+    simulationFolder : str
+        The folder where the simulations are located.
+    loggingConfigFile : str
+        The path to the logging config file.
+    resultFolder : str
+        The folder where the results are located.
+    logFolder : str
+        The folder where the logs are located.
+    exampleFolder : str
+        The folder where the examples are located.
+    """
     def __init__(self):
         self._config_dir = Path(appdirs.user_config_dir("openTPS"))
         self._configFile = self._config_dir / "mainConfig.cfg"
