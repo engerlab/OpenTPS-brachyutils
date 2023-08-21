@@ -120,6 +120,9 @@ class ProgramSettings(metaclass=Singleton):
         return folder
 
     def writeConfig(self):
+        """
+        Write the config to the config file.
+        """
         with open(self._configFile, 'w') as file:
             self._config.write(file)
 
