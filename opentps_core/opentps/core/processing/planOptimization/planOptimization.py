@@ -146,6 +146,7 @@ class PlanOptimizer:
             ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
             assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+            self.weights = np.array(self.weights)[ind_to_keep]
         self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
 
         totalDose = self.plan.planDesign.beamlets.toDoseImage()
@@ -191,7 +192,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
-                'Method {} is not implemented. Pick among ["Scipy-LBFGS", "Gradient", "BFGS", "FISTA"]'.format(
+                'Method {} is not implemented. Pick among ["Scipy-BFGS", "Scipy-LBFGS", "Gradient", "BFGS", "LBFGS", "FISTA", "LP]'.format(
                     self.method))
 
     def getConvergenceData(self):
@@ -238,8 +239,10 @@ class BoundConstraintsOptimizer(PlanOptimizer):
             self.solver.params['maxit'] = nit1
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver((0, self.bounds[1])))
             x0 = np.array(result['sol'])
-            ind_to_keep = x0 >= self.bounds[0]
+            ind_to_keep = np.full(x0.shape, False)
+            ind_to_keep[x0 >= self.bounds[0]] = True
             x0 = x0[ind_to_keep]
+
             self.functions = [] # to avoid a beamlet copy with different size
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
             objectiveFunction = DoseFidelity(self.plan, self.xSquared)

@@ -129,7 +129,7 @@ class ConvexSolver(object):
                   'time': time.time() - startTime,
                   'objective': objective}
 
-        if self.params['output'] is not None:
+        if self.params.get('output') is not None:
             with open(self.params['output'], 'w') as f:
                 json.dump(result, f)
 

@@ -1,10 +1,9 @@
-
 [tool.poetry]
-name = "opentps-gui"
+name = "opentps"
 homepage = "http://opentps.org/"
-version = "1.0.5"
+version = "1.0.0"
 readme = "README.md"
-license = "GPLv3"
+license = "Apache-2.0"
 description = "Open source TPS for advanced proton therapy"
 authors = ["Sylvain Deffet <sylvaindeffet@gmail.com>",
     "Damien Dasnoy <damien.dasnoy@uclouvain.be>",
@@ -13,22 +12,24 @@ authors = ["Sylvain Deffet <sylvaindeffet@gmail.com>",
     "Kevin Souris <kevin.souris@iba-group.com>",
     "Sophie Wuyckens <sophie.wuyckens@uclouvain.be>"]
 packages = [
-    { include = "opentps" }
+    { include = "opentps/core", from="opentps_core"},
+    { include = "opentps/gui", from="opentps_gui"}
 ]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-vtk = "^9.2.6"
 cachecontrol = "*"
 numpy = "^1.23.5"
 Pillow = "^9.4.0"
 pydicom = "^2.4.1"
+vtk = "^9.2.6"
 PyQt5 = "^5.15.7"
 pyqtgraph = "^0.13.1"
 SimpleITK = "^2.2.1"
 sparse-dot-mkl = "^0.8.3"
 setuptools = "^67.8.0" # Required for local testing with python -m pip install -e .
 pandas = "^1.5.3"
+requests = "2.28.1"
 scikit-image = "*"
 
 [tool.poetry.dev-dependencies]
@@ -39,4 +40,3 @@ opentps = "opentps.gui:main.run"
 [build-system]
 requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
-

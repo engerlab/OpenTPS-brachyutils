@@ -28,7 +28,7 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
         int_array = np.ctypeslib.ndpointer(dtype=np.int32)
-        bool_array = np.ctypeslib.ndpointer(dtype=np.bool)
+        bool_array = np.ctypeslib.ndpointer(dtype=bool)
         libRaytracing.raytrace_WET.argtypes = [float_array, bool_array, float_array, float_array, float_array,
                                                int_array, float_array]
         libRaytracing.raytrace_WET.restype = ctypes.c_void_p
@@ -45,7 +45,7 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
             ROI_mask = ROI.Mask
 
         # call C function
-        libRaytracing.raytrace_WET(SPR.imageArray.astype(np.float32), ROI_mask.astype(np.bool), WET, Offset,
+        libRaytracing.raytrace_WET(SPR.imageArray.astype(np.float32), ROI_mask.astype(bool), WET, Offset,
                                    PixelSpacing, GridSize, beam_direction)
 
 
@@ -211,7 +211,7 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
         int_array = np.ctypeslib.ndpointer(dtype=np.int32)
-        bool_array = np.ctypeslib.ndpointer(dtype=np.bool)
+        bool_array = np.ctypeslib.ndpointer(dtype=bool)
         libRaytracing.transport_spots_to_target.argtypes = [float_array, bool_array, float_array, float_array,
                                                             int_array, float_array, float_array, float_array,
                                                             ctypes.c_int]
@@ -228,7 +228,7 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
 
         # call C function
         libRaytracing.transport_spots_to_target(SPR.imageArray.astype(np.float32),
-                                                Target_mask.imageArray.astype(np.bool).flatten(), Offset,
+                                                Target_mask.imageArray.astype(bool).flatten(), Offset,
                                                 PixelSpacing, GridSize, positions, WETs, direction, NumSpots)
 
         # post process results
@@ -301,7 +301,7 @@ def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET,
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
         int_array = np.ctypeslib.ndpointer(dtype=np.int32)
-        bool_array = np.ctypeslib.ndpointer(dtype=np.bool)
+        bool_array = np.ctypeslib.ndpointer(dtype=bool)
         libRaytracing.transport_spots_inside_target.argtypes = [float_array, bool_array, float_array, float_array,
                                                                 int_array, float_array, float_array, float_array,
                                                                 float_array, ctypes.c_int, ctypes.c_int, ctypes.c_float,
@@ -321,7 +321,7 @@ def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET,
 
         # call C function
         libRaytracing.transport_spots_inside_target(SPR.imageArray.astype(np.float32),
-                                                    Target_mask.imageArray.astype(np.bool).flatten(),
+                                                    Target_mask.imageArray.astype(bool).flatten(),
                                                     Offset,
                                                     PixelSpacing, GridSize, positions, WETs, Layers, direction,
                                                     NumSpots, max_number_layers, minWET, LayerSpacing)
@@ -410,7 +410,7 @@ def transport_spots_inside_target_map(SPR, Target_mask, SpotGrid, direction, min
             logger.error("Not compatible with " + platform.system() + " system.")
         float_array = np.ctypeslib.ndpointer(dtype=np.float32)
         int_array = np.ctypeslib.ndpointer(dtype=np.int32)
-        bool_array = np.ctypeslib.ndpointer(dtype=np.bool)
+        bool_array = np.ctypeslib.ndpointer(dtype=bool)
         libRaytracing.transport_spots_inside_target.argtypes = [float_array, bool_array, float_array, float_array,
                                                                 int_array, float_array, float_array, float_array,
                                                                 float_array, ctypes.c_int, ctypes.c_int, ctypes.c_float,
@@ -429,7 +429,7 @@ def transport_spots_inside_target_map(SPR, Target_mask, SpotGrid, direction, min
         Layers = -1.0 * np.ones(NumSpots * max_number_layers, dtype=np.float32, order='C')
 
         # call C function
-        libRaytracing.transport_spots_inside_target(SPR.Image.astype(np.float32), Target_mask.astype(np.bool), Offset,
+        libRaytracing.transport_spots_inside_target(SPR.Image.astype(np.float32), Target_mask.astype(bool), Offset,
                                                     PixelSpacing, GridSize, positions, WETs, Layers, direction,
                                                     NumSpots, max_number_layers, minWET, LayerSpacing)
 
