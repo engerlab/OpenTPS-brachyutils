@@ -34,4 +34,4 @@ rem pip3 install cupy
 
 echo
 echo Start the OpenTPS GUI by running
-echo      start_opentps.bat
+echo      start_opentps_anaconda_windows.bat

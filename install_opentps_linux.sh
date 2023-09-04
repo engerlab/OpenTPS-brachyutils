@@ -60,13 +60,26 @@ python3.9 -m venv $ENV_PATH
 
 # Activate the virtual environment
 source $ENV_PATH/bin/activate
-echo "Virtual environment 'OpenTPS/venv' created"
+echo "Virtual environment 'OpenTPS_venv' created"
 
 # Upgrade pip
 pip3 install --upgrade pip
 
 # Install required Python packages
-pip3 install pydicom numpy scipy matplotlib Pillow PyQt5==5.15.7 pyqtgraph sparse_dot_mkl vtk SimpleITK pandas scikit-image tensorflow keras
+pip3 install pydicom
+pip3 install numpy
+pip3 install scipy 
+pip3 install matplotlib 
+pip3 install Pillow
+pip3 install PyQt5==5.15.7 
+pip3 install pyqtgraph
+pip3 install sparse_dot_mkl 
+pip3 install vtk
+pip3 install SimpleITK
+pip3 install pandas
+pip3 install scikit-image 
+pip3 install tensorflow
+pip3 install keras
 # pip3 install cupy
 
 echo
