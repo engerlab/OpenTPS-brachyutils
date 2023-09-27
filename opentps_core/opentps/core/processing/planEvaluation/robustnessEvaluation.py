@@ -67,7 +67,13 @@ class Robustness:
 
         self.scenarios.append(scenario)
 
-    def setTarget(self, targetContour, targetPrescription):
+    def setTarget(self, ct, target, targetPrescription):
+        from opentps.core.data import ROIContour
+        if isinstance(target, ROIContour):
+            targetContour = target.getBinaryMask(origin=ct.origin, gridSize=ct.gridSize,
+                                                              spacing=ct.spacing)
+        else: targetContour = target
+
         if not(self.nominal.dose.hasSameGrid(targetContour)):
             resampler3D.resampleImage3DOnImage3D(targetContour,self.nominal.dose, inPlace=True, fillValue=0.)
         self.target = targetContour
@@ -106,10 +112,10 @@ class Robustness:
         mse = np.mean(np.square(error))
         return mse
 
-    def analyzeErrorSpace(self, metric, targetContour, targetPrescription):
+    def analyzeErrorSpace(self, ct, metric, targetContour, targetPrescription):
         if (
                 self.target == [] or self.target.name != targetContour.name or self.targetPrescription != targetPrescription):
-            self.setTarget(targetContour, targetPrescription)
+            self.setTarget(ct, targetContour, targetPrescription)
 
         # sort scenarios from worst to best according to selected metric
         if metric == "D95":

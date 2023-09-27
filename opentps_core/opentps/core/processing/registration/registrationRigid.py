@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class RegistrationRigid(Registration):
 
-    def __init__(self, fixed, moving, multimodal = False):
+    def __init__(self, fixed, moving, multimodal=False):
 
         Registration.__init__(self, fixed, moving)
         self.multimodal = multimodal
@@ -25,8 +25,8 @@ class RegistrationRigid(Registration):
 
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
-            tform, center, deformed = sitkImageProcessing.register(sitkImageProcessing.image3DToSITK(self.fixed), sitkImageProcessing.image3DToSITK(self.moving), multimodal=self.multimodal, fillValue=float(self.moving.min()))
-            transform = Transform3D(tform=tform, center=center)
+            tformMatrix, rotCenter, deformed = sitkImageProcessing.register(sitkImageProcessing.image3DToSITK(self.fixed), sitkImageProcessing.image3DToSITK(self.moving), multimodal=self.multimodal, fillValue=float(self.moving.min()))
+            transform = Transform3D(tformMatrix=tformMatrix, rotCenter=rotCenter)
         except:
             logger.info('Failed to use SITK registration. Try translation only.')
             from opentps.core.processing.registration.registrationTranslation import RegistrationTranslation

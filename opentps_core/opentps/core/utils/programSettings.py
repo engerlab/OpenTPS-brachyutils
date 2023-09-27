@@ -1,4 +1,5 @@
 import configparser
+import os
 
 from os import mkdir, makedirs
 from pathlib import Path
@@ -6,6 +7,7 @@ from pathlib import Path
 from pip._internal.utils import appdirs
 
 import opentps.core.config as configModule
+import opentps.core.config.logger as loggingModule
 
 
 class Singleton(type):
@@ -19,6 +21,7 @@ class ProgramSettings(metaclass=Singleton):
     def __init__(self):
         self._config_dir = Path(appdirs.user_config_dir("openTPS"))
         self._configFile = self._config_dir / "mainConfig.cfg"
+        self._loggingConfigFilePath = loggingModule.__path__[0] + os.sep + 'logging_config.json'
 
         if not self._configFile.exists():
             makedirs(self._config_dir, exist_ok=True)
@@ -51,6 +54,7 @@ class ProgramSettings(metaclass=Singleton):
         self._config["dir"]["resultFolder"] = str(path / "Results")
         self._config["dir"]["simulationFolder"] = str(path / "Simulations")
         self._config["dir"]["logFolder"] = str(path / "Logs")
+        self._config["dir"]["loggingConfigFile"] = str(self._loggingConfigFilePath)
         self._config["dir"]["exampleFolder"] = str(path / "examples")
 
         self.writeConfig()
@@ -66,6 +70,10 @@ class ProgramSettings(metaclass=Singleton):
         folder = self._config["dir"]["simulationFolder"]
         self._createFolderIfNotExists(folder)
         return folder
+
+    @property
+    def loggingConfigFile(self):
+        return self._loggingConfigFilePath
 
     @property
     def resultFolder(self):

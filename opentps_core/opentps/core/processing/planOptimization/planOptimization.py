@@ -8,7 +8,7 @@ from opentps.core.processing.planOptimization.objectives.doseFidelity import Dos
 
 try:
     import sparse_dot_mkl
-    use_MKL = 1
+    use_MKL = 0 # Currently deactivated on purpose because sparse_dot_mkl generates seg fault
 except:
     use_MKL = 0
 
@@ -31,6 +31,7 @@ class PlanOptimizer:
         self.opti_params = kwargs
         self.functions = []
         self._xSquared = True
+        self.thresholdSpotRemoval = 1e-6 # remove all spots below this value after optimization from the plan and beamlet matrix
 
     @property
     def xSquared(self):
@@ -108,18 +109,18 @@ class PlanOptimizer:
         except:
             pass
 
-        weights = result['sol']
+        self.weights = result['sol']
         crit = result['crit']
-        niter = result['niter']
-        time = result['time']
-        cost = result['objective']
+        self.niter = result['niter']
+        self.time = result['time']
+        self.cost = result['objective']
 
-        if niter<=0:
+        if self.niter<=0:
             niter = 1
 
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
-                .format(self.solver.__class__.__name__, niter, weights, cost, time, time / niter))
+                .format(self.solver.__class__.__name__, self.niter, self.weights, self.cost, self.time, self.time / self.niter))
 
         # unload scenario beamlets
         for s in range(len(self.plan.planDesign.robustness.scenarios)):
@@ -128,50 +129,68 @@ class PlanOptimizer:
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.plan.spotMUs = np.square(weights).astype(np.float32)
+            self.plan.spotMUs = np.square(self.weights).astype(np.float32)
         else:
-            self.plan.spotMUs = weights.astype(np.float32)
+            self.plan.spotMUs = self.weights.astype(np.float32)
         
-        threshold_MU = 1e-4
         MU_before_simplify = self.plan.spotMUs.copy()
-        self.plan.simplify(threshold=threshold_MU) # remove zero MU spots
+        self.plan.simplify(threshold=self.thresholdSpotRemoval) # remove spots below self.thresholdSpotRemoval
         if self.plan.planDesign.beamlets.shape[1] != len(self.plan.spotMUs):
             # Beamlet matrix has not removed zero weight column
-            ind_to_keep = MU_before_simplify > threshold_MU
+            ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
             assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+            self.weights = np.array(self.weights)[ind_to_keep]
         self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
 
         totalDose = self.plan.planDesign.beamlets.toDoseImage()
         logger.info('Optimization done.')
 
-        return weights, totalDose, cost
+        return self.weights, totalDose, self.cost
+
+    def getConvergenceData(self, method):
+        dct = {}
+        if 'Scipy' in method:
+            dct['func_0'] = self.cost[:-1]
+        elif method == 'LP':
+            raise NotImplementedError('No convergence data is available for LP')
+        else:
+            nFunctions = len(self.cost[0])
+            for i in range(nFunctions):
+                dct['func_%s' % i] = [itm[i] for itm in self.cost[:-1]]
+        dct['time'] = self.time
+        dct['nIter'] = self.niter
+
+        return dct
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
     def __init__(self, method, plan:RTPlan, **kwargs):
         super().__init__(plan, **kwargs)
-
-        if method == 'Scipy-BFGS':
+        self.method = method
+        if self.method == 'Scipy-BFGS':
             self.solver = bfgs.ScipyOpt('BFGS', **kwargs)
-        elif method == 'Scipy-LBFGS':
+        elif self.method == 'Scipy-LBFGS':
             self.solver = bfgs.ScipyOpt('L-BFGS-B', **kwargs)
-        elif method == 'Gradient':
+        elif self.method == 'Gradient':
             self.solver = gradientDescent.GradientDescent(**kwargs)
-        elif method == 'BFGS':
+        elif self.method == 'BFGS':
             self.solver = bfgs.BFGS(**kwargs)
-        elif method == "LBFGS":
+        elif self.method == "LBFGS":
             self.solver = bfgs.LBFGS(**kwargs)
-        elif method == "FISTA":
+        elif self.method == "FISTA":
             self.solver = fista.FISTA(**kwargs)
-        elif method == "LP":
+        elif self.method == "LP":
             from opentps.core.processing.planOptimization.solvers import lp
             self.xSquared = False
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
-                'Method {} is not implemented. Pick among ["Scipy-LBFGS", "Gradient", "BFGS", "FISTA"]'.format(
+                'Method {} is not implemented. Pick among ["Scipy-BFGS", "Scipy-LBFGS", "Gradient", "BFGS", "LBFGS", "FISTA", "LP]'.format(
                     self.method))
+
+    def getConvergenceData(self):
+        return super().getConvergenceData(self.method)
 
 
 class BoundConstraintsOptimizer(PlanOptimizer):
@@ -200,6 +219,8 @@ class BoundConstraintsOptimizer(PlanOptimizer):
 
         if self.bounds[0] == 0:
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds), maxit=self.opti_params.get('maxit', 1000))
+        elif self.bounds[0] < 0:
+            raise ValueError("Bounds cannot be negative")
         else:
             if nIterations is not None:
                 nit1, nit2 = nIterations[0], nIterations[1]
@@ -210,8 +231,9 @@ class BoundConstraintsOptimizer(PlanOptimizer):
             # First Optimization with lower bound = 0
             self.solver.params['maxit'] = nit1
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver((0, self.bounds[1])))
-            x0 = result['sol']
-            ind_to_keep = x0 >= self.bounds[0]
+            x0 = np.array(result['sol'])
+            ind_to_keep = np.full(x0.shape,False)
+            ind_to_keep[x0 >= self.bounds[0]] = True
             x0 = x0[ind_to_keep]
             self.functions = [] # to avoid a beamlet copy with different size
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
@@ -221,11 +243,12 @@ class BoundConstraintsOptimizer(PlanOptimizer):
             # second optimization with lower bound = self.bounds[0]
             self.solver.params['maxit'] = nit2
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver(self.bounds))
-            result_weights = np.zeros(ind_to_keep.shape, dtype=np.float32)
+            result_weights = np.zeros(ind_to_keep.shape, dtype=np.float32) # reintroduce filtered spots at zero MU
             result_weights[ind_to_keep] = result['sol']
             result['sol'] = result_weights
 
-        
+            self.thresholdSpotRemoval = 1e-6 # zero spot MUs are removed in the postProcess with plan.simplify(self.thresholdSpotRemoval)
+
         return self.postProcess(result)
     
 

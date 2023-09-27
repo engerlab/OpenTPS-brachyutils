@@ -37,11 +37,11 @@ class RegistrationTranslation(Registration):
             stop = self.roiBox[1]
             translation = opt.x
 
-        tform = np.zeros((4, 4))
-        tform[0:-1, -1] = translation
-        tform[0:-1, 0:-1] = np.eye(3)
+        tformMatrix = np.zeros((4, 4))
+        tformMatrix[0:-1, -1] = translation
+        tformMatrix[0:-1, 0:-1] = np.eye(3)
 
-        transform = Transform3D(tform=tform)
+        transform = Transform3D(tformMatrix=tformMatrix)
         self.deformed = transform.deformImage(self.moving, fillValue='closest')
         self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
         return transform

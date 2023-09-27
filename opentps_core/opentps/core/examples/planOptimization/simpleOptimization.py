@@ -1,14 +1,12 @@
 import os
+import logging
+import numpy as np
+from matplotlib import pyplot as plt
 import sys
+sys.path.append('..')
 
 from opentps.core.io.dicomIO import writeRTPlan
 from opentps.core.processing.planOptimization.tools import evaluateClinical
-
-sys.path.append('..')
-
-import numpy as np
-from matplotlib import pyplot as plt
-
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import ROIMask
 from opentps.core.data.plan import ObjectivesList
@@ -24,11 +22,12 @@ from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsqu
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D, resampleImage3D
 from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
 
+logger = logging.getLogger(__name__)
 
 # Generic example: box of water with squared target
 def run():
     output_path = os.getcwd()
-    print('Files will be stored in ' + output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
 
     ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
@@ -74,7 +73,7 @@ def run():
 
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
-        print('Plan loaded')
+        logger.info('Plan loaded')
     else:
         planDesign = PlanDesign()
         planDesign.ct = ct
@@ -103,7 +102,7 @@ def run():
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
 
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
+    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
 
@@ -142,7 +141,7 @@ def run():
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
 
     # Display dose
-    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     ax[0].axes.get_xaxis().set_visible(False)
     ax[0].axes.get_yaxis().set_visible(False)
     ax[0].imshow(img_ct, cmap='gray')
@@ -152,8 +151,19 @@ def run():
     ax[1].plot(target_DVH.histogram[0], target_DVH.histogram[1], label=target_DVH.name)
     ax[1].set_xlabel("Dose (Gy)")
     ax[1].set_ylabel("Volume (%)")
-    plt.grid(True)
-    plt.legend()
+    ax[1].grid(True)
+    ax[1].legend()
+
+    convData = solver.getConvergenceData()
+    ax[2].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
+               label='Fidelity')
+    ax[2].set_xlabel('Time (s)')
+    ax[2].set_ylabel('Cost')
+    ax[2].set_yscale('symlog')
+    ax2 = ax[2].twiny()
+    ax2.set_xlabel('Iterations')
+    ax2.set_xlim(0, convData['nIter'])
+    ax[2].grid(True)
 
     plt.show()
 

@@ -1,95 +1,296 @@
 import numpy as np
-import cupy
-import cupyx
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
+from typing import Optional, Sequence, Union
+import copy
+import logging
+logger = logging.getLogger(__name__)
 
-## ------------------------------------------------------------------------------------------------
-def translateCupy(dataArray, translationInPixels=[0, 0, 0], cval=-1000):
-    """
-
-    Parameters
-    ----------
-    dataArray : ND numpy array, the data to translate
-    translationInPixels : sequence of the translation in pixels in the 3 direction [X, Y, Z]
-    cval : the value to fill the data for points coming, after translation, from outside the image
-
-    Returns
-    -------
-    ND numpy array, the translated data
-    """
+try:
+    import cupy
+    import cupyx
+except:
+    logger.warning("Cannot import Cupy module")
+    pass
     
-    cupyArray = cupy.asarray(dataArray)
-
-    if not (np.array(translationInPixels == np.array([0, 0, 0])).all() or np.array(translationInPixels == np.array([0, 0, 0, 0])).all()):
-        cupyArray = cupyx.scipy.ndimage.shift(cupyArray, translationInPixels, mode='constant', cval=cval)
-
-    return cupy.asnumpy(cupyArray)
+from opentps.core.data.images._image3D import Image3D
+from opentps.core.data.images._vectorField3D import VectorField3D
+from opentps.core.data._roiContour import ROIContour
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+from opentps.core.processing.imageProcessing.roiMasksProcessing import buildStructElem
 
 ## ------------------------------------------------------------------------------------------------
-def rotateCupy(dataArray, rotationInDeg=[0, 0, 0], cval=-1000):
+def translateData(data, translationInMM, fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
     """
 
     Parameters
     ----------
-    dataArray : ND numpy array, the data to rotate
-    rotationInDeg : the rotation in degrees around each axis, that will be applied successively in X,Y,Z order
-    cval : the value to fill the data if points come, after rotation, from outside the image
-
+    data :
+    translationInMM : sequence of the translation in millimeters in the 3 direction [X, Y, Z]
+    fillValue : the value to fill the data for points coming, after translation, from outside the image
+    outputBox : the cube in space represented by the result after translation
     Returns
     -------
-    ND numpy array, the rotated data
-
-    NB: the order of applied rotation is important because rotations in 3D are not commutative. So to change the order to something different than X, Y, Z
-    the user can call the function multiple time with the angles specified in the order or rotation
-
-    !!! This does not take into account a difference in voxel spacing !!!
+    the translated data
     """
-    cupyArray = cupy.asarray(dataArray)
 
-    if not np.array(rotationInDeg == np.array([0, 0, 0])).all():
-        if rotationInDeg[0] != 0:
-            print('Apply rotation around X', rotationInDeg[0])
-            cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, rotationInDeg[0], axes=[1, 2], reshape=False, mode='constant', cval=cval)
-        if rotationInDeg[1] != 0:
-            print('Apply rotation around Y', rotationInDeg[1])
-            cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, rotationInDeg[1], axes=[0, 2], reshape=False, mode='constant', cval=cval)
-        if rotationInDeg[2] != 0:
-            print('Apply rotation around Z', rotationInDeg[2])
-            cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, rotationInDeg[2], axes=[0, 1], reshape=False, mode='constant', cval=cval)
-
-    return cupy.asnumpy(cupyArray)
+    if not np.array(translationInMM == np.array([0, 0, 0])).all():
+        from opentps.core.processing.imageProcessing.imageTransform3D import \
+            transform3DMatrixFromTranslationAndRotationsVectors
+        affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=translationInMM)
+        applyTransform3D(data, affTransformMatrix, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
 
 ## ------------------------------------------------------------------------------------------------
-def affineTransformCupy(img, matrix, cval=-1000):
-
+def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
     """
-    WIP
+
     Parameters
     ----------
-    img
-    matrix
-    cval
+    data : ND numpy array, the data to rotate
+    rotAnglesInDeg : the rotation in degrees around each axis, that will be applied successively in X,Y,Z order
+    fillValue : the value to fill the data if points come, after rotation, from outside the image
+    rotCenter :
+    outputBox :
+    Returns
+    -------
+    data, the rotated data
+
+    """
+
+    rotAnglesInDeg = np.array(rotAnglesInDeg)
+    if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
+
+        if isinstance(data, Dynamic3DModel):
+            logger.info(f'Rotate the Dynamic3DModel of {rotAnglesInDeg} degrees')
+            logger.info('Rotate dynamic 3D model - midp image')
+            rotateData(data.midp, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+
+            for field in data.deformationList:
+                if field.velocity != None:
+                    logger.info('Rotate dynamic 3D model - velocity field')
+                    rotateData(field.velocity, rotAnglesInDeg=rotAnglesInDeg, fillValue=0, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+                if field.displacement != None:
+                    logger.info('Rotate dynamic 3D model - displacement field')
+                    rotateData(field.displacement, rotAnglesInDeg=rotAnglesInDeg, fillValue=0, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+
+        elif isinstance(data, Dynamic3DSequence):
+            logger.info(f'Rotate Dynamic3DSequence of {rotAnglesInDeg} degrees')
+            for image3D in data.dyn3DImageList:
+                rotateData(image3D, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+
+        if isinstance(data, Image3D):
+
+            from opentps.core.data.images._roiMask import ROIMask
+
+            if isinstance(data, VectorField3D):
+                logger.info(f'Rotate VectorField3D of {rotAnglesInDeg} degrees')
+                rotate3DVectorFields(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=0,  outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+
+            elif isinstance(data, ROIMask):
+                logger.info(f'Rotate ROIMask of {rotAnglesInDeg} degrees')
+                rotateImage3D(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=0,  outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+
+            else:
+                logger.info(f'Rotate Image3D of {rotAnglesInDeg} degrees')
+                rotateImage3D(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue,  outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+
+        # affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(rotVec=rotAnglesInDeg)
+        # applyTransform3D(data, affTransformMatrix, rotCenter=rotCenter, fillValue=fillValue, outputBox=outputBox)
+
+## ------------------------------------------------------------------------------------------------
+def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
+    
+    resampled = False
+    if image.spacing[0] != image.spacing[1] or image.spacing[1] != image.spacing[2] or image.spacing[2] != image.spacing[0]:
+        initialSpacing = copy.copy(image.spacing)
+        initialGridSize = copy.copy(image.gridSize)
+        initialOrigin = copy.copy(image.origin)
+        resampled = True
+        from opentps.core.processing.imageProcessing.resampler3D import resample
+        resample(image, spacing=[min(initialSpacing), min(initialSpacing), min(initialSpacing)], inPlace=True)
+        logger.info("The rotation of data using Cupy does not take into account heterogeneous spacing. Resampling in homogeneous spacing is done.")
+
+    imgType = copy.copy(image.imageArray.dtype)
+
+    if imgType == bool:
+        image.imageArray = image.imageArray.astype(np.float)
+
+    cupyArray = cupy.asarray(image.imageArray)
+
+    if outputBox == 'same':
+        reshape = False
+    elif outputBox == 'keepAll':
+        logger.error("cupyImageProcessing.rotateImage3D does not work with outputBox=keepAll for now. Abort.")
+        raise NotImplementedError
+
+    if rotAnglesInDeg[0] != 0:
+        # print('Apply rotation around X', rotAnglesInDeg[0])
+        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[0], axes=[1, 2], order=interpOrder, reshape=reshape, mode=mode, cval=fillValue)
+    if rotAnglesInDeg[1] != 0:
+        #print('Apply rotation around Y', rotAnglesInDeg[1])
+        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[1], axes=[0, 2], order=interpOrder, reshape=reshape, mode=mode, cval=fillValue)
+    if rotAnglesInDeg[2] != 0:
+        # print('Apply rotation around Z', rotAnglesInDeg[2])
+        cupyArray = cupyx.scipy.ndimage.rotate(cupyArray, -rotAnglesInDeg[2], axes=[0, 1], order=interpOrder, reshape=reshape, mode=mode, cval=fillValue)
+
+    outData = cupy.asnumpy(cupyArray)
+
+    if imgType == bool:
+        outData[outData < 0.5] = 0
+    outData = outData.astype(imgType)
+    image.imageArray = outData
+
+    if resampled:
+        resample(image, origin=initialOrigin, gridSize=initialGridSize, spacing=initialSpacing, inPlace=True)
+        logger.info("Resampling in the initial spacing is applied after rotation")
+
+## ------------------------------------------------------------------------------------------------
+def rotate3DVectorFields(vectorField, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
+
+    """
+
+    Parameters
+    ----------
+    vectorField
+    rotationInDeg
 
     Returns
     -------
 
     """
 
-    cupyArray = cupy.asarray(img.imageArray)
-    cupyMatrix = cupy.asarray(matrix)
-    cupyArray = cupyx.scipy.ndimage.affine_transform(cupyArray, cupyMatrix, offset=[30, 0, 0])#img.gridSize/2)
+    logger.info(f'Apply rotation of {rotAnglesInDeg} degrees to field imageArray')
+    rotateImage3D(vectorField, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
 
-    img.imageArray = cupy.asnumpy(cupyArray)
+    logger.info(f'Apply rotation of {rotAnglesInDeg} degrees to field vectors')
+    from opentps.core.processing.imageProcessing.imageTransform3D import rotateVectorsInPlace
+    rotateVectorsInPlace(vectorField, -rotAnglesInDeg)
 
-    # plt.figure()
-    # plt.imshow(img.imageArray[:, 100, :])
-    # plt.show()
+## ------------------------------------------------------------------------------------------------
+def applyTransform3D(data, tformMatrix: np.ndarray, fillValue: float = 0.,
+                     outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
+                     rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
+                     translation: Sequence[float] = [0, 0, 0],
+                     interpOrder=1, mode='constant'):
+
+    from opentps.core.data._transform3D import Transform3D
+
+    if isinstance(tformMatrix, Transform3D):
+        tformMatrix = tformMatrix.tformMatrix
+
+    if isinstance(data, Image3D):
+
+        from opentps.core.data.images._roiMask import ROIMask
+
+        if isinstance(data, VectorField3D):
+            applyTransform3DToVectorField3D(data, tformMatrix, fillValue=0, outputBox=outputBox, rotCenter=rotCenter,
+                                            translation=translation, interpOrder=interpOrder, mode=mode)
+        elif isinstance(data, ROIMask):
+            applyTransform3DToImage3D(data, tformMatrix, fillValue=0, outputBox=outputBox, rotCenter=rotCenter,
+                                      translation=translation, interpOrder=interpOrder, mode=mode)
+        else:
+            applyTransform3DToImage3D(data, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                      translation=translation, interpOrder=interpOrder, mode=mode)
+
+    elif isinstance(data, Dynamic3DSequence):
+        for image in data.dyn3DImageList:
+            applyTransform3DToImage3D(image, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                      translation=translation, interpOrder=interpOrder, mode=mode)
+
+    elif isinstance(data, Dynamic3DModel):
+        applyTransform3DToImage3D(data.midp, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                  translation=translation, interpOrder=interpOrder, mode=mode)
+        for df in data.deformationList:
+            if df.velocity != None:
+                applyTransform3DToVectorField3D(df.velocity, tformMatrix, fillValue=0, outputBox=outputBox,
+                                                rotCenter=rotCenter, translation=translation, interpOrder=interpOrder, mode=mode)
+            if df.displacement != None:
+                applyTransform3DToVectorField3D(df.displacement, tformMatrix, fillValue=0, outputBox=outputBox,
+                                                rotCenter=rotCenter, translation=translation, interpOrder=interpOrder, mode=mode)
+
+    elif isinstance(data, ROIContour):
+        raise NotImplementedError
+
+    else:
+        logger.error(f'cupyImageProcessing.applyTransform3D not implemented on {type(data)} yet. Abort')
+        raise NotImplementedError
+
+    ## do we want a return here ?
+
+## ------------------------------------------------------------------------------------------------
+def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue: float = 0.,
+                              outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
+                              rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
+                              translation: Sequence[float] = [0, 0, 0], interpOrder=1, mode='constant'):
+
+    imgType = copy.copy(image.imageArray.dtype)
+
+    if imgType == bool:
+        image.imageArray = image.imageArray.astype(np.float)
+
+    if tformMatrix.shape[1] == 3:
+        completeMatrix = np.zeros((4, 4))
+        completeMatrix[0:3, 0:3] = tformMatrix
+        completeMatrix[3, 3] = 1
+        tformMatrix = completeMatrix
+
+    from opentps.core.processing.imageProcessing.imageTransform3D import getTtransformMatrixInPixels
+    tformMatrix = getTtransformMatrixInPixels(tformMatrix, image.spacing)
+
+    cupyTformMatrix = cupy.asarray(tformMatrix)
+
+    cupyImg = cupy.asarray(image.imageArray)
+
+    from opentps.core.processing.imageProcessing.imageTransform3D import parseRotCenter
+    rotCenter = parseRotCenter(rotCenter, image)
+
+    cupyImg = cupyx.scipy.ndimage.affine_transform(cupyImg, cupyTformMatrix, order=interpOrder, mode=mode, cval=fillValue)
+
+    outData = cupy.asnumpy(cupyImg)
+
+    if imgType == bool:
+        outData[outData < 0.5] = 0
+    outData = outData.astype(imgType)
+    image.imageArray = outData
+    # image.origin = output_origin
+
+## ------------------------------------------------------------------------------------------------
+def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.ndarray, fillValue: float = 0.,
+                                    outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
+                                    rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
+                                    translation: Sequence[float] = [0, 0, 0], interpOrder=1, mode='constant'):
+    vectorFieldCompList = []
+    for i in range(3):
+        compImg = Image3D.fromImage3D(vectField)
+        compImg.imageArray = vectField.imageArray[:, :, :, i]
+
+        applyTransform3DToImage3D(compImg, tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter,
+                                  translation=translation, interpOrder=interpOrder, mode=mode)
+
+        vectorFieldCompList.append(compImg.imageArray)
+
+    vectField.imageArray = np.stack(vectorFieldCompList, axis=3)
+    vectField.origin = compImg.origin
+
+    # if tformMatrix.shape[1] == 4:
+    #     tformMatrix = tformMatrix[0:-1, 0:-1]
+    #
+    # r = R.from_matrix(tformMatrix)
+    #
+    # flattenedVectorField = vectField.imageArray.reshape(
+    #     (vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
+    # flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
+    #
+    # vectField.imageArray = flattenedVectorField.reshape(
+    #     (vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
 
 
 ## ------------------------------------------------------------------------------------------------
 def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
     """
+
+    DOES NOT WORK FOR NOW
     WIP
     Parameters
     ----------
@@ -132,7 +333,6 @@ def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
     # print(coordsVector[:10])
     # np.stack((a, b), axis=-1)
 
-    print('ici')
     print(rotatedCoordsMatrix.shape)
     print(img.imageArray.shape)
     # rotatedCoordsAndValue = np.concatenate((rotatedCoordsMatrix, img.imageArray))
@@ -145,7 +345,7 @@ def rotateUsingMapCoordinatesCupy(img, rotAngleInDeg, rotAxis=1):
 
     cupyArray = cupy.asarray(img.imageArray)
 
-
+## ------------------------------------------------------------------------------------------------
 def resampleCupy():
     """
     TODO
@@ -155,3 +355,55 @@ def resampleCupy():
     """
 
     return NotImplementedError
+
+def dilateMask(mask, radius=1.0, struct=None, inPlace=True):
+
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_dilation(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy
+
+def erodeMask(mask, radius=1.0, struct=None, inPlace=True):
+
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_erosion(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy
+
+def openMask(mask, radius=1.0, struct=None, inPlace=True):
+
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_opening(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_opening(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy
+
+def closeMask(mask, radius=1.0, struct=None, inPlace=True):
+    if struct is None:
+        radius = radius / np.array(mask.spacing)
+        struct = buildStructElem(radius)
+    if inPlace:
+        mask.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_closing(cupy.asarray(mask.imageArray), structure=cupy.asarray(struct)))
+    else:
+        maskCopy = mask.copy()
+        maskCopy.imageArray = cupy.asnumpy(cupyx.scipy.ndimage.binary_closing(cupy.asarray(maskCopy.imageArray), structure=cupy.asarray(struct)))
+        return maskCopy
+
+def gaussianSmoothing(imgArray, sigma=1, truncate=2.5, mode="reflect"):
+    cupyNewImg = cupy.asarray(imgArray)
+    smoothedImg = cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupyNewImg, sigma=sigma, truncate=truncate, mode=mode))
+    return smoothedImg

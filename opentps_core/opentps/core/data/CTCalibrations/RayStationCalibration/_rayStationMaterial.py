@@ -19,7 +19,7 @@ class RayStationMaterial:
     _e = 1.602176634e-19  # Elementary charge
     _NA = 6.02214076e23
     _re = 2.8179403227e-15  # m
-    _I_water = 75.0 * _eV
+    _I_water = 68.0 * _eV
     _Z_water = np.array([1.0, 8.0])
     _A_water = np.array([1.01, 16])
     _w_water = np.array([2.02 / 18.02, 16.0 / 18.02])
@@ -28,7 +28,7 @@ class RayStationMaterial:
     def __init__(self, density=None, I=None):
         self._As = []
         if density<=0:
-            self._density = 1e-12
+            self._density = 0.0001
         else:
             self._density = density
         self._I = I

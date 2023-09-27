@@ -157,7 +157,7 @@ class Deformation3D(Image3D):
         # self.origin = np.array(origin)
         # self.spacing = np.array(spacing)
 
-    def deformImage(self, image, binarizeMask=True, fillValue='closest', outputType=np.float32, tryGPU=True):
+    def deformImage(self, image, fillValue='closest', outputType=np.float32, tryGPU=True):
         """Deform 3D image using linear interpolation.
 
             Parameters
@@ -174,7 +174,7 @@ class Deformation3D(Image3D):
     
         if (self.displacement is None):
             self.displacement = self.velocity.exponentiateField(tryGPU=tryGPU)
-
+        
         field = self.displacement.copy()
 
         if tuple(self.gridSize) != tuple(image.gridSize) or tuple(self.origin) != tuple(image._origin) or tuple(self.spacing) != tuple(image._spacing):
@@ -182,7 +182,7 @@ class Deformation3D(Image3D):
             # print('in deformation3D deformImage before resample', image.gridSize, field.gridSize)
             field.resample(image.spacing, image.gridSize, image.origin, tryGPU=tryGPU)
             # print('in deformation3D deformImage after resample', image.gridSize, field.gridSize)
-
+        
         image = image.copy()
         init_dtype = image.imageArray.dtype
 
@@ -190,11 +190,12 @@ class Deformation3D(Image3D):
             image.imageArray[:, :, :, 0] = field.warp(image.imageArray[:, :, :, 0], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
             image.imageArray[:, :, :, 1] = field.warp(image.imageArray[:, :, :, 1], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
             image.imageArray[:, :, :, 2] = field.warp(image.imageArray[:, :, :, 2], fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
+            
         else:
             image.imageArray = field.warp(image.imageArray, fillValue=fillValue, outputType=outputType, tryGPU=tryGPU)
 
 
-        if init_dtype == 'bool' and binarizeMask==True:
+        if init_dtype == 'bool':
             
             testArray = image.imageArray
             testArray[testArray < 0.5] = 0

@@ -5,14 +5,16 @@ import scipy.interpolate
 import platform
 import logging
 
+logger = logging.getLogger(__name__)
+#logger.setLevel(logging.WARNING)
+
 try:
     import cupy
     import cupyx
     # cupy.cuda.Device(0).use()
 except:
-    print('Warning: cupy not found.')
+    logger.warning('cupy not found.')
 
-logger = logging.getLogger(__name__)
 
 def interpolateTrilinear(image, gridSize, interpolatedPoints, fillValue=0, tryGPU=True):
 

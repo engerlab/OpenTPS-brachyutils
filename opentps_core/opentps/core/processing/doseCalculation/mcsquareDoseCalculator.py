@@ -72,7 +72,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def _sparseDoseFilePath(self):
-        if self._plan.planDesign.robustness.selectionStrategy==self._plan.planDesign.robustness.Strategies.DISABLED:
+        if (self._plan.planDesign is None) or self._plan.planDesign.robustness.selectionStrategy==self._plan.planDesign.robustness.Strategies.DISABLED:
             return os.path.join(self._workDir, "Sparse_Dose.txt")
         elif self._sparseDoseScenarioToRead==None:
             return os.path.join(self._workDir, "Sparse_Dose_Nominal.txt")
@@ -215,7 +215,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     def computeBeamlets(self, ct: CTImage, plan: RTPlan, roi: Optional[Sequence[Union[ROIContour, ROIMask]]] = None) -> SparseBeamlets:
         logger.info("Prepare MCsquare Beamlet calculation")
         self._ct = ct
-        self._plan = plan
+        self._plan = copy.deepcopy(plan)
+        self._plan.spotMUs = np.ones(self._plan.spotMUs.shape)
         self._roi = roi
 
         self._plan.simplify(threshold=None) # make sure no spot duplicates

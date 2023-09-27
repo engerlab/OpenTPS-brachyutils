@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import time
 import os
 import sys
+import cProfile as profile
+pr = profile.Profile()
+pr.enable()
 
 currentWorkingDir = os.getcwd()
 print('currentWorkingDir :', currentWorkingDir)
@@ -18,36 +21,32 @@ print('currentWorkingDir :', currentWorkingDir)
 sys.path.append(os.path.dirname(currentWorkingDir))
 
 from opentps.core.io.serializedObjectIO import loadDataStructure
-from opentps.core.processing.deformableDataAugmentationToolBox.interFractionChanges import shrinkOrgan, translateData, rotateData
-from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift
+from opentps.core.processing.imageProcessing.syntheticDeformation import applyBaselineShift, shrinkOrgan
 from opentps.core.processing.imageProcessing.resampler3D import crop3DDataAroundBox
 from opentps.core.processing.segmentation.segmentation3D import getBoxAroundROI
 from opentps.core.processing.deformableDataAugmentationToolBox.modelManipFunctions import *
+from opentps.core.processing.imageProcessing.imageTransform3D import rotateData, translateData, applyTransform3D
+from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
+from opentps.core.examples.syntheticData import createSynthetic4DCT
 
 if __name__ == '__main__':
 
     ## paths selection ------------------------------------
-    basePath = 'D:/ImageData/lung/Patient_12/1/FDG1/'
-    dataPath = basePath + 'dynModAndROIs.p'
-    savingPath = basePath
+    organ = 'lung'
+    studyFolder = 'FDGorFAZA_study/'
+    patientFolder = 'Patient_4'
+    patientComplement = '/1/FDG1'
+    basePath = '/DATA2/public/'
+    # dataPath = basePath + organ + '/' + studyFolder + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
 
-    # organ = 'lung'
-    # patientFolder = 'Patient_4'
-    # patientComplement = '/1/FDG1'
-    # basePath = '/DATA2/public/'
-    #
-    # resultFolder = '/test10/'
-    # resultDataFolder = 'data/'
-    #
-    # dataPath = basePath + organ + '/' + patientFolder + patientComplement + '/dynModAndROIs_bodyCropped.p'
-    # savingPath = basePath + organ + '/' + patientFolder + patientComplement + resultFolder
+    dataPath = 'D:/ImageData/lung/Patient_4/1/FDG1/dynModAndROIs_bodyCropped.p'
 
-
+    # ctList, roiList = createSynthetic4DCT(returnTumorMask=True)
 
     # parameters selection ------------------------------------
-    bodyContourToUse = 'patient'
-    targetContourToUse = 'gtv t'
-    lungContourToUse = 'r lung'
+    bodyContourToUse = 'Body'
+    targetContourToUse = 'GTV T'
+    lungContourToUse = 'R lung'
 
     # bodyContourToUse = 'Body'
     # targetContourToUse = 'GTV T'
@@ -65,10 +64,11 @@ if __name__ == '__main__':
     # translation = [0, 0, 0]
     rotation = [0, 5, 0]
     # rotation = [0, 0, 0]
-    shrinkSize = [2, 2, 2]
+    shrinkSize = [8, 5, 2]
     # shrinkSize = [0, 0, 0]
 
     # GPU used
+    tryGPU = True
     usedGPU = 0
 
     try:
@@ -132,21 +132,24 @@ if __name__ == '__main__':
     print('-' * 50)
     if contourToAddShift == targetContourToUse:
         print('Apply baseline shift of', baselineShift, 'to', contourToAddShift)
-        dynMod, GTVMask = applyBaselineShift(dynMod, GTVMask, baselineShift)
+        dynMod, GTVMask = applyBaselineShift(dynMod, GTVMask, baselineShift, tryGPU=tryGPU)
     else:
         print('Not implemented in this script --> must use the get contour by name function')
 
     print('-' * 50)
-    translateData(dynMod, translationInMM=translation)
-    translateData(GTVMask, translationInMM=translation)
+    translateData(dynMod, translationInMM=translation, tryGPU=tryGPU)
+    translateData(GTVMask, translationInMM=translation, tryGPU=tryGPU)
 
     print('-'*50)
-    rotateData(dynMod, rotationInDeg=rotation)
-    rotateData(GTVMask, rotationInDeg=rotation)
+    rotateData(dynMod, rotAnglesInDeg=rotation)
+    rotateData(GTVMask, rotAnglesInDeg=rotation)
 
     print('-' * 50)
-    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize)
+    shrinkedDynMod, shrinkedOrganMask = shrinkOrgan(dynMod, GTVMask, shrinkSize=shrinkSize, tryGPU=tryGPU)
     shrinkedDynMod.name = 'MidP_ShrinkedGTV'
+
+    resampleImage3DOnImage3D(shrinkedDynMod.midp, dynModCopy.midp, inPlace=True, tryGPU=tryGPU)
+    resampleImage3DOnImage3D(shrinkedOrganMask, GTVMaskCopy, inPlace=True, tryGPU=tryGPU)
 
     print('-' * 50)
 
@@ -158,14 +161,17 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots(1, 4)
     fig.suptitle('Example of baseline shift, translate, rotate and shrink')
-    ax[0].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[0].imshow(np.rot90(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     # ax[0].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5, cmap='Reds')
     ax[0].set_title('Initial image')
-    ax[1].imshow(shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[1].imshow(np.rot90(shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     # ax[1].imshow(shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :], alpha=0.5, cmap='Reds')
     ax[1].set_title('After inter fraction changes')
-    ax[2].imshow(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[2].imshow(np.rot90(dynModCopy.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :] - shrinkedDynMod.midp.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     ax[2].set_title('Image difference')
-    ax[3].imshow(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :])
+    ax[3].imshow(np.rot90(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     ax[3].set_title('Mask difference')
     plt.show()
+
+    pr.disable()
+    # pr.print_stats(sort='time')

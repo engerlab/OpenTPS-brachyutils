@@ -1,15 +1,33 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union, Sequence
+
+if TYPE_CHECKING:
+    from opentps.core.data.images import ROIMask, Image3D
+
 import logging
 from math import pi, cos, sin
 from typing import Sequence, Optional, Union
 
 import numpy as np
 from numpy import linalg
+from scipy.spatial.transform import Rotation as R
+import copy
 
 from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
+# from opentps.core.data._roiContour import ROIContour
+# from opentps.core.data.images._image3D import Image3D
+from opentps.core.data.images._vectorField3D import VectorField3D
+
 from opentps.core.data._roiContour import ROIContour
+from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
+from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.processing.segmentation import segmentation3D
+from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
+
+
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -62,15 +80,17 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     outputBox = _cropBoxAfterTransform(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
 
-    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
+    sitkImageProcessing.applyTransform3D(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage
 
-def _cropBox(image, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
+def _cropBox(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
     outputBox = "keepAll"
 
     if not (cropROI is None):
-        outputBox = sitkImageProcessing.extremePoints(cropROI)
+        outputBox = sitkImageProcessing.extremePointsAfterTransform(image, tform)
+        outputBox = [elem for elem in outputBox]
+
         roiBox = segmentation3D.getBoxAroundROI(cropROI)
         if cropDim0:
             outputBox[0] = roiBox[0][0]
@@ -88,9 +108,11 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
     outputBox = 'keepAll'
 
     if not (cropROI is None):
+        from opentps.core.data.images._roiMask import ROIMask
+
         outputBox = np.array(sitkImageProcessing.extremePointsAfterTransform(image, tform))
         cropROIBEV = ROIMask.fromImage3D(cropROI, patient=None)
-        sitkImageProcessing.applyTransform(cropROIBEV, tform, fillValue=0)
+        sitkImageProcessing.applyTransform3D(cropROIBEV, tform, fillValue=0)
         cropROIBEV.imageArray = cropROIBEV.imageArray.astype(bool)
         roiBox = segmentation3D.getBoxAroundROI(cropROIBEV)
         if cropDim0:
@@ -113,7 +135,7 @@ def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequen
     tform = _forwardDicomToIECGantry(beam)
     tform = linalg.inv(tform)
 
-    return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
+    return sitkImageProcessing.applyTransform3DToPoint(tform, np.array((u, v, w)))
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
@@ -121,10 +143,10 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     tform = _forwardDicomToIECGantry(beam)
 
-    outputBox = _cropBox(image, cropROI, cropDim0, cropDim1, cropDim2)
+    outputBox = _cropBox(image, tform, cropROI, cropDim0, cropDim1, cropDim2)
 
     outImage = image.__class__.fromImage3D(image, patient = None)
-    sitkImageProcessing.applyTransform(outImage, tform, fillValue=fillValue, outputBox=outputBox)
+    sitkImageProcessing.applyTransform3D(outImage, tform, fillValue=fillValue, outputBox=outputBox)
 
     return outImage
 
@@ -135,7 +157,7 @@ def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Seq
 
     tform = _forwardDicomToIECGantry(beam)
 
-    return sitkImageProcessing.applyTransformToPoint(tform, np.array((u, v, w)))
+    return sitkImageProcessing.applyTransform3DToPoint(tform, np.array((u, v, w)))
 
 def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
     isocenter = beam.isocenterPosition
@@ -219,6 +241,131 @@ def getVoxelIndexFromPosition(position, image3D):
     """
     positionInMM = np.array(position)
     shiftedPosInMM = positionInMM - image3D.origin
-    posInVoxels = np.round(np.divide(shiftedPosInMM, image3D.spacing)).astype(np.int)
+    posInVoxels = np.round(np.divide(shiftedPosInMM, image3D.spacing)).astype(int)
 
     return posInVoxels
+
+##---------------------------------------------------------------------------------------------------
+def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotVec=[0, 0, 0]):
+
+    """
+
+    Parameters
+    ----------
+    transVec
+    rotVec
+
+    Returns
+    -------
+
+    """
+    rotAngleInDeg = np.array(rotVec)
+    rotAngleInRad = -rotAngleInDeg * np.pi / 180
+    r = R.from_euler('XYZ', rotAngleInRad)
+
+    affineTransformMatrix = np.array([[1, 0, 0, -transVec[0]],
+                                  [0, 1, 0, -transVec[1]],
+                                  [0, 0, 1, -transVec[2]],
+                                  [0, 0, 0, 1]]).astype(np.float)
+
+    affineTransformMatrix[0:3, 0:3] = r.as_matrix()
+
+    return affineTransformMatrix
+
+##---------------------------------------------------------------------------------------------------
+def rotateVectorsInPlace(vectField, rotationArrayOrMatrix):
+    if rotationArrayOrMatrix.ndim == 1:
+        r = R.from_rotvec(rotationArrayOrMatrix, degrees=True)
+    elif rotationArrayOrMatrix.ndim == 2:
+        if rotationArrayOrMatrix.shape[0] == 4:
+            tformMatrix = rotationArrayOrMatrix[0:-1, 0:-1]
+        r = R.from_matrix(tformMatrix)
+
+    flattenedVectorField = vectField.imageArray.reshape((vectField.gridSize[0] * vectField.gridSize[1] * vectField.gridSize[2], 3))
+    flattenedVectorField = r.apply(flattenedVectorField, inverse=True)
+
+    vectField.imageArray = flattenedVectorField.reshape((vectField.gridSize[0], vectField.gridSize[1], vectField.gridSize[2], 3))
+
+##---------------------------------------------------------------------------------------------------
+def getTtransformMatrixInPixels(transformMatrixInMM, spacing):
+
+    transformMatrixInPixels = copy.copy(transformMatrixInMM)
+    for i in range(3):
+        transformMatrixInPixels[i, 3] = transformMatrixInPixels[i, 3] /spacing[i]
+
+    return transformMatrixInPixels
+
+##---------------------------------------------------------------------------------------------------
+def translateData(data, translationInMM, outputBox='keepAll', fillValue=0, tryGPU=False, interpOrder=1, mode='constant'):
+
+    if not np.array(translationInMM == np.array([0, 0, 0])).all():
+        if outputBox == 'keepAll':
+            translateDataByChangingOrigin(data, translationInMM)
+        else:
+            if tryGPU:
+                cupyImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+            else:
+                sitkImageProcessing.translateData(data, translationInMM=translationInMM, fillValue=fillValue, outputBox=outputBox)
+
+##---------------------------------------------------------------------------------------------------
+def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter='dicomOrigin', tryGPU=False, interpOrder=1, mode='constant'):
+    if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
+        if tryGPU:
+            cupyImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
+        else:
+            sitkImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter)
+
+##---------------------------------------------------------------------------------------------------
+def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0, outputBox:Optional[Union[Sequence[float], str]]='keepAll',
+    rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0], tryGPU=False, interpOrder=1, mode='constant'):
+
+    if tryGPU:
+        cupyImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation, interpOrder=interpOrder, mode=mode)
+    else:
+        sitkImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation)
+
+##---------------------------------------------------------------------------------------------------
+def parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]], image: Image3D):
+    rotCenter = np.array([0, 0, 0]).astype(float)
+
+    if not (rotCenterArg is None):
+        if rotCenterArg == 'dicomOrigin':
+            rotCenter = np.array([0, 0, 0]).astype(float)
+        # elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
+        elif len(rotCenterArg) == 3 and (isinstance(rotCenterArg[0], float) or isinstance(rotCenterArg[0], int)):
+            rotCenter = rotCenterArg
+        elif rotCenterArg == 'imgCorner': ## !!! Uses the center of the pixel in the corner and not its corner.
+            rotCenter = image.origin.astype(float)
+        elif rotCenterArg == 'imgCenter':
+            rotCenter = image.origin + (image.gridSizeInWorldUnit-1) / 2
+        else:
+            rotCenter = image.origin + (image.gridSizeInWorldUnit-1) / 2
+            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
+
+    return rotCenter
+
+##---------------------------------------------------------------------------------------------------
+def translateDataByChangingOrigin(data, translationInMM):
+
+    print('in imageTransform3D, translateDataByChangingOrigin')
+
+    if isinstance(data, Image3D):
+        data.origin = data.origin.astype(float) + np.array(translationInMM)
+
+    elif isinstance(data, Dynamic3DSequence):
+        for image in data.dyn3DImageList:
+            image.origin += np.array(translationInMM)
+
+    elif isinstance(data, Dynamic3DModel):
+        data.midp.origin += np.array(translationInMM)
+        for df in data.deformationList:
+            if df.velocity != None:
+                df.origin += np.array(translationInMM)
+            if df.displacement != None:
+                df.origin += np.array(translationInMM)
+
+    elif isinstance(data, ROIContour):
+        print(NotImplementedError)
+
+    else:
+        print('translateDataByChangingOrigin not implemented on', type(data), 'yet. Abort')

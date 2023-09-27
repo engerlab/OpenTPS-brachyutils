@@ -5,7 +5,8 @@ try:
     import gurobipy as gp
     from gurobipy import GRB
 except ModuleNotFoundError:
-    logger.info('No module Gurobi found\n!Licence required!\nGet free Academic license on '
+    logger.warning("Ignore the following warning if not using Gurobi linear optimizer. Gurobi not required for most features provided in OpenTPS")
+    logger.warning('No module Gurobi found\n!Licence required!\nGet free Academic license on '
                 'https://www.gurobi.com/academia/academic-program-and-licenses/ ')
     gp = None
 import numpy as np

@@ -3,7 +3,7 @@ import numpy as np
 from opentps.core.data.MCsquare._bdl import BDL
 
 
-class BDLWithSpotTilt(BDL, bdlPath=None):
+class BDLWithSpotTilt(BDL):
     def __init__(self):
         BDL.__init__(self)
 

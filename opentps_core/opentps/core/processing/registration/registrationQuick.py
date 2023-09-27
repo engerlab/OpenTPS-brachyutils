@@ -56,7 +56,7 @@ class RegistrationQuick(Registration):
         # resample moving to same resolution as fixed
         self.deformed = self.moving.copy()
         gridSize = np.array(self.moving.gridSize * np.array(self.moving.spacing) / np.array(self.fixed.spacing))
-        gridSize = gridSize.astype(np.int)
+        gridSize = gridSize.astype(int)
         self.deformed.resample(self.fixed.spacing, gridSize, self.moving.origin, tryGPU=tryGPU)
 
         # search shift in x

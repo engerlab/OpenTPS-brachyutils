@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from PyQt5.QtWidgets import *
 
@@ -6,11 +6,14 @@ import vtkmodules.vtkRenderingCore as vtkRenderingCore
 from vtkmodules import vtkInteractionStyle
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
+from opentps.core.data import ROIContour
+from opentps.core.data.images import ROIMask
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.plan import RTPlan
 from opentps.core import Event
 from opentps.gui.viewer.dataForViewer.genericImageForViewer import GenericImageForViewer
 from opentps.gui.viewer.dataForViewer.image3DForViewer import Image3DForViewer
+from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.contourLayer_3D import ContourLayer_3D
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.primaryImage3DLayer_3D import PrimaryImage3DLayer_3D
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.rtplanLayer_3D import RTPlanLayer_3D
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.secondaryImage3DLayer_3D import SecondaryImage3DLayer_3D
@@ -35,6 +38,7 @@ class Image3DViewer_3D(QWidget):
 
         self._primaryImageLayer = PrimaryImage3DLayer_3D(self._renderer, self._renderWindow, self._iStyle)
         self._secondaryImageLayer = SecondaryImage3DLayer_3D(self._renderer, self._renderWindow, self._iStyle)
+        self._contourLayer = ContourLayer_3D(self._renderer, self._renderWindow, self._iStyle)
         self._rtPlanLayer = RTPlanLayer_3D(self._renderer, self._renderWindow)
 
 
@@ -65,12 +69,17 @@ class Image3DViewer_3D(QWidget):
 
     def reset(self):
         self._rtPlanLayer.close()
+        self._contourLayer.close()
         self._primaryImageLayer.close()
         self._secondaryImageLayer.close()
 
     def show(self):
         super(Image3DViewer_3D, self).show()
         self.update()
+        self._primaryImageLayer.update()
+        self._secondaryImageLayer.update()
+        self._rtPlanLayer.update()
+        self._contourLayer.update()
 
     def update(self):
         self._primaryImageLayer.update()
@@ -145,3 +154,9 @@ class Image3DViewer_3D(QWidget):
 
         if self.isVisible():
             self.update()
+
+    def setNewContour(self, contour:Union[ROIContour, ROIMask]):
+        self._contourLayer.setNewContour(contour)
+
+        if self.isVisible():
+            self._contourLayer.update()

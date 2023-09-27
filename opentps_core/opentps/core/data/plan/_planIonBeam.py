@@ -44,27 +44,6 @@ class PlanIonBeam:
 
         return s
 
-    def __deepcopy__(self, memodict={}):
-        newBeam = PlanIonBeam()
-
-        memodict[id(self)] = newBeam
-
-        newBeam._deepCopyProperties(self, memodict)
-
-        return newBeam
-
-    def _deepCopyProperties(self, otherBeam, memodict):
-        self._layers = [layer.__deepcopy__(memodict) for layer in otherBeam._layers]
-
-        self.name = otherBeam.name
-        self.isocenterPosition = np.array(otherBeam.isocenterPosition)
-        self.gantryAngle = otherBeam.gantryAngle
-        self.couchAngle = otherBeam.couchAngle
-        self.id = otherBeam.id
-        self.rangeShifter = copy.deepcopy(otherBeam.rangeShifter, memodict)
-        self.seriesInstanceUID = otherBeam.seriesInstanceUID
-
-
     @property
     def layers(self) -> Sequence[PlanIonLayer]:
         # For backwards compatibility but we can now access each layer with indexing brackets
@@ -117,10 +96,27 @@ class PlanIonBeam:
             ind += len(layer.spotTimings)
 
     @property
+    def spotIrradiationDurations(self):
+        durations = np.array([])
+        for layer in self._layers:
+            durations = np.concatenate((durations, layer.spotIrradiationDurations))
+
+        return durations
+
+    @spotIrradiationDurations.setter
+    def spotIrradiationDurations(self, t: Sequence[float]):
+        t = np.array(t)
+
+        ind = 0
+        for layer in self._layers:
+            layer.spotIrradiationDurations = t[ind:ind + len(layer.spotIrradiationDurations)]
+            ind += len(layer.spotIrradiationDurations)
+
+    @property
     def spotXY(self) -> np.ndarray:
         xy = np.array([])
         for layer in self._layers:
-            layerXY = list(layer.spotXY)
+            layerXY = layer.spotXY
             if len(layerXY) <= 0:
                 continue
 
@@ -178,11 +174,16 @@ class PlanIonBeam:
                     self._layers[match_ind]._x = np.concatenate((self._layers[match_ind]._x, self._layers[ind]._x))
                     self._layers[match_ind]._y = np.concatenate((self._layers[match_ind]._y, self._layers[ind]._y))
                     self._layers[match_ind]._mu = np.concatenate((self._layers[match_ind]._mu, self._layers[ind]._mu))
-                    if len(self._layers[match_ind]._timings)>0 or len(self._layers[ind]._timings)>0:
+                    if len(self._layers[match_ind]._startTime)>0 or len(self._layers[ind]._startTime)>0:
                         #check both are non empty
-                        if len(self._layers[match_ind]._timings)==0 or len(self._layers[ind]._timings)==0:
+                        if len(self._layers[match_ind]._startTime)==0 or len(self._layers[ind]._startTime)==0:
                             print(f"When attempting to merge layers at energy {current_nominalEnergy}, one layer contain delivery timings while the other do not.")
-                        self._layers[match_ind]._timings = np.concatenate((self._layers[match_ind]._timings, self._layers[ind]._timings))
+                        self._layers[match_ind]._startTime = np.concatenate((self._layers[match_ind]._startTime, self._layers[ind]._startTime))
+                    if len(self._layers[match_ind]._irradiationDuration)>0 or len(self._layers[ind]._irradiationDuration)>0:
+                        #check both are non empty
+                        if len(self._layers[match_ind]._irradiationDuration)==0 or len(self._layers[ind]._irradiationDuration)==0:
+                            print(f"When attempting to merge layers at energy {current_nominalEnergy}, one layer contain irradiation durations while the other do not.")
+                        self._layers[match_ind]._irradiationDuration = np.concatenate((self._layers[match_ind]._irradiationDuration, self._layers[ind]._irradiationDuration))
                     self.removeLayer(self._layers[ind])
                 else:
                     unique_nominalEnergies.append(current_nominalEnergy)
@@ -199,6 +200,8 @@ class PlanIonBeam:
 
 class PlanIonLayerBeamCase(unittest.TestCase):
     def testFusionDuplicates(self):
+        from opentps.core.data.plan import PlanIonLayer
+
         beam = PlanIonBeam()
         beam.gantryAngle = 0
         beam.couchAngle = 0

@@ -1,4 +1,6 @@
+import copy
 import datetime
+import os
 import pydicom
 import numpy as np
 import logging
@@ -10,6 +12,7 @@ from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
 from opentps.core.data.plan._planIonLayer import PlanIonLayer
 from opentps.core.data.images._ctImage import CTImage
+from opentps.core.data.images._mrImage import MRImage
 from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.data._rtStruct import RTStruct
 from opentps.core.data._roiContour import ROIContour
@@ -87,6 +90,130 @@ def readDicomCT(dcmFiles):
                     frameOfReferenceUID=FrameOfReferenceUID, sliceLocation=sliceLocation,
                     sopInstanceUIDs=sopInstanceUIDs)
     image.patient = patient
+
+    return image
+
+def readDicomMRI(dcmFiles):
+    """
+    Generate a MR image object from a list of dicom MR slices.
+
+    Parameters
+    ----------
+    dcmFiles: list
+        List of paths for Dicom MR slices to be imported.
+
+    Returns
+    -------
+    image: mrImage object
+        The function returns the imported MR image
+    """
+
+    # read dicom slices
+    images = []
+    sopInstanceUIDs = []
+    sliceLocation = np.zeros(len(dcmFiles), dtype='float')
+    firstdcm = dcmFiles[0]
+    if hasattr(firstdcm,'RescaleSlope') == False:
+        logging.warning('no RescaleSlope, image could be wrong')
+        for i in range(len(dcmFiles)):
+            dcm = pydicom.dcmread(dcmFiles[i])
+            sliceLocation[i] = float(dcm.ImagePositionPatient[2])
+            images.append(dcm.pixel_array)
+            sopInstanceUIDs.append(dcm.SOPInstanceUID)
+    else :
+        for i in range(len(dcmFiles)):
+            dcm = pydicom.dcmread(dcmFiles[i])
+            sliceLocation[i] = float(dcm.ImagePositionPatient[2])
+            images.append(dcm.pixel_array * dcm.RescaleSlope + dcm.RescaleIntercept)
+            sopInstanceUIDs.append(dcm.SOPInstanceUID)       
+
+    # sort slices according to their location in order to reconstruct the 3d image
+    sortIndex = np.argsort(sliceLocation)
+    sliceLocation = sliceLocation[sortIndex]
+    sopInstanceUIDs = [sopInstanceUIDs[n] for n in sortIndex]
+    images = [images[n] for n in sortIndex]
+    imageData = np.dstack(images).astype("float32").transpose(1, 0, 2)
+
+    # verify reconstructed volume
+    if imageData.shape[0:2] != (dcm.Columns, dcm.Rows):
+        logging.warning("WARNING: GridSize " + str(imageData.shape[0:2]) + " different from Dicom Columns (" + str(
+            dcm.Columns) + ") and Rows (" + str(dcm.Rows) + ")")
+
+    # collect image information
+    meanSliceDistance = (sliceLocation[-1] - sliceLocation[0]) / (len(images) - 1)
+    if (hasattr(dcm, 'SliceThickness') and (
+            type(dcm.SliceThickness) == int or type(dcm.SliceThickness) == float) and abs(
+            meanSliceDistance - dcm.SliceThickness) > 0.001):
+        logging.warning(
+            "WARNING: Mean Slice Distance (" + str(meanSliceDistance) + ") is different from Slice Thickness (" + str(
+                dcm.SliceThickness) + ")")
+
+    if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
+        imgName = dcm.SeriesDescription
+    else:
+        imgName = dcm.SeriesInstanceUID
+
+    pixelSpacing = (float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), meanSliceDistance)
+    imagePositionPatient = (float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), sliceLocation[0])
+
+    # collect patient information
+    if hasattr(dcm, 'PatientID'):
+        brth = dcm.PatientBirthDate if hasattr(dcm, 'PatientBirthDate') else None
+        sex = dcm.PatientSex if hasattr(dcm, 'PatientSex') else None
+
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=brth, sex=sex)
+    else:
+        patient = Patient()
+
+    # generate MR image object
+    FrameOfReferenceUID = dcm.FrameOfReferenceUID if hasattr(dcm, 'FrameOfReferenceUID') else None
+    image = MRImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
+                    spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID,
+                    frameOfReferenceUID=FrameOfReferenceUID, sliceLocation=sliceLocation,
+                    sopInstanceUIDs=sopInstanceUIDs)
+    image.patient = patient
+    # Collect MR information
+    if hasattr(dcm, 'BodyPartExamined'):
+        image.bodyPartExamined = dcm.BodyPartExamined
+    if hasattr(dcm, 'ScanningSequence'):
+        image.scanningSequence = dcm.ScanningSequence
+    if hasattr(dcm, 'SequenceVariant'):
+        image.sequenceVariant = dcm.SequenceVariant
+    if hasattr(dcm, 'ScanOptions'):
+        image.scanOptions = dcm.ScanOptions
+    if hasattr(dcm, 'MRAcquisitionType'):
+        image.mrArcquisitionType = dcm.MRAcquisitionType
+    if hasattr(dcm, 'RepetitionTime'):
+        image.repetitionTime = float(dcm.RepetitionTime)
+    if hasattr(dcm, 'EchoTime'):
+        if dcm.EchoTime is not None:
+            image.echoTime = float(dcm.EchoTime)
+    if hasattr(dcm, 'NumberOfAverages'):
+        image.nAverages = float(dcm.NumberOfAverages)
+    if hasattr(dcm, 'ImagingFrequency'):
+        image.imagingFrequency = float(dcm.ImagingFrequency)
+    if hasattr(dcm, 'EchoNumbers'):
+        image.echoNumbers = int(dcm.EchoNumbers)
+    if hasattr(dcm, 'MagneticFieldStrength'):
+        image.magneticFieldStrength = float(dcm.MagneticFieldStrength)
+    if hasattr(dcm, 'SpacingBetweenSlices'):
+        image.spacingBetweenSlices = float(dcm.SpacingBetweenSlices)
+    if hasattr(dcm, 'NumberOfPhaseEncodingSteps'):
+        image.nPhaseSteps = int(dcm.NumberOfPhaseEncodingSteps)
+    if hasattr(dcm, 'EchoTrainLength'):
+        if dcm.EchoTrainLength is not None:
+            image.echoTrainLength = int(dcm.EchoTrainLength)
+    if hasattr(dcm, 'FlipAngle'):
+        image.flipAngle = float(dcm.FlipAngle)
+    if hasattr(dcm, 'SAR'):
+        image.sar = float(dcm.SAR)
+    if hasattr(dcm, 'StudyDate'):
+        image.studyDate = float(dcm.StudyDate)
+    if hasattr(dcm, 'StudyTime'):
+        image.studyTime = float(dcm.StudyTime)
+    if hasattr(dcm, 'AcquisitionTime'):
+        image.acquisitionTime = float(dcm.AcquisitionTime)
+
 
     return image
 
@@ -215,7 +342,7 @@ def readDicomStruct(dcmFile):
         dcmContour = dcm.ROIContourSequence[referencedRoiId]
 
         if not hasattr(dcmContour, 'ContourSequence'):
-            logging.warning("This structure has no attribute ContourSequence. Skipping...")
+            logging.warning("This structure [ ", dcmStruct.ROIName ," ]has no attribute ContourSequence. Skipping ...")
             continue
 
         # Create ROIContour object
@@ -229,7 +356,6 @@ def readDicomStruct(dcmFile):
             if hasattr(dcmSlice, 'ContourImageSequence'):
                 contour.referencedSOPInstanceUIDs.append(dcmSlice.ContourImageSequence[
                                                          0].ReferencedSOPInstanceUID)  # UID of the image of reference (eg. ct slice)
-
         struct.appendContour(contour)
 
     return struct
@@ -509,7 +635,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.SOPInstanceUID = SOPInstanceUID
 
     # patient information
-    dcm_file.PatientName = plan.patient.name
+    dcm_file.PatientName = "exported_" + plan.patient.name
     dcm_file.PatientID = plan.patient.id
     dcm_file.PatientBirthDate = plan.patient.birthDate
     dcm_file.PatientSex = plan.patient.sex
@@ -595,7 +721,6 @@ def writeRTPlan(plan: RTPlan, filePath):
             if type(dcm_layer.ScanSpotMetersetWeights) == float:
                 dcm_layer.NumberOfScanSpotPositions = 1
             else: dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
-            dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]
             dcm_layer.GantryAngle = beam.gantryAngle
@@ -638,7 +763,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     # patient information
     patient = dose.patient
     if not (patient is None):
-        dcm_file.PatientName = patient.name
+        dcm_file.PatientName = "exported_" + patient.name
         dcm_file.PatientID = patient.id
         dcm_file.PatientBirthDate = patient.birthDate
         dcm_file.PatientSex = patient.sex
@@ -715,3 +840,261 @@ def writeRTDose(dose:DoseImage, outputFile):
     # save dicom file
     print("Export dicom RTDOSE: " + outputFile)
     dcm_file.save_as(outputFile)
+    
+
+def writeRTStruct(struct: RTStruct, outputFile):
+    SOPInstanceUID = pydicom.uid.generate_uid()
+    
+    # meta data
+    meta = pydicom.dataset.FileMetaDataset()
+    meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.3'
+    meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+    meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'
+    
+    # dicom dataset
+    dcm_file = pydicom.dataset.FileDataset(outputFile, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
+    dcm_file.SOPInstanceUID = SOPInstanceUID
+    
+    # patient information
+    if not (struct.patient is None):
+        dcm_file.PatientName = "exported_" + struct.patient.name
+        dcm_file.PatientID = struct.patient.id
+        dcm_file.PatientBirthDate = struct.patient.birthDate
+        dcm_file.PatientSex = struct.patient.sex
+    
+    # content information
+    dt = datetime.datetime.now()
+    dcm_file.ContentDate = dt.strftime('%Y%m%d')
+    dcm_file.ContentTime = dt.strftime('%H%M%S.%f')
+    dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
+    dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
+    dcm_file.Modality = 'RTSTRUCT'
+    dcm_file.Manufacturer = 'OpenMCsquare'
+    dcm_file.ManufacturerModelName = 'OpenTPS'
+    dcm_file.SeriesDescription = struct.name
+    dcm_file.StudyInstanceUID = pydicom.uid.generate_uid()
+
+    SeriesInstanceUID = struct.seriesInstanceUID
+    if SeriesInstanceUID == "" or (SeriesInstanceUID is None):
+        SeriesInstanceUID = pydicom.uid.generate_uid()
+    dcm_file.SeriesInstanceUID = SeriesInstanceUID
+    dcm_file.SeriesNumber = 2
+    dcm_file.InstanceNumber = 1
+    
+    dcm_file.StructureSetROISequence = []
+    dcm_file.ROIContourSequence = []
+    
+    for cidx,contour in enumerate(struct.contours, start=1):        
+        # StructureSetROISequence
+        roi = pydicom.Dataset()
+        roi.ROINumber = cidx
+        roi.ROIName = contour.name
+        roi.ReferencedFrameOfReferenceUID = contour.referencedFrameOfReferenceUID
+        dcm_file.StructureSetROISequence.append(roi)
+        
+        # ROIContourSequence
+        con = pydicom.Dataset()
+        con.ReferencedROINumber = cidx
+        con.ROIDisplayColor = str(contour.color[0])+"\\"+str(contour.color[1])+"\\"+str(contour.color[2])
+        con.ContourSequence = []
+        for midx,mesh in enumerate(contour.polygonMesh):
+            slc = pydicom.Dataset()
+            slc.ContourData = mesh
+            slc.ContourGeometricType = "CLOSED_PLANAR"
+            slc.NumberOfContourPoints = len(mesh)
+            con.ContourSequence.append(slc)
+        dcm_file.ROIContourSequence.append(con)
+        
+    # save rt struct dicom file
+    print("Export dicom RTSTRCT: " + outputFile)
+    dcm_file.save_as(outputFile)
+
+
+def writeDicomCT(ct: CTImage, outputFolderPath:str):
+    if not os.path.exists(outputFolderPath):
+        os.mkdir(outputFolderPath)
+    folder_name = os.path.split(outputFolderPath)[-1]
+
+    outdata = ct.imageArray.copy()
+    SOPInstanceUID = pydicom.uid.generate_uid()
+
+    # meta data
+    # meta = pydicom.dataset.FileMetaDataset()
+    meta = pydicom.Dataset()
+    meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2' # CT Image Storage
+    meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+    # meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'  # modified
+    meta.ImplementationClassUID = '1.3.6.1.4.1.9590.100.1.0.100.4.0'
+    # meta.FileMetaInformationGroupLength =
+    # meta.FileMetaInformationVersion =
+    # meta.ImplementationVersionName = 
+    # meta.SourceApplicationEntityTitle = 
+
+    # dicom dataset
+    dcm_file = pydicom.dataset.FileDataset(outputFolderPath, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
+    dcm_file.SOPInstanceUID = SOPInstanceUID
+    # dcm_file.ImageType = ['ORIGINAL', 'PRIMARY', 'AXIAL']
+    dcm_file.ImageType = ['DERIVED', 'SECONDARY', 'AXIAL']
+    # dcm_file.ImplementationVersionName =
+    # dcm_file.SpecificCharacterSet =
+    # dcm_file.AccessionNumber =
+    # dcm_file.SoftwareVersion =
+
+    # patient information
+    patient = ct.patient
+    if not (patient is None):
+        dcm_file.PatientName = "exported_" + patient.name
+        dcm_file.PatientID = patient.id
+        dcm_file.PatientBirthDate = patient.birthDate
+        dcm_file.PatientSex = patient.sex
+    else:
+        dcm_file.PatientName = 'ANONYMOUS'
+        dcm_file.PatientID = 'ANONYMOUS'
+        dcm_file.PatientBirthDate = '01022010'
+        dcm_file.PatientSex = 'Helicopter'
+    dcm_file.OtherPatientNames = ''
+    dcm_file.PatientAge = '099Y'
+    dcm_file.IssuerOfPatientID = ''
+
+    # Study information
+    # dcm_file.StudyDate = '01022010'
+    # dcm_file.SeriesDate = '01022010'
+    # dcm_file.AcquisitionDate = '01022010'
+    # dcm_file.ContentDate = '20161207'
+    # dcm_file.StudyTime = '01022010'
+    # dcm_file.SeriesTime = '01022010'
+    # dcm_file.AcquisitionTime = '084338'
+    # dcm_file.ContentTime = '160108.480'
+    # dcm_file.AccessionNumber = 'D140640901'
+    # dcm_file.StudyID = ''
+    dcm_file.StudyInstanceUID = pydicom.uid.generate_uid()
+
+    # content information
+    dt = datetime.datetime.now()
+    dcm_file.ContentDate = dt.strftime('%Y%m%d')
+    dcm_file.ContentTime = dt.strftime('%H%M%S.%f')
+    dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
+    dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
+    dcm_file.Modality = 'CT'
+    # dcm_file.ModalitiesInStudy = 'CT'
+    dcm_file.Manufacturer = 'OpenTPS'
+    # dcm_file.InstitutionName = ''
+    # dcm_file.ReferringPhysicianName = ''
+    # dcm_file.StationName = ''
+    dcm_file.StudyDescription = 'OpenTPS simulation'
+    dcm_file.SeriesDescription = 'OpenTPS created image'
+    dcm_file.ManufacturerModelName = 'OpenTPS'
+    # dcm_file.InstitutionalDepartmentName = 'RADIOTHERAPY'
+    # dcm_file.OperatorsName = ''
+    # dcm_file.ManufacturerModelName = ''
+    # dcm_file.ScanOptions = 'HELICAL_CT'
+
+    dcm_file.SliceThickness = str(ct.spacing[2])
+    # dcm_file.KVP = '120.0'
+    dcm_file.SpacingBetweenSlices = str(ct.spacing[2])
+    # dcm_file.DataCollectionDiameter = '550.0'
+    # dcm_file.DeviceSerialNumber = ''
+    # dcm_file.SoftwareVersions = ''
+    # dcm_file.ProtocolName = ''
+    # dcm_file.ReconstructionDiameter = ''
+    # dcm_file.GantryDetectorTilt = ''
+    # dcm_file.TableHeight = ''
+    # dcm_file.RotationDirection = ''
+    # dcm_file.ExposureTime = ''
+    # dcm_file.XRayTubeCurrent = ''
+    # dcm_file.Exposure = ''
+    # dcm_file.GeneratorPower = ''
+    # dcm_file.ConvolutionKernel = ''
+    dcm_file.PatientPosition = 'HFS'
+    # dcm_file.CTDIvol = 
+
+    dcm_file.SeriesInstanceUID = ct.seriesInstanceUID
+    # dcm_file.SeriesInstanceUID = pydicom.uid.generate_uid()
+    dcm_file.SeriesNumber = 3
+    # dcm_file.AcquisitionNumber = '4'
+    # dcm_file.PatientOrientation = '' #['L', 'P']
+    dcm_file.ImagePositionPatient = list(ct.origin)
+    dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
+                                        0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
+    dcm_file.FrameOfReferenceUID = ct.frameOfReferenceUID
+    # dcm_file.FrameOfReferenceUID = pydicom.uid.generate_uid()
+    # dcm_file.PositionReferenceIndicator = ''
+    # dcm_file.NumberOfStudyRelatedInstances = ''
+    # dcm_file.RespiratoryIntervalTime = 
+    dcm_file.SamplesPerPixel = 1
+    dcm_file.PhotometricInterpretation = 'MONOCHROME2'
+    dcm_file.Rows = ct.gridSize[1]
+    dcm_file.Columns = ct.gridSize[0]
+    dcm_file.PixelSpacing = list(ct.spacing[0:2])
+    dcm_file.BitsAllocated = 16
+    dcm_file.BitsStored = 16
+    dcm_file.HighBit = 15
+    dcm_file.PixelRepresentation = 1
+    # dcm_file.WindowCenter = '40.0'
+    # dcm_file.WindowWidth = '400.0'
+
+    # Rescale image intensities
+    RescaleSlope = 1
+    RescaleIntercept = np.floor(np.min(outdata))
+    outdata[np.isinf(outdata)]=np.min(outdata)
+    outdata[np.isnan(outdata)]=np.min(outdata)
+    while np.max(np.abs(outdata))>=2**15:
+        print('Pixel values are too large to be stored in INT16. Entire image is divided by 2...')
+        RescaleSlope = RescaleSlope/2
+        outdata = outdata/2
+    if np.max(np.abs(outdata))<2**6:
+        print('Intensity range is too small. Entire image is rescaled...');
+        RescaleSlope = (np.max(outdata)-RescaleIntercept)/2**12
+    if not(RescaleSlope):
+        RescaleSlope = 1
+    outdata = (outdata-RescaleIntercept)/RescaleSlope           
+    # Reduce 'rounding' errors...
+    outdata = np.round(outdata)
+    # Update dicom tags
+    dcm_file.RescaleSlope = str(RescaleSlope)
+    dcm_file.RescaleIntercept = str(RescaleIntercept)
+
+    # dcm_file.ScheduledProcedureStepStartDate = ''
+    # dcm_file.ScheduledProcedureStepStartTime = ''
+    # dcm_file.ScheduledProcedureStepEndDate = ''
+    # dcm_file.ScheduledProcedureStepEndTime = ''
+    # dcm_file.PerformedProcedureStepStartDate = ''
+    # dcm_file.PerformedProcedureStepStartTime = ''
+    # dcm_file.PerformedProcedureStepID = ''
+    # dcm_file.ConfidentialityCode = ''
+    # dcm_file.ContentLabel = ct.name
+    dcm_file.ContentLabel = 'CT'
+    dcm_file.ContentDescription = ''
+    # dcm_file.StructureSetLabel = ''
+    # dcm_file.StructureSetDate = ''
+    # dcm_file.StructureSetTime = ''
+
+    # transfer syntax
+    dcm_file.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+    dcm_file.is_little_endian = True
+    dcm_file.is_implicit_VR = False
+
+    # pydicom.dataset.validate_file_meta(dcm_file.file_meta, enforce_standard=True)
+
+    for slice in range(ct.gridSize[2]):
+        dcm_slice = copy.deepcopy(dcm_file)
+        dcm_slice.ImagePositionPatient[2] = slice*ct.spacing[2]+ct.origin[2]
+        dcm_slice.SliceLocation = str(slice*ct.spacing[2]+ct.origin[2])
+        dcm_slice.InstanceNumber = str(slice+1)
+
+        # dcm_slice.SmallestImagePixelValue = np.min(outdata[:,:,slice]).astype(np.int16)
+        # dcm_slice.LargestImagePixelValue  = np.max(outdata[:,:,slice]).astype(np.int16)
+        # This causes an error because double backslash b'\\' is interpreted as a split leading 
+        # to interpretation as pydicom.multival.MultiValue instead of bytes
+        dcm_slice.SmallestImagePixelValue = None
+        dcm_slice['SmallestImagePixelValue']._value = np.min(outdata[:,:,slice]).astype(np.int16).tobytes()
+        dcm_slice.LargestImagePixelValue = None
+        dcm_slice['LargestImagePixelValue']._value = np.max(outdata[:,:,slice]).astype(np.int16).tobytes()
+
+        dcm_slice.PixelData = outdata[:,:,slice].T.astype(np.int16).tobytes()
+
+        # write output dicom file
+        output_filename = f'{folder_name}_{slice+1:04d}.dcm'
+        dcm_slice.save_as(os.path.join(outputFolderPath,output_filename))

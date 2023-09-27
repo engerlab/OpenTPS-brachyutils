@@ -5,7 +5,7 @@ from opentps.core.data.plan._scanAlgoPlan import ScanAlgoPlan
 from opentps.core.io.serializedObjectIO import saveRTPlan
 from opentps.core.processing.planDeliverySimulation.scanAlgoSimulationConfig import ScanAlgoSimulationConfig
 
-class BDT:
+class ScanAlgoBeamDeliveryTimings:
     """
     Beam Delivery Timings for ScanAlgo
     """
@@ -69,28 +69,32 @@ class BDT:
                 original_layer._x = np.array([])
                 original_layer._y = np.array([])
                 original_layer._mu = np.array([])
-                original_layer._timings = np.array([])
+                original_layer._startTime = np.array([])
+                original_layer._irradiationDuration = np.array([])
                 SA_x = [SA_layer[i]['clinicalx'] for i in range(N)]
                 SA_y = [SA_layer[i]['clinicaly'] for i in range(N)]
                 SA_w = [SA_layer[i]['charge'] * conversion_coeff for i in range(N)]
                 SA_t = [SA_layer[i]['start'] / 1000 for i in range(N)]
-                original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t)
+                SA_d = [SA_layer[i]['duration'] / 1000 for i in range(N)]
+                original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t, SA_d)
             else:
-                original_layer._timings = np.zeros(len(SA_layer))
+                original_layer._startTime = np.zeros(len(SA_layer))
+                original_layer._irradiationDuration = np.zeros(len(SA_layer))
                 for s in range(len(original_layer._x)):
                     index_spot_scanAlgo = self.findSpotIndexJson(scanAlgo['layer'][l],
                         original_layer._x[s],
                         original_layer._y[s])
                     start_time = float(SA_layer[index_spot_scanAlgo]['start']) / 1000
-                    original_layer._timings[s] = start_time
+                    original_layer._startTime[s] = start_time
+                    irradiation_duration = float(SA_layer[index_spot_scanAlgo]['duration']) / 1000
+                    original_layer._irradiationDuration[s] = irradiation_duration
             # Reorder spots according to spot timings
-            order = np.argsort(original_layer._timings)
+            order = np.argsort(original_layer._startTime)
             original_layer.reorderSpots(order)
             # Get duration of last spot in layer:
             index_spot_scanAlgo = self.findSpotIndexJson(scanAlgo['layer'][l],
                 original_layer._x[-1],
                 original_layer._y[-1])
-            original_layer.lastSpotDuration = float(SA_layer[index_spot_scanAlgo]['duration']) / 1000
         return plan
 
 
@@ -121,7 +125,8 @@ class BDT:
             original_layer._x = np.array([])
             original_layer._y = np.array([])
             original_layer._mu = np.array([])
-            original_layer._timings = np.array([])
+            original_layer._startTime = np.array([])
+            original_layer._irradiationDuration = np.array([])
 
             burst_start_time += float(scanAlgo['layers'][l]["switchingTime"])
             N_bursts = len(SA_burst)
@@ -132,15 +137,13 @@ class BDT:
                 SA_w = np.array([burst['spots'][i]['targetCharge'] * conversion_coeff for i in range(N)])
                 SA_t = np.array([burst['spots'][i]['startTime'] for i in range(N)])
                 SA_t = (SA_t + burst_start_time) / 1000 # convert to seconds
-                original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t)
+                SA_d = np.array([burst['spots'][i]['duration'] / 1000 for i in range(N)])
+                original_layer.appendSpot(SA_x, SA_y, SA_w, SA_t, SA_d)
                 bst = burst_switching_time if b<N_bursts-1 else 0.
                 burst_start_time += burst['spots'][-1]['startTime'] + burst['spots'][-1]['duration'] + bst
 
-                if b == N_bursts - 1:
-                    original_layer.lastSpotDuration = float(burst['spots'][-1]['duration']) / 1000
-
             # Reorder spots according to spot timings
-            order = np.argsort(original_layer._timings)
+            order = np.argsort(original_layer._startTime)
             original_layer.reorderSpots(order)
         return plan
 

@@ -5,12 +5,15 @@ __all__ = ['PlanIonSpot']
 class PlanIonSpot:
     def __init__(self):
         super(PlanIonSpot, self).__init__()
+        self.spotXY = []
         self.id = 0
         self.beamID, layerID = 0, 0
         self.voxels = []
         self.energy = 0.0
-
-
+        self.peakPosInDicomCoords = None
+        self.peakPosInTargetSystem = None
+        self.spotWeight = 0
+        self.spotTiming = 0
 class Contrib:
     """Dose contribution of spot to voxel"""
     def __init__(self, **kwargs):
