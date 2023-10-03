@@ -750,10 +750,13 @@ def readDicomStruct(dcmFile):
     struct.structureSetTime = dcm.StructureSetTime if hasattr(dcm, 'StructureSetTime') else None
     struct.seriesTime = dcm.SeriesTime if hasattr(dcm, 'SeriesTime') else None
     struct.sopClassUID = dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else None
+    struct.structureSetLabel = dcm.StructureSetLabel if hasattr(dcm, 'StructureSetLabel') else 'OpenTPS Created'
+    struct.rtROIObservationsSequence = dcm.RTROIObservationsSequence if hasattr(dcm, 'RTROIObservationsSequence') else []
+    struct.referencedFrameOfReferenceSequence = dcm.ReferencedFrameOfReferenceSequence if hasattr(dcm, 'ReferencedFrameOfReferenceSequence') else []
     
     return struct
 
-def writeRTStruct(struct: RTStruct, ctSeriesInstanceUID, outputFile):
+def writeRTStruct(struct: RTStruct, outputFile):
     """
     Export of TR structure data as a Dicom dose file.
     
@@ -823,12 +826,51 @@ def writeRTStruct(struct: RTStruct, ctSeriesInstanceUID, outputFile):
     dcm_file.SOPClassUID = struct.sopClassUID
     dcm_file.StudyDate = struct.studyDate
     dcm_file.SeriesDate = struct.seriesDate
+    dcm_file.StructureSetLabel = struct.structureSetLabel
 
-    refseq = pydicom.Dataset()
-    dcm_file.ReferencedFrameOfReferenceSequence = [ refseq ]
-    refseq.RTReferencedStudySequence = [ pydicom.Dataset() ]
-    refseq.RTReferencedStudySequence[0].RTReferencedSeriesSequence = [ pydicom.Dataset() ]
-    refseq.RTReferencedStudySequence[0].RTReferencedSeriesSequence[0].SeriesInstanceUID = ctSeriesInstanceUID
+    # refseq = pydicom.Dataset()
+    # dcm_file.ReferencedFrameOfReferenceSequence = [ refseq ]
+    # refseq.RTReferencedStudySequence = [ pydicom.Dataset() ]
+    # refseq.RTReferencedStudySequence[0].ReferencedSOPInstanceUID = dcm_file.StudyInstanceUID
+    # refseq.RTReferencedStudySequence[0].RTReferencedSeriesSequence = [ pydicom.Dataset() ]
+    # refseq.RTReferencedStudySequence[0].RTReferencedSeriesSequence[0].SeriesInstanceUID = ctSeriesInstanceUID
+    
+    
+    dcm_file.ReferencedFrameOfReferenceSequence = []
+    for cidx, item in enumerate(struct.referencedFrameOfReferenceSequence, start=1):
+        refFrameRef = pydicom.Dataset()
+        refFrameRef.FrameOfReferenceUID = item.FrameOfReferenceUID
+        rtRefSub1 = []
+        for cSubIdx2, subItem1 in enumerate(item.RTReferencedStudySequence, start=1):
+            rtRefSubObj1=pydicom.Dataset()
+            rtRefSubObj1.ReferencedSOPClassUID = subItem1.ReferencedSOPClassUID
+            rtRefSubObj1.ReferencedSOPInstanceUID = subItem1.ReferencedSOPInstanceUID
+            rtRefSub2 = []
+            for cSubIdx2, subItem2 in enumerate(subItem1.RTReferencedSeriesSequence, start=1):
+                rtRefSubObject2 = pydicom.Dataset()
+                rtRefSubObject2.SeriesInstanceUID = subItem2.SeriesInstanceUID
+                contourSeq = []
+                for cSubIdx3, subItem3 in enumerate(subItem2.ContourImageSequence, start=1):
+                    contourSeqObj=pydicom.Dataset()
+                    contourSeqObj.ReferencedSOPClassUID = subItem3.ReferencedSOPClassUID
+                    contourSeqObj.ReferencedSOPInstanceUID = subItem3.ReferencedSOPInstanceUID
+                    contourSeq.append(contourSeqObj)
+                rtRefSubObject2.ContourImageSequence = contourSeq
+            rtRefSub2.append(rtRefSubObject2)
+            rtRefSubObj1.RTReferencedSeriesSequence = rtRefSub2
+        rtRefSub1.append(rtRefSubObj1)
+        refFrameRef.RTReferencedStudySequence = rtRefSub1
+    dcm_file.ReferencedFrameOfReferenceSequence.append(refFrameRef)
+
+      
+    dcm_file.RTROIObservationsSequence = []
+    for cidx, item in enumerate(struct.rtROIObservationsSequence, start=1):
+        roiObs = pydicom.Dataset()
+        roiObs.ObservationNumber = item.ObservationNumber
+        roiObs.ROIObservationLabel = item.ROIObservationLabel
+        roiObs.RTROIInterpretedType = item.RTROIInterpretedType if hasattr(item, 'RTROIInterpretedType') else 'NONE'
+        roiObs.ROIInterpreter = item.ROIInterpreter if hasattr(item, 'ROIInterpreter') else ''
+        dcm_file.RTROIObservationsSequence.append(roiObs)
     
     dcm_file.StructureSetROISequence = []
     dcm_file.ROIContourSequence = []
@@ -1087,6 +1129,10 @@ def readDicomPlan(dcmFile) -> RTPlan:
         plan.rtPlanGeometry = dcm.RTPlanGeometry if hasattr(dcm, 'RTPlanGeometry') else None
         plan.prescriptionDescription = dcm.PrescriptionDescription if hasattr(dcm, 'PrescriptionDescription') else None
         plan.sopClassUID=dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else None
+        plan.doseReferenceSequence=dcm.DoseReferenceSequence if hasattr(dcm, 'DoseReferenceSequence') else []
+        plan.fractionGroupSequence = dcm.FractionGroupSequence if hasattr(dcm, 'FractionGroupSequence') else []
+        plan.referencedStructureSetSequence = dcm.ReferencedStructureSetSequence if hasattr(dcm, 'ReferencedStructureSetSequence') else []
+        plan.ionBeamSequence = dcm.IonBeamSequence if hasattr(dcm, 'IonBeamSequence') else []
         
     return plan
 
@@ -1159,15 +1205,48 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.SeriesNumber = plan.seriesNumber
 
     # plan information
+    dcm_file.DoseReferenceSequence = []
+    for cidx, item in enumerate(plan.doseReferenceSequence, start=1):
+        doseRef= pydicom.Dataset()
+        doseRef.ReferencedROINumber = item.ReferencedROINumber
+        doseRef.DoseReferenceNumber = item.DoseReferenceNumber
+        doseRef.DoseReferenceUID = item.DoseReferenceUID
+        doseRef.DoseReferenceStructureType = item.DoseReferenceStructureType
+        doseRef.DoseReferenceDescription = item.DoseReferenceDescription
+        doseRef.DoseReferenceType = item.DoseReferenceType
+        doseRef.TargetPrescriptionDose = item.TargetPrescriptionDose
+        doseRef.TargetUnderdoseVolumeFraction = item.TargetUnderdoseVolumeFraction
+        doseRef.PrivateCreator = 'OpenTPS'
+        dcm_file.DoseReferenceSequence.append(doseRef)
+        
     dcm_file.FractionGroupSequence = []
+    for cidx, item in enumerate(plan.fractionGroupSequence, start=1):
+        fraction = pydicom.Dataset()
+        fraction.FractionGroupNumber = item.FractionGroupNumber
+        fraction.NumberOfFractionsPlanned = item.NumberOfFractionsPlanned
+        fraction.NumberOfBeams = item.NumberOfBeams
+        fraction.NumberOfBrachyApplicationSetups = item.NumberOfBrachyApplicationSetups
+        refBeam = []
+        for cidx, subItem in enumerate(item.ReferencedBeamSequence, start=1):
+            refBeamObj =  pydicom.Dataset()
+            refBeamObj.BeamDose = subItem.BeamDose
+            refBeamObj.BeamDosePointDepth = subItem.BeamDosePointDepth
+            refBeamObj.BeamDosePointEquivalentDepth = subItem.BeamDosePointEquivalentDepth
+            refBeamObj.BeamDosePointSSD = subItem.BeamDosePointSSD
+            refBeamObj.BeamDoseType = subItem.BeamDoseType
+            refBeamObj.ReferencedBeamNumber = subItem.ReferencedBeamNumber
+            refBeam.append(refBeamObj)
+        fraction.ReferencedBeamSequence = refBeam
+        dcm_file.FractionGroupSequence.append(fraction)
+    
+    
     fractionGroup = pydicom.dataset.Dataset()
     # Only 1 fraction spported right now!
     fractionGroup.NumberOfFractionsPlanned = 1  # plan.numberOfFractionsPlanned
     dcm_file.FractionGroupSequence.append(fractionGroup)
     fractionGroup.ReferencedBeamSequence = []
-
+    
     dcm_file.IonBeamSequence = []
-
     for beamNumber, beam in enumerate(plan):
         referencedBeam = pydicom.dataset.Dataset()
         referencedBeam.BeamMeterset = beam.meterset
@@ -1183,7 +1262,6 @@ def writeRTPlan(plan: RTPlan, filePath):
         dcm_beam.TreatmentDeliveryType = "TREATMENT"
         dcm_beam.FinalCumulativeMetersetWeight = plan.beamCumulativeMetersetWeight[beamNumber]
         dcm_beam.BeamNumber = beamNumber
-
         rangeShifter = beam.rangeShifter
         if rangeShifter is None:
             dcm_beam.NumberOfRangeShifters = 0
@@ -1202,13 +1280,14 @@ def writeRTPlan(plan: RTPlan, filePath):
                 print("ERROR: Unknown range shifter type: " + rangeShifter.type)
 
         dcm_beam.RangeShifterSequence.append(dcm_rs)
-
         dcm_file.IonBeamSequence.append(dcm_beam)
 
         dcm_beam.IonControlPointSequence = []
+        
         for layer in beam:
-            dcm_layer = pydicom.dataset.Dataset()
+            dcm_layer = pydicom.dataset.Dataset()            
             dcm_layer.SeriesInstanceUID = SeriesInstanceUID
+            dcm_layer.ControlPointIndex = beamNumber
             dcm_layer.NumberOfPaintings = layer.numberOfPaintings
             dcm_layer.NominalBeamEnergy = layer.nominalEnergy
             dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
@@ -1232,6 +1311,13 @@ def writeRTPlan(plan: RTPlan, filePath):
 
             dcm_beam.IonControlPointSequence.append(dcm_layer)
 
+    dcm_file.ReferencedStructureSetSequence = []
+    for cidx, item in enumerate(plan.referencedStructureSetSequence, start=1):
+        refStructSeq = pydicom.Dataset()
+        refStructSeq.ReferencedSOPClassUID = item.ReferencedSOPClassUID
+        refStructSeq.ReferencedSOPInstanceUID = item.ReferencedSOPInstanceUID
+    dcm_file.ReferencedStructureSetSequence.append(refStructSeq)
+    
     # save dicom file
     print("Export dicom TRAINMENT PLAN: " + filePath)
     dcm_file.save_as(filePath)
