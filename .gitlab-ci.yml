@@ -4,7 +4,8 @@ image: python:latest
 
 stages:
   - build
-  - test
+  - test_core
+  - test_gui
   - doc
 
 # Change pip's cache directory to be inside the project directory since we can
@@ -64,7 +65,7 @@ build:
 # TODO: Should tests be executed on the built application
 test_core:
   image: python:3.9
-  stage: test
+  stage: test_core
   script:
     - pip show SimpleITK
     - cd $CI_PROJECT_DIR/
@@ -73,7 +74,7 @@ test_core:
 
 test_gui:
   image: python:3.9
-  stage: test
+  stage: test_gui
   script:
     - pip show SimpleITK
     - pip show vtk
@@ -95,7 +96,7 @@ docs:
 
 # Must be run after all script because we create __init__.py for unittest. The absence of this file is essential and tested in test_core.
 unittest_core:
-  stage: test
+  stage: test_core
   image: python:3.9
   script:
     - cd $CI_PROJECT_DIR/opentps_core/
