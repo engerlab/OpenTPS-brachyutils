@@ -2,6 +2,11 @@
 # https://hub.docker.com/r/library/python/tags/
 image: python:latest
 
+stages:
+  - build
+  - test
+  - doc
+
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
 variables:
@@ -44,6 +49,7 @@ before_script:
 
 build:
   image: python:3.9
+  stage: build
   script:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
     - cd $CI_PROJECT_DIR/opentps_core
@@ -58,6 +64,7 @@ build:
 # TODO: Should tests be executed on the built application
 test_core:
   image: python:3.9
+  stage: test
   script:
     - pip show SimpleITK
     - cd $CI_PROJECT_DIR/
@@ -66,6 +73,7 @@ test_core:
 
 test_gui:
   image: python:3.9
+  stage: test
   script:
     - pip show SimpleITK
     - pip show vtk
@@ -75,6 +83,7 @@ test_gui:
     - python -m unittest discover opentps_gui/opentps/gui
 
 docs:
+  stage: doc
   script:
     - pip install sphinx sphinx-rtd-theme
     #- export PYTHONPATH="$CI_PROJECT_DIR"
@@ -86,6 +95,7 @@ docs:
 
 # Must be run after all script because we create __init__.py for unittest. The absence of this file is essential and tested in test_core.
 unittest_core:
+  stage: test
   image: python:3.9
   script:
     - cd $CI_PROJECT_DIR/opentps_core/
