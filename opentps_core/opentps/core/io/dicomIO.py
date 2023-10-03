@@ -119,6 +119,22 @@ def readDicomCT(dcmFiles):
 
 
 def writeDicomCT(ct: CTImage, outputFolderPath:str):
+    """
+    Write image and generate the DICOM file
+
+    Parameters
+    ----------
+    ct: CTImage object
+        The ct image object
+    outputFolderPath: str
+        The output folder path
+
+    Returns
+    -------
+    SeriesInstanceUID: 
+        The function returns the series instance UID for these images.
+    """
+    
     if not os.path.exists(outputFolderPath):
         os.mkdir(outputFolderPath)
     folder_name = os.path.split(outputFolderPath)[-1]
@@ -130,7 +146,6 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     meta.ImplementationClassUID = ct.implementationClassUID
     meta.FileMetaInformationGroupLength = ct.fileMetaInformationGroupLength
     meta.ImplementationVersionName = ct.implementationVersionName
-    # meta.SourceApplicationEntityTitle = 
 
     # dicom dataset
     dcm_file = pydicom.dataset.FileDataset(outputFolderPath, {}, file_meta=meta, preamble=b"\0" * 128)
@@ -158,9 +173,6 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
 
     # Study information
     dcm_file.StudyDate = ct.studyDate
-    # dcm_file.SeriesDate = ct.seriesDate
-    # dcm_file.AcquisitionDate = '01022010'
-    # dcm_file.ContentDate = ct.contentDate
     dcm_file.StudyTime = ct.studyTime
     dcm_file.SeriesTime = ''
     # dcm_file.AcquisitionTime = '084338'
@@ -299,6 +311,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
         # write output dicom file
         output_filename = f'{folder_name}_{slice+1:04d}.dcm'
         dcm_slice.save_as(os.path.join(outputFolderPath,output_filename))
+    return dcm_file.SeriesInstanceUID
         
         
 def readDicomMRI(dcmFiles):
@@ -421,11 +434,11 @@ def readDicomMRI(dcmFiles):
         image.studyTime = float(dcm.StudyTime)
     if hasattr(dcm, 'AcquisitionTime'):
         image.acquisitionTime = float(dcm.AcquisitionTime)
-
+    image.studyInstanceUID = dcm.StudyInstanceUID if hasattr(dcm, 'StudyInstanceUID') else None
 
     return image
 
-################## Dose Dicom ###########
+################## Dose Dicom ########################################
 def readDicomDose(dcmFile):
     """
     Read a Dicom dose file and generate a dose image object.
@@ -535,7 +548,18 @@ def readDicomDose(dcmFile):
 
     return image
 
-def writeRTDose(dose:DoseImage, outputFile):    
+def writeRTDose(dose:DoseImage, outputFile):
+    """
+    Export the dose data as a Dicom dose file
+
+    Parameters
+    ----------
+    dose: DoseImage
+        The dose image object.
+    outputFile:
+        The output file path
+    """
+    
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
     meta.MediaStorageSOPClassUID = dose.mediaStorageSOPClassUID
@@ -640,7 +664,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     print("Export dicom RTDOSE: " + outputFile)
     dcm_file.save_as(outputFile)
     
-################### Dose Image ###########
+################### Dose Image #######################################################
 def readDicomStruct(dcmFile):
     """
     Read a Dicom structure set file and generate a RTStruct object.
@@ -699,7 +723,6 @@ def readDicomStruct(dcmFile):
                                                          0].ReferencedSOPInstanceUID)  # UID of the image of reference (eg. ct slice)
         struct.appendContour(contour)
         
-    struct.fileMetaInformationGroupLength = dcm.file_meta.FileMetaInformationGroupLength if hasattr(dcm, 'FileMetaInformationGroupLength') else None
     struct.mediaStorageSOPClassUID = dcm.file_meta.MediaStorageSOPClassUID if hasattr(dcm.file_meta, 'MediaStorageSOPClassUID') else None        
     struct.mediaStorageSOPInstanceUID = dcm.file_meta.MediaStorageSOPInstanceUID if hasattr(dcm, 'MediaStorageSOPInstanceUID') else None    
     struct.transferSyntaxUID = dcm.file_meta.TransferSyntaxUID if hasattr(dcm.file_meta, 'TransferSyntaxUID') else None
@@ -728,25 +751,43 @@ def readDicomStruct(dcmFile):
     struct.seriesTime = dcm.SeriesTime if hasattr(dcm, 'SeriesTime') else None
     struct.sopClassUID = dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else None
     
-     
     return struct
 
-def writeRTStruct(struct: RTStruct, outputFile):
-    SOPInstanceUID = struct.sopInstanceUID
+def writeRTStruct(struct: RTStruct, ctSeriesInstanceUID, outputFile):
+    """
+    Export of TR structure data as a Dicom dose file.
     
+    Parameters
+    ----------
+    struct: RTStruct
+        The RTStruct object
+        
+    ctSeriesInstanceUID: str
+        The serial instance UID of the CT associated with this RT structure.
+    
+    outputFile: str
+        The output folde path
+        
+    NOTE: Get the CT serial instance UID by calling the 'writeDicomCT' function.
+    """
+    
+    SOPInstanceUID = struct.sopInstanceUID
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
     meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.3'
     meta.MediaStorageSOPInstanceUID = SOPInstanceUID
-    meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'
-    meta.TransferSyntaxUID = struct.transferSyntaxUID
+    meta.ImplementationClassUID = struct.implementationClassUID
+    #'1.2.826.0.1.3680043.5.5.100.5.7.0.03'
+    meta.TransferSyntaxUID = '1.2.840.10008.1.2'
     meta.ImplementationVersionName = struct.implementationVersionName
-    
+    # NOTE: Don't modify this value
+    meta.FileMetaInformationGroupLength = 0 
+            
     # dicom dataset
     dcm_file = pydicom.dataset.FileDataset(outputFile, {}, file_meta=meta, preamble=b"\0" * 128)
     dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
     dcm_file.SOPInstanceUID = SOPInstanceUID
-    
+
     # patient information
     if not (struct.patient is None):
         dcm_file.PatientName = "exported_" + struct.patient.name
@@ -766,8 +807,7 @@ def writeRTStruct(struct: RTStruct, outputFile):
     dcm_file.SeriesDescription = struct.name
     
     # wei test
-    dcm_file.StudyInstanceUID = struct.studyInstanceUID+'1'
-
+    dcm_file.StudyInstanceUID = struct.studyInstanceUID +'1'
     SeriesInstanceUID = struct.seriesInstanceUID
     if SeriesInstanceUID == "" or (SeriesInstanceUID is None):
         SeriesInstanceUID = pydicom.uid.generate_uid()
@@ -784,10 +824,15 @@ def writeRTStruct(struct: RTStruct, outputFile):
     dcm_file.StudyDate = struct.studyDate
     dcm_file.SeriesDate = struct.seriesDate
 
+    refseq = pydicom.Dataset()
+    dcm_file.ReferencedFrameOfReferenceSequence = [ refseq ]
+    refseq.RTReferencedStudySequence = [ pydicom.Dataset() ]
+    refseq.RTReferencedStudySequence[0].RTReferencedSeriesSequence = [ pydicom.Dataset() ]
+    refseq.RTReferencedStudySequence[0].RTReferencedSeriesSequence[0].SeriesInstanceUID = ctSeriesInstanceUID
     
     dcm_file.StructureSetROISequence = []
     dcm_file.ROIContourSequence = []
-    
+        
     for cidx,contour in enumerate(struct.contours, start=1):        
         # StructureSetROISequence
         roi = pydicom.Dataset()
@@ -805,15 +850,15 @@ def writeRTStruct(struct: RTStruct, outputFile):
             slc = pydicom.Dataset()
             slc.ContourData = mesh
             slc.ContourGeometricType = "CLOSED_PLANAR"
-            slc.NumberOfContourPoints = len(mesh)
+            slc.NumberOfContourPoints = len(mesh) // 3
             con.ContourSequence.append(slc)
         dcm_file.ROIContourSequence.append(con)
-        
+                    
     # save rt struct dicom file
     print("Export dicom RTSTRCT: " + outputFile)
     dcm_file.save_as(outputFile)
 
-################### Plan Image ###########
+################### Plan Image ############################################    
 def readDicomPlan(dcmFile) -> RTPlan:
     dcm = pydicom.dcmread(dcmFile)
 
@@ -834,8 +879,6 @@ def readDicomPlan(dcmFile) -> RTPlan:
 
     plan = RTPlan(name=name)
     plan.patient = patient
-
-    # plan.OriginalDicomDataset = dcm
     
     # Photon plan
     if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5":
@@ -1048,6 +1091,16 @@ def readDicomPlan(dcmFile) -> RTPlan:
     return plan
 
 def writeRTPlan(plan: RTPlan, filePath):
+    """
+    Export the RT plan data as a Dicom dose file.
+
+    Parameters
+    ----------
+    plan: RTPlan
+        The RT plan data object
+    filePath: str
+        the output folder path
+    """
     
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
@@ -1184,7 +1237,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.save_as(filePath)
     
     
-# ################## Dose Dicom ###########
+# ################## Dose Dicom ########################################
 def readDicomVectorField(dcmFile):
     """
     Read a Dicom vector field file and generate a vector field object.
