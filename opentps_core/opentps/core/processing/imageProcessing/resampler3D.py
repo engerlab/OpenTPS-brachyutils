@@ -333,14 +333,17 @@ def warp(data,field,spacing,fillValue=0,outputType=None, tryGPU=True):
 def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
 
     """
-    Crop a 3D data around a box given in scanner coordinates
+    Crop a 3D data in-place around a box given in scanner coordinates
 
     Parameters
     ----------
     data : Image3D, Dynamic3DModel or Dynamic3DSequence
         The 3D data that will be cropped
     box : list of tuples or list
-        The box around which the data is cropped, under the form [[x1, X2], [y1, y2], [z1, z2]]
+        Universal coordinates of the box around which the data is cropped, under the form 
+        [[x1, X2], [y1, y2], [z1, z2]]. By convention, these are coordinates of the center of 
+        the voxels at the corners of the box. The resulting cropped data inclues those voxels 
+        at the extremities.
     marginInMM : list of float for the margin in mm for each dimension
         The margins in mm that is added around the box before cropping
     """
@@ -363,7 +366,7 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
         ZIndexInVoxels = [max(0, int(np.round((box[2][0] - marginInMM[2] - data.origin[2]) / data.spacing[2]))),
                           min(data.gridSize[2], int(np.round((box[2][1] + marginInMM[2] - data.origin[2]) / data.spacing[2])))]
 
-        data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1], YIndexInVoxels[0]:YIndexInVoxels[1], ZIndexInVoxels[0]:ZIndexInVoxels[1]]
+        data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1]+1, YIndexInVoxels[0]:YIndexInVoxels[1]+1, ZIndexInVoxels[0]:ZIndexInVoxels[1]+1] # +1 to include IndexInVoxels[1] 
         # data.imageArray = croppedArray
 
         origin = data.origin
