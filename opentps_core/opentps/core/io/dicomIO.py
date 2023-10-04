@@ -1212,27 +1212,6 @@ def writeRTPlan(plan: RTPlan, filePath):
         doseRef.PrivateCreator = 'OpenTPS'
         dcm_file.DoseReferenceSequence.append(doseRef)
     
-    
-    # dcm_file.FractionGroupSequence = []
-    # for item in plan.fractionGroupSequence:
-    #     fraction = pydicom.Dataset()
-    #     fraction.FractionGroupNumber = item.FractionGroupNumber
-    #     fraction.NumberOfFractionsPlanned = item.NumberOfFractionsPlanned
-    #     fraction.NumberOfBeams = item.NumberOfBeams
-    #     fraction.NumberOfBrachyApplicationSetups = item.NumberOfBrachyApplicationSetups
-    #     refBeam = []
-    #     for subItem in item.ReferencedBeamSequence:
-    #         refBeamObj =  pydicom.Dataset()
-    #         refBeamObj.BeamDose = subItem.BeamDose
-    #         refBeamObj.BeamDosePointDepth = subItem.BeamDosePointDepth
-    #         refBeamObj.BeamDosePointEquivalentDepth = subItem.BeamDosePointEquivalentDepth
-    #         refBeamObj.BeamDosePointSSD = subItem.BeamDosePointSSD
-    #         refBeamObj.BeamDoseType = subItem.BeamDoseType
-    #         refBeamObj.ReferencedBeamNumber = subItem.ReferencedBeamNumber
-    #         refBeam.append(refBeamObj)
-    #     fraction.ReferencedBeamSequence = refBeam
-    #     dcm_file.FractionGroupSequence.append(fraction)
-    
     dcm_file.FractionGroupSequence = []
     fractionGroup = pydicom.dataset.Dataset()
     # Only 1 fraction spported right now!
