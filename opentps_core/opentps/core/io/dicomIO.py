@@ -1298,7 +1298,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.save_as(filePath)
     
     
-# ################## Dose Dicom ########################################
+# ##########################################################
 def readDicomVectorField(dcmFile):
     """
     Read a Dicom vector field file and generate a vector field object.
