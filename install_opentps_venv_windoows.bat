@@ -47,7 +47,8 @@ pip install numpy
 pip install scipy
 pip install matplotlib
 pip install Pillow
-pip install PyQt5==5.15.7
+pip install PyQt5==5.15.10
+pip install PyQt5-Qt5=='5.15.2'
 pip install pyqtgraph
 pip install sparse_dot_mkl
 pip install vtk
