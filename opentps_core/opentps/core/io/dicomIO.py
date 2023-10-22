@@ -18,6 +18,12 @@ from opentps.core.data._rtStruct import RTStruct
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.images._vectorField3D import VectorField3D
 
+def floatToDS(v):
+    return pydicom.valuerep.DSfloat(v,auto_format=True)
+
+def arrayToDS(ls):
+    return list(map(floatToDS, ls))
+
 
 ################### CT Image ###########
 def readDicomCT(dcmFiles):
@@ -202,9 +208,11 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # dcm_file.OperatorsName = ''
     # dcm_file.ManufacturerModelName = ''
     # dcm_file.ScanOptions = 'HELICAL_CT'
-    dcm_file.SliceThickness = str(ct.spacing[2])
+    dcm_file.SliceThickness = floatToDS(ct.spacing[2])
+    # dcm_file.SliceThickness = ct.spacing[2]
     # dcm_file.KVP = '120.0'
-    dcm_file.SpacingBetweenSlices = str(ct.spacing[2])
+    # dcm_file.SpacingBetweenSlices = ct.spacing[2]
+    dcm_file.SpacingBetweenSlices = floatToDS(ct.spacing[2])
     # dcm_file.DataCollectionDiameter = '550.0'
     # dcm_file.DeviceSerialNumber = ''
     # dcm_file.ProtocolName = ''
@@ -223,7 +231,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.SeriesInstanceUID = ct.seriesInstanceUID
     dcm_file.SeriesNumber = ct.seriesNumber
     # dcm_file.AcquisitionNumber = '4'
-    dcm_file.ImagePositionPatient = list(ct.origin)
+    dcm_file.ImagePositionPatient = arrayToDS(ct.origin)
     dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
                                         0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
     dcm_file.FrameOfReferenceUID = ct.frameOfReferenceUID
@@ -234,7 +242,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.PhotometricInterpretation = ct.photometricInterpretation
     dcm_file.Rows = ct.gridSize[1]
     dcm_file.Columns = ct.gridSize[0]
-    dcm_file.PixelSpacing = list(ct.spacing[0:2])
+    dcm_file.PixelSpacing = arrayToDS(ct.spacing[0:2])
     dcm_file.BitsAllocated = ct.bitsAllocated
     dcm_file.BitsStored = ct.bitsStored
     dcm_file.HighBit = 15
@@ -243,23 +251,38 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # dcm_file.WindowCenter = '40.0'
     # dcm_file.WindowWidth = '400.0'
     
-    # Rescale image intensities
+    # Rescale image intensities if pixel data does not fit into INT16
     RescaleSlope = 1
-    RescaleIntercept = np.floor(np.min(outdata))
-    outdata[np.isinf(outdata)]=np.min(outdata)
-    outdata[np.isnan(outdata)]=np.min(outdata)
-    while np.max(np.abs(outdata))>=2**15:
-        print('Pixel values are too large to be stored in INT16. Entire image is divided by 2...')
-        RescaleSlope = RescaleSlope/2
-        outdata = outdata/2
-    if np.max(np.abs(outdata))<2**6:
-        print('Intensity range is too small. Entire image is rescaled...');
-        RescaleSlope = (np.max(outdata)-RescaleIntercept)/2**12
-    if not(RescaleSlope):
-        RescaleSlope = 1
-    outdata = (outdata-RescaleIntercept)/RescaleSlope           
-    # Reduce 'rounding' errors...
-    outdata = np.round(outdata)
+    RescaleIntercept = 0
+    dataMin = np.min(outdata)
+    dataMax = np.max(outdata)
+    if (dataMin<-2^15) or (dataMax>=2**15):
+        dataRange = dataMax-dataMin
+        if dataRange>=2**16:
+            RescaleSlope = dataRange/(2**16-1)
+        outdata = np.round((outdata-dataMin)/RescaleSlope - 2**15)
+        RescaleIntercept = dataMin + RescaleSlope*2**15
+     
+    ## 
+    ## OLD RESCALE CODE
+    ##    
+    # RescaleSlope = 1
+    # RescaleIntercept = np.floor(np.min(outdata))
+    # outdata[np.isinf(outdata)]=np.min(outdata)
+    # outdata[np.isnan(outdata)]=np.min(outdata)
+    # while np.max(np.abs(outdata))>=2**15:
+    #     print('Pixel values are too large to be stored in INT16. Entire image is divided by 2...')
+    #     RescaleSlope = RescaleSlope/2
+    #     outdata = outdata/2
+    # if np.max(np.abs(outdata))<2**6:
+    #     print('Intensity range is too small. Entire image is rescaled...');
+    #     RescaleSlope = (np.max(outdata)-RescaleIntercept)/2**12
+    # if not(RescaleSlope):
+    #     RescaleSlope = 1
+    # outdata = (outdata-RescaleIntercept)/RescaleSlope           
+    # # Reduce 'rounding' errors...
+    # outdata = np.round(outdata)
+    
     # Update dicom tags
     dcm_file.RescaleSlope = str(RescaleSlope)
     dcm_file.RescaleIntercept = str(RescaleIntercept)
@@ -290,13 +313,12 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
         # meta data
         meta = pydicom.dataset.FileMetaDataset()
         meta.MediaStorageSOPInstanceUID = ct.sopInstanceUIDs[slice]
-        # meta.ImplementationClassUID = ct.implementationClassUID
          
         dcm_slice = copy.deepcopy(dcm_file)
         dcm_file.SOPClassUID = ct.mediaStorageSOPClassUID
         dcm_slice.SOPInstanceUID = ct.sopInstanceUIDs[slice]
+        dcm_slice.ImagePositionPatient[2] = floatToDS(slice*ct.spacing[2]+ct.origin[2])
         
-        dcm_slice.ImagePositionPatient[2] = slice*ct.spacing[2]+ct.origin[2]
         dcm_slice.SliceLocation = str(slice*ct.spacing[2]+ct.origin[2])
         dcm_slice.InstanceNumber = str(slice+1)
 
@@ -661,9 +683,9 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.Rows = dcm_file.Height
     dcm_file.NumberOfFrames = dose.gridSize[2]
     dcm_file.SliceThickness = dose.spacing[2]
-    dcm_file.PixelSpacing = list(dose.spacing[0:2])
+    dcm_file.PixelSpacing = arrayToDS(dose.spacing[0:2])    
     dcm_file.ColorType = 'grayscale'
-    dcm_file.ImagePositionPatient = list(dose.origin)
+    dcm_file.ImagePositionPatient = arrayToDS(dose.origin)
     dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
                                         0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
     dcm_file.SamplesPerPixel = 1
@@ -1254,7 +1276,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.IonBeamSequence = []
     for beamNumber, beam in enumerate(plan):
         referencedBeam = pydicom.dataset.Dataset()
-        referencedBeam.BeamMeterset = beam.meterset
+        referencedBeam.BeamMeterset = floatToDS(beam.meterset)
         referencedBeam.ReferencedBeamNumber = beamNumber
         fractionGroup.ReferencedBeamSequence.append(referencedBeam)
 
@@ -1265,7 +1287,7 @@ def writeRTPlan(plan: RTPlan, filePath):
         dcm_beam.RadiationType = "PROTON"
         dcm_beam.ScanMode = "MODULATED"
         dcm_beam.TreatmentDeliveryType = "TREATMENT"
-        dcm_beam.FinalCumulativeMetersetWeight = plan.beamCumulativeMetersetWeight[beamNumber]
+        dcm_beam.FinalCumulativeMetersetWeight = floatToDS(plan.beamCumulativeMetersetWeight[beamNumber])
         dcm_beam.BeamNumber = beamNumber
         dcm_beam.BeamType = 'STATIC'
         rangeShifter = beam.rangeShifter
