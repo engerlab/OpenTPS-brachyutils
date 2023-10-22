@@ -262,7 +262,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
             RescaleSlope = dataRange/(2**16-1)
         outdata = np.round((outdata-dataMin)/RescaleSlope - 2**15)
         RescaleIntercept = dataMin + RescaleSlope*2**15
-     
+    
     ## 
     ## OLD RESCALE CODE
     ##    
