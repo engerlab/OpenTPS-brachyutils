@@ -121,6 +121,7 @@ def readDicomCT(dcmFiles):
     image.bitsAllocated = dcm.BitsAllocated if hasattr(dcm, 'BitsAllocated') else 0
     image.modality = dcm.Modality if hasattr(dcm, 'Modality') else ""
     image.bitsStored = dcm.BitsStored if hasattr(dcm, 'BitsStored') else 0
+    image.highBit = dcm.HighBit if hasattr(dcm, 'HighBit') else 0
     image.approvalStatus = dcm.ApprovalStatus if hasattr(dcm, 'ApprovalStatus') else 'UNAPPROVED'
 
     return image
@@ -245,24 +246,24 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.PixelSpacing = arrayToDS(ct.spacing[0:2])
     dcm_file.BitsAllocated = ct.bitsAllocated
     dcm_file.BitsStored = ct.bitsStored
-    dcm_file.HighBit = 15
+    dcm_file.HighBit = ct.highBit
     dcm_file.PixelRepresentation = 1
     dcm_file.ApprovalStatus = ct.approvalStatus
     # dcm_file.WindowCenter = '40.0'
     # dcm_file.WindowWidth = '400.0'
     
-    # Rescale image intensities if pixel data does not fit into INT16
+    # NEW: Rescale image intensities if pixel data does not fit into INT16
     RescaleSlope = 1
     RescaleIntercept = 0
     dataMin = np.min(outdata)
     dataMax = np.max(outdata)
-    if (dataMin<-2^15) or (dataMax>=2**15):
+    if (dataMin<-2**15) or (dataMax>=2**15):
         dataRange = dataMax-dataMin
         if dataRange>=2**16:
             RescaleSlope = dataRange/(2**16-1)
         outdata = np.round((outdata-dataMin)/RescaleSlope - 2**15)
         RescaleIntercept = dataMin + RescaleSlope*2**15
-    
+
     ## 
     ## OLD RESCALE CODE
     ##    
@@ -270,6 +271,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # RescaleIntercept = np.floor(np.min(outdata))
     # outdata[np.isinf(outdata)]=np.min(outdata)
     # outdata[np.isnan(outdata)]=np.min(outdata)
+        
     # while np.max(np.abs(outdata))>=2**15:
     #     print('Pixel values are too large to be stored in INT16. Entire image is divided by 2...')
     #     RescaleSlope = RescaleSlope/2
@@ -279,9 +281,10 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     #     RescaleSlope = (np.max(outdata)-RescaleIntercept)/2**12
     # if not(RescaleSlope):
     #     RescaleSlope = 1
-    # outdata = (outdata-RescaleIntercept)/RescaleSlope           
-    # # Reduce 'rounding' errors...
-    # outdata = np.round(outdata)
+    # outdata = (outdata-RescaleIntercept)/RescaleSlope
+    
+    # Reduce 'rounding' errors...
+    outdata = np.round(outdata)
     
     # Update dicom tags
     dcm_file.RescaleSlope = str(RescaleSlope)
