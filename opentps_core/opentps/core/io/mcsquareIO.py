@@ -541,7 +541,7 @@ def writeConfig(config: MCsquareConfig, file_path):
     file_path : str
         The file path
     """
-    fid = open(file_path, 'w')
+    fid = open(file_path, 'w',encoding="utf-8")
     fid.write(config.mcsquareFormatted())
     fid.close()
 

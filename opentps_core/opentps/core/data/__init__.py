@@ -6,6 +6,7 @@ from opentps.core.data._patientList import *
 from opentps.core.data._roiContour import *
 from opentps.core.data._rtStruct import *
 from opentps.core.data._sparseBeamlets import *
+from opentps.core.data._transform3D import *
 
 import opentps.core.data.CTCalibrations as CTCalibrations
 import opentps.core.data.dynamicData as dynamicData

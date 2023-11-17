@@ -131,7 +131,7 @@ class MCsquareConfig:
         Configuration file in the format used by MCsquare
     """
     Module_folder = os.path.dirname(os.path.realpath(__file__))
-    fid = open(os.path.join(Module_folder, "ConfigTemplate.txt"), 'r')
+    fid = open(os.path.join(Module_folder, "ConfigTemplate.txt"), 'r',encoding="utf-8")
     Template = fid.read()
     fid.close()
 

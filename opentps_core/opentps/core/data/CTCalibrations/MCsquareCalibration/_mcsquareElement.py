@@ -105,11 +105,11 @@ class MCsquareElement(MCsquareMaterial):
                     if 'ICRU' in line:
                         self._nuclear_data = 'ICRU'
 
-                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_elastic.dat'), mode='r')
+                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_elastic.dat'), mode='r',encoding="utf-8")
                         self._nuclearElasticData = file.read()
                         file.close()
 
-                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_inelastic.dat'), mode='r')
+                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_inelastic.dat'), mode='r',encoding="utf-8")
                         self._nuclearInelasticData = file.read()
                         file.close()
 
@@ -141,10 +141,10 @@ class MCsquareElement(MCsquareMaterial):
         super().write(folderPath, materialNamesOrderedForPrinting)
 
         if 'ICRU' in self._nuclear_data:
-            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_elastic.dat'), 'w') as f:
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_elastic.dat'), 'w',encoding="utf-8") as f:
                 f.write(self._nuclearElasticData)
 
-            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_inelastic.dat'), 'w') as f:
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_inelastic.dat'), 'w',encoding="utf-8") as f:
                 f.write(self._nuclearInelasticData)
 
             with open(os.path.join(folderPath, self.name, 'ICRU_PromptGamma.dat'), 'w') as f:

@@ -12,6 +12,14 @@ try:
 except:
     use_MKL = 0
 
+cupy_available = False
+try:
+    import cupy as cp
+    import cupyx as cpx
+    cupy_available = True
+except:
+    cupy_available = False
+
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.processing.planOptimization.solvers import sparcling, \
     beamletFree
@@ -40,6 +48,9 @@ class PlanOptimizer:
         The threshold weight below which spots are removed from the plan and beamlet matrix.
     xSquared : bool
         If True, the weights are squared.
+    GPU_acceleration : bool (default : False)
+        If True, the evaluation of the doseFidelity function is done with cupy (this attribute should only
+        be modified with the "use_GPU_acceleration" function)
     """
     def __init__(self, plan:RTPlan, **kwargs):
 
@@ -50,6 +61,7 @@ class PlanOptimizer:
         self.functions = []
         self._xSquared = True
         self.thresholdSpotRemoval = 1e-6 # remove all spots below this value after optimization from the plan and beamlet matrix
+        self.GPU_acceleration = False
 
     @property
     def xSquared(self):
@@ -58,6 +70,24 @@ class PlanOptimizer:
     @xSquared.setter
     def xSquared(self, x2):
         self._xSquared = x2
+
+    def use_GPU_acceleration(self):
+        """
+        Enable the uses of the GPU via cupy and cupyx (both library need to be installed as well as CUDA).
+        """
+        if cupy_available:
+            self.GPU_acceleration = True
+            logger.info('cupy imported in planOptimization module')
+            logger.info('abnormal used memory: {}'.format(cp.get_default_memory_pool().used_bytes()))
+        else:
+            logger.info('Unable to import CUPY, please configure CUPY to enable GPU acceleration')
+            self.GPU_acceleration = False
+    def stop_GPU_accelration(self):
+        """
+        stop the use of GPU acceleration
+        """
+        self.GPU_acceleration = False
+        logger.info('GPU accelerations deactivated')
 
 
     def initializeWeights(self):
@@ -100,11 +130,13 @@ class PlanOptimizer:
         roiObjectives = np.logical_or(roiObjectives, roiRobustObjectives)
 
         if use_MKL == 1:
+            print("Using MKL")
             beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                 sp.diags(roiObjectives.astype(np.float32), format='csc'), self.plan.planDesign.beamlets.toSparseMatrix())
         else:
             beamletMatrix = sp.csc_matrix.dot(sp.diags(roiObjectives.astype(np.float32), format='csc'),
                                               self.plan.planDesign.beamlets.toSparseMatrix())
+
         self.plan.planDesign.beamlets.setUnitaryBeamlets(beamletMatrix)
 
         if robust:
@@ -119,7 +151,7 @@ class PlanOptimizer:
                         self.plan.planDesign.robustness.scenarios[s].toSparseMatrix())
                 self.plan.planDesign.robustness.scenarios[s].setUnitaryBeamlets(beamletMatrix)
 
-        objectiveFunction = DoseFidelity(self.plan, self.xSquared)
+        objectiveFunction = DoseFidelity(self.plan, self.xSquared,self.GPU_acceleration)
         self.functions.append(objectiveFunction)
 
     def optimize(self):
@@ -136,10 +168,15 @@ class PlanOptimizer:
             The cost.
         """
         logger.info('Prepare optimization ...')
+        if self.GPU_acceleration:
+            logger.info('abnormal used memory: {}'.format(cp.get_default_memory_pool().used_bytes()))
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
         # Optimization
         result = self.solver.solve(self.functions, x0)
+        if self.GPU_acceleration:
+            self.functions[0].unload_blGPU()
+            cp._default_memory_pool.free_all_blocks()
         return self.postProcess(result)
 
     def postProcess(self, result):
