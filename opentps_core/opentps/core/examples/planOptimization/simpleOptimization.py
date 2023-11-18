@@ -3,11 +3,13 @@ import logging
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
+import datetime
+import pydicom
 sys.path.append('..')
 
-from opentps.core.io.dicomIO import writeRTPlan
+from opentps.core.io.dicomIO import writeRTPlan, writeDicomCT, writeRTDose
 from opentps.core.processing.planOptimization.tools import evaluateClinical
-from opentps.core.data.images import CTImage
+from opentps.core.data.images import CTImage, DoseImage
 from opentps.core.data.images import ROIMask
 from opentps.core.data.plan import ObjectivesList
 from opentps.core.data.plan import PlanDesign
@@ -25,28 +27,47 @@ from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOp
 logger = logging.getLogger(__name__)
 
 # Generic example: box of water with squared target
-def run():
-    output_path = os.getcwd()
+def run(output_path=""):
+    if(output_path != ""):
+        output_path = output_path
+    else:
+        output_path = os.getcwd()
+        
     logger.info('Files will be stored in {}'.format(output_path))
 
     ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
+    # ++++Don't delete UIDs to build the simple study+++++++++++++++++++
+    studyInstanceUID = pydicom.uid.generate_uid()
+    doseSeriesInstanceUID = pydicom.uid.generate_uid()
+    planSeriesInstanceUID = pydicom.uid.generate_uid()
+    ctSeriesInstanceUID =  pydicom.uid.generate_uid()
+    frameOfReferenceUID = pydicom.uid.generate_uid()
+    dt = datetime.datetime.now()
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    # CT
     patient = Patient()
-    patient.name = 'Patient'
-
+    patient.name = 'Simple_Patient'
+    Patient.id = 'Simple_Patient'
+    Patient.birthDate = dt.strftime('%Y%m%d')
+    
     ctSize = 150
-
-    ct = CTImage()
+    ct = CTImage(seriesInstanceUID=ctSeriesInstanceUID, frameOfReferenceUID=frameOfReferenceUID)
     ct.name = 'CT'
     ct.patient = patient
+    ct.studyInstanceUID = studyInstanceUID
 
     huAir = -1024.
     huWater = ctCalibration.convertRSP2HU(1.)
     data = huAir * np.ones((ctSize, ctSize, ctSize))
     data[:, 50:, :] = huWater
     ct.imageArray = data
+    dcm_CT_file = os.path.join(output_path, "CTImage_WaterPhantom_cropped_resampled_optimized")
+    writeDicomCT(ct, dcm_CT_file)
 
+    # Struct
     roi = ROIMask()
     roi.patient = patient
     roi.name = 'TV'
@@ -101,7 +122,13 @@ def run():
     plan.planDesign.objectives.fidObjList = []
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
-
+    
+    # Don't delete it
+    plan.seriesInstanceUID = planSeriesInstanceUID
+    plan.studyInstanceUID = studyInstanceUID
+    plan.frameOfReferenceUID = frameOfReferenceUID
+    plan.RTPlanGeometry = "TREATMENT_DEVICE"
+    
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
@@ -111,9 +138,10 @@ def run():
     saveRTPlan(plan, plan_file_optimized)
     # Save plan with updated spot weights in dicom format
     plan.patient = patient
-    dcm_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTPlan(plan, dcm_file)
-
+    
+    dcm_Plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTPlan(plan, dcm_Plan_file)
+    
     # MCsquare simulation
     # mc2.nbPrimaries = 1e7
     # doseImage = mc2.computeDose(ct, plan)
@@ -139,6 +167,20 @@ def run():
     img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
     img_dose = resampleImage3DOnImage3D(doseImage, ct)
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
+    di = DoseImage(imageArray=img_dose, seriesInstanceUID=doseSeriesInstanceUID, referencePlan=plan, referenceCT=ct, patient=patient)
+    
+    # Don't delete it
+    di.studyInstanceUID = studyInstanceUID
+    di.referencedRTPlanSequence = None
+    di.frameOfReferenceUID = frameOfReferenceUID 
+    di.sopClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    di.mediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    di.sopInstanceUID = pydicom.uid.generate_uid()
+    di.StudyTime = dt.strftime('%H%M%S.%f')
+    di.StudyDate = dt.strftime('%Y%m%d')
+    
+    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTDose(di, dcm_dose_file)
 
     # Display dose
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
