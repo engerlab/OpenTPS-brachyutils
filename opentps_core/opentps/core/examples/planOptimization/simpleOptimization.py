@@ -52,6 +52,7 @@ def run(output_path=""):
     patient.name = 'Simple_Patient'
     Patient.id = 'Simple_Patient'
     Patient.birthDate = dt.strftime('%Y%m%d')
+    patient.sex = ""
     
     ctSize = 150
     ct = CTImage(seriesInstanceUID=ctSeriesInstanceUID, frameOfReferenceUID=frameOfReferenceUID)
@@ -109,7 +110,7 @@ def run(output_path=""):
         planDesign.scoringVoxelSpacing = [2, 2, 2]
 
         plan = planDesign.buildPlan()  # Spot placement
-        plan.PlanName = "NewPlan"
+        plan.PlanName = "Simple_Patient"
 
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
         plan.planDesign.beamlets = beamlets
@@ -138,7 +139,6 @@ def run(output_path=""):
     saveRTPlan(plan, plan_file_optimized)
     # Save plan with updated spot weights in dicom format
     plan.patient = patient
-    
     dcm_Plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
     writeRTPlan(plan, dcm_Plan_file)
     

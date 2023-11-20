@@ -379,6 +379,7 @@ def readDicomMRI(dcmFiles):
     sopInstanceUIDs = []
     sliceLocation = np.zeros(len(dcmFiles), dtype='float')
     firstdcm = dcmFiles[0]
+    
     if hasattr(firstdcm,'RescaleSlope') == False:
         logging.warning('no RescaleSlope, image could be wrong')
         for i in range(len(dcmFiles)):
@@ -433,10 +434,12 @@ def readDicomMRI(dcmFiles):
 
     # generate MR image object
     FrameOfReferenceUID = dcm.FrameOfReferenceUID if hasattr(dcm, 'FrameOfReferenceUID') else pydicom.uid.generate_uid()
+        
     image = MRImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
                     spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID,
                     frameOfReferenceUID=FrameOfReferenceUID, sliceLocation=sliceLocation,
                     sopInstanceUIDs=sopInstanceUIDs)
+       
     image.patient = patient
     # Collect MR information
     if hasattr(dcm, 'BodyPartExamined'):
@@ -479,8 +482,17 @@ def readDicomMRI(dcmFiles):
         image.studyTime = float(dcm.StudyTime)
     if hasattr(dcm, 'AcquisitionTime'):
         image.acquisitionTime = float(dcm.AcquisitionTime)
+    if hasattr(dcm, 'PatientPosition'):
+        image.patientPosition = dcm.PatientPosition
+    if hasattr(dcm, 'SeriesNumber'):
+        image.seriesNumber = dcm.SeriesNumber
     image.studyInstanceUID = dcm.StudyInstanceUID if hasattr(dcm, 'StudyInstanceUID') else ""
-
+    image.bitsAllocated = dcm.BitsAllocated if hasattr(dcm, 'BitsAllocated') else "16"
+    image.bitsStored = dcm.BitsStored if hasattr(dcm, 'BitsStored') else ""
+    image.samplesPerPixel = dcm.SamplesPerPixel if hasattr(dcm, 'SamplesPerPixel') else "1"
+    image.hotometricInterpretation = dcm.PhotometricInterpretation if hasattr(dcm ,'PhotometricInterpretation') else 'MONOCHROME2'
+    image.softwareVersions = 'syngo MR E11'
+    
     return image
 
 ################## Dose Dicom ########################################
@@ -850,7 +862,8 @@ def readDicomStruct(dcmFile):
     struct.sopClassUID = dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.3"
     struct.structureSetLabel = dcm.StructureSetLabel if hasattr(dcm, 'StructureSetLabel') else 'OpenTPS Created'
     struct.rtROIObservationsSequence = dcm.RTROIObservationsSequence if hasattr(dcm, 'RTROIObservationsSequence') else []
-    struct.referencedFrameOfReferenceSequence = dcm.ReferencedFrameOfReferenceSequence if hasattr(dcm, 'ReferencedFrameOfReferenceSequence') else []
+    if (hasattr(dcm, 'ReferencedFrameOfReferenceSequence')):
+        struct.referencedFrameOfReferenceSequence = dcm.ReferencedFrameOfReferenceSequence
     struct.referringPhysicianName = dcm.ReferringPhysicianName if hasattr(dcm, 'ReferringPhysicianName') else ""
     struct.accessionNumber = struct.AccessionNumber if hasattr(struct, 'AccessionNumber') else ""
     struct.studyID = struct.StudyID if hasattr(struct, 'StudyID') else ""
@@ -922,7 +935,7 @@ def writeRTStruct(struct: RTStruct, outputFile):
     dcm_file.ReferringPhysicianName = struct.referringPhysicianName if hasattr(struct, 'referringPhysicianName') else ""
     dcm_file.OperatorsName = struct.OperatorsName if hasattr(struct, 'OperatorsName') else ""
 
-    dcm_file.StudyInstanceUID = struct.studyInstanceUID
+    dcm_file.StudyInstanceUID = struct.studyInstanceUID + "1"
     SeriesInstanceUID = struct.seriesInstanceUID
     if SeriesInstanceUID == "" or (SeriesInstanceUID is None):
         SeriesInstanceUID = pydicom.uid.generate_uid()
@@ -932,7 +945,7 @@ def writeRTStruct(struct: RTStruct, outputFile):
 
     dcm_file.StudyTime = struct.studyTime if hasattr(struct, 'studyTime') else dt.strftime('%H%M%S.%f')
     dcm_file.SeriesTime = struct.seriesTime if hasattr(struct, 'seriesTime') else dt.strftime('%H%M%S.%f')
-    dcm_file.FrameOfReferenceUID = struct.frameOfReferenceUID if hasattr(struct, 'frameOfReferenceUID') else pydicom.uid.generate_uid()
+    # dcm_file.FrameOfReferenceUID = struct.frameOfReferenceUID if hasattr(struct, 'frameOfReferenceUID') else pydicom.uid.generate_uid()
     dcm_file.StructureSetDate = struct.structureSetDate if hasattr(struct, 'structureSetDate') else dt.strftime('%Y%m%d')
     dcm_file.StructureSetTime = struct.structureSetTime if hasattr(struct, 'structureSetTime') else dt.strftime('%H%M%S.%f')
     dcm_file.SOPClassUID = struct.sopClassUID if hasattr(struct, 'sopClassUID') else meta.MediaStorageSOPClassUID
@@ -940,31 +953,34 @@ def writeRTStruct(struct: RTStruct, outputFile):
     dcm_file.SeriesDate = struct.seriesDate if hasattr(struct, 'seriesDate') else dt.strftime('%Y%m%d')
     dcm_file.StructureSetLabel = struct.structureSetLabel if hasattr(struct, 'structureSetLabel') else ""
     
-    dcm_file.ReferencedFrameOfReferenceSequence = []
-    for cidx, item in enumerate(struct.referencedFrameOfReferenceSequence, start=1):
-        refFrameRef = pydicom.Dataset()
-        refFrameRef.FrameOfReferenceUID = item.FrameOfReferenceUID if hasattr(struct, 'FrameOfReferenceUID') else pydicom.uid.generate_uid()
-        rtRefSub1 = []
-        for cSubIdx2, subItem1 in enumerate(item.RTReferencedStudySequence, start=1):
-            rtRefSubObj1=pydicom.Dataset()
-            rtRefSubObj1.ReferencedSOPClassUID = subItem1.ReferencedSOPClassUID if hasattr(subItem1, 'ReferencedSOPClassUID') else '1.2.840.10008.3.1.2.3.1'
-            rtRefSubObj1.ReferencedSOPInstanceUID = subItem1.ReferencedSOPInstanceUID if hasattr(subItem1, 'ReferencedSOPInstanceUID') else pydicom.uid.generate_uid()
-            rtRefSub2 = []
-            for cSubIdx2, subItem2 in enumerate(subItem1.RTReferencedSeriesSequence, start=1):
-                rtRefSubObject2 = pydicom.Dataset()
-                rtRefSubObject2.SeriesInstanceUID = subItem2.SeriesInstanceUID
-                contourSeq = []
-                for cSubIdx3, subItem3 in enumerate(subItem2.ContourImageSequence, start=1):
-                    contourSeqObj=pydicom.dataset.Dataset()
-                    contourSeqObj.ReferencedSOPClassUID = '1.2.840.10008.5.1.4.1.1.2'
-                    contourSeqObj.ReferencedSOPInstanceUID = subItem3.ReferencedSOPInstanceUID if hasattr(subItem3, 'ReferencedSOPInstanceUID') else pydicom.uid.generate_uid()
-                    contourSeq.append(contourSeqObj)
-                rtRefSubObject2.ContourImageSequence = contourSeq
-            rtRefSub2.append(rtRefSubObject2)
-            rtRefSubObj1.RTReferencedSeriesSequence = rtRefSub2
-        rtRefSub1.append(rtRefSubObj1)
-        refFrameRef.RTReferencedStudySequence = rtRefSub1
-    dcm_file.ReferencedFrameOfReferenceSequence.append(refFrameRef)
+    if hasattr(struct, 'referencedFrameOfReferenceSequence'):
+        dcm_file.ReferencedFrameOfReferenceSequence = []
+        for item in struct.referencedFrameOfReferenceSequence:
+            refFrameRef = pydicom.Dataset()
+            if hasattr(item, 'FrameOfReferenceUID'):
+                refFrameRef.FrameOfReferenceUID = item.FrameOfReferenceUID
+            rtRefSub1 = []
+            if hasattr(item, 'RTReferencedStudySequence'):
+                for subItem1 in item.RTReferencedStudySequence:
+                    rtRefSubObj1=pydicom.Dataset()
+                    rtRefSubObj1.ReferencedSOPClassUID = subItem1.ReferencedSOPClassUID if hasattr(subItem1, 'ReferencedSOPClassUID') else '1.2.840.10008.3.1.2.3.1'
+                    rtRefSubObj1.ReferencedSOPInstanceUID = subItem1.ReferencedSOPInstanceUID if hasattr(subItem1, 'ReferencedSOPInstanceUID') else pydicom.uid.generate_uid()
+                    rtRefSub2 = []
+                    for subItem2 in subItem1.RTReferencedSeriesSequence:
+                        rtRefSubObject2 = pydicom.Dataset()
+                        rtRefSubObject2.SeriesInstanceUID = subItem2.SeriesInstanceUID
+                        contourSeq = []
+                        for subItem3 in subItem2.ContourImageSequence:
+                            contourSeqObj=pydicom.dataset.Dataset()
+                            contourSeqObj.ReferencedSOPClassUID = '1.2.840.10008.5.1.4.1.1.2'
+                            contourSeqObj.ReferencedSOPInstanceUID = subItem3.ReferencedSOPInstanceUID if hasattr(subItem3, 'ReferencedSOPInstanceUID') else pydicom.uid.generate_uid()
+                            contourSeq.append(contourSeqObj)
+                        rtRefSubObject2.ContourImageSequence = contourSeq
+                    rtRefSub2.append(rtRefSubObject2)
+                    rtRefSubObj1.RTReferencedSeriesSequence = rtRefSub2
+                rtRefSub1.append(rtRefSubObj1)
+            refFrameRef.RTReferencedStudySequence = rtRefSub1
+        dcm_file.ReferencedFrameOfReferenceSequence.append(refFrameRef)
 
     dcm_file.SamplesPerPixel = 1
     dcm_file.PhotometricInterpretation = 'MONOCHROME2'
@@ -1029,7 +1045,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
         name = dcm.SeriesInstanceUID
 
     plan = RTPlan(name=name, patient = patient)
-    # plan.patient = patient
+    plan.patient = patient
     
     # Photon plan
     if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5":
@@ -1140,82 +1156,82 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 ReferencedRangeShifterNumber = int(
                     first_layer.RangeShifterSettingsSequence[0].ReferencedRangeShifterNumber)
 
-        for dcm_layer in dcm_beam.IonControlPointSequence:
-            if (plan.scanMode == "MODULATED"):
-                if dcm_layer.NumberOfScanSpotPositions == 1:
-                    sum_weights = dcm_layer.ScanSpotMetersetWeights
-                else:
-                    sum_weights = sum(dcm_layer.ScanSpotMetersetWeights)
+        # for dcm_layer in dcm_beam.IonControlPointSequence:
+            # if (plan.scanMode == "MODULATED"):
+            #     if dcm_layer.NumberOfScanSpotPositions == 1:
+            #         sum_weights = dcm_layer.ScanSpotMetersetWeights
+            #     else:
+            #         sum_weights = sum(dcm_layer.ScanSpotMetersetWeights)
 
-            elif (plan.scanMode == "LINE"):
-                sum_weights = sum(np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())
+            # elif (plan.scanMode == "LINE"):
+            #     sum_weights = sum(np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())
 
-            if sum_weights == 0.0:
-                continue
+            # if sum_weights == 0.0:
+            #     continue
 
-            layer = PlanIonLayer()
-            layer.seriesInstanceUID = plan.seriesInstanceUID
+            # layer = PlanIonLayer()
+            # layer.seriesInstanceUID = plan.seriesInstanceUID
 
-            if hasattr(dcm_layer, 'SnoutPosition'):
-                SnoutPosition = float(dcm_layer.SnoutPosition)
+            # if hasattr(dcm_layer, 'SnoutPosition'):
+            #     SnoutPosition = float(dcm_layer.SnoutPosition)
 
-            if hasattr(dcm_layer, 'NumberOfPaintings'):
-                layer.NumberOfPaintings = int(dcm_layer.NumberOfPaintings)
-            else:
-                layer.numberOfPaintings = 1
+            # if hasattr(dcm_layer, 'NumberOfPaintings'):
+            #     layer.NumberOfPaintings = int(dcm_layer.NumberOfPaintings)
+            # else:
+            #     layer.numberOfPaintings = 1
 
-            layer.nominalEnergy = floatToDS(dcm_layer.NominalBeamEnergy)
-            layer.scalingFactor = beamMeterset / finalCumulativeMetersetWeight
+            # layer.nominalEnergy = floatToDS(dcm_layer.NominalBeamEnergy)
+            # layer.scalingFactor = beamMeterset / finalCumulativeMetersetWeight
 
-            if (plan.scanMode == "MODULATED"):
-                _x = dcm_layer.ScanSpotPositionMap[0::2]
-                _y = dcm_layer.ScanSpotPositionMap[1::2]
-                mu = np.array(
-                    dcm_layer.ScanSpotMetersetWeights) * layer.scalingFactor  # spot weights are converted to MU
-                layer.appendSpot(_x, _y, mu)
+            # if (plan.scanMode == "MODULATED"):
+            #     _x = dcm_layer.ScanSpotPositionMap[0::2]
+            #     _y = dcm_layer.ScanSpotPositionMap[1::2]
+            #     mu = np.array(
+            #         dcm_layer.ScanSpotMetersetWeights) * layer.scalingFactor  # spot weights are converted to MU
+            #     layer.appendSpot(_x, _y, mu)
 
-            elif (plan.scanMode == "LINE"):
-                raise NotImplementedError()
-                # print("SpotNumber: ", dcm_layer[0x300b1092].value)
-                # print("SpotValue: ", np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist())
-                # print("MUValue: ", np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())
-                # print("SizeValue: ", np.frombuffer(dcm_layer[0x300b1098].value, dtype=np.float32).tolist())
-                # print("PaintValue: ", dcm_layer[0x300b109a].value)
-                LineScanPoints = np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist()
-                layer.LineScanControlPoint_x = LineScanPoints[0::2]
-                layer.LineScanControlPoint_y = LineScanPoints[1::2]
-                layer.LineScanControlPoint_Weights = np.frombuffer(dcm_layer[0x300b1096].value,
-                                                                   dtype=np.float32).tolist()
-                layer.LineScanControlPoint_MU = np.array(
-                    layer.LineScanControlPoint_Weights) * layer.scalingFactor  # weights are converted to MU
-                if layer.LineScanControlPoint_MU.size == 1:
-                    layer.LineScanControlPoint_MU = [layer.LineScanControlPoint_MU]
-                else:
-                    layer.LineScanControlPoint_MU = layer.LineScanControlPoint_MU.tolist()
+            # elif (plan.scanMode == "LINE"):
+            #     raise NotImplementedError()
+            #     # print("SpotNumber: ", dcm_layer[0x300b1092].value)
+            #     # print("SpotValue: ", np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist())
+            #     # print("MUValue: ", np.frombuffer(dcm_layer[0x300b1096].value, dtype=np.float32).tolist())
+            #     # print("SizeValue: ", np.frombuffer(dcm_layer[0x300b1098].value, dtype=np.float32).tolist())
+            #     # print("PaintValue: ", dcm_layer[0x300b109a].value)
+            #     LineScanPoints = np.frombuffer(dcm_layer[0x300b1094].value, dtype=np.float32).tolist()
+            #     layer.LineScanControlPoint_x = LineScanPoints[0::2]
+            #     layer.LineScanControlPoint_y = LineScanPoints[1::2]
+            #     layer.LineScanControlPoint_Weights = np.frombuffer(dcm_layer[0x300b1096].value,
+            #                                                        dtype=np.float32).tolist()
+            #     layer.LineScanControlPoint_MU = np.array(
+            #         layer.LineScanControlPoint_Weights) * layer.scalingFactor  # weights are converted to MU
+            #     if layer.LineScanControlPoint_MU.size == 1:
+            #         layer.LineScanControlPoint_MU = [layer.LineScanControlPoint_MU]
+            #     else:
+            #         layer.LineScanControlPoint_MU = layer.LineScanControlPoint_MU.tolist()
 
-            if beam.rangeShifter is not None:
-                if hasattr(dcm_layer, 'RangeShifterSettingsSequence'):
-                    RangeShifterSetting = dcm_layer.RangeShifterSettingsSequence[0].RangeShifterSetting
-                    ReferencedRangeShifterNumber = dcm_layer.RangeShifterSettingsSequence[
-                        0].ReferencedRangeShifterNumber
-                    if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'IsocenterToRangeShifterDistance'):
-                        IsocenterToRangeShifterDistance = dcm_layer.RangeShifterSettingsSequence[
-                            0].IsocenterToRangeShifterDistance
-                    if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'RangeShifterWaterEquivalentThickness'):
-                        RangeShifterWaterEquivalentThickness = float(
-                            dcm_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness)
+            # if beam.rangeShifter is not None:
+            #     if hasattr(dcm_layer, 'RangeShifterSettingsSequence'):
+            #         RangeShifterSetting = dcm_layer.RangeShifterSettingsSequence[0].RangeShifterSetting
+            #         ReferencedRangeShifterNumber = dcm_layer.RangeShifterSettingsSequence[
+            #             0].ReferencedRangeShifterNumber
+            #         if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'IsocenterToRangeShifterDistance'):
+            #             IsocenterToRangeShifterDistance = dcm_layer.RangeShifterSettingsSequence[
+            #                 0].IsocenterToRangeShifterDistance
+            #         if hasattr(dcm_layer.RangeShifterSettingsSequence[0], 'RangeShifterWaterEquivalentThickness'):
+            #             RangeShifterWaterEquivalentThickness = float(
+            #                 dcm_layer.RangeShifterSettingsSequence[0].RangeShifterWaterEquivalentThickness)
 
-                layer.rangeShifterSettings.rangeShifterSetting = RangeShifterSetting
-                layer.rangeShifterSettings.isocenterToRangeShifterDistance = IsocenterToRangeShifterDistance
-                layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness = RangeShifterWaterEquivalentThickness
-                layer.rangeShifterSettings.referencedRangeShifterNumber = ReferencedRangeShifterNumber
+            #     layer.rangeShifterSettings.rangeShifterSetting = RangeShifterSetting
+            #     layer.rangeShifterSettings.isocenterToRangeShifterDistance = IsocenterToRangeShifterDistance
+            #     layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness = RangeShifterWaterEquivalentThickness
+            #     layer.rangeShifterSettings.referencedRangeShifterNumber = ReferencedRangeShifterNumber
 
-            beam.appendLayer(layer)
-        plan.appendBeam(beam)
+            # beam.appendLayer(layer)
+        # plan.appendBeam(beam)
         
         dt = datetime.datetime.now()
         plan.fileMetaInformationGroupLength = dcm.file_meta.FileMetaInformationGroupLength if hasattr(dcm.file_meta, 'FileMetaInformationGroupLength') else 0
-        plan.mediaStorageSOPClassUID=dcm.file_meta.MediaStorageSOPClassUID if hasattr(dcm.file_meta, 'MediaStorageSOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.5"          
+        plan.mediaStorageSOPClassUID=dcm.file_meta.MediaStorageSOPClassUID if hasattr(dcm.file_meta, 'MediaStorageSOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.8"          
         plan.transferSyntaxUID=dcm.file_meta.TransferSyntaxUID if hasattr(dcm.file_meta, 'TransferSyntaxUID') else "1.2.840.10008.1.2"
         plan.implementationClassUID=dcm.file_meta.ImplementationClassUID if hasattr(dcm.file_meta, 'ImplementationClassUID') else "1.2.826.0.1.3680043.1.2.100.6.40.0.76"
         plan.implementationVersionName=dcm.file_meta.ImplementationVersionName if hasattr(dcm.file_meta, 'ImplementationVersionName') else "DicomObjects.NET"
@@ -1245,7 +1261,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
         plan.planIntent = dcm.PlanIntent if hasattr(dcm, 'PlanIntent') else ""
         plan.rtPlanGeometry = dcm.RTPlanGeometry if hasattr(dcm, 'RTPlanGeometry') else "PATIENT"
         plan.prescriptionDescription = dcm.PrescriptionDescription if hasattr(dcm, 'PrescriptionDescription') else ""
-        plan.sopClassUID = dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.5"
+        plan.sopClassUID = dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.8"
         
         plan.doseReferenceSequence=dcm.DoseReferenceSequence if hasattr(dcm, 'DoseReferenceSequence') else []
         plan.fractionGroupSequence = dcm.FractionGroupSequence if hasattr(dcm, 'FractionGroupSequence') else []
@@ -1277,7 +1293,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
     meta.FileMetaInformationGroupLength = plan.fileMetaInformationGroupLength if hasattr(plan, 'fileMetaInformationGroupLength') else 0
-    meta.MediaStorageSOPClassUID = plan.mediaStorageSOPClassUID if hasattr(plan, 'mediaStorageSOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.5"
+    meta.MediaStorageSOPClassUID = plan.mediaStorageSOPClassUID if hasattr(plan, 'mediaStorageSOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.8"
     meta.ImplementationClassUID = plan.implementationClassUID if hasattr(plan, 'implementationClassUID') else "1.2.826.0.1.3680043.1.2.100.6.40.0.76"
     meta.TransferSyntaxUID = plan.transferSyntaxUID if hasattr(plan, 'transferSyntaxUID') else "1.2.840.10008.1.2"
     meta.ImplementationVersionName = plan.implementationVersionName if hasattr(plan, 'implementationVersionName') else "DicomObjects.NET"
@@ -1289,7 +1305,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     
     # dicom dataset
     dcm_file = pydicom.dataset.FileDataset(filePath, {}, file_meta=meta, preamble=b"\0" * 128)
-    dcm_file.SOPClassUID = plan.sopClassUID if hasattr(plan, 'sopClassUID') else "1.2.840.10008.5.1.4.1.1.481.5"
+    dcm_file.SOPClassUID = plan.sopClassUID if hasattr(plan, 'sopClassUID') else "1.2.840.10008.5.1.4.1.1.481.8"
     dcm_file.SOPInstanceUID = plan.sopInstanceUID if hasattr(plan, 'sopInstanceUID') else meta.MediaStorageSOPInstanceUID
     
     # patient information
@@ -1297,7 +1313,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.PatientID = plan.patient.id if hasattr(plan.patient, 'id') else plan.patient.name
     dcm_file.PatientBirthDate = plan.patient.birthDate if hasattr(plan.patient, 'birthDate') else ""
     dcm_file.PatientSex = plan.patient.sex if hasattr(plan.patient, 'sex') else ""
-
+    
     # content information
     dt = datetime.datetime.now()
     dcm_file.ContentDate = dt.strftime('%Y%m%d')
@@ -1486,30 +1502,47 @@ def writeRTPlan(plan: RTPlan, filePath):
             referencedBeam.PatientSupportID = beam.PatientSupportID if hasattr(beam, 'PatientSupportID') else "TABLE"
             
             referencedBeam.IonControlPointSequence = []
-            if hasattr(referencedBeam, 'IonControlPointSequence') and len(referencedBeam.IonControlPointSequence)>0:
+            if hasattr(beam, 'IonControlPointSequence') and len(beam.IonControlPointSequence)>0:
                 for ioncContorItem in beam.IonControlPointSequence:
                     ionCps = pydicom.dataset.Dataset()
                     ionCps.NominalBeamEnergyUnit = ioncContorItem.NominalBeamEnergyUnit
                     ionCps.ControlPointIndex = ioncContorItem.ControlPointIndex
                     ionCps.NominalBeamEnergy = floatToDS(ioncContorItem.NominalBeamEnergy)
-                    ionCps.GantryAngle = ioncContorItem.GantryAngle
-                    ionCps.GantryRotationDirection = ioncContorItem.GantryRotationDirection
-                    ionCps.BeamLimitingDeviceAngle = ioncContorItem.BeamLimitingDeviceAngle
-                    ionCps.BeamLimitingDeviceRotationDirection = ioncContorItem.BeamLimitingDeviceRotationDirection
-                    ionCps.PatientSupportAngle = ioncContorItem.PatientSupportAngle
-                    ionCps.PatientSupportRotationDirection = ioncContorItem.PatientSupportRotationDirection
-                    ionCps.TableTopVerticalPosition = ioncContorItem.TableTopVerticalPosition
-                    ionCps.TableTopLongitudinalPosition = ioncContorItem.TableTopLongitudinalPosition
-                    ionCps.TableTopLateralPosition = ioncContorItem.TableTopLateralPosition
-                    ionCps.IsocenterPosition = ioncContorItem.IsocenterPosition
+                    if hasattr(ioncContorItem, 'GantryAngle'):
+                        ionCps.GantryAngle = ioncContorItem.GantryAngle
+                    if hasattr(ioncContorItem, 'GantryRotationDirection'):
+                        ionCps.GantryRotationDirection = ioncContorItem.GantryRotationDirection
+                    if hasattr(ioncContorItem, 'BeamLimitingDeviceAngle'):
+                        ionCps.BeamLimitingDeviceAngle = ioncContorItem.BeamLimitingDeviceAngle
+                    if hasattr(ioncContorItem, 'BeamLimitingDeviceRotationDirection'):
+                        ionCps.BeamLimitingDeviceRotationDirection = ioncContorItem.BeamLimitingDeviceRotationDirection
+                    if hasattr(ioncContorItem, 'PatientSupportAngle'):
+                        ionCps.PatientSupportAngle = ioncContorItem.PatientSupportAngle
+                    if hasattr(ioncContorItem, 'PatientSupportRotationDirection'):
+                        ionCps.PatientSupportRotationDirection = ioncContorItem.PatientSupportRotationDirection
+                    if hasattr(ioncContorItem, 'TableTopVerticalPosition'):
+                        ionCps.TableTopVerticalPosition = ioncContorItem.TableTopVerticalPosition
+                    if hasattr(ioncContorItem, 'TableTopLongitudinalPosition'):
+                        ionCps.TableTopLongitudinalPosition = ioncContorItem.TableTopLongitudinalPosition
+                    if hasattr(ioncContorItem, 'TableTopLateralPosition'):
+                        ionCps.TableTopLateralPosition = ioncContorItem.TableTopLateralPosition
+                    if hasattr(ioncContorItem, 'IsocenterPosition'):
+                        ionCps.IsocenterPosition = ioncContorItem.IsocenterPosition
                     ionCps.CumulativeMetersetWeight = ioncContorItem.CumulativeMetersetWeight
-                    ionCps.TableTopPitchAngle = ioncContorItem.TableTopPitchAngle
-                    ionCps.TableTopPitchRotationDirection = ioncContorItem.TableTopPitchRotationDirection
-                    ionCps.TableTopRollAngle = ioncContorItem.TableTopRollAngle
-                    ionCps.TableTopRollRotationDirection = ioncContorItem.TableTopRollRotationDirection
-                    ionCps.GantryPitchAngle = ioncContorItem.GantryPitchAngle
-                    ionCps.GantryPitchRotationDirection = ioncContorItem.GantryPitchRotationDirection
-                    ionCps.SnoutPosition = floatToDS(ioncContorItem.SnoutPosition)
+                    if hasattr(ioncContorItem, 'TableTopPitchAngle'):
+                        ionCps.TableTopPitchAngle = ioncContorItem.TableTopPitchAngle
+                    if hasattr(ioncContorItem, 'TableTopPitchRotationDirection'):
+                        ionCps.TableTopPitchRotationDirection = ioncContorItem.TableTopPitchRotationDirection
+                    if hasattr(ioncContorItem, 'TableTopRollAngle'):
+                        ionCps.TableTopRollAngle = ioncContorItem.TableTopRollAngle
+                    if hasattr(ioncContorItem, 'TableTopRollRotationDirection'):
+                        ionCps.TableTopRollRotationDirection = ioncContorItem.TableTopRollRotationDirection
+                    if hasattr(ioncContorItem, 'GantryPitchAngle'):    
+                        ionCps.GantryPitchAngle = ioncContorItem.GantryPitchAngle
+                    if hasattr(ioncContorItem, 'GantryPitchRotationDirection'):
+                        ionCps.GantryPitchRotationDirection = ioncContorItem.GantryPitchRotationDirection
+                    if hasattr(ioncContorItem, 'SnoutPosition'):   
+                        ionCps.SnoutPosition = floatToDS(ioncContorItem.SnoutPosition)
                     ionCps.RangeShifterSettingsSequence = []
                     if hasattr(ioncContorItem, 'RangeShifterSettingsSequence') and len(ioncContorItem.RangeShifterSettingsSequence) >0:
                         for rItem in ioncContorItem.RangeShifterSettingsSequence:
@@ -1550,16 +1583,12 @@ def writeRTPlan(plan: RTPlan, filePath):
                 ionCps.NominalBeamEnergyUnit = ""
                 ionCps.ControlPointIndex = ""
                 ionCps.NominalBeamEnergy = ""
-                ionCps.GantryAngle = "0"
-                ionCps.GantryRotationDirection = "None"
-                ionCps.BeamLimitingDeviceAngle = "0"
                 ionCps.BeamLimitingDeviceRotationDirection = "None"
                 ionCps.PatientSupportAngle = "0"
                 ionCps.PatientSupportRotationDirection = "None"
                 ionCps.TableTopVerticalPosition = ""
                 ionCps.TableTopLongitudinalPosition = ""
                 ionCps.TableTopLateralPosition = ""
-                ionCps.IsocenterPosition = ""
                 ionCps.CumulativeMetersetWeight = ""
                 ionCps.TableTopPitchAngle = 0.0
                 ionCps.TableTopPitchRotationDirection = "None"
@@ -1600,7 +1629,7 @@ def writeRTPlan(plan: RTPlan, filePath):
         referencedBeam.PrimaryDosimeterUnit = ""
         referencedBeam.BeamNumber = ""
         referencedBeam.BeamDescription = ""
-        referencedBeam.BeamType = ""
+        referencedBeam.BeamType = "STATIC"
         referencedBeam.RadiationType = ""
         referencedBeam.TreatmentDeliveryType = ""
         referencedBeam.NumberOfWedges = ""
@@ -1635,8 +1664,6 @@ def writeRTPlan(plan: RTPlan, filePath):
         ionCps.ControlPointIndex = "0"
         ionCps.NominalBeamEnergy = ""
         ionCps.GantryAngle = ""
-        ionCps.GantryRotationDirection = "None"
-        ionCps.BeamLimitingDeviceAngle = "0"
         ionCps.BeamLimitingDeviceRotationDirection = "None"
         ionCps.PatientSupportAngle = ""
         ionCps.PatientSupportRotationDirection = ""
