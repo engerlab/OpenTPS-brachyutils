@@ -109,7 +109,7 @@ def readDicomCT(dcmFiles):
     image.photometricInterpretation = dcm.PhotometricInterpretation if hasattr(dcm, 'PhotometricInterpretation') else None
     image.sopInstanceUIDs = sopInstanceUIDs
     image.sopClassUID = dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else "1.2.840.10008.5.1.4.1.1.2"
-    image.softwareVersions = dcm.SoftwareVersions if hasattr(dcm, 'SoftwareVersions') else "None"
+    image.softwareVersions = dcm.SoftwareVersions if hasattr(dcm, 'SoftwareVersions') else "10.0.100.1 (Dicom Export)"
     image.studyDate = dcm.StudyDate if hasattr(dcm, 'StudyDate') else dt.strftime('%Y%m%d')
     image.seriesNumber = dcm.SeriesNumber if(hasattr(dcm, 'SeriesNumber')) else '1'
     image.fileMetaInformationGroupLength = dcm.file_meta.FileMetaInformationGroupLength if hasattr(dcm.file_meta, 'FileMetaInformationGroupLength') else 0
@@ -176,7 +176,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.ImageType = ['DERIVED', 'SECONDARY', 'AXIAL']
     dcm_file.SpecificCharacterSet = ct.specificCharacterSet if hasattr(ct, 'specificCharacterSet') else "ISO_IR 100"
     dcm_file.AccessionNumber = ct.accessionNumber if hasattr(ct, 'accessionNumber') else ""
-    dcm_file.SoftwareVersions = ct.softwareVersions if hasattr(ct, 'softwareVersions') else ""
+    dcm_file.SoftwareVersions = ct.softwareVersions if hasattr(ct, 'softwareVersions') else "10.0.100.1 (Dicom Export)"
     
     # patient information
     patient = ct.patient
@@ -607,6 +607,7 @@ def readDicomDose(dcmFile):
     image.positionReferenceIndicator = dcm.PositionReferenceIndicator if hasattr(dcm, 'PositionReferenceIndicator') else ""
     image.gridFrameOffsetVector = gridFrameOffsetVector
     image.mediaStorageSOPInstanceUID = dcm.MediaStorageSOPInstanceUID if hasattr(dcm, 'MediaStorageSOPInstanceUID') else ""
+    image.softwareVersions = dcm.SoftwareVersions if hasattr(dcm, 'SoftwareVersions') else "10.0.100.1 (Dicom Export)"
 
     return image
 
@@ -683,6 +684,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     # or 'EFFECTIVE' for RBE dose (but RayStation exports physical dose even if 1.1 factor is already taken into account)
     dcm_file.DoseType = dose.doseType  if hasattr(dose, 'doseType') else "EFFECTIVE"
     dcm_file.DoseSummationType = dose.doseSummationType if hasattr(dose, 'doseSummationType') else "PLAN"
+    dcm_file.SoftwareVersions = dose.softwareVersions if hasattr(dose, 'softwareVersions') else "10.0.100.1 (Dicom Export)"
     
     if (hasattr(dose, 'referenceCT')):
         if (hasattr(dose.referenceCT, 'frameOfReferenceUID')):
@@ -836,7 +838,7 @@ def readDicomStruct(dcmFile):
     struct.seriesDescription = dcm.SeriesDescription if hasattr(dcm, 'SeriesDescription') else ""
     struct.manufacturerModelName = dcm.ManufacturerModelName if hasattr(dcm, 'ManufacturerModelName') else ""
     struct.patientName = dcm.PatientName if hasattr(dcm, 'PatientName') else ""
-    struct.softwareVersions = dcm.SoftwareVersions if hasattr(dcm, 'SoftwareVersions') else ""
+    struct.softwareVersions = dcm.SoftwareVersions if hasattr(dcm, 'SoftwareVersions') else "10.0.100.1 (Dicom Export)"
     struct.studyInstanceUID = dcm.StudyInstanceUID if hasattr(dcm, 'StudyInstanceUID') else ""
     struct.seriesInstanceUID = dcm.SeriesInstanceUID if hasattr(dcm, 'SeriesInstanceUID') else ""    
     struct.seriesNumber = dcm.SeriesNumber if hasattr(dcm, 'SeriesNumber') else "1"
@@ -918,7 +920,7 @@ def writeRTStruct(struct: RTStruct, outputFile):
     dcm_file.ManufacturerModelName = 'OpenTPS'
     dcm_file.SeriesDescription = struct.name if hasattr(struct, 'name') else ""
     dcm_file.ReferringPhysicianName = struct.referringPhysicianName if hasattr(struct, 'referringPhysicianName') else ""
-    dcm_file.operatorsName = struct.OperatorsName if hasattr(struct, 'OperatorsName') else ""
+    dcm_file.OperatorsName = struct.OperatorsName if hasattr(struct, 'OperatorsName') else ""
 
     dcm_file.StudyInstanceUID = struct.studyInstanceUID
     SeriesInstanceUID = struct.seriesInstanceUID
@@ -988,6 +990,7 @@ def writeRTStruct(struct: RTStruct, outputFile):
         roi.ROINumber = cidx
         roi.ROIName = contour.name
         roi.ReferencedFrameOfReferenceUID = contour.referencedFrameOfReferenceUID
+        roi.ROIGenerationAlgorithm = "AUTOMATIC"
         dcm_file.StructureSetROISequence.append(roi)
         
         # ROIContourSequence
@@ -1062,14 +1065,14 @@ def readDicomPlan(dcmFile) -> RTPlan:
         return
 
     # Start parsing PBS plan
-    plan.numberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
-    plan.numberOfBeams = int(dcm.FractionGroupSequence[0].NumberOfBeams)
-    plan.fractionGroupNumber = int(dcm.FractionGroupSequence[0].FractionGroupNumber)
+    # plan.numberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
+    # plan.numberOfBeams = int(dcm.FractionGroupSequence[0].NumberOfBeams)
+    # plan.fractionGroupNumber = int(dcm.FractionGroupSequence[0].FractionGroupNumber)
     
-    if (hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName')):
-        plan.treatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName if hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName') else ''
-    else:
-        plan.treatmentMachineName = ""
+    # if (hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName')):
+    #     plan.treatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName if hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName') else ''
+    # else:
+    #     plan.treatmentMachineName = ""
 
     for dcm_beam in dcm.IonBeamSequence:
         if dcm_beam.TreatmentDeliveryType != "TREATMENT":
@@ -1229,7 +1232,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
         plan.sopInstanceUID = dcm.SOPInstanceUID if hasattr(dcm, 'SOPInstanceUID') else plan.mediaStorageSOPClassUID
         plan.modality = dcm.Modality if hasattr(dcm, 'Modality') else ""
         plan.seriesDescription = dcm.SeriesDescription if hasattr(dcm, 'SeriesDescription') else ""
-        plan.softwareVersions=dcm.SoftwareVersions if hasattr(dcm, 'SoftwareVersions') else ""
+        plan.softwareVersions=dcm.SoftwareVersions if hasattr(dcm, 'SoftwareVersions') else "10.0.100.1 (Dicom Export)"
         plan.studyInstanceUID=dcm.StudyInstanceUID
         plan.studyID = dcm.StudyID if hasattr(dcm, 'StudyID') else ""
         plan.seriesNumber = dcm.SeriesNumber if hasattr(dcm, 'SeriesNumber') else "1"
@@ -1242,15 +1245,20 @@ def readDicomPlan(dcmFile) -> RTPlan:
         plan.planIntent = dcm.PlanIntent if hasattr(dcm, 'PlanIntent') else ""
         plan.rtPlanGeometry = dcm.RTPlanGeometry if hasattr(dcm, 'RTPlanGeometry') else "PATIENT"
         plan.prescriptionDescription = dcm.PrescriptionDescription if hasattr(dcm, 'PrescriptionDescription') else ""
-        plan.sopClassUID=dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.5"
+        plan.sopClassUID = dcm.SOPClassUID if hasattr(dcm, 'SOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.5"
+        
         plan.doseReferenceSequence=dcm.DoseReferenceSequence if hasattr(dcm, 'DoseReferenceSequence') else []
         plan.fractionGroupSequence = dcm.FractionGroupSequence if hasattr(dcm, 'FractionGroupSequence') else []
         plan.referencedStructureSetSequence = dcm.ReferencedStructureSetSequence if hasattr(dcm, 'ReferencedStructureSetSequence') else []
         plan.ionBeamSequence = dcm.IonBeamSequence if hasattr(dcm, 'IonBeamSequence') else []
+        plan.patientSetupSequence = dcm.PatientSetupSequence if hasattr(dcm, 'PatientSetupSequence') else []
+        
         plan.referringPhysicianName = dcm.ReferringPhysicianName if hasattr(dcm, 'ReferringPhysicianName') else ""
         plan.accessionNumber = dcm.AccessionNumber if hasattr(dcm, 'AccessionNumber') else ""
         plan.operatorsName = dcm.OperatorsName if hasattr(dcm, 'OperatorsName') else ""
         plan.positionReferenceIndicator = dcm.PositionReferenceIndicator if hasattr(dcm, 'PositionReferenceIndicator') else ""
+        plan.privateCreator = dcm.PrivateCreator if hasattr(plan, 'PrivateCreator') else "OpenTPS"
+        plan.approvalStatus = dcm.ApprovalStatus if hasattr(plan, 'ApprovalStatus') else "UNAPPROVED"
                 
     return plan
 
@@ -1268,11 +1276,11 @@ def writeRTPlan(plan: RTPlan, filePath):
     
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
+    meta.FileMetaInformationGroupLength = plan.fileMetaInformationGroupLength if hasattr(plan, 'fileMetaInformationGroupLength') else 0
     meta.MediaStorageSOPClassUID = plan.mediaStorageSOPClassUID if hasattr(plan, 'mediaStorageSOPClassUID') else "1.2.840.10008.5.1.4.1.1.481.5"
     meta.ImplementationClassUID = plan.implementationClassUID if hasattr(plan, 'implementationClassUID') else "1.2.826.0.1.3680043.1.2.100.6.40.0.76"
     meta.TransferSyntaxUID = plan.transferSyntaxUID if hasattr(plan, 'transferSyntaxUID') else "1.2.840.10008.1.2"
     meta.ImplementationVersionName = plan.implementationVersionName if hasattr(plan, 'implementationVersionName') else "DicomObjects.NET"
-    meta.FileMetaInformationGroupLength = plan.fileMetaInformationGroupLength if hasattr(plan, 'fileMetaInformationGroupLength') else 0
     meta.FileMetaInformationVersion = plan.fileMetaInformationVersion if hasattr(plan, 'fileMetaInformationVersion') else bytes([0,1])
     if (hasattr(plan, 'mediaStorageSOPInstanceUID')):
         meta.MediaStorageSOPInstanceUID = plan.mediaStorageSOPInstanceUID
@@ -1310,10 +1318,10 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.StudyTime = plan.studyTime if hasattr(plan, 'studyTime') else dt.strftime('%H%M%S.%f')
     dcm_file.SpecificCharacterSet = plan.specificCharacterSet if hasattr(plan, 'specificCharacterSet') else "ISO_IR 100"
     dcm_file.SeriesDate = plan.seriesDate if hasattr(plan, 'seriesDate') else dt.strftime('%Y%m%d')
-    dcm_file.SoftwareVersions = plan.softwareVersions if hasattr(plan, 'softwareVersions') else ""
+    dcm_file.SoftwareVersions = plan.softwareVersions if hasattr(plan, 'softwareVersions') else "10.0.100.1 (Dicom Export)"
     dcm_file.SeriesNumber = plan.seriesNumber if hasattr(plan, 'seriesNumber') else "1"
     dcm_file.FrameOfReferenceUID = plan.frameOfReferenceUID if hasattr(plan, 'frameOfReferenceUID') else pydicom.uid.generate_uid()
-    dcm_file.RTPlanLabel = plan.rtPlanLabel if hasattr(plan, 'rtPlanLabel') else "Unknown"
+    dcm_file.RTPlanLabel = plan.rtPlanLabel if hasattr(plan, 'rtPlanLabel') else ""
     dcm_file.RTPlanGeometry = plan.rtPlanGeometry if hasattr(plan, 'rtPlanGeometry') else "PATIENT"
     dcm_file.RTPlanName = plan.rtPlanName if hasattr(plan, 'rtPlanName') else ""
     dcm_file.RTPlanDate = plan.rtPlanDate if hasattr(plan, 'rtPlanDate') else dt.strftime('%Y%m%d')
@@ -1335,8 +1343,8 @@ def writeRTPlan(plan: RTPlan, filePath):
 
     # plan information
     dcm_file.DoseReferenceSequence = []
-    if (hasattr(plan, 'doseReferenceSequence') and len(plan.doseReferenceSequence) != 0) :
-        for cidx, item in enumerate(plan.doseReferenceSequence, start=1):
+    if (hasattr(plan, 'doseReferenceSequence') and len(plan.doseReferenceSequence) > 0) :
+        for item in plan.doseReferenceSequence:
             doseRef= pydicom.Dataset()
             doseRef.ReferencedROINumber = item.ReferencedROINumber
             doseRef.DoseReferenceNumber = item.DoseReferenceNumber
@@ -1344,9 +1352,7 @@ def writeRTPlan(plan: RTPlan, filePath):
             doseRef.DoseReferenceStructureType = item.DoseReferenceStructureType
             doseRef.DoseReferenceDescription = item.DoseReferenceDescription
             doseRef.DoseReferenceType = item.DoseReferenceType
-            doseRef.TargetPrescriptionDose = item.TargetPrescriptionDose
             doseRef.TargetUnderdoseVolumeFraction = item.TargetUnderdoseVolumeFraction
-            doseRef.PrivateCreator = 'OpenTPS'
             dcm_file.DoseReferenceSequence.append(doseRef)
     else:
         doseRef= pydicom.Dataset()
@@ -1356,91 +1362,381 @@ def writeRTPlan(plan: RTPlan, filePath):
         doseRef.DoseReferenceStructureType = 'VOLUME'
         doseRef.DoseReferenceDescription = 'OpenTPS created'
         doseRef.DoseReferenceType = 'TARGET'
-        doseRef.TargetPrescriptionDose = 0
         doseRef.TargetUnderdoseVolumeFraction = 0
-        doseRef.PrivateCreator = 'OpenTPS'
         dcm_file.DoseReferenceSequence.append(doseRef)
     
+    # Dataset => FractionGroupSequence
     dcm_file.FractionGroupSequence = []
-    fractionGroup = pydicom.dataset.Dataset()
-    # Only 1 fraction spported right now!
-    fractionGroup.NumberOfFractionsPlanned = plan.numberOfFractionsPlanned if hasattr(plan, 'numberOfFractionsPlanned') else 0
-    fractionGroup.FractionGroupNumber = plan.fractionGroupNumber if hasattr(plan, 'fractionGroupNumber') else 1
-    fractionGroup.NumberOfBeams = plan.numberOfBeams if hasattr(plan, 'numberOfBeams') else 4
-    fractionGroup.NumberOfBrachyApplicationSetups = 0
-    fractionGroup.ReferencedDoseReferenceSequence = plan.fractionGroupSequence if hasattr(plan, 'fractionGroupSequence') and (not plan.fractionGroupSequence is None) else []
-    dcm_file.FractionGroupSequence.append(fractionGroup)
-    fractionGroup.ReferencedBeamSequence = []
-    
-    dcm_file.IonBeamSequence = []
-    for beamNumber, beam in enumerate(plan):
-        referencedBeam = pydicom.dataset.Dataset()
-        referencedBeam.BeamMeterset = floatToDS(beam.meterset)
-        referencedBeam.ReferencedBeamNumber = beamNumber
-        fractionGroup.ReferencedBeamSequence.append(referencedBeam)
-
-        dcm_beam = pydicom.dataset.Dataset()
-        dcm_beam.BeamName = beam.name
-        dcm_beam.SeriesInstanceUID = SeriesInstanceUID
-        dcm_beam.TreatmentMachineName = plan.treatmentMachineName
-        dcm_beam.RadiationType = "PROTON"
-        dcm_beam.ScanMode = "MODULATED"
-        dcm_beam.TreatmentDeliveryType = "TREATMENT"
-        dcm_beam.FinalCumulativeMetersetWeight = floatToDS(plan.beamCumulativeMetersetWeight[beamNumber])
-        dcm_beam.BeamNumber = beamNumber
-        dcm_beam.BeamType = 'STATIC'
-        rangeShifter = beam.rangeShifter
-        if rangeShifter is None:
-            dcm_beam.NumberOfRangeShifters = 0
-        else:
-            dcm_beam.NumberOfRangeShifters = 1
-
-        dcm_beam.RangeShifterSequence = []
-        dcm_rs = pydicom.dataset.Dataset()
-        if not (rangeShifter is None):
-            dcm_rs.RangeShifterID = rangeShifter.ID
-            if rangeShifter.type == "binary":
-                dcm_rs.RangeShifterType = "BINARY"
-            elif rangeShifter.type == "analog":
-                dcm_rs.RangeShifterType = "ANALOG"
+    if hasattr(plan, 'fractionGroupSequence'): 
+        for item in plan.fractionGroupSequence:
+            fractionGroup = pydicom.dataset.Dataset()
+            fractionGroup.FractionGroupNumber = item.FractionGroupNumber
+            fractionGroup.NumberOfFractionsPlanned = item.NumberOfFractionsPlanned
+            fractionGroup.NumberOfBeams = item.NumberOfBeams
+            fractionGroup.NumberOfBrachyApplicationSetups = item.NumberOfBrachyApplicationSetups
+            
+            fractionGroup.ReferencedBeamSequence = []
+            if hasattr(item, 'ReferencedBeamSequence') and len(item.ReferencedBeamSequence)>0:
+                for refBeam in item.ReferencedBeamSequence:
+                    refBeamSeq = pydicom.dataset.Dataset()
+                    refBeamSeq.BeamDose = refBeam.BeamDose
+                    refBeamSeq.BeamMeterset = refBeam.BeamMeterset
+                    if (hasattr(refBeamSeq, 'BeamDosePointDepth')):
+                        refBeamSeq.BeamDosePointDepth = refBeam.BeamDosePointDepth
+                    if hasattr(refBeamSeq, 'BeamDosePointSSD'):
+                        refBeamSeq.BeamDosePointSSD = refBeam.BeamDosePointSSD
+                    refBeamSeq.BeamDoseType = refBeam.BeamDoseType
+                    refBeamSeq.ReferencedBeamNumber = refBeam.ReferencedBeamNumber
+                    fractionGroup.ReferencedBeamSequence.append(refBeamSeq)
             else:
-                print("ERROR: Unknown range shifter type: " + rangeShifter.type)
+                defaultSeq = pydicom.dataset.Dataset()
+                defaultSeq.BeamDose = ""
+                defaultSeq.BeamMeterset = ""
+                defaultSeq.BeamDoseType = ""
+                defaultSeq.ReferencedBeamNumber = ""
+                fractionGroup.ReferencedBeamSequence.append(defaultSeq)
 
-        dcm_beam.RangeShifterSequence.append(dcm_rs)
-        dcm_file.IonBeamSequence.append(dcm_beam)
+            fractionGroup.ReferencedDoseReferenceSequence = []
+            if hasattr(item, 'ReferencedDoseReferenceSequence') and len(item.ReferencedDoseReferenceSequence)>0:
+                for refDoseRef in item.ReferencedDoseReferenceSequence:
+                    rdf = pydicom.dataset.Dataset()
+                    rdf.ReferencedDoseReferenceNumber = refDoseRef.ReferencedDoseReferenceNumber
+                    fractionGroup.ReferencedDoseReferenceSequence.append(rdf)
+            else:
+                rdf = pydicom.dataset.Dataset()
+                rdf.ReferencedDoseReferenceNumber = 0
+                fractionGroup.ReferencedDoseReferenceSequence.append(rdf)
+            
+            dcm_file.FractionGroupSequence.append(fractionGroup)
+        
+    # Dataset => PatientSetupSequence
+    dcm_file.PatientSetupSequence = []
+    if hasattr(plan, 'patientSetupSequence') and len(plan.patientSetupSequence)>0:
+        for ps in plan.patientSetupSequence:
+            patientSetup = pydicom.dataset.Dataset()
+            patientSetup.PatientPosition = ps.PatientPosition
+            patientSetup.PatientSetupNumber = ps.PatientSetupNumber
+            if hasattr(ps, 'TableTopVerticalSetupDisplacement'):
+                patientSetup.TableTopVerticalSetupDisplacement = ps.TableTopVerticalSetupDisplacement
+            if hasattr(ps, 'TableTopLongitudinalSetupDisplacement'):
+                patientSetup.TableTopLongitudinalSetupDisplacement = ps.TableTopLongitudinalSetupDisplacement
+            if hasattr(ps, 'TableTopLateralSetupDisplacement'):
+                patientSetup.TableTopLateralSetupDisplacement = ps.TableTopLateralSetupDisplacement
+            dcm_file.PatientSetupSequence.append(patientSetup)
+    else:
+        patientSetup = pydicom.dataset.Dataset()
+        patientSetup.PatientPosition = ""
+        patientSetup.PatientSetupNumber = 0
+        dcm_file.PatientSetupSequence.append(patientSetup)
+    
+    # Dataset => IonBeamSequence
+    dcm_file.IonBeamSequence = []
+    if hasattr(plan, 'ionBeamSequence') and len(plan.ionBeamSequence)>0:
+        for beam in plan.ionBeamSequence:
+            referencedBeam = pydicom.dataset.Dataset()
+            # referencedBeam.BeamMeterset = floatToDS(beam.meterset)
+            referencedBeam.Manufacturer = beam.Manufacturer
+            referencedBeam.TreatmentMachineName = beam.TreatmentMachineName
+            referencedBeam.PrimaryDosimeterUnit = beam.PrimaryDosimeterUnit
+            referencedBeam.BeamNumber = beam.BeamNumber
+            referencedBeam.BeamName = beam.BeamName
+            referencedBeam.BeamDescription = beam.BeamDescription
+            referencedBeam.BeamType = beam.BeamType
+            referencedBeam.RadiationType = beam.RadiationType
+            referencedBeam.TreatmentDeliveryType = beam.TreatmentDeliveryType
+            referencedBeam.NumberOfWedges = beam.NumberOfWedges
+            referencedBeam.NumberOfCompensators = beam.NumberOfCompensators
+            referencedBeam.NumberOfBoli = beam.NumberOfBoli
+            referencedBeam.NumberOfBlocks = beam.NumberOfBlocks
+            referencedBeam.FinalCumulativeMetersetWeight = beam.FinalCumulativeMetersetWeight
+            referencedBeam.NumberOfControlPoints = beam.NumberOfControlPoints
+            referencedBeam.ScanMode = beam.ScanMode
+            referencedBeam.VirtualSourceAxisDistances = beam.VirtualSourceAxisDistances
+            # Snout Sequence
+            referencedBeam.SnoutSequence = []
+            if hasattr(beam, 'SnoutSequence') and len(beam.SnoutSequence) > 0:
+                for item in beam.SnoutSequence:
+                    snouts = pydicom.dataset.Dataset()
+                    snouts.SnoutID = item.SnoutID
+                    referencedBeam.SnoutSequence.append(snouts)
+            else:
+                snouts = pydicom.dataset.Dataset()
+                snouts.SnoutID = ""
+                referencedBeam.SnoutSequence.append(snouts)
+                
+            referencedBeam.NumberOfRangeShifters = beam.NumberOfRangeShifters if hasattr(beam, 'NumberOfRangeShifters') else ""
+            referencedBeam.RangeShifterSequence = []
+            if hasattr(beam, 'RangeShifterSequence') and len(beam.RangeShifterSequence) > 0:
+                for item in beam.RangeShifterSequence:
+                    rsSeq = pydicom.dataset.Dataset()
+                    rsSeq.RangeShifterNumber = item.RangeShifterNumber
+                    rsSeq.RangeShifterID = item.RangeShifterID
+                    rsSeq.RangeShifterType = item.RangeShifterType
+                    referencedBeam.RangeShifterSequence.append(rsSeq)
+            else:
+                rsSeq = pydicom.dataset.Dataset()
+                rsSeq.RangeShifterNumber = "0"
+                rsSeq.RangeShifterID = ""
+                rsSeq.RangeShifterType = "BINARY"
+                referencedBeam.RangeShifterSequence.append(rsSeq)
+            
+            referencedBeam.NumberOfLateralSpreadingDevices = beam.NumberOfLateralSpreadingDevices if hasattr(beam, 'NumberOfLateralSpreadingDevices') else "0"             
+            referencedBeam.NumberOfRangeModulators = beam.NumberOfRangeModulators if hasattr(beam, 'NumberOfRangeModulators') else "0"
+            referencedBeam.PatientSupportType = beam.PatientSupportType if hasattr(beam, 'PatientSupportType') else "TABLE"
+            referencedBeam.PatientSupportID = beam.PatientSupportID if hasattr(beam, 'PatientSupportID') else "TABLE"
+            
+            referencedBeam.IonControlPointSequence = []
+            if hasattr(referencedBeam, 'IonControlPointSequence') and len(referencedBeam.IonControlPointSequence)>0:
+                for ioncContorItem in beam.IonControlPointSequence:
+                    ionCps = pydicom.dataset.Dataset()
+                    ionCps.NominalBeamEnergyUnit = ioncContorItem.NominalBeamEnergyUnit
+                    ionCps.ControlPointIndex = ioncContorItem.ControlPointIndex
+                    ionCps.NominalBeamEnergy = floatToDS(ioncContorItem.NominalBeamEnergy)
+                    ionCps.GantryAngle = ioncContorItem.GantryAngle
+                    ionCps.GantryRotationDirection = ioncContorItem.GantryRotationDirection
+                    ionCps.BeamLimitingDeviceAngle = ioncContorItem.BeamLimitingDeviceAngle
+                    ionCps.BeamLimitingDeviceRotationDirection = ioncContorItem.BeamLimitingDeviceRotationDirection
+                    ionCps.PatientSupportAngle = ioncContorItem.PatientSupportAngle
+                    ionCps.PatientSupportRotationDirection = ioncContorItem.PatientSupportRotationDirection
+                    ionCps.TableTopVerticalPosition = ioncContorItem.TableTopVerticalPosition
+                    ionCps.TableTopLongitudinalPosition = ioncContorItem.TableTopLongitudinalPosition
+                    ionCps.TableTopLateralPosition = ioncContorItem.TableTopLateralPosition
+                    ionCps.IsocenterPosition = ioncContorItem.IsocenterPosition
+                    ionCps.CumulativeMetersetWeight = ioncContorItem.CumulativeMetersetWeight
+                    ionCps.TableTopPitchAngle = ioncContorItem.TableTopPitchAngle
+                    ionCps.TableTopPitchRotationDirection = ioncContorItem.TableTopPitchRotationDirection
+                    ionCps.TableTopRollAngle = ioncContorItem.TableTopRollAngle
+                    ionCps.TableTopRollRotationDirection = ioncContorItem.TableTopRollRotationDirection
+                    ionCps.GantryPitchAngle = ioncContorItem.GantryPitchAngle
+                    ionCps.GantryPitchRotationDirection = ioncContorItem.GantryPitchRotationDirection
+                    ionCps.SnoutPosition = floatToDS(ioncContorItem.SnoutPosition)
+                    ionCps.RangeShifterSettingsSequence = []
+                    if hasattr(ioncContorItem, 'RangeShifterSettingsSequence') and len(ioncContorItem.RangeShifterSettingsSequence) >0:
+                        for rItem in ioncContorItem.RangeShifterSettingsSequence:
+                            ionCpsRange = pydicom.dataset.Dataset()
+                            ionCpsRange.RangeShifterSetting = rItem.RangeShifterSetting
+                            ionCpsRange.IsocenterToRangeShifterDistance = rItem.IsocenterToRangeShifterDistance
+                            ionCpsRange.ReferencedRangeShifterNumber = rItem.ReferencedRangeShifterNumber
+                            ionCps.RangeShifterSettingsSequence.append(ionCpsRange)
+                    else:
+                        defaultIonCpsRange = pydicom.dataset.Dataset()
+                        defaultIonCpsRange.RangeShifterSetting = rItem.RangeShifterSetting
+                        defaultIonCpsRange.IsocenterToRangeShifterDistance = rItem.IsocenterToRangeShifterDistance
+                        defaultIonCpsRange.ReferencedRangeShifterNumber = rItem.ReferencedRangeShifterNumber
+                        ionCps.RangeShifterSettingsSequence.append(defaultIonCpsRange)
+                    
+                    ionCps.ScanSpotTuneID = ioncContorItem.ScanSpotTuneID
+                    ionCps.NumberOfScanSpotPositions = ioncContorItem.NumberOfScanSpotPositions
+                    ionCps.ScanSpotPositionMap = ioncContorItem.ScanSpotPositionMap
+                    ionCps.ScanSpotMetersetWeights = ioncContorItem.ScanSpotMetersetWeights
+                    ionCps.ScanningSpotSize = ioncContorItem.ScanningSpotSize
+                    ionCps.NumberOfPaintings = ioncContorItem.NumberOfPaintings
+                    ionCps.ReferencedDoseReferenceSequence = []
+                    if hasattr(ioncContorItem, 'ReferencedDoseReferenceSequence') and len(ioncContorItem.ReferencedDoseReferenceSequence)>0:
+                        for refItem in ioncContorItem.ReferencedDoseReferenceSequence:
+                            refDoseR = pydicom.dataset.Dataset()
+                            refDoseR.CumulativeDoseReferenceCoefficient = refItem.CumulativeDoseReferenceCoefficient
+                            refDoseR.ReferencedDoseReferenceNumber = refItem.ReferencedDoseReferenceNumber
+                            ionCps.ReferencedDoseReferenceSequence.append(refDoseR)
+                    else:
+                        defaultRefDoseR =  pydicom.dataset.Dataset()
+                        defaultRefDoseR.CumulativeDoseReferenceCoefficient = ""
+                        defaultRefDoseR.ReferencedDoseReferenceNumber = "0"
+                        defaultRefDoseR.PrivateCreator = ""
+                        ionCps.ReferencedDoseReferenceSequence.append(defaultRefDoseR)
+                    referencedBeam.IonControlPointSequence.append(ionCps)
+            else:
+                ionCps = pydicom.dataset.Dataset()
+                ionCps.NominalBeamEnergyUnit = ""
+                ionCps.ControlPointIndex = ""
+                ionCps.NominalBeamEnergy = ""
+                ionCps.GantryAngle = "0"
+                ionCps.GantryRotationDirection = "None"
+                ionCps.BeamLimitingDeviceAngle = "0"
+                ionCps.BeamLimitingDeviceRotationDirection = "None"
+                ionCps.PatientSupportAngle = "0"
+                ionCps.PatientSupportRotationDirection = "None"
+                ionCps.TableTopVerticalPosition = ""
+                ionCps.TableTopLongitudinalPosition = ""
+                ionCps.TableTopLateralPosition = ""
+                ionCps.IsocenterPosition = ""
+                ionCps.CumulativeMetersetWeight = ""
+                ionCps.TableTopPitchAngle = 0.0
+                ionCps.TableTopPitchRotationDirection = "None"
+                ionCps.TableTopRollAngle = 0.0
+                ionCps.TableTopRollRotationDirection = "None"
+                ionCps.GantryPitchAngle = 0.0
+                ionCps.GantryPitchRotationDirection = "None"
+                ionCps.SnoutPosition = ""
+                ionCps.RangeShifterSettingsSequence = []        
+                defaultIonCpsRange = pydicom.dataset.Dataset()
+                defaultIonCpsRange.RangeShifterSetting = "OUT"
+                defaultIonCpsRange.IsocenterToRangeShifterDistance = ""
+                defaultIonCpsRange.ReferencedRangeShifterNumber = '0'
+                ionCps.RangeShifterSettingsSequence.append(defaultIonCpsRange)
+                ionCps.ScanSpotTuneID = ""
+                ionCps.NumberOfScanSpotPositions = ""
+                ionCps.ScanSpotPositionMap = ""
+                ionCps.ScanSpotMetersetWeights = ""
+                ionCps.ScanningSpotSize = ""
+                ionCps.NumberOfPaintings = 1
+                ionCps.ReferencedDoseReferenceSequence = []
+                defaultRefDoseR =  pydicom.dataset.Dataset()
+                defaultRefDoseR.CumulativeDoseReferenceCoefficient = ""
+                defaultRefDoseR.ReferencedDoseReferenceNumber = "0"
+                defaultRefDoseR.PrivateCreator = ""
+                ionCps.ReferencedDoseReferenceSequence.append(defaultRefDoseR)
+                
+                referencedBeam.IonControlPointSequence.append(ionCps)
+                   
+            referencedBeam.PrivateCreator = beam.PrivateCreator if hasattr(beam, 'PrivateCreator') else ""
+            referencedBeam.ReferencedPatientSetupNumber = beam.ReferencedPatientSetupNumber if hasattr(beam, 'ReferencedPatientSetupNumber') else ""
+            dcm_file.IonBeamSequence.append(referencedBeam)
+    else:
+        referencedBeam = pydicom.dataset.Dataset()
+        # referencedBeam.BeamMeterset = floatToDS(beam.meterset)
+        referencedBeam.Manufacturer = ""
+        referencedBeam.TreatmentMachineName = ""
+        referencedBeam.PrimaryDosimeterUnit = ""
+        referencedBeam.BeamNumber = ""
+        referencedBeam.BeamDescription = ""
+        referencedBeam.BeamType = ""
+        referencedBeam.RadiationType = ""
+        referencedBeam.TreatmentDeliveryType = ""
+        referencedBeam.NumberOfWedges = ""
+        referencedBeam.NumberOfCompensators = ""
+        referencedBeam.NumberOfBoli = ""
+        referencedBeam.NumberOfBlocks = ""
+        referencedBeam.FinalCumulativeMetersetWeight = ""
+        referencedBeam.NumberOfControlPoints = ""
+        referencedBeam.ScanMode = ""
+        referencedBeam.VirtualSourceAxisDistances = ""
+        # Snout Sequence
+        referencedBeam.SnoutSequence = []
+        snouts = pydicom.dataset.Dataset()
+        snouts.SnoutID = ""
+        referencedBeam.SnoutSequence.append(snouts) 
+        referencedBeam.NumberOfRangeShifters = "0"
+        
+        referencedBeam.RangeShifterSequence = []
+        rsSeq = pydicom.dataset.Dataset()
+        rsSeq.RangeShifterNumber = "0"
+        rsSeq.RangeShifterID = ""
+        rsSeq.RangeShifterType = "BINARY"
+        referencedBeam.RangeShifterSequence.append(rsSeq)
+        referencedBeam.NumberOfLateralSpreadingDevices = "0"             
+        referencedBeam.NumberOfRangeModulators = "0"
+        referencedBeam.PatientSupportType = "TABLE"
+        referencedBeam.PatientSupportID = "TABLE"
+            
+        referencedBeam.IonControlPointSequence = []
+        ionCps = pydicom.dataset.Dataset()
+        ionCps.NominalBeamEnergyUnit = ""
+        ionCps.ControlPointIndex = "0"
+        ionCps.NominalBeamEnergy = ""
+        ionCps.GantryAngle = ""
+        ionCps.GantryRotationDirection = "None"
+        ionCps.BeamLimitingDeviceAngle = "0"
+        ionCps.BeamLimitingDeviceRotationDirection = "None"
+        ionCps.PatientSupportAngle = ""
+        ionCps.PatientSupportRotationDirection = ""
+        ionCps.TableTopVerticalPosition = ""
+        ionCps.TableTopLongitudinalPosition = ""
+        ionCps.TableTopLateralPosition = ""
+        ionCps.IsocenterPosition = ""
+        ionCps.CumulativeMetersetWeight = ""
+        ionCps.TableTopPitchAngle = 0.0
+        ionCps.TableTopPitchRotationDirection = "None"
+        ionCps.TableTopRollAngle = 0.0
+        ionCps.TableTopRollRotationDirection = "None"
+        ionCps.GantryPitchAngle = 0.0
+        ionCps.GantryPitchRotationDirection = "None"
+        ionCps.SnoutPosition = ""
+        ionCps.RangeShifterSettingsSequence = []
+        ionCpsRange = pydicom.dataset.Dataset()
+        ionCpsRange.RangeShifterSetting = "IN"
+        ionCpsRange.IsocenterToRangeShifterDistance = ""
+        ionCpsRange.ReferencedRangeShifterNumber = ""
+        ionCps.RangeShifterSettingsSequence.append(ionCpsRange)
+        
+        ionCps.ScanSpotTuneID = ""
+        ionCps.NumberOfScanSpotPositions = ""
+        ionCps.ScanSpotPositionMap = ""
+        ionCps.ScanSpotMetersetWeights = ""
+        ionCps.ScanningSpotSize = ""
+        ionCps.NumberOfPaintings = ""
+        ionCps.ReferencedDoseReferenceSequence = []
+        defaultRefDoseR =  pydicom.dataset.Dataset()
+        defaultRefDoseR.CumulativeDoseReferenceCoefficient = ""
+        defaultRefDoseR.ReferencedDoseReferenceNumber = "0"
+        ionCps.ReferencedDoseReferenceSequence.append(defaultRefDoseR)
+        referencedBeam.IonControlPointSequence.append(ionCps)
+        
+        referencedBeam.PrivateCreator = ""
+        referencedBeam.ReferencedPatientSetupNumber = ""
+        dcm_file.IonBeamSequence.append(referencedBeam)
+        
+        # doing someting
+            # dcm_beam = pydicom.dataset.Dataset()
+            # dcm_beam.SeriesInstanceUID = SeriesInstanceUID
+            # dcm_beam.RadiationType = "PROTON"
+            # dcm_beam.ScanMode = "MODULATED"
+            # dcm_beam.TreatmentDeliveryType = "TREATMENT"
+            # dcm_beam.FinalCumulativeMetersetWeight = floatToDS(plan.beamCumulativeMetersetWeight[beamNumber])
+            # dcm_beam.BeamNumber = beamNumber
+            # dcm_beam.BeamType = 'STATIC'
+            # rangeShifter = beam.NumberOfRangeShifters
+            # if rangeShifter is None:
+            #     dcm_beam.NumberOfRangeShifters = 0
+            # else:
+            #     dcm_beam.NumberOfRangeShifters = 1
 
-        dcm_beam.IonControlPointSequence = []
+            # dcm_beam.RangeShifterSequence = []
+            # dcm_rs = pydicom.dataset.Dataset()
+            # if not (rangeShifter is None):
+            #     dcm_rs.RangeShifterID = rangeShifter.ID
+            #     if rangeShifter.type == "binary":
+            #         dcm_rs.RangeShifterType = "BINARY"
+            #     elif rangeShifter.type == "analog":
+            #         dcm_rs.RangeShifterType = "ANALOG"
+            #     else:
+            #         print("ERROR: Unknown range shifter type: " + rangeShifter.type)
 
-        for layerIndex,layer in enumerate(beam):
-            dcm_layer = pydicom.dataset.Dataset()            
-            dcm_layer.SeriesInstanceUID = SeriesInstanceUID
-            dcm_layer.ControlPointIndex = layerIndex
-            dcm_layer.NumberOfPaintings = layer.numberOfPaintings
-            dcm_layer.NominalBeamEnergy = floatToDS(layer.nominalEnergy)
-            dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
-            dcm_layer.ScanSpotMetersetWeights = layer.spotMUs.tolist()
-            if type(dcm_layer.ScanSpotMetersetWeights) == float:
-                dcm_layer.NumberOfScanSpotPositions = 1
-            else: dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
-            dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
-                                           beam.isocenterPosition[2]]
-            dcm_layer.GantryAngle = beam.gantryAngle
-            dcm_layer.PatientSupportAngle = beam.couchAngle
+            # dcm_beam.RangeShifterSequence.append(dcm_rs)
+            # dcm_file.IonBeamSequence.append(dcm_beam)
 
-            dcm_layer.RangeShifterSettingsSequence = []
-            dcm_rsSettings = pydicom.dataset.Dataset()
-            dcm_rsSettings.IsocenterToRangeShifterDistance = layer.rangeShifterSettings.isocenterToRangeShifterDistance
-            if not (layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness is None):
-                dcm_rsSettings.RangeShifterWaterEquivalentThickness = layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness
-            dcm_rsSettings.RangeShifterSetting = layer.rangeShifterSettings.rangeShifterSetting
-            dcm_rsSettings.ReferencedRangeShifterNumber = 0
-            dcm_layer.RangeShifterSettingsSequence.append(dcm_rsSettings)
+            # dcm_beam.IonControlPointSequence = []
 
-            dcm_beam.IonControlPointSequence.append(dcm_layer)
+            # for layerIndex,layer in enumerate(beam):
+            #     dcm_layer = pydicom.dataset.Dataset()            
+            #     dcm_layer.SeriesInstanceUID = SeriesInstanceUID
+            #     dcm_layer.ControlPointIndex = layerIndex
+            #     dcm_layer.NumberOfPaintings = layer.numberOfPaintings
+            #     dcm_layer.NominalBeamEnergy = floatToDS(layer.nominalEnergy)
+            #     dcm_layer.ScanSpotPositionMap = np.array(list(layer.spotXY)).flatten().tolist()
+            #     dcm_layer.ScanSpotMetersetWeights = layer.spotMUs.tolist()
+            #     if type(dcm_layer.ScanSpotMetersetWeights) == float:
+            #         dcm_layer.NumberOfScanSpotPositions = 1
+            #     else: dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
+            #     dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
+            #                                 beam.isocenterPosition[2]]
+            #     dcm_layer.GantryAngle = beam.gantryAngle
+            #     dcm_layer.PatientSupportAngle = beam.couchAngle
 
+            #     dcm_layer.RangeShifterSettingsSequence = []
+            #     dcm_rsSettings = pydicom.dataset.Dataset()
+            #     dcm_rsSettings.IsocenterToRangeShifterDistance = layer.rangeShifterSettings.isocenterToRangeShifterDistance
+            #     if not (layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness is None):
+            #         dcm_rsSettings.RangeShifterWaterEquivalentThickness = layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness
+            #     dcm_rsSettings.RangeShifterSetting = layer.rangeShifterSettings.rangeShifterSetting
+            #     dcm_rsSettings.ReferencedRangeShifterNumber = 0
+            #     dcm_layer.RangeShifterSettingsSequence.append(dcm_rsSettings)
+
+            #     dcm_beam.IonControlPointSequence.append(dcm_layer)
+         
     dcm_file.ReferencedStructureSetSequence = []
-    if (hasattr(plan, 'referencedStructureSetSequence') and len(plan.referencedStructureSetSequence) > 0):
-        for cidx, item in enumerate(plan.referencedStructureSetSequence, start=1):
+    if (hasattr(plan, 'referencedStructureSetSequence') and len(plan.referencedStructureSetSequence)>0):
+        for item in plan.referencedStructureSetSequence:
             refStructSeq = pydicom.Dataset()
             refStructSeq.ReferencedSOPClassUID = item.ReferencedSOPClassUID
             refStructSeq.ReferencedSOPInstanceUID = item.ReferencedSOPInstanceUID
@@ -1450,6 +1746,9 @@ def writeRTPlan(plan: RTPlan, filePath):
         refStructSeq.ReferencedSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.3'
         refStructSeq.ReferencedSOPInstanceUID = pydicom.uid.generate_uid()
         dcm_file.ReferencedStructureSetSequence.append(refStructSeq)
+    
+    dcm_file.ApprovalStatus = plan.approvalStatus if hasattr(plan, 'approvalStatus') else ""
+    dcm_file.PrivateCreator = plan.privateCreator if hasattr(plan, 'privateCreator') else "OpenTPS"
     
     # save dicom file
     print("Export dicom TRAINMENT PLAN: " + filePath)
