@@ -17,12 +17,12 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "~3.9"
 cachecontrol = "*"
 numpy = "^1.23.5"
 Pillow = "^9.4.0"
 pydicom = "^2.4.1"
-vtk = "^9.2.6"
+vtk = "9.2.6"
 PyQt5 = "5.15.10"
 PyQt5-Qt5 = '5.15.2'
 pyqtgraph = "^0.13.1"
@@ -32,6 +32,7 @@ setuptools = "^67.8.0" # Required for local testing with python -m pip install -
 pandas = "^1.5.3"
 requests = "2.28.1"
 scikit-image = "*"
+pymedphys="0.39.3"
 
 [tool.poetry.dev-dependencies]
 
