@@ -6,24 +6,8 @@ stages:
   - build
   - test_core
   - test_gui
+  - unittest_core
   - doc
-
-# Change pip's cache directory to be inside the project directory since we can
-# only cache local items.
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-
-# Pip's cache doesn't store the python packages
-# https://pip.pypa.io/en/stable/topics/caching/
-#
-# If you want to also cache the installed packages, you have to install
-# them in a virtualenv and cache it as well.
-cache:
-  # https://docs.gitlab.com/ee/ci/caching/#share-caches-between-jobs-in-the-same-branch
-  key: $CI_COMMIT_REF_SLUG
-  paths:
-    - .cache/pip
-    - venv/
 
 
 before_script:
@@ -84,6 +68,7 @@ test_gui:
     - python -m unittest discover opentps_gui/opentps/gui
 
 docs:
+  image: python:3.9
   stage: doc
   script:
     - pip install sphinx sphinx-rtd-theme
@@ -96,7 +81,7 @@ docs:
 
 # Must be run after all script because we create __init__.py for unittest. The absence of this file is essential and tested in test_core.
 unittest_core:
-  stage: test_core
+  stage: unittest_core
   image: python:3.9
   script:
     - cd $CI_PROJECT_DIR/opentps_core/
