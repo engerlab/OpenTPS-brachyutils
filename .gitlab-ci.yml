@@ -68,6 +68,7 @@ test_gui:
     - python -m unittest discover opentps_gui/opentps/gui
 
 docs:
+  image: python:3.9
   stage: doc
   script:
     - pip install sphinx sphinx-rtd-theme
