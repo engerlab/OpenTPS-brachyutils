@@ -87,8 +87,8 @@ class ScanAlgoPlan:
             for layer in beam._layers:
                 layerDict = {}
                 layerDict['spotTuneId'] = "4.0"
-                layerDict['nominalBeamEnergy'] = layer.nominalEnergy
-                layerDict['numberOfPaintings'] = layer.numberOfPaintings
+                layerDict['nominalBeamEnergy'] = str(layer.nominalEnergy)
+                layerDict['numberOfPaintings'] = str(layer.numberOfPaintings)
                 layerDict['spots'] = []
                 for s in range(len(layer._mu)):
                     spotDict = {}

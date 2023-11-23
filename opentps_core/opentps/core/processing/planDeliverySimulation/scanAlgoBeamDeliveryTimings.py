@@ -9,11 +9,18 @@ class ScanAlgoBeamDeliveryTimings:
     """
     Beam Delivery Timings for ScanAlgo
     """
-    def __init__(self, plan: RTPlan):
+    def __init__(self, plan: RTPlan, URL=None, gantry=None):
         self.plan = plan
-        config = ScanAlgoSimulationConfig()
-        self.gantry = config.gantry
-        self.url = config.gateway
+        if URL is None and gantry is None:
+            config = ScanAlgoSimulationConfig()
+            self.gantry = config.gantry
+            self.url = config.gateway
+        else:
+            assert URL is not None and gantry is not None
+            if not (gantry=="POne" or gantry=="PPlus"):
+                raise ValueError(f"Gantry {gantry} not valid, type must be either 'POne' or 'PPlus'.")
+            self.gantry = gantry
+            self.url = URL
 
 
     def getPBSTimings(self, sort_spots="true"):
