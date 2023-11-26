@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def loadData(patientList:PatientList, dataPath:str, maxDepth=-1, ignoreExistingData:bool=True, importInPatient:Optional[Patient]=None):
     #TODO: implement ignoreExistingData
-
+    
     dataList = readData(dataPath, maxDepth=maxDepth)
 
     patient = None

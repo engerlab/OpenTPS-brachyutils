@@ -110,7 +110,7 @@ def run(output_path=""):
         planDesign.scoringVoxelSpacing = [2, 2, 2]
 
         plan = planDesign.buildPlan()  # Spot placement
-        plan.PlanName = "Simple_Patient"
+        plan.rtPlanName = "Simple_Patient"
 
         beamlets = mc2.computeBeamlets(ct, plan, roi=[roi])
         plan.planDesign.beamlets = beamlets
@@ -128,7 +128,7 @@ def run(output_path=""):
     plan.seriesInstanceUID = planSeriesInstanceUID
     plan.studyInstanceUID = studyInstanceUID
     plan.frameOfReferenceUID = frameOfReferenceUID
-    plan.RTPlanGeometry = "TREATMENT_DEVICE"
+    plan.rtPlanGeometry = "TREATMENT_DEVICE"
     
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
@@ -176,8 +176,8 @@ def run(output_path=""):
     di.sopClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
     di.mediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
     di.sopInstanceUID = pydicom.uid.generate_uid()
-    di.StudyTime = dt.strftime('%H%M%S.%f')
-    di.StudyDate = dt.strftime('%Y%m%d')
+    di.studyTime = dt.strftime('%H%M%S.%f')
+    di.studyDate = dt.strftime('%Y%m%d')
     
     dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
     writeRTDose(di, dcm_dose_file)
