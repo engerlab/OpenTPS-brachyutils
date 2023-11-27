@@ -1644,7 +1644,7 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
                     else:
                         defaultIonCpsRange = pydicom.dataset.Dataset()
                         defaultIonCpsRange.RangeShifterSetting = "IN"
-                        defaultIonCpsRange.IsocenterToRangeShifterDistance = ""
+                        defaultIonCpsRange.IsocenterToRangeShifterDistance = 0.0
                         defaultIonCpsRange.ReferencedRangeShifterNumber = "0"
                         ionCps.RangeShifterSettingsSequence.append(defaultIonCpsRange)
                     
@@ -1690,7 +1690,7 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
                 ionCps.RangeShifterSettingsSequence = []        
                 defaultIonCpsRange = pydicom.dataset.Dataset()
                 defaultIonCpsRange.RangeShifterSetting = "OUT"
-                defaultIonCpsRange.IsocenterToRangeShifterDistance = ""
+                defaultIonCpsRange.IsocenterToRangeShifterDistance = 0.0
                 defaultIonCpsRange.ReferencedRangeShifterNumber = '0'
                 ionCps.RangeShifterSettingsSequence.append(defaultIonCpsRange)
                 ionCps.ScanSpotTuneID = ""
@@ -1772,7 +1772,7 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
     #     ionCps.RangeShifterSettingsSequence = []
     #     ionCpsRange = pydicom.dataset.Dataset()
     #     ionCpsRange.RangeShifterSetting = "IN"
-    #     ionCpsRange.IsocenterToRangeShifterDistance = ""
+    #     ionCpsRange.IsocenterToRangeShifterDistance = 0.0
     #     ionCpsRange.ReferencedRangeShifterNumber = "0"
     #     ionCps.RangeShifterSettingsSequence.append(ionCpsRange)
         
