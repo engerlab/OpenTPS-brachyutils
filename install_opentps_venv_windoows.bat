@@ -47,15 +47,17 @@ pip install numpy
 pip install scipy
 pip install matplotlib
 pip install Pillow
-pip install PyQt5==5.15.7
+pip install PyQt5==5.15.10
+pip install PyQt5-Qt5=='5.15.2'
 pip install pyqtgraph
 pip install sparse_dot_mkl
-pip install vtk
+pip install vtk==9.2.6
 pip install SimpleITK
 pip install pandas
 pip install scikit-image
 pip install tensorflow
 pip install keras
+pip3 install pymedphys==0.39.3
 REM pip3 install cupy
 
 echo All packages installed successfully.

@@ -36,7 +36,11 @@ def applyThreshold(image, thresholdMin, thresholdMax=np.inf):
 def getBoxAroundROI(ROI) -> Sequence[Sequence[float]]:
 
     """
-    Get the box around an ROI in scanner coordinates (using the ROI origin and spacing)
+    Returns the 3D scanner coordinates (in mm) of the smallest box surrounding the given ROI.
+    By convention, the returned box coordinates are the coordinates of centers of the voxels at the extremities of the box.
+    In other words, a box that passes through the center of a voxel necessarily contains this voxel.
+    For example, in 1 dimension, with a spacing of 1mm and origin at 0mm, a box around voxels [1,2] will results
+    in box coordinates [1,2] mm even though the size of the box is 2mm (because it includes 2 voxels of 1mm spacing).
 
     Parameters
     ----------
@@ -47,7 +51,7 @@ def getBoxAroundROI(ROI) -> Sequence[Sequence[float]]:
     Returns
     ----------
     boxInUniversalCoords : list of tuples or list
-        The box around which the data is cropped, under the form [[x1, X2], [y1, y2], [z1, z2]]
+        The box coordinates, under the form [[x1, X2], [y1, y2], [z1, z2]]
 
     """
 
