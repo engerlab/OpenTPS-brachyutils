@@ -8,18 +8,17 @@ from opentps.core.processing.planDeliverySimulation.scanAlgoSimulationConfig imp
 class ScanAlgoBeamDeliveryTimings:
     """
     Beam Delivery Timings for ScanAlgo
+
+    Attributes
+    ----------
+    plan: RTPlan
+        Treatment plan without spot delivery timings information
+    URL: str
+        ScanAlgo REST gateway URL for sending request. If None, use default value in config file ScanAlgoSimulationConfig.cfg
+    gantry: str
+        Type of gantry, either 'POne' or 'PPlus'. If None, use default value in config file ScanAlgoSimulationConfig.cfg
     """
     def __init__(self, plan: RTPlan, URL:str=None, gantry:str=None):
-        """
-        Parameters
-        ----------
-        plan: RTPlan
-            Treatment plan without spot delivery timings information
-        URL: str
-            ScanAlgo REST gateway URL for sending request. If None, use default value in config file ScanAlgoSimulationConfig.cfg
-        gantry: str
-            Type of gantry, either 'POne' or 'PPlus'. If None, use default value in config file ScanAlgoSimulationConfig.cfg
-        """
         self.plan = plan
         if URL is None and gantry is None:
             config = ScanAlgoSimulationConfig()
@@ -80,7 +79,7 @@ class ScanAlgoBeamDeliveryTimings:
     def parsePPlusResponse(self, plan, scanAlgo, index_beam):
         """
         Parse response from ScanAlgo for PPlus gantry + reorder spots according to spot timings
-        
+
         Parameters
         ----------
         plan: RTPlan
@@ -92,7 +91,7 @@ class ScanAlgoBeamDeliveryTimings:
 
         Returns
         -------
-        plan:RTPlan 
+        plan:RTPlan
             updated plan with timings
         """
         assert len(plan._beams[index_beam]._layers) == len(scanAlgo['layer'])
@@ -136,16 +135,17 @@ class ScanAlgoBeamDeliveryTimings:
 
         Parameters
         ----------
-        plan: RTPlan
-        scanAlgo: dict
-            output from scanAlgo
-        index_beam: int
+        plan : RTPlan
+            The plan for which the timings are computed.
+        scanAlgo : dict
+            The output from scanAlgo.
+        index_beam : int
             index number of the beam in plan._beams
-        
+
         Returns
         -------
-        plan: RTPlan 
-            updated plan with timings
+        RTPlan
+            The plan with timings.
         """
         assert len(plan._beams[index_beam]._layers) == len(scanAlgo['layers'])
         burst_switching_time = 150
@@ -190,6 +190,17 @@ class ScanAlgoBeamDeliveryTimings:
     def findSpotIndexJson(self, json_arr, pos_x, pos_y, return_first=True):
         """
         Find index of spot corresposding to position (pos_x,pos_y) in JSON file
+
+        Parameters
+        ----------
+        json_arr : dict
+            The JSON file containing the spots.
+        pos_x : float
+            The x position of the spot.
+        pos_y : float
+            The y position of the spot.
+        return_first : bool
+            If True, return the first index found. If False, return all indices found.
         """
         if self.gantry=="PPlus":
             indices = []
@@ -221,6 +232,18 @@ class ScanAlgoBeamDeliveryTimings:
         """
         ScanAlgo returns a charge delivered for each spot. This function computes the coefficient to go from charges to MU
         for each spot in the original_layer.
+
+        Parameters
+        ----------
+        original_layer : Layer
+            The layer from the plan.
+        SA_layer : dict
+            The layer from the scanAlgo output.
+
+        Returns
+        -------
+        float
+            The conversion coefficient.
         """
         if self.gantry == 'PPlus':
             conversion_coeff = np.zeros(len(original_layer._x))
@@ -247,5 +270,13 @@ class ScanAlgoBeamDeliveryTimings:
         return conversion_coeff
 
     def getTimingsAndSavePlan(self, output_path):
+        """
+        Add timings for each spot in the plan and save the plan.
+
+        Parameters
+        ----------
+        output_path : str
+            The path where the plan will be saved.
+        """
         plan_with_timings = self.getPBSTimings(sort_spots="true")
         saveRTPlan(plan_with_timings, output_path)

@@ -81,6 +81,24 @@ def generateDynSeqFromBreathingSignalsAndModel(model, signalList, ROIList, signa
 def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROIList, signalIdxUsed=[0, 0], dimensionUsed='Z', outputType=np.float32, tryGPU=True):
 
     """
+    Generate a list of deformation fields from a model, in which each given ROI follows its breathing signal
+
+    Parameters
+    ----------
+    model : Dynamic3DModel
+        The dynamic 3D model that will be used to create the images of the resulting sequence
+    signalList : list
+        list of breathing signals as 1D numpy arrays
+    ROIList : list
+        list of points as [X, Y, Z] or (X, Y, Z) --> does not work with ROI's as masks or struct
+    dimensionUsed : str
+        X, Y, Z or norm, the dimension used to compare the breathing signals with the model deformation values
+    outputType : pixel data type (np.float32, np.uint16, etc)
+
+    Returns
+    -------
+    deformationList (list)
+        a list of deformation fields
 
 
     """
@@ -131,6 +149,27 @@ def generateDeformationListFromBreathingSignalsAndModel(model, signalList, ROILi
     return deformationList
 
 def getPhaseValueList(ROI, model, signal, signalIdxUsed, dimensionUsed='Z', tryGPU=True):
+    """
+    Get the phase value list for a given ROI and a given model
+
+    Parameters
+    ----------
+    ROI : list
+        list of points of the ROI as [X, Y, Z] or (X, Y, Z) --> does not work with ROI's as masks or struct
+    model : Dynamic3DModel
+        The dynamic 3D model that will be used to create the images of the resulting sequence
+    signal : 1D numpy array
+        the breathing signal
+    signalIdxUsed : list
+        the indexes of the signal to use
+    dimensionUsed : str
+        X, Y, Z or norm, the dimension used to compare the breathing signals with the model deformation values
+
+    Returns
+    -------
+    phaseValueList (list)
+        a list of phase values for each sample of the breathing signal
+    """
 
     ## get model deformation values for the specified dimension at the ROI location
     modelDefValuesArray = getAverageModelValuesAroundPosition(ROI, model, dimensionUsed=dimensionUsed, tryGPU=tryGPU)
@@ -166,19 +205,25 @@ def getPhaseValueList(ROI, model, signal, signalIdxUsed, dimensionUsed='Z', tryG
 ## -------------------------------------------------------------------------------
 def splitAscentDescentSubsets(CTPhasePositions):
     """
-    Split ...
+    Split the CTPhasePositions into ascent and descent subsets
 
     Parameters
     ----------
-    CTPhasePositions :
+    CTPhasePositions : 1D numpy array
+        the CT phase positions
 
     Returns
     -------
-    ascentPart : the ...
-    ascentPartIndexes
-    descentPart
-    descentPartIndexes
-    amplitude
+    ascentPart: 1D numpy array
+        the CT phase positions of the ascent subset
+    ascentPartIndexes: 1D numpy array
+        the indexes of the ascent subset
+    descentPart: 1D numpy array
+        the CT phase positions of the descent subset
+    descentPartIndexes: 1D numpy array
+        the indexes of the descent subset
+    amplitude: float
+        the amplitude of the CT phase positions
     """
     minIndex = np.argmin(CTPhasePositions)
     maxIndex = np.argmax(CTPhasePositions)
@@ -219,7 +264,19 @@ def splitAscentDescentSubsets(CTPhasePositions):
 ## ---------------------------------------------------------------------------------------------
 def isAscentOrDescentCase(signal, currentIndex):
     """
-    TODO
+    given a signal and a current index, return if the current index is in an ascent or descent case
+
+    Parameters
+    ----------
+    signal : 1D numpy array
+        the breathing signal
+    currentIndex : int
+        the current index of the signal
+
+    Returns
+    -------
+    ascendDescendCase : str
+        'ascending' or 'descending'
     """
     currentPosition = signal[currentIndex]
 
@@ -241,7 +298,33 @@ def isAscentOrDescentCase(signal, currentIndex):
 ## -----------------------------------------------------------------------------------------------------
 def computePhaseRatio(sampleValuePos, CTPhasesSubPart, CTPhasesPartsIndexes, ascendDescendCase, meanPos):
     """
-    TODO
+    given a sample value position, the CT phases positions, the CT phases indexes, the ascent or descent case and the mean position, compute the phase ratio
+
+    Parameters
+    ----------
+    sampleValuePos : float
+        the sample value position
+    CTPhasesSubPart : 1D numpy array
+        the CT phases positions
+    CTPhasesPartsIndexes : 1D numpy array
+        the CT phases indexes
+    ascendDescendCase : str
+        'ascending' or 'descending'
+    meanPos : float
+        the mean position
+
+    Returns
+    -------
+    [interExtraCase, phaseIndex, correctedPhaseIndex] : list
+    with
+        interExtraCase : str
+            'I' or 'E' meaning inter or extra
+        phaseIndex : int
+            the phase index
+        correctedPhaseIndex : float
+                the phase ratio
+        phaseRatio : float
+            the phase ratio
     """
     correctedPhaseIndex = 0
     showingCondition = False

@@ -22,7 +22,13 @@ logger = logging.getLogger(__name__)
 
 class Norm(BaseFunc):
     """
-    Base class which defines the attributes of the `norm` objects.
+    Base class which defines the attributes of the `norm` objects. Inherit from BaseFunc.
+    Code from EPFL LTS2 toolbox.
+
+    Attributes
+    ----------
+    lambda_ : float (default: 1)
+        Regularization parameter.
     """
 
     def __init__(self, lambda_=1, **kwargs):
@@ -32,7 +38,8 @@ class Norm(BaseFunc):
 
 class NormL1(Norm):
     """
-    L1-norm (eval, prox)
+    L1-norm (eval, prox). Inherits from Norm.
+    Code from EPFL LTS2 toolbox.
     """
 
     def __init__(self, **kwargs):
@@ -50,7 +57,8 @@ class NormL1(Norm):
 
 class NormL2(Norm):
     """
-    L2-norm (eval, prox, grad)
+    L2-norm (eval, prox, grad). Inherits from Norm.
+    Code from EPFL LTS2 toolbox.
     """
 
     def __init__(self, **kwargs):
@@ -72,10 +80,12 @@ class NormL2(Norm):
 
 
 class NormL21(Norm):
-    """L2,1-norm (eval, prox) for matrix (list of lists in our case)
-    : Sum of the Euclidean norms of the columns (items) of the matrix (list)
+    """
+    L2,1-norm (eval, prox) for matrix (list of lists in our case):
+    Sum of the Euclidean norms of the columns (items) of the matrix (list)
     The proximal operator for reg*||w||_2 (not squared).
-    source lasso
+    source lasso. Inherit from Norm.
+    Code from EPFL LTS2 toolbox.
     """
 
     def __init__(self, plan=None, scaleReg="group_size", oldRegularisation=False,

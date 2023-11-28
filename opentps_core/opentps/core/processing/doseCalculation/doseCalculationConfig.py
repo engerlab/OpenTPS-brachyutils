@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class DoseCalculationConfig(AbstractApplicationConfig):
+    """
+    Configuration for dose calculation using Event
+
+    """
     def __init__(self):
         super().__init__()
 

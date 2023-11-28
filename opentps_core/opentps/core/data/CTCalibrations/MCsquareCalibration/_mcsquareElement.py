@@ -6,6 +6,14 @@ from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial impo
 
 
 class MCsquareElement(MCsquareMaterial):
+    """
+    Class for MCsquare elements. Inherits from MCsquareMaterial.
+
+    Attributes
+    ----------
+    atomicWeight : float (default 0.0)
+        Atomic weight of the element.
+    """
     def __init__(self, density=0.0, electronDensity=0.0, name=None, number=0, sp=None, radiationLength=0.0, atomicWeight=0.0):
         super().__init__(density=density, electronDensity=electronDensity, name=name, number=number, sp=sp, radiationLength=radiationLength)
 
@@ -19,6 +27,14 @@ class MCsquareElement(MCsquareMaterial):
         return self.mcsquareFormatted()
 
     def mcsquareFormatted(self, materialNamesOrderedForPrinting=None):
+        """
+        Get element data in MCsquare format.
+
+        Returns
+        -------
+        s : str
+            Element data in MCsquare format.
+        """
         if self.density<=0:
             self.density = 1e-18
 
@@ -36,6 +52,21 @@ class MCsquareElement(MCsquareMaterial):
 
     @classmethod
     def load(cls, materialNb, materialsPath='default'):
+        """
+        Load element from file.
+
+        Parameters
+        ----------
+        materialNb : int
+            Number of the material.
+        materialsPath : str (default 'default')
+            Path to materials folder. If 'default', the default path is used.
+
+        Returns
+        -------
+        self : MCsquareElement
+            The loaded element.
+        """
         elementPath = MCsquareMaterial.getFolderFromMaterialNumber(materialNb, materialsPath)
 
         self = cls()
@@ -74,11 +105,11 @@ class MCsquareElement(MCsquareMaterial):
                     if 'ICRU' in line:
                         self._nuclear_data = 'ICRU'
 
-                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_elastic.dat'), mode='r')
+                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_elastic.dat'), mode='r',encoding="utf-8")
                         self._nuclearElasticData = file.read()
                         file.close()
 
-                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_inelastic.dat'), mode='r')
+                        file = open(os.path.join(elementPath, 'ICRU_Nuclear_inelastic.dat'), mode='r',encoding="utf-8")
                         self._nuclearInelasticData = file.read()
                         file.close()
 
@@ -97,13 +128,23 @@ class MCsquareElement(MCsquareMaterial):
         return self
 
     def write(self, folderPath, materialNamesOrderedForPrinting):
+        """
+        Write element data in specified folder.
+
+        Parameters
+        ----------
+        folderPath : str
+            Folder path.
+        materialNamesOrderedForPrinting : list of str
+            List of material names ordered for printing.
+        """
         super().write(folderPath, materialNamesOrderedForPrinting)
 
         if 'ICRU' in self._nuclear_data:
-            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_elastic.dat'), 'w') as f:
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_elastic.dat'), 'w',encoding="utf-8") as f:
                 f.write(self._nuclearElasticData)
 
-            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_inelastic.dat'), 'w') as f:
+            with open(os.path.join(folderPath, self.name, 'ICRU_Nuclear_inelastic.dat'), 'w',encoding="utf-8") as f:
                 f.write(self._nuclearInelasticData)
 
             with open(os.path.join(folderPath, self.name, 'ICRU_PromptGamma.dat'), 'w') as f:

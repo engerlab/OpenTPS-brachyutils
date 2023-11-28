@@ -7,7 +7,20 @@ logger = logging.getLogger(__name__)
 
 
 class Registration:
+    """
+    Base class for registration.
 
+    Attributes
+    ----------
+    fixed : image3D
+        fixed image.
+    moving : image3D
+        moving image.
+    deformed : image3D
+        deformed moving image.
+    roiBox : list
+        region of interest for registration.
+    """
     def __init__(self, fixed, moving):
         self.fixed = fixed
         self.moving = moving
@@ -49,11 +62,19 @@ class Registration:
             return
 
     def setROI(self, ROI):
-        profile = np.sum(ROI.Mask, (0, 2))
+        """
+        Set the ROI to be used for registration.
+
+        Parameters
+        ----------
+        ROI : roiMask
+            ROI to be used for registration.
+        """
+        profile = np.sum(ROI.imageArray, (0, 2))
         box = [[0, 0, 0], [0, 0, 0]]
-        x = np.where(np.any(ROI.Mask, axis=(1, 2)))[0]
-        y = np.where(np.any(ROI.Mask, axis=(0, 2)))[0]
-        z = np.where(np.any(ROI.Mask, axis=(0, 1)))[0]
+        x = np.where(np.any(ROI.imageArray, axis=(1, 2)))[0]
+        y = np.where(np.any(ROI.imageArray, axis=(0, 2)))[0]
+        z = np.where(np.any(ROI.imageArray, axis=(0, 1)))[0]
 
         # box start
         box[0][0] = x[0]
@@ -68,6 +89,16 @@ class Registration:
         self.roiBox = box
 
     def translateOrigin(self, Image, translation):
+        """
+        Translate the origin of an image.
+
+        Parameters
+        ----------
+        Image : 3DImage
+            Image from which the origin is translated.
+        translation : list
+            Translation vector.
+        """
         Image.origin[0] += translation[0]
         Image.origin[1] += translation[1]
         Image.origin[2] += translation[2]
@@ -77,6 +108,20 @@ class Registration:
         Image.VoxelZ = Image.origin[2] + np.arange(Image.gridSize[2]) * Image.spacing[2]
 
     def translateAndComputeSSD(self, translation=None, tryGPU=True):
+        """
+        Translate the moving image and compute the SSD metric.
+        Parameters
+        ----------
+        translation : list
+            Translation vector.
+        tryGPU : bool
+            If True, try to use GPU.
+
+        Returns
+        -------
+        ssd : double
+            SSD metric value after translation.
+        """
 
         if translation is None:
             translation = [0.0, 0.0, 0.0]
@@ -107,11 +152,42 @@ class Registration:
         return ssd
 
     def computeSSD(self, fixed, deformed):
+        """
+        Compute the SSD metric between two images.
+
+        Parameters
+        ----------
+        fixed : numpy array
+            Fixed image.
+        deformed : numpy array
+            Deformed image.
+
+        Returns
+        -------
+        ssd : double
+            SSD metric value.
+        """
         # compute metric
         ssd = np.sum(np.power(fixed - deformed, 2))
         return ssd
 
     def resampleMovingImage(self, keepFixedShape=True, tryGPU=True):
+        """
+        Resample the moving image to the fixed image grid.
+
+        Parameters
+        ----------
+        keepFixedShape : bool
+            If True, the moving image is resampled to the fixed image grid.
+            If False, the fixed image is resampled to the moving image grid.
+        tryGPU : bool
+            If True, try to use GPU.
+
+        Returns
+        -------
+        resampled : 3DImage
+            Resampled image.
+        """
         if self.fixed == [] or self.moving == []:
             logger.error("Image not defined in registration object")
             return
@@ -142,7 +218,18 @@ class Registration:
         return resampled
 
     def resampleFixedImage(self, tryGPU=True):
+        """
+        Resample the fixed image to the moving image grid.
 
+        Parameters
+        ----------
+        tryGPU : bool
+            If True, try to use GPU.
+
+        Returns
+        -------
+        resampled : 3DImage
+        """
         if (self.fixed == [] or self.moving == []):
             logger.error("Image not defined in registration object")
             return
@@ -167,7 +254,22 @@ class Registration:
         return resampled
 
     def computeImageDifference(self, keepFixedShape=True, tryGPU=True):
+        """
+        Compute the difference between the fixed and moving image.
 
+        Parameters
+        ----------
+        keepFixedShape : bool
+            If True, the moving image is resampled to the fixed image grid.
+            If False, the fixed image is resampled to the moving image grid.
+        tryGPU : bool
+            If True, try to use GPU.
+
+        Returns
+        -------
+        diff : 3DImage
+            Difference between the 2 images.
+        """
         if (self.fixed == [] or self.moving == []):
             logger.error("Image not defined in registration object")
             return

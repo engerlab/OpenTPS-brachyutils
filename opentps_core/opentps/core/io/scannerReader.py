@@ -7,6 +7,19 @@ from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCa
 
 
 def readScanner(scannerFolder) -> AbstractCTCalibration:
+    """
+    Read the CT calibration curve from a scanner folder
+
+    Parameters
+    ----------
+    scannerFolder:str
+        The path to the scanner folder
+
+    Returns
+    -------
+    AbstractCTCalibration
+        The CT calibration curve for the given scanner
+    """
     if os.path.isfile(os.path.join(scannerFolder, 'HU_Density_Conversion.txt')):
         try:
 

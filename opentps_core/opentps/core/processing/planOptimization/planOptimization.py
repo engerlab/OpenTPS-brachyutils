@@ -12,6 +12,14 @@ try:
 except:
     use_MKL = 0
 
+cupy_available = False
+try:
+    import cupy as cp
+    import cupyx as cpx
+    cupy_available = True
+except:
+    cupy_available = False
+
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.processing.planOptimization.solvers import sparcling, \
     beamletFree
@@ -23,6 +31,27 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizer:
+    """
+    This class is used to optimize a plan.
+
+    Attributes
+    ----------
+    plan : RTPlan
+        The plan to optimize.
+    opti_params : dict
+        The optimization parameters.
+    functions : list
+        The list of functions to optimize.
+    solver : Solver (default: bfgs.ScipyOpt('L-BFGS-B'))
+        The solver to use.
+    thresholdSpotRemoval : float
+        The threshold weight below which spots are removed from the plan and beamlet matrix.
+    xSquared : bool
+        If True, the weights are squared.
+    GPU_acceleration : bool (default : False)
+        If True, the evaluation of the doseFidelity function is done with cupy (this attribute should only
+        be modified with the "use_GPU_acceleration" function)
+    """
     def __init__(self, plan:RTPlan, **kwargs):
 
         self.solver = bfgs.ScipyOpt('L-BFGS-B')
@@ -32,6 +61,7 @@ class PlanOptimizer:
         self.functions = []
         self._xSquared = True
         self.thresholdSpotRemoval = 1e-6 # remove all spots below this value after optimization from the plan and beamlet matrix
+        self.GPU_acceleration = False
 
     @property
     def xSquared(self):
@@ -41,8 +71,34 @@ class PlanOptimizer:
     def xSquared(self, x2):
         self._xSquared = x2
 
+    def use_GPU_acceleration(self):
+        """
+        Enable the uses of the GPU via cupy and cupyx (both library need to be installed as well as CUDA).
+        """
+        if cupy_available:
+            self.GPU_acceleration = True
+            logger.info('cupy imported in planOptimization module')
+            logger.info('abnormal used memory: {}'.format(cp.get_default_memory_pool().used_bytes()))
+        else:
+            logger.info('Unable to import CUPY, please configure CUPY to enable GPU acceleration')
+            self.GPU_acceleration = False
+    def stop_GPU_accelration(self):
+        """
+        stop the use of GPU acceleration
+        """
+        self.GPU_acceleration = False
+        logger.info('GPU accelerations deactivated')
+
 
     def initializeWeights(self):
+        """
+        Initialize the weights.
+
+        Returns
+        -------
+        x0 : numpy.ndarray
+            The weights.
+        """
         # Total Dose calculation
         totalDose = self.plan.planDesign.beamlets.toDoseImage().imageArray
         maxDose = np.max(totalDose)
@@ -57,6 +113,9 @@ class PlanOptimizer:
         return x0
 
     def initializeFidObjectiveFunction(self):
+        """
+        Initialize the dose fidelity objective function.
+        """
         self.plan.planDesign.setScoringParameters()
         # crop on ROI
         roiObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
@@ -71,11 +130,13 @@ class PlanOptimizer:
         roiObjectives = np.logical_or(roiObjectives, roiRobustObjectives)
 
         if use_MKL == 1:
+            print("Using MKL")
             beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                 sp.diags(roiObjectives.astype(np.float32), format='csc'), self.plan.planDesign.beamlets.toSparseMatrix())
         else:
             beamletMatrix = sp.csc_matrix.dot(sp.diags(roiObjectives.astype(np.float32), format='csc'),
                                               self.plan.planDesign.beamlets.toSparseMatrix())
+
         self.plan.planDesign.beamlets.setUnitaryBeamlets(beamletMatrix)
 
         if robust:
@@ -90,18 +151,52 @@ class PlanOptimizer:
                         self.plan.planDesign.robustness.scenarios[s].toSparseMatrix())
                 self.plan.planDesign.robustness.scenarios[s].setUnitaryBeamlets(beamletMatrix)
 
-        objectiveFunction = DoseFidelity(self.plan, self.xSquared)
+        objectiveFunction = DoseFidelity(self.plan, self.xSquared,self.GPU_acceleration)
         self.functions.append(objectiveFunction)
 
     def optimize(self):
+        """
+        Optimize the plan.
+
+        Returns
+        -------
+        numpy.ndarray
+            The optimized weights.
+        numpy.ndarray
+            The total dose.
+        float
+            The cost.
+        """
         logger.info('Prepare optimization ...')
+        if self.GPU_acceleration:
+            logger.info('abnormal used memory: {}'.format(cp.get_default_memory_pool().used_bytes()))
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
         # Optimization
         result = self.solver.solve(self.functions, x0)
+        if self.GPU_acceleration:
+            self.functions[0].unload_blGPU()
+            cp._default_memory_pool.free_all_blocks()
         return self.postProcess(result)
 
     def postProcess(self, result):
+        """
+        Post-process the optimization result. !! The spots and the according weight bellow the thresholdSpotRemoval are removed from the plan and beamlet matrix !!
+
+        Parameters
+        ----------
+        result : dict
+            The optimization result.
+
+        Returns
+        -------
+        numpy.ndarray
+            The optimized weights.
+        numpy.ndarray
+            The total dose.
+        float
+            The cost.
+        """
         # Remove unnecessary attributs in plan
         try:
             del self.plan._spots
@@ -149,6 +244,19 @@ class PlanOptimizer:
         return self.weights, totalDose, self.cost
 
     def getConvergenceData(self, method):
+        """
+        Get the convergence data.
+
+        Parameters
+        ----------
+        method : str
+            The optimization method.
+
+        Returns
+        -------
+        dict
+            The convergence data.
+        """
         dct = {}
         if 'Scipy' in method:
             dct['func_0'] = self.cost[:-1]
@@ -165,6 +273,20 @@ class PlanOptimizer:
 
 
 class IMPTPlanOptimizer(PlanOptimizer):
+    """
+    This class is used to optimize an Intensity Modulated Proton Therapy (IMPT) plan. It inherits from PlanOptimizer.
+    Attributes
+    ----------
+    method : str
+        The optimization method. It can be one of the following:
+        - 'Scipy-BFGS'
+        - 'Scipy-LBFGS'
+        - 'Gradient'
+        - 'BFGS'
+        - 'LBFGS'
+        - 'FISTA'
+        - 'LP'
+    """
     def __init__(self, method, plan:RTPlan, **kwargs):
         super().__init__(plan, **kwargs)
         self.method = method
@@ -190,10 +312,26 @@ class IMPTPlanOptimizer(PlanOptimizer):
                     self.method))
 
     def getConvergenceData(self):
+        """
+        Get the convergence data.
+
+        Returns
+        -------
+        dict
+            The convergence data.
+        """
         return super().getConvergenceData(self.method)
 
 
 class BoundConstraintsOptimizer(PlanOptimizer):
+    """
+    This class is used to optimize a plan with bound constraints. It inherits from PlanOptimizer.
+
+    Attributes
+    ----------
+    bounds : tuple (default: (0.02, 5))
+        The bounds.
+    """
     def __init__(self, plan:RTPlan, method='Scipy-LBFGS', bounds=(0.02, 5), **kwargs):
         super().__init__(plan, **kwargs)
         self.bounds = bounds
@@ -207,6 +345,19 @@ class BoundConstraintsOptimizer(PlanOptimizer):
         return False
 
     def formatBoundsForSolver(self, bounds=None):
+        """
+        Format the bounds for the solver with respect to the number of fractions.
+
+        Parameters
+        ----------
+        bounds : tuple (default: None)
+            The bounds. If None, the bounds are set to self.bounds.
+
+        Returns
+        -------
+        list
+            The formatted bounds.
+        """
         if bounds is None:
             bounds = self.bounds
         bound_min = bounds[0] * self.plan.numberOfFractionsPlanned
@@ -214,6 +365,24 @@ class BoundConstraintsOptimizer(PlanOptimizer):
         return [(bound_min, bound_max)] * self.plan.planDesign.beamlets.shape[1]
 
     def optimize(self, nIterations=None):
+        """
+        Optimize the plan.
+
+        Parameters
+        ----------
+        nIterations : tuple (default: None)
+            The number of iterations for the first and second optimization. If None, the number of iterations is set to self.opti_params['maxit'] // 2 if first bound is 0,
+            else it is set to self.opti_params['maxit'].
+
+        Returns
+        -------
+        numpy.ndarray
+            The optimized weights.
+        numpy.ndarray
+            The total dose.
+        float
+            The cost.
+        """
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
 
@@ -254,6 +423,18 @@ class BoundConstraintsOptimizer(PlanOptimizer):
 
 
 class ARCPTPlanOptimizer(PlanOptimizer):
+    """
+    This class is used to optimize an arc proton therapy plan (ARCPT). It inherits from PlanOptimizer.
+
+    Attributes
+    ----------
+    method : str
+        The optimization method. It can be one of the following:
+        - 'FISTA'
+        - 'LS'
+        - 'MIP'
+        - 'SPArcling'
+    """
     def __init__(self, method, plan, **kwargs):
         super(ARCPTPlanOptimizer, self).__init__(plan, **kwargs)
         if method == 'FISTA':

@@ -8,6 +8,21 @@ logger = logging.getLogger(__name__)
 
 
 def matchProfiles(fixed, moving):
+    """
+    Find shift between two profiles by minimizing the mean squared error (MSE).
+
+    Parameters
+    ----------
+    fixed : array
+        fixed profile.
+    moving : array
+        moving profile.
+
+    Returns
+    -------
+    int
+        shift between profiles.
+    """
     mse = []
 
     for index in range(len(moving)):
@@ -31,7 +46,16 @@ def matchProfiles(fixed, moving):
 
 
 class RegistrationQuick(Registration):
+    """
+    Perform quick translation search between fixed and moving images. inherited from Registration class.
 
+    Attributes
+    ----------
+    fixed : Image3D
+        Fixed image.
+    moving : Image3D
+        Moving image.
+    """
     def __init__(self, fixed, moving):
         Registration.__init__(self, fixed, moving)
 

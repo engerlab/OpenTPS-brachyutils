@@ -3,6 +3,14 @@ import logging
 from opentps.core.data.plan._rtPlan import RTPlan
 
 class ScanAlgoPlan:
+    """
+    Class to create a plan with Protheus Plus or Protheus One accelerator from IBA
+
+    Parameters
+    ----------
+    Gantry : str
+        Gantry angle of the accelerator. Can be "PPlus" or "POne"
+    """
     def __init__(self, plan: RTPlan, Gantry: str, beamID = 0, sort_spots="true"):
         beam = plan._beams[beamID]
         if Gantry == "PPlus":
@@ -60,6 +68,24 @@ class ScanAlgoPlan:
 
 
     def getLayers(self,plan,Gantry,beamID):
+        """
+        Function to get the layers of the plan
+
+        Parameters
+        ----------
+        plan : RTPlan
+            Plan to be converted
+        Gantry : str
+            Gantry angle of the accelerator. Can be "PPlus" or "POne" for Protheus Plus or Protheus One
+            accelerator from IBA.
+        beamID : int
+            ID of the beam to be converted
+
+        Returns
+        -------
+        beamDict : dict
+            Dictionary with the layers of the plan
+        """
         beam = plan._beams[beamID]
         beamDict = {}
         if Gantry == "PPlus":
@@ -100,9 +126,25 @@ class ScanAlgoPlan:
         return beamDict
 
     def save(self, file_path):
+        """
+        Function to save the plan in a json file
+
+        Parameters
+        ----------
+        file_path : str
+            Path to save the plan
+        """
         with open(file_path, 'w') as fid:
             json.dump(self.__dict__,fid)
 
     def load(self,file_path):
+        """
+        Function to load a plan from a json file
+
+        Parameters
+        ----------
+        file_path : str
+            Path to load the plan
+        """
         with open(file_path) as fid:
             self.data = json.load(fid)

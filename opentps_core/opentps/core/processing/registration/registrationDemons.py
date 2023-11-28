@@ -8,7 +8,20 @@ logger = logging.getLogger(__name__)
 
 
 class RegistrationDemons(Registration):
+    """
+    Perform Demons registration between fixed and moving images. inherited from Registration class.
 
+    Attributes
+    ----------
+    fixed : Image3D
+        Fixed image.
+    moving : Image3D
+        Moving image.
+    baseResolution : float
+        Base resolution for registration.
+    tryGPU : bool
+        Try to use GPU for registration.
+    """
     def __init__(self, fixed, moving, baseResolution=2.5, tryGPU=True):
 
         Registration.__init__(self, fixed, moving)

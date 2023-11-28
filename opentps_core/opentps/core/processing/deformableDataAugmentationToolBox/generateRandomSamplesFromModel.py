@@ -4,8 +4,29 @@ import time
 
 def generateRandomImagesFromModel(model, numberOfSamples = 1, amplitudeRange = [0.8, 1.2], ampDistribution="uniform", tryGPU=True, outputType=np.int16):
     """
-    should we call this a "uniform" sample ? to differentiate with the weight maps combination ?
+    generate random images from a model
+
+    parameters
+    ----------
+    model : DeformableModel
+        the model to generate the images from
+    numberOfSamples : int
+        number of images to generate
+    amplitudeRange : list of 2 floats
+        range of the amplitude of the deformation
+    ampDistribution : string
+        distribution of the amplitude of the deformation
+    tryGPU : bool
+        try to use the GPU
+    outputType : numpy type
+        type of the output image
+
+    returns
+    -------
+    sampleImageList : list of numpy arrays
+        list of the generated images
     """
+    #should we call this a "uniform" sample ? to differentiate with the weight maps combination ?
 
     sampleImageList = []
 
@@ -18,8 +39,26 @@ def generateRandomImagesFromModel(model, numberOfSamples = 1, amplitudeRange = [
 
 def generateRandomDeformationsFromModel(model, numberOfSamples = 1, amplitudeRange = [0.8, 1.2], ampDistribution="uniform"):
     """
-        should we call this a "uniform" sample ? to differentiate with the weight maps combination ?
-        """
+    generate random deformations from a model
+
+    parameters
+    ----------
+    model : DeformableModel
+        the model to generate the deformations from
+    numberOfSamples : int
+        number of deformations to generate
+    amplitudeRange : list of 2 floats
+        range of the amplitude of the deformation
+    ampDistribution : string
+        distribution of the amplitude of the deformation
+
+    returns
+    -------
+    sampleDeformationList : list of Deformation
+        list of the generated deformations
+    """
+
+    #should we call this a "uniform" sample ? to differentiate with the weight maps combination ?
 
     sampleDeformationList = []
 

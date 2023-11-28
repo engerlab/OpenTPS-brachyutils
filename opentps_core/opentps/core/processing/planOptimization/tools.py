@@ -20,6 +20,43 @@ class WeightStructure:
     It is intended to define several structures and utilities
     such as list of weights/energies grouped by layer or by beam
     but also functions computing ELST, sparsity of the plan, etc.
+
+    Attributes
+    ----------
+    plan : RTPlan
+        The plan to be optimized
+    beamletMatrix : scipy.sparse.csc_matrix
+        The beamlet matrix of the plan
+    x : numpy.ndarray
+        The weights of the beamlets
+    nSpots : int
+        The total number of spots in the plan
+    nBeams : int
+        The total number of beams in the plan
+    nLayers : int
+        The total number of layers in the plan
+    nSpotsInLayer : numpy.ndarray
+        The number of spots in each layer
+    nSpotsInBeam : numpy.ndarray
+        The number of spots in each beam
+    nLayersInBeam : numpy.ndarray
+        The number of layers in each beam
+    energyLayers : list
+        The energies of each layer
+    nSpotsGrouped : int
+        The total number of spots in the plan after grouping
+    sparseMatrixGrouped : scipy.sparse.csc_matrix
+        The beamlet matrix of the plan after grouping
+    xGrouped : numpy.ndarray
+        The weights of the beamlets after grouping
+    spotsGrouped : list
+        The list of spots after grouping
+    beamsGrouped : list
+        The list of beams after grouping
+    layersGrouped : list
+        The list of layers after grouping
+    spotNewID : list
+        The list of new spot IDs after grouping
     """
 
     def __init__(self, plan:RTPlan):
@@ -48,12 +85,20 @@ class WeightStructure:
         self.spotNewID = None
 
     def loadSolution(self, x):
+        """
+        load solution x (weights) into the object
+        """
         logger.info("LoadingSolution x ...")
         self.x = x
 
     def computeNOfLayers(self):
         """
         return total number of energy layers in the plan
+
+        Returns
+        -------
+        int
+            The total number of energy layers in the plan
         """
         res = 0
         for i in range(len(self.plan.beams)):
@@ -67,6 +112,15 @@ class WeightStructure:
         *spotsBeams: beam index of each spot
         *spotsLayers: layer index of each spot
         *spotsEnergies: energy of each spot
+
+        Returns
+        -------
+        list
+            The list of beam indices of each spot
+        list
+            The list of layer indices of each spot
+        list
+            The list of energies of each spot
         """
         spotsBeams = []
         spotsLayers = []
@@ -89,6 +143,15 @@ class WeightStructure:
         * nOfSpotsInBeam: array with number of spots in each beam (size=nBeams)
         * nOfLayersInBeam: array with number of layers in each beam (size=nBeams)
         * energies: list of arrays with energies of each beam (len=nBeams)
+
+        Returns
+        -------
+        numpy.ndarray
+            The number of spots in each layer
+        numpy.ndarray
+            The number of spots in each beam
+        numpy.ndarray
+            The number of layers in each beam
         """
         accumulateLayers = 0
         nOfSpotsInLayer = np.zeros(self.nLayers)
@@ -109,8 +172,20 @@ class WeightStructure:
         return nOfSpotsInLayer.astype(int), nOfSpotsInBeam.astype(int), nOfLayersInBeam.astype(int), energies
 
     def getEnergyStructure(self, x):
-        """transform 1d weight vector into  list of weights vectors ordered by energy layer and beam
-        [b1e1,b1e2,...,b2e1,b2e2,...,bBeE]"""
+        """
+        transform 1d weight vector into  list of weights vectors ordered by energy layer and beam
+        [b1e1,b1e2,...,b2e1,b2e2,...,bBeE]
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+
+        Returns
+        -------
+        list
+            The list of weights vectors ordered by energy layer and beam
+        """
         energyStruct = []
         accumulateWeights = 0
         for el in range(self.nLayers):
@@ -122,8 +197,20 @@ class WeightStructure:
         return energyStruct
 
     def getBeamStructure(self, x):
-        """transform 1d weight vector into  list of layers vectors ordered by beam
-        [[[b1e1],[b1e2],...],[[b2e1],[b2e2],...],...,[[bBe1],...,[bBeE]]]"""
+        """
+        transform 1d weight vector into  list of layers vectors ordered by beam
+        [[[b1e1],[b1e2],...],[[b2e1],[b2e2],...],...,[[bBe1],...,[bBeE]]]
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+
+        Returns
+        -------
+        list
+            The list of layers vectors ordered by beam
+        """
         energyStruct = self.getEnergyStructure(x)
         beamLayerStruct = []
         accumulateLayers = 0
@@ -141,6 +228,16 @@ class WeightStructure:
     def getMUPerBeam(self, x):
         """
         return list of MUs in each beam (len=nBeams)
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+
+        Returns
+        -------
+        list
+            The list of MUs in each beam
         """
         nOfMUinbeams = []
         energyStruct = self.getEnergyStructure(x)
@@ -161,6 +258,16 @@ class WeightStructure:
     def getMUPerLayer(self, x):
         """
         return list of MUs in each layer (len=nLayers)
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+
+        Returns
+        -------
+        list
+            The list of MUs in each layer
         """
         nOfMUinLayers = []
         energyStruct = self.getEnergyStructure(x)
@@ -183,6 +290,17 @@ class WeightStructure:
         - x: spot weights
         - nLayers: threshold on number of active layers in each beam
 
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+        nLayers : int
+            The threshold on number of active layers in each beam
+
+        Returns
+        -------
+        float
+            The percentage of active energy layers in the plan (non-null weight) = Sparsity
         """
         energyStruct = self.getEnergyStructure(x)
         layersActiveInBeams = np.zeros(len(self.nLayersInBeam))
@@ -210,6 +328,18 @@ class WeightStructure:
         """
         return list of energies of the active layers (non-null weight)
         ! zero if layer is not active (len = nLayers)
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+        regCalc : bool (default=True)
+            If True, the list of energies of the active layers is returned for regularized calculation
+
+        Returns
+        -------
+        list
+            The list of energies of the active layers
         """
         energyStruct = self.getEnergyStructure(x)
         activeEnergyList = []
@@ -244,10 +374,21 @@ class WeightStructure:
 
     def computeIrradiationTime(self, x):
         """
-        return tuble including:
-        - Energy layer switching time (ELST) in seconds,
-        - Number of upwards energy switching
-        - Number of downwards energy switching
+        return the irradiation time of the plan (in seconds)
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+
+        Returns
+        -------
+        float
+            The Energy layer switching time (ELST) in seconds
+        int
+            The number of upwards energy switching
+        int
+            The number of downwards energy switching
         """
         time = 0
         switchUp = 0
@@ -270,6 +411,19 @@ class WeightStructure:
         return time, switchUp, switchDown
 
     def isActivated(self, el: PlanIonLayer) -> bool:
+        """
+        return True if layer is activated (non-null weight)
+
+        Parameters
+        ----------
+        el : PlanIonLayer
+            The layer to be checked
+
+        Returns
+        -------
+        bool
+            True if layer is activated (non-null weight)
+        """
         activated = False
         for spotID in el.spotIndices:
             if self.x[spotID] > 0.0:
@@ -280,6 +434,16 @@ class WeightStructure:
     def getListOfActiveLayersInBeams(self, x):
         """
         return list of number of active energy layers in each beam (len = nBeams)
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            The weights of the beamlets
+
+        Returns
+        -------
+        list
+            The list of number of active energy layers in each beam
         """
         beamStruct = self.nLayersInBeam
         energyStruct = self.getEnergyStructure(x)
@@ -310,8 +474,15 @@ class WeightStructure:
         return layersActiveInBeams
 
     def groupSpots(self, groupSpotsby=10):
-        """Group spot by a given parameter. Allows to get a faster optimal solution to be used as a warm start for
-        higher scale problem """
+        """
+        Group spot by a given parameter. Allows to get a faster optimal solution to be used as a warm start for
+        higher scale problem
+
+        Parameters
+        ----------
+        groupSpotsby : int (default=10)
+            The number of spots to be grouped
+        """
         accumulatedSpots = 0
         accumulatedLayers = 0
         nNewSpotsInLayer = []
@@ -404,11 +575,17 @@ class WeightStructure:
         logger.info('convert to sparse matrix')
 
     def ungroupSol(self):
+        """
+        ungroup solution x (weights) into the object
+        """
         for i in range(self.nSpots):
             idx = self.spotNewID[i]
             self.x[i] = self.xGrouped[idx]
 
     def groupSol(self):
+        """
+        group solution x (weights) into the object
+        """
         # u, idx_repeated = np.unique(self.spot_new_id, return_index=True)
         idx_repeated = pd.DataFrame(self.spotNewID).groupby([0]).indices
         for i, itm in enumerate(idx_repeated.values()):
@@ -421,6 +598,16 @@ def getEnergyWeights(energyList):
     if upward energy switching or same energy: cost = 5.5
     if downward energy switching: cost = 0.6
     [FIX ME]: first layer ?
+
+    Parameters
+    ----------
+    energyList : list
+        The list of energies of each layer
+
+    Returns
+    -------
+    list
+        The list of energy layer weights
     """
     energyWeights = energyList.copy()
     for i, nonZeroIndex in enumerate(np.nonzero(energyList)[0]):
@@ -438,6 +625,18 @@ def getEnergyWeights(energyList):
 
 
 def evaluateClinical(dose, contours, clinDict):
+    """
+    Evaluate clinical constraints
+
+    Parameters
+    ----------
+    dose : numpy.ndarray
+        The dose matrix
+    contours : list
+        The list of contours
+    clinDict : dict
+        The dictionary of clinical constraints
+    """
     roi = clinDict['ROI']
     metric = clinDict['Metric']
     limit = clinDict['Limit']

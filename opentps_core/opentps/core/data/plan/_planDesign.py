@@ -22,6 +22,48 @@ logger = logging.getLogger(__name__)
 
 
 class PlanDesign(PatientData):
+    """
+    This class is used to store the plan design. It inherits from PatientData.
+
+    Attributes
+    ----------
+    spotSpacing: float (default: 5.0)
+        spacing between spots in mm
+    layerSpacing: float (default: 5.0)
+        spacing between layers in mm
+    targetMargin: float (default: 5.0)
+        margin around the target in mm
+    scoringVoxelSpacing: float or list of float
+        spacing of the scoring grid in mm
+    targetMask: ROIMask
+        mask of the target
+    proximalLayers: int (default: 1)
+        number of proximal layers
+    distalLayers: int (default: 1)
+        number of distal layers
+    layersToSpacingAlignment: bool (default: False)
+        if True, the spacing between layers is aligned with the scoring grid
+    calibration: AbstractCTCalibration
+        calibration of the CT for stopping power conversion
+    ct: CTImage (default: None)
+        CT image
+    beamNames: list of str
+        list of beam names
+    gantryAngles: list of float
+        list of gantry angles
+    couchAngles: list of float
+        list of couch angles
+    rangeShifters: list of RangeShifter
+        list of range shifters
+    objectives: ObjectivesList
+        list of objectives
+    beamlets: list of Beamlet
+        list of beamlets
+    beamletsLET: list of Beamlet
+        list of beamlets with LET
+    robustness: Robustness
+        robustness evaluation
+    """
     def __init__(self):
         super().__init__()
 
@@ -68,6 +110,14 @@ class PlanDesign(PatientData):
             return self.ct.gridSize
 
     def buildPlan(self):
+        """
+        Builds a plan from the plan design
+
+        Returns
+        --------
+        RTPlan
+            plan
+        """
         start = time.time()
         # Spot placement
         from opentps.core.data.plan import RTPlan
@@ -91,6 +141,9 @@ class PlanDesign(PatientData):
         return plan
 
     def defineTargetMaskAndPrescription(self):
+        """
+        Defines the target mask and the prescription
+        """
         from opentps.core.data._roiContour import ROIContour
 
         targetMask = None
@@ -121,6 +174,14 @@ class PlanDesign(PatientData):
         self.targetMask = targetMask
 
     def createBeams(self, plan):
+        """
+        Creates the beams of the plan
+
+        Parameters
+        ----------
+        plan: RTPlan
+            plan
+        """
         for beam in plan:
             plan.removeBeam(beam)
 
@@ -141,6 +202,14 @@ class PlanDesign(PatientData):
             plan.appendBeam(beam)
 
     def initializeBeams(self, plan):
+        """
+        Initializes the beams of the plan
+
+        Parameters
+        ----------
+        plan: RTPlan
+            plan
+        """
         initializer = PlanInitializer()
         initializer.ctCalibration = self.calibration
         initializer.ct = self.ct
@@ -151,6 +220,16 @@ class PlanDesign(PatientData):
 
 
     def setScoringParameters(self, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None):
+        """
+        Sets the scoring parameters
+
+        Parameters
+        ----------
+        scoringGridSize: Sequence[int]
+            scoring grid size
+        scoringSpacing: Sequence[float]
+            scoring spacing
+        """
         if scoringSpacing is None and scoringGridSize is not None:
             self.scoringVoxelSpacing = self.ct.spacing*self.ct.gridSize/scoringGridSize
         if scoringSpacing is not None and scoringGridSize is None:

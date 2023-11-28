@@ -10,6 +10,26 @@ import matplotlib.pyplot as plt
 #genere des variables suivant une loi de exponentielle
 #Un timestamp correspond le debut ou la fin d un event
 def events(L,meanDurationEvents,varianceDurationEvents,Tend):
+    """
+    Generate the timestamps of the events.
+
+    Parameters
+    ----------
+    L : float
+        parameter of the exponential distribution.
+    meanDurationEvents : float
+        mean duration of the events.
+    varianceDurationEvents : float
+        variance of the duration of the events.
+    Tend : float
+        duration of the signal.
+
+    Returns
+    -------
+    timestamp : list
+        list of the timestamps of the events.
+
+    """
     timestamp = [0]
     U = np.random.uniform(0,1)
     if L == 0:
@@ -28,7 +48,32 @@ def events(L,meanDurationEvents,varianceDurationEvents,Tend):
 
 #entre deux timestamps successifs, un event est cree
 #Un event correspond a une fonction echellon 
-def vectorSimulation(coeffMin,coeffMax,amplitude,frequency,timestamps,listOfEvents): 
+def vectorSimulation(coeffMin,coeffMax,amplitude,frequency,timestamps,listOfEvents):
+    """
+    Generate the amplitude and the frequency of the signal.
+
+    Parameters
+    ----------
+    coeffMin : float
+        minimum value of the coefficient of the variation of the amplitude and the frequency.
+    coeffMax : float
+        maximum value of the coefficient of the variation of the amplitude and the frequency.
+    amplitude : float
+        amplitude of the signal.
+    frequency : float
+        frequency of the signal.
+    timestamps : array
+        timestamps of the signal.
+    listOfEvents : list
+        list of the timestamps of the events.
+
+    Returns
+    -------
+    y_amplitude : array
+        amplitude of the signal.
+    y_frequency : array
+        frequency of the signal.
+    """
     t = timestamps      
     y_amplitude = np.zeros(len(t))
     y_frequency = np.zeros(len(t))
@@ -48,6 +93,39 @@ def vectorSimulation(coeffMin,coeffMax,amplitude,frequency,timestamps,listOfEven
 
 #creation des donnees respiratoires
 def signalGeneration(amplitude=10, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.15, meanEvent = 1/20, meanEventApnea=1/120):
+    """
+    Generate the breathing signal.
+
+    Parameters
+    ----------
+    amplitude : float
+        amplitude of the signal. default is 10.
+    period : float
+        period of the signal. default is 4.0.
+    mean : float
+        mean of the noise. default is 0.
+    sigma : float
+        standard deviation of the noise. default is 3.
+    step : float
+        step of the timestamps. default is 0.5.
+    signalDuration : float
+        duration of the signal. default is 100.
+    coeffMin : float
+        minimum value of the coefficient of the variation of the amplitude and the frequency. default is 0.10.
+    coeffMax : float
+        maximum value of the coefficient of the variation of the amplitude and the frequency. default is 0.15.
+    meanEvent : float
+        mean of the duration of the events. default is 1/20.
+    meanEventApnea : float
+        mean of the duration of the apnea events. default is 1/120.
+
+    Returns
+    -------
+    timestamps : array
+        timestamps of the signal.
+    signal : array
+        breathing signal.
+    """
     amp = amplitude
     freq = 1 / period
     timestamps = np.arange(0,signalDuration,step)
@@ -120,7 +198,44 @@ def signalGeneration(amplitude=10, period=4.0, mean=0, sigma=3, step=0.5, signal
 
 
 def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
+    """
+    Generate a 3D breathing signal.
 
+    Parameters
+    ----------
+    amplitude : float
+        amplitude of the breathing signal. default is 20.
+    period : float
+        period of the breathing signal. default is 4.0.
+    mean : float
+        mean of the noise. default is 0.
+    sigma : float
+        standard deviation of the noise. default is 3.
+    step : float
+        step between two timestamps. default is 0.5.
+    signalDuration : float
+        duration of the signal. default is 100.
+    coeffMin : float
+        minimum coefficient of the breathing signal. default is 0.10.
+    coeffMax : float
+        maximum coefficient of the breathing signal. default is 0.45.
+    meanEvent : float
+        mean of the event. default is 1/20.
+    meanEventApnea : float
+        mean of the apnea event. default is 1/120.
+    otherDimensionsRatio : list
+        list of the ratio of the other dimensions. default is [0.3, 0.4].
+    otherDimensionsNoiseVar : list
+        list of the noise variance of the other dimensions. default is [0.1, 0.05].
+
+    Returns
+    -------
+    timestamps : array
+        timestamps of the signal.
+    signal3D : array
+        3D breathing signal.
+
+    """
     timestamps, mainMotionSignal = signalGeneration(amplitude=amplitude, period=period, mean=mean, sigma=sigma, step=step, signalDuration=signalDuration, coeffMin=coeffMin, coeffMax=coeffMax, meanEvent=meanEvent, meanEventApnea=meanEventApnea)
 
     secondMotionSignal = mainMotionSignal * otherDimensionsRatio[0] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[0], size=mainMotionSignal.shape[0])
@@ -138,7 +253,43 @@ def signal3DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, sign
     return timestamps, signal3D
 
 def signal2DGeneration(amplitude=20, period=4.0, mean=0, sigma=3, step=0.5, signalDuration=100, coeffMin = 0.10, coeffMax = 0.45, meanEvent = 1/20, meanEventApnea=1/120, otherDimensionsRatio = [0.3, 0.4], otherDimensionsNoiseVar = [0.1, 0.05]):
+    """
+    Generate a 2D breathing signal.
 
+    Parameters
+    ----------
+    amplitude : float
+        amplitude of the breathing signal. default is 20.
+    period : float
+        period of the breathing signal. default is 4.0.
+    mean : float
+        mean of the noise. default is 0.
+    sigma : float
+        standard deviation of the noise. default is 3.
+    step : float
+        step between two timestamps. default is 0.5.
+    signalDuration : float
+        duration of the signal. default is 100.
+    coeffMin : float
+        minimum coefficient of the breathing signal. default is 0.10.
+    coeffMax : float
+        maximum coefficient of the breathing signal. default is 0.45.
+    meanEvent : float
+        mean of the event. default is 1/20.
+    meanEventApnea : float
+        mean of the apnea event. default is 1/120.
+    otherDimensionsRatio : list
+        list of the ratio of the other dimensions. default is [0.3, 0.4].
+    otherDimensionsNoiseVar : list
+        list of the noise variance of the other dimensions. default is [0.1, 0.05].
+
+    Returns
+    -------
+    timestamps : array
+        timestamps of the signal.
+    signal2D : array
+        2D breathing signal.
+    """
     timestamps, mainMotionSignal = signalGeneration(amplitude=amplitude, period=period, mean=mean, sigma=sigma, step=step, signalDuration=signalDuration, coeffMin=coeffMin, coeffMax=coeffMax, meanEvent=meanEvent, meanEventApnea=meanEventApnea)
 
     secondMotionSignal = mainMotionSignal * otherDimensionsRatio[0] + np.random.normal(loc=0, scale=otherDimensionsNoiseVar[0], size=mainMotionSignal.shape[0])

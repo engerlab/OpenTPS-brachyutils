@@ -8,6 +8,44 @@ from opentps.core import Event
 
 
 class DVHBand():
+    """
+    Class representing a DVH band for a given ROI. The DVH band is defined by a nominal DVH and a lower and upper
+    envelope of DVH scenarios.
+    Lower and upper envelope of DVH scenarios are computed from a set of dose distributions.
+
+    Attributes
+    ----------
+    roiName : str
+        name of the ROI
+    dose : np.array
+        1D numpy array representing the discretization of the dose [0, maxDose]
+    nominalDVH : DVH
+        nominal DVH
+    volumeLow : np.array
+        lower envelope of DVH scenarios in % of volume
+    volumeHigh : np.array
+        upper envelope of DVH scenarios in % of volume
+    volumeAbsoluteLow : np.array
+        lower envelope of DVH scenarios in cm^3
+    volumeAbsoluteHigh : np.array
+        upper envelope of DVH scenarios in cm^3
+    Dmean : list
+        mean doses in Gy
+    D98 : list
+        98% doses in Gy
+    D95 : list
+        95% doses in Gy
+    D50 : list
+        50% doses in Gy
+    D5 : list
+        5% doses in Gy
+    D2 : list
+        2% doses in Gy
+    Dmin : list
+        minimum doses in Gy
+    Dmax : list
+        maximum doses in Gy
+    """
     def __init__(self, roiName: str = None, dose: np.array = None):
 
         self.dataUpdatedEvent = Event()
@@ -66,6 +104,9 @@ class DVHBand():
         return self._Dmax
 
     def computeMetrics(self):
+        """
+        Compute DVH metrics from the DVH band
+        """
         # compute metrics
         self._D98 = self.computeBandDx(98)
         self._D95 = self.computeBandDx(95)
@@ -74,6 +115,18 @@ class DVHBand():
         self._D2 = self.computeBandDx(2)
 
     def computeBandDx(self, x):
+        """
+        Compute the Dx metric from the DVH band
+
+        Parameters
+        ----------
+        x : float
+            x value in % of volume
+        Returns
+        -------
+        [low_Dx,high_Dx] : list
+            Dx metric in Gy
+        """
         index = np.searchsorted(-self._volumeLow, -x)
         if index > len(self._volumeLow) - 2: index = len(self._volumeLow) - 2
         volume = self._volumeLow[index]

@@ -13,6 +13,23 @@ logger = logging.getLogger(__name__)
 
 
 class FISTA(ConvexSolver):
+    """
+    Fast Iterative Shrinkage-Thresholding Algorithm (FISTA) solver class for convex problems. Inherit from ConvexSolver.
+    This part of the code comes from the EPFL LTS2 convex optimization toolbox.
+
+    Attributes
+    ----------
+    meth : str (default: 'ForwardBackward')
+        The name of the FISTA method to be used.
+    indicator : Indicator (default: None)
+        The indicator function.
+    projection : Projection (default: None)
+        The projection function.
+    lambda_ : float (default: 1)
+        The lambda parameter.
+    z : ndarray
+        The z variable.
+    """
     def __init__(self, accel=FistaAccel(), indicator=None, lambda_=1, **kwargs):
         super().__init__(accel=accel, **kwargs)
         self.meth = ""

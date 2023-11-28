@@ -14,6 +14,22 @@ from opentps.core.processing.rangeEnergy import energyToRange, rangeToEnergy
 logger = logging.getLogger(__name__)
 
 class BeamInitializer:
+    """
+    This class is used to initialize a beam with spots and layers.
+
+    Attributes
+    ----------
+    calibration : AbstractCTCalibration
+        The CT calibration used to convert the CT image to RSP image.
+    spotSpacing : float
+        The spacing between spots in mm.
+    layerSpacing : float
+        The spacing between layers in mm.
+    targetMargin : float
+        The margin around the target in mm.
+    beam : PlanIonBeam
+        The beam to initialize.
+    """
     def __init__(self):
         self.spotSpacing = 5.
         self.layerSpacing = 2.
@@ -23,6 +39,9 @@ class BeamInitializer:
         self.calibration: AbstractCTCalibration = None
 
     def initializeBeam(self):
+        """
+        Initialize the beam with spots and layers.
+        """
 
         # generate hexagonal spot grid around isocenter
         spotGrid = self._defineHexagSpotGridAroundIsocenter()

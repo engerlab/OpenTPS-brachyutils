@@ -23,6 +23,22 @@ from opentps.core.processing.imageProcessing.imageTransform3D import \
 
 
 def imageToSITK(image:Union[Image2D, Image3D], type=np.float32):
+    """
+    Convert an Image2D or Image3D to a SimpleITK image
+
+    parameters
+    ----------
+    image: Image2D or Image3D
+        The image to convert
+    type: np.dtype
+        The type of the image to convert to. Default is np.float32
+
+    returns
+    -------
+    sitk.Image
+        The converted image
+
+    """
     if isinstance(image, Image2D):
         return image2DToSITK(image, type)
     elif isinstance(image, Image3D):
@@ -32,6 +48,21 @@ def imageToSITK(image:Union[Image2D, Image3D], type=np.float32):
 
 
 def image2DToSITK(image: Image2D, type=np.float32):
+    """
+    Convert an Image2D to a SimpleITK image
+
+    parameters
+    --------
+    image: Image2D
+        The image to convert
+    type: np.dtype
+        The type of the image to convert to. Default is np.float32
+
+    returns
+    -------
+    sitk.Image
+        The converted image
+    """
     imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 1)
 
@@ -45,6 +76,21 @@ def image2DToSITK(image: Image2D, type=np.float32):
 
 
 def image3DToSITK(image: Image3D, type=np.float32):
+    """
+    Convert an Image3D to a SimpleITK image
+
+    parameters
+    ----------
+    image: Image3D
+        The image to convert
+    type: np.dtype
+        The type of the image to convert to. Default is np.float32
+
+    returns
+    -------
+    sitk.Image
+        The converted image
+    """
     imageData = image.imageArray.astype(type)
     imageData = np.swapaxes(imageData, 0, 2)
 
@@ -58,6 +104,21 @@ def image3DToSITK(image: Image3D, type=np.float32):
 
 
 def sitkImageToImage3D(sitkImage: sitk.Image, type=float):
+    """
+    Convert a SimpleITK image to an Image3D
+
+    parameters
+    ----------
+    sitkImage: sitk.Image
+        The image to convert
+    type: np.dtype
+        The type of the image to convert to. Default is np.float32
+
+    returns
+    -------
+    Image3D
+        The converted image
+    """
     imageArray = np.array(sitk.GetArrayFromImage(sitkImage)).astype(type)
     imageArray = np.swapaxes(imageArray, 0, 2)
     image = Image3D(imageArray=imageArray, origin=sitkImage.GetOrigin(), spacing=sitkImage.GetSpacing())
@@ -67,6 +128,21 @@ def sitkImageToImage3D(sitkImage: sitk.Image, type=float):
 
 
 def sitkImageToImage2D(sitkImage: sitk.Image, type=float):
+    """
+    Convert a SimpleITK image to an Image2D
+
+    parameters
+    ----------
+    sitkImage: sitk.Image
+        The image to convert
+    type: np.dtype
+        The type of the image to convert to. Default is np.float32
+
+    returns
+    -------
+    Image2D
+        The converted image
+    """
     imageArray = np.array(sitk.GetArrayFromImage(sitkImage)).astype(type)
     imageArray = np.swapaxes(imageArray, 0, 1)
 
@@ -78,6 +154,27 @@ def sitkImageToImage2D(sitkImage: sitk.Image, type=float):
 
 def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarray] = None,
            newShape: Optional[np.ndarray] = None, fillValue: float = 0.):
+    """
+    Resize an Image3D
+
+    parameters
+    ----------
+    image: Image3D
+        The image to resize
+    newSpacing: np.ndarray
+        The new spacing of the image
+    newOrigin: np.ndarray
+        The new origin of the image
+    newShape: np.ndarray
+        The new shape of the image
+    fillValue: float
+        The value to fill the new image with
+
+    returns
+    -------
+    Image3D
+        The resized image
+    """
     # print('in sitkImageProcessing resize', type(image))
     if newOrigin is None:
         newOrigin = image.origin
@@ -116,6 +213,19 @@ def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarra
 
 
 def extremePoints(image: Image3D):
+    """
+    Get the extreme points of an Image3D (topmost, bottommost, rightmost, leftmost, ... points of the object.
+
+    parameters
+    ----------
+    image: Image3D
+        The image to get the extreme points of
+
+    returns
+    -------
+    list
+        The extreme points coordinates of the image
+    """
     img = image3DToSITK(image)
 
     extreme_points = [img.TransformIndexToPhysicalPoint(np.array([0, 0, 0]).astype(int).tolist()),
@@ -137,6 +247,26 @@ def extremePoints(image: Image3D):
 def extremePointsAfterTransform(image: Image3D, tformMatrix: np.ndarray,
                                 rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                                 translation: Sequence[float] = [0, 0, 0]):
+    """
+    Get the extreme points of an Image3D (topmost, bottommost, rightmost, leftmost, ... points of the object after
+    applying a transformation.
+
+    parameters
+    ----------
+    image: Image3D
+        The image to transform and get the extreme points of
+    tformMatrix: np.ndarray
+        The transformation matrix to apply
+    rotCenter: Union[Sequence[float], str]
+        The rotation center of the transformation. Default is 'dicomOrigin'
+    translation: Sequence[float]
+        The translation to apply to the image. Default is [0, 0, 0]
+
+    returns
+    -------
+    list
+        The extreme points coordinates of the image after applying the transformation
+    """
     img = image3DToSITK(image)
 
     if tformMatrix.shape[1] == 4:
@@ -171,6 +301,29 @@ def applyTransform3D(data, tformMatrix: np.ndarray, fillValue: float = 0.,
                      outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
                      rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                      translation: Sequence[float] = [0, 0, 0]):
+    """
+    Apply a transformation to an Image3D or a Dynamic3DSequence.
+
+    parameters
+    ----------
+    data: Union[Image3D, Dynamic3DSequence]
+        The data to transform
+    tformMatrix: np.ndarray
+        The transformation matrix to apply
+    fillValue: float
+        The value to fill the empty voxels with. Default is 0.
+    outputBox: Union[Sequence[float], str]
+        The output box to crop the transformed image to. Default is 'keepAll'
+    rotCenter: Union[Sequence[float], str]
+        The rotation center of the transformation. Default is 'dicomOrigin'
+    translation: Sequence[float]
+        The translation to apply to the image. Default is [0, 0, 0]
+
+    returns
+    -------
+    Union[Image3D, Dynamic3DSequence]
+        The transformed data
+    """
     if isinstance(tformMatrix, Transform3D):
         tformMatrix = tformMatrix.tformMatrix
 
@@ -217,6 +370,29 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
                               outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
                               rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                               translation: Sequence[float] = [0, 0, 0]):
+    """
+    Apply a transformation to an Image3D.
+
+    parameters
+    ----------
+    image: Image3D
+        The image to transform
+    tformMatrix: np.ndarray
+        The transformation matrix to apply
+    fillValue: float
+        The value to fill the empty voxels with. Default is 0.
+    outputBox: Union[Sequence[float], str]
+        The output box to crop the transformed image to. Default is 'keepAll'
+    rotCenter: Union[Sequence[float], str]
+        The rotation center of the transformation. Default is 'dicomOrigin'
+    translation: Sequence[float]
+        The translation to apply to the image. Default is [0, 0, 0]
+
+    returns
+    -------
+    Image3D
+        The transformed image
+    """
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image)
@@ -275,6 +451,29 @@ def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.nd
                                     outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
                                     rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                                     translation: Sequence[float] = [0, 0, 0]):
+    """
+    Apply a transformation to a VectorField3D.
+
+    parameters
+    ----------
+    vectField: VectorField3D
+        The vector field to transform
+    tformMatrix: np.ndarray
+        The transformation matrix to apply
+    fillValue: float
+        The value to fill the empty voxels with. Default is 0.
+    outputBox: Union[Sequence[float], str]
+        The output box to crop the transformed image to. Default is 'keepAll'
+    rotCenter: Union[Sequence[float], str]
+        The rotation center of the transformation. Default is 'dicomOrigin'
+    translation: Sequence[float]
+        The translation to apply to the image. Default is [0, 0, 0]
+
+    returns
+    -------
+    VectorField3D
+        The transformed vector field
+    """
     vectorFieldCompList = []
     for i in range(3):
         compImg = Image3D.fromImage3D(vectField)
@@ -291,6 +490,20 @@ def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.nd
 
 def applyTransform3DToPoint(tformMatrix: np.ndarray, pnt: np.ndarray, rotCenter: Optional[Sequence[float]] = [0, 0, 0],
                             translation: Sequence[float] = [0, 0, 0]):
+    """
+    Apply a transformation to a point.
+
+    parameters
+    ----------
+    tformMatrix: np.ndarray
+        The transformation matrix to apply
+    pnt: np.ndarray
+        The point to transform [x, y, z]
+    rotCenter: Sequence[float]
+        The rotation center of the transformation. Default is [0, 0, 0]
+    translation: Sequence[float]
+        The translation to apply to the image. Default is [0, 0, 0]
+    """
     if tformMatrix.shape[1] == 4:
         translation = tformMatrix[0:-1, -1]
         tformMatrix = tformMatrix[0:-1, 0:-1]
@@ -307,11 +520,40 @@ def applyTransform3DToPoint(tformMatrix: np.ndarray, pnt: np.ndarray, rotCenter:
 
 
 def connectComponents(image: Image3D):
+    """
+    Connect the components of a binary image.
+
+    parameters
+    ----------
+    image: Image3D
+        The image to connect the components of
+
+    returns
+    -------
+    Image3D
+        The connected components image
+    """
     img = image3DToSITK(image, type='uint8')
     return sitkImageToImage3D(sitk.RelabelComponent(sitk.ConnectedComponent(img)))
 
 
 def rotateData(data, rotAnglesInDeg, fillValue=0, rotCenter='imgCenter', outputBox='keepAll'):
+    """
+    Rotate a 3D image.
+
+    parameters
+    ----------
+    data: np.ndarray
+        The image to rotate
+    rotAnglesInDeg: np.ndarray
+        The rotation angles in degrees [x, y, z]
+    fillValue: float
+        The value to fill the empty voxels with. Default is 0.
+    rotCenter: Union[Sequence[float], str]
+        The rotation center of the transformation. Default is 'imgCenter'
+    outputBox: Union[Sequence[float], str]
+        The output box to crop the transformed image to. Default is 'keepAll'
+    """
     if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
         affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(rotVec=rotAnglesInDeg)
         applyTransform3D(data, affTransformMatrix, rotCenter=rotCenter, fillValue=fillValue, outputBox=outputBox)
@@ -320,6 +562,20 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, rotCenter='imgCenter', outputB
 
 
 def translateData(data, translationInMM, fillValue=0, outputBox='keepAll'):
+    """
+    Apply a translation to a 3D image.
+
+    parameters
+    ----------
+    data: np.ndarray
+        The image to translate
+    translationInMM: np.ndarray
+        The translation in mm [x, y, z]
+    fillValue: float
+        The value to fill the empty voxels with. Default is 0.
+    outputBox: Union[Sequence[float], str]
+        The output box to crop the transformed image to. Default is 'keepAll'
+    """
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
         affTransformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=translationInMM)
         applyTransform3D(data, affTransformMatrix, fillValue=fillValue, outputBox=outputBox)
@@ -328,6 +584,29 @@ def translateData(data, translationInMM, fillValue=0, outputBox='keepAll'):
 
 
 def register(fixed_image, moving_image, multimodal=True, fillValue: float = 0.):
+    """
+    Register two images.
+
+    parameters
+    ----------
+    fixed_image: Image3D
+        The fixed image
+    moving_image: Image3D
+        The moving image
+    multimodal: bool
+        Whether the images are multimodal or not. Default is True.
+    fillValue: float
+        The value to fill the empty voxels with. Default is 0.
+
+    returns
+    -------
+    tformMatrix: np.ndarray
+        The transformation matrix
+    rotcenter: np.ndarray
+        The rotation center
+    Image3D
+        The registered image
+    """
     initial_transform = sitk.CenteredTransformInitializer(fixed_image, moving_image, sitk.Euler3DTransform(),
                                                           sitk.CenteredTransformInitializerFilter.GEOMETRY)
 
@@ -372,6 +651,21 @@ def register(fixed_image, moving_image, multimodal=True, fillValue: float = 0.):
 
 
 def dilateMask(image: Image3D, radius: Union[float, Sequence[float]]):
+    """
+    dilate a mask
+
+    parameters
+    ----------
+    image: Image3D
+        The image to dilate
+    radius: Union[float, Sequence[float]]
+        The radius of the dilation
+
+    returns
+    -------
+    Image3D
+        The dilated image
+    """
     imgType = image.imageArray.dtype
 
     img = image3DToSITK(image, type=int)

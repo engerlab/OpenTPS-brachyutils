@@ -15,6 +15,18 @@ logger = logging.getLogger(__name__)
 
 
 class Transform3D(PatientData):
+    """
+    Class for 3D transformations. Inherits from PatientData.
+
+    Attributes
+    ----------
+    tformMatrix : 4x4 numpy array
+        transformation matrix.
+    name : string
+        name of the transformation.
+    rotCenter : string
+        center of rotation, can be 'imgCenter' or 'origin'.
+    """
 
     def __init__(self, tformMatrix=None, name="Transform", rotCenter='imgCenter'):
         super().__init__(name=name)
@@ -24,28 +36,48 @@ class Transform3D(PatientData):
         self.rotCenter = rotCenter
 
     def copy(self):
+        """
+        Returns a copy of the Transform3D object.
+
+        Returns
+        -------
+        Transform3D
+            Copy of the Transform3D object.
+        """
         return Transform3D(tformMatrix=copy.deepcopy(self.tformMatrix), name=self.name + '_copy', rotCenter=self.rotCenter)
 
     def setMatrix4x4(self, tformMatrix):
+        """
+        Sets the transformation matrix.
+        """
         self.tformMatrix = tformMatrix
 
     def setCenter(self, center):
+        """
+        Sets the center of rotation.
+        """
         self.rotCenter = center
 
     def deformImage(self, data, fillValue=0, outputBox='keepAll', tryGPU=False):
-        """Transform 3D image using linear interpolation.
+        """
+        Transform 3D image using linear interpolation.
 
-            Parameters
-            ----------
-            data :
-                image to be deformed.
-            fillValue : scalar
-                interpolation value for locations outside the input voxel grid.
+        Parameters
+        ----------
+        data :
+            image to be deformed.
+        fillValue : scalar or 'closest' (default: 0)
+            interpolation value for locations outside the input voxel grid. If 'closest', the closest voxel value will
+            be used.
+        outputBox : string or list of 6 floats (default: 'keepAll')
+            'keepAll' or 'same' or [xMin, xMax, yMin, yMax, zMin, zMax]. If 'keepAll', the output image will be large
+            enough to contain the entire input image. If 'same', the output image will have the same size and origin as the input
+            image. If a list of 6 floats, the output image will have the specified size.
 
-            Returns
-            -------
-                Deformed image.
-            """
+        Returns
+        -------
+            Deformed image.
+        """
 
         data = data.copy()
 
@@ -57,19 +89,29 @@ class Transform3D(PatientData):
         return data
 
     def deformData(self, data, fillValue=0, outputBox='keepAll', tryGPU=False, interpOrder=1):
-        """Transform 3D image using linear interpolation.
+        """
+        Transform 3D image using linear interpolation.
 
-            Parameters
-            ----------
-            data :
-                image to be deformed.
-            fillValue : scalar
-                interpolation value for locations outside the input voxel grid.
+        Parameters
+        ----------
+        data :
+            image to be deformed.
+        fillValue : scalar or 'closest' (default: 0)
+            interpolation value for locations outside the input voxel grid. If 'closest', the closest voxel value will
+            be used.
+        outputBox : string or list of 6 floats (default: 'keepAll')
+            'keepAll' or 'same' or [xMin, xMax, yMin, yMax, zMin, zMax]. If 'keepAll', the output image will be large
+            enough to contain the entire input image. If 'same', the output image will have the same size and origin as the input
+            image. If a list of 6 floats, the output image will have the specified size.
+        tryGPU : bool (default: False)
+            if True, the GPU will be used if available.
+        interpOrder : int (default: 1)
+            order of the interpolation. 0 for nearest neighbor, 1 for linear, 3 for cubic.
 
-            Returns
-            -------
-                Deformed image.
-            """
+        Returns
+        -------
+            Deformed image.
+        """
 
         data = data.copy()
 
@@ -84,12 +126,19 @@ class Transform3D(PatientData):
         return data
       
     def getRotationAngles(self, inDegrees=False):
-        """Returns the Euler angles in radians.
+        """
+        Returns the Euler angles in radians.
+
+        Parameters
+        ----------
+        inDegrees : bool (default: False)
+            if True, the angles will be returned in degrees.
         
-            Returns
-            -------                
-                list of 3 floats: the Euler angles in radians (Rx,Ry,Rz).
-            """
+        Returns
+        -------
+        list of 3 floats
+            The Euler angles in radians (Rx,Ry,Rz).
+        """
             
         R = self.tformMatrix[0:-1, 0:-1]
         eul1 = m.atan2(R.item(1, 0), R.item(0, 0))
@@ -106,24 +155,25 @@ class Transform3D(PatientData):
         return -angleArray
          
     def getTranslation(self):
-        """Returns the translation.
+        """
+        Returns the translation.
         
-            Returns
-            -------                
-                list of 3 floats: the translation in the 3 directions [Tx,Ty,Tz].
+        Returns
+        -------
+        list of 3 floats
+            The translation in the 3 directions [Tx,Ty,Tz].
             """
         return -self.tformMatrix[0:-1, -1]
 
     def initFromTranslationAndRotationVectors(self, transVec=[0, 0, 0], rotVec=[0, 0, 0]):
         """
+        Initializes the transformation matrix from translation and rotation vectors.
 
         Parameters
         ----------
-        translation
-        rotation
-
-        Returns
-        -------
-
+        transVec : list of 3 floats (default: [0,0,0])
+            translation vector.
+        rotVec : list of 3 floats (default: [0,0,0])
+            rotation vector.
         """
         self.tformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=transVec, rotVec=rotVec)

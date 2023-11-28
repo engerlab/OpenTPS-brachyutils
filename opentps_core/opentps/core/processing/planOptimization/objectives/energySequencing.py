@@ -10,7 +10,16 @@ class EnergySeq(BaseFunc):
     """
     Energy sequencing function (eval, grad): regularization used to sequence
     the energy layers by descending order (favor high-to-low energy sequence)
-    gamma is the regularization parameter.
+    gamma is the regularization parameter. Inherited from BaseFunc.
+
+    Attributes
+    ----------
+    plan : Plan
+        Plan of which the energy sequencing function is calculated.
+    gamma : float
+        Regularization parameter.
+    factor : float
+        Factor used to scale the energy sequencing function.
     """
 
     def __init__(self, plan, gamma, factor=0.001, **kwargs):

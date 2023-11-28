@@ -6,6 +6,19 @@ from opentps.core.data.images._image2D import Image2D
 
 
 def crop2DDataAroundBox(data:Image2D, box, marginInMM=[0, 0, 0]):
+    """
+    Crop the data around the box with a margin in mm
+
+    Parameters
+    ----------
+    data : Image2D
+        data to be cropped.
+    box : Sequence[Sequence[float]]
+        [[Xmin,xMax],
+        [Ymin,Ymax]] :coordinates of the box to be cropped around.
+    marginInMM : Sequence[float]
+        margin in mm to be added to the box.
+    """
     for i in range(3):
         if marginInMM[i] < 0:
             raise ValueError('Negative margin not allowed')
@@ -27,6 +40,21 @@ def crop2DDataAroundBox(data:Image2D, box, marginInMM=[0, 0, 0]):
 
 
 def getBoxAroundROI(ROI:Image2D) -> Sequence[Sequence[float]]:
+    """
+    Get the box universal coordinates around the ROI ([[Xmin,xMax],
+                                                      [Ymin,Ymax]])
+
+    Parameters
+    ----------
+    ROI : Image2D
+        ROI to be cropped.
+
+    Returns
+    -------
+    Sequence[Sequence[float]]
+        [[Xmin,xMax],
+        [Ymin,Ymax]] :coordinates of the box.
+    """
     if not ROI.imageArray.dtype == bool:
         raise ValueError('ROI must have a boolean array')
 
