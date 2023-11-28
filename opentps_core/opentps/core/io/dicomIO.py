@@ -877,6 +877,16 @@ def writeRTDose(dose:DoseImage, outputFile):
     
 
 def writeRTStruct(struct: RTStruct, outputFile):
+    """
+    Write a RTStruct object to a dicom file
+
+    Parameters
+    ----------
+    struct : RTStruct
+        The RTStruct object to be written.
+    outputFile : str
+        The path to the output file
+    """
     SOPInstanceUID = pydicom.uid.generate_uid()
     
     # meta data
