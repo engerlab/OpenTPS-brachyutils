@@ -186,7 +186,8 @@ def readDicomMRI(dcmFiles):
     if hasattr(dcm, 'RepetitionTime'):
         image.repetitionTime = float(dcm.RepetitionTime)
     if hasattr(dcm, 'EchoTime'):
-        image.echoTime = float(dcm.EchoTime)
+        if dcm.EchoTime is not None:
+            image.echoTime = float(dcm.EchoTime)
     if hasattr(dcm, 'NumberOfAverages'):
         image.nAverages = float(dcm.NumberOfAverages)
     if hasattr(dcm, 'ImagingFrequency'):
@@ -200,7 +201,8 @@ def readDicomMRI(dcmFiles):
     if hasattr(dcm, 'NumberOfPhaseEncodingSteps'):
         image.nPhaseSteps = int(dcm.NumberOfPhaseEncodingSteps)
     if hasattr(dcm, 'EchoTrainLength'):
-        image.echoTrainLength = int(dcm.EchoTrainLength)
+        if dcm.EchoTrainLength is not None:
+            image.echoTrainLength = int(dcm.EchoTrainLength)
     if hasattr(dcm, 'FlipAngle'):
         image.flipAngle = float(dcm.FlipAngle)
     if hasattr(dcm, 'SAR'):
@@ -340,7 +342,7 @@ def readDicomStruct(dcmFile):
         dcmContour = dcm.ROIContourSequence[referencedRoiId]
 
         if not hasattr(dcmContour, 'ContourSequence'):
-            logging.warning("This structure has no attribute ContourSequence. Skipping...")
+            logging.warning("The structure [ "+ str(dcmStruct.ROIName) +" ] has no attribute ContourSequence. Skipping ...")
             continue
 
         # Create ROIContour object
@@ -354,7 +356,6 @@ def readDicomStruct(dcmFile):
             if hasattr(dcmSlice, 'ContourImageSequence'):
                 contour.referencedSOPInstanceUIDs.append(dcmSlice.ContourImageSequence[
                                                          0].ReferencedSOPInstanceUID)  # UID of the image of reference (eg. ct slice)
-
         struct.appendContour(contour)
 
     return struct
@@ -658,7 +659,7 @@ def writeRTPlan(plan: RTPlan, filePath):
     dcm_file.SOPInstanceUID = SOPInstanceUID
 
     # patient information
-    dcm_file.PatientName = plan.patient.name
+    dcm_file.PatientName = "exported_" + plan.patient.name
     dcm_file.PatientID = plan.patient.id
     dcm_file.PatientBirthDate = plan.patient.birthDate
     dcm_file.PatientSex = plan.patient.sex
@@ -744,7 +745,6 @@ def writeRTPlan(plan: RTPlan, filePath):
             if type(dcm_layer.ScanSpotMetersetWeights) == float:
                 dcm_layer.NumberOfScanSpotPositions = 1
             else: dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
-            dcm_layer.NumberOfScanSpotPositions = len(dcm_layer.ScanSpotMetersetWeights)
             dcm_layer.IsocenterPosition = [beam.isocenterPosition[0], beam.isocenterPosition[1],
                                            beam.isocenterPosition[2]]
             dcm_layer.GantryAngle = beam.gantryAngle
@@ -797,7 +797,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     # patient information
     patient = dose.patient
     if not (patient is None):
-        dcm_file.PatientName = patient.name
+        dcm_file.PatientName = "exported_" + patient.name
         dcm_file.PatientID = patient.id
         dcm_file.PatientBirthDate = patient.birthDate
         dcm_file.PatientSex = patient.sex
@@ -874,6 +874,76 @@ def writeRTDose(dose:DoseImage, outputFile):
     # save dicom file
     print("Export dicom RTDOSE: " + outputFile)
     dcm_file.save_as(outputFile)
+    
+
+def writeRTStruct(struct: RTStruct, outputFile):
+    SOPInstanceUID = pydicom.uid.generate_uid()
+    
+    # meta data
+    meta = pydicom.dataset.FileMetaDataset()
+    meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.3'
+    meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+    meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'
+    
+    # dicom dataset
+    dcm_file = pydicom.dataset.FileDataset(outputFile, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
+    dcm_file.SOPInstanceUID = SOPInstanceUID
+    
+    # patient information
+    if not (struct.patient is None):
+        dcm_file.PatientName = "exported_" + struct.patient.name
+        dcm_file.PatientID = struct.patient.id
+        dcm_file.PatientBirthDate = struct.patient.birthDate
+        dcm_file.PatientSex = struct.patient.sex
+    
+    # content information
+    dt = datetime.datetime.now()
+    dcm_file.ContentDate = dt.strftime('%Y%m%d')
+    dcm_file.ContentTime = dt.strftime('%H%M%S.%f')
+    dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
+    dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
+    dcm_file.Modality = 'RTSTRUCT'
+    dcm_file.Manufacturer = 'OpenMCsquare'
+    dcm_file.ManufacturerModelName = 'OpenTPS'
+    dcm_file.SeriesDescription = struct.name
+    dcm_file.StudyInstanceUID = pydicom.uid.generate_uid()
+
+    SeriesInstanceUID = struct.seriesInstanceUID
+    if SeriesInstanceUID == "" or (SeriesInstanceUID is None):
+        SeriesInstanceUID = pydicom.uid.generate_uid()
+    dcm_file.SeriesInstanceUID = SeriesInstanceUID
+    dcm_file.SeriesNumber = 2
+    dcm_file.InstanceNumber = 1
+    
+    dcm_file.StructureSetROISequence = []
+    dcm_file.ROIContourSequence = []
+    
+    for cidx,contour in enumerate(struct.contours, start=1):        
+        # StructureSetROISequence
+        roi = pydicom.Dataset()
+        roi.ROINumber = cidx
+        roi.ROIName = contour.name
+        roi.ReferencedFrameOfReferenceUID = contour.referencedFrameOfReferenceUID
+        dcm_file.StructureSetROISequence.append(roi)
+        
+        # ROIContourSequence
+        con = pydicom.Dataset()
+        con.ReferencedROINumber = cidx
+        con.ROIDisplayColor = str(contour.color[0])+"\\"+str(contour.color[1])+"\\"+str(contour.color[2])
+        con.ContourSequence = []
+        for midx,mesh in enumerate(contour.polygonMesh):
+            slc = pydicom.Dataset()
+            slc.ContourData = mesh
+            slc.ContourGeometricType = "CLOSED_PLANAR"
+            slc.NumberOfContourPoints = len(mesh)
+            con.ContourSequence.append(slc)
+        dcm_file.ROIContourSequence.append(con)
+        
+    # save rt struct dicom file
+    print("Export dicom RTSTRCT: " + outputFile)
+    dcm_file.save_as(outputFile)
+
 
 def writeDicomCT(ct: CTImage, outputFolderPath:str):
     """
@@ -920,7 +990,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # patient information
     patient = ct.patient
     if not (patient is None):
-        dcm_file.PatientName = patient.name
+        dcm_file.PatientName = "exported_" + patient.name
         dcm_file.PatientID = patient.id
         dcm_file.PatientBirthDate = patient.birthDate
         dcm_file.PatientSex = patient.sex
@@ -987,7 +1057,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
 
     dcm_file.SeriesInstanceUID = ct.seriesInstanceUID
     # dcm_file.SeriesInstanceUID = pydicom.uid.generate_uid()
-    dcm_file.SeriesNumber = ''
+    dcm_file.SeriesNumber = 3
     # dcm_file.AcquisitionNumber = '4'
     # dcm_file.PatientOrientation = '' #['L', 'P']
     dcm_file.ImagePositionPatient = list(ct.origin)
