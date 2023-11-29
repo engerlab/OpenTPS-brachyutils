@@ -13,6 +13,19 @@ Extend rtplan with attributs .layers and .spots to access directly global id and
 '''
 
 def extendPlanLayers(plan: RTPlan) -> RTPlan:
+    """
+    Extends the plan with a list of layers and spots for each beam.
+
+    Parameters
+    ----------
+    plan : RTPlan
+        The plan to extend.
+
+    Returns
+    -------
+    RTPlan
+        The extended plan.
+    """
     plan._layers = []
     plan._spots = []
 
@@ -41,11 +54,32 @@ def extendPlanLayers(plan: RTPlan) -> RTPlan:
             plan._layers.append(outLayer)
 
 class ExtendedBeam(PlanIonBeam):
+    """
+    Class to extend the PlanIonBeam class with a list of layers. Inherits from PlanIonBeam.
+
+    Attributes
+    ----------
+    laverIndices : Sequence[int]
+        The indices of the layers in the beam.
+    """
     def __init__(self):
         super().__init__()
 
     @classmethod
     def fromBeam(cls, beam: PlanIonBeam):
+        """
+        Creates a new ExtendedBeam from a PlanIonBeam.
+
+        Parameters
+        ----------
+        beam : PlanIonBeam
+            The beam to copy.
+
+        Returns
+        -------
+        ExtendedBeam
+            The new beam.
+        """
         newBeam = cls()
 
         newBeam.name = beam.name
@@ -66,6 +100,20 @@ class ExtendedBeam(PlanIonBeam):
 
 
 class ExtendedPlanIonLayer(PlanIonLayer):
+    """
+    Class to extend the PlanIonLayer class with a list of spots. Inherits from PlanIonLayer.
+
+    Attributes
+    ----------
+    spots : Sequence[PlanIonSpot]
+        The spots in the layer.
+    spotIndices : Sequence[int]
+        The indices of the spots in the layer.
+    id : int
+        The id of the layer.
+    beamID : int
+        The id of the beam the layer belongs to.
+    """
     def __init__(self, nominalEnergy: float = 0.0):
         super().__init__(nominalEnergy=nominalEnergy)
 
@@ -76,6 +124,19 @@ class ExtendedPlanIonLayer(PlanIonLayer):
 
     @classmethod
     def fromLayer(cls, layer: PlanIonLayer):
+        """
+        Creates a new ExtendedPlanIonLayer from a PlanIonLayer.
+
+        Parameters
+        ----------
+        layer : PlanIonLayer
+            The layer to copy.
+
+        Returns
+        -------
+        ExtendedPlanIonLayer
+            The new layer.
+        """
         newLayer = cls(layer.nominalEnergy)
         spotXY = list(layer.spotXY)
         spotMUs = layer.spotMUs

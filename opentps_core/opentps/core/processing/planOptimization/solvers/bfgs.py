@@ -12,6 +12,29 @@ logger = logging.getLogger(__name__)
 
 
 class ScipyOpt:
+    """
+    ScipyOpt is a wrapper for the scipy.optimize.minimize function.
+
+    Attributes
+    ----------
+    meth : str (default: 'L-BFGS')
+        The name of the scipy.optimize.minimize method to be used.
+    Nfeval : int
+        The number of function evaluations.
+    params : dict
+        The parameters for the scipy.optimize.minimize function.
+        The paremeters are:
+            ftol : float (default: 1e-06)
+                Tolerance for termination by the change of the cost function.
+            gtol : float (default: 1e-05)
+                Tolerance for termination by the norm of the gradient.
+            maxit : int (default: 1000)
+                Maximum number of iterations.
+            output : str (default: None)
+                The name of the output file.
+    name : str
+        The name of the solver.
+    """
     def __init__(self, meth='L-BFGS', **kwargs):
         self.meth = meth
         self.Nfeval = 1
@@ -23,6 +46,34 @@ class ScipyOpt:
         self.name = meth
 
     def solve(self, func, x0, bounds=None):
+        """
+        Solves the planOptimization problem using the scipy.optimize.minimize function.
+
+        Parameters
+        ----------
+        func : list of functions
+            The functions to be optimized.
+        x0 : list
+            The initial guess.
+        bounds : list of Bounds (default: None)
+            The bounds on the variables for scipy.optimize.minimize.
+
+        Returns
+        -------
+        result : dict
+            The result of the planOptimization.
+            The keys are:
+                sol : list
+                    The solution.
+                crit : str
+                    The termination criterion.
+                niter : int
+                    The number of iterations.
+                time : float
+                    The time of the planOptimization.
+                objective : list
+                    The value of the objective function at each iteration.
+        """
         def callbackF(Xi):
             logger.info('Iteration {} of Scipy-{}'.format(self.Nfeval, self.meth))
             logger.info('objective = {0:.6e}  '.format(func[0].eval(Xi)))
@@ -128,8 +179,17 @@ class LBFGS(BFGS):
             self.yks = self.yks[1:]
 
     def getHg(self, H0, g):
-        """ This function returns the approximate inverse Hessian\
-                multiplied by the gradient, H*g        """
+        """
+        This function returns the approximate inverse Hessian\
+        multiplied by the gradient, H*g
+
+        Parameters
+        ----------
+        H0 : ndarray
+            Initial guess for the inverse Hessian
+        g : ndarray
+            Gradient of the objective function
+        """
         m_t = len(self.sks)
         q = g
         a = np.zeros(m_t)

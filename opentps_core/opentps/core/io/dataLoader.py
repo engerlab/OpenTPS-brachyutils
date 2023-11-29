@@ -14,6 +14,34 @@ from opentps.core.io.serializedObjectIO import loadDataStructure
 logger = logging.getLogger(__name__)
 
 def loadData(patientList:PatientList, dataPath:str, maxDepth=-1, ignoreExistingData:bool=True, importInPatient:Optional[Patient]=None):
+    """
+    Load all data found at the given input path.
+
+    Parameters
+    ----------
+    patientList: PatientList
+        The patient list to which the data will be added.
+
+    dataPath: str or list
+        Path or list of paths pointing to the data to be loaded.
+
+    maxDepth: int, optional
+        Maximum subfolder depth where the function will check for data to be loaded.
+        Default is -1, which implies recursive search over infinite subfolder depth.
+
+    ignoreExistingData: bool, optional
+        If True, the function will not load data that is already present in the patient list.
+        Default is True. (not implemented yet)
+
+    importInPatient: Patient, optional
+        If given, the data will be imported into the given patient.
+        Default is None, which implies that the data will be imported into a new patient.
+
+    Returns
+    -------
+    dataList: list of data objects
+        The function returns a list of data objects containing the imported data.
+    """
     #TODO: implement ignoreExistingData
     
     dataList = readData(dataPath, maxDepth=maxDepth)
@@ -188,6 +216,18 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
 
 
 def readSingleData(filePath, dicomCT = {}):
+    """
+    Load a single data object from the given input path.
+
+    Parameters
+    ----------
+    filePath: str
+        Path pointing to the data to be loaded.
+
+    dicomCT: dict, optional
+        Dictionary containing the Dicom CT data already loaded. This is used to load the CT slices in the correct order.
+
+    """
     if os.path.isdir(filePath):
         # Check that it is a DICOM CT otherwise error
         listFiles = listAllFiles(filePath, maxDepth=0)

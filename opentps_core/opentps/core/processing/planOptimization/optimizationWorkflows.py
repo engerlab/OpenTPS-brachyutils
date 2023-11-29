@@ -19,6 +19,16 @@ from opentps.core.processing.planOptimization.planOptimizationConfig import Plan
 logger = logging.getLogger(__name__)
 
 def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
+    """
+    Optimizes an IMPT plan
+
+    Parameters
+    ----------
+    plan : RTPlan
+        The plan to be optimized
+    planStructure : PlanDesign
+        The plan design containing the optimization parameters
+    """
     start = time.time()
     plan.planDesign = planStructure
     planStructure.objectives.setScoringParameters(planStructure.ct)

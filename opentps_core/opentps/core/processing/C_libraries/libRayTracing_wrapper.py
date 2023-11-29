@@ -16,6 +16,23 @@ currentWorkingDir = os.getcwd()
 
 
 def WET_raytracing(SPR, beam_direction, ROI=[]):
+    """
+    Compute the Water Equivalent Thickness (WET) along the beam direction for each voxel of the SPR image.
+
+    Parameters
+    ----------
+    SPR : SPR
+        The SPR image.
+    beam_direction : list
+        The beam direction.
+    ROI : ROI, optional
+        The ROI to consider. The default is []. If ROI is not provided, the WET is computed for the whole SPR image.
+
+    Returns
+    -------
+    WET : numpy array
+        The WET array of dimension 3 (x,y,z) with the WET value for each voxel.
+    """
     try:
         # import C library
         if (platform.system() == "Linux"):
@@ -107,6 +124,25 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
 
 
 def compute_position_from_range(SPR, spot_positions, spot_directions, spot_ranges):
+    """
+    Compute the Cartesian position of a list of spots given their position, direction and range in water.
+
+    Parameters
+    ----------
+    SPR : SPR
+        The SPR image.
+    spot_positions : list
+        The list of spot positions.
+    spot_directions : list
+        The list of spot directions.
+    spot_ranges : list
+        The list of spot ranges in water.
+
+    Returns
+    -------
+    CartesianSpotPositions : list
+        The list of Cartesian spot positions.
+    """
     NumSpots = len(spot_positions)
 
     try:
@@ -197,6 +233,20 @@ def compute_position_from_range(SPR, spot_positions, spot_directions, spot_range
 
 
 def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
+    """
+    Transport a list of spots until they reach the target.
+
+    Parameters
+    ----------
+    SPR : SPR
+        The SPR image.
+    Target_mask : Mask
+        The target mask.
+    SpotGrid : dict
+        The list of spots.
+    direction : list
+        The beam direction.
+    """
     NumSpots = len(SpotGrid["x"])
 
     try:
@@ -287,6 +337,24 @@ def transport_spots_to_target(SPR, Target_mask, SpotGrid, direction):
 
 
 def transport_spots_inside_target(SPR, Target_mask, SpotGrid, direction, minWET, LayerSpacing):
+    """
+    Transport a list of spots until they reach the target and compute the energy layers crossed by each spot.
+
+    Parameters
+    ----------
+    SPR : SPR
+        The SPR image.
+    Target_mask : Mask
+        The target mask.
+    SpotGrid : dict
+        The list of spots.
+    direction : list
+        The beam direction.
+    minWET : float
+        The minimum WET value to consider.
+    LayerSpacing : float
+        The layer spacing.
+    """
     NumSpots = len(SpotGrid["x"])
 
     try:

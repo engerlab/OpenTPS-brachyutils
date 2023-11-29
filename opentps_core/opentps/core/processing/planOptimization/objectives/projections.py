@@ -14,6 +14,14 @@ logger = logging.getLogger(__name__)
 class BaseProj(BaseFunc):
     """
     Base class which defines the attributes of the `proj` objects.
+    Code from EPFL LTS2 toolbox.
+
+    Attributes
+    ----------
+    epsilon : float (default: 1)
+        Regularization parameter.
+    method : str (default: 'FISTA')
+        Method used to solve the proximal problem.
     """
 
     def __init__(self, epsilon=1, method='FISTA', **kwargs):
@@ -30,7 +38,8 @@ class PositiveProj(BaseProj):
     Projection on nonnegative orthant (eval, prox)
     This function is the indicator function :math:`i_S(z)` of the set S which
     is zero if `z` is in the set and infinite otherwise. The set S is defined
-    by \mathbb{R}^N_+
+    by \mathbb{R}^N_+ . Inherits from BaseProj.
+    Code from EPFL LTS2 toolbox.
     """
 
     def __init__(self, **kwargs):
@@ -50,7 +59,20 @@ class Indicator(BaseProj):
     is zero if `z` is in the set and infinite otherwise. The set S is defined
     by ?
     ?: Indicator activated if beam MU <= epsilon. If yes, MU redistributed
-    on activated layers for the sum to reach epsilon (esp= regularization parameter)
+    on activated layers for the sum to reach epsilon (esp= regularization parameter).
+    Inherits from BaseProj.
+    Code from EPFL LTS2 toolbox.
+
+    Attributes
+    ----------
+    plan : Plan
+        Plan object.
+    smooth_fun : SmoothFunction
+        Smooth function object.
+    eps : float
+        Regularization parameter.
+    struct : WeightStructure
+        Weight structure object.
     """
 
     def __init__(self, plan, smooth_fun, eps, **kwargs):

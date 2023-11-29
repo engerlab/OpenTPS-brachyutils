@@ -10,6 +10,28 @@ def oneDimensionNavThreshold(videoData, nav, gama, bins):
     """
     Select the pixel line under the navigator placed by mouse, then create an image with the pixel line of every frame.
     Use Otsu's thresholding method to select a threshold and mask the new ...
+
+    Parameters
+    ----------
+    videoData : dict
+        Dictionary containing all the data of the video.
+    nav : list
+        List containing the coordinates of the navigator.
+    gama : float
+        Gama value for the image.
+    bins : int
+        Number of bins for the image.
+
+    Returns
+    -------
+    signal : array
+        Array containing the signal of the navigator.
+    rotAngleInRad : float
+        Rotation angle in radians.
+    navigatorOrientation : str
+        Orientation of the navigator.
+    nav : list
+        List containing the coordinates of the navigator.
     """
 
     from skimage.filters import threshold_otsu
@@ -111,8 +133,8 @@ def oneDimensionNavThreshold(videoData, nav, gama, bins):
                     signal[i] = j + ((thresh - underNavVectorArray[i, j]) / (underNavVectorArray[i, j + 1] - underNavVectorArray[i, j]))
                 interfaceNotFound = False
 
-    if cos(rotAngleInRad) != 0:
-        signal *= (pixelSpacing/cos(rotAngleInRad))
+    if math.cos(rotAngleInRad) != 0:
+        signal *= (pixelSpacing/math.cos(rotAngleInRad))
     else:
         print('Invalid navigator position, rotation angle = 90°')
 
@@ -178,6 +200,31 @@ def oneDimensionNavThreshold(videoData, nav, gama, bins):
 
 ##------------------------------------------------------------------------------------------------
 def extractROIAndRotationParams(arrayList, squareCoords):
+    """
+    Extract the ROI from the image and compute the rotation angle based on the navigator position.
+
+    Parameters
+    ----------
+    arrayList : list
+        List containing the images of the video.
+    squareCoords : list
+        List containing the coordinates of the navigator.
+
+    Returns
+    -------
+    ROIarrayList : list
+        List containing the ROI of the images.
+    origin : tuple
+        Origin of the ROI.
+    rotAngleInRad : float
+        Rotation angle in radians.
+    rotAngleInDeg : float
+        Rotation angle in degrees.
+    selectedLineIndex : int
+        Index of the selected line.
+    navigatorMainDirection : str
+        Orientation of the navigator. "vertical" or "horizontal".
+    """
 
     X1 = squareCoords[0][0]
     X2 = squareCoords[1][0]
@@ -197,7 +244,7 @@ def extractROIAndRotationParams(arrayList, squareCoords):
         else:
             for image in arrayList:
                 ROIarrayList.append(copy.deepcopy(image[min(Y1, Y2):max(Y1, Y2), min(X1, X2)-3:max(X1, X2)+4]))
-            rotAngleInRad = atan((X2 - X1) / (Y2 - Y1))
+            rotAngleInRad = math.atan((X2 - X1) / (Y2 - Y1))
         selectedLineIndex = round(ROIarrayList[0].shape[1]/2)
 
     else:
@@ -209,7 +256,7 @@ def extractROIAndRotationParams(arrayList, squareCoords):
         else:
             for image in arrayList:
                 ROIarrayList.append(copy.deepcopy(image[min(Y1, Y2)-3:max(Y1, Y2)+4, min(X1, X2):max(X1, X2)]))
-            rotAngleInRad = -atan((Y2 - Y1) / (X2 - X1))
+            rotAngleInRad = -math.atan((Y2 - Y1) / (X2 - X1))
         selectedLineIndex = round(ROIarrayList[0].shape[0] / 2)
 
     for image in ROIarrayList:

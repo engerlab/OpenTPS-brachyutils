@@ -13,6 +13,44 @@ if TYPE_CHECKING:
 
 
 class PlanIonLayer:
+    """
+    This class is used to store the layer of a ionBeam.
+
+    Attributes
+    ----------
+    nominalEnergy: float (default: 0.0)
+        nominal energy of the layer
+    spots: list of PlanIonSpot
+        list of spots
+    spotX: np.ndarray
+        x coordinates of the spots
+    spotY: np.ndarray
+        y coordinates of the spots
+    spotXY: np.ndarray
+        x and y coordinates of the spots
+    spotMUs: np.ndarray
+        MUs of the spots
+    spotWeights: np.ndarray
+        weights of the spots
+    spotTimings: np.ndarray
+        timings of the spots
+    spotIrradiationDurations: np.ndarray
+        irradiation durations of the spots
+    meterset:
+        meterset of the layer
+    numberOfSpots: int
+        number of spots
+    numberOfPaintings: int (default: 1)
+        number of paintings
+    rangeShifterSettings: RangeShifterSettings
+        range shifter settings
+    seriesInstanceUID: str
+        series instance UID
+    spotsPeakPosInDcmCoords: list of np.ndarray
+        peak positions of the spots in DICOM coordinates
+    spotsPeakPosInTargetSystem: list of np.ndarray
+        peak positions of the spots in target system coordinates
+    """
     def __init__(self, nominalEnergy: float = 0.0):
 
         self._spots: Sequence[PlanIonSpot] = []
@@ -31,9 +69,25 @@ class PlanIonLayer:
         self.spotsPeakPosInTargetSystem = []
 
     def __len__(self):
+        """
+        Returns the number of spots.
+
+        Returns
+        --------
+        int
+            number of spots
+        """
         return len(self._mu)
 
     def __str__(self):
+        """
+        Returns a string representation of the layer.
+
+        Returns
+        --------
+        str
+            string representation of the layer
+        """
         s = 'NominalEnergy: ' + str(self.nominalEnergy) + '\n'
         s += 'Spots ((x, y), MU): \n'
 
@@ -123,6 +177,22 @@ class PlanIonLayer:
     def addToSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
                   mu: Union[float, Sequence[float]], startTime: Optional[Union[float, Sequence[float]]] = None,
                   irradiationDuration: Optional[Union[float, Sequence[float]]] = None):
+        """
+        Adds MU to a spot or multiple spots.
+
+        Parameters
+        ----------
+        x: float or Sequence[float]
+            x coordinate of the spot(s)
+        y: float or Sequence[float]
+            y coordinate of the spot(s)
+        mu: float or Sequence[float]
+            MU of the spot(s)
+        startTime: float or Sequence[float] (optional)
+            start time of the spot(s)
+        irradiationDuration: float or Sequence[float] (optional)
+            irradiation duration of the spot(s)
+        """
         if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = startTime if startTime is None else startTime[i]
@@ -141,6 +211,22 @@ class PlanIonLayer:
     def appendSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
                    mu: Union[float, Sequence[float]], startTime: Optional[Union[float, Sequence[float]]] = None,
                    irradiationDuration: Optional[Union[float, Sequence[float]]] = None):
+        """
+        Appends a spot or multiple spots to the layer.
+
+        Parameters
+        ----------
+        x: float or Sequence[float]
+            x coordinate of the spot(s)
+        y: float or Sequence[float]
+            y coordinate of the spot(s)
+        mu: float or Sequence[float]
+            MU of the spot(s)
+        startTime: float or Sequence[float] (optional)
+            start time of the spot(s)
+        irradiationDuration: float or Sequence[float] (optional)
+            irradiation duration of the spot(s)
+        """
         if not isinstance(x, Iterable): x = [x]
         if not isinstance(y, Iterable): y = [y]
         if not isinstance(mu, Iterable): mu = [mu]
@@ -173,6 +259,22 @@ class PlanIonLayer:
     def setSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
                 mu: Union[float, Sequence[float]], startTime: Optional[Union[float, Sequence[float]]] = None,
                 irradiationDuration: Optional[Union[float, Sequence[float]]] = None):
+        """
+        Sets a spot or multiple spots to the layer.
+
+        Parameters
+        ----------
+        x: float or Sequence[float]
+            x coordinate of the spot(s)
+        y: float or Sequence[float]
+            y coordinate of the spot(s)
+        mu: float or Sequence[float]
+            MU of the spot(s)
+        startTime: float or Sequence[float] (optional)
+            start time of the spot(s)
+        irradiationDuration: float or Sequence[float] (optional)
+            irradiation duration of the spot(s)
+        """
         if isinstance(x, Iterable):
             for i, xElem in enumerate(x):
                 t = startTime if startTime is None else startTime[i]
@@ -193,6 +295,16 @@ class PlanIonLayer:
             self.appendSpot(x, y, mu, startTime, irradiationDuration)
 
     def removeSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]]):
+        """
+        Removes a spot or multiple spots from the layer.
+
+        Parameters
+        ----------
+        x: float or Sequence[float]
+            x coordinate of the spot(s)
+        y: float or Sequence[float]
+            y coordinate of the spot(s)
+        """
         _, spotPos = self.spotDefinedInXY(x, y)
 
         self._x = np.delete(self._x, spotPos)
@@ -204,6 +316,21 @@ class PlanIonLayer:
             self._irradiationDuration = np.delete(self._irradiationDuration, spotPos)
 
     def spotDefinedInXY(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]]) -> Tuple[bool, int]:
+        """
+        Checks if a spot or multiple spots are defined in the layer.
+
+        Parameters
+        ----------
+        x: float or Sequence[float]
+            x coordinate of the spot(s)
+        y: float or Sequence[float]
+            y coordinate of the spot(s)
+
+        Returns
+        ----------
+        exist: bool or Sequence[bool]
+            True if the spot(s) exist in the layer, False otherwise
+        """
         if isinstance(x, Iterable):
             exist = []
             where = []
@@ -224,6 +351,22 @@ class PlanIonLayer:
         return (False, None)
 
     def reorderSpots(self, order: Union[str, Sequence[int]] = 'scanAlgo'):
+        """
+        Reorders the spots in the layer.
+
+        Parameters
+        ----------
+        order: str or Sequence[int]
+            the way the spots are sorted.
+            If str, the following options are available:
+                - 'scanAlgo': the way scanAlgo sort spots in a serpentine fashion
+                - 'timing': sort according to the start time of the spots
+            If Sequence[int], the spots a reordered according to the order of the indices
+
+        Raises
+        ----------
+        ValueError: if the order is not recognized
+        """
         if type(order) is str:
             if order == 'scanAlgo':  # the way scanAlgo sort spots in a serpentine fashion
                 coord = np.column_stack((self._x, self._y)).astype(float)
@@ -277,11 +420,27 @@ class PlanIonLayer:
 
 
     def simplify(self, threshold: float = 0.0):
+        """
+        Simplifies the layer by merging duplicate spots and removing spots with a mu below a threshold.
+
+        Parameters
+        ----------
+        threshold: float (default: 0.0)
+            the threshold below which spots are removed
+        """
         self._fusionDuplicates()
         if threshold is not None:
             self.removeZeroMUSpots(threshold)
     
     def removeZeroMUSpots(self, threshold):
+        """
+        Removes spots with a mu below a threshold.
+
+        Parameters
+        ----------
+        threshold: float
+            the threshold below which spots are removed
+        """
         index_to_keep = np.flatnonzero(self._mu > threshold)
         self._mu = np.array([self._mu[i] for i in range(len(self._mu)) if i in index_to_keep])
         self._x = np.array([self._x[i] for i in range(len(self._x)) if i in index_to_keep])
@@ -293,6 +452,9 @@ class PlanIonLayer:
 
 
     def _fusionDuplicates(self):
+        """
+        Merge spots with the same location.
+        """
         if len(self) > 1:
             # If timing is not taken into account (self._startTime is empty), two spots with the same location are considered duplicates
             # If timing is taken into account (self._startTime is not empty), two spots with the same location are considered duplicates only if their timing are equal
@@ -334,6 +496,9 @@ class PlanIonLayer:
         return copy.deepcopy(self)
 
     def createEmptyLayerWithSameMetaData(self):
+        """
+        Creates an empty layer with the same metadata (e.g. range shifter settings) as the current layer.
+        """
         layer = self.copy()
         layer._x = np.array([])
         layer._y = np.array([])
@@ -344,6 +509,19 @@ class PlanIonLayer:
 
 
 class RangeShifterSettings:
+    """
+    Class to store range shifter settings.
+
+    Parameters
+    -----------
+    isocenterToRangeShifterDistance: float (default: 0.0)
+        distance from isocenter to range shifter
+    rangeShifterWaterEquivalentThickness: float
+        water equivalent thickness of the range shifter
+    rangeShifterSetting: str (default: 'OUT')
+    referencedRangeShifterNumber: int (default: 0)
+        referenced range shifter number
+    """
     def __init__(self):
         self.isocenterToRangeShifterDistance = 0.0
         self.rangeShifterWaterEquivalentThickness = None  # Means get thickness from BDL! This is extremely error prone!

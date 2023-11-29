@@ -51,13 +51,13 @@ def readDicomCT(dcmFiles):
     sopInstanceUIDs = []
     sliceLocation = np.zeros(len(dcmFiles), dtype='float')
     dt = datetime.datetime.now()
-    
+
     for i in range(len(dcmFiles)):
         dcm = pydicom.dcmread(dcmFiles[i])
         sliceLocation[i] = float(dcm.ImagePositionPatient[2])
         images.append(dcm.pixel_array * dcm.RescaleSlope + dcm.RescaleIntercept)
         sopInstanceUIDs.append(dcm.SOPInstanceUID)
-        
+
 
     # sort slices according to their location in order to reconstruct the 3d image
     sortIndex = np.argsort(sliceLocation)
@@ -152,16 +152,16 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
 
     Returns
     -------
-    SeriesInstanceUID: 
+    SeriesInstanceUID:
         The function returns the series instance UID for these images.
     """
-    
+
     if not os.path.exists(outputFolderPath):
         os.mkdir(outputFolderPath)
     folder_name = os.path.split(outputFolderPath)[-1]
     outdata = ct.imageArray.copy()
     dt = datetime.datetime.now()
-    
+
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
     meta.MediaStorageSOPClassUID = ct.mediaStorageSOPClassUID if hasattr(ct, 'mediaStorageSOPClassUID') else '1.2.840.10008.5.1.4.1.1.2'   
@@ -244,7 +244,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
                                         0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
     dcm_file.FrameOfReferenceUID = ct.frameOfReferenceUID if hasattr(ct, 'frameOfReferenceUID') else pydicom.uid.generate_uid()
     # dcm_file.NumberOfStudyRelatedInstances = ''
-    # dcm_file.RespiratoryIntervalTime = 
+    # dcm_file.RespiratoryIntervalTime =
     dcm_file.SamplesPerPixel = 1
     dcm_file.PhotometricInterpretation = ct.photometricInterpretation if hasattr(ct, 'photometricInterpretation') else 'MONOCHROME2'
     dcm_file.Rows = ct.gridSize[1]
@@ -257,7 +257,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.ApprovalStatus = ct.approvalStatus if hasattr(ct, 'approvalStatus') else 'UNAPPROVED'
     # dcm_file.WindowCenter = '40.0'
     # dcm_file.WindowWidth = '400.0'
-    
+
     # NEW: Rescale image intensities if pixel data does not fit into INT16
     RescaleSlope = 1
     RescaleIntercept = 0
@@ -270,14 +270,14 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
         outdata = np.round((outdata-dataMin)/RescaleSlope - 2**15)
         RescaleIntercept = dataMin + RescaleSlope*2**15
 
-    ## 
+    ##
     ## OLD RESCALE CODE
-    ##    
+    ##
     # RescaleSlope = 1
     # RescaleIntercept = np.floor(np.min(outdata))
     # outdata[np.isinf(outdata)]=np.min(outdata)
     # outdata[np.isnan(outdata)]=np.min(outdata)
-        
+
     # while np.max(np.abs(outdata))>=2**15:
     #     print('Pixel values are too large to be stored in INT16. Entire image is divided by 2...')
     #     RescaleSlope = RescaleSlope/2
@@ -288,10 +288,10 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     # if not(RescaleSlope):
     #     RescaleSlope = 1
     # outdata = (outdata-RescaleIntercept)/RescaleSlope
-    
+
     # Reduce 'rounding' errors...
     outdata = np.round(outdata)
-    
+
     # Update dicom tags
     dcm_file.RescaleSlope = str(RescaleSlope)
     dcm_file.RescaleIntercept = str(RescaleIntercept)
@@ -317,7 +317,7 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
     dcm_file.is_little_endian = True
     dcm_file.is_implicit_VR = False
 
-    
+
     # pydicom.dataset.validate_file_meta(dcm_file.file_meta, enforce_standard=True)
     for slice in range(ct.gridSize[2]):
         dcm_slice = copy.deepcopy(dcm_file)
@@ -336,18 +336,18 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
         # dcm_slice.SOPInstanceUID = ct.sopInstanceUIDs[slice]
         dcm_slice.SOPInstanceUID = dcm_slice.file_meta.MediaStorageSOPInstanceUID
         dcm_slice.ImagePositionPatient[2] = floatToDS(slice*ct.spacing[2]+ct.origin[2])
-        
+
         dcm_slice.SliceLocation = str(slice*ct.spacing[2]+ct.origin[2])
         dcm_slice.InstanceNumber = str(slice+1)
 
         # dcm_slice.SmallestImagePixelValue = np.min(outdata[:,:,slice]).astype(np.int16)
         # dcm_slice.LargestImagePixelValue  = np.max(outdata[:,:,slice]).astype(np.int16)
-        # This causes an error because double backslash b'\\' is interpreted as a split leading 
+        # This causes an error because double backslash b'\\' is interpreted as a split leading
         # to interpretation as pydicom.multival.MultiValue instead of bytes
-        
+
         dcm_slice.SmallestImagePixelValue = 0
         dcm_slice['SmallestImagePixelValue']._value = np.min(outdata[:,:,slice]).astype(np.int16).tobytes()
-        
+
         dcm_slice.LargestImagePixelValue = 0
         dcm_slice['LargestImagePixelValue']._value = np.max(outdata[:,:,slice]).astype(np.int16).tobytes()
 
@@ -357,8 +357,8 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
         output_filename = f'{folder_name}_{slice+1:04d}.dcm'
         dcm_slice.save_as(os.path.join(outputFolderPath,output_filename))
     return dcm_file.SeriesInstanceUID
-        
-        
+
+
 def readDicomMRI(dcmFiles):
     """
     Generate a MR image object from a list of dicom MR slices.
@@ -561,7 +561,7 @@ def readDicomDose(dcmFile):
     if hasattr(dcm, 'GridFrameOffsetVector') and not dcm.GridFrameOffsetVector is None:
         if (dcm.GridFrameOffsetVector[1] - dcm.GridFrameOffsetVector[0] < 0):
             imageData = np.flip(imageData, 2)
-            
+
             # Note: Tuples are immutable so we cannot change their values. Our code returns an error.
             # Solution: Convert our “classes” tuple into a list. This will let us change the values in our sequence of class names
             imagePositionPatient_list = list(imagePositionPatient)
@@ -717,7 +717,7 @@ def writeRTDose(dose:DoseImage, outputFile):
         for cindex, item in enumerate(dcm_file.ReferencedRTPlanSequence):
             if not dcm_file.ReferencedRTPlanSequence[cindex].ReferencedSOPClassUID:
                 dcm_file.ReferencedRTPlanSequence[cindex].ReferencedSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.8"
-                
+
             if not dcm_file.ReferencedRTPlanSequence[cindex].ReferencedSOPInstanceUID:
                 dcm_file.ReferencedRTPlanSequence[cindex].ReferencedSOPInstanceUID = pydicom.uid.generate_uid()
                 
@@ -768,7 +768,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     # save dicom file
     print("Export dicom RTDOSE: " + outputFile)
     dcm_file.save_as(outputFile)
-    
+
 ################### Dose Image #######################################################
 def readDicomStruct(dcmFile):
     """
@@ -787,7 +787,7 @@ def readDicomStruct(dcmFile):
     # Read DICOM file
     dcm = pydicom.dcmread(dcmFile)
     dt = datetime.datetime.now()
-    
+
     if (not hasattr(dcm, 'SeriesInstanceUID')):
         logging.error("Error: Unknown data type for " + dcmFile)
         return None
@@ -874,18 +874,18 @@ def readDicomStruct(dcmFile):
 def writeRTStruct(struct: RTStruct, outputFile):
     """
     Export of TR structure data as a Dicom dose file.
-    
+
     Parameters
     ----------
     struct: RTStruct
         The RTStruct object
-        
+
     ctSeriesInstanceUID: str
         The serial instance UID of the CT associated with this RT structure.
-    
+
     outputFile: str
         The output folde path
-        
+
     NOTE: Get the CT serial instance UID by calling the 'writeDicomCT' function.
     """
     
@@ -996,11 +996,11 @@ def writeRTStruct(struct: RTStruct, outputFile):
         roiObs.RTROIInterpretedType = item.RTROIInterpretedType if hasattr(item, 'RTROIInterpretedType') else 'NONE'
         roiObs.ROIInterpreter = item.ROIInterpreter if hasattr(item, 'ROIInterpreter') else 'None'
         dcm_file.RTROIObservationsSequence.append(roiObs)
-    
+
     dcm_file.StructureSetROISequence = []
     dcm_file.ROIContourSequence = []
-        
-    for cidx,contour in enumerate(struct.contours, start=1): 
+
+    for cidx,contour in enumerate(struct.contours, start=1):
         # StructureSetROISequence
         roi = pydicom.Dataset()
         roi.ROINumber = cidx
@@ -1008,7 +1008,7 @@ def writeRTStruct(struct: RTStruct, outputFile):
         roi.ReferencedFrameOfReferenceUID = contour.referencedFrameOfReferenceUID
         roi.ROIGenerationAlgorithm = "AUTOMATIC"
         dcm_file.StructureSetROISequence.append(roi)
-        
+
         # ROIContourSequence
         con = pydicom.Dataset()
         con.ReferencedROINumber = cidx
@@ -1026,8 +1026,21 @@ def writeRTStruct(struct: RTStruct, outputFile):
     print("Export dicom RTSTRCT: " + outputFile)
     dcm_file.save_as(outputFile)
 
-################### Plan Image ############################################    
+################### Plan Image ############################################
 def readDicomPlan(dcmFile) -> RTPlan:
+    """
+    Read a Dicom plan file and generate a RTPlan object.
+
+    Parameters
+    ----------
+    dcmFile: str
+        Path of the Dicom plan file.
+
+    Returns
+    -------
+    plan: RTPlan object
+        The function returns the imported plan
+    """
     dcm = pydicom.dcmread(dcmFile)
 
     # collect patient information
@@ -1055,7 +1068,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
 
     # Ion plan
     elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.8":
-        
+
         plan.modality = "RT Ion Plan IOD"
 
         if dcm.IonBeamSequence[0].RadiationType == "PROTON":
@@ -1280,6 +1293,18 @@ def readDicomPlan(dcmFile) -> RTPlan:
 
 def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
     """
+    Write a RTPlan object to a dicom file
+
+    Parameters
+    ----------
+    plan : RTPlan
+        the RTPlan object to be written.
+    filePath : str
+        path to the dicom file
+
+    """
+    SOPInstanceUID = pydicom.uid.generate_uid()
+    """
     Export the RT plan data as a Dicom dose file.
 
     Parameters
@@ -1289,7 +1314,7 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
     filePath: str
         the output folder path
     """
-    
+
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
     meta.FileMetaInformationGroupLength = plan.fileMetaInformationGroupLength if hasattr(plan, 'fileMetaInformationGroupLength') else 0
@@ -1818,9 +1843,120 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
     # save dicom file
     print("Export dicom TRAINMENT PLAN: " + filePath)
     dcm_file.save_as(filePath)
+
+def writeRTDose(dose:DoseImage, outputFile):
+    """
+    Write a dose image to a DICOM RTDOSE file
+
+    Parameters
+    ----------
+    dose : DoseImage
+        The dose image to write in the Dicom file
+    outputFile : str
+        The path to the output file
+    """
+    SOPInstanceUID = pydicom.uid.generate_uid()
+
+    # meta data
+    meta = pydicom.dataset.FileMetaDataset()
+    meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+    # meta.ImplementationClassUID = '1.2.826.0.1.3680043.1.2.100.5.7.0.47' # from RayStation
+    meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'  # modified
+    # meta.FileMetaInformationGroupLength =
+    # meta.FileMetaInformationVersion =
+
+    # dicom dataset
+    dcm_file = pydicom.dataset.FileDataset(outputFile, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
+    dcm_file.SOPInstanceUID = SOPInstanceUID
+    # dcm_file.ImplementationVersionName =
+    # dcm_file.SpecificCharacterSet =
+    # dcm_file.AccessionNumber =
+    # dcm_file.SoftwareVersion =
+
+    # patient information
+    patient = dose.patient
+    if not (patient is None):
+        dcm_file.PatientName = "exported_" + patient.name
+        dcm_file.PatientID = patient.id
+        dcm_file.PatientBirthDate = patient.birthDate
+        dcm_file.PatientSex = patient.sex
+
+    # content information
+    dt = datetime.datetime.now()
+    dcm_file.ContentDate = dt.strftime('%Y%m%d')
+    dcm_file.ContentTime = dt.strftime('%H%M%S.%f')
+    dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
+    dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
+    dcm_file.Modality = 'RTDOSE'
+    dcm_file.Manufacturer = 'OpenMCsquare'
+    dcm_file.ManufacturerModelName = 'OpenTPS'
+    dcm_file.SeriesDescription = dose.name
+    dcm_file.StudyInstanceUID = pydicom.uid.generate_uid()
+    #dcm_file.StudyID = self.StudyInfo.StudyID
+    #dcm_file.StudyDate = self.StudyInfo.StudyDate
+    #dcm_file.StudyTime = self.StudyInfo.StudyTime
+    dcm_file.SeriesInstanceUID = dose.seriesInstanceUID
+    dcm_file.SeriesNumber = 1
+    dcm_file.InstanceNumber = 1
+    dcm_file.PatientOrientation = ''
+    if dose.referenceCT is None:
+        dcm_file.FrameOfReferenceUID = pydicom.uid.generate_uid()
+    else:
+        dcm_file.FrameOfReferenceUID = dose.referenceCT.frameOfReferenceUID
+    dcm_file.DoseUnits = 'GY'
+    dcm_file.DoseType = 'PHYSICAL'  # or 'EFFECTIVE' for RBE dose (but RayStation exports physical dose even if 1.1 factor is already taken into account)
+    dcm_file.DoseSummationType = 'PLAN'
+    ReferencedPlan = pydicom.dataset.Dataset()
+    ReferencedPlan.ReferencedSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.8"  # ion plan
+    if dose.referencePlan is None:
+        ReferencedPlan.ReferencedSOPInstanceUID = pydicom.uid.generate_uid()
+    else:
+        ReferencedPlan.ReferencedSOPInstanceUID = dose.referencePlan.SOPInstanceUID
+    dcm_file.ReferencedRTPlanSequence = pydicom.sequence.Sequence([ReferencedPlan])
+    # dcm_file.ReferringPhysicianName
+    # dcm_file.OperatorName
+
+    # image information
+    dcm_file.Width = dose.gridSize[0]
+    dcm_file.Columns = dcm_file.Width
+    dcm_file.Height = dose.gridSize[1]
+    dcm_file.Rows = dcm_file.Height
+    dcm_file.NumberOfFrames = dose.gridSize[2]
+    dcm_file.SliceThickness = dose.spacing[2]
+    dcm_file.PixelSpacing = list(dose.spacing[0:2])
+    dcm_file.ColorType = 'grayscale'
+    dcm_file.ImagePositionPatient = list(dose.origin)
+    dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
+                                        0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
+    dcm_file.SamplesPerPixel = 1
+    dcm_file.PhotometricInterpretation = 'MONOCHROME2'
+    dcm_file.FrameIncrementPointer = pydicom.tag.Tag((0x3004, 0x000c))
+    dcm_file.GridFrameOffsetVector = list(
+        np.arange(0, dose.gridSize[2] * dose.spacing[2], dose.spacing[2]))
+
+    # transfer syntax
+    dcm_file.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+    dcm_file.is_little_endian = True
+    dcm_file.is_implicit_VR = False
+
+    # image data
+    dcm_file.BitDepth = 16
+    dcm_file.BitsAllocated = 16
+    dcm_file.BitsStored = 16
+    dcm_file.HighBit = 15
+    dcm_file.PixelRepresentation = 0  # 0=unsigned, 1=signed
+    dcm_file.DoseGridScaling = dose.imageArray.max() / (2 ** dcm_file.BitDepth - 1)
+    dcm_file.PixelData = (dose.imageArray / dcm_file.DoseGridScaling).astype(np.uint16).transpose(2, 1, 0).tostring()
+
+    # print(dcm_file)
+
+    # save dicom file
+    print("Export dicom RTDOSE: " + outputFile)
+    dcm_file.save_as(outputFile)
     
-    
-# ##########################################################
+
 def readDicomVectorField(dcmFile):
     """
     Read a Dicom vector field file and generate a vector field object.
@@ -1872,3 +2008,204 @@ def readDicomVectorField(dcmFile):
     field.patient = patient
 
     return field
+
+
+
+def writeDicomCT(ct: CTImage, outputFolderPath:str):
+    """
+    Write a CTImage object to a dicom file
+
+    Parameters
+    ----------
+    ct : CTImage
+        CTImage object to be written
+    outputFolderPath : str
+        folder path where the dicom file will be written
+
+    """
+    if not os.path.exists(outputFolderPath):
+        os.mkdir(outputFolderPath)
+    folder_name = os.path.split(outputFolderPath)[-1]
+
+    outdata = ct.imageArray.copy()
+    SOPInstanceUID = pydicom.uid.generate_uid()
+
+    # meta data
+    # meta = pydicom.dataset.FileMetaDataset()
+    meta = pydicom.Dataset()
+    meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.2' # CT Image Storage
+    meta.MediaStorageSOPInstanceUID = SOPInstanceUID
+    # meta.ImplementationClassUID = '1.2.826.0.1.3680043.5.5.100.5.7.0.03'  # modified
+    meta.ImplementationClassUID = '1.3.6.1.4.1.9590.100.1.0.100.4.0'
+    # meta.FileMetaInformationGroupLength =
+    # meta.FileMetaInformationVersion =
+    # meta.ImplementationVersionName = 
+    # meta.SourceApplicationEntityTitle = 
+
+    # dicom dataset
+    dcm_file = pydicom.dataset.FileDataset(outputFolderPath, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file.SOPClassUID = meta.MediaStorageSOPClassUID
+    dcm_file.SOPInstanceUID = SOPInstanceUID
+    # dcm_file.ImageType = ['ORIGINAL', 'PRIMARY', 'AXIAL']
+    dcm_file.ImageType = ['DERIVED', 'SECONDARY', 'AXIAL']
+    # dcm_file.ImplementationVersionName =
+    # dcm_file.SpecificCharacterSet =
+    # dcm_file.AccessionNumber =
+    # dcm_file.SoftwareVersion =
+
+    # patient information
+    patient = ct.patient
+    if not (patient is None):
+        dcm_file.PatientName = "exported_" + patient.name
+        dcm_file.PatientID = patient.id
+        dcm_file.PatientBirthDate = patient.birthDate
+        dcm_file.PatientSex = patient.sex
+    else:
+        dcm_file.PatientName = 'ANONYMOUS'
+        dcm_file.PatientID = 'ANONYMOUS'
+        dcm_file.PatientBirthDate = '01022010'
+        dcm_file.PatientSex = 'Helicopter'
+    dcm_file.OtherPatientNames = ''
+    dcm_file.PatientAge = '099Y'
+    dcm_file.IssuerOfPatientID = ''
+
+    # Study information
+    # dcm_file.StudyDate = '01022010'
+    # dcm_file.SeriesDate = '01022010'
+    # dcm_file.AcquisitionDate = '01022010'
+    # dcm_file.ContentDate = '20161207'
+    # dcm_file.StudyTime = '01022010'
+    # dcm_file.SeriesTime = '01022010'
+    # dcm_file.AcquisitionTime = '084338'
+    # dcm_file.ContentTime = '160108.480'
+    # dcm_file.AccessionNumber = 'D140640901'
+    # dcm_file.StudyID = ''
+    dcm_file.StudyInstanceUID = pydicom.uid.generate_uid()
+
+    # content information
+    dt = datetime.datetime.now()
+    dcm_file.ContentDate = dt.strftime('%Y%m%d')
+    dcm_file.ContentTime = dt.strftime('%H%M%S.%f')
+    dcm_file.InstanceCreationDate = dt.strftime('%Y%m%d')
+    dcm_file.InstanceCreationTime = dt.strftime('%H%M%S.%f')
+    dcm_file.Modality = 'CT'
+    # dcm_file.ModalitiesInStudy = 'CT'
+    dcm_file.Manufacturer = 'OpenTPS'
+    # dcm_file.InstitutionName = ''
+    # dcm_file.ReferringPhysicianName = ''
+    # dcm_file.StationName = ''
+    dcm_file.StudyDescription = 'OpenTPS simulation'
+    dcm_file.SeriesDescription = 'OpenTPS created image'
+    dcm_file.ManufacturerModelName = 'OpenTPS'
+    # dcm_file.InstitutionalDepartmentName = 'RADIOTHERAPY'
+    # dcm_file.OperatorsName = ''
+    # dcm_file.ManufacturerModelName = ''
+    # dcm_file.ScanOptions = 'HELICAL_CT'
+
+    dcm_file.SliceThickness = str(ct.spacing[2])
+    # dcm_file.KVP = '120.0'
+    dcm_file.SpacingBetweenSlices = str(ct.spacing[2])
+    # dcm_file.DataCollectionDiameter = '550.0'
+    # dcm_file.DeviceSerialNumber = ''
+    # dcm_file.SoftwareVersions = ''
+    # dcm_file.ProtocolName = ''
+    # dcm_file.ReconstructionDiameter = ''
+    # dcm_file.GantryDetectorTilt = ''
+    # dcm_file.TableHeight = ''
+    # dcm_file.RotationDirection = ''
+    # dcm_file.ExposureTime = ''
+    # dcm_file.XRayTubeCurrent = ''
+    # dcm_file.Exposure = ''
+    # dcm_file.GeneratorPower = ''
+    # dcm_file.ConvolutionKernel = ''
+    dcm_file.PatientPosition = 'HFS'
+    # dcm_file.CTDIvol = 
+
+    dcm_file.SeriesInstanceUID = ct.seriesInstanceUID
+    # dcm_file.SeriesInstanceUID = pydicom.uid.generate_uid()
+    dcm_file.SeriesNumber = 3
+    # dcm_file.AcquisitionNumber = '4'
+    # dcm_file.PatientOrientation = '' #['L', 'P']
+    dcm_file.ImagePositionPatient = list(ct.origin)
+    dcm_file.ImageOrientationPatient = [1, 0, 0, 0, 1,
+                                        0]  # HeadFirstSupine=1,0,0,0,1,0  FeetFirstSupine=-1,0,0,0,1,0  HeadFirstProne=-1,0,0,0,-1,0  FeetFirstProne=1,0,0,0,-1,0
+    dcm_file.FrameOfReferenceUID = ct.frameOfReferenceUID
+    # dcm_file.FrameOfReferenceUID = pydicom.uid.generate_uid()
+    # dcm_file.PositionReferenceIndicator = ''
+    # dcm_file.NumberOfStudyRelatedInstances = ''
+    # dcm_file.RespiratoryIntervalTime = 
+    dcm_file.SamplesPerPixel = 1
+    dcm_file.PhotometricInterpretation = 'MONOCHROME2'
+    dcm_file.Rows = ct.gridSize[1]
+    dcm_file.Columns = ct.gridSize[0]
+    dcm_file.PixelSpacing = list(ct.spacing[0:2])
+    dcm_file.BitsAllocated = 16
+    dcm_file.BitsStored = 16
+    dcm_file.HighBit = 15
+    dcm_file.PixelRepresentation = 1
+    # dcm_file.WindowCenter = '40.0'
+    # dcm_file.WindowWidth = '400.0'
+
+    # Rescale image intensities
+    RescaleSlope = 1
+    RescaleIntercept = np.floor(np.min(outdata))
+    outdata[np.isinf(outdata)]=np.min(outdata)
+    outdata[np.isnan(outdata)]=np.min(outdata)
+    while np.max(np.abs(outdata))>=2**15:
+        print('Pixel values are too large to be stored in INT16. Entire image is divided by 2...')
+        RescaleSlope = RescaleSlope/2
+        outdata = outdata/2
+    if np.max(np.abs(outdata))<2**6:
+        print('Intensity range is too small. Entire image is rescaled...');
+        RescaleSlope = (np.max(outdata)-RescaleIntercept)/2**12
+    if not(RescaleSlope):
+        RescaleSlope = 1
+    outdata = (outdata-RescaleIntercept)/RescaleSlope           
+    # Reduce 'rounding' errors...
+    outdata = np.round(outdata)
+    # Update dicom tags
+    dcm_file.RescaleSlope = str(RescaleSlope)
+    dcm_file.RescaleIntercept = str(RescaleIntercept)
+
+    # dcm_file.ScheduledProcedureStepStartDate = ''
+    # dcm_file.ScheduledProcedureStepStartTime = ''
+    # dcm_file.ScheduledProcedureStepEndDate = ''
+    # dcm_file.ScheduledProcedureStepEndTime = ''
+    # dcm_file.PerformedProcedureStepStartDate = ''
+    # dcm_file.PerformedProcedureStepStartTime = ''
+    # dcm_file.PerformedProcedureStepID = ''
+    # dcm_file.ConfidentialityCode = ''
+    # dcm_file.ContentLabel = ct.name
+    dcm_file.ContentLabel = 'CT'
+    dcm_file.ContentDescription = ''
+    # dcm_file.StructureSetLabel = ''
+    # dcm_file.StructureSetDate = ''
+    # dcm_file.StructureSetTime = ''
+
+    # transfer syntax
+    dcm_file.file_meta.TransferSyntaxUID = pydicom.uid.ExplicitVRLittleEndian
+    dcm_file.is_little_endian = True
+    dcm_file.is_implicit_VR = False
+
+    # pydicom.dataset.validate_file_meta(dcm_file.file_meta, enforce_standard=True)
+
+    for slice in range(ct.gridSize[2]):
+        dcm_slice = copy.deepcopy(dcm_file)
+        dcm_slice.ImagePositionPatient[2] = slice*ct.spacing[2]+ct.origin[2]
+        dcm_slice.SliceLocation = str(slice*ct.spacing[2]+ct.origin[2])
+        dcm_slice.InstanceNumber = str(slice+1)
+
+        # dcm_slice.SmallestImagePixelValue = np.min(outdata[:,:,slice]).astype(np.int16)
+        # dcm_slice.LargestImagePixelValue  = np.max(outdata[:,:,slice]).astype(np.int16)
+        # This causes an error because double backslash b'\\' is interpreted as a split leading 
+        # to interpretation as pydicom.multival.MultiValue instead of bytes
+        dcm_slice.SmallestImagePixelValue = None
+        dcm_slice['SmallestImagePixelValue']._value = np.min(outdata[:,:,slice]).astype(np.int16).tobytes()
+        dcm_slice.LargestImagePixelValue = None
+        dcm_slice['LargestImagePixelValue']._value = np.max(outdata[:,:,slice]).astype(np.int16).tobytes()
+
+        dcm_slice.PixelData = outdata[:,:,slice].T.astype(np.int16).tobytes()
+
+        # write output dicom file
+        output_filename = f'{folder_name}_{slice+1:04d}.dcm'
+        dcm_slice.save_as(os.path.join(outputFolderPath,output_filename))

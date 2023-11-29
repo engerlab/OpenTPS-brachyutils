@@ -6,6 +6,9 @@ from abc import abstractmethod
 
 
 class AbstractCTCalibration:
+    """
+    Abstract class for CT calibration. Methods are redefined in mcSquareCTCalibration and rayStationCTCalibration.
+    """
     @abstractmethod
     def convertHU2MassDensity(self, hu):
         pass

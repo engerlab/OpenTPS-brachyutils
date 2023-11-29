@@ -9,6 +9,19 @@ from opentps.core.data.CTCalibrations.RayStationCalibration._rayStationMaterial 
 
 
 class RayStationDensity2Material:
+    """
+    Class to convert mass density to material for RayStation.
+
+    Attributes
+    ----------
+    !! USED ONLY AT INITIALIZATION !!
+    densities : np.ndarray
+        Densities of the materials.
+    materials : Sequence[RayStationMaterial]
+        Materials.
+    fromFile : str
+        Path to the material file.
+    """
     def __init__(self, densities=None, materials=None, fromFile=None):
         self._densities = None
         self._materials = materials
@@ -38,6 +51,14 @@ class RayStationDensity2Material:
         return self.rayStationFormatted
 
     def rayStationFormatted(self)->str:
+        """
+        Returns the materials in the format of RayStation.
+
+        Returns
+        -------
+        str
+            Materials in the format of RayStation.
+        """
         s  = ''
         for i, material in enumerate(self._materials):
             s = s + str(i) + ' ' + material.rayStationFormatted() + '\n'
@@ -45,6 +66,21 @@ class RayStationDensity2Material:
         return s
 
     def convertMassDensity2RSP(self, density:Union[float, np.ndarray], energy=100):
+        """
+        Converts mass density to relative stopping power (RSP).
+
+        Parameters
+        ----------
+        density : Union[float, np.ndarray]
+            Mass density.
+        energy : float (default=100)
+            Energy of the beam.
+
+        Returns
+        -------
+        Union[float, np.ndarray]
+            Relative stopping power (RSP).
+        """
         densityIsScalar = not isinstance(density, np.ndarray)
 
         if densityIsScalar:
@@ -88,6 +124,21 @@ class RayStationDensity2Material:
 
 
     def convertRSP2MassDensity(self, rsp, energy=100):
+        """
+        Converts relative stopping power (RSP) to mass density.
+
+        Parameters
+        ----------
+        rsp : Union[float, np.ndarray]
+            Relative stopping power (RSP).
+        energy : float (default=100)
+            Energy of the beam.
+
+        Returns
+        -------
+        Union[float, np.ndarray]
+            Mass density.
+        """
         density_ref, rsp_ref = self._getBijectiveMassDensity2RSP(energy=energy)
 
         density = interpolate.interp1d(rsp_ref, density_ref, kind='linear', fill_value='extrapolate')
@@ -112,9 +163,25 @@ class RayStationDensity2Material:
 
 
     def getDensities(self):
+        """
+        Returns the densities of the materials.
+
+        Returns
+        -------
+        np.ndarray
+            Densities of the materials.
+        """
         return np.array(self._densities)
 
     def getMaterials(self):
+        """
+        Returns the materials.
+
+        Returns
+        -------
+        Sequence[RayStationMaterial]
+            Materials.
+        """
         return self._materials
 
     def _load(self, materialFile):
@@ -189,7 +256,13 @@ class RayStationDensity2Material:
         self.setMaterials(materials)
 
     def setDensities(self, densities):
+        """
+        Sets the densities of the materials.
+        """
         self._densities = np.array(densities)
 
     def setMaterials(self, materials):
+        """
+        Sets the materials.
+        """
         self._materials = materials

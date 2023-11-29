@@ -15,6 +15,18 @@ logger = logging.getLogger(__name__)
 
 
 class ROIMask(Image3D):
+    """
+    Class for ROI mask. Inherits from Image3D. It is a binary image with 1 inside the ROI and 0 outside.
+
+    Attributes
+    ----------
+    name : str (default: 'ROI contour')
+        Name of the ROI mask
+    color : str (default: '0,0,0')
+        RGB of the color of the ROI mask, format : 'r,g,b' like '0,0,0' for black for instance
+    centerOfMass : numpy.ndarray
+        Center of mass of the ROI mask
+    """
     def __init__(self, imageArray=None, name="ROI contour", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0), displayColor=(0, 0, 0), patient=None, seriesInstanceUID=None):
         self.colorChangedSignal = Event(object)
         self._displayColor = displayColor
@@ -23,6 +35,30 @@ class ROIMask(Image3D):
 
     @classmethod
     def fromImage3D(cls, image, **kwargs):
+        """
+        Create a ROIContour from an Image3D. The imageArray of the ROIContour is the same as the imageArray of the Image3D.
+
+        Parameters
+        ----------
+        image : Image3D
+            Image3D from which the ROIContour is created
+        kwargs : dict (optional)
+            Additional arguments to be passed to the constructor of the ROIContour
+                - imageArray : numpy.ndarray
+                    Image array of the image.
+                - origin : tuple of float
+                    Origin of the image.
+                - spacing : tuple of float
+                    Spacing of the image.
+                - angles : tuple of float
+                    Angles of the image.
+                - seriesInstanceUID : str
+                    Series instance UID of the image.
+                - patient : Patient
+                    Patient object of the image.
+                - name : str
+                    Name of the image.
+        """
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient, 'name': image.name}
         dic.update(kwargs)
@@ -51,22 +87,67 @@ class ROIMask(Image3D):
         return (COM * self.spacing) + self.origin
 
     def getVolume(self, inVoxels=False):
+        """
+        Get the volume of the ROI mask.
+
+        Parameters
+        ----------
+        inVoxels : bool (default: False)
+            If True, the volume is returned in voxels, otherwise in mm^3.
+        """
         return roiMasksProcessing.getMaskVolume(self, inVoxels=inVoxels)
 
     def copy(self):
+        """
+        Create a copy of the ROI mask.
+
+        Returns
+        -------
+        ROIMask
+            Copy of the ROI mask.
+        """
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
     def dilateMask(self, radius=1.0, struct=None, tryGPU=False):
+        """
+        Dilate the ROI mask.
+
+        Parameters
+        ----------
+        radius : float (default: 1.0)
+            Radius of the dilation in mm.
+        struct : numpy.ndarray (default: None)
+            Structuring element for the dilation.
+        tryGPU : bool (default: False)
+            If True, the dilation is performed on the GPU if possible.
+        """
         roiMasksProcessing.dilateMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
     def erodeMask(self, radius=1.0, struct=None, tryGPU=True):
+        """
+        Erode the ROI mask.
+
+        Parameters
+        ----------
+        radius : float (default: 1.0)
+            Radius of the erosion in mm.
+        struct : numpy.ndarray (default: None)
+            Structuring element for the erosion.
+        tryGPU : bool (default: False)
+            If True, the erosion is performed on the GPU if possible.
+        """
         roiMasksProcessing.erodeMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
     def createMaskRings(self, nRings, radius):
         """
-            Create a ring ROI to obtain nice gradient dose around the ROI
-            nRings: Number of rings to be created
-            radius: thickness of each ring in mm
+        Create a ring ROI to obtain nice gradient dose around the ROI
+
+        Parameters
+        ----------
+        nRings: int
+            Number of rings to be created
+        radius: float
+            thickness of each ring in mm
         """
         rings = []
         roiSizes = [self]
@@ -85,13 +166,50 @@ class ROIMask(Image3D):
 
 
     def openMask(self, radius=1.0, struct=None, tryGPU=True):
+        """
+        Open the ROI mask.
+
+        Parameters
+        ----------
+        radius : float (default: 1.0)
+            Radius of the opening in mm.
+        struct : numpy.ndarray (default: None)
+            Structuring element for the opening.
+        tryGPU : bool (default: False)
+            If True, the opening is performed on the GPU if possible.
+        """
         roiMasksProcessing.openMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
     def closeMask(self, radius=1.0, struct=None, tryGPU=True):
+        """
+        Close the ROI mask.
+
+        Parameters
+        ----------
+        radius : float (default: 1.0)
+            Radius of the closing in mm.
+        struct : numpy.ndarray (default: None)
+            Structuring element for the closing.
+        tryGPU : bool (default: False)
+            If True, the closing is performed on the GPU if possible.
+        """
         roiMasksProcessing.closeMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
 
 
     def getBinaryContourMask(self, internalBorder=False):
+        """
+        Get the binary contour mask of the ROI mask.
+
+        Parameters
+        ----------
+        internalBorder : bool (default: False)
+            If True the ROI is eroded before getting the contour mask, otherwise it is dilated.
+
+        Returns
+        -------
+        ROIMask
+            Binary contour mask of the ROI mask.
+        """
 
         if internalBorder:
             erodedROI = ROIMask.fromImage3D(self)
@@ -115,6 +233,14 @@ class ROIMask(Image3D):
 
 
     def getROIContour(self):
+        """
+        Get the ROI contour.
+
+        Returns
+        -------
+        ROIContour
+            ROI contour of the ROI mask.
+        """
 
         try:
             from skimage.measure import label, find_contours

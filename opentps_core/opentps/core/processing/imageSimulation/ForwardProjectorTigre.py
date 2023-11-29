@@ -5,7 +5,37 @@ import math
 logger = logging.getLogger(__name__)
 
 def forwardProjectionTigre(ct, angles, axis='Z', ctIsocenter=None, SAD=1000, SID=1550, flatpanelGridSize=[1440,1440], flatpanelPixelSpacing=[0.296,0.296], poissonNoise=1e5, gaussianNoise=10):
+    """
+    Forward projection of CT image using Tigre toolbox ( https://github.com/CERN/TIGRE/blob/master/Frontispiece/python_installation.md ).
 
+    Parameters
+    ----------
+    ct : CT
+        CT object
+    angles : float or list or numpy.ndarray
+        Projection angles in radians
+    axis : str, optional
+        Axis of CT image to be used for forward projection. The default is 'Z'.
+    ctIsocenter : numpy.ndarray, optional
+        Isocenter of CT image. The default is None.
+    SAD : float, optional
+        Source to axis distance in mm. The default is 1000.
+    SID : float, optional
+        Source to detector distance in mm. The default is 1550.
+    flatpanelGridSize : list, optional
+        Flatpanel grid size in pixels. The default is [1440,1440].
+    flatpanelPixelSpacing : list, optional
+        Flatpanel pixel spacing in mm. The default is [0.296,0.296].
+    poissonNoise : float, optional
+        Poisson noise level. The default is 1e5.
+    gaussianNoise : float, optional
+        Gaussian noise level. The default is 10.
+
+    Returns
+    -------
+    projections : numpy.ndarray
+        Forward projections.
+    """
     try:
         import tigre  # https://github.com/CERN/TIGRE/blob/master/Frontispiece/python_installation.md
     except:

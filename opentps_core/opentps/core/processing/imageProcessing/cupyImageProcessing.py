@@ -23,10 +23,9 @@ from opentps.core.processing.imageProcessing.roiMasksProcessing import buildStru
 ## ------------------------------------------------------------------------------------------------
 def translateData(data, translationInMM, fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
     """
-
     Parameters
     ----------
-    data :
+    data : Image3D or Dynamic3DSequence or Dynamic3DModel
     translationInMM : sequence of the translation in millimeters in the 3 direction [X, Y, Z]
     fillValue : the value to fill the data for points coming, after translation, from outside the image
     outputBox : the cube in space represented by the result after translation
@@ -44,18 +43,24 @@ def translateData(data, translationInMM, fillValue=0, outputBox='keepAll', inter
 ## ------------------------------------------------------------------------------------------------
 def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
     """
-
     Parameters
     ----------
-    data : ND numpy array, the data to rotate
-    rotAnglesInDeg : the rotation in degrees around each axis, that will be applied successively in X,Y,Z order
-    fillValue : the value to fill the data if points come, after rotation, from outside the image
-    rotCenter :
-    outputBox :
+    data : Image3D or Dynamic3DSequence or Dynamic3DModel
+        data to be rotated.
+    rotAnglesInDeg : sequence[float]
+        rotation angles in degrees in the 3 directions [X, Y, Z]
+    fillValue : float
+        the value to fill the data for points coming, after rotation, from outside the image
+    outputBox : str
+        the cube in space represented by the result after rotation
+    interpOrder : int
+        the order of the interpolation
+    mode : str
+        the mode of the interpolation
+
     Returns
     -------
     data, the rotated data
-
     """
 
     rotAnglesInDeg = np.array(rotAnglesInDeg)
@@ -100,7 +105,24 @@ def rotateData(data, rotAnglesInDeg, fillValue=0, outputBox='keepAll', interpOrd
 
 ## ------------------------------------------------------------------------------------------------
 def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
-    
+    """
+    rotate image3D around its center
+
+    Parameters
+    ----------
+    image : Image3D
+        the image to be rotated
+    rotAnglesInDeg : sequence[float]
+        rotation angles in degrees in the 3 directions [X, Y, Z]
+    fillValue : float
+        the value to fill the data for points coming, after rotation, from outside the image
+    outputBox : str
+        the cube in space represented by the result after rotation
+    interpOrder : int
+        the order of the interpolation
+    mode : str
+        the mode of the interpolation
+    """
     resampled = False
     if image.spacing[0] != image.spacing[1] or image.spacing[1] != image.spacing[2] or image.spacing[2] != image.spacing[0]:
         initialSpacing = copy.copy(image.spacing)
@@ -149,15 +171,23 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
 def rotate3DVectorFields(vectorField, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepAll', interpOrder=1, mode='constant'):
 
     """
+    Rotate a vector field around its center
 
     Parameters
     ----------
-    vectorField
-    rotationInDeg
+    vectorField : VectorField3D
+        the vector field to be rotated
+    rotationInDeg : sequence[float]
+        rotation angles in degrees in the 3 directions [X, Y, Z]
+    fillValue : float
+        the value to fill the data for points coming, after rotation, from outside the image. Default is 0
+    outputBox : str
+        the cube in space represented by the result after rotation (same, keepAll). Default is keepAll
 
-    Returns
-    -------
-
+    interpOrder : int
+        the order of the interpolation (0, 1, 2, 3, 4) default is 1
+    mode : str
+        the mode of the interpolation (constant, nearest, reflect, wrap). Default is constant
     """
 
     logger.info(f'Apply rotation of {rotAnglesInDeg} degrees to field imageArray')
@@ -173,6 +203,28 @@ def applyTransform3D(data, tformMatrix: np.ndarray, fillValue: float = 0.,
                      rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                      translation: Sequence[float] = [0, 0, 0],
                      interpOrder=1, mode='constant'):
+    """
+    Apply a 3D transformation to an image or a vector field
+
+    Parameters
+    ----------
+    data : Image3D or VectorField3D
+        the data to be transformed
+    tformMatrix : np.ndarray
+        the transformation matrix
+    fillValue : float
+        the value to fill the data for points coming, after rotation, from outside the image. Default is 0
+    outputBox : str
+        the cube in space represented by the result after rotation ('same', 'keepAll'). Default is 'keepAll'
+    rotCenter : str or sequence[float]
+        the center of rotation. Default is dicomOrigin
+    translation : sequence[float]
+        the translation to apply to the data after rotation. Default is [0, 0, 0]
+    interpOrder : int
+        the order of the interpolation (0, 1, 2, 3, 4) default is 1
+    mode : str
+        the mode of the interpolation ('constant', 'nearest', 'reflect', 'wrap'). Default is 'constant'
+    """
 
     from opentps.core.data._transform3D import Transform3D
 
@@ -223,7 +275,28 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
                               outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
                               rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                               translation: Sequence[float] = [0, 0, 0], interpOrder=1, mode='constant'):
+    """
+    Apply a 3D transformation to an image
 
+    Parameters
+    ----------
+    image : Image3D
+        the image to be transformed
+    tformMatrix : np.ndarray
+        the transformation matrix
+    fillValue : float
+        the value to fill the data for points coming, after rotation, from outside the image. Default is 0
+    outputBox : str
+        the cube in space represented by the result after rotation ('same', 'keepAll'). Default is 'keepAll'
+    rotCenter : str or sequence[float]
+        the center of rotation. Default is 'dicomOrigin'
+    translation : sequence[float]
+        the translation to apply to the data after rotation. Default is [0, 0, 0]
+    interpOrder : int
+        the order of the interpolation (0, 1, 2, 3, 4) default is 1
+    mode : str
+        the mode of the interpolation ('constant', 'nearest', 'reflect', 'wrap'). Default is 'constant'
+    """
     imgType = copy.copy(image.imageArray.dtype)
 
     if imgType == bool:
@@ -260,6 +333,28 @@ def applyTransform3DToVectorField3D(vectField: VectorField3D, tformMatrix: np.nd
                                     outputBox: Optional[Union[Sequence[float], str]] = 'keepAll',
                                     rotCenter: Optional[Union[Sequence[float], str]] = 'dicomOrigin',
                                     translation: Sequence[float] = [0, 0, 0], interpOrder=1, mode='constant'):
+    """
+    Apply a 3D transformation to a vector field
+
+    Parameters
+    ----------
+    vectField : VectorField3D
+        the vector field to be transformed
+    tformMatrix : np.ndarray
+        the transformation matrix
+    fillValue : float
+        the value to fill the data for points coming, after rotation, from outside the image. Default is 0
+    outputBox : str
+        the cube in space represented by the result after rotation ('same', 'keepAll'). Default is 'keepAll'
+    rotCenter : str or sequence[float]
+        the center of rotation. Default is 'dicomOrigin'
+    translation : sequence[float]
+        the translation to apply to the data after rotation. Default is [0, 0, 0]
+    interpOrder : int
+        the order of the interpolation (0, 1, 2, 3, 4) default is 1
+    mode : str
+        the mode of the interpolation ('constant', 'nearest', 'reflect', 'wrap'). Default is 'constant'
+    """
     vectorFieldCompList = []
     for i in range(3):
         compImg = Image3D.fromImage3D(vectField)
@@ -357,7 +452,25 @@ def resampleCupy():
     return NotImplementedError
 
 def dilateMask(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    dilate a mask by a given radius
 
+    Parameters
+    ----------
+    mask : Image3D
+        the mask to dilate
+    radius : float
+        the radius of the dilation in mm. Default is 1.0
+    struct : ndarray
+        the structuring element to use for the dilation. Default is None
+    inPlace : bool
+        if True, the mask is dilated in place, if False, a copy of the mask is returned. Default is True
+
+    Returns
+    -------
+    Image3D
+        the dilated mask if inPlace is False, None otherwise
+    """
     if struct is None:
         radius = radius / np.array(mask.spacing)
         struct = buildStructElem(radius)
@@ -369,6 +482,25 @@ def dilateMask(mask, radius=1.0, struct=None, inPlace=True):
         return maskCopy
 
 def erodeMask(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    erode a mask by a given radius
+
+    Parameters
+    ----------
+    mask : Image3D
+        the mask to erode
+    radius : float
+        the radius of the erosion in mm. Default is 1.0
+    struct : ndarray
+        the structuring element to use for the erosion. Default is None
+    inPlace : bool
+        if True, the mask is eroded in place, if False, a copy of the mask is returned. Default is True
+
+    Returns
+    -------
+    Image3D
+        the eroded mask if inPlace is False, None otherwise
+    """
 
     if struct is None:
         radius = radius / np.array(mask.spacing)
@@ -381,7 +513,25 @@ def erodeMask(mask, radius=1.0, struct=None, inPlace=True):
         return maskCopy
 
 def openMask(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    open a mask by a given radius
 
+    Parameters
+    ----------
+    mask : Image3D
+        the mask to open
+    radius : float
+        the radius of the opening in mm. Default is 1.0
+    struct : ndarray
+        the structuring element to use for the opening. Default is None
+    inPlace : bool
+        if True, the mask is opened in place, if False, a copy of the mask is returned. Default is True
+
+    Returns
+    -------
+    Image3D
+        the opened mask if inPlace is False, None otherwise
+    """
     if struct is None:
         radius = radius / np.array(mask.spacing)
         struct = buildStructElem(radius)
@@ -393,6 +543,25 @@ def openMask(mask, radius=1.0, struct=None, inPlace=True):
         return maskCopy
 
 def closeMask(mask, radius=1.0, struct=None, inPlace=True):
+    """
+    close a mask by a given radius
+
+    Parameters
+    ----------
+    mask : Image3D
+        the mask to close
+    radius : float
+        the radius of the closing in mm. Default is 1.0
+    struct : ndarray
+        the structuring element to use for the closing. Default is None
+    inPlace : bool
+        if True, the mask is closed in place, if False, a copy of the mask is returned. Default is True
+
+    Returns
+    -------
+    Image3D
+        the closed mask if inPlace is False, None otherwise
+    """
     if struct is None:
         radius = radius / np.array(mask.spacing)
         struct = buildStructElem(radius)
@@ -404,6 +573,25 @@ def closeMask(mask, radius=1.0, struct=None, inPlace=True):
         return maskCopy
 
 def gaussianSmoothing(imgArray, sigma=1, truncate=2.5, mode="reflect"):
+    """
+    smooth an image with a gaussian filter
+
+    Parameters
+    ----------
+    imgArray : ndarray
+        the image to smooth
+    sigma : float
+        the sigma of the gaussian filter. Default is 1
+    truncate : float
+        the truncation of the gaussian filter. Default is 2.5
+    mode : str
+        the mode of the gaussian filter. Default is "reflect"
+
+    Returns
+    -------
+    ndarray
+        the smoothed image
+    """
     cupyNewImg = cupy.asarray(imgArray)
     smoothedImg = cupy.asnumpy(cupyx.scipy.ndimage.gaussian_filter(cupyNewImg, sigma=sigma, truncate=truncate, mode=mode))
     return smoothedImg

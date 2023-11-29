@@ -7,6 +7,16 @@ logger = logging.getLogger(__name__)
 
 
 class PlanOptimizationConfig(AbstractApplicationConfig):
+    """
+    This class is used to store the configuration of the plan optimization. Inherit from AbstractApplicationConfig.
+
+    Attribute
+    ----------
+    imptSolver : str
+        The solver used for the IMPT optimization. Default is 'Scipy-LBFGS'.
+    imptMaxIter : int
+        The maximum number of iterations for the IMPT optimization. Default is 100.
+    """
     def __init__(self):
         super().__init__()
 

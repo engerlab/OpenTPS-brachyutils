@@ -11,6 +11,14 @@ logger = logging.getLogger(__name__)
 
 # Since this is a singleton AbstractApplicationConfig must be abstract if we want several ApplicationConfig to coexist
 class AbstractApplicationConfig(metaclass=Singleton):
+    """
+    Abstract class for application configuration. This class is a singleton.
+
+    Attributes
+    ----------
+    configFile : str
+        Path to the configuration file.
+    """
     def __init__(self):
         programSettings = ProgramSettings()
 
@@ -36,6 +44,23 @@ class AbstractApplicationConfig(metaclass=Singleton):
             os.mkdir(folder)
 
     def getConfigField(self, section:str, field:str, defaultValue:Any) -> str:
+        """
+        Get a configuration field from the configuration file. If the field does not exist, it will be created with the default value.
+
+        Parameters
+        ----------
+        section : str
+            Section of the configuration file.
+        field : str
+            Field of the configuration file.
+        defaultValue : Any
+            Default value of the field.
+
+        Returns
+        -------
+        str
+            Configuration of the field.
+        """
         try:
             output = self._config[section][field]
             if not (output is None):
@@ -53,6 +78,23 @@ class AbstractApplicationConfig(metaclass=Singleton):
         return self._config[section][field]
 
     def setConfigField(self, section:str, field:str, value:Any):
+        """
+        Set a configuration field from the configuration file.
+
+        Parameters
+        ----------
+        section : str
+            Section of the configuration file.
+        field : str
+            Field of the configuration file.
+        value : Any
+            Value of the field.
+
+        Returns
+        -------
+        str
+            Configuration of the field.
+        """
         try:
             self._config[section]
         except:
@@ -62,5 +104,13 @@ class AbstractApplicationConfig(metaclass=Singleton):
         self.writeConfig()
 
     def writeConfig(self):
+        """
+        Write the configuration file.
+
+        Returns
+        -------
+        str
+            Configuration of the field.
+        """
         with open(self.configFile, 'w') as file:
             self._config.write(file)

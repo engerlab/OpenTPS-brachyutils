@@ -2,13 +2,25 @@ from opentps.core.processing.registration.registrationRigid import RegistrationR
 
 
 def getTranslationAndRotation(fixed, moving, transform=None):
-    """Compute the translation and rotation between image1 and image2.
+    """
+    Compute the translation and rotation between image1 and image2.
 
-            Returns
-            -------
-            T: the translation in mm
-            anglesArray: the array of angles in radians
-            """
+    Parameters
+    ----------
+    fixed : Image3D
+        The fixed image
+    moving : Image3D
+        The moving image
+    transform : Transform3D, optional
+        The transform between the two images
+
+    Returns
+    -------
+    T : array
+        The translation in mm
+    anglesArray : array
+        The array of angles in radians
+    """
 
     if transform==None:
         print("Compute rigid registration for the image comparison")

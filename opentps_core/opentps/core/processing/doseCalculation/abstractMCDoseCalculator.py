@@ -4,6 +4,9 @@ from opentps.core.processing.doseCalculation.abstractDoseCalculator import Abstr
 __all__ = ['AbstractMCDoseCalculator']
 
 class AbstractMCDoseCalculator(AbstractDoseCalculator):
+    """
+    Abstract class for Monte Carlo dose calculation
+    """
     def __init__(self):
         super().__init__()
 

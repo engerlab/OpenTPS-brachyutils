@@ -10,7 +10,19 @@ logger = logging.getLogger(__name__)
 
 def createExternalPoints(imgSize, numberOfPointsPerEdge = 0):
     """
+    Create a list of points that are outside the image, to be used for the weight maps
 
+    parameters
+    ----------
+    imgSize : list
+        size of the image
+    numberOfPointsPerEdge : int
+        number of points to create per edge of the image. default is 0, which means no points are created.
+
+    returns
+    -------
+    externalPoints : list
+        list of points that are outside the image
     """
     xHalfSize = imgSize[0] / 2
     yHalfSize = imgSize[1] / 2
@@ -76,7 +88,24 @@ def createExternalPoints(imgSize, numberOfPointsPerEdge = 0):
 
 def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSpacing):
     """
+    Create a list of weight maps, one for each internal point. Each weight map is a 3D array of the same size as the image, with values between 0 and 1.
+    The value 1 is at the position of the internal point, and the value 0 is at the position of the external points.
 
+    parameters
+    ----------
+    absoluteInternalPoints : list
+        list of internal points coordinates in absolute coordinates
+    imageGridSize : list
+        size of the image
+    imageOrigin : list
+        origin of the image
+    pixelSpacing : list
+        pixel spacing of the image
+
+    returns
+    -------
+    weightMapList : list
+        list of weight maps
     """
     ## get points coordinates in voxels (no need to get them in int, it will not be used to access image values)
     internalPoints = copy.deepcopy(absoluteInternalPoints)
@@ -120,7 +149,19 @@ def createWeightMaps(absoluteInternalPoints, imageGridSize, imageOrigin, pixelSp
 
 def getWeightMapsAsImage3DList(internalPoints, ref3DImage):
     """
+    Create a list of weight maps, one for each internal point. Each weight map is a 3D array of the same size as the image, with values between 0 and 1.
 
+    parameters
+    ----------
+    internalPoints : list
+        list of internal points coordinates in absolute coordinates
+    ref3DImage : Image3D
+        reference image
+
+    returns
+    -------
+    image3DList : list
+        list of weight maps as Image3D objects
     """
     weightMapList = createWeightMaps(internalPoints, ref3DImage.gridSize, ref3DImage.origin, ref3DImage.spacing)
     image3DList = []
@@ -131,6 +172,14 @@ def getWeightMapsAsImage3DList(internalPoints, ref3DImage):
 
 
 def showPoints(pointList):
+    """
+    Show a list of points in a plot.
+
+    parameters
+    ----------
+    pointList : list
+        list of points coordinates
+    """
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -146,7 +195,25 @@ def showPoints(pointList):
 
 def generateDeformationFromTrackers(midpModel, phases, amplitudes, internalPoints):
     """
+    Generate a deformation field from a list of internal points, phases and amplitudes.
 
+    parameters
+    ----------
+    midpModel : MidPositionModel
+        mid-position model
+    phases : list
+        list of phases
+    amplitudes : list
+        list of amplitudes
+    internalPoints : list
+        list of internal points coordinates in absolute coordinates
+
+    returns
+    -------
+    field : Image3D
+        deformation field
+    weightMapList : list
+        list of weight maps
     """
     if midpModel.midp is None or midpModel.deformationList is None:
         logger.error(
@@ -170,7 +237,23 @@ def generateDeformationFromTrackers(midpModel, phases, amplitudes, internalPoint
 
 def generateDeformationFromTrackersAndWeightMaps(midpModel, phases, amplitudes, weightMapList):
     """
+    generate a deformation field from a list of weight maps, phases and amplitudes.
 
+    parameters
+    ----------
+    midpModel : MidPositionModel
+        mid-position model
+    phases : list
+        list of phases
+    amplitudes : list
+        list of amplitudes
+    weightMapList : list
+        list of weight maps
+
+    returns
+    -------
+    field : Image3D
+        deformation field
     """
     if midpModel.midp is None or midpModel.deformationList is None:
         logger.error(
