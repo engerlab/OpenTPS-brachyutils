@@ -43,7 +43,7 @@ def loadData(patientList:PatientList, dataPath:str, maxDepth=-1, ignoreExistingD
         The function returns a list of data objects containing the imported data.
     """
     #TODO: implement ignoreExistingData
-
+    
     dataList = readData(dataPath, maxDepth=maxDepth)
 
     patient = None
