@@ -7,7 +7,7 @@ import datetime
 import pydicom
 sys.path.append('..')
 
-from opentps.core.io.dicomIO import writeRTPlan, writeDicomCT, writeRTDose
+from opentps.core.io.dicomIO import writeRTPlan, writeDicomCT, writeRTDose, writeRTStruct
 from opentps.core.processing.planOptimization.tools import evaluateClinical
 from opentps.core.data.images import CTImage, DoseImage
 from opentps.core.data.images import ROIMask
@@ -15,6 +15,7 @@ from opentps.core.data.plan import ObjectivesList
 from opentps.core.data.plan import PlanDesign
 from opentps.core.data import DVH
 from opentps.core.data import Patient
+from opentps.core.data import RTStruct
 from opentps.core.data.plan import FidObjective
 from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
@@ -44,6 +45,7 @@ def run(output_path=""):
     planSeriesInstanceUID = pydicom.uid.generate_uid()
     ctSeriesInstanceUID =  pydicom.uid.generate_uid()
     frameOfReferenceUID = pydicom.uid.generate_uid()
+    # structSeriesInstanceUID = pydicom.uid.generate_uid()
     dt = datetime.datetime.now()
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -76,6 +78,13 @@ def run(output_path=""):
     data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
+
+    # contour = roi.getROIContour()
+    # struct = RTStruct(seriesInstanceUID=structSeriesInstanceUID)
+    # struct.studyInstanceUID = studyInstanceUID
+    # struct.frameOfReferenceUID = frameOfReferenceUID
+    # struct.appendContour(contour)
+    # writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
 
     # Design plan
     beamNames = ["Beam1"]
@@ -211,5 +220,4 @@ def run(output_path=""):
 
 
 if __name__ == "__main__":
-    output_path = r"C:\Users\valentin.hamaide\OneDrive - IBA Group\flash_tps\scripts\data\simpleOpti"
-    run(output_path)
+    run()

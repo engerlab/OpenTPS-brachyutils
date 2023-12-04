@@ -7,7 +7,7 @@ import datetime
 import pydicom
 sys.path.append('..')
 
-from opentps.core.io.dicomIO import writeRTPlan, writeDicomCT, writeRTDose
+from opentps.core.io.dicomIO import writeRTPlan, writeDicomCT, writeRTDose, writeRTStruct
 from opentps.core.processing.planOptimization.tools import evaluateClinical
 from opentps.core.data.images import CTImage, DoseImage
 from opentps.core.data.images import ROIMask
@@ -15,6 +15,7 @@ from opentps.core.data.plan import ObjectivesList
 from opentps.core.data.plan import PlanDesign
 from opentps.core.data import DVH
 from opentps.core.data import Patient
+from opentps.core.data import RTStruct
 from opentps.core.data.plan import FidObjective
 from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
@@ -63,6 +64,11 @@ def run(output_path=""):
     data = np.zeros((ctSize, ctSize, ctSize)).astype(bool)
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
+
+    # contour = roi.getROIContour()
+    # struct = RTStruct()
+    # struct.appendContour(contour)
+    # writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
 
     # Design plan
     beamNames = ["Beam1"]
