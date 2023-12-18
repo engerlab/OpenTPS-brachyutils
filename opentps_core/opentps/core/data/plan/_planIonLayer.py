@@ -346,7 +346,7 @@ class PlanIonLayer:
 
     def _singleSpotCheck(self, x: float, y: float) -> Tuple[bool, Optional[int]]:
         for i, (x_xy, y_xy) in enumerate(self.spotXY):
-            if (x == x_xy and y == y_xy):
+            if (np.isclose(x , x_xy, atol=0.01) and np.isclose(y , y_xy, atol=0.01)):
                 return (True, i)
         return (False, None)
 
