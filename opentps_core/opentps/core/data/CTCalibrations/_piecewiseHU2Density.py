@@ -212,8 +212,9 @@ class PiecewiseHU2Density:
                 if foundHU_to_Density and re.search(r'HU', line):
                     break
                 elif foundHU_to_Density:
-                    lineSplit = line.split()
-
+                    lineSplit = line.split()                    
+                    if len(lineSplit)<1:
+                        continue
                     if lineSplit[0]=='#':
                         continue
 

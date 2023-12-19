@@ -6,7 +6,7 @@ from opentps.core.data.CTCalibrations.RayStationCalibration._rayStationCTCalibra
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 
 
-def readScanner(scannerFolder) -> AbstractCTCalibration:
+def readScanner(scannerFolder, materialsPath='default') -> AbstractCTCalibration:
     """
     Read the CT calibration curve from a scanner folder
 
@@ -25,7 +25,7 @@ def readScanner(scannerFolder) -> AbstractCTCalibration:
 
             return MCsquareCTCalibration(fromFiles=(os.path.join(scannerFolder, 'HU_Density_Conversion.txt'),
                                                     os.path.join(scannerFolder, 'HU_Material_Conversion.txt'),
-                                                       'default'))
+                                                       materialsPath))
         except Exception as e:
             raise ('Could not import MCsquare CT calibration from provided files') from e
 
