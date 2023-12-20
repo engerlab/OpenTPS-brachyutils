@@ -18,7 +18,37 @@ from opentps.core import Event
 
 class Patient:
     """
-    A class Patient contains patient information and patient data
+    A class Patient contains patient information and patient data.
+    Patient data can be images, RTStructs, RTPlans, PlanDesigns, Dynamic3DSequences, Dynamic3DModels, and ROIMasks.
+
+    Attributes
+    ----------
+    name : str
+        name of the patient
+    id : str
+        ID of the patient
+    birthDate : str
+        birth date of the patient
+    sex : str
+        sex of the patient
+    patientData : list
+        list of patient data
+    images : list
+        list of images
+    roiMasks : list
+        list of ROIMasks
+    rtStructs : list
+        list of RTStructs
+    rtPlans : list
+        list of RTPlans
+    planDesigns : list
+        list of PlanDesigns
+    dynamic3DSequences : list
+        list of Dynamic3DSequences
+    dynamic3DModels : list
+        list of Dynamic3DModels
+    dynamic2DSequences : list
+        list of Dynamic2DSequences
     """
     class TypeConditionalEvent(Event):
         def __init__(self, *args):
@@ -67,6 +97,28 @@ class Patient:
 
 
     def __str__(self):
+        """
+        Returns a string representation of the patient formated as:
+        Patient name: <name>
+            images:
+                <image1>
+                <image2>
+                ...
+            Plans:
+                <plan1>
+                <plan2>
+                ...
+            Structure sets:
+                <struct1>
+                <struct2>
+                ...
+
+        Returns
+        -------
+        str
+            string representation of the patient
+
+        """
         string = "Patient name: " + self.name + "\n"
         string += "  images:\n"
         for img in self._images:
@@ -129,9 +181,30 @@ class Patient:
             return [data for data in self._patientData if isinstance(data, dataType)]
 
     def hasPatientData(self, data:PatientData):
+        """
+        Checks if the patient has the given data
+
+        Parameters
+        ----------
+        data : PatientData
+            data to check for
+
+        Returns
+        -------
+        bool
+            True if the patient has the given data, False otherwise
+        """
         return (data in self._patientData)
 
     def appendPatientData(self, data:Union[Sequence[PatientData], PatientData]):
+        """
+        Appends the given data to the patient
+
+        Parameters
+        ----------
+        data : Union[Sequence[PatientData], PatientData]
+            data to append
+        """
         if isinstance(data, list):
             self.appendPatientDataList(data)
 
@@ -141,8 +214,16 @@ class Patient:
             self.patientDataAddedSignal.emit(data)
 
     def appendPatientDataList(self, dataList:Sequence[PatientData]):
+        """"
+        Appends the given list of data to the patient
+
+        Parameters
+        ----------
+        dataList : Sequence[PatientData]
+            list of data to append
+        """
         for data in dataList:
-            self.appendPatientData(data)
+                self.appendPatientData(data)
 
     def removePatientData(self, data:Union[Sequence[PatientData], PatientData]):
         if isinstance(data, list):
@@ -154,18 +235,40 @@ class Patient:
             self.patientDataRemovedSignal.emit(data)
 
     def removePatientDataList(self, dataList:Sequence[PatientData]):
+        """
+        Removes the given list of data from the patient
+
+        Parameters
+        ----------
+        dataList : Sequence[PatientData]
+            list of data to remove
+        """
         for data in dataList:
             self.removePatientData(data)
         return
 
     def getTypeAsString(self) -> str:
+        """
+        Returns the class as a string
+
+        Returns
+        -------
+        str
+            class as a string
+        """
         return self.__class__.__name__
 
 
     def dumpableCopy(self):
         """
-        deprecated?
+        Returns a dumpable copy of the patient
+
+        Returns
+        -------
+        Patient
+            dumpable copy of the patient
         """
+        #deprecated?
         dumpablePatientCopy = Patient()
         for data in self._patientData:
             dumpablePatientCopy._patientData.append(data.dumpableCopy())

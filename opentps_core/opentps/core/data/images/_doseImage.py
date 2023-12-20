@@ -11,6 +11,18 @@ from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.images._ctImage import CTImage
 
 class DoseImage(Image3D):
+    """
+    Class for dose images. Inherits from Image3D and its attributes.
+
+    Attributes
+    ----------
+    referenceCT : CTImage
+        Reference CT image for the dose image.
+    referencePlan : RTPlan
+        Reference RTPlan for the dose image.
+    sopInstanceUID : str
+        SOP instance UID of the dose image.
+    """
 
     def __init__(self, imageArray=None, name="Dose image", origin=(0, 0, 0), spacing=(1, 1, 1), angles=(0, 0, 0),
                  seriesInstanceUID=None, sopInstanceUID=None, referencePlan:RTPlan = None, referenceCT:CTImage = None, patient=None):
@@ -23,6 +35,33 @@ class DoseImage(Image3D):
 
     @classmethod
     def fromImage3D(cls, image: Image3D, **kwargs):
+        """
+        Creates a DoseImage from an Image3D object.
+
+        Parameters
+        ----------
+        image : Image3D
+            Image3D object to be converted.
+        kwargs : dict (optional)
+            Additional keyword arguments.
+            - imageArray : numpy.ndarray
+                Image array of the image.
+            - origin : tuple of float
+                Origin of the image.
+            - spacing : tuple of float
+                Spacing of the image.
+            - angles : tuple of float
+                Angles of the image.
+            - seriesInstanceUID : str
+                Series instance UID of the image.
+            - patient : Patient
+                Patient object of the image.
+
+        Returns
+        --------
+        DoseImage
+            DoseImage object.
+        """
         dic = {'imageArray': copy.deepcopy(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
         dic.update(kwargs)
@@ -34,6 +73,14 @@ class DoseImage(Image3D):
         return cl
 
     def copy(self):
+        """
+        Returns a copy of the DoseImage object.
+
+        Returns
+        --------
+        DoseImage
+            Copy of the DoseImage object.
+        """
         dose = DoseImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid(), referencePlan=self.referencePlan, referenceCT=self.referenceCT)
         dose.patient = self.patient
         return dose
@@ -42,12 +89,42 @@ class DoseImage(Image3D):
         pass
 
     def dumpableCopy(self):
+        """
+        Returns a dumpable copy of the DoseImage object.
+
+        Returns
+        --------
+        DoseImage
+            Dumpable copy of the DoseImage object.
+        """
         dumpableDose = DoseImage(imageArray=self.imageArray, name=self.name, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, frameOfReferenceUID=self.frameOfReferenceUID, sopInstanceUID=self.sopInstanceUID, planSOPInstanceUID=self.planSOPInstanceUID)
         # dumpableDose.patient = self.patient
         return dumpableDose
 
     @classmethod
     def createEmptyDoseWithSameMetaData(cls, image:Image3D, **kwargs):
+        """
+        Creates an empty DoseImage with the same meta data as the given Image3D object.
+
+        Parameters
+        ----------
+        image : Image3D
+            Image3D object to be converted.
+        kwargs : dict (optional)
+            Additional keyword arguments.
+                - imageArray : numpy.ndarray
+                    Image array of the image.
+                - origin : tuple of float
+                    Origin of the image.
+                - spacing : tuple of float
+                    Spacing of the image.
+                - angles : tuple of float
+                    Angles of the image.
+                - seriesInstanceUID : str
+                    Series instance UID of the image.
+                - patient : Patient
+                    Patient object of the image.
+        """
         dic = {'imageArray': np.zeros_like(image.imageArray), 'origin': image.origin, 'spacing': image.spacing,
                'angles': image.angles, 'seriesInstanceUID': image.seriesInstanceUID, 'patient': image.patient}
         dic.update(kwargs)

@@ -38,6 +38,23 @@ except:
 
 
 def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Sequence[Image3D]:
+    """
+    Extends all images to the same size and spacing, using the smallest spacing and the largest size.
+
+    parameters
+    ----------
+    images: Sequence[Image3D]
+        The images to extend.
+    inPlace: bool
+        Whether to modify the images in place. Default is False.
+    fillValue: float
+        The value to fill the new voxels with. Default is 0.
+
+    returns
+    -------
+    Sequence[Image3D]
+        The extended images if inPlace is False, otherwise the original images modified.
+    """
     newOrigin = np.array([np.Inf, np.Inf, np.Inf])
     newSpacing = np.array([np.Inf, np.Inf, np.Inf])
     newEnd = np.array([-np.Inf, -np.Inf, -np.Inf])
@@ -70,6 +87,31 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
 
 def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    """
+    Transforms an image from DICOM to IEC Gantry coordinates.
+
+    parameters
+    ----------
+    image: Image3D
+        The image to transform.
+    beam: PlanIonBeam
+        The beam to use for the transformation.
+    fillValue: float
+        The value to fill the new voxels with. Default is 0.
+    cropROI: Optional[Union[ROIContour, ROIMask]]
+        The ROI to crop the image to. Default is None.
+    cropDim0: bool
+        Whether to crop the image in the first dimension. Default is True.
+    cropDim1: bool
+        Whether to crop the image in the second dimension. Default is True.
+    cropDim2: bool
+        Whether to crop the image in the third dimension. Default is True.
+
+    returns
+    -------
+    Image3D
+        The transformed image.
+    """
     logger.info("Resampling image DICOM -> IEC Gantry")
 
     tform = _forwardDicomToIECGantry(beam)
@@ -85,6 +127,29 @@ def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
     return outImage
 
 def _cropBox(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
+    """
+    Calculates the output box crop
+
+    parameters
+    ----------
+    image: Image3D
+        The image to transform.
+    tform: np.ndarray
+        The transformation matrix.
+    cropROI: Optional[Union[ROIContour, ROIMask]]
+        The ROI to crop the image to. Default is None.
+    cropDim0: bool
+        Whether to crop the image in the first dimension. Default is True.
+    cropDim1: bool
+        Whether to crop the image in the second dimension. Default is True.
+    cropDim2: bool
+        Whether to crop the image in the third dimension. Default is True.
+
+    returns
+    -------
+    Optional[Sequence[float]]
+        The output box coordinates with the format [x0, x1, y0, y1, z0, z1]
+    """
     outputBox = "keepAll"
 
     if not (cropROI is None):
@@ -105,6 +170,29 @@ def _cropBox(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim
     return outputBox
 
 def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIMask]], cropDim0, cropDim1, cropDim2) -> Optional[Sequence[float]]:
+    """
+    Calculates the output box crop after a transformation.
+
+    parameters
+    ----------
+    image: Image3D
+        The image to transform.
+    tform: np.ndarray
+        The transformation matrix.
+    cropROI: Optional[Union[ROIContour, ROIMask]]
+        The ROI to crop the image to. Default is None.
+    cropDim0: bool
+        Whether to crop the image in the first dimension. Default is True.
+    cropDim1: bool
+        Whether to crop the image in the second dimension. Default is True.
+    cropDim2: bool
+        Whether to crop the image in the third dimension. Default is True.
+
+    returns
+    -------
+    Optional[Sequence[float]]
+        The output box coordinates with the format [x0, x1, y0, y1, z0, z1]
+    """
     outputBox = 'keepAll'
 
     if not (cropROI is None):
@@ -128,6 +216,21 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
     return outputBox
 
 def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
+    """
+    Transforms a point from DICOM to IEC Gantry coordinates.
+
+    parameters
+    ----------
+    beam: PlanIonBeam
+        The beam to use for the transformation.
+    point: Sequence[float]
+        The point to transform coordinates [x, y, z].
+
+    returns
+    -------
+    Sequence[float]
+        The transformed point.
+    """
     u = point[0]
     v = point[1]
     w = point[2]
@@ -139,6 +242,31 @@ def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequen
 
 def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
+    """
+    Transforms an image from IEC Gantry to DICOM coordinates.
+
+    parameters
+    ----------
+    image: Image3D
+        The image to transform.
+    beam: PlanIonBeam
+        The beam to use for the transformation.
+    fillValue: float
+        The value to fill the image with outside the image. Default is 0.
+    cropROI: Optional[Union[ROIContour, ROIMask]]
+        The ROI to crop the image to. Default is None.
+    cropDim0: bool
+        Whether to crop the image in the first dimension. Default is True.
+    cropDim1: bool
+        Whether to crop the image in the second dimension. Default is True.
+    cropDim2: bool
+        Whether to crop the image in the third dimension. Default is True.
+
+    returns
+    -------
+    Image3D
+        The transformed image.
+    """
     logger.info("Resampling image IEC Gantry -> DICOM")
 
     tform = _forwardDicomToIECGantry(beam)
@@ -151,6 +279,21 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
     return outImage
 
 def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
+    """
+    Transforms a point from IEC Gantry to DICOM coordinates.
+
+    parameters
+    ----------
+    beam: PlanIonBeam
+        The beam to use for the transformation.
+    point: Sequence[float]
+        The point to transform coordinates [x, y, z].
+
+    returns
+    -------
+    Sequence[float]
+        The transformed point.
+    """
     u = point[0]
     v = point[1]
     w = point[2]
@@ -160,6 +303,20 @@ def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Seq
     return sitkImageProcessing.applyTransform3DToPoint(tform, np.array((u, v, w)))
 
 def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
+    """
+    Calculates the transformation matrix from DICOM to IEC Gantry coordinates.
+
+    parameters
+    ----------
+    beam: PlanIonBeam
+        The beam to use for the transformation.
+
+    returns
+    -------
+    np.ndarray
+        The transformation matrix.
+
+    """
     isocenter = beam.isocenterPosition
     gantryAngle = beam.gantryAngle
     patientSupportAngle = beam.couchAngle
@@ -188,6 +345,21 @@ def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
     return T
 
 def _roll(angle:float, offset:Sequence[float]) -> np.ndarray:
+    """
+    Calculates the rotation matrix for a roll.
+
+    parameters
+    ----------
+    angle: float
+        The angle of the roll in degrees.
+    offset: Sequence[float]
+        The offset of the rotation.
+
+    returns
+    -------
+    np.ndarray
+        The rotation matrix.
+    """
     a = pi * angle / 180.
     ca = cos(a)
     sa = sin(a)
@@ -200,6 +372,21 @@ def _roll(angle:float, offset:Sequence[float]) -> np.ndarray:
     return np.array(R)
 
 def _rot(angle:float, offset:Sequence[float]) -> np.ndarray:
+    """
+    Calculates the rotation matrix for a rotation around the z-axis.
+
+    parameters
+    ----------
+    angle: float
+        The angle of the rotation in degrees.
+    offset: Sequence[float]
+        The offset of the rotation.
+
+    returns
+    -------
+    np.ndarray
+        The rotation matrix.
+    """
     a = pi * angle / 180.
     ca = cos(a)
     sa = sin(a)
@@ -212,6 +399,20 @@ def _rot(angle:float, offset:Sequence[float]) -> np.ndarray:
     return np.array(R)
 
 def _pitch(angle:float, offset:Sequence[float]) -> np.ndarray:
+    """
+    Calculates the rotation matrix for a pitch.
+
+    parameters
+    ----------
+    angle: float
+        The angle of the pitch in degrees.
+    offset: Sequence[float]
+
+    returns
+    -------
+    np.ndarray
+        The rotation matrix.
+    """
     a = pi * angle / 180.
     ca = cos(a)
     sa = sin(a)
@@ -249,15 +450,19 @@ def getVoxelIndexFromPosition(position, image3D):
 def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotVec=[0, 0, 0]):
 
     """
+    Create a 4x4 affine transform matrix from a translation vector and a rotation vector.
 
     Parameters
     ----------
-    transVec
-    rotVec
+    transVec : list or tuple of 3 elements
+        The translation vector in mm.
+    rotVec : list or tuple of 3 elements
+        The rotation vector in degrees.
 
     Returns
     -------
-
+    np.ndarray
+        The 4x4 affine transform matrix.
     """
     rotAngleInDeg = np.array(rotVec)
     rotAngleInRad = -rotAngleInDeg * np.pi / 180
@@ -274,6 +479,16 @@ def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotV
 
 ##---------------------------------------------------------------------------------------------------
 def rotateVectorsInPlace(vectField, rotationArrayOrMatrix):
+    """
+    Rotate a vector field in place using a rotation matrix or a rotation vector.
+
+    Parameters
+    ----------
+    vectField : VectorField3D
+        The vector field to rotate.
+    rotationArrayOrMatrix : np.ndarray
+        The rotation matrix or rotation vector.
+    """
     if rotationArrayOrMatrix.ndim == 1:
         r = R.from_rotvec(rotationArrayOrMatrix, degrees=True)
     elif rotationArrayOrMatrix.ndim == 2:
@@ -288,6 +503,21 @@ def rotateVectorsInPlace(vectField, rotationArrayOrMatrix):
 
 ##---------------------------------------------------------------------------------------------------
 def getTtransformMatrixInPixels(transformMatrixInMM, spacing):
+    """
+    Get the transform matrix in pixels from a transform matrix in mm.
+
+    Parameters
+    ----------
+    transformMatrixInMM : np.ndarray
+        The transform matrix in mm.
+    spacing : list or tuple of 3 elements
+        The spacing of the image.
+
+    Returns
+    -------
+    np.ndarray
+        The transform matrix in pixels.
+    """
 
     transformMatrixInPixels = copy.copy(transformMatrixInMM)
     for i in range(3):
@@ -297,6 +527,26 @@ def getTtransformMatrixInPixels(transformMatrixInMM, spacing):
 
 ##---------------------------------------------------------------------------------------------------
 def translateData(data, translationInMM, outputBox='keepAll', fillValue=0, tryGPU=False, interpOrder=1, mode='constant'):
+    """
+    Translate the data by changing its origin.
+
+    Parameters
+    ----------
+    data : Image3D or VectorField3D
+        The data to translate.
+    translationInMM : list or tuple of 3 elements
+        The translation vector in mm.
+    outputBox : str, optional
+        The output box. The default is 'keepAll'.
+    fillValue : int, optional
+        The value to fill the empty voxels. The default is 0.
+    tryGPU : bool, optional
+        Try to use the GPU. The default is False.
+    interpOrder : int, optional
+        The interpolation order. The default is 1.
+    mode : str, optional
+        The mode for the interpolation. The default is 'constant'.
+    """
 
     if not np.array(translationInMM == np.array([0, 0, 0])).all():
         if outputBox == 'keepAll':
@@ -309,6 +559,28 @@ def translateData(data, translationInMM, outputBox='keepAll', fillValue=0, tryGP
 
 ##---------------------------------------------------------------------------------------------------
 def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter='dicomOrigin', tryGPU=False, interpOrder=1, mode='constant'):
+    """
+    Rotate the data.
+
+    Parameters
+    ----------
+    data : Image3D or VectorField3D
+        The data to rotate.
+    rotAnglesInDeg : list or tuple of 3 elements
+        The rotation angles in degrees.
+    outputBox : str, optional
+        The output box. The default is 'keepAll'.
+    fillValue : int, optional
+        The value to fill the empty voxels. The default is 0.
+    rotCenter : list or tuple of 3 elements, optional
+        The rotation center. The default is 'dicomOrigin'.
+    tryGPU : bool, optional
+        Try to use the GPU. The default is False.
+    interpOrder : int, optional
+        The interpolation order. The default is 1.
+    mode : str, optional
+        The mode for the interpolation. The default is 'constant'.
+    """
     if not np.array(rotAnglesInDeg == np.array([0, 0, 0])).all():
         if tryGPU:
             cupyImageProcessing.rotateData(data, rotAnglesInDeg=rotAnglesInDeg, fillValue=fillValue, outputBox=outputBox, interpOrder=interpOrder, mode=mode)
@@ -318,7 +590,30 @@ def rotateData(data, rotAnglesInDeg, outputBox='keepAll', fillValue=0, rotCenter
 ##---------------------------------------------------------------------------------------------------
 def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0, outputBox:Optional[Union[Sequence[float], str]]='keepAll',
     rotCenter: Optional[Union[Sequence[float], str]]='dicomOrigin', translation:Sequence[float]=[0, 0, 0], tryGPU=False, interpOrder=1, mode='constant'):
+    """
+    Apply a 3D transform to the data.
 
+    Parameters
+    ----------
+    data : Image3D or VectorField3D
+        The data to transform.
+    tformMatrix : np.ndarray
+        The transform matrix.
+    fillValue : float, optional
+        The value to fill the empty voxels. The default is 0.
+    outputBox : str, optional
+        The output box. The default is 'keepAll'.
+    rotCenter : list or tuple of 3 elements, optional
+        The rotation center. The default is 'dicomOrigin'.
+    translation : list or tuple of 3 elements, optional
+        The translation vector in mm. The default is [0, 0, 0].
+    tryGPU : bool, optional
+        Try to use the GPU. The default is False.
+    interpOrder : int, optional
+        The interpolation order. The default is 1.
+    mode : str, optional
+        The mode for the interpolation. The default is 'constant'.
+    """
     if tryGPU:
         cupyImageProcessing.applyTransform3D(data, tformMatrix=tformMatrix, fillValue=fillValue, outputBox=outputBox, rotCenter=rotCenter, translation=translation, interpOrder=interpOrder, mode=mode)
     else:
@@ -326,6 +621,21 @@ def applyTransform3D(data, tformMatrix:np.ndarray, fillValue:float=0, outputBox:
 
 ##---------------------------------------------------------------------------------------------------
 def parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]], image: Image3D):
+    """
+    Parse the rotation center.
+
+    Parameters
+    ----------
+    rotCenterArg : list or tuple of 3 elements, optional
+        The rotation center. The default is 'dicomOrigin'.
+    image : Image3D
+        The image.
+
+    Returns
+    -------
+    rotCenter : np.ndarray
+        The rotation center.
+    """
     rotCenter = np.array([0, 0, 0]).astype(float)
 
     if not (rotCenterArg is None):
@@ -346,6 +656,16 @@ def parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]], image: I
 
 ##---------------------------------------------------------------------------------------------------
 def translateDataByChangingOrigin(data, translationInMM):
+    """
+    Translate the data by changing its origin.
+
+    Parameters
+    ----------
+    data : Image3D or VectorField3D
+        The data to translate.
+    translationInMM : list or tuple of 3 elements
+        The translation vector in mm.
+    """
 
     print('in imageTransform3D, translateDataByChangingOrigin')
 

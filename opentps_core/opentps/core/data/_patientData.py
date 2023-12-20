@@ -12,6 +12,18 @@ from opentps.core import Event
 
 
 class PatientData:
+    """
+    Base class for all patient data classes.
+
+    Attributes
+    ----------
+    name : str
+        name of the patient data
+    seriesInstanceUID : str
+        series instance UID of the patient data
+    patient : Patient
+        patient object
+    """
     _staticVars = {"deepCopyingExceptNdArray": False}
 
     def __init__(self, name='', seriesInstanceUID='', patient=None):
@@ -57,6 +69,14 @@ class PatientData:
         self.setName(name)
 
     def setName(self, name:str):
+        """
+        Set the name of the patient data.
+
+        Parameters
+        ----------
+        name : str
+            name of the patient data
+        """
         self._name = name
         self.nameChangedSignal.emit(self._name)
 
@@ -70,6 +90,14 @@ class PatientData:
         self.setPatient(patient)
 
     def setPatient(self, patient):
+        """
+        Set the patient.
+
+        Parameters
+        ----------
+        patient : Patient
+            patient object
+        """
         if patient == self._patient:
             return
 
@@ -79,6 +107,14 @@ class PatientData:
             self._patient.appendPatientData(self)
 
     def getTypeAsString(self) -> str:
+        """
+        Returns the type of the patient data as a string.
+
+        Returns
+        --------
+        str
+            type of the patient data
+        """
         return self.__class__.__name__
 
 class EventTestCase(unittest.TestCase):

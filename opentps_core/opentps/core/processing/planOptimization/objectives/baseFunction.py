@@ -20,6 +20,16 @@ class BaseFunc(object):
     def eval(self, x):
         """
         Function evaluation
+
+        Parameters
+        ----------
+        x : array_like
+            Point at which the function is evaluated
+
+        Returns
+        -------
+        sol : float
+            Function value at x
         """
         sol = self._eval(np.asarray(x))
         name = self.__class__.__name__
@@ -32,6 +42,18 @@ class BaseFunc(object):
     def prox(self, x, T):
         """
         Function proximal operator
+
+        Parameters
+        ----------
+        x : array_like
+            Point at which the proximal operator is evaluated
+        T : float
+            Proximal operator parameter
+
+        Returns
+        -------
+        sol : array_like
+            Proximal operator value at x
         """
         return self._prox(np.asarray(x), T)
 
@@ -41,6 +63,16 @@ class BaseFunc(object):
     def grad(self, x):
         """
         Function gradient
+
+        Parameters
+        ----------
+        x : array_like
+            Point at which the gradient is evaluated
+
+        Returns
+        -------
+        sol : array_like
+            Gradient value at x
         """
         return self._grad(np.asarray(x))
 
@@ -50,6 +82,16 @@ class BaseFunc(object):
     def cap(self, x):
         """
         Test the capabilities of the function object
+
+        Parameters
+        ----------
+        x : array_like
+            Point at which the capabilities are tested
+
+        Returns
+        -------
+        cap : list
+            List of capabilities
         """
         cap = ['EVAL', 'GRAD', 'PROX']
         try:

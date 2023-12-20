@@ -10,7 +10,16 @@ class LogBarrier(BaseFunc):
     the selected layers to the whole gantry rotating range. The term sums up
     the intensity of each beam and penalizes the zero intensities,
     therefore forcing each beam to keep at least one layer selected.
-    beta is the regularization parameter for the log barrier function
+    beta is the regularization parameter for the log barrier function. Inherits from BaseFunc.
+
+    Attributes
+    ----------
+    plan : Plan
+        The plan to be optimized.
+    beta : float
+        Regularization parameter for the log barrier function.
+    struct : WeightStructure
+        Weight structure of the plan.
     """
 
     def __init__(self, plan, beta, **kwargs):
@@ -19,7 +28,19 @@ class LogBarrier(BaseFunc):
         super(LogBarrier, self).__init__(**kwargs)
 
     def logCols(self, x):
-        """ Calculates log of each beam"""
+        """
+         Calculates log of each beam
+
+        Parameters
+        ----------
+        x : list
+            List of beams and layers.
+
+        Returns
+        -------
+        res : list
+            List of log of each beam.
+        """
         res = np.zeros(len(x))
         for beam in range(len(x)):
             for layer in range(len(x[beam])):
@@ -37,7 +58,19 @@ class LogBarrier(BaseFunc):
         return res
 
     def dlogCols(self, x):
-        """ Calculates derivative log of each layer and sum in each beam"""
+        """
+        Calculates derivative log of each layer and sum in each beam
+
+        Parameters
+        ----------
+        x : list
+            List of beams and layers.
+
+        Returns
+        -------
+        res : list
+            List of derivative log of each layer and sum in each beam.
+        """
         X = [[]]
         layerSum = np.zeros(len(x))
         for beam in range(len(x)):

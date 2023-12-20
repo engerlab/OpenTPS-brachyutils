@@ -8,6 +8,28 @@ from opentps.core.processing.imageProcessing.image2DManip import getBinaryMaskFr
 
 logger = logging.getLogger(__name__)
 def multiProcDRRs(dataList, projAngle, projAxis, outputSize, ncore=None):
+    """
+    This function is used to generate DRRs from a list of images and masks.
+    It uses multiprocessing to speed up the process.
+
+    Parameters
+    ----------
+    dataList : list
+        List of images and masks. Each element of the list is a list of two elements: image and mask.
+    projAngle : float
+        Projection angle in degrees.
+    projAxis : str
+        Projection axis. Can be 'X', 'Y' or 'Z'.
+    outputSize : list
+        Output size of the DRRs. It is a list of two elements: number of rows and number of columns.
+    ncore : int, optional
+        Number of cores used for multiprocessing. If None, all the logical cores of the machine are used. The default is None.
+
+    Returns
+    -------
+    croppedImgAndMaskDRRsPlus2DCOM : list
+        List of DRRs, masks and 2D center of mass. Each element of the list is a list of three elements: DRR, mask and 2D center of mass.
+    """
 
     import multiprocessing
     multiprocessing.set_start_method('fork', force=True)
@@ -43,6 +65,27 @@ def multiProcDRRs(dataList, projAngle, projAxis, outputSize, ncore=None):
 
 ## ------------------------------------------------------------------------------------
 def DRRsBinarizeAndCrop(image, mask, projectionAngle=0, projectionAxis='Z', outputSize=[]):
+    """
+    This function is used to generate a DRR from an image and a mask. It also crops the DRR to remove the black borders.
+
+    Parameters
+    ----------
+    image : numpy array
+        Image.
+    mask : numpy array
+        Mask.
+    projectionAngle : float, optional
+        Projection angle in degrees. The default is 0.
+    projectionAxis : str, optional
+        Projection axis. Can be 'X', 'Y' or 'Z'. The default is 'Z'.
+    outputSize : list, optional
+        Output size of the DRR. It is a list of two elements: number of rows and number of columns. The default is [].
+
+    Returns
+    -------
+    list
+        List of DRR, mask and 2D center of mass. Each element of the list is a list of three elements: DRR, mask and 2D center of mass.
+    """
     
     startTime = time.time()
     DRR = forwardProjection(image, projectionAngle, axis=projectionAxis)

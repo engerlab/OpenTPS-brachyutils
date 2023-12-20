@@ -6,7 +6,21 @@ from opentps.core.processing.planDeliverySimulation.irradiationDurationLUT impor
 
 class SimpleBeamDeliveryTimings:
     """
-    Simple Beam Delivery Timings
+    Simple Beam Delivery Timings.
+    This class computes the timings for each spot in the plan.
+
+    Attributes
+    ----------
+    plan : RTPlan
+        The plan assiocated with the timings.
+    irradiationDurationLUT : IrradiationDurationLUT
+        The look-up table (LUT) for the irradiation duration.
+    scanningSpeed : float (default: 8000.)
+        The scanning speed in mm/s.
+    layerSwitchUpDuration : float (default: 6.)
+        The layer switch up duration in s.
+    layerSwitchDownDuration : float (default: 0.6)
+        The layer switch down duration in s.
     """
     def __init__(self, plan: RTPlan):
         self.plan = plan
@@ -17,8 +31,16 @@ class SimpleBeamDeliveryTimings:
 
     def getPBSTimings(self, sort_spots="true"):
         """
-        Add timings for each spot in the plan:
-        OUTPUT:
+        Add timings for each spot in the plan
+
+        Parameters
+        ----------
+        sort_spots : bool (default: True)
+            If True, the spots are sorted by their start time.
+
+        Returns
+        -------
+        plan : RTPlan
             RTPlan with timings
         """
         plan = self.plan.copy()
@@ -51,9 +73,32 @@ class SimpleBeamDeliveryTimings:
 
     
     def computeIrradiationDuration(self, energy, mu):
+        """
+        Compute the irradiation duration for a given energy and MU.
+
+        Parameters
+        ----------
+        energy : float
+            The energy in MeV.
+        mu : float
+            The MU.
+
+        Returns
+        -------
+        irradiationDuration : float
+            The irradiation duration in s.
+        """
         return mu * np.interp(energy, self.irradiationDurationLUT.nominalEnergy, self.irradiationDurationLUT.duration)
 
 
     def getTimingsAndSavePlan(self, output_path):
+        """
+        Compute the timings for each spot in the plan and save the plan.
+
+        Parameters
+        ----------
+        output_path : str
+            The path to save the plan.
+        """
         plan_with_timings = self.getPBSTimings(sort_spots="true")
         saveRTPlan(plan_with_timings, output_path)

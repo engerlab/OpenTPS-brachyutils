@@ -23,6 +23,42 @@ logger = logging.getLogger(__name__)
 
 
 class RTPlan(PatientData):
+    """
+    Class for storing the data of a single RTPlan. Inherits from PatientData.
+
+    Attributes
+    ----------
+    name: str (default: "RTPlan")
+        Name of the RTPlan.
+    patient: Patient
+        Patient object to which the RTPlan belongs.
+    deliveredProtons: float
+        Number of protons delivered in the plan.
+    beams: list of PlanIonBeam
+        List of beams in the plan.
+    layers: list of PlanIonLayer
+        List of layers in the plan.
+    spotMUs: np.ndarray
+        Array of spot monitor units.
+    spotTimings: np.ndarray
+        Array of spot timings.
+    spotIrradiationDurations: np.ndarray
+        Array of spot irradiation durations.
+    spotXY: np.ndarray
+        Array of spot XY coordinates.
+    meterset: float
+        Total number of monitor units in the plan.
+    beamCumulativeMetersetWeight: np.ndarray
+        Array of beam cumulative meterset weights.
+    layerCumulativeMetersetWeight: np.ndarray
+        Array of layer cumulative meterset weights.
+    meterset: float
+        Total number of monitor units in the plan.
+    numberOfSpots: int
+        Number of spots in the plan.
+    numberOffractionsPlanned: int (default: 1)
+        Number of fractions planned.
+    """
     def __init__(self, name="RTPlan", patient=None):
         self.deliveredProtons = None
         self._beams = []
@@ -188,6 +224,14 @@ class RTPlan(PatientData):
             self._numberOfFractionsPlanned = fraction
 
     def simplify(self, threshold: float = 0.0):
+        """
+        Simplify the plan by removing duplicate beams and simplifying each beam
+
+        Parameters
+        ----------
+        threshold : float (default 0.0)
+            The threshold to use for simplifying each beam
+        """
         self._fusionDuplicates()
         for beam in self._beams:
             beam.simplify(threshold=threshold)
@@ -196,6 +240,21 @@ class RTPlan(PatientData):
         self._beams = [beam for beam in self._beams if len(beam._layers) > 0]
 
     def reorderPlan(self, order_layers="decreasing", order_spots="scanAlgo"):
+        """
+        Reorder the plan by reordering each beam
+
+        Parameters
+        ----------
+        order_layers: str or list of int (default: 'decreasing')
+            order of the layers. If 'decreasing' or 'scanAlgo', the layers are ordered by decreasing nominal energy.
+            If a list of int, the layers are ordered according to the list.
+        order_spots: str or Sequence[int] (default: 'scanAlgo')
+            the way the spots are sorted.
+                If str, the following options are available:
+                    - 'scanAlgo': the way scanAlgo sort spots in a serpentine fashion
+                    - 'timing': sort according to the start time of the spots
+                If Sequence[int], the spots a reordered according to the order of the indices
+        """
         for beam in self._beams:
             beam.reorderLayers(order_layers)
             for layer in beam._layers:
@@ -231,6 +290,15 @@ class RTPlan(PatientData):
     def appendSpot(self, beam: PlanIonBeam, layer: PlanIonLayer, spot_index: int):
         """
         Assign a particular spot (beam, layer, spot_index) to plan
+
+        Parameters
+        ----------
+        beam: PlanIonBeam
+            The beam of the spot to assign
+        layer: PlanIonLayer
+            The layer of the spot to assign
+        spot_index: int
+            The index of the spot to assign
         """
         # Integrate in RTPlan
         # List gantry angles in plan
@@ -258,6 +326,16 @@ class RTPlan(PatientData):
                                                                 layer._mu[spot_index], t, d)
 
     def appendLayer(self, beam: PlanIonBeam, layer: PlanIonLayer):
+        """
+        Assign a particular layer (beam, layer) to plan
+
+        Parameters
+        ----------
+        beam: PlanIonBeam
+            The beam of the layer to assign
+        layer: PlanIonLayer
+            The layer to assign
+        """
         gantry_angles = [] if self._beams == [] else [b.gantryAngle for b in self._beams]
         if beam.gantryAngle not in gantry_angles:
             new_beam = beam.createEmptyBeamWithSameMetaData()
@@ -277,6 +355,9 @@ class RTPlan(PatientData):
         self._layers.append(layer)
 
     def createEmptyPlanWithSameMetaData(self):
+        """
+        Create an empty plan with the same metadata as the current plan
+        """
         plan = self.copy()
         plan._beams = []
         return plan

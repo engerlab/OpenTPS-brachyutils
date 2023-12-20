@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 def compute(CT4D, refIndex=0, baseResolution=2.5, nbProcesses=-1, tryGPU=True):
 
-    """Compute mid-position image and corresponding deformations from a 4D image.
+    """
+    Compute mid-position image and corresponding deformations from a 4D image.
 
     Parameters
     ----------

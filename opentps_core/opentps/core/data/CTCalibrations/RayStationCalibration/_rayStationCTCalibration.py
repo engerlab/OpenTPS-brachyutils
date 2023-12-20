@@ -12,30 +12,127 @@ from opentps.core.data.CTCalibrations._piecewiseHU2Density import PiecewiseHU2De
 
 
 class RayStationCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, RayStationDensity2Material):
+    """
+    Class for RayStation CT calibration. Inherits from AbstractCTCalibration, PiecewiseHU2Density and RayStationDensity2Material.
+    """
     def __init__(self, piecewiseTable=(None, None), densities=None, materials=None, fromFiles=(None, None)):
         PiecewiseHU2Density.__init__(self, piecewiseTable=piecewiseTable, fromFile=fromFiles[0])
         RayStationDensity2Material.__init__(self, densities=densities, materials=materials, fromFile=fromFiles[1])
 
     def convertHU2MassDensity(self, hu):
+        """
+        Convert HU to mass density.
+
+        Parameters
+        ----------
+        hu : float or array_like
+            The HU value(s).
+
+        Returns
+        -------
+        float or array_like
+            The mass density value(s).
+        """
         return PiecewiseHU2Density.convertHU2MassDensity(self, hu)
 
     def convertHU2RSP(self, hu, energy=100):
+        """
+        Convert HU to relative stopping power.
+
+        Parameters
+        ----------
+        hu : float or array_like
+            The HU value(s).
+        energy : float (default=100)
+            The energy of the beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The relative stopping power value(s).
+        """
         density = self.convertHU2MassDensity(hu)
         return self.convertMassDensity2RSP(density, energy)
 
     def convertMassDensity2HU(self, density):
+        """
+        Convert mass density to HU.
+
+        Parameters
+        ----------
+        density : float or array_like
+            The mass density value(s).
+
+        Returns
+        -------
+        float or array_like
+            The HU value(s).
+        """
         return PiecewiseHU2Density.convertMassDensity2HU(self, density)
 
     def convertMassDensity2RSP(self, density, energy=100):
+        """
+        Convert mass density to relative stopping power.
+
+        Parameters
+        ----------
+        density : float or array_like
+            The mass density value(s).
+        energy : float (default=100)
+            The energy of the beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The relative stopping power value(s).
+        """
         return RayStationDensity2Material.convertMassDensity2RSP(self, density, energy)
 
     def convertRSP2HU(self, rsp, energy=100):
+        """
+        Convert relative stopping power to HU.
+
+        Parameters
+        ----------
+        rsp : float or array_like
+            The relative stopping power value(s).
+        energy : float (default=100)
+            The energy of the beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The HU value(s).
+        """
         return self.convertMassDensity2HU(self.convertRSP2MassDensity(rsp, energy))
 
     def convertRSP2MassDensity(self, rsp, energy=100):
+        """
+        Convert relative stopping power to mass density.
+
+        Parameters
+        ----------
+        rsp : float or array_like
+            The relative stopping power value(s).
+        energy : float (default=100)
+            The energy of the beam in MeV.
+
+        Returns
+        -------
+        float or array_like
+            The mass density value(s).
+        """
         return RayStationDensity2Material.convertRSP2MassDensity(self, rsp, energy)
 
     def toMCSquareCTCalibration(self, materialsPath='default'):
+        """
+        Convert RayStation CT calibration to MCsquare CT calibration.
+
+        Returns
+        -------
+        MCsquareCTCalibration
+            The MCsquare CT calibration.
+        """
         hu, densities = self.getPiecewiseHU2MassDensityConversion()
         densities = np.array(densities)
         hu = np.array(hu)

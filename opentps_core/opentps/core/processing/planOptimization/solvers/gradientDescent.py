@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 class GradientDescent(ConvexSolver):
     """
-        Gradient descent algorithm.
-        Can be used for problems with any number of smooth functions.
+    class for gradient descent solver. Inherits from ConvexSolver.
+    This part of the code comes from the EPFL LTS2 convex optimization toolbox.
     """
 
     def __init__(self, **kwargs):

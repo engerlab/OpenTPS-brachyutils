@@ -16,21 +16,29 @@ logger = logging.getLogger(__name__)
 def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
              fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
     """
-    
     Parameters
     ----------
-    data
-    spacing
-    gridSize
-    origin
-    fillValue
-    outputType
-    inPlace
-    tryGPU
+    data: Image3D, Deformation3D, Dynamic3DSequence
+        The data to be resampled
+    spacing: Sequence[float]
+        The new spacing of the resampled data
+    gridSize: Sequence[int]
+        The new grid size of the resampled data
+    origin: Sequence[float]
+        The new origin of the resampled data
+    fillValue: float
+        The value to fill the resampled data with
+    outputType: np.dtype
+        The data type of the resampled data
+    inPlace: bool
+        Whether to perform the resampling in place
+    tryGPU: bool
+        Whether to attempt to use the GPU for resampling
 
     Returns
     -------
-
+    resampledData: Image3D, Deformation3D, Dynamic3DSequence
+        The resampled data (if inPlace = False)
     """
 
     from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
@@ -77,20 +85,29 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
                     fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
     """
-
     Parameters
     ----------
-    image
-    spacing
-    gridSize
-    origin
-    fillValue
-    outputType
-    inPlace
-    tryGPU
+    image: Image3D
+        The image to be resampled
+    spacing: Sequence[float]
+        The new spacing of the resampled image
+    gridSize: Sequence[int]
+        The new grid size of the resampled image
+    origin: Sequence[float]
+        The new origin of the resampled image
+    fillValue: float
+        The value to fill the resampled image with
+    outputType: np.dtype
+        The data type of the resampled image
+    inPlace: bool
+        Whether to perform the resampling in place
+    tryGPU: bool
+        Whether to attempt to use the GPU for resampling
 
     Returns
     -------
+    resampledImage: Image3D
+        The resampled image (if inPlace = False)
 
     """
     if not inPlace:
@@ -160,15 +177,21 @@ def resampleOnImage3D(data:Any, fixedImage:Image3D, fillValue:float=0., inPlace:
 
     Parameters
     ----------
-    data
-    fixedImage
-    fillValue
-    inPlace
-    tryGPU
+    data: Image3D
+        The image to be resampled
+    fixedImage: Image3D
+        The image to be resampled on
+    fillValue: float
+        The value to fill the resampled image with
+    inPlace: bool
+        Whether to perform the resampling in place
+    tryGPU: bool
+        Whether to attempt to use the GPU for resampling
 
     Returns
     -------
-
+    resampledImage: Image3D
+        The resampled image (if inPlace = False)
     """
     if isinstance(data, Image3D):
         return resampleImage3DOnImage3D(data, fixedImage, fillValue=fillValue, inPlace=inPlace, tryGPU=tryGPU)
@@ -181,14 +204,21 @@ def resampleImage3DOnImage3D(image:Image3D, fixedImage:Image3D, fillValue:float=
 
     Parameters
     ----------
-    image
-    fixedImage
-    fillValue
-    inPlace
-    tryGPU
+    image: Image3D
+        The image to be resampled
+    fixedImage: Image3D
+        The image to be resampled on
+    fillValue: float
+        The value to fill the resampled image with
+    inPlace: bool
+        Whether to perform the resampling in place
+    tryGPU: bool
+        Whether to attempt to use the GPU for resampling
 
     Returns
     -------
+    resampledImage: Image3D
+        The resampled image (if inPlace = False)
 
     """
     if not inPlace:
@@ -203,7 +233,8 @@ def resampleImage3DOnImage3D(image:Image3D, fixedImage:Image3D, fillValue:float=
 ## --------------------------------------------------------------------------------------
 def resampleOpenMP(data, inputOrigin, inputSpacing, inputGridSize, outputOrigin, outputSpacing, outputGridSize, fillValue=0, outputType=None, tryGPU=True):
 
-    """Resample 3D data according to new voxel grid using linear interpolation.
+    """
+    Resample 3D data according to new voxel grid using linear interpolation.
 
     Parameters
     ----------
@@ -333,14 +364,17 @@ def warp(data,field,spacing,fillValue=0,outputType=None, tryGPU=True):
 def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
 
     """
-    Crop a 3D data around a box given in scanner coordinates
+    Crop a 3D data in-place around a box given in scanner coordinates
 
     Parameters
     ----------
     data : Image3D, Dynamic3DModel or Dynamic3DSequence
         The 3D data that will be cropped
     box : list of tuples or list
-        The box around which the data is cropped, under the form [[x1, X2], [y1, y2], [z1, z2]]
+        Universal coordinates of the box around which the data is cropped, under the form 
+        [[x1, X2], [y1, y2], [z1, z2]]. By convention, these are coordinates of the center of 
+        the voxels at the corners of the box. The resulting cropped data inclues those voxels 
+        at the extremities.
     marginInMM : list of float for the margin in mm for each dimension
         The margins in mm that is added around the box before cropping
     """
@@ -363,7 +397,7 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
         ZIndexInVoxels = [max(0, int(np.round((box[2][0] - marginInMM[2] - data.origin[2]) / data.spacing[2]))),
                           min(data.gridSize[2], int(np.round((box[2][1] + marginInMM[2] - data.origin[2]) / data.spacing[2])))]
 
-        data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1], YIndexInVoxels[0]:YIndexInVoxels[1], ZIndexInVoxels[0]:ZIndexInVoxels[1]]
+        data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1]+1, YIndexInVoxels[0]:YIndexInVoxels[1]+1, ZIndexInVoxels[0]:ZIndexInVoxels[1]+1] # +1 to include IndexInVoxels[1] 
         # data.imageArray = croppedArray
 
         origin = data.origin

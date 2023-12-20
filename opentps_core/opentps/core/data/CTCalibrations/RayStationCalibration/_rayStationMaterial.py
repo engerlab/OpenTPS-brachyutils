@@ -10,6 +10,21 @@ from opentps.core.data.CTCalibrations.RayStationCalibration._X0 import X0
 
 
 class RayStationMaterial:
+    """
+    Class to represent a material in RayStation.
+
+    Attributes
+    ----------
+    density : float
+        Density of the material in g/cm3.
+    electronDensity : float
+        Electron density of the material in cm-3.
+    radiationLength : float
+        Radiation length of the material in cm.
+    I : float !! USED ONLY AT INITIALIZATION !!
+        Mean excitation energy of the material in eV.
+    """
+
     _eV = 1.602176634e-19  # J
     _MeV = 1.0e6 * _eV
     _c = 299792458.0  # m / s
@@ -39,6 +54,14 @@ class RayStationMaterial:
         return self.rayStationFormatted()
 
     def rayStationFormatted(self):
+        """
+        Returns a string with the material formatted as in RayStation.
+
+        Returns
+        -------
+        str
+            String with the material formatted as in RayStation.
+        """
         s = 'Density = ' + str(self._density) + ' gr/cm3 nElements = ' + str(len(self._weights)) + ' I = ' + str(self._I) + ' eV\n'
         for i, _ in enumerate(self._weights):
             s = s + str(i) + ' ' + str(self._Zs[i]) + ' ' + str(self._As[i]) + ' ' + str(self._weights[i]) + '\n'
@@ -46,6 +69,18 @@ class RayStationMaterial:
         return s
 
     def appendElement(self, weight, A, Z):
+        """
+        Appends an element to the material.
+
+        Parameters
+        ----------
+        weight : float
+            Weight of the element in the material in g/cm3.
+        A : float
+            Atomic weight of the element.
+        Z : int
+            Atomic number of the element.
+        """
         self._weights.append(weight)
         self._As.append(A)
         self._Zs.append(Z)
@@ -74,6 +109,19 @@ class RayStationMaterial:
         return 1.0/np.sum(w/X)
 
     def getRSP(self, energy):
+        """
+        Returns the relative stopping power of the material at the given energy.
+
+        Parameters
+        ----------
+        energy : float
+            Energy of the particle in MeV.
+
+        Returns
+        -------
+        float
+            Relative stopping power of the material at the given energy.
+        """
         #Should we rather raise an error?
         if energy<=0:
             return 0
@@ -92,6 +140,19 @@ class RayStationMaterial:
         return S_water_Jm2g_RS
 
     def getSP(self, energy):
+        """
+        Returns the stopping power of the material at the given energy.
+
+        Parameters
+        ----------
+        energy : float
+            Energy of the particle in MeV.
+
+        Returns
+        -------
+        float
+            Stopping power of the material at the given energy.
+        """
         E = energy * self._MeV
         I = self._I * self._eV
 
@@ -107,6 +168,19 @@ class RayStationMaterial:
         return S
 
     def toMCSquareMaterial(self, materialsPath='default'):
+        """
+        Converts the material to a MCsquareMaterial.
+
+        Parameters
+        ----------
+        materialsPath : str (default='default')
+            Path to the materials folder of MCsquare.
+
+        Returns
+        -------
+        MCsquareMolecule
+            MCsquareMolecule corresponding to the material.
+        """
         materialNumbers = MCsquareMaterial.getMaterialNumbers(materialsPath)
 
         MCSquareElements = []

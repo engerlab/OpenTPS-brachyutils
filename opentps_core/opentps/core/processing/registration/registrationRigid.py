@@ -7,7 +7,18 @@ logger = logging.getLogger(__name__)
 
 
 class RegistrationRigid(Registration):
+    """
+    Perform rigid registration between fixed and moving images. inherited from Registration class.
 
+    Attributes
+    ----------
+    fixed : Image3D
+        Fixed image.
+    moving : Image3D
+        Moving image.
+    multimodal : bool
+        If True, use multimodal registration.
+    """
     def __init__(self, fixed, moving, multimodal=False):
 
         Registration.__init__(self, fixed, moving)

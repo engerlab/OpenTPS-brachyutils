@@ -39,14 +39,28 @@ def run(output_path=""):
     ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
+    # ++++Don't delete UIDs to build the simple study+++++++++++++++++++
+    studyInstanceUID = pydicom.uid.generate_uid()
+    doseSeriesInstanceUID = pydicom.uid.generate_uid()
+    planSeriesInstanceUID = pydicom.uid.generate_uid()
+    ctSeriesInstanceUID =  pydicom.uid.generate_uid()
+    frameOfReferenceUID = pydicom.uid.generate_uid()
+    # structSeriesInstanceUID = pydicom.uid.generate_uid()
+    dt = datetime.datetime.now()
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
     # CT
     patient = Patient()
     patient.name = 'Simple_Patient'
+    Patient.id = 'Simple_Patient'
+    Patient.birthDate = dt.strftime('%Y%m%d')
+    patient.sex = ""
     
     ctSize = 150
-    ct = CTImage()
+    ct = CTImage(seriesInstanceUID=ctSeriesInstanceUID, frameOfReferenceUID=frameOfReferenceUID)
     ct.name = 'CT'
     ct.patient = patient
+    ct.studyInstanceUID = studyInstanceUID
 
     huAir = -1024.
     huWater = ctCalibration.convertRSP2HU(1.)
@@ -66,7 +80,9 @@ def run(output_path=""):
     roi.imageArray = data
 
     # contour = roi.getROIContour()
-    # struct = RTStruct()
+    # struct = RTStruct(seriesInstanceUID=structSeriesInstanceUID)
+    # struct.studyInstanceUID = studyInstanceUID
+    # struct.frameOfReferenceUID = frameOfReferenceUID
     # struct.appendContour(contour)
     # writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
 
@@ -117,6 +133,12 @@ def run(output_path=""):
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
     
+    # Don't delete it
+    plan.seriesInstanceUID = planSeriesInstanceUID
+    plan.studyInstanceUID = studyInstanceUID
+    plan.frameOfReferenceUID = frameOfReferenceUID
+    plan.rtPlanGeometry = "TREATMENT_DEVICE"
+    
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
     w, doseImage, ps = solver.optimize()
@@ -128,6 +150,10 @@ def run(output_path=""):
     plan.patient = patient
     dcm_Plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
     writeRTPlan(plan, dcm_Plan_file)
+    
+    # MCsquare simulation
+    # mc2.nbPrimaries = 1e7
+    # doseImage = mc2.computeDose(ct, plan)
 
     # Compute DVH on resampled contour
     target_DVH = DVH(roi, doseImage)
@@ -150,7 +176,17 @@ def run(output_path=""):
     img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
     img_dose = resampleImage3DOnImage3D(doseImage, ct)
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
-    di = DoseImage(imageArray=img_dose, referencePlan=plan, referenceCT=ct, patient=patient)
+    di = DoseImage(imageArray=img_dose, seriesInstanceUID=doseSeriesInstanceUID, referencePlan=plan, referenceCT=ct, patient=patient)
+    
+    # Don't delete it
+    di.studyInstanceUID = studyInstanceUID
+    di.referencedRTPlanSequence = None
+    di.frameOfReferenceUID = frameOfReferenceUID 
+    di.sopClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    di.mediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    di.sopInstanceUID = pydicom.uid.generate_uid()
+    di.studyTime = dt.strftime('%H%M%S.%f')
+    di.studyDate = dt.strftime('%Y%m%d')
     
     dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
     writeRTDose(di, dcm_dose_file)

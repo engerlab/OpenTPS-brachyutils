@@ -9,7 +9,18 @@ logger = logging.getLogger(__name__)
 
 
 class RegistrationTranslation(Registration):
+    """
+    Perform translation registration between fixed and moving images. inherited from Registration class.
 
+    Attributes
+    ----------
+    fixed : Image3D
+        Fixed image.
+    moving : Image3D
+        Moving image.
+    initialTranslation : list
+        Initial translation guess.
+    """
     def __init__(self, fixed, moving, initialTranslation=[0.0, 0.0, 0.0]):
 
         Registration.__init__(self, fixed, moving)

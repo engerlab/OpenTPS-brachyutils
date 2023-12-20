@@ -13,18 +13,52 @@ logger = logging.getLogger(__name__)
 
 
 class ExportTypes(Enum):
+    """
+    Enumeration of the different export types
+    """
     DICOM = "Dicom"
     MHD = "MHD"
     MCSQUARE = "MCsquare"
     PICKLE = "Pickle"
 
 class DataType:
+    """
+    Class to store the export types for a specific data type
+
+    Attributes
+    ----------
+    name:str
+        The name of the data type
+    exportTypes:Sequence
+        The export types for this data type
+    exportType:ExportTypes
+        The export type to use
+
+    """
     def __init__(self, name:str, exportTypes:Sequence):
         self.name = name
         self.exportTypes = exportTypes
         self.exportType = ExportTypes.DICOM
 
 class ExportConfig:
+    """
+    gives all the export configuration to store the data (depending on the data type)
+
+    Attributes
+    ----------
+
+    imageConfig:DataType
+        The image data type configuration
+    doseConfig:DataType
+        The dose data type configuration
+    planConfig:DataType
+        The plan data type configuration
+    contoursConfig:DataType
+        The contours data type configuration
+    otherConfig:DataType
+        The other data type configuration
+
+    """
     def __init__(self):
         self._types = [DataType("Image", [ExportTypes.DICOM, ExportTypes.MHD, ExportTypes.MCSQUARE, ExportTypes.PICKLE]),
                        DataType("Dose", [ExportTypes.DICOM, ExportTypes.MHD, ExportTypes.PICKLE]),
@@ -59,6 +93,19 @@ class ExportConfig:
         return self[4]
 
 def exportPatient(patient:Patient, folderPath:str, config:ExportConfig):
+    """
+    Exports the patient data to the given folder path.
+
+    Parameters
+    ----------
+
+    patient:Patient
+        The patient to export
+    folderPath:str
+        The folder path to export to
+    config:ExportConfig
+        The export configuration
+    """
     for data in patient.patientData:
         if isinstance(data, RTPlan):
             exportPlan(data, folderPath, config.planConfig.exportType)
@@ -68,6 +115,18 @@ def exportPatient(patient:Patient, folderPath:str, config:ExportConfig):
             logger.warning(data.__class__.__name__ + ' cannot be exported')
 
 def exportImage(image:Image3D, folderPath:str, imageConfig:ExportTypes):
+    """
+    Exports the image to the given folder path.
+
+    Parameters
+    ----------
+    image:Image3D
+        The image to export
+    folderPath:str
+        The folder path to export to
+    imageConfig:ExportTypes
+        The export configuration
+    """
     if imageConfig == ExportTypes.MHD:
         filePath = _checkAndRenameFile(folderPath, image.name + '.mhd')
         mhdIO.exportImageMHD(os.path.join(folderPath, filePath), image)
@@ -77,6 +136,18 @@ def exportImage(image:Image3D, folderPath:str, imageConfig:ExportTypes):
         mhdIO.exportImageMHD(os.path.join(folderPath, filePath), image)
 
 def exportPlan(plan:RTPlan, folderPath:str, planConfig:ExportTypes):
+    """
+    Exports the plan to the given folder path.
+
+    Parameters
+    ----------
+    plan:RTPlan
+        The plan to export
+    folderPath:str
+        The folder path to export to
+    planConfig:ExportTypes
+        The export configuration
+    """
     if planConfig == ExportTypes.DICOM:
         filePath = _checkAndRenameFile(folderPath, plan.name + '.dcm')
         dicomIO.writeRTPlan(plan, os.path.join(folderPath, filePath))
@@ -84,6 +155,17 @@ def exportPlan(plan:RTPlan, folderPath:str, planConfig:ExportTypes):
         raise NotImplementedError
 
 def exportPatientAsDicom(patient:Patient, folderPath:str):
+    """
+    Exports the patient data to the given folder path as dicom.
+
+    Parameters
+    ----------
+    patient:Patient
+        The patient to export
+    folderPath:str
+        The folder path to export to
+
+    """
     for data in patient.patientData:
         if isinstance(data, RTPlan):
             exportPlan(data, folderPath, ExportTypes.DICOM)
@@ -94,6 +176,21 @@ def exportPatientAsDicom(patient:Patient, folderPath:str):
 
 
 def _checkAndRenameFile(folderPath:str, fileName:str) -> str:
+    """
+    Checks if the file already exists in the folder path and renames it if it does.
+
+    Parameters
+    ----------
+    folderPath:str
+        The folder path to check in
+    fileName:str
+        The file name to check
+
+    Returns
+    -------
+    fileName:str
+        The new file name
+    """
     if not os.path.isfile(os.path.join(folderPath, fileName)):
         return fileName
 

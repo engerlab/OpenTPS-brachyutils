@@ -13,6 +13,39 @@ from opentps.core import Event
 
 
 class DVH:
+    """
+    Class to compute and store the DVH of a ROI.
+
+    Attributes
+    ---------
+    dose: DoseImage
+        The dose image
+    roiMask: ROIMask
+        The ROI mask
+    name: str
+        The name of the ROI
+    Dmean: float
+        The mean dose
+    D98: float
+        The dose received by 98% of the volume
+    D95: float
+        The dose received by 95% of the volume
+    D50: float
+        The dose received by 50% of the volume
+    D5: float
+        The dose received by 5% of the volume
+    D2: float
+        The dose received by 2% of the volume
+    Dmin: float
+        The minimum dose
+    Dmax: float
+        The maximum dose
+    Dstd: float
+        The standard deviation of the dose
+    histogram: tuple
+        The dose and volume arrays
+
+    """
     def __init__(self, roiMask:Union[ROIContour, ROIMask], dose:DoseImage=None, prescription=None):
 
         self.dataUpdatedEvent = Event()
@@ -109,6 +142,14 @@ class DVH:
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
     def computeDVH(self, maxDVH:float=100.0):
+        """
+        Compute the DVH from the doseImage and the roiMask. The DVH is computed for the dose range [0, maxDVH] Gy.
+
+        Parameters
+        ----------
+        maxDVH: float
+            The maximum dose for the DVH
+        """
         if (self._doseImage is None):
             return
 
@@ -291,7 +332,7 @@ class DVH:
         Return
         ------
         out: float
-          Homogenity index
+          Homogeneity index
 
         """
         if method == 'conventional_1':

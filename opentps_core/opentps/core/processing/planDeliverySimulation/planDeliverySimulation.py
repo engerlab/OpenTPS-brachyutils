@@ -27,6 +27,30 @@ from opentps.core.data._dvhBand import DVHBand
 import time
 
 class PlanDeliverySimulation():
+    """
+    Class for simulating the delivery of a treatment plan on a 4DCT.
+
+    Attributes
+    ----------
+    plan : RTPlan
+        Treatment plan to simulate
+    CT4D : Dynamic3DSequence
+        4DCT on which the plan is simulated
+    model3D : Dynamic3DModel
+        Model of the 4DCT. If not provided, it is computed from the 4DCT
+    deliverySimulationPath : str
+        Path to the simulation directory where the doses are saved
+    overwriteOutsideROI : ROIContour
+        Overwrite values outside overwriteOutsideROI
+    MCsquareSimulationPath : str
+        Path to the MCsquare simulation directory
+    saveDosesToFile : bool
+        Whether or not to save the doses to file
+    saveDosesInObject : bool
+        Whether or not to save the doses in the object
+    deliveryModel : BeamDeliveryTimings
+        Class for computing the delivery timings of the spots in the plan
+    """
     def __init__(self, plan:RTPlan, CT4D: Optional[Dynamic3DSequence]= None, 
     model3D: Optional[Dynamic3DModel]= None, deliverySimulationFolderName: Optional[str] = None,
     overwriteOutsideROI: Optional[ROIContour] = None, MCsquareSimulationPath: Optional[str] = None,
@@ -99,6 +123,18 @@ class PlanDeliverySimulation():
         3) each resulting dose is non-rigidly registered to the MidP CT `model3D.midp` 
         3) the sum of these doses is computed
         All doses are saved in the simulation directory `simulation_dir`.
+
+        Parameters
+        ----------
+        save_partial_doses: bool (default=True)
+            Whether or not to save partial doses, i.e. doses on each phase before accumulation
+        start_phase: int (default=0)
+            Phase at which to start the delivery
+
+        Returns
+        -------
+        dose_MidP: DoseImage
+            Accumulated dose on the MidP CT
         """
         # Check if plan contains delivery timings
         if len(self.plan.spotTimings)==0:
@@ -160,7 +196,7 @@ class PlanDeliverySimulation():
         CT4D : Dynamic3DSequence
         model3D : Dynamic3DModel
         simulation_dir : str
-            Path to the simulation direcrotry where the doses are saved
+            Path to the simulation directory where the doses are saved
         overwriteOutsideROI : ROIContour
             Overwrite values outside overwriteOutsideROI
         save_partial_doses: bool
@@ -223,6 +259,27 @@ class PlanDeliverySimulation():
         """
         4D dynamic simulation on a continuous sequence of CT. Same principle as simulate4DDD function but the 4DCT (i.e. continuous sequence)
         is not stored in the RAM.
+
+        Parameters
+        ----------
+        midp : CTImage
+            MidP CT on which the dose is accumulated
+        ct_folder : str
+            Path to the folder containing the CT images
+        def_fields_folder : str
+            Path to the folder containing the deformation fields
+        sequence_timings : np.ndarray
+            Array of timings of the images in the continuous sequence
+        output_dose_path : str
+            Path to the folder where the doses are saved
+        save_all_doses : bool
+            Whether or not to save all doses on each image of the continuous sequence
+        remove_interpolated_files : bool
+            Whether or not to remove interpolated files (i.e. files with _0.[0-9].mhd)
+        downsample : int
+            Downsample the continuous sequence by a factor of `downsample`
+        start_irradiation : float
+            Moment at which to start the irradiation with beginning of continuous seq = 0. and end = 1.
         """
         if len(self.plan.spotTimings)==0:
             print('plan has no delivery timings. Querying ScanAlgo...')
@@ -299,6 +356,20 @@ class PlanDeliverySimulation():
         """
         Split spots from `ReferencePlan` to `num_plans` plans according to the number of images in 4DCT, breathing period and start phase.
         Return a list of `num_plans` plans where each spot is assigned to a plan (=breathing phase)
+
+        Parameters
+        ----------
+        num_plans : int (default=10)
+            Number of plans to create
+        breathing_period : float (default=4.)
+            Breathing period in seconds
+        start_phase : int (default=0)
+            Phase at which to start the delivery
+
+        Returns
+        -------
+        plan_4DCT : dict
+            Dictionary of plans where the index number corresponds to the phase number
         """
         time_per_phase = breathing_period / num_plans
 
@@ -331,11 +402,11 @@ class PlanDeliverySimulation():
         """
         Create a plan for each image in the continuous sequence where at least one spot is shot
         and assign each spot of the `ReferencePlan`to one of the created plans.
-        Returns a dictionnary of plans where the index number corresponds to the image number in
+        Returns a dictionary of plans where the index number corresponds to the image number in
         the continuous sequence.
         """
         # Check if plan include spot timings
-        # start_irradiation \in [0,1] : moment at which to start the irradiation with beggining of 
+        # start_irradiation \in [0,1] : moment at which to start the irradiation with beginning of
         # continuous seq = 0. and end = 1.
         if len(self.plan.spotTimings)==0:
             print('plan has no delivery timings. Querying ScanAlgo...')
@@ -393,6 +464,21 @@ class PlanDeliverySimulation():
 
 
     def computeDVHBand(self, doseList:Sequence[DoseImage] = [], ROIList:Sequence[ROIContour] = []):
+        """
+        Compute DVH band from a list of doses and ROIs.
+
+        Parameters
+        ----------
+        doseList : Sequence[DoseImage]
+            List of doses
+        ROIList : Sequence[ROIContour]
+            List of ROIs
+
+        Returns
+        -------
+        dvh_bands : Sequence[DVHBand]
+            The computed DVH bands
+        """
         dvh_bands = []
         median_dose = DoseImage().createEmptyDoseWithSameMetaData(doseList[0])
         median_dose._imageArray = np.median(np.stack([dose.imageArray for dose in doseList], axis=0), axis=0)
@@ -413,6 +499,21 @@ class PlanDeliverySimulation():
 
     
     def computeDVHBand4DDD(self, ROIList, singleFraction=True):
+        """
+        Compute DVH band from 4DDD simulation results.
+
+        Parameters
+        ----------
+        ROIList : Sequence[ROIContour]
+            List of ROIs.
+        singleFraction : bool (default=True)
+            Whether or not to compute the DVH band from the first fraction only.
+
+        Returns
+        -------
+        dvh_bands : Sequence[DVHBand]
+            The computed DVH bands.
+        """
         if singleFraction:
             # Results for the first fraction
             simulation_dir = os.path.join(self.deliverySimulationPath, '4DDD', f'{self.plan.numberOfFractionsPlanned}_fx')
