@@ -127,3 +127,8 @@ class Transform3D(PatientData):
 
         """
         self.tformMatrix = transform3DMatrixFromTranslationAndRotationsVectors(transVec=transVec, rotVec=rotVec)
+
+
+    def inverseTransform(self):
+
+        self.tformMatrix = np.linalg.inv(self.tformMatrix)

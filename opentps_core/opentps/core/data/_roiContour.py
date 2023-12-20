@@ -70,10 +70,18 @@ class ROIContour(PatientData):
 
         contourSpacing[0] = minSpatialResolution
         contourSpacing[1] = minSpatialResolution
-        if np.isfinite(zDiff[0]):
-            contourSpacing[2] = zDiff[0]
+
+        if len(zDiff) == 0:
+
+            from opentps.core.data.images._roiMask import ROIMask
+            return ROIMask(imageArray=None, name=self.name, origin=contourOrigin, spacing=contourSpacing,
+                           displayColor=self._displayColor)
+
         else:
-            contourSpacing[2] = minSpatialResolution
+            if np.isfinite(zDiff[0]):
+                contourSpacing[2] = zDiff[0]
+            else:
+                contourSpacing[2] = minSpatialResolution
 
         contourOrigin[0] = allX[0]
         contourOrigin[1] = allY[0]
@@ -168,7 +176,7 @@ class ROIContour(PatientData):
 
         return mask
 
-    def getCenterOfMass(self, origin, gridSize, spacing):
+    def getCenterOfMass(self, origin=None, gridSize=None, spacing=None):
 
         tempMask = self.getBinaryMask(origin=origin, gridSize=gridSize, spacing=spacing)
         centerOfMass = tempMask.centerOfMass

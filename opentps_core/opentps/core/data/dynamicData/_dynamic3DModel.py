@@ -100,24 +100,21 @@ class Dynamic3DModel(PatientData):
         return field.deformImage(self.midp, fillValue='closest', tryGPU=tryGPU)
 
 
-    def computeAllDisplacementFields(self): ## not working for now, the field.displacement is None after the function
+    def computeAllDisplacementFields(self, multiProc=True): ## not working for now, the field.displacement is None after the function
 
-        print('Compute all model displacement fields using multiprocessing')
+        if multiProc:
+            print('Compute all model displacement fields using multiprocessing')
 
-        with ProcessPoolExecutor() as executor:
-            executor.map(self.computeDisplacementField, self.deformationList)
+            with ProcessPoolExecutor() as executor:
+                executor.map(self.computeDisplacementField, self.deformationList)
+        else:
+            for field in self.deformationList:
+                self.computeDisplacementField(field)
 
 
     def computeDisplacementField(self, field):
         field.displacement = field.velocity.exponentiateField()
 
-
-    # def dumpableCopy(self):
-    #
-    #     dumpableDefList = [deformation.dumpableCopy() for deformation in self.deformationList]
-    #     dumpableModel = Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
-    #     dumpableModel.patient = self.patient
-    #     return dumpableModel
 
     def getMaskByName(self, name):
 

@@ -206,6 +206,13 @@ class Deformation3D(Image3D):
 
         return image
 
+    def createDisplacementFromVelocity(self, tryGPU=True):
+        if self.velocity is None:
+            logger.error("Velocity field is None, creating displacement field from velocity field is impossible.")
+        else:
+            self.displacement = self.velocity.exponentiateField(tryGPU=tryGPU)
+
+
     def inverse(self):
         if self.velocity is None:
             logger.error("Inversing a Deformation3D without the velocity field is not possible for now.")

@@ -49,7 +49,7 @@ def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], spacing=[1
         return ct
 
 
-def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks = False):
+def createSynthetic4DCT(numberOfPhases=4, spacing=[1, 1, 2], returnTumorMasks=False, motionNoise=True):
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = Dynamic3DSequence()
@@ -59,11 +59,18 @@ def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks 
     diaphMinPos = 20
     diaphPosList = getPhasesPositions(numberOfPhases, diaphMinPos, diaphMinPos+diaphMotionAmp)
 
-    diaphNoise = [[3, 1],
-              [6, -1],
-              [9, -1],
-              [12, 1],
-              [15, 1]]
+    if motionNoise:
+        diaphNoise = [[3, 1],
+                  [6, -1],
+                  [9, -1],
+                  [12, 1],
+                  [15, 1]]
+    else:
+        diaphNoise = [[3, 0],
+                      [6, 0],
+                      [9, 0],
+                      [12, 0],
+                      [15, 0]]
 
     for elemIdx in range(len(diaphNoise)):
         if diaphNoise[elemIdx][0] <= numberOfPhases - 1:
@@ -75,11 +82,18 @@ def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks 
     zMinPos = 40
     zPosList = getPhasesPositions(numberOfPhases, zMinPos, zMinPos+zMotionAmp)
 
-    zNoise = [[3, 1],
-              [6, -1],
-              [9, -1],
-              [12, 1],
-              [15, 1]]
+    if motionNoise:
+        zNoise = [[3, 1],
+                  [6, -1],
+                  [9, -1],
+                  [12, 1],
+                  [15, 1]]
+    else:
+        zNoise = [[3, 0],
+                      [6, 0],
+                      [9, 0],
+                      [12, 0],
+                      [15, 0]]
 
     for elemIdx in range(len(zNoise)):
         if zNoise[elemIdx][0] <= numberOfPhases - 1:
@@ -91,11 +105,18 @@ def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks 
     xMinPos = 42
     xPosList = getPhasesPositions(numberOfPhases, xMinPos, xMinPos+xMotionAmp)
 
-    xNoise = [[3, 1],
-              [6, -1],
-              [9, -1],
-              [12, 1],
-              [15, 1]]
+    if motionNoise:
+        xNoise = [[3, 1],
+                  [6, -1],
+                  [9, -1],
+                  [12, 1],
+                  [15, 1]]
+    else:
+        xNoise = [[3, 0],
+                  [6, 0],
+                  [9, 0],
+                  [12, 0],
+                  [15, 0]]
 
     for elemIdx in range(len(xNoise)):
         if xNoise[elemIdx][0] <= numberOfPhases-1:
