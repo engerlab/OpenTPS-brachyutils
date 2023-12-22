@@ -229,3 +229,9 @@ class Image2D(PatientData):
             return True
         else:
             return False
+
+    def compressData(self):
+        """
+        Changes pixel type of data imageArray to int16 for more efficient storage
+        """
+        self.imageArray = self.imageArray.astype(np.int16)
