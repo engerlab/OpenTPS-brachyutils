@@ -157,6 +157,36 @@ class BeamInitializer:
                 spotGrid["y"].append(y + self.beam.isocenterPosition[1])
                 spotGrid["z"].append(z + self.beam.isocenterPosition[2])
         return spotGrid
+    
+    def _defineSquareSpotGridAroundIsocenter(self):
+        FOV = 400  # max field size on IBA P+ is 30x40 cm
+        numSpotX = math.ceil(FOV / self.spotSpacing)
+        numSpotY = math.ceil(FOV / (self.spotSpacing * math.cos(math.pi / 6)))
+
+        spotGrid = {"BEVx": [], "BEVy": [], "x": [], "y": [], "z": [], "WET": [], "EnergyLayers": []}
+
+        for i in range(numSpotX):
+            for j in range(numSpotY):
+                spot = {}
+
+                # coordinates in Beam-eye-view
+                spotGrid["BEVx"].append((i - round(numSpotX / 2)) * self.spotSpacing)
+                spotGrid["BEVy"].append((j - round(numSpotY / 2)) * self.spotSpacing)
+
+                # 3D coordinates
+                x, y, z = spotGrid["BEVx"][-1], 0, spotGrid["BEVy"][-1]
+
+                # rotation for gantry angle (around Z axis)
+                [x, y, z] = self._rotateVector([x, y, z], math.radians(self.beam.gantryAngle), 'z')
+
+                # rotation for couch angle (around Y axis)
+                [x, y, z] = self._rotateVector([x, y, z], math.radians(self.beam.couchAngle), 'y')
+
+                # Dicom CT coordinates
+                spotGrid["x"].append(x + self.beam.isocenterPosition[0])
+                spotGrid["y"].append(y + self.beam.isocenterPosition[1])
+                spotGrid["z"].append(z + self.beam.isocenterPosition[2])
+        return spotGrid
 
     def _rotateVector(self, vec, angle, axis):
         if axis == 'x':

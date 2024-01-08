@@ -649,7 +649,7 @@ def readBDL(path, materialsPath='default') -> BDL:
                 bdl.rangeShifters[-1].WET = float(value)
 
     # parse BDL table
-    BDL_table = np.loadtxt(path, skiprows=table_line)
+    BDL_table = np.atleast_2d(np.loadtxt(path, skiprows=table_line))
 
     bdl.nominalEnergy = BDL_table[:, 0]
     bdl.meanEnergy = BDL_table[:, 1]
