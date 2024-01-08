@@ -30,6 +30,7 @@ class MCsquareHU2Material:
 
         if not (fromFile[0] is None):
             self._initializeFromFiles(fromFile[0], materialsPath=fromFile[1])
+        self.materialsPath = fromFile[1]
 
     def __str__(self):
         return self.mcsquareFormatted()
@@ -254,7 +255,10 @@ class MCsquareHU2Material:
             material.write(folderPath, matNames)
 
     def _copyDefaultMaterials(self, folderPath):
-        materialsPath = os.path.join(str(MCsquareModule.__path__[0]), 'Materials')
+        if self.materialsPath == 'default':
+            materialsPath = os.path.join(str(MCsquareModule.__path__[0]), 'Materials')
+        else:
+            materialsPath = self.materialsPath
 
         for folder in glob(materialsPath + os.path.sep + '*' + os.path.sep):
             y = folder.split(os.path.sep)
@@ -283,7 +287,8 @@ class MCsquareHU2Material:
             The materials in the order they should be printed in the MCsquare list.dat file.
         """
         materials = self.allMaterialsAndElements()
-        defaultMats = MCsquareMaterial.getMaterialList('default')
+        # defaultMats = MCsquareMaterial.getMaterialList('default')
+        defaultMats = MCsquareMaterial.getMaterialList(self.materialsPath)
 
         orderMaterials = []
         for mat in defaultMats:
