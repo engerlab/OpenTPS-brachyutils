@@ -1240,7 +1240,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.rangeShifterSettings.referencedRangeShifterNumber = ReferencedRangeShifterNumber
 
             beam.appendLayer(layer)
-        # plan.appendBeam(beam)
+        plan.appendBeam(beam)
         
         dt = datetime.datetime.now()
         plan.fileMetaInformationGroupLength = dcm.file_meta.FileMetaInformationGroupLength if hasattr(dcm.file_meta, 'FileMetaInformationGroupLength') else 0
