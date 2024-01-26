@@ -202,6 +202,20 @@ class MCsquareHU2Material:
         hu = refHUs[indexOfClosestSP]
 
         return np.reshape(hu, spShape)
+    
+    def convertMaterial2HU(self, materialName:str):
+        for i, mat in enumerate(self.__materials):
+            if mat.name == materialName:
+                return self.__hu[i]
+        raise ValueError(f'Material {materialName} undefined')
+    
+    def getHU2MaterialConversion(self):
+        return (self.__hu, self.__materials)
+    
+    def getMaterialFromName(self, name:str):
+        for mat in self.__materials:
+            if mat.name == name:
+                return mat
 
     def __load(self, materialFile, materialsPath='default'):
         self.__hu = []

@@ -307,6 +307,10 @@ def readMCsquareMHD(filePath) -> Image3D:
     """
     image = importImageMHD(filePath)
 
+    image.origin[0] = image.origin[0] + image.spacing[0]/2
+    image.origin[2] = image.origin[2] + image.spacing[2]/2
+    image.origin[1] = - image.origin[1] - image.spacing[1] * image.gridSize[1] + image.spacing[1]/2
+
     # Convert data for compatibility with MCsquare
     # These transformations may be modified in a future version
     image.imageArray = np.flip(image.imageArray, 0)
@@ -475,6 +479,13 @@ def writeCT(ct: CTImage, filtePath, overwriteOutsideROI=None):
 
     image.imageArray = np.flip(image.imageArray, 0)
     image.imageArray = np.flip(image.imageArray, 1)
+
+    # DICOM to MCsquare coordinates
+    image.origin[0] = image.origin[0] - image.spacing[0] / 2.0
+    image.origin[2] = image.origin[2] - image.spacing[2] / 2.0
+    image.origin[1] = -image.origin[1] - image.spacing[1] * \
+                                    image.gridSize[1] + \
+                                    image.spacing[1] / 2.0 #  inversion of Y, which is flipped in MCsquare
 
     exportImageMHD(filtePath, image)
 

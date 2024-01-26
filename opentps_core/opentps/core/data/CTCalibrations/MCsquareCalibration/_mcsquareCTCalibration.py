@@ -180,6 +180,9 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         density = interpolate.interp1d(rsp_ref, hu_ref, kind='linear', fill_value='extrapolate')
 
         return density(rsp)
+    
+    def convertMaterial2HU(self, materialID):
+        return MCsquareHU2Material.convertMaterial2HU(self, materialID)
 
     def _getBijectiveHU2RSP(self, HuMin=-1100., huMax=5000., step=2., energy=100):
         hu_ref = np.arange(HuMin, huMax, step)
