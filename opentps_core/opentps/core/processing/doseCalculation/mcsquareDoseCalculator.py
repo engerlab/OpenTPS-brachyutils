@@ -571,7 +571,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         else:
             fraction = plan.numberOfFractionsPlanned
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
-        dose.origin = self._ct.origin # to avoid middle of voxel correction from MCsquare calculation when independentScoringGrid is used
         return dose
 
     def _importLET(self) -> LETImage:
@@ -812,11 +811,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 0] / 2.0
             config["Scoring_origin"][2] = self._ct.origin[2] - self._scoringVoxelSpacing[
                 2] / 2.0
-            # config["Scoring_origin"][1] = -self._ct.origin[1] - config["Scoring_voxel_spacing"][1] * \
-            #                              config["Scoring_grid_size"][1] + \
-            #                              config["Scoring_voxel_spacing"][1] / 2.0
-            config["Scoring_origin"][1] = self._ct.origin[1] - self._scoringVoxelSpacing[
-                1] / 2.0
+            config["Scoring_origin"][1] = -self._ct.origin[1] - self._scoringVoxelSpacing[1] * \
+                                         self.scoringGridSize[1] + \
+                                         self._scoringVoxelSpacing[1] / 2.0 #  inversion of Y, which is flipped in MCsquare
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
         # config["Stat_uncertainty"] = 2.
 
