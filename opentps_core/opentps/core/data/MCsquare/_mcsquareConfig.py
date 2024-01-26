@@ -3,6 +3,7 @@ __all__ = ['MCsquareConfig']
 
 
 import os
+import numpy as np
 
 
 class MCsquareConfig:
@@ -136,7 +137,7 @@ class MCsquareConfig:
     fid.close()
 
     for key in self.config:
-      if type(self.config[key]) == list:
+      if np.ndim(self.config[key]) > 0: #i,e not a scalar #type(self.config[key]) == list:
         Template = Template.replace('{' + key.upper() + '}',
                                     str(self.config[key][0]) + " " + str(self.config[key][1]) + " " + str(self.config[key][2]))
       else:
