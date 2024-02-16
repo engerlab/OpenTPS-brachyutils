@@ -346,7 +346,7 @@ class PlanIonLayer:
 
     def _singleSpotCheck(self, x: float, y: float) -> Tuple[bool, Optional[int]]:
         for i, (x_xy, y_xy) in enumerate(self.spotXY):
-            if (np.isclose(x , x_xy, atol=0.01) and np.isclose(y , y_xy, atol=0.01)):
+            if (np.isclose(x , x_xy, atol=0.1) and np.isclose(y , y_xy, atol=0.1)):
                 return (True, i)
         return (False, None)
 
@@ -459,27 +459,28 @@ class PlanIonLayer:
             # If timing is not taken into account (self._startTime is empty), two spots with the same location are considered duplicates
             # If timing is taken into account (self._startTime is not empty), two spots with the same location are considered duplicates only if their timing are equal
             if len(self._startTime)==0:
-                unique_positions = [(self._x[0], self._y[0])]
+                unique_positions = np.atleast_2d([self._x[0], self._y[0]])
                 ind = 1
                 while ind < len(self._x):
-                    current_position = (self._x[ind], self._y[ind])
-                    if current_position in unique_positions:
+                    current_position = np.array([self._x[ind], self._y[ind]])
+                    if np.any(np.sum(np.isclose(current_position, unique_positions, atol=0.1), axis=1)==2): # at least one pair is close
                         #fusion
-                        match_ind = unique_positions.index(current_position) # find index in unique positions
+                        match_ind = np.flatnonzero(np.sum(np.isclose(current_position, unique_positions, atol=0.1), axis=1)==2)[0]
                         self._mu[match_ind] += self._mu[ind]
                         self._x = np.delete(self._x, ind)
                         self._y = np.delete(self._y, ind)
                         self._mu = np.delete(self._mu, ind)
                     else:
-                        unique_positions.append(current_position)
+                        unique_positions = np.vstack((unique_positions, current_position))
                         ind += 1
             else:
-                unique_positions = [(self._x[0], self._y[0], self._startTime[0])]
+                unique_positions = np.atleast_2d([self._x[0], self._y[0], self._startTime[0] / 1000])
                 ind = 1
                 while ind < len(self._x):
-                    current_position = (self._x[ind], self._y[ind], self._startTime[ind])
-                    if current_position in unique_positions:
+                    current_position = np.array([self._x[ind], self._y[ind], self._startTime[ind] / 1000])
+                    if np.any(np.sum(np.isclose(current_position, unique_positions, atol=0.1), axis=1)==3): # at least one pair is close
                         #fusion
+                        match_ind = np.flatnonzero(np.sum(np.isclose(current_position, unique_positions, atol=0.1), axis=1)==3)[0]
                         match_ind = unique_positions.index(current_position) # find index in unique positions
                         self._mu[match_ind] += self._mu[ind]
                         self._x = np.delete(self._x, ind)
@@ -489,7 +490,7 @@ class PlanIonLayer:
                         if len(self._irradiationDuration) > 0:
                             self._irradiationDuration = np.delete(self._irradiationDuration, ind)
                     else:
-                        unique_positions.append(current_position)
+                        unique_positions = np.vstack((unique_positions, current_position))
                         ind += 1
 
     def copy(self):
