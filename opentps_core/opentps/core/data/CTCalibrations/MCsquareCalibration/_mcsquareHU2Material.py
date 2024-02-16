@@ -216,6 +216,7 @@ class MCsquareHU2Material:
         for mat in self.__materials:
             if mat.name == name:
                 return mat
+        raise ValueError(f'Material {name} is not part of the calibration file')
 
     def __load(self, materialFile, materialsPath='default'):
         self.__hu = []
