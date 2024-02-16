@@ -184,15 +184,16 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._scoringVoxelSpacing = [spacing, spacing, spacing]
         else:
             self._scoringVoxelSpacing = spacing
+        
+        adapt_gridSize_to_new_spacing = self._scoringGridSize is None
+        if adapt_gridSize_to_new_spacing: # adapt gridSize to new spacing
+            return np.array([int(math.floor(i / j * k)) for i, j, k in
+                    zip(self._ct.gridSize, self._scoringVoxelSpacing, self._ct.spacing)])
 
     @property
     def scoringGridSize(self):
         if self._scoringGridSize is not None:
             return self._scoringGridSize
-        if self.independentScoringGrid:
-            # Adapt gridSize to scoringVoxelSpacing
-            return [int(math.floor(i / j * k)) for i, j, k in
-                    zip(self._ct.gridSize, self.scoringVoxelSpacing, self._ct.spacing)]
         return self._ct.gridSize
     
     @scoringGridSize.setter
