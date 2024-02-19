@@ -200,7 +200,8 @@ class DoseComputationPanel(QWidget):
         doseCalculator = MCsquareDoseCalculator()
 
         doseCalculator.beamModel = beamModel
-        self.selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
+        # self.selectedPlan.scoringVoxelSpacing = self._doseSpacingSpin.value()
+        doseCalculator.setScoringParameters(scoringSpacing=self._doseSpacingSpin.value(), adapt_gridSize_to_new_spacing=True)
         doseCalculator.nbPrimaries = self._numProtons.value()
         doseCalculator.statUncertainty = self._statUncertainty.value()
         doseCalculator.ctCalibration = calibration

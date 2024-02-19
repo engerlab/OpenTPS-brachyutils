@@ -23,6 +23,12 @@ class MCsquareMolecule(MCsquareMaterial):
         super().__init__(density=density, electronDensity=electronDensity, name=name, number=number, sp=sp, radiationLength=radiationLength)
         self.MCsquareElements = MCsquareElements
         self.weights = weights
+    
+    @classmethod
+    def fromMCsquareElement(cls, element:MCsquareElement, matNb=0):
+        return cls(density=element.density, electronDensity=element.electronDensity, name='Aluminium_material', number=matNb,
+                             sp=element.sp, radiationLength=element.radiationLength,
+                             MCsquareElements=[element], weights=[100.])
 
     def __str__(self):
         return self.mcsquareFormatted()
