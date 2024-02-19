@@ -481,7 +481,6 @@ class PlanIonLayer:
                     if np.any(np.sum(np.isclose(current_position, unique_positions, atol=0.1), axis=1)==3): # at least one pair is close
                         #fusion
                         match_ind = np.flatnonzero(np.sum(np.isclose(current_position, unique_positions, atol=0.1), axis=1)==3)[0]
-                        match_ind = unique_positions.index(current_position) # find index in unique positions
                         self._mu[match_ind] += self._mu[ind]
                         self._x = np.delete(self._x, ind)
                         self._y = np.delete(self._y, ind)
