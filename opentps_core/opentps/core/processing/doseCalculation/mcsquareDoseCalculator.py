@@ -185,13 +185,18 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         else:
             self._scoringVoxelSpacing = spacing
         
-        adapt_gridSize_to_new_spacing = self._scoringGridSize is None
-        if adapt_gridSize_to_new_spacing: # adapt gridSize to new spacing
-            return np.array([int(math.floor(i / j * k)) for i, j, k in
-                    zip(self._ct.gridSize, self._scoringVoxelSpacing, self._ct.spacing)])
+        # adapt_gridSize_to_new_spacing = self._scoringGridSize is None
+        # if adapt_gridSize_to_new_spacing: # adapt gridSize to new spacing
+        #     self._scoringGridSize = np.floor(self._ct.gridSize*self._ct.spacing/self._scoringVoxelSpacing).astype(int)
+        #     # return np.array([int(math.floor(i / j * k)) for i, j, k in
+        #     #         zip(self._ct.gridSize, self._scoringVoxelSpacing, self._ct.spacing)])
 
     @property
     def scoringGridSize(self):
+        if self._plan:
+            if self._plan.planDesign:
+                self._scoringGridSize = self._plan.planDesign.scoringGridSize
+                return self._scoringGridSize
         if self._scoringGridSize is not None:
             return self._scoringGridSize
         return self._ct.gridSize
@@ -202,6 +207,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
     
     @property
     def scoringOrigin(self):
+        if self._plan:
+            if self._plan.planDesign:
+                self._scoringOrigin = self._plan.planDesign.scoringOrigin
+                return self._scoringOrigin
         if self._scoringOrigin is not None:
             return self._scoringOrigin
         else:
@@ -209,7 +218,34 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         
     @scoringOrigin.setter
     def scoringOrigin(self, origin):
-        self._scoringOrigin = list(origin)
+        self._scoringOrigin = origin
+    
+
+    def setScoringParameters(self, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None,
+                                scoringOrigin:Optional[Sequence[int]]=None, adapt_gridSize_to_new_spacing=False):
+        """
+        Sets the scoring parameters
+
+        Parameters
+        ----------
+        scoringGridSize: Sequence[int]
+            scoring grid size
+        scoringSpacing: Sequence[float]
+            scoring spacing
+        scoringOrigin: Sequence[float]
+            scoring origin
+        adapt_gridSize_to_new_spacing: bool
+            If True, automatically adapt the gridSize to the new spacing
+        """
+        if adapt_gridSize_to_new_spacing and scoringGridSize is not None:
+            raise ValueError('Cannot adapt gridSize to new spacing if scoringGridSize provided.')
+        
+        if scoringSpacing is not None: self.scoringVoxelSpacing = scoringSpacing
+        if scoringGridSize is not None: self.scoringGridSize = scoringGridSize
+        if scoringOrigin is not None: self.scoringOrigin = scoringOrigin
+        
+        if adapt_gridSize_to_new_spacing:
+            self.scoringGridSize = np.floor(self._ct.gridSize*self._ct.spacing/self._scoringVoxelSpacing).astype(int)
 
     @property
     def simulationDirectory(self) -> str:

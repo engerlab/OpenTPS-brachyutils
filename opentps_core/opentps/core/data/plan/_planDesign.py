@@ -71,6 +71,8 @@ class PlanDesign(PatientData):
         self.layerSpacing = 5.0
         self.targetMargin = 5.0
         self._scoringVoxelSpacing = None
+        self._scoringGridSize = None
+        self._scoringOrigin = None
         self.targetMask: ROIMask = None
         self.proximalLayers = 1
         self.distalLayers = 1
@@ -104,11 +106,26 @@ class PlanDesign(PatientData):
 
     @property
     def scoringGridSize(self):
-        if self._scoringVoxelSpacing is not None:
-            return np.floor(self.ct.gridSize*self.ct.spacing/self.scoringVoxelSpacing).astype(int)
+        if self._scoringGridSize is not None:
+            return self._scoringGridSize
         else:
             return self.ct.gridSize
+    
+    @scoringGridSize.setter
+    def scoringGridSize(self, gridSize: Sequence[float]):
+        self._gridSize = gridSize
 
+    @property
+    def scoringOrigin(self):
+        if self._scoringOrigin is not None:
+            return self._scoringOrigin
+        else:
+            return self.ct.origin
+        
+    @scoringOrigin.setter
+    def scoringOrigin(self, origin):
+        self._scoringOrigin = origin
+        
     def buildPlan(self):
         """
         Builds a plan from the plan design
@@ -219,7 +236,8 @@ class PlanDesign(PatientData):
                                self.proximalLayers, self.distalLayers)
 
 
-    def setScoringParameters(self, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None):
+    def setScoringParameters(self, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None,
+                                scoringOrigin:Optional[Sequence[int]]=None, adapt_gridSize_to_new_spacing=False):
         """
         Sets the scoring parameters
 
@@ -229,16 +247,21 @@ class PlanDesign(PatientData):
             scoring grid size
         scoringSpacing: Sequence[float]
             scoring spacing
+        scoringOrigin: Sequence[float]
+            scoring origin
+        adapt_gridSize_to_new_spacing: bool
+            If True, automatically adapt the gridSize to the new spacing
         """
-        if scoringSpacing is None and scoringGridSize is not None:
-            self.scoringVoxelSpacing = self.ct.spacing*self.ct.gridSize/scoringGridSize
-        if scoringSpacing is not None and scoringGridSize is None:
-            self.scoringVoxelSpacing = scoringSpacing
-        if scoringSpacing is not None and scoringGridSize is not None:
-            raise Exception('Cannot set both scoring spacing and grid size at the same time.')
-        # scoringSpacing and scoringGridSize are None --> defaults to CT spacing and size
-
+        if adapt_gridSize_to_new_spacing and scoringGridSize is not None:
+            raise ValueError('Cannot adapt gridSize to new spacing if scoringGridSize provided.')
+        
+        if scoringSpacing is not None: self.scoringVoxelSpacing = scoringSpacing
+        if scoringGridSize is not None: self.scoringGridSize = scoringGridSize
+        if scoringOrigin is not None: self.scoringOrigin = scoringOrigin
+        
+        if adapt_gridSize_to_new_spacing:
+            self.scoringGridSize = np.floor(self.ct.gridSize*self.ct.spacing/self.scoringVoxelSpacing).astype(int)
 
         for objective in self.objectives.fidObjList:
-            objective._updateMaskVec(spacing=self.scoringVoxelSpacing, gridSize=self.scoringGridSize, origin=self.ct.origin)
+            objective._updateMaskVec(spacing=self.scoringVoxelSpacing, gridSize=self.scoringGridSize, origin=self.scoringOrigin)
             
