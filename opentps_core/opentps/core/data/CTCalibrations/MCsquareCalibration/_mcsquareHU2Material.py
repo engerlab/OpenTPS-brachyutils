@@ -2,12 +2,14 @@ import os
 from distutils.dir_util import copy_tree
 from glob import glob
 from typing import Sequence, Union
+import re
 
 import numpy as np
 from numpy.matlib import repmat
 
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial import MCsquareMaterial
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMolecule import MCsquareMolecule
+from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareElement import MCsquareElement
 
 import opentps.core.processing.doseCalculation.MCsquare as MCsquareModule
 
@@ -217,10 +219,35 @@ class MCsquareHU2Material:
             if mat.name.casefold() == name.casefold():
                 return mat
         raise ValueError(f'Material {name} is not part of the calibration file')
+    
+    def loadMaterial(self, materialNb, materialsPath='default'):
+        """
+        Load material from file.
+
+        Parameters
+        ----------
+        materialNb : int
+            Number of the material.
+        materialsPath : str (default 'default')
+            Path to materials folder. If 'default', the default path is used.
+
+        Returns
+        -------
+        self : MCsquareMaterial
+            The loaded material.
+        """
+        materialPath = MCsquareMaterial.getFolderFromMaterialNumber(materialNb, materialsPath)
+        with open(os.path.join(materialPath, 'Material_Properties.dat'), "r") as f:
+            for line in f:
+                if re.search(r'Atomic_Weight', line):
+                    return MCsquareElement.load(materialNb, materialsPath)
+
+        return MCsquareMolecule.load(materialNb, materialsPath)
 
     def __load(self, materialFile, materialsPath='default'):
         self.__hu = []
         self.__materials = []
+        self.materialsPath = materialsPath
 
         with open(materialFile, "r") as file:
             for line in file:
@@ -235,8 +262,17 @@ class MCsquareHU2Material:
                 if len(lineSplit) > 1:
                     self.__hu.append(float(lineSplit[0]))
 
-                    material = MCsquareMolecule.load(int(lineSplit[1]), materialsPath)
+                    material = self.loadMaterial(int(lineSplit[1]), materialsPath)
                     self.__materials.append(material)
+    
+    def writeHeader(self):
+        """
+        Return header of HU to density conversion table
+        """
+        s =  "# ===================\n"
+        s += "# HU	Material label\n"
+        s += "# ===================\n\n"
+        return s
 
     def write(self, folderPath, huMaterialFile):
         """
@@ -260,6 +296,7 @@ class MCsquareHU2Material:
         materialsOrderedForPrinting_names = [mat.name.casefold() for mat in materialsOrderedForPrinting]
 
         with open(huMaterialFile, 'w') as f:
+            f.write(self.writeHeader())
             for i, hu in enumerate(self.__hu):
                 index = materialsOrderedForPrinting_names.index(self.__materials[i].name.casefold())
                 s = str(hu) + ' ' + str(materialsOrderedForPrinting[index].number) + '\n'

@@ -58,6 +58,15 @@ class PiecewiseHU2Density:
 
     def _initializeFromFile(self, huDensityFile):
         self.__load(huDensityFile)
+    
+    def writeHeader(self):
+        """
+        Return header of HU to density conversion table
+        """
+        s =  "# ===================\n"
+        s += "# HU	density g/cm3\n"
+        s += "# ===================\n\n"
+        return s
 
     def writeableTable(self):
         """
@@ -111,6 +120,7 @@ class PiecewiseHU2Density:
             Path to the file to write the HU to mass density conversion table to.
         """
         with open(scannerFile, 'w') as f:
+            f.write(self.writeHeader())
             f.write(self.writeableTable())
 
     def convertMassDensity2HU(self, densities):
