@@ -1,5 +1,6 @@
 import os
 import re
+import numpy as np
 
 from opentps.core.data.CTCalibrations.MCsquareCalibration._G4StopPow import G4StopPow
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial import MCsquareMaterial
@@ -128,6 +129,23 @@ class MCsquareElement(MCsquareMaterial):
             self.pstarSP = G4StopPow(fromFile=os.path.join(elementPath, 'PSTAR_Stop_Pow.dat'))
 
         return self
+    
+    def stoppingPower(self, energy:float=100.) -> float:
+        """
+        Get stopping power of the material.
+
+        Parameters
+        ----------
+        energy : float (default 100.)
+            Energy in MeV.
+
+        Returns
+        -------
+        s : float
+            Stopping power in MeV cm2/g at the given energy.
+        """
+        e, s = self.sp.toList()
+        return np.interp(energy, e, s)
 
     def write(self, folderPath, materialNamesOrderedForPrinting):
         """
