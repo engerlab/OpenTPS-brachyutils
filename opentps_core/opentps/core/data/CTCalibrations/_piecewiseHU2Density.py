@@ -21,7 +21,7 @@ class PiecewiseHU2Density:
         Tuple containing the HU to mass density conversion table.
     """
     _DENSITY_EPS = 0.0001
-    def __init__(self, piecewiseTable=(None, None), fromFile=None):
+    def __init__(self, piecewiseTable=([], []), fromFile=None):
         self.__hu = piecewiseTable[0]
         self.__densities = piecewiseTable[1]
 
