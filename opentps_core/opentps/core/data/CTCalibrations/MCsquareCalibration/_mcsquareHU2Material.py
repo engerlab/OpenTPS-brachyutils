@@ -286,8 +286,8 @@ class MCsquareHU2Material:
             Path to the file where the HU to material conversion table will be written.
         """
         self._writeHU2MaterialFile(huMaterialFile)
-        # self._copyDefaultMaterials(folderPath)
         if folderPath:
+            self._copyDefaultMaterials(folderPath)
             self._writeMaterials(folderPath)
             self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
 
@@ -326,8 +326,10 @@ class MCsquareHU2Material:
             copy_tree(folder, targetFolder)
 
     def _writeMCsquareList(self, listFile):
+        materialsOrderedForPrinting = self.materialsOrderedForPrinting()
+
         with open(listFile, 'w') as f:
-            for mat in self.allMaterialsAndElements():
+            for i, mat in enumerate(materialsOrderedForPrinting):
                 f.write(str(mat.number) + ' ' + mat.name + '\n')
 
 
