@@ -117,9 +117,11 @@ def run(output_path=""):
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
     
+    plan.numberOfFractionsPlanned = 30
+
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
-    w, doseImage, ps = solver.optimize()
+    doseImage, ps = solver.optimize()
 
     # Save plan with updated spot weights in serialized format (OpenTPS format)
     plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")

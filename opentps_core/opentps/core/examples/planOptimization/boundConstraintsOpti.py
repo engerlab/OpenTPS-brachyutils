@@ -105,7 +105,7 @@ def run():
 
     solver = BoundConstraintsOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50, bounds=(0.2, 50))
     # Optimize treatment plan
-    w, doseImage, ps = solver.optimize()
+    doseImage, ps = solver.optimize()
 
     # Save plan with updated spot weights
     # saveRTPlan(plan, plan_file)

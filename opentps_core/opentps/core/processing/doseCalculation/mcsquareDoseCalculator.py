@@ -411,8 +411,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._startMCsquare()
             beamletDose = self._importBeamlets()
 
-        beamletDose.beamletWeights = np.array(plan.spotMUs)
-
         return beamletDose
 
     def _computeBeamletsLinux(self):
