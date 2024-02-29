@@ -23,6 +23,12 @@ class MCsquareMolecule(MCsquareMaterial):
         super().__init__(density=density, electronDensity=electronDensity, name=name, number=number, sp=sp, radiationLength=radiationLength)
         self.MCsquareElements = MCsquareElements
         self.weights = weights
+    
+    @classmethod
+    def fromMCsquareElement(cls, element:MCsquareElement, matNb=0):
+        return cls(density=element.density, electronDensity=element.electronDensity, name='Aluminium_material', number=matNb,
+                             sp=element.sp, radiationLength=element.radiationLength,
+                             MCsquareElements=[element], weights=[100.])
 
     def __str__(self):
         return self.mcsquareFormatted()
@@ -43,6 +49,11 @@ class MCsquareMolecule(MCsquareMaterial):
         """
         e, s = self.sp.toList()
         return np.interp(energy, e, s)
+    
+    @property
+    def rsp(self):
+        waterSP = 7.25628392 # water (element 17 in default table) SP at 100MeV: ctCalibration.waterSP(energy=100)
+        return self.density * self.stoppingPower(energy=100)/waterSP
 
     def mcsquareFormatted(self, materialNamesOrderedForPrinting):
         """
@@ -67,8 +78,9 @@ class MCsquareMolecule(MCsquareMaterial):
         s += 'Nuclear_Data 		Mixture ' + str(len(self.weights)) + ' # mixture with ' + str(len(self.weights)) + ' components\n'
         s += '# 	Label 	Name 		fraction by mass (in %)\n'
 
+        materialNamesOrderedForPrinting_case = [mat.casefold() for mat in materialNamesOrderedForPrinting]
         for i, element in enumerate(self.MCsquareElements):
-            nb = materialNamesOrderedForPrinting.index(element.name) + 1
+            nb = materialNamesOrderedForPrinting_case.index(element.name.casefold()) + 1
             s += 'Mixture_Component ' + str(nb) + ' ' + element.name + ' ' + str(self.weights[i]) + '\n'
 
         return s
@@ -135,6 +147,8 @@ class MCsquareMolecule(MCsquareMaterial):
                     raise ValueError(moleculePath + ' is an element not a molecule.')
 
         self.sp = G4StopPow(fromFile=os.path.join(moleculePath, 'G4_Stop_Pow.dat'))
-        self.pstarSP = G4StopPow(fromFile=os.path.join(moleculePath, 'PSTAR_Stop_Pow.dat'))
+        self.pstarSP = None
+        if os.path.exists(os.path.join(moleculePath, 'PSTAR_Stop_Pow.dat')):
+            self.pstarSP = G4StopPow(fromFile=os.path.join(moleculePath, 'PSTAR_Stop_Pow.dat'))
 
         return self

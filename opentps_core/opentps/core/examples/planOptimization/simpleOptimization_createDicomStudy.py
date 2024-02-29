@@ -116,7 +116,7 @@ def run(output_path=""):
         planDesign.spotSpacing = 5.0
         planDesign.layerSpacing = 5.0
         planDesign.targetMargin = 5.0
-        planDesign.scoringVoxelSpacing = [2, 2, 2]
+        planDesign.setScoringParameters(scoringSpacing=[2, 2, 2], adapt_gridSize_to_new_spacing=True)
 
         plan = planDesign.buildPlan()  # Spot placement
         plan.rtPlanName = "Simple_Patient"

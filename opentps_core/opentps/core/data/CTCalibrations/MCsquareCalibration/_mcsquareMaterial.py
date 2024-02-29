@@ -138,6 +138,39 @@ class MCsquareMaterial:
                 materialNumbers.append(int(lineSplit[0]))
 
         return materialNumbers
+    
+    @staticmethod
+    def getMaterialNumberFromName(name, materialsPath='default'):
+        """
+        Get Material number from material name if it exists
+
+        Parameters
+        ----------
+        name : str
+            Name of the material to search for
+        materialsPath : str (default 'default')
+            Path to materials folder. If 'default', the default path is used.
+
+        Returns
+        -------
+        materialNumber : int
+            Material number or None if it does not exists
+        """
+        if materialsPath=='default':
+            materialsPath = os.path.join(str(MCsquare.__path__[0]), 'Materials')
+
+        listPath = os.path.join(materialsPath, 'list.dat')
+
+        with open(listPath, "r") as file:
+            for line in file:
+                # to_split = " ".join(line.split()) # remove double white spaces and tab
+                lineSplit = line.split()
+
+                if len(lineSplit)<2:
+                    continue
+                
+                if lineSplit[1].casefold()==name.casefold():
+                    return int(lineSplit[0])
 
     def write(self, folderPath, materialNamesOrderedForPrinting):
         """

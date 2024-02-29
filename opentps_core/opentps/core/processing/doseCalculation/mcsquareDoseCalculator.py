@@ -98,6 +98,8 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         self._nbPrimaries = 0
         self._statUncertainty = 0.0
         self._scoringVoxelSpacing = None
+        self._scoringGridSize = None
+        self._scoringOrigin = None
         self._simulationDirectory = ProgramSettings().simulationFolder
         self._simulationFolderName = 'MCsquare_simulation'
 
@@ -160,7 +162,9 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
 
     @property
     def independentScoringGrid(self) -> bool:
-        return not np.allclose(self._ct.spacing, self.scoringVoxelSpacing, atol=0.01)
+        return not np.allclose(self._ct.spacing, self.scoringVoxelSpacing, atol=0.01) or \
+                not np.allclose(self._ct.gridSize, self.scoringGridSize, atol=0.01) or \
+                not np.allclose(self._ct.origin, self.scoringOrigin, atol=0.01)
 
     @property
     def scoringVoxelSpacing(self) -> Sequence[float]:
@@ -180,14 +184,68 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._scoringVoxelSpacing = [spacing, spacing, spacing]
         else:
             self._scoringVoxelSpacing = spacing
+        
+        # adapt_gridSize_to_new_spacing = self._scoringGridSize is None
+        # if adapt_gridSize_to_new_spacing: # adapt gridSize to new spacing
+        #     self._scoringGridSize = np.floor(self._ct.gridSize*self._ct.spacing/self._scoringVoxelSpacing).astype(int)
+        #     # return np.array([int(math.floor(i / j * k)) for i, j, k in
+        #     #         zip(self._ct.gridSize, self._scoringVoxelSpacing, self._ct.spacing)])
 
     @property
     def scoringGridSize(self):
-        if self.independentScoringGrid:
-            return [int(math.floor(i / j * k)) for i, j, k in
-                    zip(self._ct.gridSize, self.scoringVoxelSpacing, self._ct.spacing)]
+        if self._plan:
+            if self._plan.planDesign:
+                self._scoringGridSize = self._plan.planDesign.scoringGridSize
+                return self._scoringGridSize
+        if self._scoringGridSize is not None:
+            return self._scoringGridSize
+        return self._ct.gridSize
+    
+    @scoringGridSize.setter
+    def scoringGridSize(self, gridSize):
+        self._scoringGridSize = gridSize
+    
+    @property
+    def scoringOrigin(self):
+        if self._plan:
+            if self._plan.planDesign:
+                self._scoringOrigin = self._plan.planDesign.scoringOrigin
+                return self._scoringOrigin
+        if self._scoringOrigin is not None:
+            return self._scoringOrigin
         else:
-            return self._ct.gridSize
+            return self._ct.origin
+        
+    @scoringOrigin.setter
+    def scoringOrigin(self, origin):
+        self._scoringOrigin = origin
+    
+
+    def setScoringParameters(self, scoringGridSize:Optional[Sequence[int]]=None, scoringSpacing:Optional[Sequence[float]]=None,
+                                scoringOrigin:Optional[Sequence[int]]=None, adapt_gridSize_to_new_spacing=False):
+        """
+        Sets the scoring parameters
+
+        Parameters
+        ----------
+        scoringGridSize: Sequence[int]
+            scoring grid size
+        scoringSpacing: Sequence[float]
+            scoring spacing
+        scoringOrigin: Sequence[float]
+            scoring origin
+        adapt_gridSize_to_new_spacing: bool
+            If True, automatically adapt the gridSize to the new spacing
+        """
+        if adapt_gridSize_to_new_spacing and scoringGridSize is not None:
+            raise ValueError('Cannot adapt gridSize to new spacing if scoringGridSize provided.')
+        
+        if scoringSpacing is not None: self.scoringVoxelSpacing = scoringSpacing
+        if scoringGridSize is not None: self.scoringGridSize = scoringGridSize
+        if scoringOrigin is not None: self.scoringOrigin = scoringOrigin
+        
+        if adapt_gridSize_to_new_spacing:
+            self.scoringGridSize = np.floor(self._ct.gridSize*self._ct.spacing/self._scoringVoxelSpacing).astype(int)
 
     @property
     def simulationDirectory(self) -> str:
@@ -377,7 +435,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         beamletDose.setUnitaryBeamlets(
             csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(self._beamletRescaling()), dtype=np.float32)))
 
-        beamletDose.doseOrigin = self._ct.origin
+        beamletDose.doseOrigin = self.scoringOrigin
 
         beamletDose.doseSpacing = self.scoringVoxelSpacing
         beamletDose.doseGridSize = self.scoringGridSize
@@ -571,7 +629,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         else:
             fraction = plan.numberOfFractionsPlanned
         dose.imageArray = dose.imageArray * self._deliveredProtons() * 1.602176e-19 * 1000 * fraction
-        dose.origin = self._ct.origin # to avoid middle of voxel correction from MCsquare calculation when independentScoringGrid is used
         return dose
 
     def _importLET(self) -> LETImage:
@@ -614,7 +671,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             Beamlet dose computed by MCsquare
         """
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseDoseFilePath, self._beamletRescaling(), self.scoringOrigin, self._roi)
         return beamletDose
 
     def _importBeamletsLET(self):
@@ -627,7 +684,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             Beamlet LET computed by MCsquare
         """
         self._resampleROI()
-        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self._ct.origin, self._roi)
+        beamletDose = mcsquareIO.readBeamlets(self._sparseLETFilePath, self._beamletRescaling(), self.scoringOrigin, self._roi)
         return beamletDose
 
     def _beamletRescaling(self) -> Sequence[float]:
@@ -808,15 +865,13 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             config["Independent_scoring_grid"] = True
             config["Scoring_voxel_spacing"] = [x / 10.0 for x in self.scoringVoxelSpacing]  # in cm
             config["Scoring_grid_size"] = self.scoringGridSize
-            config["Scoring_origin"][0] = self._ct.origin[0] - self._scoringVoxelSpacing[
+            config["Scoring_origin"][0] = self.scoringOrigin[0] - self.scoringVoxelSpacing[
                 0] / 2.0
-            config["Scoring_origin"][2] = self._ct.origin[2] - self._scoringVoxelSpacing[
+            config["Scoring_origin"][2] = self.scoringOrigin[2] - self.scoringVoxelSpacing[
                 2] / 2.0
-            # config["Scoring_origin"][1] = -self._ct.origin[1] - config["Scoring_voxel_spacing"][1] * \
-            #                              config["Scoring_grid_size"][1] + \
-            #                              config["Scoring_voxel_spacing"][1] / 2.0
-            config["Scoring_origin"][1] = self._ct.origin[1] - self._scoringVoxelSpacing[
-                1] / 2.0
+            config["Scoring_origin"][1] = -self.scoringOrigin[1] - self.scoringVoxelSpacing[1] * \
+                                         self.scoringGridSize[1] + \
+                                         self.scoringVoxelSpacing[1] / 2.0 #  inversion of Y, which is flipped in MCsquare
             config["Scoring_origin"][:] = [x / 10.0 for x in config["Scoring_origin"]]  # in cm
         # config["Stat_uncertainty"] = 2.
 
@@ -871,10 +926,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         roiResampled = []
         for contour in self._roi:
             if isinstance(contour, ROIContour):
-                resampledMask = contour.getBinaryMask(origin=self._ct.origin, gridSize=self.scoringGridSize,
+                resampledMask = contour.getBinaryMask(origin=self.scoringOrigin, gridSize=self.scoringGridSize,
                                                       spacing=np.array(self.scoringVoxelSpacing))
             elif isinstance(contour, ROIMask):
-                resampledMask = resampler3D.resampleImage3D(contour, origin=self._ct.origin,
+                resampledMask = resampler3D.resampleImage3D(contour, origin=self.scoringOrigin,
                                                             gridSize=self.scoringGridSize,
                                                             spacing=np.array(self.scoringVoxelSpacing))
             else:

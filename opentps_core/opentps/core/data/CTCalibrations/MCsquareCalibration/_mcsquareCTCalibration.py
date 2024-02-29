@@ -17,7 +17,7 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
     """
     Class for the CT calibration for MCsquare. Inherits from AbstractCTCalibration, PiecewiseHU2Density and MCsquareHU2Material.
     """
-    def __init__(self, hu2densityTable=(None, None), hu2materialTable=(None, None), fromFiles=(None, None, 'default')):
+    def __init__(self, hu2densityTable=([], []), hu2materialTable=([], []), fromFiles=(None, None, 'default')):
         PiecewiseHU2Density.__init__(self, piecewiseTable=hu2densityTable, fromFile=fromFiles[0])
         MCsquareHU2Material.__init__(self, piecewiseTable=hu2materialTable, fromFile=(fromFiles[1], fromFiles[2]))
 
@@ -55,7 +55,7 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
 
         return newObj
 
-    def addEntry(self, hu:float, density:Optional[float], material:Optional[MCsquareMolecule]):
+    def addEntry(self, hu:float=None, density:Optional[float]=None, material:Optional[MCsquareMolecule]=None):
         """
         Add an entry to the HU to mass density and HU to material conversion tables. Either density or material must be None, and the other must be a valid value.
 
@@ -68,10 +68,17 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         material : MCsquareMolecule (optional)
             The material.
         """
-        if not (density is None):
+        if not (density is None) and not(hu is None):
             PiecewiseHU2Density.addEntry(self, hu, density)
-        if not(material is None):
+        if not(material is None) and not(hu is None):
             MCsquareHU2Material.addEntry(self, hu, material)
+    
+        if hu is None:
+            assert material is not None
+            if len(self.allMaterialsAndElements()) < 2:
+                raise ValueError(f"Need at least two elements in HU to density table to infer HU value of material {material.name}")
+            self.addEntry(hu=self.convertMassDensity2HU(material.density), density=material.density, material=material)
+                
 
     def convertHU2MassDensity(self, hu):
         """
@@ -180,6 +187,9 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         density = interpolate.interp1d(rsp_ref, hu_ref, kind='linear', fill_value='extrapolate')
 
         return density(rsp)
+    
+    def convertMaterial2HU(self, materialID):
+        return MCsquareHU2Material.convertMaterial2HU(self, materialID)
 
     def _getBijectiveHU2RSP(self, HuMin=-1100., huMax=5000., step=2., energy=100):
         hu_ref = np.arange(HuMin, huMax, step)

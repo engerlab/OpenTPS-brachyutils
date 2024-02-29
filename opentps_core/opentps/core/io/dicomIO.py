@@ -987,14 +987,15 @@ def writeRTStruct(struct: RTStruct, outputFile):
     dcm_file.StudyID = struct.studyID if hasattr(struct, 'studyID') else ""
     
     dcm_file.RTROIObservationsSequence = []
-    for cidx, item in enumerate(struct.rtROIObservationsSequence, start=1):
-        roiObs = pydicom.Dataset()
-        roiObs.ObservationNumber = item.ObservationNumber if hasattr(item, 'ObservationNumber') else ''
-        roiObs.ReferencedROINumber = item.ReferencedROINumber if hasattr(item, 'ReferencedROINumber') else ''
-        roiObs.ROIObservationLabel = item.ROIObservationLabel if hasattr(item, 'ROIObservationLabel') else ''
-        roiObs.RTROIInterpretedType = item.RTROIInterpretedType if hasattr(item, 'RTROIInterpretedType') else 'NONE'
-        roiObs.ROIInterpreter = item.ROIInterpreter if hasattr(item, 'ROIInterpreter') else 'None'
-        dcm_file.RTROIObservationsSequence.append(roiObs)
+    if hasattr(struct, 'rtROIObservationsSequence'):
+        for cidx, item in enumerate(struct.rtROIObservationsSequence, start=1):
+            roiObs = pydicom.Dataset()
+            roiObs.ObservationNumber = item.ObservationNumber if hasattr(item, 'ObservationNumber') else ''
+            roiObs.ReferencedROINumber = item.ReferencedROINumber if hasattr(item, 'ReferencedROINumber') else ''
+            roiObs.ROIObservationLabel = item.ROIObservationLabel if hasattr(item, 'ROIObservationLabel') else ''
+            roiObs.RTROIInterpretedType = item.RTROIInterpretedType if hasattr(item, 'RTROIInterpretedType') else 'NONE'
+            roiObs.ROIInterpreter = item.ROIInterpreter if hasattr(item, 'ROIInterpreter') else 'None'
+            dcm_file.RTROIObservationsSequence.append(roiObs)
 
     dcm_file.StructureSetROISequence = []
     dcm_file.ROIContourSequence = []
@@ -1239,7 +1240,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 layer.rangeShifterSettings.referencedRangeShifterNumber = ReferencedRangeShifterNumber
 
             beam.appendLayer(layer)
-        # plan.appendBeam(beam)
+        plan.appendBeam(beam)
         
         dt = datetime.datetime.now()
         plan.fileMetaInformationGroupLength = dcm.file_meta.FileMetaInformationGroupLength if hasattr(dcm.file_meta, 'FileMetaInformationGroupLength') else 0

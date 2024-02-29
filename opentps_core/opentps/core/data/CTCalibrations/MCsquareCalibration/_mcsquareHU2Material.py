@@ -2,12 +2,14 @@ import os
 from distutils.dir_util import copy_tree
 from glob import glob
 from typing import Sequence, Union
+import re
 
 import numpy as np
 from numpy.matlib import repmat
 
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial import MCsquareMaterial
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMolecule import MCsquareMolecule
+from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareElement import MCsquareElement
 
 import opentps.core.processing.doseCalculation.MCsquare as MCsquareModule
 
@@ -24,12 +26,13 @@ class MCsquareHU2Material:
     piecewiseTable : tuple
         Tuple containing the HU to mass density conversion table.
     """
-    def __init__(self, piecewiseTable=(None, None), fromFile=(None, 'default')):
+    def __init__(self, piecewiseTable=([], []), fromFile=(None, 'default')):
         self.__hu = piecewiseTable[0]
         self.__materials = piecewiseTable[1]
 
         if not (fromFile[0] is None):
             self._initializeFromFiles(fromFile[0], materialsPath=fromFile[1])
+        self.materialsPath = fromFile[1]
 
     def __str__(self):
         return self.mcsquareFormatted()
@@ -201,10 +204,50 @@ class MCsquareHU2Material:
         hu = refHUs[indexOfClosestSP]
 
         return np.reshape(hu, spShape)
+    
+    def convertMaterial2HU(self, materialName:str):
+        for i, mat in enumerate(self.__materials):
+            if mat.name.casefold() == materialName.casefold():
+                return self.__hu[i]
+        raise ValueError(f'Material {materialName} undefined')
+    
+    def getHU2MaterialConversion(self):
+        return (self.__hu, self.__materials)
+    
+    def getMaterialFromName(self, name:str):
+        for mat in self.__materials:
+            if mat.name.casefold() == name.casefold():
+                return mat
+        raise ValueError(f'Material {name} is not part of the calibration file')
+    
+    def loadMaterial(self, materialNb, materialsPath='default'):
+        """
+        Load material from file.
+
+        Parameters
+        ----------
+        materialNb : int
+            Number of the material.
+        materialsPath : str (default 'default')
+            Path to materials folder. If 'default', the default path is used.
+
+        Returns
+        -------
+        self : MCsquareMaterial
+            The loaded material.
+        """
+        materialPath = MCsquareMaterial.getFolderFromMaterialNumber(materialNb, materialsPath)
+        with open(os.path.join(materialPath, 'Material_Properties.dat'), "r") as f:
+            for line in f:
+                if re.search(r'Atomic_Weight', line):
+                    return MCsquareElement.load(materialNb, materialsPath)
+
+        return MCsquareMolecule.load(materialNb, materialsPath)
 
     def __load(self, materialFile, materialsPath='default'):
         self.__hu = []
         self.__materials = []
+        self.materialsPath = materialsPath
 
         with open(materialFile, "r") as file:
             for line in file:
@@ -219,8 +262,17 @@ class MCsquareHU2Material:
                 if len(lineSplit) > 1:
                     self.__hu.append(float(lineSplit[0]))
 
-                    material = MCsquareMolecule.load(int(lineSplit[1]), materialsPath)
+                    material = self.loadMaterial(int(lineSplit[1]), materialsPath)
                     self.__materials.append(material)
+    
+    def writeHeader(self):
+        """
+        Return header of HU to density conversion table
+        """
+        s =  "# ===================\n"
+        s += "# HU	Material label\n"
+        s += "# ===================\n\n"
+        return s
 
     def write(self, folderPath, huMaterialFile):
         """
@@ -234,16 +286,20 @@ class MCsquareHU2Material:
             Path to the file where the HU to material conversion table will be written.
         """
         self._writeHU2MaterialFile(huMaterialFile)
-        self._copyDefaultMaterials(folderPath)
-        self._writeMaterials(folderPath)
-        self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
+        if folderPath:
+            self._copyDefaultMaterials(folderPath)
+            self._writeMaterials(folderPath)
+            self._writeMCsquareList(os.path.join(folderPath, 'list.dat'))
 
     def _writeHU2MaterialFile(self, huMaterialFile):
         materialsOrderedForPrinting = self.materialsOrderedForPrinting()
+        materialsOrderedForPrinting_names = [mat.name.casefold() for mat in materialsOrderedForPrinting]
 
         with open(huMaterialFile, 'w') as f:
+            f.write(self.writeHeader())
             for i, hu in enumerate(self.__hu):
-                s = str(hu) + ' ' + str(materialsOrderedForPrinting.index(self.__materials[i])+1) + '\n'
+                index = materialsOrderedForPrinting_names.index(self.__materials[i].name.casefold())
+                s = str(hu) + ' ' + str(materialsOrderedForPrinting[index].number) + '\n'
                 f.write(s)
 
     def _writeMaterials(self, folderPath):
@@ -254,7 +310,10 @@ class MCsquareHU2Material:
             material.write(folderPath, matNames)
 
     def _copyDefaultMaterials(self, folderPath):
-        materialsPath = os.path.join(str(MCsquareModule.__path__[0]), 'Materials')
+        if self.materialsPath == 'default':
+            materialsPath = os.path.join(str(MCsquareModule.__path__[0]), 'Materials')
+        else:
+            materialsPath = self.materialsPath
 
         for folder in glob(materialsPath + os.path.sep + '*' + os.path.sep):
             y = folder.split(os.path.sep)
@@ -271,7 +330,8 @@ class MCsquareHU2Material:
 
         with open(listFile, 'w') as f:
             for i, mat in enumerate(materialsOrderedForPrinting):
-                f.write(str(i+1) + ' ' + mat.name + '\n')
+                f.write(str(mat.number) + ' ' + mat.name + '\n')
+
 
     def materialsOrderedForPrinting(self):
         """
@@ -283,16 +343,19 @@ class MCsquareHU2Material:
             The materials in the order they should be printed in the MCsquare list.dat file.
         """
         materials = self.allMaterialsAndElements()
-        defaultMats = MCsquareMaterial.getMaterialList('default')
+        # defaultMats = MCsquareMaterial.getMaterialList('default')
+        defaultMats = MCsquareMaterial.getMaterialList(self.materialsPath)
 
         orderMaterials = []
         for mat in defaultMats:
             newMat = MCsquareMaterial()
             newMat.name = mat["name"]
+            newMat.number = mat["ID"]
             orderMaterials.append(newMat)
 
         for material in materials:
-            orderMaterials.append(material)
+            if material.name.casefold() not in [mat.name.casefold() for mat in orderMaterials]:
+                orderMaterials.append(material)
 
         return orderMaterials
 
@@ -317,7 +380,7 @@ class MCsquareHU2Material:
     def _sortMaterialsandElements(self, materials:Sequence[MCsquareMaterial]) -> Sequence[MCsquareMaterial]:
         uniqueMaterials = []
 
-        materialNames = [material.name for material in materials]
+        materialNames = [material.name.casefold() for material in materials]
         _, ind = np.unique(materialNames, return_index=True)
 
         for i in ind:
