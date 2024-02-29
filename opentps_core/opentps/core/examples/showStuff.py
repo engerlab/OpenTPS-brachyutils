@@ -61,7 +61,7 @@ def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='',
     print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
     clinROI = [roi.name, roi.name]
     clinMetric = ["Dmin", "Dmax"]
-    clinLimit = [19., 21.]
+    clinLimit = [59., 61.]
     clinObj = {'ROI': clinROI, 'Metric': clinMetric, 'Limit': clinLimit}
     print('Clinical evaluation')
     evaluateClinical(doseImage, [roi], clinObj)
@@ -153,7 +153,7 @@ def simulateAndShowDoseDVH(ct, plan, roi, imgName, outPutPath='', show=True):
     print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
     clinROI = [roi.name, roi.name]
     clinMetric = ["Dmin", "Dmax"]
-    clinLimit = [19., 21.]
+    clinLimit = [59., 61.]
     clinObj = {'ROI': clinROI, 'Metric': clinMetric, 'Limit': clinLimit}
     print('Clinical evaluation')
     evaluateClinical(doseImage, [roi], clinObj)
@@ -226,7 +226,7 @@ def showDoseAndDVH(ct, doseImage, roi, imgName, outPutPath='', show=True):
     print('D5 - D95 =  {} Gy'.format(target_DVH.D5 - target_DVH.D95))
     clinROI = [roi.name, roi.name]
     clinMetric = ["Dmin", "Dmax"]
-    clinLimit = [19., 21.]
+    clinLimit = [59., 61.]
     clinObj = {'ROI': clinROI, 'Metric': clinMetric, 'Limit': clinLimit}
     print('Clinical evaluation')
     evaluateClinical(doseImage, [roi], clinObj)
