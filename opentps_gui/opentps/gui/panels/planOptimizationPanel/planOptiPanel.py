@@ -312,7 +312,7 @@ class PlanOptiPanel(QWidget):
             else:
                 solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxit=self._optiConfig['maxIter'])
             # Optimize treatment plan
-            _, doseImage, _ = solver.optimize()
+            doseImage, _ = solver.optimize()
             doseImage.patient = self._mcsquareWindow._doseComputationPanel.selectedCT.patient
 
 

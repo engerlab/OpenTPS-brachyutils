@@ -71,7 +71,6 @@ def readBeamlets(file_path, beamletRescaling:Sequence[float], origin, roi: Optio
 
     beamletDose = SparseBeamlets()
     beamletDose.setUnitaryBeamlets(csc_matrix.dot(sparseBeamlets, csc_matrix(np.diag(beamletRescaling), dtype=np.float32)))
-    beamletDose.beamletWeights = np.ones(header["NbrSpots"])
     beamletDose.doseOrigin = origin
     beamletDose.doseSpacing = header["VoxelSpacing"]
     beamletDose.doseGridSize = header["ImageSize"]

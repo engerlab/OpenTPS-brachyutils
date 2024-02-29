@@ -26,6 +26,8 @@ from opentps.core.processing.planOptimization.solvers import sparcling, \
 from opentps.core.processing.planOptimization.solvers import bfgs, localSearch
 from opentps.core.processing.planOptimization.solvers import fista, gradientDescent
 from opentps.core.processing.planOptimization import planPreprocessing
+from scipy.sparse import csc_matrix
+from opentps.core.data.images._doseImage import DoseImage
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +102,7 @@ class PlanOptimizer:
             The weights.
         """
         # Total Dose calculation
-        totalDose = self.plan.planDesign.beamlets.toDoseImage().imageArray
+        totalDose = self.computeDose().imageArray
         maxDose = np.max(totalDose)
         try:
             x0 = self.opti_params['init_weights']
@@ -155,6 +157,28 @@ class PlanOptimizer:
         objectiveFunction = DoseFidelity(self.plan, self.xSquared,self.GPU_acceleration)
         self.functions.append(objectiveFunction)
 
+    def computeDose(self):
+        assert hasattr(self.plan, 'planDesign')
+        assert hasattr(self.plan.planDesign.beamlets, '_sparseBeamlets')
+        assert self.plan.planDesign.beamlets._sparseBeamlets is not None
+
+        beamlets = self.plan.planDesign.beamlets
+        weights = np.array(self.plan.spotMUs, dtype=np.float32)
+        if use_MKL == 1:
+            totalDose = sparse_dot_mkl.dot_product_mkl(beamlets._sparseBeamlets, weights) * self.plan.numberOfFractionsPlanned
+        else:
+            totalDose = csc_matrix.dot(beamlets._sparseBeamlets, weights) * self.plan.numberOfFractionsPlanned
+
+        totalDose = np.reshape(totalDose, beamlets._gridSize, order='F')
+        totalDose = np.flip(totalDose, 0)
+        totalDose = np.flip(totalDose, 1)
+
+        doseImage = DoseImage(imageArray=totalDose, origin=beamlets._origin, spacing=beamlets._spacing,
+                              angles=beamlets._orientation)
+        doseImage.patient = self.plan.patient
+
+        return doseImage
+
     def optimize(self):
         """
         Optimize the plan.
@@ -192,7 +216,8 @@ class PlanOptimizer:
     def postProcess(self, result):
         """
         Post-process the optimization result. !! The spots and the according weight bellow the thresholdSpotRemoval are removed from the plan and beamlet matrix !!
-
+        The optimized weights are saved in self.plan.spotMUs
+        
         Parameters
         ----------
         result : dict
@@ -201,11 +226,9 @@ class PlanOptimizer:
         Returns
         -------
         numpy.ndarray
-            The optimized weights.
-        numpy.ndarray
             The total dose.
         float
-            The cost.
+            The value of the objective function.
         """
         # Remove unnecessary attributs in plan
         try:
@@ -214,7 +237,7 @@ class PlanOptimizer:
         except:
             pass
 
-        self.weights = result['sol']
+        weights = result['sol']
         crit = result['crit']
         self.niter = result['niter']
         self.time = result['time']
@@ -225,7 +248,7 @@ class PlanOptimizer:
 
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
-                .format(self.solver.__class__.__name__, self.niter, self.weights, self.cost, self.time, self.time / self.niter))
+                .format(self.solver.__class__.__name__, self.niter, weights, self.cost, self.time, self.time / self.niter))
 
         # unload scenario beamlets
         for s in range(len(self.plan.planDesign.robustness.scenarios)):
@@ -234,9 +257,9 @@ class PlanOptimizer:
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.plan.spotMUs = np.square(self.weights).astype(np.float32)
+            self.plan.spotMUs = np.square(weights).astype(np.float32) / self.plan.numberOfFractionsPlanned
         else:
-            self.plan.spotMUs = self.weights.astype(np.float32)
+            self.plan.spotMUs = weights.astype(np.float32) / self.plan.numberOfFractionsPlanned
         
         MU_before_simplify = self.plan.spotMUs.copy()
         self.plan.simplify(threshold=self.thresholdSpotRemoval) # remove spots below self.thresholdSpotRemoval
@@ -245,13 +268,11 @@ class PlanOptimizer:
             ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
             assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
-            self.weights = np.array(self.weights)[ind_to_keep]
-        self.plan.planDesign.beamlets.beamletWeights = self.plan.spotMUs
 
-        totalDose = self.plan.planDesign.beamlets.toDoseImage()
+        totalDose = self.computeDose()
         logger.info('Optimization done.')
 
-        return self.weights, totalDose, self.cost
+        return totalDose, self.cost
 
     def getConvergenceData(self, method):
         """

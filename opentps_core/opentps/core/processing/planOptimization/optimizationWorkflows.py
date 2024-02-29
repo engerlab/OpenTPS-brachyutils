@@ -41,9 +41,8 @@ def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
     logger.info("Number of spots: {}".format(plan.numberOfSpots))
 
     _computeBeamlets(plan, planStructure)
-    _optimizePlan(plan, planStructure)
+    finalDose = _optimizePlan(plan, planStructure)
 
-    finalDose = _computeFinalDose(plan, planStructure)
     finalDose.patient = plan.patient
 
 def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
@@ -127,10 +126,5 @@ def _optimizePlan(plan:RTPlan, planStructure:PlanDesign):
 
     solver.xSquared = False
 
-    w, doseImage, ps = solver.optimize()
-
-    plan.spotMUs = w
-
-def _computeFinalDose(plan:RTPlan, planStructure) -> DoseImage:
-    planStructure.beamlets.beamletWeights = plan.spotMUs
-    return planStructure.beamlets.toDoseImage()
+    doseImage, ps = solver.optimize()
+    return doseImage
