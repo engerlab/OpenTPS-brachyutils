@@ -1094,14 +1094,14 @@ def readDicomPlan(dcmFile) -> RTPlan:
         return
 
     # Start parsing PBS plan
-    # plan.numberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
+    plan._numberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
     # plan.numberOfBeams = int(dcm.FractionGroupSequence[0].NumberOfBeams)
-    # plan.fractionGroupNumber = int(dcm.FractionGroupSequence[0].FractionGroupNumber)
+    plan.fractionGroupNumber = int(dcm.FractionGroupSequence[0].FractionGroupNumber)
     
-    # if (hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName')):
-    #     plan.treatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName if hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName') else ''
-    # else:
-    #     plan.treatmentMachineName = ""
+    if (hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName')):
+        plan.treatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName if hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName') else ''
+    else:
+        plan.treatmentMachineName = ""
 
     for dcm_beam in dcm.IonBeamSequence:
         if dcm_beam.TreatmentDeliveryType != "TREATMENT":
@@ -1476,7 +1476,7 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
         dcm_file.FractionGroupSequence = []
         fg = pydicom.dataset.Dataset()
         fg.FractionGroupNumber = "0"
-        fg.NumberOfFractionsPlanned = ""
+        fg.NumberOfFractionsPlanned = plan.numberOfFractionsPlanned
         fg.NumberOfBeams = len(plan)
         fg.NumberOfBrachyApplicationSetups = "0"
         fg.ReferencedBeamSequence = []
