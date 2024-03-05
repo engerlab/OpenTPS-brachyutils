@@ -93,6 +93,8 @@ def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='',
 
     # Display dose
     fig, ax = plt.subplots(2, 3, figsize=(16, 9))
+    fig.suptitle(imgName)
+
     ax[0, 0].axes.get_xaxis().set_visible(False)
     ax[0, 0].axes.get_yaxis().set_visible(False)
     ax[0, 0].imshow(img_ct1, cmap='gray')
@@ -121,6 +123,11 @@ def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='',
     ax[1, 0].legend()
 
     convData = refSolver.getConvergenceData()
+    print("convData['time']", convData['time'])
+    print("convData['nIter']", convData['nIter'])
+    print("convData['func_0']", len(convData['func_0']))
+    print('i had the issue here with len(convData[func_0]) = 215 --> odd number')
+    print(len(np.arange(0, convData['time'], convData['time'] / convData['nIter'])))
     ax[1, 1].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
                label='Fidelity')
     ax[1, 1].set_xlabel('Time (s)')
@@ -219,6 +226,8 @@ def simulateAndShowDoseDVH(ct, plan, roi, imgName, outPutPath='', show=True):
     return doseImage
 
 def showDoseAndDVH(ct, doseImage, roi, imgName, outPutPath='', show=True):
+
+    print(type(ct), type(doseImage), type(roi))
 
     # Compute DVH on resampled contour
     target_DVH = DVH(roi, doseImage)

@@ -544,8 +544,8 @@ def readDicomDose(dcmFile):
 
     planSOPInstanceUID = dcm.ReferencedRTPlanSequence[0].ReferencedSOPInstanceUID
 
-    if (type(dcm.SliceThickness) == float):
-        sliceThickness = dcm.SliceThickness
+    if (hasattr(dcm, 'SliceThickness') and dcm.SliceThickness != ""):
+        sliceThickness = float(dcm.SliceThickness)
     else:
         if (hasattr(dcm, 'GridFrameOffsetVector') and not dcm.GridFrameOffsetVector is None):
             sliceThickness = abs((dcm.GridFrameOffsetVector[-1] - dcm.GridFrameOffsetVector[0]) / (len(dcm.GridFrameOffsetVector) - 1))
@@ -586,6 +586,7 @@ def readDicomDose(dcmFile):
     image = DoseImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
                       spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID, referencePlan = referencedSOPInstanceUID,
                       sopInstanceUID=dcm.SOPInstanceUID)
+
     image.patient = patient
     image.studyInstanceUID = dcm.StudyInstanceUID if hasattr(dcm, 'StudyInstanceUID') else pydicom.uid.generate_uid()
     image.seriesInstanceUID = dcm.SeriesInstanceUID if hasattr(dcm, 'SeriesInstanceUID') else pydicom.uid.generate_uid()
@@ -646,7 +647,7 @@ def writeRTDose(dose:DoseImage, outputFile):
         
     dt = datetime.datetime.now()
     # meta.ImplementationClassUID = '1.2.826.0.1.3680043.1.2.100.5.7.0.47' # from RayStation
-    meta.ImplementationClassUID =  dose.implementationClassUID if hasattr(dose, 'implementationClassUID') else "1.2.826.0.1.3680043.1.2.100.6.40.0.76"
+    meta.ImplementationClassUID = dose.implementationClassUID if hasattr(dose, 'implementationClassUID') else "1.2.826.0.1.3680043.1.2.100.6.40.0.76"
     meta.FileMetaInformationGroupLength = 0
     meta.FileMetaInformationVersion = dose.fileMetaInformationVersion if hasattr(dose, 'fileMetaInformationVersion') else bytes([0,1])
     meta.ImplementationVersionName = dose.implementationVersionName if hasattr(dose, 'implementationVersionName') else "DicomObjects.NET"
