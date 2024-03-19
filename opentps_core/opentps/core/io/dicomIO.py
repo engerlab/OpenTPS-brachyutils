@@ -747,7 +747,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.FrameIncrementPointer = dose.frameIncrementPointer if hasattr(dose, 'frameIncrementPointer') else {}
     dcm_file.PositionReferenceIndicator = dose.positionReferenceIndicator if hasattr(dose, 'positionReferenceIndicator') else ""
     
-    if (hasattr(dose, 'gridSize') and len(dose.gridSize.shape) > 2):
+    if (hasattr(dose, 'gridSize') and len(dose.gridSize) > 2):
         dcm_file.GridFrameOffsetVector = list(np.arange(0, dose.gridSize[2] * dose.spacing[2], dose.spacing[2]))
     else:
         dcm_file.GridFrameOffsetVector = dose.gridFrameOffsetVector if hasattr(dose, 'gridFrameOffsetVector') and not(dose.gridFrameOffsetVector is None) else ""
