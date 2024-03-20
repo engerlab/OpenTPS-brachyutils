@@ -244,7 +244,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         if scoringGridSize is not None: self.scoringGridSize = scoringGridSize
         if scoringOrigin is not None: self.scoringOrigin = scoringOrigin
         
-        if adapt_gridSize_to_new_spacing:
+        if adapt_gridSize_to_new_spacing and self._scoringVoxelSpacing is not None:
             self.scoringGridSize = np.floor(self._ct.gridSize*self._ct.spacing/self._scoringVoxelSpacing).astype(int)
 
     @property

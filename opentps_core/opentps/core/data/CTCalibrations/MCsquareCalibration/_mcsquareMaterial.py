@@ -1,5 +1,6 @@
 import os
 from abc import abstractmethod
+import re
 
 import opentps.core.processing.doseCalculation.MCsquare as MCsquare
 
@@ -196,3 +197,43 @@ class MCsquareMaterial:
         self.sp.write(spFile)
         if not (self.pstarSP is None):
             self.pstarSP.write(spFilePSTAR)
+
+    @classmethod
+    def load(cls, materialNbOrName, materialsPath='default'):
+        """
+        Load element from file.
+
+        Parameters
+        ----------
+        materialNbOrName : int or str
+            Number of the material or name of the material.
+        materialsPath : str (default 'default')
+            Path to materials folder. If 'default', the default path is used.
+
+        Returns
+        -------
+        self : MCsquareElement
+            The loaded element.
+        """
+        from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareElement import MCsquareElement
+        from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMolecule import MCsquareMolecule
+
+        if isinstance(materialNbOrName, int):
+            materialNb = materialNbOrName
+        elif isinstance(materialNbOrName, str):
+            materialNb = cls.getMaterialNumberFromName(materialNbOrName, materialsPath)
+        else:
+            raise ValueError(f'{materialNbOrName} is not of type int or string')
+        
+        elementPath = cls.getFolderFromMaterialNumber(materialNb, materialsPath)
+
+        with open(os.path.join(elementPath, 'Material_Properties.dat'), "r") as f:
+            for line in f:
+                if re.search(r'Mixture_Component', line): # molecule
+                    return MCsquareMolecule.load(materialNb, materialsPath)
+
+                if re.search(r'Atomic_Weight', line): # element
+                    return MCsquareElement.load(materialNb, materialsPath)
+            
+        raise ValueError(moleculePath + ' is not an element nor a molecule.')
+
