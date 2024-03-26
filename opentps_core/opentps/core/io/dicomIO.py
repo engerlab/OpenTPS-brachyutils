@@ -1528,10 +1528,7 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
                 ctrlpt.ScanSpotTuneID = "0"
                 ctrlpt.ScanSpotPositionMap = arrayToDS(np.array(list(layer.spotXY)).flatten().tolist())
                 ctrlpt.ScanSpotMetersetWeights = arrayToDS(layer.spotMUs.tolist())
-                if type(ctrlpt.ScanSpotMetersetWeights) == float:
-                    ctrlpt.NumberOfScanSpotPositions = 1
-                else:
-                    ctrlpt.NumberOfScanSpotPositions = len(ctrlpt.ScanSpotMetersetWeights)      
+                ctrlpt.NumberOfScanSpotPositions = layer.numberOfSpots
                 if layerNumber==0:
                     ctrlpt.GantryAngle = beam.gantryAngle
                     ctrlpt.GantryRotationDirection = "NONE"
