@@ -236,7 +236,7 @@ class PlanOptimizer:
         self.cost = result['objective']
 
         if self.niter<=0:
-            niter = 1
+            self.niter = 1
 
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
