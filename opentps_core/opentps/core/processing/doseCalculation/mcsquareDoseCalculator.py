@@ -386,7 +386,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         plan : RTPlan
             RT plan
         roi : Optional[Sequence[Union[ROIContour, ROIMask]]], optional
-            ROI contours or masks, by default None
+            ROI contours or masks on which beamlets will be cropped at import, by default None
 
         Returns
         -------
@@ -487,7 +487,7 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
         plan : RTPlan
             RT plan
         roi : Optional[Sequence[Union[ROIContour, ROIMask]]], optional
-            ROI contours or masks, by default None
+            ROI contours or masks on which beamlets will be cropped at import, by default None
         storePath : Optional[str], optional
             Path to store the beamlets, by default None
 

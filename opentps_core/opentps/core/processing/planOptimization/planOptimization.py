@@ -45,11 +45,12 @@ class PlanOptimizer:
     functions : list
         The list of functions to optimize.
     solver : Solver (default: bfgs.ScipyOpt('L-BFGS-B'))
-        The solver to use.
+        The solver to use. By default, no bounds are set. Machine delivery constraints can (and should) be enforced
+        by setting the bounds.
     thresholdSpotRemoval : float
         The threshold weight below which spots are removed from the plan and beamlet matrix.
     xSquared : bool
-        If True, the weights are squared.
+        If True, the weights are squared. True by default to avoid negative weights.
     GPU_acceleration : bool (default : False)
         If True, the evaluation of the doseFidelity function is done with cupy (this attribute should only
         be modified with the "use_GPU_acceleration" function)
@@ -62,7 +63,8 @@ class PlanOptimizer:
         self.opti_params = kwargs
         self.functions = []
         self._xSquared = True
-        self.thresholdSpotRemoval = 1e-6 # remove all spots below this value after optimization from the plan and beamlet matrix
+        self.thresholdSpotRemoval = 1e-6 # remove all spots below this value after optimization from the plan and
+        # beamlet matrix
         self.GPU_acceleration = False
 
     @property
