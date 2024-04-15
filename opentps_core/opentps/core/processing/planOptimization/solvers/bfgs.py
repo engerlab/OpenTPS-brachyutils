@@ -56,7 +56,8 @@ class ScipyOpt:
         x0 : list
             The initial guess.
         bounds : list of Bounds (default: None)
-            The bounds on the variables for scipy.optimize.minimize.
+            The bounds on the variables for scipy.optimize.minimize. By default, no bounds are set.
+            Machine delivery constraints can (and should) be enforced by setting the bounds.
 
         Returns
         -------

@@ -182,7 +182,8 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         float or array_like
             The HU value(s).
         """
-        hu_ref, rsp_ref = self._getBijectiveHU2RSP(energy=energy)
+        hu_ref, _ = self.getPiecewiseHU2MassDensityConversion()
+        rsp_ref = self.convertHU2RSP(hu_ref, energy)
 
         density = interpolate.interp1d(rsp_ref, hu_ref, kind='linear', fill_value='extrapolate')
 
@@ -192,7 +193,7 @@ class MCsquareCTCalibration(AbstractCTCalibration, PiecewiseHU2Density, MCsquare
         return MCsquareHU2Material.convertMaterial2HU(self, materialID)
 
     def _getBijectiveHU2RSP(self, HuMin=-1100., huMax=5000., step=2., energy=100):
-        hu_ref = np.arange(HuMin, huMax, step)
+        hu_ref = np.arange(HuMin, huMax+step, step)
         rsp_ref = self.convertHU2RSP(hu_ref, energy)
         rsp_ref = np.array(rsp_ref)
 

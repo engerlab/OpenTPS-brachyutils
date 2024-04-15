@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.sparse as sp
+from copy import copy
 import logging
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class DoseFidelity(BaseFunc):
         else:
             self.scenariosBL = []
 
+        self.savedWorstCase = (None, None)
 
     def unload_blGPU(self):
         del self.beamlets_gpu
@@ -185,11 +187,13 @@ class DoseFidelity(BaseFunc):
 
         fTot += max(scenarioList)
 
+        worstCaseIndex = scenarioList.index(max(scenarioList)) - 1  # returns id of the worst case scenario (-1 for nominal)
+        self.savedWorstCase = (copy(x), worstCaseIndex)
+
         if not returnWorstCase:
             return fTot
         else:
-            return fTot, scenarioList.index(
-                max(scenarioList)) - 1  # returns id of the worst case scenario (-1 for nominal)
+            return fTot, worstCaseIndex
 
     def computeFidelityGradient(self, x):
         """
@@ -211,8 +215,11 @@ class DoseFidelity(BaseFunc):
             If the objective metric is not supported.
         """
         # get worst case scenario
-        if self.scenariosBL:
-            fTot, worstCase = self.computeFidelityFunction(x, returnWorstCase=True)
+        if len(self.scenariosBL) > 0:
+            if np.array_equal(x, self.savedWorstCase[0]):
+                worstCase = self.savedWorstCase[1]
+            else:
+                _, worstCase = self.computeFidelityFunction(x, returnWorstCase=True)
         else:
             worstCase = -1
         if self.xSquare:

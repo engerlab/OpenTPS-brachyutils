@@ -748,7 +748,7 @@ def writeRTDose(dose:DoseImage, outputFile):
     dcm_file.FrameIncrementPointer = dose.frameIncrementPointer if hasattr(dose, 'frameIncrementPointer') else {}
     dcm_file.PositionReferenceIndicator = dose.positionReferenceIndicator if hasattr(dose, 'positionReferenceIndicator') else ""
     
-    if (hasattr(dose, 'gridSize') and len(dose.gridSize.shape) > 2):
+    if (hasattr(dose, 'gridSize') and len(dose.gridSize) > 2):
         dcm_file.GridFrameOffsetVector = list(np.arange(0, dose.gridSize[2] * dose.spacing[2], dose.spacing[2]))
     else:
         dcm_file.GridFrameOffsetVector = dose.gridFrameOffsetVector if hasattr(dose, 'gridFrameOffsetVector') and not(dose.gridFrameOffsetVector is None) else ""
@@ -1529,10 +1529,7 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
                 ctrlpt.ScanSpotTuneID = "0"
                 ctrlpt.ScanSpotPositionMap = arrayToDS(np.array(list(layer.spotXY)).flatten().tolist())
                 ctrlpt.ScanSpotMetersetWeights = arrayToDS(layer.spotMUs.tolist())
-                if type(ctrlpt.ScanSpotMetersetWeights) == float:
-                    ctrlpt.NumberOfScanSpotPositions = 1
-                else:
-                    ctrlpt.NumberOfScanSpotPositions = len(ctrlpt.ScanSpotMetersetWeights)      
+                ctrlpt.NumberOfScanSpotPositions = layer.numberOfSpots
                 if layerNumber==0:
                     ctrlpt.GantryAngle = beam.gantryAngle
                     ctrlpt.GantryRotationDirection = "NONE"
