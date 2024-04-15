@@ -167,8 +167,8 @@ class RTPlan(PatientData):
 
         ind = 0
         for beam in self._beams:
-            beam.spotIrradiationDurations = t[ind:ind + len(beam.spotIrradiationDurations)]
-            ind += len(beam.spotIrradiationDurations)
+            beam.spotIrradiationDurations = t[ind:ind + beam.numberOfSpots]
+            ind += beam.numberOfSpots
 
     @property
     def spotXY(self) -> np.ndarray:

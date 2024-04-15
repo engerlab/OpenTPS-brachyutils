@@ -64,21 +64,20 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionari
          The default is False.
     """
 
-
     if type(dataList) != list:
         dataList = [dataList]
-        print("datalist",dataList)
+        # print("datalist", dataList)
     if dictionarized:
         for elementIdx in range(len(dataList)):
             dataList[elementIdx] = dictionarizeData(dataList[elementIdx])
     
     if compressedBool:
-        logger.info("Compress and save serialized data structure in drive")
+        logger.info(f'Compressed Serialized data structure saved in drive: {savingPath} .p')
         with bz2.BZ2File(savingPath + '_compressed.pbz2', 'w') as f:
             cPickle.dump(dataList, f)
 
     else:
-        logger.info("Save serialized data structure in drive")
+        logger.info(f'Serialized data structure saved in drive: {savingPath} .p')
         # basic version
         # pickle.dump(self.Patients, open(savingPath + ".p", "wb"), protocol=4)
 
@@ -88,9 +87,6 @@ def saveSerializedObjects(dataList, savingPath, compressedBool=False, dictionari
         with open(savingPath + ".p", 'wb') as f_out:
             for idx in range(0, len(bytes_out), max_bytes):
                 f_out.write(bytes_out[idx:idx + max_bytes])
-
-    logger.info(f'Serialized data structure saved in drive: {savingPath} .p')
-
 
 
 # ---------------------------------------------------------------------------------------------------

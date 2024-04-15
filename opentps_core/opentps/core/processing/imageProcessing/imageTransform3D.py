@@ -667,8 +667,6 @@ def translateDataByChangingOrigin(data, translationInMM):
         The translation vector in mm.
     """
 
-    print('in imageTransform3D, translateDataByChangingOrigin')
-
     if isinstance(data, Image3D):
         data.origin = data.origin.astype(float) + np.array(translationInMM)
 

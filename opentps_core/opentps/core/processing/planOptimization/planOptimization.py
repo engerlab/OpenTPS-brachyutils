@@ -363,7 +363,7 @@ class BoundConstraintsOptimizer(PlanOptimizer):
     bounds : tuple (default: (0.02, 5))
         The bounds.
     """
-    def __init__(self, plan:RTPlan, method='Scipy-LBFGS', bounds=(0.02, 250), **kwargs):
+    def __init__(self, plan: RTPlan, method='Scipy-LBFGS', bounds=(0.02, 250), **kwargs):
         super().__init__(plan, **kwargs)
         self.bounds = bounds
         if method == 'Scipy-LBFGS':

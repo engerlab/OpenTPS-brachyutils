@@ -42,7 +42,7 @@ def show2DMaskBorder(filledMaskSlice, color='red'):
     return border
 
 
-def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='', show=True):
+def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, figName='', outPutPath='', show=True):
     # MCsquare simulation
     ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
@@ -50,7 +50,6 @@ def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='',
     # Configure MCsquare
     mc2 = MCsquareDoseCalculator()
     mc2.beamModel = bdl
-    mc2.nbPrimaries = 5e4
     mc2.ctCalibration = ctCalibration
     mc2.nbPrimaries = 1e7
     doseImage = mc2.computeDose(ct, plan)
@@ -93,7 +92,7 @@ def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='',
 
     # Display dose
     fig, ax = plt.subplots(2, 3, figsize=(16, 9))
-    fig.suptitle(imgName)
+    fig.suptitle(figName)
 
     ax[0, 0].axes.get_xaxis().set_visible(False)
     ax[0, 0].axes.get_yaxis().set_visible(False)
@@ -123,13 +122,14 @@ def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='',
     ax[1, 0].legend()
 
     convData = refSolver.getConvergenceData()
-    print("convData['time']", convData['time'])
-    print("convData['nIter']", convData['nIter'])
-    print("convData['func_0']", len(convData['func_0']))
-    print('i had the issue here with len(convData[func_0]) = 215 --> odd number')
-    print(len(np.arange(0, convData['time'], convData['time'] / convData['nIter'])))
-    ax[1, 1].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
-               label='Fidelity')
+    # print("convData['time']", convData['time'])
+    # print("convData['nIter']", convData['nIter'])
+    # print("convData['func_0']", len(convData['func_0']))
+    # print('i had the issue here with len(convData[func_0]) = 215 --> odd number')
+    # print(len(np.arange(0, convData['time'], convData['time'] / convData['nIter'])))
+    timeAxis = np.arange(0, convData['time'], convData['time'] / convData['nIter'])
+    if len(timeAxis) > len(convData['func_0']): timeAxis = timeAxis[:-1]
+    ax[1, 1].plot(timeAxis, convData['func_0'], 'bo-', lw=2, label='Fidelity')
     ax[1, 1].set_xlabel('Time (s)')
     ax[1, 1].set_ylabel('Cost')
     ax[1, 1].set_yscale('symlog')
@@ -137,11 +137,11 @@ def simulateAndShowOptiDoseDVH(ct, plan, roi, refSolver, imgName, outPutPath='',
     ax4.set_xlabel('Iterations')
     ax4.set_xlim(0, convData['nIter'])
     ax[1, 1].grid(True)
-    plt.savefig(outPutPath + imgName)
+    plt.savefig(outPutPath + figName)
     if show:
         plt.show()
 
-def simulateAndShowDoseDVH(ct, plan, roi, imgName, outPutPath='', show=True):
+def simulateAndShowDoseDVH(ct, plan, roi, figName='', outPutPath='', show=True):
     # MCsquare simulation
     ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
@@ -180,36 +180,40 @@ def simulateAndShowDoseDVH(ct, plan, roi, imgName, outPutPath='', show=True):
     img_dose1 = resampleImage3DOnImage3D(doseImage, ct)
     img_dose1 = img_dose1.imageArray[:, :, Z_coord].transpose(1, 0)
 
-    img_ct2 = ct.imageArray[X_coord, :, :].transpose(1, 0)
-    img_mask2 = contourTargetMask.imageArray[X_coord, :, :].transpose(1, 0)
+    img_ct2 = np.rot90(ct.imageArray[X_coord, :, :])
+    img_mask2 = np.rot90(contourTargetMask.imageArray[X_coord, :, :])
     img_dose2 = resampleImage3DOnImage3D(doseImage, ct)
-    img_dose2 = img_dose2.imageArray[X_coord, :, :].transpose(1, 0)
+    img_dose2 = np.rot90(img_dose2.imageArray[X_coord, :, :])
 
-    img_ct3 = ct.imageArray[:, Y_coord, :].transpose(1, 0)
-    img_mask3 = contourTargetMask.imageArray[:, Y_coord, :].transpose(1, 0)
+    img_ct3 = np.rot90(ct.imageArray[:, Y_coord, :])
+    img_mask3 = np.rot90(contourTargetMask.imageArray[:, Y_coord, :])
     img_dose3 = resampleImage3DOnImage3D(doseImage, ct)
-    img_dose3 = img_dose3.imageArray[:, Y_coord, :].transpose(1, 0)
+    img_dose3 = np.rot90(img_dose3.imageArray[:, Y_coord, :])
 
     # Display dose
     fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-    ax[0, 0].axes.get_xaxis().set_visible(False)
+    fig.suptitle(figName)
+    # ax[0, 0].axes.get_xaxis().set_visible(False)
     ax[0, 0].axes.get_yaxis().set_visible(False)
     ax[0, 0].imshow(img_ct1, cmap='gray')
     ax[0, 0].imshow(img_mask1, alpha=.2, cmap='binary')  # PTV
+    ax[0, 0].set_xlabel('Axial')
     dose = ax[0, 0].imshow(img_dose1, cmap='jet', alpha=.2)
     plt.colorbar(dose, ax=ax[0, 0])
 
-    ax[0, 1].axes.get_xaxis().set_visible(False)
+    # ax[0, 1].axes.get_xaxis().set_visible(False)
     ax[0, 1].axes.get_yaxis().set_visible(False)
     ax[0, 1].imshow(img_ct2, cmap='gray')
     ax[0, 1].imshow(img_mask2, alpha=.2, cmap='binary')  # PTV
+    ax[0, 1].set_xlabel('Sagittal')
     dose = ax[0, 1].imshow(img_dose2, cmap='jet', alpha=.2)
     plt.colorbar(dose, ax=ax[0, 1])
 
-    ax[1, 0].axes.get_xaxis().set_visible(False)
+    # ax[1, 0].axes.get_xaxis().set_visible(False)
     ax[1, 0].axes.get_yaxis().set_visible(False)
     ax[1, 0].imshow(img_ct3, cmap='gray')
     ax[1, 0].imshow(img_mask3, alpha=.2, cmap='binary')  # PTV
+    ax[1, 0].set_xlabel('Coronal')
     dose = ax[1, 0].imshow(img_dose3, cmap='jet', alpha=.2)
     plt.colorbar(dose, ax=ax[1, 0])
 
@@ -219,15 +223,13 @@ def simulateAndShowDoseDVH(ct, plan, roi, imgName, outPutPath='', show=True):
     ax[1, 1].grid(True)
     ax[1, 1].legend()
 
-    plt.savefig(outPutPath + imgName)
+    plt.savefig(outPutPath + figName)
     if show:
         plt.show()
 
     return doseImage
 
-def showDoseAndDVH(ct, doseImage, roi, imgName, outPutPath='', show=True):
-
-    print(type(ct), type(doseImage), type(roi))
+def showDoseAndDVH(ct, doseImage, roi, figName='', outPutPath='', show=True):
 
     # Compute DVH on resampled contour
     target_DVH = DVH(roi, doseImage)
@@ -255,36 +257,40 @@ def showDoseAndDVH(ct, doseImage, roi, imgName, outPutPath='', show=True):
     img_dose1 = resampleImage3DOnImage3D(doseImage, ct)
     img_dose1 = img_dose1.imageArray[:, :, Z_coord].transpose(1, 0)
 
-    img_ct2 = ct.imageArray[X_coord, :, :].transpose(1, 0)
-    img_mask2 = contourTargetMask.imageArray[X_coord, :, :].transpose(1, 0)
+    img_ct2 = np.rot90(ct.imageArray[X_coord, :, :])
+    img_mask2 = np.rot90(contourTargetMask.imageArray[X_coord, :, :])
     img_dose2 = resampleImage3DOnImage3D(doseImage, ct)
-    img_dose2 = img_dose2.imageArray[X_coord, :, :].transpose(1, 0)
+    img_dose2 = np.rot90(img_dose2.imageArray[X_coord, :, :])
 
-    img_ct3 = ct.imageArray[:, Y_coord, :].transpose(1, 0)
-    img_mask3 = contourTargetMask.imageArray[:, Y_coord, :].transpose(1, 0)
+    img_ct3 = np.rot90(ct.imageArray[:, Y_coord, :])
+    img_mask3 = np.rot90(contourTargetMask.imageArray[:, Y_coord, :])
     img_dose3 = resampleImage3DOnImage3D(doseImage, ct)
-    img_dose3 = img_dose3.imageArray[:, Y_coord, :].transpose(1, 0)
+    img_dose3 = np.rot90(img_dose3.imageArray[:, Y_coord, :])
 
     # Display dose
     fig, ax = plt.subplots(2, 2, figsize=(16, 9))
-    ax[0, 0].axes.get_xaxis().set_visible(False)
+    fig.suptitle(figName)
+    # ax[0, 0].axes.get_xaxis().set_visible(False)
     ax[0, 0].axes.get_yaxis().set_visible(False)
     ax[0, 0].imshow(img_ct1, cmap='gray')
     ax[0, 0].imshow(img_mask1, alpha=.2, cmap='binary')  # PTV
+    ax[0, 0].set_xlabel('Axial')
     dose = ax[0, 0].imshow(img_dose1, cmap='jet', alpha=.2)
     plt.colorbar(dose, ax=ax[0, 0])
 
-    ax[0, 1].axes.get_xaxis().set_visible(False)
+    # ax[0, 1].axes.get_xaxis().set_visible(False)
     ax[0, 1].axes.get_yaxis().set_visible(False)
     ax[0, 1].imshow(img_ct2, cmap='gray')
     ax[0, 1].imshow(img_mask2, alpha=.2, cmap='binary')  # PTV
+    ax[0, 1].set_xlabel('Sagittal')
     dose = ax[0, 1].imshow(img_dose2, cmap='jet', alpha=.2)
     plt.colorbar(dose, ax=ax[0, 1])
 
-    ax[1, 0].axes.get_xaxis().set_visible(False)
+    # ax[1, 0].axes.get_xaxis().set_visible(False)
     ax[1, 0].axes.get_yaxis().set_visible(False)
     ax[1, 0].imshow(img_ct3, cmap='gray')
     ax[1, 0].imshow(img_mask3, alpha=.2, cmap='binary')  # PTV
+    ax[1, 0].set_xlabel('Coronal')
     dose = ax[1, 0].imshow(img_dose3, cmap='jet', alpha=.2)
     plt.colorbar(dose, ax=ax[1, 0])
 
@@ -294,8 +300,25 @@ def showDoseAndDVH(ct, doseImage, roi, imgName, outPutPath='', show=True):
     ax[1, 1].grid(True)
     ax[1, 1].legend()
 
-    plt.savefig(outPutPath + imgName)
+    plt.savefig(outPutPath + figName)
     if show:
         plt.show()
 
     return doseImage
+
+def show3ViewsOnTarget(image, targetCOMInVoxel, imgName='', savingPath='', show=True):
+    fig, axs = plt.subplots(1, 3)
+
+    fig.suptitle('3 plane view of ' + imgName + ' centered on target')
+
+    axs[0].imshow(np.rot90(image.imageArray[:, targetCOMInVoxel[1], :]), cmap='gray')
+    axs[0].set_title('Coronal View')
+    axs[1].imshow(np.rot90(image.imageArray[targetCOMInVoxel[0], :, :]), cmap='gray')
+    axs[1].set_title('Sagittal View')
+    axs[2].imshow(np.rot90(image.imageArray[:, :, targetCOMInVoxel[2]], 3), cmap='gray')
+    axs[2].set_title('Axial View')
+
+    if savingPath:
+        plt.savefig(savingPath + imgName + 'Target3DView')
+    if show:
+        plt.show()
