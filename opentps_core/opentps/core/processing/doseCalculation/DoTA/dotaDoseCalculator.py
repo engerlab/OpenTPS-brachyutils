@@ -2,8 +2,8 @@ import numpy as np
 import h5py
 import json
 from tensorflow.keras.utils import Sequence
-from dota.src.models import dota_energies
-from dota.src.plot import plot_slice, plot_beam
+from opentps.core.processing.doseCalculation.DoTA.models import dota_energies
+from opentps.core.processing.doseCalculation.DoTA.plot import plot_slice, plot_beam
 from tensorflow_addons.optimizers import LAMB
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 import random
