@@ -9,14 +9,10 @@ from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 import random
 import os
 import sys
-#os.chdir('/linux/meghislain/ARIES-RL/opentps/opentps_core')
 currentWorkingDir = os.getcwd()
 sys.path.append(currentWorkingDir)
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
-from opentps.core.io.serializedObjectIO import saveSerializedObjects, loadDataStructure, loadSerializedObject
-from opentps.core.processing.imageProcessing.imageTransform3D import getVoxelIndexFromPosition
-from opentps.core.examples.syntheticData import *
 
 class DoTADoseCalculator():
     """
@@ -26,22 +22,20 @@ class DoTADoseCalculator():
 
     *list_IDs: a list with the file identifiers.
     *batch_size: size of the mini-batch.
-    *num_energies: number of different energies per geometry.
     *ikey, okey: input and output key identifiers.
     *shuffle: flag to shuffle IDs after each epoch.
     *scale: dict with max and min values
     """
     def __init__(self, path = "", scale = {"y_min":0., "y_max":1, "x_min":-1000.0, "x_max":2397.98291015625,
-                 "e_min":70, "e_max":220}, batch_size = 8, num_energies=10, num_rotations = 4, 
+                 "e_min":70, "e_max":220}, batch_size = 8, num_rotations = 4, 
                  ikey='geometry', okey='dose', shuffle=True, train_all = True, train_split = 0.8, val_split = 0.1, num_epochs = 10,
                  learning_rate = 0.001, weight_decay = 0.0001, input_dim = (150,24,24), param_file = None,
-                 path_weights = None, path_weights_new = None, inference_per_batch = False):
+                 path_weights = None, path_weights_new = None, inference_per_batch = False, cutoff = 0.5):
         self.batch_size = batch_size
         self.path = path 
         self.ikey = ikey
         self.okey = okey
         self.shuffle = shuffle
-        self.num_energies = num_energies
         self.num_rotations = num_rotations
         self.train_all = train_all
         self.train_split = train_split
@@ -58,6 +52,7 @@ class DoTADoseCalculator():
         self.path_weights = path_weights
         self.path_weights_new = path_weights_new
         self.inference_per_batch = inference_per_batch
+        self.cutoff = cutoff
         ## Define and train the transformer.
         self.transformer = dota_energies(
             num_tokens=self.param['num_tokens'],
@@ -77,7 +72,7 @@ class DoTADoseCalculator():
 
         self.transformer.load_weights(self.path_weights)
         
-    def dataGenerator(self): #terme plus specifique SplitDataSetList
+    def SplitDataSetList(self): 
         list_Energy = []
         list_Rot = []
         list_Files = []
@@ -117,7 +112,7 @@ class DoTADoseCalculator():
         # Shuffle the three arrays using the common index array
         listIDs = [listIDs[i] for i in common_index]
         list_Files = [list_Files[i] for i in common_index]
-        if self.train_all == True :
+        if self.train_withDataAugmentation == True :
             list_Rot = [list_Rot[i] for i in common_index]
             list_Energy = [list_Energy[i] for i in common_index]
 
@@ -129,17 +124,17 @@ class DoTADoseCalculator():
             valRot = list_Rot[int(round(self.train_split*len(listIDs))):int(round((self.train_split+self.val_split)*len(listIDs)))]
             testRot = list_Rot[int(round((self.train_split+self.val_split)*len(listIDs))):]
 
-            trainFiles = list_Files[:int(round(self.train_split*len(listIDs)))]
-            valFiles = list_Files[int(round(self.train_split*len(listIDs))):int(round((self.train_split+self.val_split)*len(listIDs)))]
-            testFiles = list_Files[int(round((self.train_split+self.val_split)*len(listIDs))):]
+        trainFiles = list_Files[:int(round(self.train_split*len(listIDs)))]
+        valFiles = list_Files[int(round(self.train_split*len(listIDs))):int(round((self.train_split+self.val_split)*len(listIDs)))]
+        testFiles = list_Files[int(round((self.train_split+self.val_split)*len(listIDs))):]
 
         trainIDs = listIDs[:int(round(self.train_split*len(listIDs)))] #les définir en self. et les mettre en paramètres initialisés à 0
         valIDs = listIDs[int(round(self.train_split*len(listIDs))):int(round((self.train_split+self.val_split)*len(listIDs)))]
         testIDs = listIDs[int(round((self.train_split+self.val_split)*len(listIDs))):]
         #une fonction role : split dataSet et 
         # les deux dernieres lignes a appeler que quand on train
-        train_gen = DataGenerator(trainIDs, self.batch_size, self.path, self.scale, num_energies=self.num_energies, train_all = self.train_all, ID_Energies = trainEnergies,ID_Rotation = trainRot, ID_Files = trainFiles)
-        val_gen = DataGenerator(valIDs, self.batch_size, self.path, self.scale, num_energies=self.num_energies, train_all = self.train_all, ID_Energies = valEnergies, ID_Rotation = valRot, ID_Files = valFiles)
+        train_gen = H5DataExtractor(trainIDs, self.batch_size, self.path, self.scale, train_withDataAugmentation = self.train_withDataAugmentation, ID_Energies = trainEnergies,ID_Rotation = trainRot, ID_Files = trainFiles)
+        val_gen = H5DataExtractor(valIDs, self.batch_size, self.path, self.scale, train_withDataAugmentation = self.train_withDataAugmentation, ID_Energies = valEnergies, ID_Rotation = valRot, ID_Files = valFiles)
 
         return train_gen, val_gen, testIDs, testFiles, testEnergies, testRot
     
@@ -171,10 +166,32 @@ class DoTADoseCalculator():
         self.transformer.save_weights(self.path_weights_new)
 
         return self.transformer
+        
+    def computeDoseBoxFromNumpyArray(self, CT = np.zeros((150,25,25)), energy= 70):
+        geometry = np.expand_dims(CT[:, :-1, :-1], axis=(0, -1))
+        inputs = (geometry - self.scale['x_min']) / (self.scale['x_max'] - self.scale['x_min'])
+
+        prediction = self.transformer.predict([inputs, np.expand_dims(energy, -1)])
+        prediction = prediction * (self.scale['y_max']-self.scale['y_min']) + self.scale['y_min']
+        prediction[prediction<(self.cutoff/100)*self.scale['y_max']] = 0
+        return np.squeeze(prediction)
     
+    def computeDoseBoxFromH5File(self, ID, FileNumber, EnergyID):
+        dataPath = self.path[FileNumber]
+        with h5py.File(dataPath, 'r') as fh:
+                geometry = np.expand_dims(np.transpose(fh[self.ikey][:-1,:-1,:,ID]), axis=(0,-1))
+                inputs = (geometry - self.scale['x_min']) / (self.scale['x_max'] - self.scale['x_min'])
+                ground_truth = np.transpose(fh[self.okey+str(EnergyID)][:-1,:-1,:,ID])
+                energies = (fh['energy'+str(EnergyID)][ID] - self.scale['e_min']) / (self.scale['e_max'] - self.scale['e_min'])
+
+        # Predict dose distribution
+        prediction = self.transformer.predict([inputs, np.expand_dims(energies, -1)])
+        prediction = prediction * (self.scale['y_max']-self.scale['y_min']) + self.scale['y_min']
+        prediction[prediction<(self.cutoff/100)*self.scale['y_max']] = 0
+        return np.squeeze(prediction)
+
     def infer(self, transformer, testIDs=[], testFiles=[], testEnergies=[], testRot=[], fromFile=True, CT = np.zeros((150,25,25)), energy= 70, gt = np.zeros((150,25,25))):
         # fromh5File au lieu de fromFile
-        # computeDoseFromh5File et computeDoseFromNumpyArray
         # computeDoseOnTestSet
         # enlever le ground_truth (utilisation et evaluation du modele)
         if fromFile :
@@ -192,7 +209,7 @@ class DoTADoseCalculator():
         return inputs, prediction, ground_truth
 
 
-class DataGenerator(Sequence):
+class H5DataExtractor(Sequence):
     """
     Generates data for Keras.
     Assumes that the data is stored in a folder (e.g. /data) 
@@ -200,13 +217,12 @@ class DataGenerator(Sequence):
 
     *list_IDs: a list with the file identifiers.
     *batch_size: size of the mini-batch.
-    *num_energies: number of different energies per geometry.
     *ikey, okey: input and output key identifiers.
     *shuffle: flag to shuffle IDs after each epoch.
     *scale: dict with max and min values
     """
-    def __init__(self, list_IDs, batch_size, path, scale, num_energies=2, 
-                 ikey='geometry', okey='dose', shuffle=True, train_all = True, ID_Energies = [], ID_Rotation = [], ID_Files = []):
+    def __init__(self, list_IDs, batch_size, path, scale,
+                 ikey='geometry', okey='dose', shuffle=True, train_withDataAugmentation = True, ID_Energies = [], ID_Rotation = [], ID_Files = []):
 
         self.batch_size = batch_size
         self.list_IDs = list_IDs
@@ -214,8 +230,7 @@ class DataGenerator(Sequence):
         self.ikey = ikey
         self.okey = okey
         self.shuffle = shuffle
-        self.num_energies = num_energies
-        self.train_all = train_all
+        self.train_withDataAugmentation = train_withDataAugmentation
         self.ID_Energies = ID_Energies
         self.ID_Rotation = ID_Rotation
         self.ID_Files = ID_Files
@@ -254,16 +269,15 @@ class DataGenerator(Sequence):
         print(indexes)
         # Find list of IDs.
         list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        list_files_temp = [self.ID_Files[k] for k in indexes]
         list_rot_temp = []
         list_energ_temp = []
-        list_files_temp = []
-        if self.train_all == True:
+        if self.train_withDataAugmentation == True:
             list_rot_temp = [self.ID_Rotation[k] for k in indexes]
             list_energ_temp = [self.ID_Energies[k] for k in indexes]
-            list_files_temp = [self.ID_Files[k] for k in indexes]
 
         # Generate data.
-        X, y = self.__data_generation(list_IDs_temp, list_energ_temp, list_rot_temp, list_files_temp)
+        X, y = self.__get_data(list_IDs_temp, list_energ_temp, list_rot_temp, list_files_temp)
 
         return X, y
 
@@ -274,25 +288,29 @@ class DataGenerator(Sequence):
             np.random.shuffle(self.indexes)
 
 
-    def __data_generation(self, list_IDs_temp, list_energ_temp, list_rot_temp, list_files_temp):
+    def __get_data(self, list_IDs_temp = [], list_energ_temp = [], list_rot_temp = [], list_files_temp = []):
         # Generates data containing batch_size samples.
         X = np.empty((self.batch_size, *self.input_dim))
         y = np.empty((self.batch_size, *self.output_dim))
         energies = np.empty((self.batch_size))
         
-        if self.train_all == False:
-                with h5py.File(self.path[0], 'r') as fh:
-                        for i, ID in enumerate(list_IDs_temp):
-                            dose_index = random.choice(list(range(self.num_energies)))
-                            tmpGeometry = np.transpose(fh[self.ikey][:,:,:,ID])
-                            tmpDose = np.transpose(fh[self.okey+str(dose_index)][:,:,:,ID])
-                            energies[i] = fh['energy'+str(dose_index)][ID]
+        if self.train_withDataAugmentation == False:
+            # Iterate over unique file numbers in list_files_temp
+            for file_num in set(list_files_temp):
+                with h5py.File(self.path[file_num], 'r') as fh:
+                    dose_keys = [key for key in fh.keys() if key.startswith("dose")]
+                    num_energies = len(dose_keys)
+                    for i, ID in enumerate(list_IDs_temp):
+                        dose_index = random.choice(list(range(self.num_energies)))
+                        tmpGeometry = np.transpose(fh[self.ikey][:,:,:,ID])
+                        tmpDose = np.transpose(fh[self.okey+str(dose_index)][:,:,:,ID])
+                        energies[i] = fh['energy'+str(dose_index)][ID]
 
-                            # Augment data.
-                            # TODO: remove last slicing for shapes (see above)
-                            rot = np.random.choice(self.rotk)
-                            X[i,] = np.rot90(tmpGeometry, rot, (1,2))[:,:-1,:-1] 
-                            y[i,] = np.rot90(tmpDose, rot, (1,2))[:,:-1,:-1]
+                        # Augment data.
+                        # TODO: remove last slicing for shapes (see above)
+                        rot = np.random.choice(self.rotk)
+                        X[i,] = np.rot90(tmpGeometry, rot, (1,2))[:,:-1,:-1] 
+                        y[i,] = np.rot90(tmpDose, rot, (1,2))[:,:-1,:-1]
         else :
             # Iterate over unique file numbers in list_files_temp
             for file_num in set(list_files_temp):
