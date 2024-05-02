@@ -34,9 +34,8 @@ class DoTADoseCalculator():
     def __init__(self, path = "", scale = {"y_min":0., "y_max":1, "x_min":-1000.0, "x_max":2397.98291015625,
                  "e_min":70, "e_max":220}, batch_size = 8, num_energies=10, num_rotations = 4, 
                  ikey='geometry', okey='dose', shuffle=True, train_all = True, train_split = 0.8, val_split = 0.1, num_epochs = 10,
-                 learning_rate = 0.001, weight_decay = 0.0001, input_dim = (150,24,24), param_file = '/linux/meghislain/ARIES-RL/dota/hyperparam.json',
-                 path_weights = '/linux/meghislain/ARIES-RL/weights_24_04T.ckpt', path_weights_new = '/linux/meghislain/ARIES-RL/weights_24_04T_new.ckpt', inference_per_batch = False):
-        # dans l'initialisation mettre des paths none pas meghislain
+                 learning_rate = 0.001, weight_decay = 0.0001, input_dim = (150,24,24), param_file = None,
+                 path_weights = None, path_weights_new = None, inference_per_batch = False):
         self.batch_size = batch_size
         self.path = path 
         self.ikey = ikey
@@ -364,7 +363,10 @@ def infer_(model, IDs=0, filename="", scale="", ikey='geometry', okey='dose', cu
 
 path = '/home/meghislain/ARIES-RL/'
 #file_paths = [path + f"data/image_{i}.h5" for i in range(4)]
-dota = DoTADoseCalculator()
+param_file = '/linux/meghislain/ARIES-RL/dota/hyperparam.json'
+path_weights = '/linux/meghislain/ARIES-RL/weights_24_04T.ckpt'
+path_weights_new = '/linux/meghislain/ARIES-RL/weights_24_04T_new.ckpt'
+dota = DoTADoseCalculator(path_weights = path_weights, path_weights_new = path_weights_new, param_file = param_file)
 #train_gen, val_gen, testIDs, testFiles, testEnergies, testRot = dota.dataGenerator()
 #transformer = dota.train(train_gen, val_gen)
 
