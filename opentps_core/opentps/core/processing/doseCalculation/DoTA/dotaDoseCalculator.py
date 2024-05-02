@@ -86,6 +86,8 @@ class DoTADoseCalculator():
             with h5py.File(self.path[j], 'r') as fh:
                 # avoir un nombre d'energie pas constant 
                 nb_geometries = fh['geometry'].shape[-1]
+                dose_keys = [key for key in fh.keys() if key.startswith("dose")]
+                num_energies = len(dose_keys)
                 if self.train_all == False :
                     listIDs += range(nb_geometries)
                     list_Files += np.ones(nb_geometries)*j
