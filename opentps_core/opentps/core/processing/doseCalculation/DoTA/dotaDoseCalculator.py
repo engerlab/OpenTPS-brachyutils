@@ -1,15 +1,16 @@
 import numpy as np
-import h5py
+# import h5py
 import json
 from tensorflow.keras.utils import Sequence
 from opentps.core.processing.doseCalculation.DoTA.models import dota_energies
 from opentps.core.processing.doseCalculation.DoTA.plot import plot_slice, plot_beam
 from tensorflow_addons.optimizers import LAMB
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
+
 import random
 import os
 import sys
-os.chdir('/linux/meghislain/ARIES-RL/opentps/opentps_core')
+#os.chdir('/linux/meghislain/ARIES-RL/opentps/opentps_core')
 currentWorkingDir = os.getcwd()
 sys.path.append(currentWorkingDir)
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
@@ -34,8 +35,8 @@ class DoTADoseCalculator():
     def __init__(self, path = "", scale = {"y_min":0., "y_max":1, "x_min":-1000.0, "x_max":2397.98291015625,
                  "e_min":70, "e_max":220}, batch_size = 8, num_energies=10, num_rotations = 4, 
                  ikey='geometry', okey='dose', shuffle=True, train_all = True, train_split = 0.8, val_split = 0.1, num_epochs = 10,
-                 learning_rate = 0.001, weight_decay = 0.0001, input_dim = (150,24,24), param_file = '/linux/meghislain/ARIES-RL/dota/hyperparam.json',
-                 path_weights = '/linux/meghislain/ARIES-RL/weights_24_04T.ckpt', path_weights_new = '/linux/meghislain/ARIES-RL/weights_24_04T_new.ckpt', inference_per_batch = False):
+                 learning_rate = 0.001, weight_decay = 0.0001, input_dim = (150,24,24), param_file = None,
+                 path_weights = None, path_weights_new = None, inference_per_batch = False):
         # dans l'initialisation mettre des paths none pas meghislain
         self.batch_size = batch_size
         self.path = path 
@@ -362,32 +363,32 @@ def infer_(model, IDs=0, filename="", scale="", ikey='geometry', okey='dose', cu
     return np.squeeze(geometry), np.squeeze(prediction), np.squeeze(ground_truth)
 
 
-path = '/home/meghislain/ARIES-RL/'
+# path = '/home/meghislain/ARIES-RL/'
 #file_paths = [path + f"data/image_{i}.h5" for i in range(4)]
-dota = DoTADoseCalculator()
+# dota = DoTADoseCalculator()
 #train_gen, val_gen, testIDs, testFiles, testEnergies, testRot = dota.dataGenerator()
 #transformer = dota.train(train_gen, val_gen)
 
-baseDataPath = '/linux/meghislain/ARIES-RL/test_picture/'
-patientName = 'Patient00'
-
-patientPath = baseDataPath + patientName + '/'
-dataPath = patientPath + 'Data/'
-CT4DPath = dataPath + '4DCT'
-rtStructPath = dataPath + 'MidP_CT_rtstruct'
-dynModPath = dataPath + 'dynMod'
-resultsPath = patientPath + 'Results/'
-_4DCTDynSeqPath = dataPath + '4DCTDynSeq'
-contSeqBasePath = dataPath + 'contSeq'
-MaskPath = dataPath + 'targetMaskByPhaseList_Target'
-
-CT4D = loadDataStructure(_4DCTDynSeqPath + '.p')[0]
-masks = loadDataStructure(MaskPath + '.p')
-COMInVoxel = getVoxelIndexFromPosition(masks[0].centerOfMass, CT4D.dyn3DImageList[0])
-CT = CT4D.dyn3DImageList[0].imageArray[:150,COMInVoxel[1]-12:COMInVoxel[1]+13,COMInVoxel[2]-12:COMInVoxel[2]+13]
-CT[CT>0] *= 3
-CT[:15,:,:] = 2300*np.ones((15,25,25))
-geo, pred, gt = dota.infer(transformer = dota.transformer, fromFile=False, CT = CT, energy = 72)
-plot_beam(geo, gt, pred,  gamma_evaluation=False, savefig=False, ID=0, add="24_04")
-plot_slice(geo, gt, pred, dota.scale, cutoff=0.1, gamma_slice=False, savefig=False,ID=0, add="24_04")
+# baseDataPath = '/linux/meghislain/ARIES-RL/test_picture/'
+# patientName = 'Patient00'
+#
+# patientPath = baseDataPath + patientName + '/'
+# dataPath = patientPath + 'Data/'
+# CT4DPath = dataPath + '4DCT'
+# rtStructPath = dataPath + 'MidP_CT_rtstruct'
+# dynModPath = dataPath + 'dynMod'
+# resultsPath = patientPath + 'Results/'
+# _4DCTDynSeqPath = dataPath + '4DCTDynSeq'
+# contSeqBasePath = dataPath + 'contSeq'
+# MaskPath = dataPath + 'targetMaskByPhaseList_Target'
+#
+# CT4D = loadDataStructure(_4DCTDynSeqPath + '.p')[0]
+# masks = loadDataStructure(MaskPath + '.p')
+# COMInVoxel = getVoxelIndexFromPosition(masks[0].centerOfMass, CT4D.dyn3DImageList[0])
+# CT = CT4D.dyn3DImageList[0].imageArray[:150,COMInVoxel[1]-12:COMInVoxel[1]+13,COMInVoxel[2]-12:COMInVoxel[2]+13]
+# CT[CT>0] *= 3
+# CT[:15,:,:] = 2300*np.ones((15,25,25))
+# geo, pred, gt = dota.infer(transformer = dota.transformer, fromFile=False, CT = CT, energy = 72)
+# plot_beam(geo, gt, pred,  gamma_evaluation=False, savefig=False, ID=0, add="24_04")
+# plot_slice(geo, gt, pred, dota.scale, cutoff=0.1, gamma_slice=False, savefig=False,ID=0, add="24_04")
         
