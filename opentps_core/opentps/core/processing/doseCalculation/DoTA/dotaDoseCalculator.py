@@ -1,17 +1,23 @@
 import numpy as np
 import h5py
 import json
+import copy
 from tensorflow.keras.utils import Sequence
-from opentps.core.processing.doseCalculation.DoTA.models import dota_energies
-from opentps.core.processing.doseCalculation.DoTA.plot import plot_slice, plot_beam
 from tensorflow_addons.optimizers import LAMB
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
 import random
 import os
 import sys
+
+from opentps.core.processing.imageProcessing import imageTransform3D
+from opentps.core.processing.doseCalculation.DoTA.models import dota_energies
+from opentps.core.processing.doseCalculation.DoTA.plot import plot_slice, plot_beam
+from opentps.core.data.images._doseImage import DoseImage
+
 currentWorkingDir = os.getcwd()
 sys.path.append(currentWorkingDir)
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 
 
 class DoTADoseCalculator():
@@ -166,7 +172,26 @@ class DoTADoseCalculator():
         self.transformer.save_weights(self.path_weights_new)
 
         return self.transformer
-        
+
+
+    def getBoxFromSpotAndAngle(self, spotXY, beamAngle, CTImage):
+        box = None
+        return box
+
+
+    def computePlanDose(self, plan, CTImage):
+
+        dose = DoseImage().createEmptyDoseWithSameMetaData(CTImage)
+        for beam in plan.beams:
+            BEVImage = copy.copy(CTImage)
+            imageTransform3D.dicomToIECGantry(BEVImage, beam, fillValue=0.)
+            for layer in beam.layers:
+                for spotXY in layer:
+                    CTBox = self.getBoxFromSpotAndAngle(spotXY, beam.angle, CTImage)
+                    dose = self.computeDoseBoxFromNumpyArray(CTBox, layer.nominalEnergy)
+                    print(spotXY)
+
+
     def computeDoseBoxFromNumpyArray(self, CT = np.zeros((150,25,25)), energy= 70):
         geometry = np.expand_dims(CT[:, :-1, :-1], axis=(0, -1))
         inputs = (geometry - self.scale['x_min']) / (self.scale['x_max'] - self.scale['x_min'])
@@ -175,7 +200,8 @@ class DoTADoseCalculator():
         prediction = prediction * (self.scale['y_max']-self.scale['y_min']) + self.scale['y_min']
         prediction[prediction<(self.cutoff/100)*self.scale['y_max']] = 0
         return np.squeeze(prediction)
-    
+
+
     def computeDoseBoxFromH5File(self, ID, FileNumber, EnergyID):
         dataPath = self.path[FileNumber]
         with h5py.File(dataPath, 'r') as fh:
@@ -189,6 +215,7 @@ class DoTADoseCalculator():
         prediction = prediction * (self.scale['y_max']-self.scale['y_min']) + self.scale['y_min']
         prediction[prediction<(self.cutoff/100)*self.scale['y_max']] = 0
         return np.squeeze(prediction)
+
 
     def infer(self, transformer, testIDs=[], testFiles=[], testEnergies=[], testRot=[], fromFile=True, CT = np.zeros((150,25,25)), energy= 70, gt = np.zeros((150,25,25))):
         # fromh5File au lieu de fromFile
