@@ -24,6 +24,7 @@ from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCa
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D, resampleImage3D
 from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
+from opentps import gui
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +41,8 @@ def run(output_path=""):
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
     # CT
-    patient = Patient()
-    patient.name = 'Simple_Patient'
+    patient = Patient(name='Simple_Patient')
+    gui.patientList.append(patient)
     
     ctSize = 150
     ct = CTImage()
@@ -65,10 +66,10 @@ def run(output_path=""):
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
 
-    # contour = roi.getROIContour()
-    # struct = RTStruct()
-    # struct.appendContour(contour)
-    # writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
+    contour = roi.getROIContour()
+    struct = RTStruct()
+    struct.appendContour(contour)
+    writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
 
     # Design plan
     beamNames = ["Beam1"]
@@ -152,10 +153,9 @@ def run(output_path=""):
     img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
     img_dose = resampleImage3DOnImage3D(doseImage, ct)
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
-    di = DoseImage(imageArray=img_dose, referencePlan=plan, referenceCT=ct, patient=patient)
     
     dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTDose(di, dcm_dose_file)
+    writeRTDose(doseImage, dcm_dose_file)
 
     # Display dose
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
@@ -183,6 +183,7 @@ def run(output_path=""):
     ax[2].grid(True)
 
     plt.show()
+    gui.run()
 
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ class RSPImage(Image3D):
         self.sopInstanceUIDs = sopInstanceUIDs
 
         super().__init__(imageArray=imageArray, name=name, origin=origin, spacing=spacing,
-                         angles=angles, seriesInstanceUID=seriesInstanceUID, patient=patient)
+                         angles=angles, seriesInstanceUID=seriesInstanceUID, patient=None)
 
     def __str__(self):
         return "RSP image: " + self.seriesInstanceUID
