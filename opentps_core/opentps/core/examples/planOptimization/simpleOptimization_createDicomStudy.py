@@ -164,6 +164,21 @@ def run(output_path=""):
     clinObj = {'ROI': clinROI, 'Metric': clinMetric, 'Limit': clinLimit}
     print('Clinical evaluation')
     evaluateClinical(doseImage, [roi], clinObj)
+    
+    # Don't delete it
+    doseImage.referencePlan = plan
+    doseImage.referenceCT = ct
+    doseImage.patient = patient
+    doseImage.studyInstanceUID = studyInstanceUID
+    doseImage.frameOfReferenceUID = frameOfReferenceUID 
+    doseImage.sopClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    doseImage.mediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
+    doseImage.sopInstanceUID = pydicom.uid.generate_uid()
+    doseImage.studyTime = dt.strftime('%H%M%S.%f')
+    doseImage.studyDate = dt.strftime('%Y%m%d')
+    
+    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTDose(doseImage, dcm_dose_file)
 
     # center of mass
     roi = resampleImage3DOnImage3D(roi, ct)
@@ -176,20 +191,6 @@ def run(output_path=""):
     img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
     img_dose = resampleImage3DOnImage3D(doseImage, ct)
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
-    di = DoseImage(imageArray=img_dose, seriesInstanceUID=doseSeriesInstanceUID, referencePlan=plan, referenceCT=ct, patient=patient)
-    
-    # Don't delete it
-    di.studyInstanceUID = studyInstanceUID
-    di.referencedRTPlanSequence = None
-    di.frameOfReferenceUID = frameOfReferenceUID 
-    di.sopClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
-    di.mediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.2'
-    di.sopInstanceUID = pydicom.uid.generate_uid()
-    di.studyTime = dt.strftime('%H%M%S.%f')
-    di.studyDate = dt.strftime('%Y%m%d')
-    
-    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTDose(di, dcm_dose_file)
 
     # Display dose
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))

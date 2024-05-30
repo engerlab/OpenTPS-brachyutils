@@ -124,6 +124,9 @@ def run(output_path=""):
     # Optimize treatment plan
     doseImage, ps = solver.optimize()
 
+    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTDose(doseImage, dcm_dose_file)
+
     # Save plan with updated spot weights in serialized format (OpenTPS format)
     plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
     saveRTPlan(plan, plan_file_optimized)
