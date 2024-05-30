@@ -44,7 +44,7 @@ class ImageFusionPropEditor(QMainWindow):
         self._slider_ax = plt.axes([0.20, 0.1, 0.60, 0.03])
         self.slider = RangeSlider(self._slider_ax, "Range", bins[0], bins[-1], valinit=image.range, dragging=True)
 
-        self.cm = plt.cm.get_cmap(image.lookupTableName)
+        self.cm = plt.get_cmap(image.lookupTableName)
 
         bin_centers = 0.5 * (bins[:-1] + bins[1:])
         col = (bin_centers - image.range[0]) / (image.range[1] - image.range[0])
