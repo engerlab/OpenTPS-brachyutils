@@ -88,7 +88,7 @@ class Dynamic3DSequence(PatientData):
 
     def prepareTimings(self):
         """
-        Prepare the timings of the dynamic 3D sequence.
+        Prepare the timings of the dynamic 3D sequence in the case where it represent one breathing period.
         """
         numberOfImages = len(self.dyn3DImageList)
         self.timingsList = np.linspace(0, self.breathingPeriod, numberOfImages + 1)
