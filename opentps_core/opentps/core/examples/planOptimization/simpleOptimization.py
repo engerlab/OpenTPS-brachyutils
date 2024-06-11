@@ -123,6 +123,9 @@ def run(output_path=""):
     # Optimize treatment plan
     doseImage, ps = solver.optimize()
 
+    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTDose(doseImage, dcm_dose_file)
+
     # Save plan with updated spot weights in serialized format (OpenTPS format)
     plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
     saveRTPlan(plan, plan_file_optimized)
@@ -152,10 +155,6 @@ def run(output_path=""):
     img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
     img_dose = resampleImage3DOnImage3D(doseImage, ct)
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
-    di = DoseImage(imageArray=img_dose, referencePlan=plan, referenceCT=ct, patient=patient)
-    
-    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTDose(di, dcm_dose_file)
 
     # Display dose
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
