@@ -54,8 +54,7 @@ def fusionLT(range:Sequence[float], opacity:float, colormap:str) -> vtkCommonCor
     table.SetValueRange(0.0, 1.0)  # from black to white
     table.SetSaturationRange(0.0, 0.0)  # no color saturation
     table.SetRampToLinear()
-
-    cm = plt.cm.get_cmap(colormap)
+    cm = plt.get_cmap(colormap)
     linInd = list(np.arange(0, 1.01, 0.01))
 
     table.SetNumberOfTableValues(len(linInd))
