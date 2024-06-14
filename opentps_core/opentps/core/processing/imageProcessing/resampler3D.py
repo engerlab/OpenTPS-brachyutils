@@ -152,6 +152,14 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
     if trySITK:
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
+            # anti-aliasing filter
+            sigma = [0, 0, 0]
+            if (spacing[0] > image.spacing[0]): sigma[0] = 0.4 * (spacing[0] / image.spacing[0])
+            if (spacing[1] > image.spacing[1]): sigma[1] = 0.4 * (spacing[1] / image.spacing[1])
+            if (spacing[2] > image.spacing[2]): sigma[2] = 0.4 * (spacing[2] / image.spacing[2])
+            if (sigma != [0, 0, 0]):
+                logger.info("data is filtered before downsampling")
+                image.imageArray[:, :, :] = imageFilter3D.gaussConv(image.imageArray[:, :, :], sigma)
             sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)
         except Exception as e:
             logger.info('Failed to use SITK resampler. Try OpenMP without GPU instead.')
