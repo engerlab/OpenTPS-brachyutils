@@ -14,8 +14,10 @@ except:
     logger.warning('cupy not found.')
 
 from opentps.core.data.images._deformation3D import Deformation3D
+from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.processing.registration.registration import Registration
 import opentps.core.processing.imageProcessing.filter3D as imageFilter3D
+import opentps.core.processing.registration.morphonsCupy as morphonsCupy
 
 
 
@@ -89,6 +91,15 @@ class RegistrationMorphons(Registration):
             numpy array
                 Deformation from moving to fixed images.
             """
+
+        if self.tryGPU:
+            velocity, deformed = morphonsCupy.computeMorphonsCupy(self.fixed.imageArray, self.fixed.origin, self.fixed.spacing, self.moving.imageArray, self.moving.origin, self.moving.spacing, self.baseResolution)
+            spacing = np.array([self.baseResolution,self.baseResolution,self.baseResolution])
+            deformation = Deformation3D(origin=self.fixed.origin, spacing=spacing, velocity=VectorField3D(imageArray=cupy.asnumpy(velocity), name="velocity", origin=self.fixed.origin, spacing=spacing))
+            self.deformed = self.fixed.copy()
+            self.deformed._imageArray = deformed
+            self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
+            return deformation
 
         if self.nbProcesses < 0:
             self.nbProcesses = min(mp.cpu_count(), 6)
