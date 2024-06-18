@@ -93,13 +93,16 @@ class RegistrationMorphons(Registration):
             """
 
         if self.tryGPU:
-            velocity, deformed = morphonsCupy.computeMorphonsCupy(self.fixed.imageArray, self.fixed.origin, self.fixed.spacing, self.moving.imageArray, self.moving.origin, self.moving.spacing, self.baseResolution)
-            spacing = np.array([self.baseResolution,self.baseResolution,self.baseResolution])
-            deformation = Deformation3D(origin=self.fixed.origin, spacing=spacing, velocity=VectorField3D(imageArray=cupy.asnumpy(velocity), name="velocity", origin=self.fixed.origin, spacing=spacing))
-            self.deformed = self.fixed.copy()
-            self.deformed._imageArray = deformed
-            self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
-            return deformation
+            try:
+                velocity, deformed = morphonsCupy.computeMorphonsCupy(self.fixed.imageArray, self.fixed.origin, self.fixed.spacing, self.moving.imageArray, self.moving.origin, self.moving.spacing, self.baseResolution)
+                spacing = np.array([self.baseResolution,self.baseResolution,self.baseResolution])
+                deformation = Deformation3D(origin=self.fixed.origin, spacing=spacing, velocity=VectorField3D(imageArray=cupy.asnumpy(velocity), name="velocity", origin=self.fixed.origin, spacing=spacing))
+                self.deformed = self.fixed.copy()
+                self.deformed._imageArray = deformed
+                self.deformed.setName(self.moving.name + '_registered_to_' + self.fixed.name)
+                return deformation
+            except:
+                logger.info('Failed to use full CuPy implementation. Try CPU instead.')
 
         if self.nbProcesses < 0:
             self.nbProcesses = min(mp.cpu_count(), 6)

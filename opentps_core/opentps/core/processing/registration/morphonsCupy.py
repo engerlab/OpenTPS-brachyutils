@@ -10,6 +10,7 @@ try:
     import cupyx.scipy.signal
 except:
     logger.warning('cupy not found.')
+    pass
 
 
 def applyMorphonsKernels(data, k, is_fixed=1):
