@@ -512,7 +512,6 @@ def readDicomDose(dcmFile):
     """
 
     dcm = pydicom.dcmread(dcmFile)
-    dt = datetime.datetime.now()
 
     # read image pixel data
     if ((hasattr(dcm, 'BitsStored') and dcm.BitsStored == 16) and (hasattr(dcm, 'PixelRepresentation') and dcm.PixelRepresentation == 0)):
@@ -595,6 +594,7 @@ def readDicomDose(dcmFile):
     image.fileMetaInformationVersion = dcm.file_meta.FileMetaInformationVersion if hasattr(dcm.file_meta, 'FileMetaInformationVersion') else bytes([0,1])
     image.implementationVersionName = dcm.file_meta.ImplementationVersionName if hasattr(dcm.file_meta, 'ImplementationVersionName') else "DicomObjects.NET"
     image.studyID = dcm.StudyID if hasattr(dcm, 'StudyID') else ""
+    dt = datetime.datetime.now()
     image.studyDate = dcm.StudyDate if hasattr(dcm, 'StudyDate') else dt.strftime('%Y%m%d')
     image.studyTime = dcm.StudyTime if hasattr(dcm, 'StudyTime') else dt.strftime('%H%M%S.%f')
     image.seriesNumber = dcm.SeriesNumber if hasattr(dcm, 'SeriesNumber') else "1"

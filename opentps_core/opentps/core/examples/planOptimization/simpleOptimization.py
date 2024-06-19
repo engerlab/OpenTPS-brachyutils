@@ -40,9 +40,8 @@ def run(output_path=""):
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)
 
     # CT
-    patient = Patient()
-    patient.name = 'Simple_Patient'
-    
+    patient = Patient(name='Simple_Patient')
+
     ctSize = 150
     ct = CTImage()
     ct.name = 'CT'
@@ -65,10 +64,10 @@ def run(output_path=""):
     data[100:120, 100:120, 100:120] = True
     roi.imageArray = data
 
-    # contour = roi.getROIContour()
-    # struct = RTStruct()
-    # struct.appendContour(contour)
-    # writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
+    contour = roi.getROIContour()
+    struct = RTStruct()
+    struct.appendContour(contour)
+    writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
 
     # Design plan
     beamNames = ["Beam1"]
@@ -155,6 +154,9 @@ def run(output_path=""):
     img_mask = contourTargetMask.imageArray[:, :, Z_coord].transpose(1, 0)
     img_dose = resampleImage3DOnImage3D(doseImage, ct)
     img_dose = img_dose.imageArray[:, :, Z_coord].transpose(1, 0)
+    
+    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
+    writeRTDose(doseImage, dcm_dose_file)
 
     # Display dose
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
