@@ -147,6 +147,11 @@ class MCsquareElement(MCsquareMaterial):
         e, s = self.sp.toList()
         return np.interp(energy, e, s)
 
+    @property
+    def rsp(self):
+        waterSP = 7.25628392 # water (element 17 in default table) SP at 100MeV: ctCalibration.waterSP(energy=100)
+        return self.density * self.stoppingPower(energy=100)/waterSP
+
     def write(self, folderPath, materialNamesOrderedForPrinting):
         """
         Write element data in specified folder.
