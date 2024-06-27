@@ -62,10 +62,10 @@ def exponentiateFieldCupy(field, spacing):
     return field
 
 
-def resampleCupy(data, inputOrigin, inputSpacing, inputGridSize, outputOrigin, outputSpacing, outputGridSize, fillValue=0):
+def resampleCupy(input, inputOrigin, inputSpacing, outputOrigin, outputSpacing, outputGridSize, fillValue=0):
     vectorDimension = 1
-    if data.ndim > 3:
-        vectorDimension = data.shape[3]
+    if input.ndim > 3:
+        vectorDimension = input.shape[3]
 
     # anti-aliasing filter
     sigma = [0, 0, 0]
@@ -73,12 +73,14 @@ def resampleCupy(data, inputOrigin, inputSpacing, inputGridSize, outputOrigin, o
     if (outputSpacing[1] > inputSpacing[1]): sigma[1] = 0.4 * (outputSpacing[1] / inputSpacing[1])
     if (outputSpacing[2] > inputSpacing[2]): sigma[2] = 0.4 * (outputSpacing[2] / inputSpacing[2])
     if (sigma != [0, 0, 0]):
-        logger.info("data is filtered before downsampling")
+        data = cupy.copy(input)
         if vectorDimension > 1:
             for i in range(vectorDimension):
                 data[:, :, :, i] = cupyx.scipy.ndimage.gaussian_filter(data[:, :, :, i], sigma=sigma, truncate=2.5, mode="reflect")
         else:
             data[:, :, :] = cupyx.scipy.ndimage.gaussian_filter(data[:, :, :], sigma=sigma, truncate=2.5, mode="reflect")
+    else:
+        data = input
 
     interpX = (outputOrigin[0] - inputOrigin[0] + cupy.arange(outputGridSize[0]) * outputSpacing[0]) / inputSpacing[0]
     interpY = (outputOrigin[1] - inputOrigin[1] + cupy.arange(outputGridSize[1]) * outputSpacing[1]) / inputSpacing[1]
@@ -93,29 +95,34 @@ def resampleCupy(data, inputOrigin, inputSpacing, inputGridSize, outputOrigin, o
         for i in range(vectorDimension):
             fieldTemp = cupyx.scipy.ndimage.map_coordinates(data[:, :, :, i], xi.T, order=1, mode='nearest', cval=fillValue)
             field[:, :, :, i] = fieldTemp.reshape((outputGridSize[1], outputGridSize[0], outputGridSize[2])).transpose(1, 0, 2)
-        data = field
+        return field
     else:
         data = cupyx.scipy.ndimage.map_coordinates(data, xi.T, order=1, mode='nearest', cval=fillValue)
-        data = data.reshape((outputGridSize[1], outputGridSize[0], outputGridSize[2])).transpose(1, 0, 2)
-
-    return data
+        return data.reshape((outputGridSize[1], outputGridSize[0], outputGridSize[2])).transpose(1, 0, 2)
 
 
-def warpCupy(data,displacement,spacing):
-    size = data.shape
+def warpCupy(data, displacement, displacementSpacing, dataSpacing=None, displacementOrigin=None, dataOrigin=None):
+    if dataSpacing is None:
+        dataSpacing = displacementSpacing
+    if displacementOrigin is None:
+        displacementOrigin = [0,0,0]
+    if dataOrigin is None:
+        dataOrigin = displacementOrigin
+
+    size = displacement.shape
     vectorDimension = 1
     if data.ndim > 3:
         vectorDimension = size[3]
 
-    x = cupy.arange(size[0])
-    y = cupy.arange(size[1])
-    z = cupy.arange(size[2])
-    xi = cupy.array(np.meshgrid(x, y, z), dtype="float32")
+    interpX = (displacementOrigin[0] - dataOrigin[0] + cupy.arange(size[0]) * displacementSpacing[0]) / dataSpacing[0]
+    interpY = (displacementOrigin[1] - dataOrigin[1] + cupy.arange(size[1]) * displacementSpacing[1]) / dataSpacing[1]
+    interpZ = (displacementOrigin[2] - dataOrigin[2] + cupy.arange(size[2]) * displacementSpacing[2]) / dataSpacing[2]
+    xi = cupy.array(cupy.meshgrid(interpX, interpY, interpZ))
     xi = cupy.rollaxis(xi, 0, 4)
     xi = xi.reshape((xi.size // 3, 3))
-    xi[:, 0] += displacement[:, :, :, 0].transpose(1, 0, 2).reshape((xi.shape[0],)) / spacing[0]
-    xi[:, 1] += displacement[:, :, :, 1].transpose(1, 0, 2).reshape((xi.shape[0],)) / spacing[1]
-    xi[:, 2] += displacement[:, :, :, 2].transpose(1, 0, 2).reshape((xi.shape[0],)) / spacing[2]
+    xi[:, 0] += displacement[:, :, :, 0].transpose(1, 0, 2).reshape((xi.shape[0],)) / displacementSpacing[0]
+    xi[:, 1] += displacement[:, :, :, 1].transpose(1, 0, 2).reshape((xi.shape[0],)) / displacementSpacing[1]
+    xi[:, 2] += displacement[:, :, :, 2].transpose(1, 0, 2).reshape((xi.shape[0],)) / displacementSpacing[2]
 
     if vectorDimension > 1:
         field = cupy.zeros_like(data)
@@ -131,16 +138,14 @@ def warpCupy(data,displacement,spacing):
     return data
 
 
-def computeMorphonsCupy(fixed,fixedOrigin,fixedSpacing,moving,movingOrigin,movingSpacing,baseResolution):
+def computeMorphonsCupy(fixed,fixedOrigin,fixedSpacing,moving,movingOrigin,movingSpacing,baseResolution,priorVelocity=None,threshold=0):
 
     eps32 = cupy.finfo("float32").eps
+    sigmaRegularization = 1.25
     scales = baseResolution * np.asarray([11.3137, 8.0, 5.6569, 4.0, 2.8284, 2.0, 1.4142, 1.0])
     iterations = [10, 10, 10, 10, 10, 10, 5, 2]
     qDirections = [[0, 0.5257, 0.8507], [0, -0.5257, 0.8507], [0.5257, 0.8507, 0], [-0.5257, 0.8507, 0],
                    [0.8507, 0, 0.5257], [0.8507, 0, -0.5257]]
-    fixedGridSize = np.array(fixed.shape)
-    movingGridSize = np.array(moving.shape)
-
     morphonsPath = os.path.join(os.path.dirname(__file__), 'Morphons_kernels')
     k = []
     k.append(cupy.asarray(np.reshape(
@@ -162,7 +167,13 @@ def computeMorphonsCupy(fixed,fixedOrigin,fixedSpacing,moving,movingOrigin,movin
         np.float32(np.fromfile(os.path.join(morphonsPath, "kernel6_real.bin"), dtype="float64")) + np.float32(
             np.fromfile(os.path.join(morphonsPath, "kernel6_imag.bin"), dtype="float64")) * 1j, (9, 9, 9))))
 
+    fixedGridSize = np.array(fixed.shape)
+    fixed = cupy.asarray(fixed, dtype='float32')
+    moving = cupy.asarray(moving, dtype='float32')
+
     for s in range(len(scales)):
+
+        usePriorVelocity = not (priorVelocity is None) and s<3
 
         # Compute grid for new scale
         gridSize = np.array([round(fixedSpacing[1] / scales[s] * fixedGridSize[0]),
@@ -175,22 +186,24 @@ def computeMorphonsCupy(fixed,fixedOrigin,fixedSpacing,moving,movingOrigin,movin
         if(spacing[0]<fixedSpacing[0] and spacing[1]<fixedSpacing[1] and spacing[2]<fixedSpacing[2]):
             break
 
-        logger.info('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str
+        print('Morphons scale:' + str(s + 1) + '/' + str(len(scales)) + ' (' + str
             (round(spacing[0] * 1e2) / 1e2 ) + 'x' + str(round(spacing[1] * 1e2) / 1e2) + 'x' + str
             (round(spacing[2] * 1e2) / 1e2) + 'mm3)')
 
         # Resample fixed and moving images and deformation according to the considered scale (voxel spacing)
-        fixedResampled = resampleCupy(cupy.asarray(fixed), fixedOrigin, fixedSpacing, fixedGridSize, fixedOrigin, spacing, gridSize, fillValue=-1000)
-        movingResampled = resampleCupy(cupy.asarray(moving), movingOrigin, movingSpacing, movingGridSize, fixedOrigin, spacing, gridSize, fillValue=-1000)
+        fixedResampled = resampleCupy(fixed, fixedOrigin, fixedSpacing, fixedOrigin, spacing, gridSize, fillValue=-1000)
+        movingResampled = resampleCupy(moving, movingOrigin, movingSpacing, fixedOrigin, spacing, gridSize, fillValue=-1000)
+        if usePriorVelocity:
+            priorVelocityResampled = cupy.asarray(priorVelocity)
+            priorVelocityResampled = resampleCupy(priorVelocityResampled, fixedOrigin, fixedSpacing, fixedOrigin, spacing, gridSize, fillValue=0)
 
         if s != 0:
-            velocity = resampleCupy(velocity, fixedOrigin, previousSpacing, previousSize, fixedOrigin, spacing, gridSize, fillValue=0)
-            certainty = resampleCupy(certainty, fixedOrigin, previousSpacing, previousSize, fixedOrigin, spacing, gridSize, fillValue=0)
+            velocity = resampleCupy(velocity, fixedOrigin, previousSpacing, fixedOrigin, spacing, gridSize, fillValue=0)
+            certainty = resampleCupy(certainty, fixedOrigin, previousSpacing, fixedOrigin, spacing, gridSize, fillValue=0)
         else:
             velocity = cupy.zeros((gridSize[0], gridSize[1], gridSize[2], 3), dtype="float32")
             certainty = cupy.zeros_like(fixedResampled, dtype="float32")
 
-        previousSize = gridSize
         previousSpacing = spacing
 
         # Compute phase on fixed image
@@ -243,10 +256,7 @@ def computeMorphonsCupy(fixed,fixedOrigin,fixedSpacing,moving,movingOrigin,movin
             certaintyUpdate = a11 + a22 + a33
 
             # Corrections
-            det = a11 * a22 * a33 + 2 * a12 * a13 * a23 - cupy.power(a13, 2) * a22 - a11 * cupy.power(a23,
-                                                                                                      2) - cupy.power \
-                (a12,
-                                                                                                                      2) * a33
+            det = a11 * a22 * a33 + 2 * a12 * a13 * a23 - cupy.power(a13, 2) * a22 - a11 * cupy.power(a23, 2) - cupy.power(a12, 2) * a33
 
             z = (det == 0)
             det[z] = 1
@@ -265,10 +275,17 @@ def computeMorphonsCupy(fixed,fixedOrigin,fixedSpacing,moving,movingOrigin,movin
             velocity = fieldUpdate
             certainty = cupy.divide(cupy.power(certainty, 2) + cupy.power(certaintyUpdate, 2), certainty + certaintyUpdate + eps32)
 
-            # Regularize velocity deformation and certainty
-            velocity, certainty = normGaussConvCupy(velocity, certainty, 1.25)
+            # Correct velocity with prior if required
+            if usePriorVelocity:
+                # velocity = priorVelocityResampled
+                velocity[fixedResampled > threshold, :] = priorVelocityResampled[fixedResampled > threshold, :]
+                certainty[fixedResampled > threshold] = cupy.amax(certainty)
 
-    velocityUpsampled = resampleCupy(velocity, fixedOrigin, previousSpacing, previousSize, fixedOrigin, fixedSpacing, fixedGridSize, fillValue=0)
-    displacement = exponentiateFieldCupy(velocityUpsampled, fixedSpacing)
-    deformed = cupy.asnumpy(warpCupy(cupy.asarray(moving), displacement, fixedSpacing))
-    return velocity, deformed
+            # Regularize velocity deformation and certainty
+            velocity, certainty = normGaussConvCupy(velocity, certainty, sigmaRegularization)
+
+    velocityResampled = resampleCupy(velocity, fixedOrigin, previousSpacing, fixedOrigin, fixedSpacing, fixedGridSize, fillValue=0)
+    displacement = exponentiateFieldCupy(velocityResampled, fixedSpacing)
+    deformed = warpCupy(cupy.asarray(moving), displacement, fixedSpacing, movingSpacing, fixedOrigin, movingOrigin)
+
+    return cupy.asnumpy(velocityResampled), cupy.asnumpy(deformed)
