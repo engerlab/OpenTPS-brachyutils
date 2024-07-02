@@ -25,8 +25,8 @@ from subprocess import Popen, PIPE
 from opentps.core.examples.syntheticData import createSynthetic3DCT
 
 ## Set the child script environnement path and child scrip file path
-script2EnvPath = 'python.exe'  ## example: 'C:/Users/johnsmith/anaconda3/envs/myEnv/python.exe
-script2Path = 'backAndForthChild.py'
+childEnvPath = 'python.exe'  ## example: 'C:/Users/johnsmith/anaconda3/envs/myEnv/python.exe
+childScriptPath = 'backAndForthChild.py'
 
 ## Create test image to share between scripts
 ct = createSynthetic3DCT()
@@ -47,7 +47,7 @@ plt.imshow(sharedTestArray[:, sliceToShow, :])
 plt.show()
 
 ## Launch child process
-process = Popen(script2EnvPath + ' ' + script2Path, stdin=PIPE, stdout=PIPE, encoding='utf-8', text=True)#, universal_newlines=True, shell=True)
+process = Popen(childEnvPath + ' ' + childScriptPath, stdin=PIPE, stdout=PIPE, encoding='utf-8', text=True)#, universal_newlines=True, shell=True)
 
 ## Send the command 'init' to second process
 process.stdin.write('init' + '\n')
@@ -74,7 +74,7 @@ for i in range(3):
 
     ## Get the response from the second script
     response = process.stdout.readline().strip()
-    print(f'Back in script 1 after command2: Response: {response}')
+    print(f'Back in script 1 after command "processImage": Response: {response}')
 
     ## Plot image after process image command
     ct.imageArray[:] = sharedTestArray[:]
