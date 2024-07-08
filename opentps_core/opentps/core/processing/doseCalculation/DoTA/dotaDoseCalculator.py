@@ -9,10 +9,10 @@ import random
 import os
 import sys
 
-from opentps.core.processing.imageProcessing import imageTransform3D
+# from opentps.core.processing.imageProcessing import imageTransform3D
 from opentps.core.processing.doseCalculation.DoTA.models import dota_energies
 from opentps.core.processing.doseCalculation.DoTA.plot import plot_slice, plot_beam
-from opentps.core.data.images._doseImage import DoseImage
+# from opentps.core.data.images._doseImage import DoseImage
 
 currentWorkingDir = os.getcwd()
 sys.path.append(currentWorkingDir)
@@ -36,7 +36,7 @@ class DoTADoseCalculator():
                  "e_min":70, "e_max":220}, batch_size = 8, num_rotations = 4, 
                  ikey='geometry', okey='dose', shuffle=True, train_all = True, train_split = 0.8, val_split = 0.1, num_epochs = 10,
                  learning_rate = 0.001, weight_decay = 0.0001, input_dim = (150,24,24), param_file = None,
-                 path_weights = None, path_weights_new = None, inference_per_batch = False, cutoff = 0.5):
+                 path_weights = None, path_weights_new = None, inference_per_batch = False, cutoff = 0.5, dose = None):
         self.batch_size = batch_size
         self.path = path 
         self.ikey = ikey
@@ -59,6 +59,7 @@ class DoTADoseCalculator():
         self.path_weights_new = path_weights_new
         self.inference_per_batch = inference_per_batch
         self.cutoff = cutoff
+        self.dose = np.zeros((self.input_dim))
         ## Define and train the transformer.
         self.transformer = dota_energies(
             num_tokens=self.param['num_tokens'],
@@ -179,27 +180,29 @@ class DoTADoseCalculator():
         return box
 
 
-    def computePlanDose(self, plan, CTImage):
+    # def computePlanDose(self, plan, CTImage):
 
-        dose = DoseImage().createEmptyDoseWithSameMetaData(CTImage)
-        for beam in plan.beams:
-            BEVImage = copy.copy(CTImage)
-            imageTransform3D.dicomToIECGantry(BEVImage, beam, fillValue=0.)
-            for layer in beam.layers:
-                for spotXY in layer:
-                    CTBox = self.getBoxFromSpotAndAngle(spotXY, beam.angle, CTImage)
-                    dose = self.computeDoseBoxFromNumpyArray(CTBox, layer.nominalEnergy)
-                    print(spotXY)
+    #     dose = DoseImage().createEmptyDoseWithSameMetaData(CTImage)
+    #     for beam in plan.beams:
+    #         BEVImage = copy.copy(CTImage)
+    #         imageTransform3D.dicomToIECGantry(BEVImage, beam, fillValue=0.)
+    #         for layer in beam.layers:
+    #             for spotXY in layer:
+    #                 CTBox = self.getBoxFromSpotAndAngle(spotXY, beam.angle, CTImage)
+    #                 dose = self.computeDoseBoxFromNumpyArray(CTBox, layer.nominalEnergy)
+    #                 print(spotXY)
 
 
     def computeDoseBoxFromNumpyArray(self, CT = np.zeros((150,25,25)), energy= 70):
         geometry = np.expand_dims(CT[:, :-1, :-1], axis=(0, -1))
         inputs = (geometry - self.scale['x_min']) / (self.scale['x_max'] - self.scale['x_min'])
+        energies = (energy - self.scale['e_min']) / (self.scale['e_max'] - self.scale['e_min']))
 
-        prediction = self.transformer.predict([inputs, np.expand_dims(energy, -1)])
+        prediction = self.transformer.predict([inputs, np.expand_dims(energies, -1)])
         prediction = prediction * (self.scale['y_max']-self.scale['y_min']) + self.scale['y_min']
         prediction[prediction<(self.cutoff/100)*self.scale['y_max']] = 0
-        return np.squeeze(prediction)
+        self.dose = np.squeeze(prediction)
+        return self.dose
 
 
     def computeDoseBoxFromH5File(self, ID, FileNumber, EnergyID):
