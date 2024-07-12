@@ -128,7 +128,7 @@ class ProgramSettings(metaclass=Singleton):
 
     def _createFolderIfNotExists(self, folder):
         folder = Path(folder)
-        
+
         if not folder.is_dir():
             mkdir(folder)
 
@@ -136,8 +136,6 @@ class ProgramSettings(metaclass=Singleton):
     def _defaultConfig(self):
         configTemplate = configparser.ConfigParser()
         configTemplate.read(Path(str(configModule.__path__[0])) / "config_template.cfg")
-
-        self._createFolderIfNotExists(configTemplate["dir"]["workspace"])
 
         return configTemplate
 
