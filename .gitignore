@@ -25,4 +25,11 @@ wei_dev_test.bat
 opentps_core/opentps/core/Processing/DoseCalculation/MCsquare/BDL/UMCG_P1_v2_RangeShifter.txt
 *.tps
 *.blm
-*.dcm
+*.csv
+*.tif
+*.pkl
+*.p
+*.svg
+*.log
+*.pdf
+*.png
