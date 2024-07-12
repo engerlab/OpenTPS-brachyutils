@@ -171,8 +171,9 @@ def run(output_path=""):
     ax[1].legend()
 
     convData = solver.getConvergenceData()
-    ax[2].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
-               label='Fidelity')
+    x_data = np.linspace(0, convData['time'], len(convData['func_0']))
+    y_data = convData['func_0']
+    ax[2].plot(x_data, y_data , 'bo-', lw=2, label='Fidelity')
     ax[2].set_xlabel('Time (s)')
     ax[2].set_ylabel('Cost')
     ax[2].set_yscale('symlog')
