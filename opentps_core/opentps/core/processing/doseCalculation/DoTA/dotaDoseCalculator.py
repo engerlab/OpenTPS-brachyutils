@@ -196,7 +196,7 @@ class DoTADoseCalculator():
     def computeDoseBoxFromNumpyArray(self, CT = np.zeros((150,25,25)), energy= 70):
         geometry = np.expand_dims(CT[:, :-1, :-1], axis=(0, -1))
         inputs = (geometry - self.scale['x_min']) / (self.scale['x_max'] - self.scale['x_min'])
-        energies = (energy - self.scale['e_min']) / (self.scale['e_max'] - self.scale['e_min']))
+        energies = (energy - self.scale['e_min']) / (self.scale['e_max'] - self.scale['e_min'])
 
         prediction = self.transformer.predict([inputs, np.expand_dims(energies, -1)])
         prediction = prediction * (self.scale['y_max']-self.scale['y_min']) + self.scale['y_min']
