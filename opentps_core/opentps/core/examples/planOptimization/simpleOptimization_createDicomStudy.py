@@ -32,7 +32,9 @@ def run(output_path=""):
     if(output_path != ""):
         output_path = output_path
     else:
-        output_path = os.getcwd()
+        output_path = os.path.join(os.getcwd(), 'Output_Example')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
         
     logger.info('Files will be stored in {}'.format(output_path))
 
@@ -67,8 +69,7 @@ def run(output_path=""):
     data = huAir * np.ones((ctSize, ctSize, ctSize))
     data[:, 50:, :] = huWater
     ct.imageArray = data
-    dcm_CT_file = os.path.join(output_path, "CTImage_WaterPhantom_cropped_resampled_optimized")
-    writeDicomCT(ct, dcm_CT_file)
+    writeDicomCT(ct, output_path)
 
     # Struct
     roi = ROIMask()
@@ -148,8 +149,7 @@ def run(output_path=""):
     saveRTPlan(plan, plan_file_optimized)
     # Save plan with updated spot weights in dicom format
     plan.patient = patient
-    dcm_Plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTPlan(plan, dcm_Plan_file)
+    writeRTPlan(plan, output_path)
     
     # MCsquare simulation
     # mc2.nbPrimaries = 1e7
@@ -177,8 +177,7 @@ def run(output_path=""):
     doseImage.studyTime = dt.strftime('%H%M%S.%f')
     doseImage.studyDate = dt.strftime('%Y%m%d')
     
-    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTDose(doseImage, dcm_dose_file)
+    writeRTDose(doseImage, output_path)
 
     # center of mass
     roi = resampleImage3DOnImage3D(roi, ct)
