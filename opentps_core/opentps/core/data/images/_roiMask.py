@@ -302,8 +302,3 @@ class ROIMask(Image3D):
 
         return contour
 
-
-    # def dumpableCopy(self):
-    #     dumpableMask = ROIMask(imageArray=self.data, name=self.name, patientInfo=self.patientInfo, origin=self.origin, spacing=self.spacing, displayColor=self._displayColor)
-    #     # dumpableMask.patient = self.patient
-    #     return dumpableMask

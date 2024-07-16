@@ -127,15 +127,5 @@ class MRImage(Image3D):
         return MRImage(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin,
                        spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
 
-        # def dumpableCopy(self):
-        #
-        #     dumpableImg = MRImage(imageArray=self.imageArray, name=self.name, patientInfo=self.patientInfo, origin=self.origin,
-        #             spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID,
-        #             frameOfReferenceUID=self.frameOfReferenceUID, sliceLocation=self.sliceLocation,
-        #             sopInstanceUIDs=self.sopInstanceUIDs)
-
-        # dumpableImg.patient = self.patient
-
-        return dumpableImg
 
 
