@@ -46,6 +46,7 @@ class ExportTable(QWidget):
         dataTypes = ExportConfig()
         self._exportTypes = [ExportTypes.DICOM, ExportTypes.MHD, ExportTypes.MCSQUARE, ExportTypes.PICKLE]
         self._buttonGroups = []
+        self._radio_buttons = {}  # To keep track of the state of radio buttons
 
         rowNb = len(dataTypes)
         colNb = len(self._exportTypes)
@@ -63,10 +64,9 @@ class ExportTable(QWidget):
 
         for row, dataType in enumerate(dataTypes):
             button_group = QButtonGroup(self)
-            button_group.setExclusive(True)
+            button_group.setExclusive(False) 
             self._buttonGroups.append(button_group)
 
-            dataTypeHasOneOptionChecked = False
             for col, exportType in enumerate(self._exportTypes):
                 checkbox = QRadioButton()
                 button_group.addButton(checkbox, col)
@@ -74,21 +74,30 @@ class ExportTable(QWidget):
 
                 if exportType in dataType.exportTypes:
                     checkbox.setEnabled(True)
-                    if not dataTypeHasOneOptionChecked:
-                        checkbox.setChecked(True)
-                        dataTypeHasOneOptionChecked = True
-                    else:
-                        checkbox.setChecked(False)
+                    checkbox.setChecked(False) 
+                    self._radio_buttons[(row, col)] = checkbox  
+                    checkbox.toggled.connect(lambda checked, cb=checkbox, bg=button_group: self._toggle_radio_button(cb, bg, checked))
                 else:
                     checkbox.setChecked(False)
                     checkbox.setEnabled(False)
+
+    def _toggle_radio_button(self, checkbox, button_group, checked):
+        if not checked:
+            return  
+
+        for btn in button_group.buttons():
+            if btn != checkbox:
+                btn.setChecked(False)
 
     @property
     def exportConfig(self) -> ExportConfig:
         config = ExportConfig()
 
         for i, dataType in enumerate(config):
-            dataType.exportType = self._exportTypes[self._buttonGroups[i].checkedId()]
-            print(dataType.exportType)
+            checked_id = self._buttonGroups[i].checkedId()
+            if checked_id != -1:
+                dataType.exportType = self._exportTypes[checked_id]
+            else:
+                dataType.exportType = None
 
         return config

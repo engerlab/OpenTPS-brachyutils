@@ -8,7 +8,7 @@ from vtkmodules.vtkIOGeometry import vtkSTLReader
 from opentps.core.data.plan import RTPlan, PlanIonBeam
 from opentps.gui.viewer.dataForViewer.polyDataForViewer import PolyDataForViewer
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.polyData3DLayer_3D import PolyData3DLayer_3D
-
+import opentps.gui.res.icons as iconModule
 
 class BeamLayer_3D:
     def __init__(self, renderer, renderWindow):
@@ -17,8 +17,7 @@ class BeamLayer_3D:
 
         self._nozzleLayer = PolyData3DLayer_3D(self._renderer, self._renderWindow)
 
-        altPath = '/home/sylvain/Downloads/Universal_nozzle_cover.stl'
-        filePath = os.path.join(altPath) #iconModule.__path__[0], 'iba_nozzle.stl')
+        filePath = os.path.join(iconModule.__path__[0], 'iba_nozzle.stl')
         self._stlReader = vtkSTLReader()
         self._stlReader.SetFileName(filePath)
         self._tformFilter = vtkTransformPolyDataFilter()
