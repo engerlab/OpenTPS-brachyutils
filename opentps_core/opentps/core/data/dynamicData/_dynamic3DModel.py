@@ -146,13 +146,6 @@ class Dynamic3DModel(PatientData):
         field.displacement = field.velocity.exponentiateField()
 
 
-    # def dumpableCopy(self):
-    #
-    #     dumpableDefList = [deformation.dumpableCopy() for deformation in self.deformationList]
-    #     dumpableModel = Dynamic3DModel(name=self.name, midp=self.midp.dumpableCopy(), deformationList=dumpableDefList)
-    #     dumpableModel.patient = self.patient
-    #     return dumpableModel
-
     def getMaskByName(self, name):
         """
         Get a mask from the model by its name.

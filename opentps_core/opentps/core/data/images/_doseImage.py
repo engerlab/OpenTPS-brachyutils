@@ -82,24 +82,7 @@ class DoseImage(Image3D):
             Copy of the DoseImage object.
         """
         dose = DoseImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid(), referencePlan=self.referencePlan, referenceCT=self.referenceCT)
-        dose.patient = self.patient
         return dose
-
-    def exportDicom(self, outputFile, planUID=[]):
-        pass
-
-    def dumpableCopy(self):
-        """
-        Returns a dumpable copy of the DoseImage object.
-
-        Returns
-        --------
-        DoseImage
-            Dumpable copy of the DoseImage object.
-        """
-        dumpableDose = DoseImage(imageArray=self.imageArray, name=self.name, origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID, frameOfReferenceUID=self.frameOfReferenceUID, sopInstanceUID=self.sopInstanceUID, planSOPInstanceUID=self.planSOPInstanceUID)
-        # dumpableDose.patient = self.patient
-        return dumpableDose
 
     @classmethod
     def createEmptyDoseWithSameMetaData(cls, image:Image3D, **kwargs):
