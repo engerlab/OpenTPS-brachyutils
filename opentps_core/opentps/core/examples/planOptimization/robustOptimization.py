@@ -23,10 +23,14 @@ from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOp
 logger = logging.getLogger(__name__)
 
 # Generic example: box of water with squared target
-def run():
-    output_path = os.getcwd()
+def run(output_path=""):
+    if(output_path != ""):
+        output_path = output_path
+    else:
+        output_path = os.path.join(os.getcwd(), 'Output_Example')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
     logger.info('Files will be stored in {}'.format(output_path))
-
 
     ctCalibration = readScanner(DoseCalculationConfig().scannerFolder)
     bdl = mcsquareIO.readBDL(DoseCalculationConfig().bdlFile)

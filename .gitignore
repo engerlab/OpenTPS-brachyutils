@@ -16,6 +16,7 @@ version.py
 Perso/
 waldoScripts/
 testData/*
+*.dcm
 
 
 OpenTPS_venv/*
