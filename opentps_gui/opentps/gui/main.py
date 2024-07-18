@@ -2,6 +2,8 @@ import logging
 import unittest
 
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtGui import QFont
 
 from opentps.core.data import PatientList
 from opentps.core.utils.programSettings import ProgramSettings
@@ -31,6 +33,15 @@ def runWithMainWindow(mainWindow):
     logger.info("Start opentps gui")
 
     mainWindow.show()
+    #display a message box
+    msg = QMessageBox()
+    msg.setIcon(QMessageBox.Warning)
+    msg.setText(" ------------------------------DISCLAIMER------------------------------ \nOpenTPS is not a medical device, it is purely intended for research purposes and should only be used as such. It is neither FDA or CE approved. The authors of OpenTPS are not responsible for any misuse of the software.")
+    msg.setFont(QFont("Arial", 12))
+    msg.setWindowTitle("Disclaimer")
+    msg.setStandardButtons(QMessageBox.Ok)
+    msg.exec_()
+
     app.exec_()
 
     mainWindow.close()
