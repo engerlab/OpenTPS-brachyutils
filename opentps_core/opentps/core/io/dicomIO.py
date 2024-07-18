@@ -17,6 +17,7 @@ from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.data._rtStruct import RTStruct
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.images._vectorField3D import VectorField3D
+from opentps.core.data._transform3D import Transform3D
 
 logger = logging.getLogger(__name__)
 
@@ -1944,3 +1945,35 @@ def readDicomVectorField(dcmFile):
     field.patient = patient
 
     return field
+
+
+
+
+def readDicomRigidTransform(dcmFile):
+    """
+    Read a Dicom registration file and generate a 3D transform object.
+
+    Parameters
+    ----------
+    dcmFile: str
+        Path of the Dicom registration file.
+
+    Returns
+    -------
+    transform: Transform3D object
+        The function returns the imported transform
+    """
+
+    dcm = pydicom.dcmread(dcmFile)
+
+    for i in range(len(dcm.RegistrationSequence)):
+        if hasattr(dcm.RegistrationSequence[i], 'MatrixRegistrationSequence'):
+            reg_matrix = dcm.RegistrationSequence[i].MatrixRegistrationSequence[0].MatrixSequence[0].FrameOfReferenceTransformationMatrix
+
+    tformMatrix = np.array(reg_matrix).reshape(4, 4)
+    tformMatrix_1 = np.linalg.inv(tformMatrix) # get inverse
+    transform3D = Transform3D()
+    transform3D.setCenter('dicomOrigin')
+    transform3D.setMatrix4x4(tformMatrix_1)
+
+    return transform3D
