@@ -7,7 +7,7 @@ import logging
 from opentps.core.data._patientData import PatientData
 from opentps.core.data._patient import Patient
 from opentps.core.data._patientList import PatientList
-from opentps.core.io.dicomIO import readDicomCT, readDicomMRI, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan
+from opentps.core.io.dicomIO import readDicomCT, readDicomMRI, readDicomDose, readDicomVectorField, readDicomStruct, readDicomPlan, readDicomRigidTransform
 from opentps.core.io import mhdIO
 from opentps.core.io.serializedObjectIO import loadDataStructure
 
@@ -124,8 +124,12 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
 
         # Dicom field
         if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or dcm.Modality == "REG":
-            field = readDicomVectorField(filePath)
-            dataList.append(field)
+            if hasattr(dcm,'RegistrationSequence'):
+                transform = readDicomRigidTransform(filePath)
+                dataList.append(transform)
+            if hasattr(dcm,'DeformableRegistrationSequence'):
+                field = readDicomVectorField(filePath)
+                dataList.append(field)
 
         # Dicom CT
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
