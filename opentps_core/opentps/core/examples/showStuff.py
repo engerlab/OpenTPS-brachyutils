@@ -306,7 +306,7 @@ def showDoseAndDVH(ct, doseImage, roi, figName='', outPutPath='', show=True):
 
     return doseImage
 
-def show3ViewsOnTarget(image, targetCOMInVoxel, imgName='', savingPath='', show=True):
+def show3ViewsOnTarget(image, targetCOMInVoxel, imgName='', savingPath='', show=False):
     fig, axs = plt.subplots(1, 3)
 
     fig.suptitle('3 plane view of ' + imgName + ' centered on target')
