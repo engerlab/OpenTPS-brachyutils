@@ -11,6 +11,7 @@ import logging
 
 from opentps.core.data._patientData import PatientData
 from opentps.core import Event
+import pydicom
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ class Image3D(PatientData):
         Image3D
             Copy of the image.
         """
-        return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
+        return Image3D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
 
     @property
     def imageArray(self) -> np.ndarray:

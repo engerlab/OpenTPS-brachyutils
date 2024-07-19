@@ -166,7 +166,6 @@ class ROIMask(Image3D):
             rings.append(ringMask)
         return rings
 
-
     def openMask(self, radius=1.0, struct=None, tryGPU=True):
         """
         Open the ROI mask.
@@ -196,7 +195,6 @@ class ROIMask(Image3D):
             If True, the closing is performed on the GPU if possible.
         """
         roiMasksProcessing.closeMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
-
 
     def getBinaryContourMask(self, internalBorder=False):
         """
@@ -232,7 +230,6 @@ class ROIMask(Image3D):
             dilatedROI.imageArray = imageArray
 
             return dilatedROI
-
 
     def getROIContour(self):
         """
@@ -304,7 +301,6 @@ class ROIMask(Image3D):
 
         return contour
 
-
     def compressData(self):
         """
         If ROIMask imageArray is not empty, crop it around the rectangle box containing the non-zeros values,
@@ -318,4 +314,5 @@ class ROIMask(Image3D):
             self.imageArray = self.imageArray.astype(bool)
         else:
             self.imageArray = None
+
 

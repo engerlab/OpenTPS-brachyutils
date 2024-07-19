@@ -74,7 +74,7 @@ class ViewController():
     def _displayCTOfCurrentPatient(self):
         if self.currentPatient is None:
             return
-
+        
         ct = self.currentPatient.getPatientDataOfType(CTImage)
         if len(ct)>0:
             self.mainImage = ct[0]

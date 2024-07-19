@@ -190,7 +190,7 @@ class Deformation3D(Image3D):
             field used as velocity in the deformation.
         """
 
-        self.velocity = field
+        self.velocity = field.copy()
         self.displacement = None
         self.origin = field._origin
         self.spacing = field._spacing
@@ -207,7 +207,7 @@ class Deformation3D(Image3D):
         """
 
         self.velocity = None
-        self.displacement = field
+        self.displacement = field.copy()
         self.origin = field._origin
         self.spacing = field._spacing
         self.angles = field._angles

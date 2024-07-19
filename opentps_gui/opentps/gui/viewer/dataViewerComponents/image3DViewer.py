@@ -174,8 +174,6 @@ class Image3DViewer(QWidget):
         self._contourLayer.referenceImage = image
         self._textLayer.setPrimaryTextLine(2, image.name)
 
-        self._handlePosition(self._primaryImageLayer.image.selectedPosition)
-
         self._primaryImageLayer.image.selectedPositionChangedSignal.connect(self._handlePosition)
         self._primaryImageLayer.image.nameChangedSignal.connect(self._setPrimaryName)
 
@@ -200,8 +198,8 @@ class Image3DViewer(QWidget):
         self._secondaryImageLayer.image = secondaryImage
 
         self._renderer.ResetCamera()
+        self._handlePosition(self._primaryImageLayer.image.selectedPosition)
         self._renderWindow.Render()
-
 
 
     def _setPrimaryName(self, name):
@@ -319,6 +317,8 @@ class Image3DViewer(QWidget):
             self._secondaryImageLayer.resliceAxes = self._viewMatrix
 
         self._renderer.ResetCamera()
+        if self._primaryImageLayer.image is not None:
+            self._handlePosition(self._primaryImageLayer.image.selectedPosition)
         self._renderWindow.Render()
 
         self.viewTypeChangedSignal.emit(self._viewType)
@@ -441,15 +441,6 @@ class Image3DViewer(QWidget):
         self._renderWindow.Render()
 
     def _handlePosition(self, position: typing.Sequence):
-        if not self._crossHairEnabled or position is None:
-            self._textLayer.setPrimaryTextLine(0, '')
-            self._textLayer.setPrimaryTextLine(1, '')
-
-            if not self.secondaryImage is None:
-                self._textLayer.setSecondaryTextLine(0, '')
-                self._textLayer.setSecondaryTextLine(1, '')
-            return
-
         transfo_mat = vtkCommonMath.vtkMatrix4x4()
         transfo_mat.DeepCopy(self._viewMatrix)
         transfo_mat.Invert()
@@ -460,6 +451,16 @@ class Image3DViewer(QWidget):
         self._viewMatrix.SetElement(0, 3, pos[0])
         self._viewMatrix.SetElement(1, 3, pos[1])
         self._viewMatrix.SetElement(2, 3, pos[2])
+
+        if not self._crossHairEnabled or position is None:
+            self._textLayer.setPrimaryTextLine(0, '')
+            self._textLayer.setPrimaryTextLine(1, '')
+
+            if not self.secondaryImage is None:
+                self._textLayer.setSecondaryTextLine(0, '')
+                self._textLayer.setSecondaryTextLine(1, '')
+            return
+
         if self._crossHairEnabled:
             self._crossHairLayer.position = (posAfterInverse[0], posAfterInverse[1])
 

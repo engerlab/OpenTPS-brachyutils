@@ -17,6 +17,9 @@ from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.data._rtStruct import RTStruct
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.images._vectorField3D import VectorField3D
+from opentps.core.data._transform3D import Transform3D
+
+logger = logging.getLogger(__name__)
 
 def floatToDS(v):
     return pydicom.valuerep.DSfloat(v,auto_format=True)
@@ -139,7 +142,7 @@ def readDicomCT(dcmFiles):
     return image
 
 
-def writeDicomCT(ct: CTImage, outputFolderPath:str):
+def writeDicomCT(ct: CTImage, outputFolderPath:str, outputFileName:str=None):
     """
     Write image and generate the DICOM file
 
@@ -158,7 +161,6 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
 
     if not os.path.exists(outputFolderPath):
         os.mkdir(outputFolderPath)
-    folder_name = os.path.split(outputFolderPath)[-1]
     outdata = ct.imageArray.copy()
     dt = datetime.datetime.now()
 
@@ -353,11 +355,20 @@ def writeDicomCT(ct: CTImage, outputFolderPath:str):
 
         dcm_slice.PixelData = outdata[:,:,slice].T.astype(np.int16).tobytes()
 
-        # write output dicom file
-        output_filename = f'{folder_name}_{slice+1:04d}.dcm'
-        dcm_slice.save_as(os.path.join(outputFolderPath,output_filename))
+        if outputFileName:
+            CTName = ''.join(letter for letter in outputFileName if letter.isalnum())
+            filename = f'CT_{CTName}_{slice+1:04d}.dcm'
+        elif hasattr(dcm_slice, 'SOPInstanceUID'):
+            filename = f'CT_{dcm_slice.SOPInstanceUID}_{slice+1:04d}.dcm'
+        else : 
+            filename = f'CT_{slice+1:04d}.dcm'
+        dcm_slice.save_as(os.path.join(outputFolderPath, filename))
+        logger.info("Export dicom CT: " + filename + " in " + outputFolderPath)
+    
     return dcm_file.SeriesInstanceUID
 
+
+################### MRI Image ####################
 
 def readDicomMRI(dcmFiles):
     """
@@ -624,7 +635,7 @@ def readDicomDose(dcmFile):
 
     return image
 
-def writeRTDose(dose:DoseImage, outputFile):
+def writeRTDose(dose:DoseImage, outputFolder:str, outputFilename:str = None):
     """
     Export the dose data as a Dicom dose file
 
@@ -632,19 +643,18 @@ def writeRTDose(dose:DoseImage, outputFile):
     ----------
     dose: DoseImage
         The dose image object.
-    outputFile:
-        The output file path
+    outputFolder:
+        The output folder path
     """
         
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
     sopUID = pydicom.uid.generate_uid()
     meta.MediaStorageSOPClassUID = "1.2.840.10008.5.1.4.1.1.481.2"
-    if (hasattr(dose, 'mediaStorageSOPInstanceUID') and dose.mediaStorageSOPInstanceUID != ""):
+    if (hasattr(dose, 'mediaStorageSOPInstanceUID') and dose.mediaStorageSOPInstanceUID != "" and dose.mediaStorageSOPInstanceUID is not None):
         meta.MediaStorageSOPInstanceUID = dose.mediaStorageSOPInstanceUID
     else:
-        meta.MediaStorageSOPInstanceUID = dose.sopInstanceUID if hasattr(dose, 'sopInstanceUID') and dose.sopInstanceUID != "" else pydicom.uid.generate_uid()
-        
+        meta.MediaStorageSOPInstanceUID = dose.sopInstanceUID if hasattr(dose, 'sopInstanceUID') and dose.sopInstanceUID != "" and not dose.sopInstanceUID is None else pydicom.uid.generate_uid()
     dt = datetime.datetime.now()
     # meta.ImplementationClassUID = '1.2.826.0.1.3680043.1.2.100.5.7.0.47' # from RayStation
     meta.ImplementationClassUID = dose.implementationClassUID if hasattr(dose, 'implementationClassUID') else "1.2.826.0.1.3680043.1.2.100.6.40.0.76"
@@ -654,9 +664,9 @@ def writeRTDose(dose:DoseImage, outputFile):
     meta.TransferSyntaxUID = dose.transferSyntaxUID if hasattr(dose, 'transferSyntaxUID') else "1.2.840.10008.1.2"
     
     # dicom dataset
-    dcm_file = pydicom.dataset.FileDataset(outputFile, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file = pydicom.dataset.FileDataset(outputFolder, {}, file_meta=meta, preamble=b"\0" * 128)
     dcm_file.SOPClassUID = dose.sopClassUID if hasattr(dose, 'sopClassUID') else "1.2.840.10008.5.1.4.1.1.481.2"
-    dcm_file.SOPInstanceUID = meta.MediaStorageSOPInstanceUID
+    dcm_file.SOPInstanceUID = meta.MediaStorageSOPInstanceUID 
     dcm_file.AccessionNumber = dose.accessionNumber if hasattr(dose, 'accessionNumber') else ""
     dcm_file.SoftwareVersion = dose.softwareVersion if hasattr(dose, 'softwareVersion') else ""
     dcm_file.OperatorsName = dose.operatorsName if hasattr(dose, 'operatorsName') else ""
@@ -769,8 +779,25 @@ def writeRTDose(dose:DoseImage, outputFile):
         dcm_file.PixelData = (dose.imageArray / dcm_file.DoseGridScaling).astype(np.uint16).transpose(1, 0).tostring()
     
     # save dicom file
-    print("Export dicom RTDOSE: " + outputFile)
-    dcm_file.save_as(outputFile)
+    if outputFilename:
+        doseFilename = ''.join(letter for letter in outputFilename if letter.isalnum())
+        filename = doseFilename + '.dcm'
+    elif hasattr(dcm_file, 'SOPInstanceUID'):
+        filename = f'RD{dcm_file.SOPInstanceUID}.dcm'
+    else : 
+        counter = 1
+        # Loop until we find a filename that does not exist
+        filename = f'RD.dcm'
+        
+    file_root, file_ext = os.path.splitext(filename)
+    newFilename = filename
+    counter = 1
+    while os.path.exists(os.path.join(outputFolder, newFilename)):
+        newFilename = f"{file_root}_{counter}{file_ext}"
+        counter += 1
+        
+    logger.info("Export dicom RTDOSE: " + newFilename + " in " + outputFolder)
+    dcm_file.save_as(os.path.join(outputFolder, newFilename))
 
 
 def readDicomStruct(dcmFile):
@@ -874,7 +901,7 @@ def readDicomStruct(dcmFile):
             
     return struct
 
-def writeRTStruct(struct: RTStruct, outputFile):
+def writeRTStruct(struct: RTStruct, outputFolder: str, outputFilename:str = None):
     """
     Export of TR structure data as a Dicom dose file.
 
@@ -886,8 +913,8 @@ def writeRTStruct(struct: RTStruct, outputFile):
     ctSeriesInstanceUID: str
         The serial instance UID of the CT associated with this RT structure.
 
-    outputFile: str
-        The output folde path
+    outputFolder: str
+        The output folder path
 
     NOTE: Get the CT serial instance UID by calling the 'writeDicomCT' function.
     """
@@ -895,11 +922,10 @@ def writeRTStruct(struct: RTStruct, outputFile):
     # meta data
     meta = pydicom.dataset.FileMetaDataset()
     meta.MediaStorageSOPClassUID = '1.2.840.10008.5.1.4.1.1.481.3'
-    if (hasattr(struct, 'mediaStorageSOPInstanceUID') and struct.mediaStorageSOPInstanceUID != ""):
+    if (hasattr(struct, 'mediaStorageSOPInstanceUID') and struct.mediaStorageSOPInstanceUID != "" and struct.mediaStorageSOPInstanceUID is not None):
         meta.MediaStorageSOPInstanceUID = struct.mediaStorageSOPInstanceUID
     else:
-        meta.MediaStorageSOPInstanceUID = struct.sopInstanceUID if hasattr(struct, 'sopInstanceUID') and struct.sopInstanceUID != "" else pydicom.uid.generate_uid()
-        
+        meta.MediaStorageSOPInstanceUID = struct.sopInstanceUID if hasattr(struct, 'sopInstanceUID') and struct.sopInstanceUID != "" and not struct.sopInstanceUID is None else pydicom.uid.generate_uid()
     meta.ImplementationClassUID = struct.implementationClassUID if hasattr(struct, 'implementationClassUID') else "1.2.826.0.1.3680043.1.2.100.6.40.0.76"
     #'1.2.826.0.1.3680043.5.5.100.5.7.0.03'
     meta.TransferSyntaxUID = '1.2.840.10008.1.2'
@@ -909,7 +935,7 @@ def writeRTStruct(struct: RTStruct, outputFile):
     meta.FileMetaInformationVersion = struct.fileMetaInformationVersion if hasattr(struct, 'fileMetaInformationVersion') else bytes([0,1])
             
     # dicom dataset
-    dcm_file = pydicom.dataset.FileDataset(outputFile, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file = pydicom.dataset.FileDataset(outputFolder, {}, file_meta=meta, preamble=b"\0" * 128)
     dcm_file.SOPClassUID = '1.2.840.10008.5.1.4.1.1.481.3'
     dcm_file.SOPInstanceUID = meta.MediaStorageSOPInstanceUID
 
@@ -1024,8 +1050,23 @@ def writeRTStruct(struct: RTStruct, outputFile):
         dcm_file.ROIContourSequence.append(con)
  
     # save rt struct dicom file
-    print("Export dicom RTSTRCT: " + outputFile)
-    dcm_file.save_as(outputFile)
+    if outputFilename:
+        contourFilename = ''.join(letter for letter in outputFilename if letter.isalnum())
+        filename = contourFilename + '.dcm'
+    elif hasattr(dcm_file, 'SOPInstanceUID'):
+        filename = f'RS{dcm_file.SOPInstanceUID}.dcm'
+    else : 
+        filename = f'RS.dcm'
+
+    file_root, file_ext = os.path.splitext(filename)
+    newFilename = filename
+    counter = 1
+    while os.path.exists(os.path.join(outputFolder, newFilename)):
+        newFilename = f"{file_root}_{counter}{file_ext}"
+        counter += 1
+
+    dcm_file.save_as(os.path.join(outputFolder, newFilename))
+    logger.info("Export dicom RTSTRUCT: " + newFilename + ' in ' +  outputFolder)
 
 ################### Plan Image ############################################
 def readDicomPlan(dcmFile) -> RTPlan:
@@ -1063,7 +1104,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
     
     # Photon plan
     if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.481.5":
-        print("ERROR: Conventional radiotherapy (photon) plans are not supported")
+        logger.warning("ERROR: Conventional radiotherapy (photon) plans are not supported")
         plan.modality = "RT Plan IOD"
         return
 
@@ -1075,7 +1116,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
         if dcm.IonBeamSequence[0].RadiationType == "PROTON":
             plan.radiationType = "Proton"
         else:
-            print("ERROR: Radiation type " + dcm.IonBeamSequence[0].RadiationType + " not supported")
+            logger.warning("ERROR: Radiation type " + dcm.IonBeamSequence[0].RadiationType + " not supported")
             plan.radiationType = dcm.IonBeamSequence[0].RadiationType
             return
 
@@ -1084,13 +1125,13 @@ def readDicomPlan(dcmFile) -> RTPlan:
         elif dcm.IonBeamSequence[0].ScanMode == "LINE":
             plan.scanMode = "LINE"  # Line Scanning
         else:
-            print("ERROR: Scan mode " + dcm.IonBeamSequence[0].ScanMode + " not supported")
+            logger.warning("ERROR: Scan mode " + dcm.IonBeamSequence[0].ScanMode + " not supported")
             plan.scanMode = dcm.IonBeamSequence[0].ScanMode
             return
 
             # Other
     else:
-        print("ERROR: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + plan.DcmFile)
+        logger.warning("ERROR: Unknown SOPClassUID " + dcm.SOPClassUID + " for file " + plan.DcmFile)
         plan.modality = ""
         return
 
@@ -1123,8 +1164,8 @@ def readDicomPlan(dcmFile) -> RTPlan:
         ReferencedBeam_id = next((x for x, val in enumerate(dcm.FractionGroupSequence[0].ReferencedBeamSequence) if
                                   val.ReferencedBeamNumber == dcm_beam.BeamNumber), -1)
         if ReferencedBeam_id == -1:
-            print("ERROR: Beam number " + dcm_beam.BeamNumber + " not found in FractionGroupSequence.")
-            print("This beam is therefore discarded.")
+            logger.warning("ERROR: Beam number " + dcm_beam.BeamNumber + " not found in FractionGroupSequence.")
+            logger.warning("This beam is therefore discarded.")
             continue
         else:
             beamMeterset = float(dcm.FractionGroupSequence[0].ReferencedBeamSequence[ReferencedBeam_id].BeamMeterset)
@@ -1141,10 +1182,10 @@ def readDicomPlan(dcmFile) -> RTPlan:
             elif dcm_beam.RangeShifterSequence[0].RangeShifterType == "ANALOG":
                 beam.rangeShifter.type = "analog"
             else:
-                print("ERROR: Unknown range shifter type for beam " + dcm_beam.BeamName if hasattr(dcm_beam, 'BeamName') else 'No beam name')
+                logger.warning("ERROR: Unknown range shifter type for beam " + dcm_beam.BeamName if hasattr(dcm_beam, 'BeamName') else 'No beam name')
                 # beam.rangeShifter.type = "none"
         else:
-            print("ERROR: More than one range shifter defined for beam " + dcm_beam.BeamName if hasattr(dcm_beam, 'BeamName') else 'No beam name')
+            logger.warning("ERROR: More than one range shifter defined for beam " + dcm_beam.BeamName if hasattr(dcm_beam, 'BeamName') else 'No beam name')
             # beam.rangeShifterID = ""
             # beam.rangeShifterType = "none"
 
@@ -1292,7 +1333,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 
     return plan
 
-def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
+def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct: RTStruct=None):
     """
     Write a RTPlan object to a dicom file
 
@@ -1300,8 +1341,8 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
     ----------
     plan : RTPlan
         the RTPlan object to be written.
-    filePath : str
-        path to the dicom file
+    outputFolder : str
+        path to the dicom folder
 
     """
 
@@ -1313,13 +1354,13 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
     meta.TransferSyntaxUID = plan.transferSyntaxUID if hasattr(plan, 'transferSyntaxUID') else "1.2.840.10008.1.2"
     meta.ImplementationVersionName = plan.implementationVersionName if hasattr(plan, 'implementationVersionName') else "DicomObjects.NET"
     meta.FileMetaInformationVersion = plan.fileMetaInformationVersion if hasattr(plan, 'fileMetaInformationVersion') else bytes([0,1])
-    if (hasattr(plan, 'mediaStorageSOPInstanceUID')):
+    if (hasattr(plan, 'mediaStorageSOPInstanceUID') and plan.mediaStorageSOPInstanceUID != "" and not plan.mediaStorageSOPInstanceUID is None):
         meta.MediaStorageSOPInstanceUID = plan.mediaStorageSOPInstanceUID
     else:
-        meta.MediaStorageSOPInstanceUID = plan.sopInstanceUID if hasattr(plan, 'sopInstanceUID') else pydicom.uid.generate_uid()
+        meta.MediaStorageSOPInstanceUID = plan.sopInstanceUID if hasattr(plan, 'sopInstanceUID') and plan.sopInstanceUID != "" and not plan.sopInstanceUID is None else pydicom.uid.generate_uid()
     
     # dicom dataset
-    dcm_file = pydicom.dataset.FileDataset(filePath, {}, file_meta=meta, preamble=b"\0" * 128)
+    dcm_file = pydicom.dataset.FileDataset(outputFolder, {}, file_meta=meta, preamble=b"\0" * 128)
     dcm_file.SOPClassUID = plan.sopClassUID if hasattr(plan, 'sopClassUID') else "1.2.840.10008.5.1.4.1.1.481.8"
     dcm_file.SOPInstanceUID = plan.sopInstanceUID if hasattr(plan, 'sopInstanceUID') else meta.MediaStorageSOPInstanceUID
     
@@ -1834,8 +1875,24 @@ def writeRTPlan(plan: RTPlan, filePath, struct: RTStruct=None):
     dcm_file.PrivateCreator = plan.privateCreator if hasattr(plan, 'privateCreator') else "OpenTPS"
     
     # save dicom file
-    print("Export dicom TRAINMENT PLAN: " + filePath)
-    dcm_file.save_as(filePath)
+    if outputFilename:
+        planFilename = ''.join(letter for letter in outputFilename if letter.isalnum())
+        filename = planFilename + '.dcm'
+    elif hasattr(dcm_file, 'SOPInstanceUID'):
+        filename = f'RP{dcm_file.SOPInstanceUID}.dcm'
+    else : 
+        filename = f'RP.dcm'
+
+    file_root, file_ext = os.path.splitext(filename)
+    newFilename = filename
+    counter = 1
+    while os.path.exists(os.path.join(outputFolder, newFilename)):
+        newFilename = f"{file_root}_{counter}{file_ext}"
+        counter += 1
+
+    dcm_file.save_as(os.path.join(outputFolder, newFilename))
+    logger.info("Export dicom TREATMENT PLAN: " + newFilename + ' in ' + outputFolder)
+    
     
 
 def readDicomVectorField(dcmFile):
@@ -1889,3 +1946,35 @@ def readDicomVectorField(dcmFile):
     field.patient = patient
 
     return field
+
+
+
+
+def readDicomRigidTransform(dcmFile):
+    """
+    Read a Dicom registration file and generate a 3D transform object.
+
+    Parameters
+    ----------
+    dcmFile: str
+        Path of the Dicom registration file.
+
+    Returns
+    -------
+    transform: Transform3D object
+        The function returns the imported transform
+    """
+
+    dcm = pydicom.dcmread(dcmFile)
+
+    for i in range(len(dcm.RegistrationSequence)):
+        if hasattr(dcm.RegistrationSequence[i], 'MatrixRegistrationSequence'):
+            reg_matrix = dcm.RegistrationSequence[i].MatrixRegistrationSequence[0].MatrixSequence[0].FrameOfReferenceTransformationMatrix
+
+    tformMatrix = np.array(reg_matrix).reshape(4, 4)
+    tformMatrix_1 = np.linalg.inv(tformMatrix) # get inverse
+    transform3D = Transform3D()
+    transform3D.setCenter('dicomOrigin')
+    transform3D.setMatrix4x4(tformMatrix_1)
+
+    return transform3D

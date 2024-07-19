@@ -32,7 +32,9 @@ def run(output_path=""):
     if(output_path != ""):
         output_path = output_path
     else:
-        output_path = os.getcwd()
+        output_path = os.path.join(os.getcwd(), 'Output_Example')
+        if not os.path.exists(output_path):
+            os.makedirs(output_path)
         
     logger.info('Files will be stored in {}'.format(output_path))
 
@@ -53,8 +55,7 @@ def run(output_path=""):
     data = huAir * np.ones((ctSize, ctSize, ctSize))
     data[:, 50:, :] = huWater
     ct.imageArray = data
-    dcm_CT_file = os.path.join(output_path, "CTImage_WaterPhantom_cropped_resampled_optimized")
-    writeDicomCT(ct, dcm_CT_file)
+    writeDicomCT(ct, output_path)
 
     # Struct
     roi = ROIMask()
@@ -122,17 +123,18 @@ def run(output_path=""):
     solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
     # Optimize treatment plan
     doseImage, ps = solver.optimize()
-
-    dcm_dose_file = os.path.join(output_path, "Dose_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTDose(doseImage, dcm_dose_file)
+    # User input filename
+    # writeRTDose(doseImage, output_path, outputFilename="BeamletTotalDose")
+    # or default name
+    writeRTDose(doseImage, output_path)
 
     # Save plan with updated spot weights in serialized format (OpenTPS format)
     plan_file_optimized = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
     saveRTPlan(plan, plan_file_optimized)
     # Save plan with updated spot weights in dicom format
     plan.patient = patient
-    dcm_Plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.dcm")
-    writeRTPlan(plan, dcm_Plan_file)
+    # writeRTPlan(plan, output_path, outputFilename = plan.name )
+    writeRTPlan(plan, output_path )
 
     # Compute DVH on resampled contour
     target_DVH = DVH(roi, doseImage)
@@ -171,8 +173,9 @@ def run(output_path=""):
     ax[1].legend()
 
     convData = solver.getConvergenceData()
-    ax[2].plot(np.arange(0, convData['time'], convData['time'] / convData['nIter']), convData['func_0'], 'bo-', lw=2,
-               label='Fidelity')
+    x_data = np.linspace(0, convData['time'], len(convData['func_0']))
+    y_data = convData['func_0']
+    ax[2].plot(x_data, y_data , 'bo-', lw=2, label='Fidelity')
     ax[2].set_xlabel('Time (s)')
     ax[2].set_ylabel('Cost')
     ax[2].set_yscale('symlog')

@@ -150,6 +150,15 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
         trySITK = True
 
     if trySITK:
+        if not(image.imageArray.dtype=='bool'):
+            # anti-aliasing filter
+            sigma = [0, 0, 0]
+            if (spacing[0] > image.spacing[0]): sigma[0] = 0.4 * (spacing[0] / image.spacing[0])
+            if (spacing[1] > image.spacing[1]): sigma[1] = 0.4 * (spacing[1] / image.spacing[1])
+            if (spacing[2] > image.spacing[2]): sigma[2] = 0.4 * (spacing[2] / image.spacing[2])
+            if (sigma != [0, 0, 0]):
+                logger.info("data is filtered before downsampling")
+                image.imageArray[:, :, :] = imageFilter3D.gaussConv(image.imageArray[:, :, :], sigma)
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
             sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)
@@ -270,18 +279,19 @@ def resampleOpenMP(data, inputOrigin, inputSpacing, inputGridSize, outputOrigin,
     if data.ndim > 3:
         vectorDimension = data.shape[3]
 
-    # anti-aliasing filter
-    sigma = [0, 0, 0]
-    if (outputSpacing[0] > inputSpacing[0]): sigma[0] = 0.4 * (outputSpacing[0] / inputSpacing[0])
-    if (outputSpacing[1] > inputSpacing[1]): sigma[1] = 0.4 * (outputSpacing[1] / inputSpacing[1])
-    if (outputSpacing[2] > inputSpacing[2]): sigma[2] = 0.4 * (outputSpacing[2] / inputSpacing[2])
-    if (sigma != [0, 0, 0]):
-        logger.info("data is filtered before downsampling")
-        if vectorDimension > 1:
-            for i in range(vectorDimension):
-                data[:, :, :, i] = imageFilter3D.gaussConv(data[:, :, :, i], sigma, tryGPU=tryGPU)
-        else:
-            data[:, :, :] = imageFilter3D.gaussConv(data[:, :, :], sigma, tryGPU=tryGPU)
+    if not(data.dtype == 'bool'):
+        # anti-aliasing filter
+        sigma = [0, 0, 0]
+        if (outputSpacing[0] > inputSpacing[0]): sigma[0] = 0.4 * (outputSpacing[0] / inputSpacing[0])
+        if (outputSpacing[1] > inputSpacing[1]): sigma[1] = 0.4 * (outputSpacing[1] / inputSpacing[1])
+        if (outputSpacing[2] > inputSpacing[2]): sigma[2] = 0.4 * (outputSpacing[2] / inputSpacing[2])
+        if (sigma != [0, 0, 0]):
+            logger.info("data is filtered before downsampling")
+            if vectorDimension > 1:
+                for i in range(vectorDimension):
+                    data[:, :, :, i] = imageFilter3D.gaussConv(data[:, :, :, i], sigma, tryGPU=tryGPU)
+            else:
+                data[:, :, :] = imageFilter3D.gaussConv(data[:, :, :], sigma, tryGPU=tryGPU)
 
     interpX = (outputOrigin[0] - inputOrigin[0] + np.arange(outputGridSize[0]) * outputSpacing[0]) / inputSpacing[0]
     interpY = (outputOrigin[1] - inputOrigin[1] + np.arange(outputGridSize[1]) * outputSpacing[1]) / inputSpacing[1]
