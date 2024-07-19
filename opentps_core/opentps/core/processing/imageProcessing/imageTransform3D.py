@@ -639,18 +639,18 @@ def parseRotCenter(rotCenterArg: Optional[Union[Sequence[float], str]], image: I
     rotCenter = np.array([0, 0, 0]).astype(float)
 
     if not (rotCenterArg is None):
-        if rotCenterArg == 'dicomOrigin':
-            rotCenter = np.array([0, 0, 0]).astype(float)
-        # elif len(rotCenter) == 3 and (rotCenter[0].dtype == 'float64' or rotCenter[0].dtype == 'int'):
-        elif len(rotCenterArg) == 3 and (isinstance(rotCenterArg[0], float) or isinstance(rotCenterArg[0], int)):
+        if len(rotCenterArg) == 3 and (isinstance(rotCenterArg[0], float) or isinstance(rotCenterArg[0], int)):
             rotCenter = rotCenterArg
-        elif rotCenterArg == 'imgCorner': ## !!! Uses the center of the pixel in the corner and not its corner.
+        elif rotCenterArg == 'dicomOrigin':
+            rotCenter = np.array([0, 0, 0]).astype(float)
+        elif rotCenterArg == 'imgCorner':
+            logger.warning("The imageCorner option for rotations uses the center of the pixel in the corner and not the corner of the pixel.")
             rotCenter = image.origin.astype(float)
         elif rotCenterArg == 'imgCenter':
             rotCenter = image.origin + (image.gridSizeInWorldUnit-1) / 2
         else:
             rotCenter = image.origin + (image.gridSizeInWorldUnit-1) / 2
-            print('Rotation center not recognized, default value is used (image center)', type(rotCenter), rotCenter)
+            logger.warning("Rotation center not recognized, default value is used (image center).")
 
     return rotCenter
 
@@ -666,8 +666,6 @@ def translateDataByChangingOrigin(data, translationInMM):
     translationInMM : list or tuple of 3 elements
         The translation vector in mm.
     """
-
-    print('in imageTransform3D, translateDataByChangingOrigin')
 
     if isinstance(data, Image3D):
         data.origin = data.origin.astype(float) + np.array(translationInMM)

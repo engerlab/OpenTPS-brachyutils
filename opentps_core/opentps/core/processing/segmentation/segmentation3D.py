@@ -63,21 +63,25 @@ def getBoxAroundROI(ROI) -> Sequence[Sequence[float]]:
     elif isinstance(ROI, ROIMask):
         ROIMaskObject = ROI
 
-    ones = np.where(ROIMaskObject.imageArray == True)
+    if 1 in ROIMaskObject.imageArray:
+        ones = np.where(ROIMaskObject.imageArray == True)
 
-    boxInVoxel = [[np.min(ones[0]), np.max(ones[0])],
-                  [np.min(ones[1]), np.max(ones[1])],
-                  [np.min(ones[2]), np.max(ones[2])]]
+        boxInVoxel = [[np.min(ones[0]), np.max(ones[0])],
+                      [np.min(ones[1]), np.max(ones[1])],
+                      [np.min(ones[2]), np.max(ones[2])]]
 
-    logger.info(f'ROI box in voxels: {boxInVoxel}')
+        logger.info(f'ROI box in voxels: {boxInVoxel}')
 
-    boxInUniversalCoords = []
-    for i in range(3):
-        boxInUniversalCoords.append([ROI.origin[i] + (boxInVoxel[i][0] * ROI.spacing[i]), ROI.origin[i] + (boxInVoxel[i][1] * ROI.spacing[i])])
+        boxInUniversalCoords = []
+        for i in range(3):
+            boxInUniversalCoords.append([ROI.origin[i] + (boxInVoxel[i][0] * ROI.spacing[i]), ROI.origin[i] + (boxInVoxel[i][1] * ROI.spacing[i])])
 
-    logger.info(f'ROI box in scanner coordinates: {boxInUniversalCoords}')
+        logger.info(f'ROI box in scanner coordinates: {boxInUniversalCoords}')
 
-    return boxInUniversalCoords
+        return boxInUniversalCoords
+
+    else:
+        logger.info(f'ROI mask is empty')
 
 
 def getBoxAboveThreshold(data:Image3D, threshold=0.):

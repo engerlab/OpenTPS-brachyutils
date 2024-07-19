@@ -389,50 +389,54 @@ def crop3DDataAroundBox(data, box, marginInMM=[0, 0, 0]):
         The margins in mm that is added around the box before cropping
     """
 
-    for i in range(3):
-        if marginInMM[i] < 0:
-            logger.warning('In crop3DDataAroundBox, negative margins not allowed. The margin is set to 0.')
-            marginInMM[i] = 0
+    if box is not None:
+        for i in range(3):
+            if marginInMM[i] < 0:
+                logger.warning('In crop3DDataAroundBox, negative margins not allowed. The margin is set to 0.')
+                marginInMM[i] = 0
 
-    from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
+        from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 
-    if isinstance(data, Image3D):
-        logger.info(f'Before crop image 3D origin and grid size: {data.origin}, {data.gridSize}')
+        if isinstance(data, Image3D):
+            logger.info(f'Before crop image 3D origin and grid size: {data.origin}, {data.gridSize}')
 
-        ## get the box in voxels with a min/max check to limit the box to the image border (that could be reached with the margin)
-        XIndexInVoxels = [max(0, int(np.round((box[0][0] - marginInMM[0] - data.origin[0]) / data.spacing[0]))),
-                          min(data.gridSize[0], int(np.round((box[0][1] + marginInMM[0] - data.origin[0]) / data.spacing[0])))]
-        YIndexInVoxels = [max(0, int(np.round((box[1][0] - marginInMM[1] - data.origin[1]) / data.spacing[1]))),
-                          min(data.gridSize[1], int(np.round((box[1][1] + marginInMM[1] - data.origin[1]) / data.spacing[1])))]
-        ZIndexInVoxels = [max(0, int(np.round((box[2][0] - marginInMM[2] - data.origin[2]) / data.spacing[2]))),
-                          min(data.gridSize[2], int(np.round((box[2][1] + marginInMM[2] - data.origin[2]) / data.spacing[2])))]
+            ## get the box in voxels with a min/max check to limit the box to the image border (that could be reached with the margin)
+            XIndexInVoxels = [max(0, int(np.round((box[0][0] - marginInMM[0] - data.origin[0]) / data.spacing[0]))),
+                              min(data.gridSize[0], int(np.round((box[0][1] + marginInMM[0] - data.origin[0]) / data.spacing[0])))]
+            YIndexInVoxels = [max(0, int(np.round((box[1][0] - marginInMM[1] - data.origin[1]) / data.spacing[1]))),
+                              min(data.gridSize[1], int(np.round((box[1][1] + marginInMM[1] - data.origin[1]) / data.spacing[1])))]
+            ZIndexInVoxels = [max(0, int(np.round((box[2][0] - marginInMM[2] - data.origin[2]) / data.spacing[2]))),
+                              min(data.gridSize[2], int(np.round((box[2][1] + marginInMM[2] - data.origin[2]) / data.spacing[2])))]
 
-        data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1]+1, YIndexInVoxels[0]:YIndexInVoxels[1]+1, ZIndexInVoxels[0]:ZIndexInVoxels[1]+1] # +1 to include IndexInVoxels[1] 
-        # data.imageArray = croppedArray
+            data.imageArray = data.imageArray[XIndexInVoxels[0]:XIndexInVoxels[1]+1, YIndexInVoxels[0]:YIndexInVoxels[1]+1, ZIndexInVoxels[0]:ZIndexInVoxels[1]+1] # +1 to include IndexInVoxels[1]
+            # data.imageArray = croppedArray
 
-        origin = data.origin
-        origin[0] += XIndexInVoxels[0] * data.spacing[0]
-        origin[1] += YIndexInVoxels[0] * data.spacing[1]
-        origin[2] += ZIndexInVoxels[0] * data.spacing[2]
+            origin = data.origin
+            origin[0] += XIndexInVoxels[0] * data.spacing[0]
+            origin[1] += YIndexInVoxels[0] * data.spacing[1]
+            origin[2] += ZIndexInVoxels[0] * data.spacing[2]
 
-        data.origin = origin
+            data.origin = origin
 
-        logger.info(f'After crop origin and grid size: {data.origin}, {data.gridSize}')
+            logger.info(f'After crop origin and grid size: {data.origin}, {data.gridSize}')
 
-    elif isinstance(data, Dynamic3DModel):
-        logger.info('Crop dynamic 3D model')
-        logger.info('Crop dynamic 3D model - midp image')
-        crop3DDataAroundBox(data.midp, box, marginInMM=marginInMM)
-        for field in data.deformationList:
-            if field.velocity != None:
-                logger.info('Crop dynamic 3D model - velocity field')
-                crop3DDataAroundBox(field.velocity, box, marginInMM=marginInMM)
-            if field.displacement != None:
-                logger.info('Crop dynamic 3D model - displacement field')
-                crop3DDataAroundBox(field.displacement, box, marginInMM=marginInMM)
+        elif isinstance(data, Dynamic3DModel):
+            logger.info('Crop dynamic 3D model')
+            logger.info('Crop dynamic 3D model - midp image')
+            crop3DDataAroundBox(data.midp, box, marginInMM=marginInMM)
+            for field in data.deformationList:
+                if field.velocity != None:
+                    logger.info('Crop dynamic 3D model - velocity field')
+                    crop3DDataAroundBox(field.velocity, box, marginInMM=marginInMM)
+                if field.displacement != None:
+                    logger.info('Crop dynamic 3D model - displacement field')
+                    crop3DDataAroundBox(field.displacement, box, marginInMM=marginInMM)
 
 
-    elif isinstance(data, Dynamic3DSequence):
-        logger.info('Crop dynamic 3D sequence')
-        for image3D in data.dyn3DImageList:
-            crop3DDataAroundBox(image3D, box, marginInMM=marginInMM)
+        elif isinstance(data, Dynamic3DSequence):
+            logger.info('Crop dynamic 3D sequence')
+            for image3D in data.dyn3DImageList:
+                crop3DDataAroundBox(image3D, box, marginInMM=marginInMM)
+
+    else:
+        logger.info('In crop3DDataAroundBox given box is empty, so no crop is applied')

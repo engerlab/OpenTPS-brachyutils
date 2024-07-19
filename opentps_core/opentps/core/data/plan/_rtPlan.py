@@ -75,6 +75,7 @@ class RTPlan(PatientData):
 
         self.planDesign = None
 
+
         super().__init__(name=name, patient=patient)
 
     def __getitem__(self, beamNb) -> PlanIonBeam:
@@ -166,8 +167,8 @@ class RTPlan(PatientData):
 
         ind = 0
         for beam in self._beams:
-            beam.spotIrradiationDurations = t[ind:ind + len(beam.spotIrradiationDurations)]
-            ind += len(beam.spotIrradiationDurations)
+            beam.spotIrradiationDurations = t[ind:ind + beam.numberOfSpots]
+            ind += beam.numberOfSpots
 
     @property
     def spotXY(self) -> np.ndarray:

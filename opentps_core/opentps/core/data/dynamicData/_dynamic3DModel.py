@@ -121,17 +121,14 @@ class Dynamic3DModel(PatientData):
         return field.deformImage(self.midp, fillValue='closest', tryGPU=tryGPU)
 
 
-    def computeAllDisplacementFields(self): ## not working for now, the field.displacement is None after the function
+
+    def computeAllDisplacementFields(self):
         """
         Compute all model displacement fields.
-
-        !! Not working for now !!
         """
 
-        print('Compute all model displacement fields using multiprocessing')
-
-        with ProcessPoolExecutor() as executor:
-            executor.map(self.computeDisplacementField, self.deformationList)
+        for field in self.deformationList:
+            self.computeDisplacementField(field)
 
 
     def computeDisplacementField(self, field):

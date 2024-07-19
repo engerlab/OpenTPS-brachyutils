@@ -342,3 +342,9 @@ class Image3D(PatientData):
             Maximum value of the image array.
         """
         return self._imageArray.max()
+
+    def compressData(self):
+        """
+        Changes pixel type of data imageArray to int16 for more efficient storage
+        """
+        self.imageArray = self.imageArray.astype(np.int16)

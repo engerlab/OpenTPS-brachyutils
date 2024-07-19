@@ -108,6 +108,7 @@ class PlanOptimizer:
         maxDose = np.max(totalDose)
         try:
             x0 = self.opti_params['init_weights']
+            logger.info('Initial weights are given by user')
         except KeyError:
             normFactor = self.plan.planDesign.objectives.targetPrescription / maxDose
             if self.xSquared:
@@ -198,11 +199,20 @@ class PlanOptimizer:
             logger.info('abnormal used memory: {}'.format(cp.get_default_memory_pool().used_bytes()))
         self.initializeFidObjectiveFunction()
         x0 = self.initializeWeights()
+
+        try:
+            bounds = self.opti_params['bounds']
+            logger.info('Bounds are given by user')
+        except:
+            bounds = None
+
         # Optimization
-        result = self.solver.solve(self.functions, x0)
+        result = self.solver.solve(self.functions, x0, bounds=bounds)
+
         if self.GPU_acceleration:
             self.functions[0].unload_blGPU()
             cp._default_memory_pool.free_all_blocks()
+
         return self.postProcess(result)
 
     def postProcess(self, result):
@@ -355,10 +365,11 @@ class BoundConstraintsOptimizer(PlanOptimizer):
     bounds : tuple (default: (0.02, 5))
         The bounds.
     """
-    def __init__(self, plan:RTPlan, method='Scipy-LBFGS', bounds=(0.02, 5), **kwargs):
+    def __init__(self, plan: RTPlan, method='Scipy-LBFGS', bounds=(0.02, 250), **kwargs):
         super().__init__(plan, **kwargs)
         self.bounds = bounds
         if method == 'Scipy-LBFGS':
+            self.method = method
             self.solver = bfgs.ScipyOpt('L-BFGS-B', **kwargs)
         else:
             raise NotImplementedError(f'Method {method} does not accept bound constraints')
@@ -424,9 +435,10 @@ class BoundConstraintsOptimizer(PlanOptimizer):
             self.solver.params['maxit'] = nit1
             result = self.solver.solve(self.functions, x0, bounds=self.formatBoundsForSolver((0, self.bounds[1])))
             x0 = np.array(result['sol'])
-            ind_to_keep = np.full(x0.shape,False)
+            ind_to_keep = np.full(x0.shape, False)
             ind_to_keep[x0 >= self.bounds[0]] = True
             x0 = x0[ind_to_keep]
+
             self.functions = [] # to avoid a beamlet copy with different size
             self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
             objectiveFunction = DoseFidelity(self.plan, self.xSquared)
@@ -442,7 +454,9 @@ class BoundConstraintsOptimizer(PlanOptimizer):
             self.thresholdSpotRemoval = 1e-6 # zero spot MUs are removed in the postProcess with plan.simplify(self.thresholdSpotRemoval)
 
         return self.postProcess(result)
-    
+
+    def getConvergenceData(self):
+        return super().getConvergenceData(self.method)
 
 
 class ARCPTPlanOptimizer(PlanOptimizer):

@@ -135,16 +135,12 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
         elif dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.2":
             # Dicom CT are not loaded directly. All slices must first be classified according to SeriesInstanceUID.
 
-            print(filePath)
-            print(os.path.dirname(os.path.dirname(filePath)))
-
             # this checks if a breathingPeriod file is present in the ct folder or in the parent of the ct folder
             # if yes, this ct slice is given a dynamic series index
             dynSeriesIndex = -1
             for txtFilePathIndex, txtFilePath in enumerate(fileLists["txt"]):
                 if txtFilePath.endswith('breathingPeriod.txt'):
                     if os.path.dirname(txtFilePath) == os.path.dirname(filePath) or os.path.dirname(txtFilePath) == os.path.dirname(os.path.dirname(filePath)):
-                        print('In Data loader IN IF', txtFilePath)
                         dynSeriesIndex = txtFilePathIndex
                         ## associer la slice à une série 4D
 

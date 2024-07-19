@@ -3,6 +3,7 @@ __all__ = ['CTImage']
 
 import pydicom
 import copy
+import numpy as np
 
 from opentps.core.data.images._image3D import Image3D
 
@@ -78,5 +79,7 @@ class CTImage(Image3D):
         """
         return CTImage(imageArray=copy.deepcopy(self.imageArray), name=self.name+'_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=pydicom.uid.generate_uid())
 
+    def compressData(self):
+        self.imageArray = self.imageArray.astype(np.int16)
 
 

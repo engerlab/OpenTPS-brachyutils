@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._ctImage import CTImage
@@ -19,9 +20,23 @@ def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], spacing=[1
     im[targetPos[0]-5:targetPos[0]+5, targetPos[1]-5:targetPos[1]+5, targetPos[2]-5:targetPos[2]+5] = 0
     # vertebral column
     im[80:90, 95:105, :] = 800
+    # rib
+    im[22:26, 90:110, 46:50] = 800
     # couch
     im[:, 130:135, :] = 100
     ct = CTImage(imageArray=im, name='fixed', origin=[0, 0, 0], spacing=spacing)
+
+    # xSlice = 45
+    # ySlice = 98
+    # zSlice = 48
+    # plt.figure()
+    # plt.subplot(1, 3, 1)
+    # plt.imshow(ct.imageArray[xSlice, :, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+    # plt.subplot(1, 3, 2)
+    # plt.imshow(ct.imageArray[:, ySlice, :].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+    # plt.subplot(1, 3, 3)
+    # plt.imshow(ct.imageArray[:, :, zSlice].T[::-1, ::1], cmap='gray', origin='upper', vmin=-1000, vmax=1000)
+    # plt.show()
 
     if returnTumorMask:
         mask = np.full((170, 170, 100), 0)
@@ -34,7 +49,7 @@ def createSynthetic3DCT(diaphragmPos = 20, targetPos = [50, 100, 35], spacing=[1
         return ct
 
 
-def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks = False):
+def createSynthetic4DCT(numberOfPhases=4, spacing=[1, 1, 2], returnTumorMasks=False, motionNoise=True):
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = Dynamic3DSequence()
@@ -44,11 +59,18 @@ def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks 
     diaphMinPos = 20
     diaphPosList = getPhasesPositions(numberOfPhases, diaphMinPos, diaphMinPos+diaphMotionAmp)
 
-    diaphNoise = [[3, 1],
-              [6, -1],
-              [9, -1],
-              [12, 1],
-              [15, 1]]
+    if motionNoise:
+        diaphNoise = [[3, 1],
+                  [6, -1],
+                  [9, -1],
+                  [12, 1],
+                  [15, 1]]
+    else:
+        diaphNoise = [[3, 0],
+                      [6, 0],
+                      [9, 0],
+                      [12, 0],
+                      [15, 0]]
 
     for elemIdx in range(len(diaphNoise)):
         if diaphNoise[elemIdx][0] <= numberOfPhases - 1:
@@ -60,11 +82,18 @@ def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks 
     zMinPos = 40
     zPosList = getPhasesPositions(numberOfPhases, zMinPos, zMinPos+zMotionAmp)
 
-    zNoise = [[3, 1],
-              [6, -1],
-              [9, -1],
-              [12, 1],
-              [15, 1]]
+    if motionNoise:
+        zNoise = [[3, 1],
+                  [6, -1],
+                  [9, -1],
+                  [12, 1],
+                  [15, 1]]
+    else:
+        zNoise = [[3, 0],
+                      [6, 0],
+                      [9, 0],
+                      [12, 0],
+                      [15, 0]]
 
     for elemIdx in range(len(zNoise)):
         if zNoise[elemIdx][0] <= numberOfPhases - 1:
@@ -76,11 +105,18 @@ def createSynthetic4DCT(numberOfPhases = 4, spacing=[1, 1, 2], returnTumorMasks 
     xMinPos = 42
     xPosList = getPhasesPositions(numberOfPhases, xMinPos, xMinPos+xMotionAmp)
 
-    xNoise = [[3, 1],
-              [6, -1],
-              [9, -1],
-              [12, 1],
-              [15, 1]]
+    if motionNoise:
+        xNoise = [[3, 1],
+                  [6, -1],
+                  [9, -1],
+                  [12, 1],
+                  [15, 1]]
+    else:
+        xNoise = [[3, 0],
+                  [6, 0],
+                  [9, 0],
+                  [12, 0],
+                  [15, 0]]
 
     for elemIdx in range(len(xNoise)):
         if xNoise[elemIdx][0] <= numberOfPhases-1:

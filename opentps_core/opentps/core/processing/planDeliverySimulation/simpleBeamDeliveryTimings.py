@@ -74,21 +74,23 @@ class SimpleBeamDeliveryTimings:
     
     def computeIrradiationDuration(self, energy, mu):
         """
-        Compute the irradiation duration for a given energy and MU.
+        Compute the irradiation duration for a given energy and MU array.
 
         Parameters
         ----------
         energy : float
             The energy in MeV.
-        mu : float
+        mu : array of floats
             The MU.
 
         Returns
         -------
-        irradiationDuration : float
+        irradiationDuration : array of floats
             The irradiation duration in s.
         """
-        return mu * np.interp(energy, self.irradiationDurationLUT.nominalEnergy, self.irradiationDurationLUT.duration)
+
+        irradiationDuration = mu * np.interp(energy, self.irradiationDurationLUT.nominalEnergy, self.irradiationDurationLUT.duration)
+        return irradiationDuration
 
 
     def getTimingsAndSavePlan(self, output_path):

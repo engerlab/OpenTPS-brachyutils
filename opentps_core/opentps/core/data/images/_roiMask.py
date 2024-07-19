@@ -10,6 +10,8 @@ from opentps.core.data.images._image3D import Image3D
 from opentps.core import Event
 from opentps.core.processing.imageProcessing import sitkImageProcessing, cupyImageProcessing
 from opentps.core.processing.imageProcessing import roiMasksProcessing
+from opentps.core.processing.imageProcessing.resampler3D import crop3DDataAroundBox
+from opentps.core.processing.segmentation.segmentation3D import getBoxAroundROI
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +166,6 @@ class ROIMask(Image3D):
             rings.append(ringMask)
         return rings
 
-
     def openMask(self, radius=1.0, struct=None, tryGPU=True):
         """
         Open the ROI mask.
@@ -194,7 +195,6 @@ class ROIMask(Image3D):
             If True, the closing is performed on the GPU if possible.
         """
         roiMasksProcessing.closeMask(self, radius=radius, struct=struct, inPlace=True, tryGPU=tryGPU)
-
 
     def getBinaryContourMask(self, internalBorder=False):
         """
@@ -230,7 +230,6 @@ class ROIMask(Image3D):
             dilatedROI.imageArray = imageArray
 
             return dilatedROI
-
 
     def getROIContour(self):
         """
@@ -301,4 +300,19 @@ class ROIMask(Image3D):
         contour.polygonMesh = polygonMeshList
 
         return contour
+
+    def compressData(self):
+        """
+        If ROIMask imageArray is not empty, crop it around the rectangle box containing the non-zeros values,
+        else, put it to None.
+
+        This can be used for more size efficient data storage
+        """
+        if 1 in self.imageArray:
+            croppingBox = getBoxAroundROI(self)
+            crop3DDataAroundBox(self, croppingBox, marginInMM=(2, 2, 2))
+            self.imageArray = self.imageArray.astype(bool)
+        else:
+            self.imageArray = None
+
 

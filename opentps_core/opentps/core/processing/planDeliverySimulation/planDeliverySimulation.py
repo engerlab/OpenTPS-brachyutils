@@ -298,6 +298,12 @@ class PlanDeliverySimulation():
         defList = sorted(os.listdir(def_fields_folder))
         defList = [x for x in defList if not x.endswith('.raw') and not x.endswith('.RAW')]
 
+        if ctList[0].endswith('.p'):
+            serializedData = True
+            print('Images are in serialized format.')
+        else:
+            serializedData = False
+
         # remove interpolated files
         if remove_interpolated_files:
             r1 = re.compile(r"_0\.[0-9]\.mhd$") # math _0.[0-9].mhd
@@ -322,7 +328,10 @@ class PlanDeliverySimulation():
 
         for i in plan_sequence:
             print(f"Importing CT {ctList[i]}")
-            phaseImage = readSingleData(os.path.join(ct_folder, ctList[i]))
+            if serializedData:
+                phaseImage = readSingleData(os.path.join(ct_folder, ctList[i]))[0]
+            else:
+                phaseImage = readSingleData(os.path.join(ct_folder, ctList[i]))
 
             dose_name = f"dose_on_phase_image_{str(i)}"
             self.mc2.nbPrimaries = np.minimum(1e5 * plan_sequence[i].numberOfSpots, 1e7)
@@ -335,7 +344,10 @@ class PlanDeliverySimulation():
             ## Accumulate dose on MidP
             # Load deformation field on 3D image
             print(f"Importing deformation field {defList[i]}")
-            df = readSingleData(os.path.join(def_fields_folder, defList[i]))
+            if serializedData:
+                df = readSingleData(os.path.join(def_fields_folder, defList[i]))[0]
+            else:
+                df = readSingleData(os.path.join(def_fields_folder, defList[i]))
             df2 = Deformation3D()
             df2.initFromVelocityField(df)
 
@@ -404,6 +416,7 @@ class PlanDeliverySimulation():
         and assign each spot of the `ReferencePlan`to one of the created plans.
         Returns a dictionary of plans where the index number corresponds to the image number in
         the continuous sequence.
+        !! the sequence_timings must be given in seconds and not milliseconds
         """
         # Check if plan include spot timings
         # start_irradiation \in [0,1] : moment at which to start the irradiation with beginning of

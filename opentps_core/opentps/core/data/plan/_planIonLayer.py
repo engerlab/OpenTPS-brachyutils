@@ -159,10 +159,10 @@ class PlanIonLayer:
     def spotIrradiationDurations(self, w: Sequence[float]):
         w = np.array(w)
 
-        if len(self._irradiationDuration) != len(w):
+        if self.numberOfSpots != len(w):
             raise ValueError(
                 "Length of provided spot timings is not correct. Provided: " + str(len(w)) + " - Expected: " + str(
-                    len(self._irradiationDuration)))
+                    self.numberOfSpots))
 
         self._irradiationDuration = w
 
@@ -172,7 +172,7 @@ class PlanIonLayer:
 
     @property
     def numberOfSpots(self) -> int:
-        return len(self.spotMUs)
+        return len(self.spotXY)
 
     def addToSpot(self, x: Union[float, Sequence[float]], y: Union[float, Sequence[float]],
                   mu: Union[float, Sequence[float]], startTime: Optional[Union[float, Sequence[float]]] = None,

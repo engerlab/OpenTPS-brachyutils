@@ -241,3 +241,8 @@ class Image2D(PatientData):
         """
         return Image2D(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles, seriesInstanceUID=self.seriesInstanceUID)
 
+    def compressData(self):
+        """
+        Changes pixel type of data imageArray to int16 for more efficient storage
+        """
+        self.imageArray = self.imageArray.astype(np.int16)
