@@ -7,13 +7,12 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem, QMainWindow, QAction, QFileDialog, QToolBar, QCheckBox
 
 from opentps.core.data.images import ROIMask
-from opentps.core.data.plan import PlanDesign
+from opentps.core.data.plan import PlanDesign, Robustness
 from opentps.core.data.plan._objectivesList import FidObjective, ObjectivesList
-from opentps.core.data._patient import Patient
+from opentps.core.data import Patient
 from opentps.core import Event
 
 import opentps.gui.res.icons as IconModule
-from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 
 
 class ObjectivesWindow(QMainWindow):

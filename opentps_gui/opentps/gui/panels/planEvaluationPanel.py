@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from opentps.core.data import Patient
 from opentps.core.data.plan import RTPlan
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
+from opentps.core.processing.planEvaluation.robustnessEvaluation import RobustnessEval
 from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
 from opentps.gui.panels.planDesignPanel.robustnessSettings import RobustnessSettings
 
@@ -167,8 +167,8 @@ class PlanEvaluationPanel(QWidget):
         TargetPrescription = self.Prescription.value()
 
         self.robustness_scenarios.DoseDistributionType = self.DisplayedDose.currentText()
-
-        if (self.robustness_scenarios.SelectionStrategy == Robustness.Strategies.DOSIMETRIC):
+        # TODO: update with new attribut robustnessEval.analysisStrategy.DOSIMETRIC
+        if (self.robustness_scenarios.SelectionStrategy == RobustnessEval.Strategies.DOSIMETRIC):
             self.robustness_scenarios.dosimetric_space_analysis(self.Metric.currentText(), CI, Target,
                                                                 TargetPrescription)
         else:

@@ -91,8 +91,17 @@ def run(output_path=""):
         # Robustness settings
         planDesign.robustness.setupSystematicError = [5.0, 5.0, 5.0]  # mm
         planDesign.robustness.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
-        planDesign.robustness.rangeSystematicError = 3.0  # %
-        planDesign.robustness.selectionStrategy = planDesign.robustness.Strategies.ERRORSPACE_REGULAR
+        planDesign.robustness.rangeSystematicError = 0.0  # %
+
+        # Regular scenario sampling
+        planDesign.robustness.selectionStrategy = planDesign.robustness.Strategies.REDUCED_SET
+
+        # All scenarios (includes diagonals on sphere)
+        # planDesign.robustness.selectionStrategy = planDesign.robustness.Strategies.ALL
+
+        # Random scenario sampling  
+        # planDesign.robustness.selectionStrategy = planDesign.robustness.Strategies.RANDOM
+        # planDesign.robustness.numScenarios = 5 # specify how many random scenarios to simulate, default = 100
 
         planDesign.spotSpacing = 7.0
         planDesign.layerSpacing = 6.0

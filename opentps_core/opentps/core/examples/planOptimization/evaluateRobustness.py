@@ -14,7 +14,7 @@ from opentps.core.io.scannerReader import readScanner
 from opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
+from opentps.core.processing.planEvaluation.robustnessEvaluation import RobustnessEval
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def run(output_path=""):
     mc2.ctCalibration = ctCalibration
 
     # Load / Generate new plan
-    plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled.tps")
+    plan_file = os.path.join(output_path, "Plan_WaterPhantom_cropped_resampled_optimized.tps")
 
     if os.path.isfile(plan_file):
         plan = loadRTPlan(plan_file)
@@ -76,22 +76,33 @@ def run(output_path=""):
         print("You need to design and optimize a plan first - See SimpleOptimization or robustOptimization script.")
 
     # Load / Generate scenarios
-    scenario_folder = os.path.join(output_path,'RobustnessTest_Nov-16-2022_14-30-28_')
+    scenario_folder = os.path.join(output_path,'RobustnessTest_Jul-17-2024_15-16-10_')
     if os.path.isdir(scenario_folder):
-        scenarios = Robustness()
-        scenarios.selectionStrategy = Robustness.Strategies.ERRORSPACE_REGULAR
-        scenarios.setupSystematicError = plan.planDesign.robustness.setupSystematicError
-        scenarios.setupRandomError = plan.planDesign.robustness.setupRandomError
-        scenarios.rangeSystematicError = plan.planDesign.robustness.rangeSystematicError
+        scenarios = RobustnessEval()
+        scenarios.selectionStrategy = RobustnessEval.Strategies.ALL
+        scenarios.setupSystematicError = plan.planDesign.robustnessEval.setupSystematicError
+        scenarios.setupRandomError = plan.planDesign.robustnessEval.setupRandomError
+        scenarios.rangeSystematicError = plan.planDesign.robustnessEval.rangeSystematicError
         scenarios.load(scenario_folder)
     else:
         # MCsquare config for scenario dose computation
         mc2.nbPrimaries = 1e7
-        plan.planDesign.robustness = Robustness()
-        plan.planDesign.robustness.setupSystematicError = [5.0, 5.0, 5.0]  # mm
-        plan.planDesign.robustness.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
-        plan.planDesign.robustness.rangeSystematicError = 3.0  # %
-        plan.planDesign.robustness.selectionStrategy = Robustness.Strategies.ERRORSPACE_REGULAR
+        plan.planDesign.robustnessEval = RobustnessEval()
+        plan.planDesign.robustnessEval.setupSystematicError = [5.0, 5.0, 5.0]  # mm
+        plan.planDesign.robustnessEval.setupRandomError = [0.0, 0.0, 0.0]  # mm (sigma)
+        plan.planDesign.robustnessEval.rangeSystematicError = 3.0  # %
+
+        # Regular scenario sampling
+        #plan.planDesign.robustnessEval.selectionStrategy = planDesign.robustnessEval.Strategies.REDUCED_SET
+
+        # All scenarios (includes diagonals on sphere)
+        # plan.planDesign.robustnessEval.selectionStrategy = planDesign.robustnessEval.Strategies.ALL
+
+        # Random scenario sampling  
+        plan.planDesign.robustnessEval.selectionStrategy = plan.planDesign.robustnessEval.Strategies.RANDOM
+        plan.planDesign.robustnessEval.numScenarios = 30 # specify how many random scenarios to simulate, default = 100
+        
+        plan.patient = None
         # run MCsquare simulation
         scenarios = mc2.computeRobustScenario(ct, plan, [roi])
         if not os.path.isdir(output_path):
