@@ -1,21 +1,21 @@
 
-__all__ = ['PlanDesign']
+__all__ = ['PlanDesign','Robustness']
 
 import logging
 import time
 from typing import Optional, Sequence, Union
-
+from enum import Enum
 import numpy as np
 import pydicom
 
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
-from opentps.core.data.images._ctImage import CTImage
+from opentps.core.data.images import CTImage
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.plan._rangeShifter import RangeShifter
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data._patientData import PatientData
-from opentps.core.data.plan._objectivesList import ObjectivesList
-from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
+from opentps.core.data.plan import ObjectivesList
+from opentps.core.processing.planEvaluation.robustnessEvaluation import RobustnessEval
 from opentps.core.processing.planOptimization.planInitializer import PlanInitializer
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,7 @@ class PlanDesign(PatientData):
         self.beamletsLET = []
 
         self.robustness = Robustness()
+        self.robustnessEval = RobustnessEval()
 
     @property
     def scoringVoxelSpacing(self) -> Sequence[float]:
@@ -265,3 +266,37 @@ class PlanDesign(PatientData):
         for objective in self.objectives.fidObjList:
             objective._updateMaskVec(spacing=self.scoringVoxelSpacing, gridSize=self.scoringGridSize, origin=self.scoringOrigin)
             
+class Robustness:
+    """
+    This class is used to compute the robustness of a plan.
+
+    Attributes
+    ----------
+    selectionStrategy : str
+        The selection strategy used to select the scenarios.
+        It can be "REDUCED_SET" or "ALL" or "DISABLED".
+    setupSystematicError : list (default = [1.6, 1.6, 1.6]) (mm)
+        The setup systematic error in mm.
+    setupRandomError : list (default = [1.4, 1.4, 1.4]) (mm, sigma)
+        The setup random error in mm.
+    rangeSystematicError : float (default = 1.6) (%)
+        The range systematic error in %.
+    numScenarios : int
+        The number of scenarios.
+    scenarios : list
+        The list of scenarios.
+    """
+    class Strategies(Enum):
+        DEFAULT = "DISABLED"
+        DISABLED = "DISABLED"
+        ALL = "ALL"
+        REDUCED_SET = "REDUCED_SET"
+        RANDOM = "RANDOM"
+
+    def __init__(self):
+        self.selectionStrategy = self.Strategies.DEFAULT
+        self.setupSystematicError = [1.6, 1.6, 1.6]  # mm
+        self.setupRandomError = [1.4, 1.4, 1.4]  # mm
+        self.rangeSystematicError = 1.6  # %
+        self.numScenarios = 0
+        self.scenarios = []

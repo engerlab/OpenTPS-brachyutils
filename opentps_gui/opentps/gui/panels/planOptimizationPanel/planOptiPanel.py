@@ -7,13 +7,12 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QComboBox, QLabel, QPushButton
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.plan import ObjectivesList
-from opentps.core.data.plan._planDesign import PlanDesign
-from opentps.core.data._patient import Patient
+from opentps.core.data.plan import PlanDesign, Robustness
+from opentps.core.data import Patient
 from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
 from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
-from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
 from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer, BoundConstraintsOptimizer
 from opentps.gui.panels.doseComputationPanel import DoseComputationPanel
 from opentps.gui.panels.patientDataWidgets import PatientDataComboBox
@@ -83,8 +82,8 @@ class mcsquareCalculationWindow(QDialog):
             nominal, scenarios = doseCalculator.computeRobustScenarioBeamlets(self._doseComputationPanel.selectedCT,
                                                    self._doseComputationPanel.selectedPlan, self._contours)
             self._doseComputationPanel.selectedPlan.planDesign.beamlets = nominal
-            self._doseComputationPanel.selectedPlan.planDesign.scenarios = scenarios
-            self._doseComputationPanel.selectedPlan.planDesign.numScenarios = len(scenarios)
+            self._doseComputationPanel.selectedPlan.planDesign.robustness.scenarios = scenarios
+            self._doseComputationPanel.selectedPlan.planDesign.robustness.numScenarios = len(scenarios)
         else:
             beamlets = doseCalculator.computeBeamlets(self._doseComputationPanel.selectedCT,
                                                    self._doseComputationPanel.selectedPlan, self._contours)

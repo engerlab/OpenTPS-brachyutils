@@ -1,8 +1,7 @@
 
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt
-from opentps.core.processing.planEvaluation.robustnessEvaluation import Robustness
-
+from opentps.core.data.plan import Robustness
 
 class RobustnessSettings(QWidget):
     def __init__(self, viewController, planEvaluation=False, parent=None):
@@ -41,21 +40,21 @@ class RobustnessSettings(QWidget):
         RobustSettings = ''
         if (self._robustParam.selectionStrategy == self._robustParam.Strategies.DISABLED):
             RobustSettings = 'No robust settings'
-        elif (self._robustParam.selectionStrategy == self._robustParam.Strategies.ERRORSPACE_REGULAR):
+        elif (self._robustParam.selectionStrategy == self._robustParam.Strategies.ALL):
             RobustSettings += '<b>Scenario</b>: '
-            RobustSettings += 'Error space (regular)<br>'
+            RobustSettings += 'All <br>'
             RobustSettings += 'Syst. setup: E<sub>S</sub> = ' + str(self._robustParam.setupSystematicError) + ' mm<br>'
             RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.setupRandomError) + ' mm<br>'
             RobustSettings += 'Syst. range: E<sub>R</sub> = ' + str(self._robustParam.rangeSystematicError) + ' %<br>'
-        elif (self._robustParam.selectionStrategy == self._robustParam.Strategies.ERRORSPACE_STAT):
+        elif (self._robustParam.selectionStrategy == self._robustParam.Strategies.REDUCED_SET):
             RobustSettings += '<b>Scenario</b>: '
-            RobustSettings += 'Error space (statistical)<br>'
+            RobustSettings += 'Reduced set<br>'
             RobustSettings += 'Syst. setup: &Sigma;<sub>S</sub> = ' + str(self._robustParam.setupSystematicError) + ' mm<br>'
             RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.setupRandomError) + ' mm<br>'
             RobustSettings += 'Syst. range: &Sigma;<sub>R</sub> = ' + str(self._robustParam.rangeSystematicError) + ' %<br>'
-        elif self._robustParam.selectionStrategy == self._robustParam.Strategies.DOSIMETRIC:
+        elif self._robustParam.selectionStrategy == self._robustParam.Strategies.RANDOM:
             RobustSettings += '<b>Scenario</b>: '
-            RobustSettings += 'Dosimetric space (statistical)<br>'
+            RobustSettings += 'Random <br>'
             RobustSettings += 'Syst. setup: &Sigma;<sub>S</sub> = ' + str(self._robustParam.setupSystematicError) + ' mm<br>'
             RobustSettings += 'Rand. setup: &sigma;<sub>S</sub> = ' + str(self._robustParam.setupRandomError) + ' mm<br>'
             RobustSettings += 'Syst. range: &Sigma;<sub>R</sub> = ' + str(self._robustParam.rangeSystematicError) + ' %<br>'
@@ -77,11 +76,7 @@ class RobustnessSettingsDialog(QDialog):
         self._strategyBox = QComboBox()
         self._strategyBox.setMaximumWidth(300 - 18)
 
-        if (planEvaluation):
-            self._strategyBox.addItems(
-                ['Dosimetric space (statistical)', 'Error space (statistical)', 'Error space (regular)'])
-        else:
-            self._strategyBox.addItems(['Disabled', 'Error space (regular)'])
+        self._strategyBox.addItems(['Disabled', 'Reduced set','All','Random'])
 
         self.main_layout.addWidget(self._strategyBox)
         self.main_layout.addSpacing(20)
@@ -184,12 +179,12 @@ class RobustnessSettingsDialog(QDialog):
 
         if (self._strategyBox.currentText() == 'Disabled'):
             self._robustParam.selectionStrategy = Robustness.Strategies.DISABLED
-        elif (self._strategyBox.currentText() == 'Dosimetric space (statistical)'):
-            self._robustParam.selectionStrategy = Robustness.Strategies.DOSIMETRIC
-        elif (self._strategyBox.currentText() == 'Error space (statistical)'):
-            self._robustParam.selectionStrategy = Robustness.Strategies.ERRORSPACE_STAT
-        else:
-            self._robustParam.selectionStrategy = Robustness.Strategies.ERRORSPACE_REGULAR
+        elif (self._strategyBox.currentText() == 'All'):
+            self._robustParam.selectionStrategy = Robustness.Strategies.ALL
+        elif (self._strategyBox.currentText() == 'Reduced set'):
+            self._robustParam.selectionStrategy = Robustness.Strategies.REDUCED_SET
+        elif (self._strategyBox.currentText() == 'Random'):
+            self._robustParam.selectionStrategy = Robustness.Strategies.RANDOM
 
     @property
     def robustStrategie(self):
@@ -199,12 +194,12 @@ class RobustnessSettingsDialog(QDialog):
     def robustStrategie(self, strategy):
         if strategy == Robustness.Strategies.DISABLED:
             self._strategyBox.setCurrentText('Disabled')
-        elif strategy == Robustness.Strategies.DOSIMETRIC:
-            self._strategyBox.setCurrentText('Dosimetric space (statistical)')
-        elif strategy == Robustness.Strategies.ERRORSPACE_STAT:
-            self._strategyBox.setCurrentText('Error space (statistical)')
-        elif strategy == Robustness.Strategies.ERRORSPACE_REGULAR:
-            self._strategyBox.setCurrentText('Error space (regular)')
+        elif strategy == Robustness.Strategies.ALL:
+            self._strategyBox.setCurrentText('ALL')
+        elif strategy == Robustness.Strategies.REDUCED_SET:
+            self._strategyBox.setCurrentText('Reduced set')
+        elif strategy == Robustness.Strategies.RANDOM:
+            self._strategyBox.setCurrentText('Random')
 
         self.updateRobustStrategy()
 
@@ -218,7 +213,7 @@ class RobustnessSettingsDialog(QDialog):
             self.rand_setup_z.setEnabled(False)
             self.syst_range.setEnabled(False)
 
-        elif (self._strategyBox.currentText() == 'Error space (regular)'):
+        elif (self._strategyBox.currentText() == 'All'):
             self.syst_setup_x.setEnabled(True)
             self.syst_setup_y.setEnabled(True)
             self.syst_setup_z.setEnabled(True)
@@ -236,7 +231,7 @@ class RobustnessSettingsDialog(QDialog):
             self.rand_setup_z.setText('0.0')
             self.syst_range.setText('3.0')
 
-        elif (self._strategyBox.currentText() == 'Error space (statistical)'):
+        elif (self._strategyBox.currentText() == 'Reduced set'):
             self.syst_setup_x.setEnabled(True)
             self.syst_setup_y.setEnabled(True)
             self.syst_setup_z.setEnabled(True)
@@ -283,7 +278,7 @@ class RobustnessSettingsDialog(QDialog):
         sigma_z = float(self.rand_setup_z.text())
         range_sigma = float(self.syst_range.text())
 
-        if (self._strategyBox.currentText() == 'Error space (regular)'):
+        if (self._strategyBox.currentText() == 'Reduced set'):
             margin_x = 1.0 * Sigma_x + 0.7 * sigma_x
             margin_y = 1.0 * Sigma_y + 0.7 * sigma_y
             margin_z = 1.0 * Sigma_z + 0.7 * sigma_z

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-class Robustness:
+class RobustnessEval:
     """
     This class is used to compute the robustness of a plan.
 
@@ -53,12 +53,14 @@ class Robustness:
     doseDistribution : list[DoseImage]
         The dose distributions.
     """
+
+    # TODO: Add analysisStrategy class : DOSIMETRIC or ERROR SPACE
     class Strategies(Enum):
         DEFAULT = "DISABLED"
         DISABLED = "DISABLED"
-        ERRORSPACE_REGULAR = "ERRORSPACE_REGULAR"
-        ERRORSPACE_STAT = "ERRORSPACE_STAT"
-        DOSIMETRIC = "DOSIMETRIC"
+        ALL = "ALL"
+        REDUCED_SET = "REDUCED_SET"
+        RANDOM = "RANDOM"
 
     def __init__(self):
         self.selectionStrategy = self.Strategies.DEFAULT
