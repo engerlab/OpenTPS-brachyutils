@@ -123,7 +123,7 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
         dcm = pydicom.dcmread(filePath)
 
         # Dicom field
-        if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or dcm.Modality == "REG":
+        if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or (hasattr(dcm, 'Modality') and dcm.Modality == "REG"):
             if hasattr(dcm,'RegistrationSequence'):
                 transform = readDicomRigidTransform(filePath)
                 dataList.append(transform)
@@ -252,7 +252,7 @@ def readSingleData(filePath, dicomCT = {}):
             dcm = pydicom.dcmread(filePath)
 
             # Dicom field
-            if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or dcm.Modality == "REG":
+            if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.3" or (hasattr(dcm, 'Modality') and dcm.Modality == "REG"):
                 field = readDicomVectorField(filePath)
                 return field
 

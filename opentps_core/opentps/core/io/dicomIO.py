@@ -1136,10 +1136,9 @@ def readDicomPlan(dcmFile) -> RTPlan:
         return
 
     # Start parsing PBS plan
-    plan._numberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
-    # plan.numberOfBeams = int(dcm.FractionGroupSequence[0].NumberOfBeams)
-    plan.fractionGroupNumber = int(dcm.FractionGroupSequence[0].FractionGroupNumber)
-    
+    plan.numberOfFractionsPlanned = int(dcm.FractionGroupSequence[0].NumberOfFractionsPlanned)
+    plan.numberOfBeams = int(dcm.FractionGroupSequence[0].NumberOfBeams) if hasattr(dcm.FractionGroupSequence[0], 'NumberOfBeams') else len(dcm.IonBeamSequence)
+    plan.fractionGroupNumber = int(dcm.FractionGroupSequence[0].FractionGroupNumber) if hasattr(dcm.FractionGroupSequence[0], 'FractionGroupNumber') else 1   
     if (hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName')):
         plan.treatmentMachineName = dcm.IonBeamSequence[0].TreatmentMachineName if hasattr(dcm.IonBeamSequence[0], 'TreatmentMachineName') else ''
     else:
@@ -1231,7 +1230,7 @@ def readDicomPlan(dcmFile) -> RTPlan:
                 SnoutPosition = float(dcm_layer.SnoutPosition)
 
             if hasattr(dcm_layer, 'NumberOfPaintings'):
-                layer.NumberOfPaintings = int(dcm_layer.NumberOfPaintings)
+                layer.numberOfPaintings = int(dcm_layer.NumberOfPaintings)
             else:
                 layer.numberOfPaintings = 1
 
@@ -1453,23 +1452,23 @@ def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct:
     if hasattr(plan, 'fractionGroupSequence'): 
         for item in plan.fractionGroupSequence:
             fractionGroup = pydicom.dataset.Dataset()
-            fractionGroup.FractionGroupNumber = item.FractionGroupNumber
-            fractionGroup.NumberOfFractionsPlanned = item.NumberOfFractionsPlanned
-            fractionGroup.NumberOfBeams = item.NumberOfBeams
-            fractionGroup.NumberOfBrachyApplicationSetups = item.NumberOfBrachyApplicationSetups
+            fractionGroup.FractionGroupNumber = item.FractionGroupNumber if hasattr(item, 'FractionGroupNumber') else "0"
+            fractionGroup.NumberOfFractionsPlanned = plan.numberOfFractionsPlanned
+            fractionGroup.NumberOfBeams = plan.NumberOfBeams if hasattr(plan, 'NumberOfBeams') else len(plan)
+            fractionGroup.NumberOfBrachyApplicationSetups = item.NumberOfBrachyApplicationSetups if hasattr(item, 'NumberOfBrachyApplicationSetups') else "0"
             
             fractionGroup.ReferencedBeamSequence = []
             if hasattr(item, 'ReferencedBeamSequence') and len(item.ReferencedBeamSequence)>0:
                 for refBeam in item.ReferencedBeamSequence:
                     refBeamSeq = pydicom.dataset.Dataset()
-                    refBeamSeq.BeamDose = refBeam.BeamDose
-                    refBeamSeq.BeamMeterset = refBeam.BeamMeterset
+                    refBeamSeq.BeamDose = refBeam.BeamDose if hasattr(refBeamSeq, 'BeamDose') else ""
+                    refBeamSeq.BeamMeterset = refBeam.BeamMeterset if hasattr(refBeamSeq, 'BeamMeterset') else ""
                     if (hasattr(refBeamSeq, 'BeamDosePointDepth')):
                         refBeamSeq.BeamDosePointDepth = refBeam.BeamDosePointDepth
                     if hasattr(refBeamSeq, 'BeamDosePointSSD'):
                         refBeamSeq.BeamDosePointSSD = refBeam.BeamDosePointSSD
-                    refBeamSeq.BeamDoseType = refBeam.BeamDoseType
-                    refBeamSeq.ReferencedBeamNumber = refBeam.ReferencedBeamNumber
+                    refBeamSeq.BeamDoseType = refBeam.BeamDoseType  if hasattr(refBeamSeq, 'BeamDoseType') else ""
+                    refBeamSeq.ReferencedBeamNumber = refBeam.ReferencedBeamNumber if hasattr(refBeamSeq, 'ReferencedBeamNumber') else ""
                     fractionGroup.ReferencedBeamSequence.append(refBeamSeq)
             else:
                 defaultSeq = pydicom.dataset.Dataset()
@@ -1535,6 +1534,7 @@ def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct:
             bm.PrimaryDosimeterUnit = 'MU'
             bm.BeamNumber = beamNumber
             bm.BeamName = beam.name
+            bm.BeamDescription = ''
             bm.BeamType = 'STATIC'
             bm.RadiationType = plan.radiationType.upper()
             bm.TreatmentDeliveryType = 'TREATMENT'
@@ -1594,29 +1594,27 @@ def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct:
                     
             dcm_file.IonBeamSequence.append(bm)  
             
-    # beams read from DICOM file
-    # TODO: replace
     if hasattr(plan, 'ionBeamSequence') and len(plan.ionBeamSequence)>0:
-        for beam in plan.ionBeamSequence:
+        for beamNumber, beam in enumerate(plan.ionBeamSequence):
             referencedBeam = pydicom.dataset.Dataset()
             # referencedBeam.BeamMeterset = floatToDS(beam.meterset)
-            referencedBeam.Manufacturer = beam.Manufacturer
-            referencedBeam.TreatmentMachineName = beam.TreatmentMachineName
-            referencedBeam.PrimaryDosimeterUnit = beam.PrimaryDosimeterUnit
-            referencedBeam.BeamNumber = beam.BeamNumber
-            referencedBeam.BeamName = beam.BeamName
-            referencedBeam.BeamDescription = beam.BeamDescription
-            referencedBeam.BeamType = beam.BeamType
-            referencedBeam.RadiationType = beam.RadiationType
-            referencedBeam.TreatmentDeliveryType = beam.TreatmentDeliveryType
-            referencedBeam.NumberOfWedges = beam.NumberOfWedges
-            referencedBeam.NumberOfCompensators = beam.NumberOfCompensators
-            referencedBeam.NumberOfBoli = beam.NumberOfBoli
-            referencedBeam.NumberOfBlocks = beam.NumberOfBlocks
-            referencedBeam.FinalCumulativeMetersetWeight = beam.FinalCumulativeMetersetWeight
-            referencedBeam.NumberOfControlPoints = beam.NumberOfControlPoints
-            referencedBeam.ScanMode = beam.ScanMode
-            referencedBeam.VirtualSourceAxisDistances = beam.VirtualSourceAxisDistances
+            referencedBeam.Manufacturer = beam.Manufacturer if hasattr(beam, "Manufacturer") else ""
+            referencedBeam.TreatmentMachineName = beam.TreatmentMachineName if hasattr(beam, "TreatmentMachineName") else ""
+            referencedBeam.PrimaryDosimeterUnit = beam.PrimaryDosimeterUnit if hasattr(beam, "PrimaryDosimeterUnit") else "MU"
+            referencedBeam.BeamNumber = beam.BeamNumber if hasattr(beam, "BeamNumber") else str(beamNumber)
+            referencedBeam.BeamName = beam.BeamName if hasattr(beam, "BeamName") else ""
+            referencedBeam.BeamDescription = beam.BeamDescription if hasattr(beam, "BeamDescription") else ""
+            referencedBeam.BeamType = beam.BeamType if hasattr(beam, "BeamType") else "STATIC"
+            referencedBeam.RadiationType = plan.radiationType.upper() if hasattr(plan, "radiationType") else ""
+            referencedBeam.TreatmentDeliveryType = beam.TreatmentDeliveryType if hasattr(beam, "TreatmentDeliveryType") else "TREATMENT"
+            referencedBeam.NumberOfWedges = beam.NumberOfWedges if hasattr(beam, "NumberOfWedges") else "0"
+            referencedBeam.NumberOfCompensators = beam.NumberOfCompensators if hasattr(beam, "NumberOfCompensators") else "0"
+            referencedBeam.NumberOfBoli = beam.NumberOfBoli if hasattr(beam, "NumberOfBoli") else "0"
+            referencedBeam.NumberOfBlocks = beam.NumberOfBlocks if hasattr(beam, "NumberOfBlocks") else "0"
+            referencedBeam.FinalCumulativeMetersetWeight = beam.FinalCumulativeMetersetWeight if hasattr(beam, "FinalCumulativeMetersetWeight") else floatToDS(plan.beamCumulativeMetersetWeight[beamNumber])
+            referencedBeam.NumberOfControlPoints = beam.NumberOfControlPoints if hasattr(beam, "NumberOfControlPoints") else len(beam)
+            referencedBeam.ScanMode = beam.ScanMode if hasattr(beam, "ScanMode") else "MODULATED"
+            referencedBeam.VirtualSourceAxisDistances = beam.VirtualSourceAxisDistances if hasattr(beam,"VirtualSourceAxisDistances") else arrayToDS([0,0])
             # Snout Sequence
             referencedBeam.SnoutSequence = []
             if hasattr(beam, 'SnoutSequence') and len(beam.SnoutSequence) > 0:
@@ -1631,12 +1629,12 @@ def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct:
                 
             referencedBeam.NumberOfRangeShifters = beam.NumberOfRangeShifters if hasattr(beam, 'NumberOfRangeShifters') else ""
             referencedBeam.RangeShifterSequence = []
-            if hasattr(beam, 'RangeShifterSequence') and len(beam.RangeShifterSequence) > 0:
+            if hasattr(beam, 'RangeShifterSequence') and len(beam.RangeShifterSequence) > 0:     
                 for item in beam.RangeShifterSequence:
                     rsSeq = pydicom.dataset.Dataset()
-                    rsSeq.RangeShifterNumber = item.RangeShifterNumber
-                    rsSeq.RangeShifterID = item.RangeShifterID
-                    rsSeq.RangeShifterType = item.RangeShifterType
+                    rsSeq.RangeShifterNumber = item.RangeShifterNumber if hasattr(beam, 'RangeShifterNumber') else "0"
+                    rsSeq.RangeShifterID = item.RangeShifterID if hasattr(beam, 'RangeShifterID') else ""
+                    rsSeq.RangeShifterType = item.RangeShifterType if hasattr(beam, 'RangeShifterType') else "BINARY"
                     referencedBeam.RangeShifterSequence.append(rsSeq)
             else:
                 rsSeq = pydicom.dataset.Dataset()
@@ -1654,10 +1652,10 @@ def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct:
             if hasattr(beam, 'IonControlPointSequence') and len(beam.IonControlPointSequence)>0:
                 for ioncContorItem in beam.IonControlPointSequence:
                     ionCps = pydicom.dataset.Dataset()
-                    ionCps.NominalBeamEnergyUnit = ioncContorItem.NominalBeamEnergyUnit
-                    ionCps.ControlPointIndex = ioncContorItem.ControlPointIndex
-                    ionCps.NominalBeamEnergy = floatToDS(ioncContorItem.NominalBeamEnergy)
-                    if hasattr(ioncContorItem, 'GantryAngle'):
+                    ionCps.NominalBeamEnergyUnit = ioncContorItem.NominalBeamEnergyUnit if hasattr(ioncContorItem, 'NominalBeamEnergyUnit') else ""
+                    ionCps.ControlPointIndex = ioncContorItem.ControlPointIndex if hasattr(ioncContorItem, 'ControlPointIndex') else ""
+                    ionCps.NominalBeamEnergy = floatToDS(ioncContorItem.NominalBeamEnergy) if hasattr(ioncContorItem, 'NominalBeamEnergy') else ""
+                    if hasattr(ioncContorItem, 'GantryAngle'): 
                         ionCps.GantryAngle = ioncContorItem.GantryAngle
                     if hasattr(ioncContorItem, 'GantryRotationDirection'):
                         ionCps.GantryRotationDirection = ioncContorItem.GantryRotationDirection
@@ -1677,7 +1675,8 @@ def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct:
                         ionCps.TableTopLateralPosition = ioncContorItem.TableTopLateralPosition
                     if hasattr(ioncContorItem, 'IsocenterPosition'):
                         ionCps.IsocenterPosition = ioncContorItem.IsocenterPosition
-                    ionCps.CumulativeMetersetWeight = ioncContorItem.CumulativeMetersetWeight
+                    if hasattr(ioncContorItem, 'CumulativeMetersetWeight'):
+                        ionCps.CumulativeMetersetWeight = ioncContorItem.CumulativeMetersetWeight
                     if hasattr(ioncContorItem, 'TableTopPitchAngle'):
                         ionCps.TableTopPitchAngle = ioncContorItem.TableTopPitchAngle
                     if hasattr(ioncContorItem, 'TableTopPitchRotationDirection'):
@@ -1707,12 +1706,12 @@ def writeRTPlan(plan: RTPlan, outputFolder:str, outputFilename:str=None, struct:
                         defaultIonCpsRange.ReferencedRangeShifterNumber = "0"
                         ionCps.RangeShifterSettingsSequence.append(defaultIonCpsRange)
                     
-                    ionCps.ScanSpotTuneID = ioncContorItem.ScanSpotTuneID
-                    ionCps.NumberOfScanSpotPositions = ioncContorItem.NumberOfScanSpotPositions
-                    ionCps.ScanSpotPositionMap = ioncContorItem.ScanSpotPositionMap
-                    ionCps.ScanSpotMetersetWeights = ioncContorItem.ScanSpotMetersetWeights
-                    ionCps.ScanningSpotSize = ioncContorItem.ScanningSpotSize
-                    ionCps.NumberOfPaintings = ioncContorItem.NumberOfPaintings
+                    ionCps.ScanSpotTuneID = ioncContorItem.ScanSpotTuneID if hasattr(ioncContorItem, "ScanSpotTuneID") else ""
+                    ionCps.NumberOfScanSpotPositions = ioncContorItem.NumberOfScanSpotPositions if hasattr(ioncContorItem, "NumberOfScanSpotPositions") else ""
+                    ionCps.ScanSpotPositionMap = ioncContorItem.ScanSpotPositionMap if hasattr(ioncContorItem, "ScanSpotPositionMap") else ""
+                    ionCps.ScanSpotMetersetWeights = ioncContorItem.ScanSpotMetersetWeights if hasattr(ioncContorItem, "ScanSpotMetersetWeights") else ""
+                    ionCps.ScanningSpotSize = ioncContorItem.ScanningSpotSize if hasattr(ioncContorItem, "ScanningSpotSize") else ""
+                    ionCps.NumberOfPaintings = ioncContorItem.NumberOfPaintings if hasattr(ioncContorItem, "NumberOfPaintings") else 1
                     ionCps.ReferencedDoseReferenceSequence = []
                     if hasattr(ioncContorItem, 'ReferencedDoseReferenceSequence') and len(ioncContorItem.ReferencedDoseReferenceSequence)>0:
                         for refItem in ioncContorItem.ReferencedDoseReferenceSequence:
