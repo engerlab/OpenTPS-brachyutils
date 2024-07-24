@@ -277,6 +277,7 @@ DLLEXPORT_TAG void transport_spots_inside_target(float *SPR, bool *Target_mask, 
   		dist[1] = fabs(((floor((y-Offset[1])/PixelSpacing[1]) + (direction[1]>0)) * PixelSpacing[1] + Offset[1] - y)/direction[1]);
   		dist[2] = fabs(((floor((z-Offset[2])/PixelSpacing[2]) + (direction[2]>0)) * PixelSpacing[2] + Offset[2] - z)/direction[2]);
   		step = fmin(dist[0], fmin(dist[1], dist[2])) + 1e-3;
+      step = fmin(step, LayerSpacing);
 
   		voxel_SPR = SPR[id_vox];
         
