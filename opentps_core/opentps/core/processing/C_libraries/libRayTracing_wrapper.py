@@ -59,7 +59,7 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
         if ROI == []:
             ROI_mask = np.ones(SPR.gridSize)
         else:
-            ROI_mask = ROI.Mask
+            ROI_mask = np.array(ROI.imageArray, dtype=np.bool, order='C')
 
         # call C function
         libRaytracing.raytrace_WET(SPR.imageArray.astype(np.float32), ROI_mask.astype(bool), WET, Offset,
@@ -81,7 +81,7 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
             for j in range(SPR.gridSize[1]):
                 for k in range(SPR.gridSize[2]):
                     if (ROI != []):
-                        if (ROI.Mask[i, j, k] == 0): continue
+                        if (ROI.imageArray[i, j, k] == 0): continue
 
                     # initialize raytracing for voxel ijk
                     voxel_WET = 0
@@ -497,7 +497,7 @@ def transport_spots_inside_target_map(SPR, Target_mask, SpotGrid, direction, min
         Layers = -1.0 * np.ones(NumSpots * max_number_layers, dtype=np.float32, order='C')
 
         # call C function
-        libRaytracing.transport_spots_inside_target(SPR.Image.astype(np.float32), Target_mask.astype(bool), Offset,
+        libRaytracing.transport_spots_inside_target(SPR.imageArray.astype(np.float32), Target_mask.imageArray.astype(bool).flatten(), Offset,
                                                     PixelSpacing, GridSize, positions, WETs, Layers, direction,
                                                     NumSpots, max_number_layers, minWET, LayerSpacing)
 
