@@ -114,7 +114,7 @@ class PlanDesign(PatientData):
     
     @scoringGridSize.setter
     def scoringGridSize(self, gridSize: Sequence[float]):
-        self._gridSize = gridSize
+        self._scoringGridSize = gridSize
 
     @property
     def scoringOrigin(self):
