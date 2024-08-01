@@ -220,7 +220,8 @@ class PlanOptiPanel(QWidget):
             if obj.roiName not in objROINames:
                 objROINames.append(obj.roiName)
                 contours.append(obj.roi)
-        self.selectedPlanStructure.defineTargetMaskAndPrescription()
+
+        self.selectedPlanStructure.defineTargetMaskAndPrescriptionFromObjList()
 
         if self._spotPlacementBox.isChecked():
             self._placeSpots()
@@ -292,9 +293,9 @@ class PlanOptiPanel(QWidget):
 
         else:
             if self._selectedAlgo == "Scipy-BFGS":
-                method = 'Scipy-BFGS'
+                method = 'Scipy_BFGS'
             if self._selectedAlgo == "Scipy-LBFGS (recommended)":
-                method = 'Scipy-LBFGS'
+                method = 'Scipy_L-BFGS-B'
             elif self._selectedAlgo == "In-house BFGS":
                 method = 'BFGS'
             elif self._selectedAlgo == "In-house LBFGS":
@@ -307,9 +308,9 @@ class PlanOptiPanel(QWidget):
                 method = 'LP'
 
             if self._optiConfig['bounds']:
-                solver = BoundConstraintsOptimizer(method = method, plan = self._plan, bounds = self._optiConfig['bounds'], maxit=self._optiConfig['maxIter'])
+                solver = BoundConstraintsOptimizer(method = method, plan = self._plan, bounds = self._optiConfig['bounds'], maxiter=self._optiConfig['maxIter'])
             else:
-                solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxit=self._optiConfig['maxIter'])
+                solver = IMPTPlanOptimizer(method=method, plan=self._plan, maxiter=self._optiConfig['maxIter'])
             # Optimize treatment plan
             doseImage, _ = solver.optimize()
             doseImage.patient = self._mcsquareWindow._doseComputationPanel.selectedCT.patient

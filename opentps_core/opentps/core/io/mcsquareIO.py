@@ -5,7 +5,7 @@ import struct
 import time
 import logging
 import unittest
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Iterable
 
 import numpy as np
 import pydicom
@@ -849,13 +849,19 @@ def writeObjectives(objectives: ObjectivesList, file_path):
     file_path : str
         The path to the file where the objectives will be written
     """
-    targetName = objectives.targetName.replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
+    if isinstance(objectives.targetName,Iterable):
+        targetName = objectives.targetName[0].replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
+    else:
+        targetName = objectives.targetName[0].replace(' ', '_').replace('-', '_').replace('.', '_').replace('/', '_')
 
     logger.info("Write plan objectives: {}".format(file_path))
     fid = open(file_path, 'w');
     fid.write("# List of objectives for treatment plan planOptimization\n\n")
     fid.write("Target_ROIName:\n" + targetName + "\n\n")
-    fid.write("Dose_prescription:\n" + str(objectives.targetPrescription) + "\n\n")
+    if isinstance(objectives.targetPrescription,Iterable):
+        fid.write("Dose_prescription:\n" + str(objectives.targetPrescription[0]) + "\n\n")
+    else:
+        fid.write("Dose_prescription:\n" + str(objectives.targetPrescription) + "\n\n")
     fid.write("Number_of_objectives:\n" + str(len(objectives.fidObjList)) + "\n\n")
 
     for objective in objectives.fidObjList:

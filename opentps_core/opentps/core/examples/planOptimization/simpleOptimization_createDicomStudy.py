@@ -118,7 +118,8 @@ def run(output_path=""):
         planDesign.layerSpacing = 5.0
         planDesign.targetMargin = 5.0
         planDesign.setScoringParameters(scoringSpacing=[2, 2, 2], adapt_gridSize_to_new_spacing=True)
-
+        planDesign.defineTargetMaskAndPrescription(target = roi, targetPrescription = 20.) # needs to be called prior spot placement
+        
         plan = planDesign.buildPlan()  # Spot placement
         plan.rtPlanName = "Simple_Patient"
 
@@ -128,9 +129,7 @@ def run(output_path=""):
         # Save plan with initial spot weights in serialized format (OpenTPS format)
         saveRTPlan(plan, plan_file)
 
-    plan.planDesign.objectives = ObjectivesList()
-    plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    plan.planDesign.objectives.fidObjList = []
+    # Set objectives (attribut is already initialized in planDesign object)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0)
     
@@ -140,7 +139,7 @@ def run(output_path=""):
     plan.frameOfReferenceUID = frameOfReferenceUID
     plan.rtPlanGeometry = "TREATMENT_DEVICE"
     
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=1000)
+    solver = IMPTPlanOptimizer(method='Scipy_L-BFGS-B', plan=plan, maxiter=1000)
     # Optimize treatment plan
     doseImage, ps = solver.optimize()
 

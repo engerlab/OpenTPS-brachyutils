@@ -20,6 +20,7 @@ except:
     cupy_available = False
 
 from opentps.core.processing.planOptimization.objectives.baseFunction import BaseFunc
+from opentps.core.data._dvh import DVH
 
 
 class DoseFidelity(BaseFunc):
@@ -122,6 +123,59 @@ class DoseFidelity(BaseFunc):
                     f = np.mean(np.minimum(0, doseTotal[objective.maskVec].get() - objective.limitValue) ** 2)
                 else:
                     f = np.mean(np.minimum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
+            elif objective.metric == objective.Metrics.DUNIFORM:
+                if self.GPU_acceleration:
+                    f = np.mean((doseTotal[objective.maskVec].get() - objective.limitValue) ** 2)
+                else:
+                    f = np.mean((doseTotal[objective.maskVec] - objective.limitValue) ** 2)
+            elif objective.metric == objective.Metrics.DFALLOFF:
+                if self.GPU_acceleration:
+                    f = np.mean(np.maximum(0, doseTotal[objective.maskVec].get() - objective.voxelwiseLimitValue) ** 2)
+                else:
+                    f = np.mean(np.maximum(0, doseTotal[objective.maskVec] - objective.voxelwiseLimitValue) ** 2)
+            elif objective.metric == objective.Metrics.DVHMIN:
+                if self.GPU_acceleration:
+                    deviation = doseTotal[objective.maskVec].get() - objective.limitValue
+                    DAV = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec]).get()
+                    deviation[(doseTotal[objective.maskVec].get() > objective.limitValue) | (doseTotal[objective.maskVec].get() < DAV)] = 0
+                    f = np.mean(deviation**2)
+                else:
+                    deviation = doseTotal[objective.maskVec] - objective.limitValue
+                    DAV = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec])
+                    deviation[(doseTotal[objective.maskVec] > objective.limitValue) | (doseTotal[objective.maskVec] < DAV)] = 0
+                    f = np.mean(deviation**2)   
+            elif objective.metric == objective.Metrics.DVHMAX:
+                if self.GPU_acceleration:
+                    deviation = doseTotal[objective.maskVec].get() - objective.limitValue
+                    DAV = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec]).get()
+                    deviation[(doseTotal[objective.maskVec].get() < objective.limitValue) | (doseTotal[objective.maskVec].get() > DAV)] = 0
+                    f = np.mean(deviation**2)
+                else:
+                    deviation = doseTotal[objective.maskVec] - objective.limitValue
+                    DAV = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec])
+                    deviation[(doseTotal[objective.maskVec] < objective.limitValue) | (doseTotal[objective.maskVec] > DAV)] = 0
+                    f = np.mean(deviation**2)
+            elif objective.metric == objective.Metrics.EUDMAX:
+                if self.GPU_acceleration:
+                    DVH_a = np.mean(doseTotal[objective.maskVec].get() ** objective.EUDa) ** (1/objective.EUDa)
+                    f = max(0, DVH_a - objective.limitValue) ** 2
+                else:
+                    DVH_a = np.mean(doseTotal[objective.maskVec] ** objective.EUDa) ** (1/objective.EUDa)
+                    f = max(0, DVH_a - objective.limitValue) ** 2
+            elif objective.metric == objective.Metrics.EUDMIN:
+                if self.GPU_acceleration:
+                    DVH_a = np.mean(doseTotal[objective.maskVec].get() ** objective.EUDa) ** (1/objective.EUDa)
+                    f = min(0, DVH_a - objective.limitValue) ** 2
+                else:
+                    DVH_a = np.mean(doseTotal[objective.maskVec] ** objective.EUDa) ** (1/objective.EUDa)
+                    f = min(0, DVH_a - objective.limitValue) ** 2
+            elif objective.metric == objective.Metrics.EUDUNIFORM:
+                if self.GPU_acceleration:
+                    DVH_a = np.mean(doseTotal[objective.maskVec].get() ** objective.EUDa) ** (1/objective.EUDa)
+                    f = (DVH_a - objective.limitValue) ** 2
+                else:
+                    DVH_a = np.mean(doseTotal[objective.maskVec] ** objective.EUDa) ** (1/objective.EUDa)
+                    f = (DVH_a - objective.limitValue) ** 2   
             elif objective.metric == objective.Metrics.DFALLOFF:
                 if self.GPU_acceleration:
                     f = np.mean(np.maximum(0, doseTotal[objective.maskVec].get() - objective.voxelwiseLimitValue) ** 2)
@@ -176,6 +230,29 @@ class DoseFidelity(BaseFunc):
                                    np.mean(doseTotal[objective.maskVec], dtype=np.float32) - objective.limitValue) ** 2
                 elif objective.metric == objective.Metrics.DMIN:
                     f = np.mean(np.minimum(0, doseTotal[objective.maskVec] - objective.limitValue) ** 2)
+                elif objective.metric == objective.Metrics.DUNIFORM:
+                    f = np.mean((doseTotal[objective.maskVec] - objective.limitValue) ** 2)
+                elif objective.metric == objective.Metrics.DFALLOFF:
+                    f = np.mean(np.maximum(0, doseTotal[objective.maskVec] - objective.voxelwiseLimitValue) ** 2)
+                elif objective.metric == objective.Metrics.DVHMIN:
+                    deviation = doseTotal[objective.maskVec] - objective.limitValue
+                    DAV = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec])
+                    deviation[(doseTotal[objective.maskVec] > objective.limitValue) | (doseTotal[objective.maskVec] < DAV)] = 0
+                    f = np.mean(deviation**2)
+                elif objective.metric == objective.Metrics.DVHMAX:
+                    deviation = doseTotal[objective.maskVec] - objective.limitValue
+                    DAV = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec])
+                    deviation[(doseTotal[objective.maskVec] < objective.limitValue) | (doseTotal[objective.maskVec] > DAV)] = 0
+                    f = np.mean(deviation**2)
+                elif objective.metric == objective.Metrics.EUDMAX:
+                    DVH_a = np.mean(doseTotal[objective.maskVec] ** objective.EUDa) ** (1/objective.EUDa)
+                    f = max(0, DVH_a - objective.limitValue) ** 2
+                elif objective.metric == objective.Metrics.EUDMIN:
+                    DVH_a = np.mean(doseTotal[objective.maskVec] ** objective.EUDa) ** (1/objective.EUDa)
+                    f = min(0, DVH_a - objective.limitValue) ** 2
+                elif objective.metric == objective.Metrics.EUDUNIFORM:
+                    DVH_a = np.mean(doseTotal[objective.maskVec] ** objective.EUDa) ** (1/objective.EUDa)
+                    f = (DVH_a - objective.limitValue) ** 2
                 elif objective.metric == objective.Metrics.DFALLOFF:
                     f = np.mean(np.maximum(0, doseTotal[objective.maskVec] - objective.voxelwiseLimitValue) ** 2)
                 else:
@@ -309,7 +386,7 @@ class DoseFidelity(BaseFunc):
                         cp.float32))
                 else:
                     f = np.maximum(0, np.mean(doseTotal[objective.maskVec],
-                                              dtype=np.float32) - objective.limitValue.astype(np.float32))
+                                              dtype=np.float32) - objective.limitValue)
 
                 if self.GPU_acceleration:
                     try:
@@ -348,6 +425,27 @@ class DoseFidelity(BaseFunc):
                     df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
                     dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
 
+            elif objective.metric == objective.Metrics.DUNIFORM:
+                if self.GPU_acceleration:
+                    maskVec_gpu = cp.asarray(objective.maskVec)
+                    limitValue_gpu = cp.asarray(objective.limitValue)
+                    f = doseTotal[maskVec_gpu] - limitValue_gpu.astype(cp.float32)
+
+                else:
+                    f = doseTotal[objective.maskVec] - objective.limitValue
+
+                if self.GPU_acceleration:
+                    f = cpx.scipy.sparse.diags(f, format='csc')
+                    df = cp.sparse.csc_matrix.dot(f, doseBL[maskVec_gpu, :])
+                    dfTot += objective.weight * (cpx.scipy.sparse.csr_matrix.mean(df, axis=0)).get()
+                elif use_MKL == 1:
+                    f = sp.diags(f.astype(np.float32), format='csc')
+                    df = sparse_dot_mkl.dot_product_mkl(f, doseBL[objective.maskVec, :])
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=0)
+                else:
+                    df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
+
             elif objective.metric == objective.Metrics.DFALLOFF:
                 if self.GPU_acceleration:
                     maskVec_gpu = cp.asarray(objective.maskVec)
@@ -369,6 +467,124 @@ class DoseFidelity(BaseFunc):
                     df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
                     dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
 
+            elif objective.metric == objective.Metrics.DVHMIN:
+                d_ref = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec])
+                if self.GPU_acceleration:
+                    maskVec_gpu = cp.asarray(objective.maskVec)
+                    limitValue_gpu = cp.asarray(objective.limitValue)
+                    f = cp.minimum(0, doseTotal[maskVec_gpu] - limitValue_gpu.astype(cp.float32))
+                    f[doseTotal[maskVec_gpu] < d_ref] = 0
+                else:
+                    f = np.minimum(0, doseTotal[objective.maskVec] - objective.limitValue)
+                    f[doseTotal[objective.maskVec] < d_ref] = 0
+
+
+                if self.GPU_acceleration:
+                    f = cpx.scipy.sparse.diags(f, format='csc')
+                    df = cp.sparse.csc_matrix.dot(f, doseBL[maskVec_gpu, :])
+                    dfTot += objective.weight * (cpx.scipy.sparse.csr_matrix.mean(df, axis=0)).get()
+                elif use_MKL == 1:
+                    f = sp.diags(f.astype(np.float32), format='csc')
+                    df = sparse_dot_mkl.dot_product_mkl(f, doseBL[objective.maskVec, :])
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=0)
+                else:
+                    df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
+
+            elif objective.metric == objective.Metrics.DVHMAX:
+                d_ref = self._calcInverseDVH(objective.volume, doseTotal[objective.maskVec])
+                if self.GPU_acceleration:
+                    maskVec_gpu = cp.asarray(objective.maskVec)
+                    limitValue_gpu = cp.asarray(objective.limitValue)
+                    f = cp.maximum(0, doseTotal[maskVec_gpu] - limitValue_gpu.astype(cp.float32))
+                    f[doseTotal[maskVec_gpu] > d_ref] = 0
+                else:
+                    f = np.maximum(0, doseTotal[objective.maskVec] - objective.limitValue)
+                    f[doseTotal[objective.maskVec] > d_ref] = 0
+                if self.GPU_acceleration:
+                    f = cpx.scipy.sparse.diags(f, format='csc')
+                    df = cp.sparse.csc_matrix.dot(f, doseBL[maskVec_gpu, :])
+                    dfTot += objective.weight * (cpx.scipy.sparse.csr_matrix.mean(df, axis=0)).get()
+                elif use_MKL == 1:
+                    f = sp.diags(f.astype(np.float32), format='csc')
+                    df = sparse_dot_mkl.dot_product_mkl(f, doseBL[objective.maskVec, :])
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=0)
+                else:
+                    df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
+            elif objective.metric == objective.Metrics.EUDMAX:
+                if self.GPU_acceleration:
+                    maskVec_gpu = cp.asarray(objective.maskVec)
+                    limitValue_gpu = cp.asarray(objective.limitValue)
+                    EUDa_gpu = cp.asarray(objective.EUDa)
+                    power_dose = doseTotal[maskVec_gpu] ** EUDa_gpu
+                    EUD_a = cp.mean(power_dose) ** (1/EUDa_gpu)
+                    f = (1 / len(maskVec_gpu)) ** ((1 - EUDa_gpu)/ EUDa_gpu) * cp.sum(power_dose) ** ((1 - EUDa_gpu) / EUDa_gpu) * doseTotal[maskVec_gpu] ** (EUDa_gpu - 1) * cp.maximum(0, EUD_a - limitValue_gpu)
+                else:
+                    power_dose = doseTotal[objective.maskVec] ** objective.EUDa
+                    EUD_a = np.mean(power_dose) ** (1/objective.EUDa)
+                    f = (1 / len(objective.maskVec)) ** ((1 - objective.EUDa)/ objective.EUDa) * np.sum(power_dose) ** ((1 - objective.EUDa) / objective.EUDa) * doseTotal[objective.maskVec] ** (objective.EUDa - 1) * max(0, EUD_a - objective.limitValue)
+
+                if self.GPU_acceleration:
+                    f = cpx.scipy.sparse.diags(f, format='csc')
+                    df = cp.sparse.csc_matrix.dot(f, doseBL[maskVec_gpu, :])
+                    dfTot += objective.weight * (cpx.scipy.sparse.csr_matrix.mean(df, axis=0)).get()
+                elif use_MKL == 1:
+                    f = sp.diags(f.astype(np.float32), format='csc')
+                    df = sparse_dot_mkl.dot_product_mkl(f, doseBL[objective.maskVec, :])
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=0)
+                else:
+                    df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
+            elif objective.metric == objective.Metrics.EUDMIN:
+                if self.GPU_acceleration:
+                    maskVec_gpu = cp.asarray(objective.maskVec)
+                    limitValue_gpu = cp.asarray(objective.limitValue)
+                    EUDa_gpu = cp.asarray(objective.EUDa)
+                    power_dose = doseTotal[maskVec_gpu] ** EUDa_gpu
+                    EUD_a = cp.mean(power_dose) ** (1/EUDa_gpu)
+                    f = (1 / len(maskVec_gpu)) ** ((1 - EUDa_gpu)/ EUDa_gpu) * cp.sum(power_dose) ** ((1 - EUDa_gpu) / EUDa_gpu) * doseTotal[maskVec_gpu] ** (EUDa_gpu - 1) * cp.minimum(0, EUD_a - limitValue_gpu)
+                else:
+                    power_dose = doseTotal[objective.maskVec] ** objective.EUDa
+                    EUD_a = np.mean(power_dose) ** (1/objective.EUDa)
+                    f = (1 / len(objective.maskVec)) ** ((1 - objective.EUDa)/ objective.EUDa) * np.sum(power_dose) ** ((1 - objective.EUDa) / objective.EUDa) * doseTotal[objective.maskVec] ** (objective.EUDa - 1) * min(0,EUD_a - objective.limitValue)
+
+                if self.GPU_acceleration:
+                    f = cpx.scipy.sparse.diags(f, format='csc')
+                    df = cp.sparse.csc_matrix.dot(f, doseBL[maskVec_gpu, :])
+                    dfTot += objective.weight * (cpx.scipy.sparse.csr_matrix.mean(df, axis=0)).get()
+                elif use_MKL == 1:
+                    f = sp.diags(f.astype(np.float32), format='csc')
+                    df = sparse_dot_mkl.dot_product_mkl(f, doseBL[objective.maskVec, :])
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=0)
+                else:
+                    df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
+            elif objective.metric == objective.Metrics.EUDUNIFORM:
+                if self.GPU_acceleration:
+                    maskVec_gpu = cp.asarray(objective.maskVec)
+                    limitValue_gpu = cp.asarray(objective.limitValue)
+                    EUDa_gpu = cp.asarray(objective.EUDa)
+                    power_dose = doseTotal[maskVec_gpu] ** EUDa_gpu
+                    EUD_a = cp.mean(power_dose) ** (1/EUDa_gpu)
+                    f = (1 / len(maskVec_gpu)) ** ((1 - EUDa_gpu)/ EUDa_gpu) * cp.sum(power_dose) ** ((1 - EUDa_gpu) / EUDa_gpu) * doseTotal[maskVec_gpu] ** (EUDa_gpu - 1) * (EUD_a - limitValue_gpu)
+                else:
+                    power_dose = doseTotal[objective.maskVec] ** objective.EUDa
+                    EUD_a = np.mean(power_dose) ** (1/objective.EUDa)
+                    f = (1 / len(objective.maskVec)) ** ((1 - objective.EUDa)/ objective.EUDa) * np.sum(power_dose) ** ((1 - objective.EUDa) / objective.EUDa) * doseTotal[objective.maskVec] ** (objective.EUDa - 1) * (EUD_a - objective.limitValue)
+
+                if self.GPU_acceleration:
+                    f = cpx.scipy.sparse.diags(f, format='csc')
+                    df = cp.sparse.csc_matrix.dot(f, doseBL[maskVec_gpu, :])
+                    dfTot += objective.weight * (cpx.scipy.sparse.csr_matrix.mean(df, axis=0)).get()
+                elif use_MKL == 1:
+                    f = sp.diags(f.astype(np.float32), format='csc')
+                    df = sparse_dot_mkl.dot_product_mkl(f, doseBL[objective.maskVec, :])
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=0)
+                else:
+                    df = sp.csr_matrix.multiply(doseBL[:, objective.maskVec], f)
+                    dfTot += objective.weight * sp.csr_matrix.mean(df, axis=1)
+                    
             else:
                 raise Exception(objective.metric + ' is not supported as an objective metric')
 
@@ -383,6 +599,16 @@ class DoseFidelity(BaseFunc):
             cp._default_memory_pool.free_all_blocks()
 
         return dfTot
+    
+    def _calcInverseDVH(self, volume, dose):
+        if self.GPU_acceleration:
+            sorted_dose = cp.sort(dose.flatten())
+            volume_cupy = cp.asarray(volume)
+            index = cp.rint((1 - volume_cupy) * len(sorted_dose)).astype(np.int32)
+        else:
+            sorted_dose = np.sort(dose.flatten())
+            index = int((1 - volume) * len(sorted_dose))
+        return sorted_dose[index]
 
     def _eval(self, x):
         f = self.computeFidelityFunction(x)
