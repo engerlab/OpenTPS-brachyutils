@@ -1,104 +1,10 @@
-import json
 import logging
-import time
 import numpy as np
-import scipy.optimize
-from scipy.optimize import Bounds
 
 from opentps.core.processing.planOptimization.acceleration.linesearch import LineSearch
 from opentps.core.processing.planOptimization.solvers.gradientDescent import GradientDescent
 
 logger = logging.getLogger(__name__)
-
-
-class ScipyOpt:
-    """
-    ScipyOpt is a wrapper for the scipy.optimize.minimize function.
-
-    Attributes
-    ----------
-    meth : str (default: 'L-BFGS')
-        The name of the scipy.optimize.minimize method to be used.
-    Nfeval : int
-        The number of function evaluations.
-    params : dict
-        The parameters for the scipy.optimize.minimize function.
-        The paremeters are:
-            ftol : float (default: 1e-06)
-                Tolerance for termination by the change of the cost function.
-            gtol : float (default: 1e-05)
-                Tolerance for termination by the norm of the gradient.
-            maxit : int (default: 1000)
-                Maximum number of iterations.
-            output : str (default: None)
-                The name of the output file.
-    name : str
-        The name of the solver.
-    """
-    def __init__(self, meth='L-BFGS', **kwargs):
-        self.meth = meth
-        self.Nfeval = 1
-        self.params = kwargs
-        self.params['ftol'] = self.params.get('ftol', 1e-06)
-        self.params['gtol'] = self.params.get('gtol', 1e-05)
-        self.params['maxit'] = self.params.get('maxit', 1000)
-        self.params['output'] = self.params.get('output', None)
-        self.name = meth
-
-    def solve(self, func, x0, bounds=None):
-        """
-        Solves the planOptimization problem using the scipy.optimize.minimize function.
-
-        Parameters
-        ----------
-        func : list of functions
-            The functions to be optimized.
-        x0 : list
-            The initial guess.
-        bounds : list of Bounds (default: None)
-            The bounds on the variables for scipy.optimize.minimize. By default, no bounds are set.
-            Machine delivery constraints can (and should) be enforced by setting the bounds.
-
-        Returns
-        -------
-        result : dict
-            The result of the planOptimization.
-            The keys are:
-                sol : list
-                    The solution.
-                crit : str
-                    The termination criterion.
-                niter : int
-                    The number of iterations.
-                time : float
-                    The time of the planOptimization.
-                objective : list
-                    The value of the objective function at each iteration.
-        """
-        def callbackF(Xi):
-            logger.info('Iteration {} of Scipy-{}'.format(self.Nfeval, self.meth))
-            logger.info('objective = {0:.6e}  '.format(func[0].eval(Xi)))
-            cost.append(func[0].eval(Xi))
-            self.Nfeval += 1
-
-        startTime = time.time()
-
-        cost = [func[0].eval(x0)]
-        if 'GRAD' not in func[0].cap(x0):
-            logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
-        res = scipy.optimize.minimize(func[0].eval, x0, method=self.meth, jac=func[0].grad, callback=callbackF,
-                                      options={'disp': True, 'iprint': -1, 'maxiter': self.params['maxit'], 'ftol': self.params['ftol'], 'gtol': self.params['gtol']},
-                                      bounds=bounds)
-
-        result = {'sol': res.x.tolist(), 'crit': res.message, 'niter': res.nit, 'time': time.time() - startTime,
-                  'objective': cost}
-
-        if self.params['output'] is not None:
-            with open(self.params['output'],'w') as f:
-                json.dump(result, f)
-
-        return result
-
 
 class BFGS(GradientDescent):
     """

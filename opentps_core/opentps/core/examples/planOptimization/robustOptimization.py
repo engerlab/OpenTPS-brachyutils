@@ -83,7 +83,6 @@ def run(output_path=""):
     else:
         planDesign = PlanDesign()
         planDesign.ct = ct
-        planDesign.targetMask = roi
         planDesign.gantryAngles = gantryAngles
         planDesign.beamNames = beamNames
         planDesign.couchAngles = couchAngles
@@ -106,7 +105,9 @@ def run(output_path=""):
         planDesign.spotSpacing = 7.0
         planDesign.layerSpacing = 6.0
         planDesign.targetMargin = max(planDesign.spotSpacing, planDesign.layerSpacing) + max(planDesign.robustness.setupSystematicError)
-
+        # scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
+        # planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
+        planDesign.defineTargetMaskAndPrescription(target = roi, targetPrescription = 20.) # needs to be called prior spot placement
         plan = planDesign.buildPlan()  # Spot placement
         plan.PlanName = "RobustPlan"
 
@@ -114,6 +115,7 @@ def run(output_path=""):
         plan.planDesign.beamlets = nominal
         plan.planDesign.robustness.scenarios = scenarios
         plan.planDesign.robustness.numScenarios = len(scenarios)
+        
 
         #saveRTPlan(plan, plan_file)
 
@@ -121,15 +123,11 @@ def run(output_path=""):
 
     beamletMatrix = plan.planDesign.beamlets.toSparseMatrix()
     saveRTPlan(plan, plan_file)
-    plan.planDesign.objectives = ObjectivesList()
-    plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    # scoringGridSize = [int(math.floor(i / j * k)) for i, j, k in zip(ct.gridSize, scoringSpacing, ct.spacing)]
-    # plan.planDesign.objectives.setScoringParameters(ct, scoringGridSize, scoringSpacing)
-    plan.planDesign.objectives.fidObjList = []
+    # Set objectives (attribut is already initialized in planDesign object)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0, robust=True)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.5, 1.0, robust=True)
 
-    solver = IMPTPlanOptimizer(method='Scipy-LBFGS', plan=plan, maxit=50)
+    solver = IMPTPlanOptimizer(method='Scipy_L-BFGS-B', plan=plan, maxiter=50)
     # Optimize treatment plan
     doseImage, ps = solver.optimize()
 

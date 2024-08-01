@@ -356,6 +356,8 @@ class LP:
                 model.addConstr((vmean >= (aux.sum() / M) - objective.limitValue),
                                      name=objective.roiName.replace(" ", "_") + "_meanConstr")
                 fidelity += vmean * objective.weight
+            else:
+                raise Exception(str(objective.metric) + " objectives are not implemented for the LP method")
 
         model.setObjective(fidelity)
         #model.setObjectiveN(fidelity, 0, 0, self.fidWeight, 0, 0, "Fidelity cost")

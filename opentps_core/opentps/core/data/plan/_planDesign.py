@@ -3,12 +3,13 @@ __all__ = ['PlanDesign','Robustness']
 
 import logging
 import time
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, Iterable
 from enum import Enum
 import numpy as np
 import pydicom
 
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
+from opentps.core.data._roiContour import ROIContour
 from opentps.core.data.images import CTImage
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.plan._rangeShifter import RangeShifter
@@ -36,7 +37,7 @@ class PlanDesign(PatientData):
     scoringVoxelSpacing: float or list of float
         spacing of the scoring grid in mm
     targetMask: ROIMask
-        mask of the target
+        union of target masks
     proximalLayers: int (default: 1)
         number of proximal layers
     distalLayers: int (default: 1)
@@ -73,7 +74,6 @@ class PlanDesign(PatientData):
         self._scoringVoxelSpacing = None
         self._scoringGridSize = None
         self._scoringOrigin = None
-        self.targetMask: ROIMask = None
         self.proximalLayers = 1
         self.distalLayers = 1
         self.layersToSpacingAlignment = False
@@ -126,7 +126,8 @@ class PlanDesign(PatientData):
     @scoringOrigin.setter
     def scoringOrigin(self, origin):
         self._scoringOrigin = origin
-        
+
+
     def buildPlan(self):
         """
         Builds a plan from the plan design
@@ -157,10 +158,11 @@ class PlanDesign(PatientData):
         logger.info("Number of spots: {}".format(plan.numberOfSpots))
 
         return plan
-
-    def defineTargetMaskAndPrescription(self):
+    
+    def defineTargetMaskAndPrescriptionFromObjList(self):
         """
-        Defines the target mask and the prescription
+        Defines the target mask and the prescription from the objective list 
+        Only works if objectives have already been set.
         """
         from opentps.core.data._roiContour import ROIContour
 
@@ -168,8 +170,6 @@ class PlanDesign(PatientData):
         for objective in self.objectives.fidObjList:
             if objective.metric == objective.Metrics.DMIN:
                 roi = objective.roi
-
-                self.objectives.setTarget(objective.roiName, objective.limitValue)
 
                 if isinstance(roi, ROIContour):
                     mask = roi.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
@@ -185,9 +185,60 @@ class PlanDesign(PatientData):
                     targetMask = mask
                 else:
                     targetMask.imageArray = np.logical_or(targetMask.imageArray, mask.imageArray)
+                
+                self.objectives.setTarget(objective.roiName, mask, objective.limitValue)
 
         if targetMask is None:
             raise Exception('Could not find a target volume in dose fidelity objectives')
+
+        self.targetMask = targetMask
+
+    def defineTargetMaskAndPrescription(self,target:Union[Union[ROIMask,ROIContour],Sequence[Union[ROIMask,ROIContour]]],targetPrescription:Union[float,Sequence[float]]):
+        """
+        Defines the target mask and the prescription with given parameters (primary and secondary tumors masl)
+        Works even if no objectives have been set (at the plan design stage)
+        Call required before spot placement.
+        """
+        from opentps.core.data._roiContour import ROIContour
+        targetMask = None
+        if isinstance(target,Iterable):
+            for target,p in list(zip(target,targetPrescription)):                
+                if isinstance(target, ROIContour):
+                        mask = target.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
+                                                spacing=self.ct.spacing)
+                elif isinstance(target, ROIMask):
+                    mask = resampler3D.resampleImage3D(target, origin=self.ct.origin,
+                                                    gridSize=self.ct.gridSize,
+                                                    spacing=self.ct.spacing)
+                else:
+                    raise Exception(target.__class__.__name__ + ' is not a supported class for roi')
+
+                if targetMask is None:
+                    targetMask = mask
+                else:
+                    targetMask.imageArray = np.logical_or(targetMask.imageArray, mask.imageArray)
+                
+                self.objectives.setTarget(target.name, mask, p)
+        else:
+            if isinstance(target, ROIContour):
+                    mask = target.getBinaryMask(origin=self.ct.origin, gridSize=self.ct.gridSize,
+                                            spacing=self.ct.spacing)
+            elif isinstance(target, ROIMask):
+                mask = resampler3D.resampleImage3D(target, origin=self.ct.origin,
+                                                gridSize=self.ct.gridSize,
+                                                spacing=self.ct.spacing)
+            else:
+                raise Exception(target.__class__.__name__ + ' is not a supported class for roi')
+
+            if targetMask is None:
+                targetMask = mask
+            else:
+                targetMask.imageArray = np.logical_or(targetMask.imageArray, mask.imageArray)
+            
+            self.objectives.setTarget(target.name, mask, targetPrescription)
+
+        if targetMask is None:
+            raise Exception('No ROIContour nor ROIMask found in class attribut targets - User must specify')
 
         self.targetMask = targetMask
 

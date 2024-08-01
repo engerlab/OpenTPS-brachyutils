@@ -59,7 +59,6 @@ def run():
     # Generate new plan
     planDesign = PlanDesign()
     planDesign.ct = ct
-    planDesign.targetMask = roi
     planDesign.gantryAngles = gantryAngles
     planDesign.beamNames = beamNames
     planDesign.couchAngles = couchAngles
@@ -67,18 +66,15 @@ def run():
     planDesign.spotSpacing = 5.0
     planDesign.layerSpacing = 5.0
     planDesign.targetMargin = 5.0
-
+    planDesign.defineTargetMaskAndPrescription(target = roi, targetPrescription = 20.) # needs to be called prior spot placement
+        
     plan = planDesign.buildPlan()  # Spot placement
     plan.PlanName = "NewPlan"
 
-
-    plan.planDesign.objectives = ObjectivesList()
-    plan.planDesign.objectives.setTarget(roi.name, 20.0)
-    plan.planDesign.objectives.fidObjList = []
+    # Set objectives (attribut is already initialized in planDesign object)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMAX, 20.0, 1.0)
     plan.planDesign.objectives.addFidObjective(roi, FidObjective.Metrics.DMIN, 20.0, 1.0)
-    plan.planDesign.defineTargetMaskAndPrescription()
-
+    
     # MCsquare beamlet free planOptimization
     doseImage = mc2.optimizeBeamletFree(ct, plan, [roi])
     # Compute DVH

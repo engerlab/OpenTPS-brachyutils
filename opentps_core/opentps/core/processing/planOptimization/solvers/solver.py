@@ -160,9 +160,9 @@ class ConvexSolver(object):
                 err /= np.sqrt(last_sol.size)
                 if err < self.params['xtol']:
                     crit = 'XTOL'
-            if 'maxit' in self.params:
-                if niter >= self.params['maxit']:
-                    crit = 'MAXIT'
+            if 'maxiter' in self.params:
+                if niter >= self.params['maxiter']:
+                    crit = 'MAXITER'
 
             logger.info('    objective = {:.2e}'.format(current))
 

@@ -1,4 +1,4 @@
-from opentps.core.processing.planOptimization.solvers import bfgs, gradientDescent, lp
+from opentps.core.processing.planOptimization.solvers import bfgs, gradientDescent, lp, scipyOpt
 from opentps.core.data.plan._planIonLayer import PlanIonLayer
 from opentps.core.data.plan._planIonBeam import PlanIonBeam
 
@@ -21,7 +21,7 @@ class SPArCling:
         The final angle step.
     mode : str (default: 'BLBased')
         The mode of the solver.
-    coreOptimizer : str (default: 'Scipy-LBFGS')
+    coreOptimizer : str (default: 'Scipy_L-BFGS-B')
         The core optimizer to be used.
     M : int (default: 2)
         The number of beams to be used.
@@ -37,7 +37,7 @@ class SPArCling:
 
     """
     def __init__(self, plan, arcStart, arcStop, maxNSplitting, finalAngleStep, mode='BLBased',
-                 coreOptimizer='Scipy-LBFGS',
+                 coreOptimizer='Scipy_L-BFGS-B',
                  **kwargs):
         super(SPArCling, self).__init__(**kwargs)
         self.plan = plan
@@ -78,10 +78,10 @@ class SPArCling:
         else:
             raise NotImplementedError
 
-            if self.coreOptimizer == "Scipy-LBFGS":
-                solver = bfgs.ScipyOpt('BFGS', **kwargs)
-            elif self.coreOptimizer == 'Scipy-LBFGS':
-                solver = bfgs.ScipyOpt('L-BFGS-B', **kwargs)
+            if self.coreOptimizer == "Scipy_BFGS":
+                solver = scipyOpt.ScipyOpt('BFGS', **kwargs)
+            elif self.coreOptimizer == 'Scipy_L-BFGS-B':
+                solver = scipyOpt.ScipyOpt('L-BFGS-B', **kwargs)
             elif self.coreOptimizer == 'Gradient':
                 solver = gradientDescent.GradientDescent(**kwargs)
             elif self.coreOptimizer == 'BFGS':
