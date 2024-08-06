@@ -12,7 +12,7 @@ from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial impo
 
 class BDL:
     """
-    Beam Delivery Line (BDL) class
+    Beam Data Library (BDL) class
 
     Attributes
     ----------

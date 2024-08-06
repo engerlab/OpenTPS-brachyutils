@@ -137,7 +137,7 @@ class ObjectivesList:
             if limitValue == None: raise Exception("Error: objective DUNIFORM is missing a parameter.")
         elif metric == FidObjective.Metrics.EUDMAX.value or metric == FidObjective.Metrics.EUDMAX:
             objective.metric = FidObjective.Metrics.EUDMAX
-            if EUDa == None and limitValue == None:
+            if EUDa == None or limitValue == None:
                 raise Exception("Error: objective EUDMAX is missing a parameter.")
             elif EUDa==0:
                 raise Exception("Error: parameter of objective EUDMAX must be different than zero.")
@@ -145,7 +145,7 @@ class ObjectivesList:
                 objective.EUDa = EUDa
         elif metric == FidObjective.Metrics.EUDMIN.value or metric == FidObjective.Metrics.EUDMIN:
             objective.metric = FidObjective.Metrics.EUDMIN
-            if EUDa == None and limitValue == None:
+            if EUDa == None or limitValue == None:
                 raise Exception("Error: objective EUDMIN is missing a parameter.")
             elif EUDa==0:
                 raise Exception("Error: parameter of objective EUDMAX must be different than zero.")
@@ -153,7 +153,7 @@ class ObjectivesList:
                 objective.EUDa = EUDa
         elif metric == FidObjective.Metrics.EUDUNIFORM.value or metric == FidObjective.Metrics.EUDUNIFORM:
             objective.metric = FidObjective.Metrics.EUDUNIFORM
-            if EUDa == None and limitValue == None:
+            if EUDa == None or limitValue == None:
                 raise Exception("Error: objective EUDUNIFORM is missing a parameter.")
             elif EUDa==0:
                 raise Exception("Error: parameter of objective EUDMAX must be different than zero.")
@@ -161,13 +161,13 @@ class ObjectivesList:
                 objective.EUDa = EUDa
         elif metric == FidObjective.Metrics.DVHMAX.value or metric == FidObjective.Metrics.DVHMAX :
             objective.metric = FidObjective.Metrics.DVHMAX
-            if volume == None and limitValue == None:
+            if volume == None or limitValue == None:
                 raise Exception("Error: objective DVHMAX is missing a volume argument.")
             else :
                 objective.volume = volume/100
         elif metric == FidObjective.Metrics.DVHMIN.value or metric == FidObjective.Metrics.DVHMIN :
             objective.metric = FidObjective.Metrics.DVHMIN
-            if volume == None and limitValue == None:
+            if volume == None or limitValue == None:
                 raise Exception("Error: objective DVHMIN is missing a volume argument.")
             else :
                 objective.volume = volume/100
@@ -175,7 +175,7 @@ class ObjectivesList:
         elif metric == FidObjective.Metrics.DFALLOFF.value or metric == FidObjective.Metrics.DFALLOFF:
             objective.metric = FidObjective.Metrics.DFALLOFF
             logger.warning("Dose fall-off objective only supported for primary tumor volume at the moment")
-            if fallOffDistance == None and fallOffHighDoseLevel == None and fallOffLowDoseLevel == None and self.targetMask is None:
+            if fallOffDistance == None or fallOffHighDoseLevel == None or fallOffLowDoseLevel == None or self.targetMask is None:
                 raise Exception("Error: objective DFALLOFF is missing one or several arguments (falloff distance, lower and higher dose levels).")
             else:
                 objective.fallOffDistance = fallOffDistance*10 #(cm->mm)
