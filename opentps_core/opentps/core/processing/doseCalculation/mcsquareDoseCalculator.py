@@ -795,10 +795,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                                         self._plan.planDesign.robustnessEval.setupRandomError[2] / 10]  # cm
         config["Systematic_Range_Error"] = self._plan.planDesign.robustnessEval.rangeSystematicError  # %
         
-        # TODO: Remove duplicate of nominal scenario (in MCsquare or retrieving nominal scenario index from output MC2 file)
-        #if np.sum(config["Random_Setup_Error"])==0:
-        #    config["Simulate_nominal_plan"] = False 
-        
         if self._plan.planDesign.robustnessEval.selectionStrategy == self._plan.planDesign.robustnessEval.Strategies.ALL:
             config["Scenario_selection"] == "All"
             self._plan.planDesign.robustnessEval.numScenarios = 81
@@ -823,7 +819,11 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             self._plan.planDesign.robustnessEval.numScenarios = config["Num_Random_Scenarios"]
         else:
             logger.error("No scenario selection strategy was configured. Pick between [ALL,REDUCED_SET,RANDOM]")
-
+        
+        # Remove duplicate of nominal scenario if no random set up errors in ALL and REDUCED_SET scenarios 
+        if np.sum(config["Random_Setup_Error"])==0 and config["Scenario_selection"] != "Random":
+            self._plan.planDesign.robustnessEval.numScenarios-=1
+        
         self._plan.planDesign.robustnessEval.numScenarios = int(self._plan.planDesign.robustnessEval.numScenarios) # handle float output
         
         return config
@@ -852,10 +852,6 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
             config["Random_Setup_Error"] = [self._plan.planDesign.robustness.setupRandomError[0] / 10, self._plan.planDesign.robustness.setupRandomError[1] / 10,
                                             self._plan.planDesign.robustness.setupRandomError[2] / 10]  # cm
             config["Systematic_Range_Error"] = self._plan.planDesign.robustness.rangeSystematicError  # %
-            
-            # TO DO: Remove duplicate of nominal scenario (in MCsquare or retrieving nominal scenario index from output MC2 file)
-            #if np.sum(config["Random_Setup_Error"])==0:
-            #    config["Simulate_nominal_plan"] = False 
 
             if self._plan.planDesign.robustness.selectionStrategy == self._plan.planDesign.robustness.Strategies.ALL:
                 config["Scenario_selection"] == "All"
@@ -883,6 +879,10 @@ class MCsquareDoseCalculator(AbstractMCDoseCalculator, AbstractDoseInfluenceCalc
                 self._plan.planDesign.robustness.numScenarios = config["Num_Random_Scenarios"]
             else:
                 logger.error("No scenario selection strategy was configured. Pick between [ALL,REDUCED_SET,RANDOM]")
+            
+            # Remove duplicate of nominal scenario if no random set up errors in ALL and REDUCED_SET scenarios 
+            if np.sum(config["Random_Setup_Error"])==0 and config["Scenario_selection"] != "Random":
+                self._plan.planDesign.robustness.numScenarios-=1
 
             self._plan.planDesign.robustness.numScenarios = int(self._plan.planDesign.robustness.numScenarios) # handle float output
 
