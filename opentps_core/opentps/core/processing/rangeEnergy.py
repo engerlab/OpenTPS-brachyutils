@@ -40,7 +40,7 @@ def rangeToEnergy(r80: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
             3.464048 + 0.561372013 * np.log(r80) - 0.004900892 * np.log(r80) * np.log(r80) + 0.001684756748 * np.log(
                 r80) * np.log(r80) * np.log(r80))
 
-    if r80 <= 1.:
+    if r80 <= 0.0:
         return 0
     else:
         return exp(
@@ -98,7 +98,7 @@ def energyToRange(energy: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
         energy[energy < 1.] = 1.
         r80 = np.exp(-5.5064 + 1.2193 * np.log(energy) + 0.15248 * np.log(energy) * np.log(energy) - 0.013296 * np.log(
             energy) * np.log(energy) * np.log(energy))
-    elif energy <= 1:
+    elif energy <= 0.0:
         r80 = 0
     else:
         r80 = exp(-5.5064 + 1.2193 * log(energy) + 0.15248 * log(energy) * log(energy) - 0.013296 * log(energy) * log(

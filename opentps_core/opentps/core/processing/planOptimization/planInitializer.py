@@ -1,5 +1,6 @@
 import logging
 import math
+import warnings
 
 import numpy as np
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
@@ -97,12 +98,16 @@ class BeamInitializer:
                 minWET = energyToRange(minEnergy) * 10
                 for l in range(self.proximalLayers):
                     minWET -= self.layerSpacing
+                    if minWET/10 < 1.0:
+                        warnings.warn('Small proton ranges are used, accuracy of energy computation cannot be guaranteed.')
                     spotGrid["EnergyLayers"][s].append(rangeToEnergy(minWET / 10))
             if self.distalLayers > 0:
                 maxEnergy = max(spotGrid["EnergyLayers"][s])
                 maxWET = energyToRange(maxEnergy) * 10
                 for l in range(self.distalLayers):
                     maxWET += self.layerSpacing
+                    if maxWET/10 < 1.0:
+                        warnings.warn('Small proton ranges are used, accuracy of energy computation cannot be guaranteed.')
                     spotGrid["EnergyLayers"][s].append(rangeToEnergy(maxWET / 10))
 
             # generate plan structure
