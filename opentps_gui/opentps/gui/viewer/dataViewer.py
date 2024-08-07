@@ -616,7 +616,7 @@ class DataViewer(QWidget):
 
     def _removeImageFromViewers(self, image: Union[Image3D, ]):
         """
-        Remove image from all cached viewers --> does not work ?
+        Remove image from all cached viewers -> The two # lines caused problems because self.cachedStaticImage2DViewer.primaryImage didn't always exist. To be investigated.
         """
 
         if self.cachedStaticImage3DViewer.primaryImage == image:
@@ -627,10 +627,12 @@ class DataViewer(QWidget):
         if self.cachedDynamicImage3DViewer.primaryImage == image:
             self.cachedStaticImage3DViewer.primaryImage = image
 
-        if self.cachedStaticImage2DViewer.primaryImage == image:
+        # if self.cachedStaticImage2DViewer.primaryImage == image:
+        if hasattr(self.cachedStaticImage2DViewer, 'primaryImage') and self.cachedStaticImage2DViewer.primaryImage == image:
             self.cachedStaticImage2DViewer.primaryImage = image
 
-        if self.cachedDynamicImage2DViewer.primaryImage == image:
+        # if self.cachedDynamicImage2DViewer.primaryImage == image:
+        if hasattr(self.cachedDynamicImage2DViewer, 'primaryImage') and self.cachedStaticImage2DViewer.primaryImage == image:
             self.cachedDynamicImage2DViewer.primaryImage = None
 
         if self.cachedStaticDVHViewer.dose == image:
