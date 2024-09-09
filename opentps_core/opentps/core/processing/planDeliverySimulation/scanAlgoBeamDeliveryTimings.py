@@ -18,7 +18,7 @@ class ScanAlgoBeamDeliveryTimings:
     gantry: str
         Type of gantry, either 'POne' or 'PPlus'. If None, use default value in config file ScanAlgoSimulationConfig.cfg
     """
-    def __init__(self, plan: RTPlan, URL:str=None, gantry:str=None):
+    def __init__(self, plan: RTPlan, URL:str=None, gantry:str=None, auth=None, spotTuneId=None):
         self.plan = plan
         if URL is None and gantry is None:
             config = ScanAlgoSimulationConfig()
@@ -30,6 +30,8 @@ class ScanAlgoBeamDeliveryTimings:
                 raise ValueError(f"Gantry {gantry} not valid, type must be either 'POne' or 'PPlus'.")
             self.gantry = gantry
             self.url = URL
+        self.auth=auth
+        self.spotTuneId=spotTuneId
 
 
     def getPBSTimings(self, sort_spots="true"):
@@ -55,13 +57,18 @@ class ScanAlgoBeamDeliveryTimings:
         plan = self.plan.copy()
         gantry_angles = [] if plan._beams==[] else [beam.gantryAngle for beam in plan._beams]
         for index,beam in enumerate(plan._beams):
-            data = ScanAlgoPlan(plan, self.gantry, index, sort_spots=sort_spots)
+            data = ScanAlgoPlan(plan, self.gantry, index, sort_spots=sort_spots, spotTuneId=self.spotTuneId)
             gantry_angle = float(data.gantryangle) if self.gantry=="PPlus" else float(data.gantryAngle)
-            scanAlgo = requests.post(self.url,json=data.__dict__).json()
+            scanAlgo = requests.post(self.url,json=data.__dict__, auth=self.auth).json()
             if 'cause' in scanAlgo:
                print("!!!!!!!!! ScanAlgo ERROR in beam !!!!!!! ", index)
                print('\n')
                print(scanAlgo['cause'])
+               print('\n')
+            if 'error' in scanAlgo:
+               print("ScanAlgo ERROR")
+               print('\n')
+               print(scanAlgo['message'])
                print('\n')
             else:
                 if self.gantry == "PPlus":

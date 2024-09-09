@@ -4,14 +4,14 @@ from opentps.core.data.plan._rtPlan import RTPlan
 
 class ScanAlgoPlan:
     """
-    Class to create a plan with Protheus Plus or Protheus One accelerator from IBA
+    Class to create a plan with Proteus Plus or Proteus One accelerator from IBA
 
     Parameters
     ----------
     Gantry : str
         Gantry angle of the accelerator. Can be "PPlus" or "POne"
     """
-    def __init__(self, plan: RTPlan, Gantry: str, beamID = 0, sort_spots="true"):
+    def __init__(self, plan: RTPlan, Gantry: str, beamID = 0, sort_spots="true", spotTuneId=None):
         beam = plan._beams[beamID]
         if Gantry == "PPlus":
             self.bsp = "GTR1-PBS"
@@ -64,6 +64,8 @@ class ScanAlgoPlan:
 
         self.mud = "0"
 
+        self.spotTuneId = spotTuneId
+
         self.beam = self.getLayers(plan,Gantry,beamID)
 
 
@@ -94,7 +96,7 @@ class ScanAlgoPlan:
             beamDict['layer'] = []
             for layer in beam._layers:
                 layerDict = {}
-                layerDict['spottuneid'] = "3.0"
+                layerDict['spottuneid'] = self.spotTuneId if self.spotTuneId is not None else "3.0"
                 layerDict['energy'] = str(layer.nominalEnergy)
                 layerDict['paintings'] = str(layer.numberOfPaintings)
                 layerDict['spot'] = []
@@ -112,7 +114,7 @@ class ScanAlgoPlan:
             beamDict['layers'] = []
             for layer in beam._layers:
                 layerDict = {}
-                layerDict['spotTuneId'] = "4.0"
+                layerDict['spotTuneId'] = self.spotTuneId if self.spotTuneId is not None else "4.0"
                 layerDict['nominalBeamEnergy'] = str(layer.nominalEnergy)
                 layerDict['numberOfPaintings'] = str(layer.numberOfPaintings)
                 layerDict['spots'] = []
