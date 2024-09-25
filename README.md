@@ -2,7 +2,7 @@
 
 OpenTPS is a Python application for treatment planning in proton therapy, based on the MCsquare Monte Carlo dose engine.
 
-The OpenTPS application 1.0.0 consists of the packages opentps-core (version 1.0.7) and opentps-gui (version 1.0.5) which are also available separately.
+The OpenTPS (version 1.1.2) application consists of the packages opentps-core (version 1.1.2) and opentps-gui (version 1.0.6) which are also available separately.
 
 If you are using OpenTPS as part of your research, teaching, or other activities, we would be grateful if you could star the repository and/or cite our work.
 
