@@ -95,7 +95,7 @@ class RSPImage(Image3D):
 
         return newRSPImage
 
-    def computeCumulativeWEPL(self, beam:Optional[PlanIonBeam]=None, sad=np.Inf, roi=None) -> Image3D:
+    def computeCumulativeWEPL(self, beam:Optional[PlanIonBeam]=None, sad=np.inf, roi=None) -> Image3D:
         """
         Compute the cumulative water equivalent path length (WEPL) of the image.
 
