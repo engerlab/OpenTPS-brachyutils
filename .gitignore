@@ -27,8 +27,10 @@ opentps_core/opentps/core/Processing/DoseCalculation/MCsquare/BDL/UMCG_P1_v2_Ran
 opentps_core/opentps/core/examples/JupyterNotebooks/Data/Plan_WaterPhantom_cropped_resampled.tps
 opentps_core/opentps/core/examples/planOptimization/Plan_WaterPhantom_cropped_resampled.tps
 testData/lightDynSeqWithMod.p
+testData/veryLightDynMod.p
+testData/lightTest4DCT.p
 opentps_core/opentps/core/examples/JupyterNotebooks/Data/SimpleRealDoseComputationOptimization_plan.tps
-
+opentps_core/opentps/core/examples/JupyterNotebooks/Data/Plan_WaterPhantom_cropped_resampled.tps
 *.tps
 *.blm
 *.dcm
