@@ -24,6 +24,11 @@ opentps_gui/ws_dev/*
 wei_dev_test.bat
 
 opentps_core/opentps/core/Processing/DoseCalculation/MCsquare/BDL/UMCG_P1_v2_RangeShifter.txt
+opentps_core/opentps/core/examples/JupyterNotebooks/Data/Plan_WaterPhantom_cropped_resampled.tps
+opentps_core/opentps/core/examples/planOptimization/Plan_WaterPhantom_cropped_resampled.tps
+testData/lightDynSeqWithMod.p
+opentps_core/opentps/core/examples/JupyterNotebooks/Data/SimpleRealDoseComputationOptimization_plan.tps
+
 *.tps
 *.blm
 *.dcm
