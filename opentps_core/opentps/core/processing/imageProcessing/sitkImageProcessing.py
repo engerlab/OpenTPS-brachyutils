@@ -198,7 +198,7 @@ def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarra
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(img.GetDirection())
 
-    outImg = sitk.Resample(img, reference_image, transform, sitk.sitkLinear, fillValue)
+    outImg = sitk.Resample(img, reference_image, transform, sitk.sitkNearestNeighbor, fillValue)
     outData = np.array(sitk.GetArrayFromImage(outImg))
 
     if imgType == bool:
