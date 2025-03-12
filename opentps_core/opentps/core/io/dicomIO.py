@@ -554,7 +554,7 @@ def readDicomDose(dcmFile):
 
     planSOPInstanceUID = dcm.ReferencedRTPlanSequence[0].ReferencedSOPInstanceUID
 
-    if (hasattr(dcm, 'SliceThickness') and dcm.SliceThickness != ""):
+    if (hasattr(dcm, 'SliceThickness') and dcm.SliceThickness != "" and dcm.SliceThickness is not None):
         sliceThickness = float(dcm.SliceThickness)
     else:
         if (hasattr(dcm, 'GridFrameOffsetVector') and not dcm.GridFrameOffsetVector is None):
