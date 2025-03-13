@@ -17,9 +17,9 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "*"
+python = "~3.13"
 cachecontrol = "*"
-numpy = "*"
+numpy = "^1.23.5"
 Pillow = "*"
 pydicom = "^2.4.1"
 vtk = "9.4.0"
