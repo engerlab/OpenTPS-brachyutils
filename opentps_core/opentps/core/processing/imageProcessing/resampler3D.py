@@ -83,7 +83,7 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 
 ## --------------------------------------------------------------------------------------
 def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
-                    fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
+                    fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False, gaussian_filter:bool=True):
     """
     Parameters
     ----------
@@ -150,7 +150,12 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
         trySITK = True
 
     if trySITK:
-        if not(image.imageArray.dtype=='bool'):
+        if not(
+            image.imageArray.dtype=='bool' or
+            image.imageArray.dtype=='uint8' or
+            image.imageArray.dtype=='int' or
+            not gaussian_filter
+            ):
             # anti-aliasing filter
             sigma = [0, 0, 0]
             if (spacing[0] > image.spacing[0]): sigma[0] = 0.4 * (spacing[0] / image.spacing[0])
@@ -158,7 +163,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
             if (spacing[2] > image.spacing[2]): sigma[2] = 0.4 * (spacing[2] / image.spacing[2])
             if (sigma != [0, 0, 0]):
                 logger.info("data is filtered before downsampling")
-                # image.imageArray[:, :, :] = imageFilter3D.gaussConv(image.imageArray[:, :, :], sigma)
+                image.imageArray[:, :, :] = imageFilter3D.gaussConv(image.imageArray[:, :, :], sigma)
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
             sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)
