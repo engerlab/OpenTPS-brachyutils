@@ -366,22 +366,12 @@ class DVH:
 
         raise NotImplementedError(f'Homogenity index method {method} not implemented.')
 
-    def conformityIndex(self, dose, Contour, body_contour, method="Paddick"):
+    def conformityIndex(self, method="Paddick"):
         """
         Compute the conformity index describing how tightly the prescription dose is conforming to the target.
 
         Parameters
         ----------
-
-        dose: RTdose
-          The RTdose object
-
-        Contour: ROIcontour
-          ROIcontour object of the target
-
-        body_contour: ROIcontour
-          ROIcontour object of delineating the contour of the body of the patient
-
         method: str
           Method to use for computing the conformity index
           if method=='RTOG': use the Radiation therapy oncology group guidelines index (https://doi.org/10.1016/0360-3016(93)90548-A)
@@ -398,18 +388,22 @@ class DVH:
         percentile = 0.95  # ICRU reference isodose
         if method == 'RTOG':  # Radiation therapy oncology group guidelines (1993)
             # prescription isodose volume
-            isodose_prescription_volume = np.sum(dose.Image[body_contour.Mask == 1] >= percentile * self._prescription)
-            contour_volume = np.sum(Contour.Mask)
+            isodose_prescription_volume = np.sum(
+                self._doseImage.imageArray[self._roiMask.imageArray == True] >= percentile 
+                * self._prescription)
+            contour_volume = np.sum(self._roiMask.imageArray)
             return isodose_prescription_volume / contour_volume
 
         if method == 'Paddick':
             # prescription isodose volume
-            isodose_prescription_volume = np.sum(dose.Image[body_contour.Mask == 1] >= percentile * self._prescription)
+            isodose_prescription_volume = np.sum(
+                self._doseImage.imageArray[self._roiMask.imageArray == True] >= percentile 
+                * self._prescription)
             # Target volume
-            contour_volume = np.sum(Contour.Mask)
+            contour_volume = np.sum(self._roiMask.imageArray)
             # target volume covered by the prescription isodose volume
             contour_volume_covered_by_prescription = np.sum(
-                dose.Image[Contour.Mask == 1] >= percentile * self._prescription)
+                self._doseImage.imageArray[self._roiMask.imageArray == 1] >= percentile * self._prescription)
             return contour_volume_covered_by_prescription ** 2 / (isodose_prescription_volume * contour_volume)
 
         raise NotImplementedError(f'Conformity index method {method} not implemented.')
