@@ -127,7 +127,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
 
 
     # gridSize is None but spacing is not
-    if gridSize is None:
+    if gridSize is None or len(gridSize) == 0:
         gridSize = np.floor(image.gridSize*image.spacing/spacing)
 
     if origin is None:
