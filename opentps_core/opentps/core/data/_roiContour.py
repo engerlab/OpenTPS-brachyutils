@@ -56,7 +56,7 @@ class ROIContour(PatientData):
         self._displayColor = color
         self.colorChangedSignal.emit(self._displayColor)
 
-    def getBinaryMask(self, origin=None, gridSize=None, spacing=None, useVTK=True):
+    def getBinaryMask(self, origin=None, gridSize=None, spacing=None, useVTK=False):
         """
         Convert the ROI contour to a binary mask image.
 
