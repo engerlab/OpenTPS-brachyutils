@@ -1,0 +1,90 @@
+# Official language image. Look for the different tagged releases at:
+# https://hub.docker.com/r/library/python/tags/
+image: python:latest
+
+stages:
+  - build
+  - test_core
+  - test_gui
+  - unittest_core
+  - doc
+
+
+before_script:
+  - python --version  # For debugging
+  - pip install virtualenv
+# install poetry in separate venv
+  - export POETRY_HOME=/opt/poetry
+  - virtualenv $POETRY_HOME
+  - source $POETRY_HOME/bin/activate
+  - $POETRY_HOME/bin/pip install poetry==1.2.0
+  - $POETRY_HOME/bin/poetry --version
+# create environment for project
+  - virtualenv venv
+  #- virtualenv --clear venv
+  - source venv/bin/activate
+  #- pip3 install poetry
+  - $POETRY_HOME/bin/poetry --version
+  - cd $CI_PROJECT_DIR/opentps_core
+  - $POETRY_HOME/bin/poetry install --no-root # install dependencies
+  - apt-get update && apt-get install -y libgl1 # For PyQt5
+  #- apt-get install -y '^libxcb.*-dev' # For PyQt5
+  - cd $CI_PROJECT_DIR/opentps_gui
+  - $POETRY_HOME/bin/poetry install --no-root # install dependencies
+
+build:
+  image: python:3.11
+  stage: build
+  script:
+    - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
+    - cd $CI_PROJECT_DIR/opentps_core
+    - $POETRY_HOME/bin/poetry build
+    - cd $CI_PROJECT_DIR/opentps_gui
+    - $POETRY_HOME/bin/poetry build
+    #- pip install dist/*
+  artifacts:
+    paths:
+      - dist/*.whl
+
+# TODO: Should tests be executed on the built application
+test_core:
+  image: python:3.11
+  stage: test_core
+  script:
+    - pip show SimpleITK
+    - cd $CI_PROJECT_DIR/
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
+    - python3 CI/tests.py
+
+test_gui:
+  image: python:3.11
+  stage: test_gui
+  script:
+    - pip show SimpleITK
+    - pip show vtk
+    - cd $CI_PROJECT_DIR/
+    - export PYTHONPATH="$CI_PROJECT_DIR/opentps_core:$CI_PROJECT_DIR/opentps_gui"
+    - export QT_QPA_PLATFORM=offscreen
+    - python -m unittest discover opentps_gui/opentps/gui
+
+docs:
+  image: python:3.11
+  stage: doc
+  script:
+    - pip install sphinx sphinx-rtd-theme
+    #- export PYTHONPATH="$CI_PROJECT_DIR"
+    #- python3 docs/tools/version_utils.py
+    #- cd docs
+    #- make html
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Must be run after all script because we create __init__.py for unittest. The absence of this file is essential and tested in test_core.
+unittest_core:
+  stage: unittest_core
+  image: python:3.11
+  script:
+    - cd $CI_PROJECT_DIR/opentps_core/
+    - touch opentps/__init__.py # because unittests does not work on namespace package
+    - touch __init__.py # because unittests does not work on namespace package
+    - python3 -m unittest discover -s ./opentps -p '[!example]*.py' -v
