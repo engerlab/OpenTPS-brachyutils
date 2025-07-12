@@ -1,0 +1,12 @@
+.gitignore merge=ours
+opentps_core/opentps/core/data/images/_rspImage.py merge=ours
+opentps_gui/opentps/gui/viewer/dataForViewer/dyn2DSeqForViewer.py merge=ours
+opentps_gui/opentps/gui/viewer/dataForViewer/dyn3DSeqForViewer.py merge=ours
+pyproject.toml merge=ours
+opentps_core/opentps/core/processing/registration/registrationQuick.py merge=ours
+opentps_core/opentps/core/processing/imageProcessing/sitkImageProcessing.py merge=ours
+opentps_core/opentps/core/data/images/_image3D.py merge=ours
+opentps_core/opentps/core/io/dicomIO.py merge=ours
+opentps_core/opentps/core/processing/imageProcessing/resampler3D.py merge=ours
+opentps_core/opentps/core/data/_dvh.py merge=ours
+opentps_core/opentps/core/data/_roiContour.py merge=ours
