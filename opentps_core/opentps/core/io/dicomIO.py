@@ -469,7 +469,7 @@ def readDicomMRI(dcmFiles):
         image.scanOptions = dcm.ScanOptions
     if hasattr(dcm, 'MRAcquisitionType'):
         image.mrArcquisitionType = dcm.MRAcquisitionType
-    if hasattr(dcm, 'RepetitionTime'):
+    if hasattr(dcm, 'RepetitionTime') and dcm.RepetitionTime is not None:
         image.repetitionTime = float(dcm.RepetitionTime)
     if hasattr(dcm, 'EchoTime'):
         if dcm.EchoTime is not None:
