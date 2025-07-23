@@ -12,6 +12,14 @@ import opentps.core.processing.imageProcessing.resampler3D as resampler3D
 
 logger = logging.getLogger(__name__)
 
+try:
+    import cupy
+    import cupyx.scipy.signal
+    import opentps.core.processing.registration.morphonsCupy as morphonsCupy
+except:
+    logger.warning('cupy not found.')
+    pass
+
 
 class VectorField3D(Image3D):
     """
@@ -58,13 +66,8 @@ class VectorField3D(Image3D):
         image : Image3D
             image from which the voxel grid is copied.
         """
-
-        # print('in vectorField3D initFromImage --> this if-fix is not ideal and should be changed. The issue comes from the gridSize which is a parameter ')
-        # if image.__class__ == "CTImage":
-        #     imgGridSize = image.gridSize
-        # if image.__class__ == "CTImage":
         imgGridSize = image.gridSize
-        self._imageArray = np.zeros((imgGridSize[0], imgGridSize[1], imgGridSize[2], 3))
+        self._imageArray = np.zeros((imgGridSize[0], imgGridSize[1], imgGridSize[2], 3), dtype="float32")
         self.origin = image._origin
         self.spacing = image._spacing
 
@@ -108,22 +111,45 @@ class VectorField3D(Image3D):
             Displacement field.
         """
 
-        norm = np.square(self._imageArray[:, :, :, 0]/self.spacing[0]) + np.square(self._imageArray[:, :, :, 1]/self.spacing[1]) + np.square(self._imageArray[:, :, :, 2]/self.spacing[2])
-        N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
-        if N < 1: N = 1
-
         displacement = self.copy()
-        displacement._imageArray = displacement._imageArray * 2 ** (-N)
 
-        for r in range(N):
-            new_0 = displacement.warp(displacement._imageArray[:, :, :, 0], fillValue='closest', tryGPU=tryGPU)
-            new_1 = displacement.warp(displacement._imageArray[:, :, :, 1], fillValue='closest', tryGPU=tryGPU)
-            new_2 = displacement.warp(displacement._imageArray[:, :, :, 2], fillValue='closest', tryGPU=tryGPU)
-            displacement._imageArray[:, :, :, 0] += new_0
-            displacement._imageArray[:, :, :, 1] += new_1
-            displacement._imageArray[:, :, :, 2] += new_2
+        if tryGPU:
+            try:
+                field = cupy.asarray(self._imageArray, dtype='float32')
+                norm = cupy.square(field[:, :, :, 0] / self.spacing[0]) + cupy.square(
+                    field[:, :, :, 1] / self.spacing[1]) + cupy.square(field[:, :, :, 2] / self.spacing[2])
+                N = cupy.asnumpy(cupy.ceil(2 + cupy.log2(cupy.maximum(1.0, cupy.amax(cupy.sqrt(norm)))) / 2)) + 1
+                if N < 1: N = 1
+                field = field * 2 ** (-N)
+                for r in range(int(N)):
+                    new_0 = morphonsCupy.warpCupy(field[:, :, :, 0], field, self.spacing)
+                    new_1 = morphonsCupy.warpCupy(field[:, :, :, 1], field, self.spacing)
+                    new_2 = morphonsCupy.warpCupy(field[:, :, :, 2], field, self.spacing)
+                    field[:, :, :, 0] += new_0
+                    field[:, :, :, 1] += new_1
+                    field[:, :, :, 2] += new_2
 
-        displacement._imageArray = displacement._imageArray.astype(outputType)
+                displacement._imageArray = cupy.asnumpy(field).astype(outputType)
+            except:
+                logger.warning('cupy not used for field exponentiation.')
+                tryGPU = False
+
+        if tryGPU is False:
+            norm = np.square(self._imageArray[:, :, :, 0]/self.spacing[0]) + np.square(self._imageArray[:, :, :, 1]/self.spacing[1]) + np.square(self._imageArray[:, :, :, 2]/self.spacing[2])
+            N = math.ceil(2 + math.log2(np.maximum(1.0, np.amax(np.sqrt(norm)))) / 2) + 1
+            if N < 1: N = 1
+
+            displacement._imageArray = displacement._imageArray * 2 ** (-N)
+
+            for r in range(N):
+                new_0 = displacement.warp(displacement._imageArray[:, :, :, 0], fillValue='closest', tryGPU=tryGPU)
+                new_1 = displacement.warp(displacement._imageArray[:, :, :, 1], fillValue='closest', tryGPU=tryGPU)
+                new_2 = displacement.warp(displacement._imageArray[:, :, :, 2], fillValue='closest', tryGPU=tryGPU)
+                displacement._imageArray[:, :, :, 0] += new_0
+                displacement._imageArray[:, :, :, 1] += new_1
+                displacement._imageArray[:, :, :, 2] += new_2
+
+            displacement._imageArray = displacement._imageArray.astype(outputType)
 
         return displacement
 

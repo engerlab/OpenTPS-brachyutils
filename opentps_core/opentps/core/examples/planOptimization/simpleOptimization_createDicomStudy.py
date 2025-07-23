@@ -12,7 +12,7 @@ from opentps.core.processing.planOptimization.tools import evaluateClinical
 from opentps.core.data.images import CTImage, DoseImage
 from opentps.core.data.images import ROIMask
 from opentps.core.data.plan import ObjectivesList
-from opentps.core.data.plan import PlanDesign
+from opentps.core.data.plan._protonPlanDesign import ProtonPlanDesign
 from opentps.core.data import DVH
 from opentps.core.data import Patient
 from opentps.core.data import RTStruct
@@ -21,9 +21,15 @@ from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.io.serializedObjectIO import saveRTPlan, loadRTPlan
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.doseCalculation.protons.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D, resampleImage3D
-from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
+from opentps.core.processing.planOptimization.planOptimization import IntensityModulationOptimizer
+
+"""
+In this example, we will create and optimize a simple ion (Proton) plan. 
+The generated CT, the plan, and the dose will be saved as DICOM files.
+"""
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +38,7 @@ def run(output_path=""):
     if(output_path != ""):
         output_path = output_path
     else:
-        output_path = os.path.join(os.getcwd(), 'Output_Example')
+        output_path = os.path.join(os.getcwd(), 'Output', 'SimpleOptimization')
         if not os.path.exists(output_path):
             os.makedirs(output_path)
         
@@ -85,7 +91,7 @@ def run(output_path=""):
     # struct.studyInstanceUID = studyInstanceUID
     # struct.frameOfReferenceUID = frameOfReferenceUID
     # struct.appendContour(contour)
-    # writeRTStruct(struct, os.path.join(output_path, "struct.dcm"))
+    # writeRTStruct(struct, output_path, "struct")
 
     # Design plan
     beamNames = ["Beam1"]
@@ -107,7 +113,7 @@ def run(output_path=""):
         plan = loadRTPlan(plan_file)
         logger.info('Plan loaded')
     else:
-        planDesign = PlanDesign()
+        planDesign = ProtonPlanDesign()
         planDesign.ct = ct
         planDesign.targetMask = roi
         planDesign.gantryAngles = gantryAngles
@@ -139,7 +145,7 @@ def run(output_path=""):
     plan.frameOfReferenceUID = frameOfReferenceUID
     plan.rtPlanGeometry = "TREATMENT_DEVICE"
     
-    solver = IMPTPlanOptimizer(method='Scipy_L-BFGS-B', plan=plan, maxiter=1000)
+    solver = IntensityModulationOptimizer(method='Scipy_L-BFGS-B', plan=plan, maxiter=1000)
     # Optimize treatment plan
     doseImage, ps = solver.optimize()
 
@@ -216,7 +222,7 @@ def run(output_path=""):
     ax[2].grid(True)
 
     plt.show()
-
+    plt.savefig(f'{output_path}/Dose_SimpleOptimization.png', format = 'png')
 
 if __name__ == "__main__":
     run()

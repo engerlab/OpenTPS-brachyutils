@@ -76,6 +76,14 @@ class Dynamic3DSequence(PatientData):
 
     def __len__(self):
         return len(self.dyn3DImageList)
+    
+    def __getitem__(self, index):
+        # Custom behavior for getting an item
+        return self.dyn3DImageList[index]
+
+    def __setitem__(self, index, value):
+        # Custom behavior for setting an item
+        self.dyn3DImageList[index] = value
 
 
     def print_dynSeries_info(self, prefix=""):

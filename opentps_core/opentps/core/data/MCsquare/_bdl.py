@@ -114,9 +114,10 @@ class BDL:
         s += str(self.smy) + '\n\n'
 
         if len(self.rangeShifters) >0:
-            s += 'Range Shifter parameters\n'
             for RS in self.rangeShifters:
+                s += 'Range Shifter parameters\n'
                 s += RS.mcsquareFormatted(materials)
+                s += '\n'
             s += '\n'
 
         s += 'Beam parameters\n'

@@ -372,6 +372,7 @@ class DVH:
 
         Parameters
         ----------
+
         method: str
           Method to use for computing the conformity index
           if method=='RTOG': use the Radiation therapy oncology group guidelines index (https://doi.org/10.1016/0360-3016(93)90548-A)
@@ -403,7 +404,7 @@ class DVH:
             contour_volume = np.sum(self._roiMask.imageArray)
             # target volume covered by the prescription isodose volume
             contour_volume_covered_by_prescription = np.sum(
-                self._doseImage.imageArray[self._roiMask.imageArray == 1] >= percentile * self._prescription)
+                self._doseImage.imageArray[self._roiMask.imageArray == True] >= percentile * self._prescription)
             return contour_volume_covered_by_prescription ** 2 / (isodose_prescription_volume * contour_volume)
 
         raise NotImplementedError(f'Conformity index method {method} not implemented.')

@@ -14,7 +14,7 @@ from scipy.spatial.transform import Rotation as R
 import copy
 
 from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
 # from opentps.core.data._roiContour import ROIContour
 # from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._vectorField3D import VectorField3D
@@ -55,9 +55,9 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
     Sequence[Image3D]
         The extended images if inPlace is False, otherwise the original images modified.
     """
-    newOrigin = np.array([np.Inf, np.Inf, np.Inf])
-    newSpacing = np.array([np.Inf, np.Inf, np.Inf])
-    newEnd = np.array([-np.Inf, -np.Inf, -np.Inf])
+    newOrigin = np.array([np.inf, np.inf, np.inf])
+    newSpacing = np.array([np.inf, np.inf, np.inf])
+    newEnd = np.array([-np.inf, -np.inf, -np.inf])
 
     for image in images:
         o = image.origin
@@ -85,7 +85,7 @@ def extendAll(images:Sequence[Image3D], inPlace=False, fillValue:float=0.) -> Se
     return outImages
 
 
-def dicomToIECGantry(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
+def dicomToIECGantry(image:Image3D, beam:PlanProtonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     """
     Transforms an image from DICOM to IEC Gantry coordinates.
@@ -215,7 +215,7 @@ def _cropBoxAfterTransform(image, tform, cropROI:Optional[Union[ROIContour, ROIM
 
     return outputBox
 
-def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequence[float]:
+def dicomCoordinate2iecGantry(beam:PlanProtonBeam, point:Sequence[float]) -> Sequence[float]:
     """
     Transforms a point from DICOM to IEC Gantry coordinates.
 
@@ -240,7 +240,7 @@ def dicomCoordinate2iecGantry(beam:PlanIonBeam, point:Sequence[float]) -> Sequen
 
     return sitkImageProcessing.applyTransform3DToPoint(tform, np.array((u, v, w)))
 
-def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
+def iecGantryToDicom(image:Image3D, beam:PlanProtonBeam, fillValue:float=0, cropROI:Optional[Union[ROIContour, ROIMask]]=None,
                      cropDim0=True, cropDim1=True, cropDim2=True) -> Image3D:
     """
     Transforms an image from IEC Gantry to DICOM coordinates.
@@ -278,7 +278,7 @@ def iecGantryToDicom(image:Image3D, beam:PlanIonBeam, fillValue:float=0, cropROI
 
     return outImage
 
-def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Sequence[float]:
+def iecGantryCoordinatetoDicom(beam: PlanProtonBeam, point: Sequence[float]) -> Sequence[float]:
     """
     Transforms a point from IEC Gantry to DICOM coordinates.
 
@@ -302,7 +302,7 @@ def iecGantryCoordinatetoDicom(beam: PlanIonBeam, point: Sequence[float]) -> Seq
 
     return sitkImageProcessing.applyTransform3DToPoint(tform, np.array((u, v, w)))
 
-def _forwardDicomToIECGantry(beam:PlanIonBeam) -> np.ndarray:
+def _forwardDicomToIECGantry(beam:PlanProtonBeam) -> np.ndarray:
     """
     Calculates the transformation matrix from DICOM to IEC Gantry coordinates.
 
@@ -471,7 +471,7 @@ def transform3DMatrixFromTranslationAndRotationsVectors(transVec=[0, 0, 0], rotV
     affineTransformMatrix = np.array([[1, 0, 0, -transVec[0]],
                                   [0, 1, 0, -transVec[1]],
                                   [0, 0, 1, -transVec[2]],
-                                  [0, 0, 0, 1]]).astype(np.float)
+                                  [0, 0, 0, 1]]).astype(float)
 
     affineTransformMatrix[0:3, 0:3] = r.as_matrix()
 

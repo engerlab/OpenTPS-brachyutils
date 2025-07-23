@@ -130,7 +130,7 @@ class ProgramSettings(metaclass=Singleton):
         folder = Path(folder)
 
         if not folder.is_dir():
-            mkdir(folder)
+            folder.mkdir(parents = True)
 
     @property
     def _defaultConfig(self):

@@ -1,5 +1,5 @@
 import numpy as np
-#from vtkmodules.vtkImagingGeneral import vtkSimpleImageFilterExample
+from vtkmodules.vtkImagingGeneral import vtkSimpleImageFilterExample
 
 from opentps.gui.viewer.dataForViewer.genericImageForViewer import GenericImageForViewer
 from opentps.gui.viewer.dataForViewer.image2DForViewer import Image2DForViewer

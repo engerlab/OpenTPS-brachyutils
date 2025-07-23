@@ -58,10 +58,10 @@ class MCsquareConfig:
     self.config["Systematic_Setup_Error"] = [0.25, 0.25, 0.25]
     self.config["Random_Setup_Error"] = [0.1,  0.1,  0.1]
     self.config["Systematic_Range_Error"] = 3.0
-    self.config["Systematic_Amplitude_Error"] = 5.0
-    self.config["Random_Amplitude_Error"] = 5.0
-    self.config["Systematic_Period_Error"] = 5.0
-    self.config["Random_Period_Error"] = 5.0
+    self.config["Systematic_Amplitude_Error"] = 0 # default : 5.0 %
+    self.config["Random_Amplitude_Error"] = 0 # default : 5.0 %
+    self.config["Systematic_Period_Error"] = 0 # default : 5.0 %
+    self.config["Random_Period_Error"] = 0 # default : 5.0 %
   
     # Beamlet simulation
     self.config["Beamlet_Mode"] = False

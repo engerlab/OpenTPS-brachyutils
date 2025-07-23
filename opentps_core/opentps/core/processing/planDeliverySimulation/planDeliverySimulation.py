@@ -10,7 +10,7 @@ from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.io import mcsquareIO
-from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.doseCalculation.protons.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.utils.programSettings import ProgramSettings
 from pydicom.uid import generate_uid
 from opentps.core.data._rtStruct import ROIContour
@@ -103,7 +103,7 @@ class PlanDeliverySimulation():
             dose = self.mc2.computeDose(CT, self.plan)
             dose.name = f"partial_4DD_p{p:03d}"
             if self.saveDosesInObject: self.computedDoses.append(dose)
-            if self.saveDosesToFile: writeRTDose(dose, os.path.join(fx_dir, f"{dose.name}.dcm"))
+            if self.saveDosesToFile: writeRTDose(dose, fx_dir, f"{dose.name}.dcm")
             # Accumulate dose on MidP CT
             df = self.model3D.deformationList[p]
             dose_MidP._imageArray += df.deformImage(dose)._imageArray
@@ -111,8 +111,7 @@ class PlanDeliverySimulation():
 
         if self.saveDosesInObject: self.computedDoses.append(dose_MidP)
         if self.saveDosesToFile:
-            output_accumulated_dose = os.path.join(fx_dir, dose_MidP.name + ".dcm")
-            writeRTDose(dose_MidP, output_accumulated_dose)
+            writeRTDose(dose_MidP, fx_dir, f'{dose_MidP.name}.dcm')
 
 
     def simulate4DDynamicDose(self, save_partial_doses=True, start_phase=0):
@@ -172,15 +171,14 @@ class PlanDeliverySimulation():
             dose.name = f"partial_4DDD_p{p:03d}"
             if save_partial_doses:
                 # if self.saveDosesInObject: self.computedDoses.append(dose)
-                if self.saveDosesToFile: writeRTDose(dose, os.path.join(path_dose, f"{dose.name}.dcm"))
+                if self.saveDosesToFile: writeRTDose(dose, path_dose, f"{dose.name}.dcm")
             # Accumulate dose on MidP CT
             df = self.model3D.deformationList[p]
             dose_MidP._imageArray += df.deformImage(dose)._imageArray
 
         if self.saveDosesInObject: self.computedDoses.append(dose_MidP)
         if self.saveDosesToFile:
-            output_accumulated_dose = os.path.join(path_dose, "accumulated_4DDD.dcm")
-            writeRTDose(dose_MidP, output_accumulated_dose)
+            writeRTDose(dose_MidP, path_dose,  "accumulated_4DDD.dcm")
 
         return dose_MidP
 
@@ -251,8 +249,7 @@ class PlanDeliverySimulation():
             dose_MidP._imageArray += np.sum(np.stack([dose._imageArray for dose in selected_doses], axis=0), axis=0) / number_of_fractions
             if self.saveDosesInObject: self.computedDoses.append(dose_MidP)
             if self.saveDosesToFile:
-                output_path = os.path.join(dir_scenarios, f'dose_scenario_{str(scenario_number)}.dcm')
-                writeRTDose(dose_MidP, output_path)
+                writeRTDose(dose_MidP, dir_scenarios, f'dose_scenario_{str(scenario_number)}.dcm')
 
 
     def simulatePlanOnContinuousSequence(self, midp: CTImage, ct_folder, def_fields_folder, sequence_timings, output_dose_path=None, save_all_doses=False, remove_interpolated_files=False, downsample=0, start_irradiation=0.):
@@ -339,7 +336,7 @@ class PlanDeliverySimulation():
             dose.name = dose_name
 
             if save_all_doses:
-                writeRTDose(dose, os.path.join(output_dose_path, dose_name+'.dcm'))
+                writeRTDose(dose, output_dose_path, dose_name+'.dcm')
 
             ## Accumulate dose on MidP
             # Load deformation field on 3D image
@@ -357,7 +354,7 @@ class PlanDeliverySimulation():
 
         t_end = time.time()
         print(f"it took {t_end-t_start} to simulate on the continuous sequence.")
-        writeRTDose(dose_MidP, os.path.join(output_dose_path, "dose_midP_continuous_seq.dcm"))
+        writeRTDose(dose_MidP, output_dose_path, "dose_midP_continuous_seq.dcm")
         print("Total irradiation time:",self._getIrradiationTime(self.plan),"seconds")
         with open(os.path.join(output_dose_path, "treatment_info.txt"), 'w') as f:
             f.write(f"Total treatment time: {self._getIrradiationTime(self.plan)} seconds")

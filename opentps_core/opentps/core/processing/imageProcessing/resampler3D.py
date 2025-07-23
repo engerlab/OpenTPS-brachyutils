@@ -8,6 +8,7 @@ import opentps.core.processing.imageProcessing.filter3D as imageFilter3D
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._deformation3D import Deformation3D
+from opentps.core.data.images._vectorField3D import VectorField3D
 from opentps.core.processing.C_libraries.libInterp3_wrapper import interpolateTrilinear
 
 logger = logging.getLogger(__name__)
@@ -45,20 +46,35 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 
     if isinstance(data, Deformation3D):
         if not(data.velocity is None):
-            resampleImage3D(data.velocity, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
-                            outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+            data.velocity = resample(data.velocity, spacing=spacing, gridSize=gridSize, origin=origin,
+             fillValue=fillValue, outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
             data.origin = np.array(data.velocity.origin)
             data.spacing = np.array(data.velocity.spacing)
+            return data
         if not(data.displacement is None):
-            resampleImage3D(data.displacement, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
-                            outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+            data.displacement = resample(data.displacement, spacing=spacing, gridSize=gridSize, origin=origin,
+             fillValue=fillValue, outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
             data.origin = np.array(data.displacement.origin)
             data.spacing = np.array(data.displacement.spacing)
+            return data
         if data.velocity is None and data.displacement is None:
             print('No fields found in the Deformation3D object, velocity and displacement are None')
             return
         else:
             return data
+        
+    elif isinstance(data, VectorField3D):
+        vector_field = []
+        for i in range(data.imageArray.shape[3]):
+            component = Image3D(data.imageArray[:,:,:,i], origin=data.origin, spacing=data.spacing, angles=data.angles)
+            component = resampleImage3D(component, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
+                            outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+            vector_field.append(component)
+        data.imageArray = np.stack([v.imageArray for v in vector_field], axis=-1)
+
+        data.spacing = vector_field[0].spacing
+        data.origin = vector_field[0].origin
+        return data
 
     elif isinstance(data, Image3D):
         return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
@@ -83,7 +99,7 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 
 ## --------------------------------------------------------------------------------------
 def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
-                    fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False, gaussian_filter:bool=True):
+                    fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
     """
     Parameters
     ----------
@@ -115,7 +131,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
 
     # spacing is None
     if spacing is None:
-        if gridSize is None:
+        if gridSize is None or len(gridSize) == 0:
             if origin is None:
                 raise ValueError('spacing, gridSize and origin cannot be simultaneously None')
             else:
@@ -127,8 +143,8 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
 
 
     # gridSize is None but spacing is not
-    if gridSize is None or len(gridSize) == 0:
-        gridSize = np.floor(image.gridSize*image.spacing/spacing)
+    if gridSize is None:
+        gridSize = np.floor(image.gridSize*image.spacing/spacing).astype(int)
 
     if origin is None:
         origin = image.origin
@@ -153,17 +169,16 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
         if not(
             image.imageArray.dtype=='bool' or
             image.imageArray.dtype=='uint8' or
-            image.imageArray.dtype=='int' or
-            not gaussian_filter
+            image.imageArray.dtype=='int'
             ):
             # anti-aliasing filter
-            sigma = [0, 0, 0]
-            if (spacing[0] > image.spacing[0]): sigma[0] = 0.4 * (spacing[0] / image.spacing[0])
-            if (spacing[1] > image.spacing[1]): sigma[1] = 0.4 * (spacing[1] / image.spacing[1])
-            if (spacing[2] > image.spacing[2]): sigma[2] = 0.4 * (spacing[2] / image.spacing[2])
-            if (sigma != [0, 0, 0]):
+            sigma = [0] * len(image.spacing)
+            for i in range(len(image.spacing)):
+                if spacing[i] > image.spacing[i]: sigma[i] = 0.4 * (spacing[i] / image.spacing[i])
+                
+            if any(s != 0 for s in sigma):
                 logger.info("data is filtered before downsampling")
-                image.imageArray[:, :, :] = imageFilter3D.gaussConv(image.imageArray[:, :, :], sigma)
+                image.imageArray = imageFilter3D.gaussConv(image.imageArray, sigma)
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
             sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)

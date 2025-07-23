@@ -2,6 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
+import os
 
 from opentps.core.data.images import CTImage
 from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwardProjectionTigre
@@ -9,6 +10,12 @@ from opentps.core.processing.imageSimulation.ForwardProjectorTigre import forwar
 logger = logging.getLogger(__name__)
 
 def run():
+
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleDRRwithTigre')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
 
     # GENERATE SYNTHETIC CT IMAGE
     im = np.full((170, 170, 100), -1000)
@@ -53,6 +60,7 @@ def run():
     ax[0,3].title.set_text('DRR with high noise')
     ax[0,4].title.set_text('High noise')
     plt.show()
+    plt.savefig(os.path.join(output_path, 'ExampleDRRwithTigre.png'))
 
     print('TIGRE DRR example completed')
 

@@ -1,0 +1,10 @@
+Name 	 Brass_CuZn39Pb3
+Molecular_Weight 	  0.0 	 # N.C
+Density  	 8.400000 	  # in g/cm3
+Electron_Density  	 2.2993e+24 	 # in cm-3
+Radiation_Length 	  11.7847 	  # in g/cm2
+
+Nuclear_Data 	 Mixture 1 	  # mixture with 1 components
+
+ # Label 	  Name 	 fraction by mass
+Mixture_Component 	 10 	 copper 	 100.000000

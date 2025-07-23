@@ -4,9 +4,9 @@ import typing
 
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QMainWindow
 
-from opentps.core.data.plan import PlanIonBeam
-from opentps.core.data.plan import PlanIonLayer
-from opentps.core.data.plan import PlanIonSpot
+from opentps.core.data.plan import PlanProtonBeam
+from opentps.core.data.plan import PlanProtonLayer
+from opentps.core.data.plan import PlanProtonSpot
 from opentps.core.data.plan import RangeShifter
 from opentps.core.data import PatientData
 from opentps.core import Event
@@ -68,4 +68,4 @@ class TwoRowElement(QWidget):
         w.show()
 
     def supportedTypes(self):
-        return typing.Union[PatientData, PlanIonBeam, PlanIonLayer, PlanIonSpot, RangeShifter].__args__
+        return typing.Union[PatientData, PlanProtonBeam, PlanProtonLayer, PlanProtonSpot, RangeShifter].__args__

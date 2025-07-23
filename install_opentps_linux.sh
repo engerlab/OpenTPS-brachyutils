@@ -67,20 +67,20 @@ pip3 install --upgrade pip
 
 # Install required Python packages
 pip3 install pydicom
-pip3 install numpy
-pip3 install scipy 
+pip3 install "numpy>=1.24.0"
+pip3 install scipy
 pip3 install matplotlib 
 pip3 install Pillow
-pip3 install PyQt5==5.15.7 
+pip3 install PyQt5==5.15.7
 pip3 install pyqtgraph
-pip3 install sparse_dot_mkl 
+pip3 install sparse_dot_mkl
 pip3 install vtk==9.2.6
 pip3 install SimpleITK
 pip3 install pandas
-pip3 install scikit-image 
+pip3 install scikit-image
 pip3 install tensorflow
 pip3 install keras
-pip3 install pymedphys==0.39.3
+pip3 install pymedphys==0.40.0
 # pip3 install cupy
 
 echo
