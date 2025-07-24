@@ -567,6 +567,14 @@ def readDicomPET(dcmFiles):
         imgName = dcm.SeriesDescription
     else:
         imgName = dcm.SeriesInstanceUID
+    # collect image information
+    meanSliceDistance = (sliceLocation[-1] - sliceLocation[0]) / (len(images) - 1)
+    if (hasattr(dcm, 'SliceThickness') and (
+            type(dcm.SliceThickness) == int or type(dcm.SliceThickness) == float) and abs(
+            meanSliceDistance - dcm.SliceThickness) > 0.001):
+        logging.warning(
+            "WARNING: Mean Slice Distance (" + str(meanSliceDistance) + ") is different from Slice Thickness (" + str(
+                dcm.SliceThickness) + ")")
 
     pixelSpacing = (float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), meanSliceDistance)
     imagePositionPatient = (float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), sliceLocation[0])
