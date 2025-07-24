@@ -14,6 +14,7 @@ from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
 from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._mrImage import MRImage
+from opentps.core.data.images._petImage import PETImage
 from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.data._rtStruct import RTStruct
 from opentps.core.data._roiContour import ROIContour
@@ -512,6 +513,146 @@ def readDicomMRI(dcmFiles):
     image.softwareVersions = 'syngo MR E11'
     
     return image
+
+################## PET Dicom ########################################
+
+def readDicomPET(dcmFiles):
+    r"""
+    Generate a PET image object from a list of dicom PET slices.
+
+    Parameters
+    ----------
+    dcmFiles: list
+        List of paths for Dicom PET slices to be imported.
+
+    Returns
+    -------
+    image: mrImage object
+        The function returns the imported PET image
+    """
+    from pydicom.datadict import dictionary_description
+    header = pydicom.dcmread(dcmFiles[0])
+    # read dicom slices
+    images = []
+    sopInstanceUIDs = []
+    sliceLocation = np.zeros(len(dcmFiles), dtype='float')
+    firstdcm = dcmFiles[0]
+    
+    if hasattr(firstdcm,'RescaleSlope') == False:
+        logging.warning('no RescaleSlope, image could be wrong')
+        for i in range(len(dcmFiles)):
+            dcm = pydicom.dcmread(dcmFiles[i])
+            sliceLocation[i] = float(dcm.ImagePositionPatient[2])
+            images.append(dcm.pixel_array)
+            sopInstanceUIDs.append(dcm.SOPInstanceUID)
+    else :
+        for i in range(len(dcmFiles)):
+            dcm = pydicom.dcmread(dcmFiles[i])
+            sliceLocation[i] = float(dcm.ImagePositionPatient[2])
+            images.append(dcm.pixel_array * dcm.RescaleSlope + dcm.RescaleIntercept)
+            sopInstanceUIDs.append(dcm.SOPInstanceUID)       
+
+    # sort slices according to their location in order to reconstruct the 3d image
+    sortIndex = np.argsort(sliceLocation)
+    sliceLocation = sliceLocation[sortIndex]
+    sopInstanceUIDs = [sopInstanceUIDs[n] for n in sortIndex]
+    images = [images[n] for n in sortIndex]
+    imageData = np.dstack(images).astype("float32").transpose(1, 0, 2)
+
+    # verify reconstructed volume
+    if imageData.shape[0:2] != (dcm.Columns, dcm.Rows):
+        logging.warning("WARNING: GridSize " + str(imageData.shape[0:2]) + " different from Dicom Columns (" + str(
+            dcm.Columns) + ") and Rows (" + str(dcm.Rows) + ")")
+    if (hasattr(dcm, 'SeriesDescription') and dcm.SeriesDescription != ""):
+        imgName = dcm.SeriesDescription
+    else:
+        imgName = dcm.SeriesInstanceUID
+
+    pixelSpacing = (float(dcm.PixelSpacing[1]), float(dcm.PixelSpacing[0]), meanSliceDistance)
+    imagePositionPatient = (float(dcm.ImagePositionPatient[0]), float(dcm.ImagePositionPatient[1]), sliceLocation[0])
+
+    # collect patient information
+    if hasattr(dcm, 'PatientID'):
+        birth = dcm.PatientBirthDate if hasattr(dcm, 'PatientBirthDate') else ""
+        sex = dcm.PatientSex if hasattr(dcm, 'PatientSex') else None
+
+        patient = Patient(id=dcm.PatientID, name=str(dcm.PatientName), birthDate=birth, sex=sex)
+    else:
+        patient = Patient()
+
+    # generate MR image object
+    FrameOfReferenceUID = dcm.FrameOfReferenceUID if hasattr(dcm, 'FrameOfReferenceUID') else pydicom.uid.generate_uid()
+
+    image = PETImage(imageArray=imageData, name=imgName, origin=imagePositionPatient,
+        spacing=pixelSpacing, seriesInstanceUID=dcm.SeriesInstanceUID,
+        frameOfReferenceUID=FrameOfReferenceUID, sliceLocation=sliceLocation,
+        sopInstanceUIDs=sopInstanceUIDs)
+    image.patient = patient
+
+    pet_tags = [
+        (0x0008, 0x0021),  # SeriesDate
+        (0x0008, 0x0031),  # SeriesTime
+        (0x0054, 0x1001),  # Units
+        (0x0054, 0x1000),  # SeriesType
+        (0x0054, 0x1006),  # SUVType
+        (0x0054, 0x1002),  # CountsSource
+        (0x0054, 0x1101),  # CorrectionApplied
+        (0x0054, 0x1101),  # AttenuationCorrectionMethod
+        (0x0054, 0x1105),  # ScatterCorrectionMethod
+        (0x0054, 0x1102),  # DecayCorrection
+        (0x0018, 0x9758),  # ReconstructionDiameter
+        (0x0018, 0x1210),  # ConvolutionKernel
+        (0x0054, 0x1103),  # ReconstructionMethod
+        (0x0054, 0x1104),  # Collimator/Detector Lines Used
+        (0x0018, 0x9755),  # Coincidence Window Width
+        (0x0008, 0x0008),  # Image Type
+        (0x0028, 0x0103),  # Pixel Representation
+        (0x0028, 0x0100),  # Bits Allocated
+        (0x0028, 0x0101),  # Bits Stored
+        (0x0028, 0x0102),  # High Bit
+        (0x0028, 0x1052),  # Rescale Intercept
+        (0x0028, 0x1053),  # Rescale Slope
+        (0x0054, 0x1300),  # Frame Reference Time
+        (0x0008, 0x0022),  # Acquisition Date
+        (0x0008, 0x0032),  # Acquisition Time
+        (0x0018, 0x1242),  # Actual Frame Duration
+        (0x0054, 0x1310),  # Primary Counts Accumulated
+        (0x0054, 0x1324),  # Slice Sensitivity Factor
+        (0x0054, 0x1321),  # Decay Factor
+        (0x0054, 0x1322),  # Dose Calibration Factor
+        (0x0054, 0x1323),  # Scatter Fraction Factor
+        (0x0054, 0x1324),  # Dead Time Correction Factor
+        (0x0018, 0x1060),  # Trigger Time
+        (0x0018, 0x1063),  # Frame Time
+        (0x0018, 0x1081),  # Low R-R Value
+        (0x0018, 0x1082),  # High R-R Value
+        (0x0010, 0x0010),  # Patient Name
+        (0x0010, 0x0020),  # Patient ID
+        (0x0010, 0x0030),  # Patient Birth Date
+        (0x0010, 0x0040),  # Patient Sex
+        (0x0020, 0x000D),  # Study Instance UID
+        (0x0020, 0x000E),  # Series Instance UID
+        (0x0008, 0x0018),  # SOP Instance UID
+        (0x0008, 0x0060),  # Modality
+        (0x0028, 0x0010),  # Rows
+        (0x0028, 0x0011),  # Columns
+        (0x0028, 0x0030),  # Pixel Spacing
+        (0x0018, 0x0050),  # Slice Thickness
+        (0x0020, 0x0032),  # Image Position Patient
+        (0x0020, 0x0037),  # Image Orientation Patient
+    ]
+
+    for tag_code in pet_tags:
+        try:
+            tag_value = header.get(tag_code)
+            if tag_value is not None:
+                tag_name = dictionary_description(tag_code)
+                if tag_name:
+                    setattr(image, tag_name.replace(' ', ''), tag_value)
+        except (AttributeError, KeyError):
+            continue
+    return image
+
 
 ################## Dose Dicom ########################################
 def readDicomDose(dcmFile):
