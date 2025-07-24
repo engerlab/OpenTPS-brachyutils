@@ -2,6 +2,7 @@ from typing import Sequence, Any
 
 import numpy as np
 import logging
+import SimpleITK as sitk
 
 import opentps.core.processing.imageProcessing.filter3D as imageFilter3D
 
@@ -99,7 +100,7 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 
 ## --------------------------------------------------------------------------------------
 def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
-                    fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
+                    fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False, sitk_interpolator=sitk.sitkLinear):
     """
     Parameters
     ----------
@@ -181,7 +182,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
                 image.imageArray = imageFilter3D.gaussConv(image.imageArray, sigma)
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
-            sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue)
+            sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue, interpolator=sitk_interpolator)
         except Exception as e:
             logger.info('Failed to use SITK resampler. Try OpenMP without GPU instead.')
             tryOpenMP = True
@@ -228,7 +229,7 @@ def resampleOnImage3D(data:Any, fixedImage:Image3D, fillValue:float=0., inPlace:
         raise NotImplementedError
 
 ## --------------------------------------------------------------------------------------
-def resampleImage3DOnImage3D(image:Image3D, fixedImage:Image3D, fillValue:float=0., inPlace:bool=False, tryGPU:bool=False):
+def resampleImage3DOnImage3D(image:Image3D, fixedImage:Image3D, fillValue:float=0., inPlace:bool=False, tryGPU:bool=False, sitk_interpolator=sitk.sitkLinear):
     """
 
     Parameters
@@ -255,7 +256,7 @@ def resampleImage3DOnImage3D(image:Image3D, fixedImage:Image3D, fillValue:float=
 
     if not (image.hasSameGrid(fixedImage)):
         resampleImage3D(image, spacing=fixedImage.spacing, origin=fixedImage.origin, gridSize=fixedImage.gridSize.astype(int),
-                      fillValue=fillValue, inPlace=True, tryGPU=tryGPU)
+                      fillValue=fillValue, inPlace=True, tryGPU=tryGPU, sitk_interpolator=sitk_interpolator)
 
     return image
 

@@ -153,7 +153,7 @@ def sitkImageToImage2D(sitkImage: sitk.Image, type=float):
 
 
 def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarray] = None,
-           newShape: Optional[np.ndarray] = None, fillValue: float = 0.):
+           newShape: Optional[np.ndarray] = None, fillValue: float = 0., interpolator=sitk.sitkLinear):
     """
     Resize an Image3D
 
@@ -198,7 +198,7 @@ def resize(image: Image3D, newSpacing: np.ndarray, newOrigin: Optional[np.ndarra
     transform = sitk.AffineTransform(dimension)
     transform.SetMatrix(img.GetDirection())
 
-    outImg = sitk.Resample(img, reference_image, transform, sitk.sitkNearestNeighbor, fillValue)
+    outImg = sitk.Resample(img, reference_image, transform, interpolator, fillValue)
     outData = np.array(sitk.GetArrayFromImage(outImg))
 
     if imgType == bool:
