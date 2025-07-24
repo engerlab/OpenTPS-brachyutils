@@ -182,7 +182,7 @@ class ROIContour(PatientData):
             The function returns the binary mask of the contour
 
         """
-        mask3D = np.zeros(gridSize, dtype=np.bool)
+        mask3D = np.zeros(gridSize, dtype=np.bool_)
 
         for contourData in self.polygonMesh:
             # extract contour coordinates and convert to image coordinates (voxels)
@@ -257,7 +257,7 @@ class ROIContour(PatientData):
         mask: roiMask object
             The function returns the binary mask of the contou
         """
-        mask3D = np.zeros(gridSize, dtype=np.bool)
+        mask3D = np.zeros(gridSize, dtype=np.bool_)
 
         for contourData in self.polygonMesh:
             # extract contour coordinates and convert to image coordinates (voxels)
