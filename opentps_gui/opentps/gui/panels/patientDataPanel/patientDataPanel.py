@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QDia
 import opentps.core.io.dataLoader as dataLoader
 from opentps.core.io.serializedObjectIO import saveDataStructure
 from opentps.core import Event
+from opentps.gui.viewer.exportWindow import ExportWindow
 from opentps.gui.panels.patientDataPanel.patientDataSelection import PatientDataSelection
 
 
@@ -33,7 +34,7 @@ class PatientDataPanel(QWidget):
         loadDataButton = QPushButton('Load data')
         loadDataButton.clicked.connect(self.loadData)
         self.buttonLayout.addWidget(loadDataButton)
-        saveDataButton = QPushButton('Save data (Serialized)')
+        saveDataButton = QPushButton('Save data')
         saveDataButton.clicked.connect(self.saveData)
         self.buttonLayout.addWidget(saveDataButton)
         self.layout.addLayout(self.buttonLayout)
@@ -54,12 +55,8 @@ class PatientDataPanel(QWidget):
         dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
 
     def saveData(self):
-        fileDialog = SaveData_dialog()
-        savingPath, compressedBool, splitPatientsBool = fileDialog.getSaveFileName(None, dir=self.dataPath)
-
-        patientList = self._viewController.activePatients
-        # patientList = [patient.dumpableCopy() for patient in self._viewController._patientList]
-        saveDataStructure(patientList, savingPath, compressedBool=compressedBool, splitPatientsBool=splitPatientsBool)
+        self._exportWindow = ExportWindow(self._viewController)
+        self._exportWindow.show()
 
 ## ------------------------------------------------------------------------------------------
 class SaveData_dialog(QFileDialog):

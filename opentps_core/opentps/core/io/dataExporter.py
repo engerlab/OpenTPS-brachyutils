@@ -10,6 +10,8 @@ from opentps.core.io import mhdIO
 from opentps.core.io import dicomIO
 from opentps.core.data.images import CTImage,DoseImage
 from opentps.core.data import RTStruct
+from opentps.core.io.serializedObjectIO import saveSerializedObjects
+from opentps.core.io.mcsquareIO import writeCT, writePlan, writeContours
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +67,7 @@ class ExportConfig:
     def __init__(self):
         self._types = [DataType("Image", [ExportTypes.DICOM, ExportTypes.MHD, ExportTypes.MCSQUARE, ExportTypes.PICKLE]),
                        DataType("Dose", [ExportTypes.DICOM, ExportTypes.MHD, ExportTypes.PICKLE]),
-                       DataType("Plan", [ExportTypes.DICOM, ExportTypes.MCSQUARE, ExportTypes.PICKLE]),
+                       DataType("Plan", [ExportTypes.DICOM, ExportTypes.PICKLE]),
                        DataType("Contours", [ExportTypes.DICOM, ExportTypes.MHD, ExportTypes.PICKLE]),
                        DataType("Other", [ExportTypes.DICOM, ExportTypes.MHD, ExportTypes.MCSQUARE, ExportTypes.PICKLE])]
 
@@ -142,6 +144,12 @@ def exportImage(image:Image3D, folderPath:str, imageConfig:ExportTypes):
             dicomIO.writeRTDose(image, folderPath)
         if isinstance(image, CTImage):
             dicomIO.writeDicomCT(image, folderPath)
+    elif imageConfig == ExportTypes.PICKLE:
+        filePath = _checkAndRenameFile(folderPath, image.__class__.__name__ + '_' + image.name)
+        saveSerializedObjects(image, os.path.join(folderPath, filePath))
+    elif imageConfig == ExportTypes.MCSQUARE:
+        filePath = _checkAndRenameFile(folderPath, image.__class__.__name__ + '_' + image.name)
+        writeCT(image, os.path.join(folderPath, filePath))
     else:
         logger.warning(image.__class__.__name__ + ' cannot be exported in dicom. Exporting in MHD instead.')
         filePath = _checkAndRenameFile(folderPath, image.__class__.__name__ + '_' + image.name + '.mhd')
@@ -162,6 +170,9 @@ def exportPlan(plan:RTPlan, folderPath:str, planConfig:ExportTypes):
     """
     if planConfig == ExportTypes.DICOM:
         dicomIO.writeRTPlan(plan, folderPath)
+    elif planConfig == ExportTypes.PICKLE:
+        filePath = _checkAndRenameFile(folderPath, plan.__class__.__name__ + '_' + plan.name)
+        saveSerializedObjects(plan, os.path.join(folderPath, filePath))
     else:
         raise NotImplementedError
     
@@ -180,6 +191,14 @@ def exportContours(contours:RTStruct, folderPath:str, contoursConfig:ExportTypes
     """
     if contoursConfig == ExportTypes.DICOM:
         dicomIO.writeRTStruct(contours, folderPath)
+    elif contoursConfig == ExportTypes.MCSQUARE:
+        writeContours(contours, folderPath)
+    elif contoursConfig == ExportTypes.PICKLE:
+        filePath = _checkAndRenameFile(folderPath, contours.__class__.__name__ + '_' + contours.name)
+        saveSerializedObjects(contours, os.path.join(folderPath, filePath))
+    elif contoursConfig == ExportTypes.MHD:
+        filePath = _checkAndRenameFile(folderPath, contours.__class__.__name__ + '_' + contours.name)
+        mhdIO.exportImageMHD(os.path.join(folderPath, filePath), contours)
     else:
         raise NotImplementedError    
 

@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import logging
+import os
 
 from opentps.core.data.images import CTImage
 from opentps.core.processing.registration.registrationMorphons import RegistrationMorphons
@@ -10,6 +11,10 @@ from opentps.core.examples.syntheticData import *
 logger = logging.getLogger(__name__)
 
 def run():
+    output_path = os.path.join(os.getcwd(), 'Output')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed_img = np.full((100, 100, 100), -1000)
@@ -97,6 +102,7 @@ def run():
     ax[0, 2].title.set_text('Difference after registration')
 
     plt.show()
+    plt.savefig(os.path.join(output_path, 'Example_Morphons.png'))
 
     print('Morphons example completed')
 

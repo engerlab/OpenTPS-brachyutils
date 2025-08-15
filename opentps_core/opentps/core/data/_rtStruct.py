@@ -86,7 +86,7 @@ class RTStruct(PatientData):
         contour : ROIContour
         """
         self._contours.append(contour)
-        self.contourAddedSignal.emit(contour)
+        # self.contourAddedSignal.emit(contour)
 
 
     def removeContour(self, contour:ROIContour):

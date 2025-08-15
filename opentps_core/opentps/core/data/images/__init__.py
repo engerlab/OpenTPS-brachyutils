@@ -1,6 +1,7 @@
 
 from opentps.core.data.images._ctImage import *
 from opentps.core.data.images._mrImage import *
+from opentps.core.data.images._petImage import *
 from opentps.core.data.images._doseImage import *
 from opentps.core.data.images._image2D import *
 from opentps.core.data.images._letImage import *

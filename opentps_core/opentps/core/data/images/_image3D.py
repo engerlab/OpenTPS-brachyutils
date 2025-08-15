@@ -180,6 +180,11 @@ class Image3D(PatientData):
             return np.array([0, 0, 0])
         return np.array(self._imageArray.shape)
 
+    @gridSize.setter
+    def gridSize(self, gridSize) -> np.ndarray:
+        self._imageArray = np.zeros(gridSize)
+        self.dataChangedSignal.emit()
+
     @property
     def gridSizeInWorldUnit(self)  -> np.ndarray:
         return self.gridSize*self.spacing

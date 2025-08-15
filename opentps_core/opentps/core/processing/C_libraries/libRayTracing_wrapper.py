@@ -59,7 +59,7 @@ def WET_raytracing(SPR, beam_direction, ROI=[]):
         if ROI == []:
             ROI_mask = np.ones(SPR.gridSize)
         else:
-            ROI_mask = np.array(ROI.imageArray, dtype=np.bool, order='C')
+            ROI_mask = np.array(ROI.imageArray, dtype=np.bool_, order='C')
 
         # call C function
         libRaytracing.raytrace_WET(SPR.imageArray.astype(np.float32), ROI_mask.astype(bool), WET, Offset,

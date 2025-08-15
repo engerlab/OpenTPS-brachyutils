@@ -3,9 +3,9 @@ import scipy.sparse as sp
 import pandas as pd
 
 from opentps.core.data import DVH
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
-from opentps.core.data.plan._planIonLayer import PlanIonLayer
-from opentps.core.data.plan._planIonSpot import PlanIonSpot
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
+from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
+from opentps.core.data.plan._planProtonSpot import PlanProtonSpot
 from opentps.core.data.plan._rtPlan import RTPlan
 
 import logging
@@ -410,7 +410,7 @@ class WeightStructure:
 
         return time, switchUp, switchDown
 
-    def isActivated(self, el: PlanIonLayer) -> bool:
+    def isActivated(self, el: PlanProtonLayer) -> bool:
         """
         return True if layer is activated (non-null weight)
 
@@ -494,7 +494,7 @@ class WeightStructure:
                 nSpotsInLayer = len(layer.spots)
                 nNewSpots = divmod(nSpotsInLayer, groupSpotsby)
                 for k in range(nNewSpots[0] + 1):
-                    spot = PlanIonSpot()
+                    spot = PlanProtonSpot()
                     spot.id = accumulatedSpots
                     spot.beamID = i
                     spot.layerID = accumulatedLayers
@@ -523,11 +523,11 @@ class WeightStructure:
         self.beamsGrouped = []
         # BEAMS
         for i in range(self.nBeams):
-            b = PlanIonBeam()
+            b = PlanProtonBeam()
             b.id = i
             # LAYERS
             for j in range(self.nLayersInBeam[i]):
-                el = PlanIonLayer()
+                el = PlanProtonLayer()
                 el.id = accumulatedLayers
                 el.beamID = i
                 el.nominalEnergy = self.energyLayers[i][j]

@@ -33,7 +33,7 @@ before_script:
   - $POETRY_HOME/bin/poetry install --no-root # install dependencies
 
 build:
-  image: python:3.9
+  image: python:3.11
   stage: build
   script:
     - export PYTHONPATH="$PWD/opentps_core:$PWD/opentps_gui"
@@ -48,7 +48,7 @@ build:
 
 # TODO: Should tests be executed on the built application
 test_core:
-  image: python:3.9
+  image: python:3.11
   stage: test_core
   script:
     - pip show SimpleITK
@@ -57,7 +57,7 @@ test_core:
     - python3 CI/tests.py
 
 test_gui:
-  image: python:3.9
+  image: python:3.11
   stage: test_gui
   script:
     - pip show SimpleITK
@@ -68,7 +68,7 @@ test_gui:
     - python -m unittest discover opentps_gui/opentps/gui
 
 docs:
-  image: python:3.9
+  image: python:3.11
   stage: doc
   script:
     - pip install sphinx sphinx-rtd-theme
@@ -82,7 +82,7 @@ docs:
 # Must be run after all script because we create __init__.py for unittest. The absence of this file is essential and tested in test_core.
 unittest_core:
   stage: unittest_core
-  image: python:3.9
+  image: python:3.11
   script:
     - cd $CI_PROJECT_DIR/opentps_core/
     - touch opentps/__init__.py # because unittests does not work on namespace package

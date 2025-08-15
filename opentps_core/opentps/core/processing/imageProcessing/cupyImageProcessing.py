@@ -136,7 +136,7 @@ def rotateImage3D(image, rotAnglesInDeg=[0, 0, 0], fillValue=0, outputBox='keepA
     imgType = copy.copy(image.imageArray.dtype)
 
     if imgType == bool:
-        image.imageArray = image.imageArray.astype(np.float)
+        image.imageArray = image.imageArray.astype(float)
 
     cupyArray = cupy.asarray(image.imageArray)
 
@@ -300,7 +300,7 @@ def applyTransform3DToImage3D(image: Image3D, tformMatrix: np.ndarray, fillValue
     imgType = copy.copy(image.imageArray.dtype)
 
     if imgType == bool:
-        image.imageArray = image.imageArray.astype(np.float)
+        image.imageArray = image.imageArray.astype(float)
 
     if tformMatrix.shape[1] == 3:
         completeMatrix = np.zeros((4, 4))

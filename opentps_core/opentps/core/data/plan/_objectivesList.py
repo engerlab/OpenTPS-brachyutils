@@ -90,7 +90,7 @@ class ObjectivesList:
 
         Parameters
         ----------
-        roi: ROIContour or ROIMask
+        roi: ROIContour and ROIMask
             region of interest
         metric: FidObjective.Metrics or str
             metric to use for the objective : "DMin", "DMax", "DMean", "DUniform", "DVHMin", "DVHMax", "EUDMin", "EUDMax" or "EUDUniform" or "DFALLOFF" or FidObjective.Metrics.DMIN, FidObjective.Metrics.DMAX, FidObjective.Metrics.DMEAN, FidObjective.Metrics.DUNIFORM, FidObjective.Metrics.DVHMIN, FidObjective.Metrics.DVHMAX, FidObjective.Metrics.EUDMIN, FidObjective.Metrics.EUDMAX, FidObjective.Metrics.EUDUNIFORM or FidObjective.Metrics.DFALLOFF
@@ -330,8 +330,6 @@ class FidObjective:
             # convert 1D vector
             self.voxelwiseLimitValue = np.ndarray.flatten(self.voxelwiseLimitValue, 'F')
             self.voxelwiseLimitValue = self.voxelwiseLimitValue[self.maskVec]
-
-
 
 class ExoticObjective:
     """

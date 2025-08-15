@@ -2,7 +2,7 @@
 [tool.poetry]
 name = "opentps-gui"
 homepage = "http://opentps.org/"
-version = "1.0.5"
+version = "2.0.2"
 readme = "README.md"
 license = "GPLv3"
 description = "Open source TPS for advanced proton therapy"
@@ -17,21 +17,21 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "~3.9"
-vtk = "9.2.6"
+python = "~3.11"
 cachecontrol = "*"
-numpy = "^1.23.5"
+numpy = "^1.26.4"
 Pillow = "^9.4.0"
-pydicom = "^2.4.1"
+pydicom = "^3.0.1"
+vtk = "9.2.6"
 PyQt5 = "5.15.10"
 PyQt5-Qt5 = '5.15.2'
 pyqtgraph = "^0.13.1"
 SimpleITK = "^2.2.1"
-sparse-dot-mkl = "^0.8.3"
+sparse-dot-mkl = "^0.9.6"
 setuptools = "^67.8.0" # Required for local testing with python -m pip install -e .
-pandas = "^1.5.3"
+pandas = "^2.2.3"
 scikit-image = "*"
-pymedphys="0.39.3"
+pymedphys="^0.40.0"
 
 [tool.poetry.dev-dependencies]
 

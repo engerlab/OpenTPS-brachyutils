@@ -8,7 +8,7 @@ from vtkmodules.vtkFiltersSources import vtkSphereSource, vtkLineSource
 from vtkmodules.vtkRenderingCore import vtkActor, vtkPolyDataMapper
 
 from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.plan import PlanIonBeam
+from opentps.core.data.plan import PlanProtonBeam
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.processing.imageProcessing import imageTransform3D
 
@@ -68,7 +68,7 @@ class BeamLayer:
 
         # TODO: update view
 
-    def setBeam(self, beam:PlanIonBeam, referenceImage:Image3D):
+    def setBeam(self, beam:PlanProtonBeam, referenceImage:Image3D):
         transfo_mat = vtkCommonMath.vtkMatrix4x4()
         transfo_mat.DeepCopy(self._resliceAxes)
         transfo_mat.Invert()

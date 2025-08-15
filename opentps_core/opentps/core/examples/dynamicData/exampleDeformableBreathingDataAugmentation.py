@@ -5,6 +5,7 @@ sys.path.append(currentWorkingDir)
 import numpy as np
 from pathlib import Path
 import math
+import logging
 
 # from opentps.core.io.serializedObjectIO import loadDataStructure
 import matplotlib.pyplot as plt
@@ -16,7 +17,15 @@ from opentps.core.processing.imageProcessing.imageTransform3D import getVoxelInd
 from opentps.core.processing.imageProcessing.resampler3D import resample
 from opentps.core.examples.syntheticData import*
 
+logger = logging.getLogger(__name__)
+
 if __name__ == '__main__':
+
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleDeformableBreathingDataAugmentation')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
 
     CT4D = createSynthetic4DCT(numberOfPhases=10)
     # CT4D = resample(CT4D, gridSize=(80, 50, 50))
@@ -29,7 +38,7 @@ if __name__ == '__main__':
         plt.imshow(np.rot90(CT4D.dyn3DImageList[imageIndex].imageArray[:, 95, :]))
 
     anim = FuncAnimation(fig, updateAnim, frames=len(CT4D.dyn3DImageList), interval=300)
-    anim.save('D:/anim.gif')
+    anim.save(os.path.join(output_path, 'anim.gif'))
     plt.show()
 
     # GENERATE MIDP
@@ -120,5 +129,5 @@ if __name__ == '__main__':
         plt.imshow(np.rot90(dynSeq.dyn3DImageList[imageIndex].imageArray[:, 29, :]))
 
     anim = FuncAnimation(fig, updateAnim, frames=len(dynSeq.dyn3DImageList), interval=300)
-    anim.save('D:/anim3.gif')
+    anim.save(os.path.join(output_path, 'anim3.gif'))
     plt.show()

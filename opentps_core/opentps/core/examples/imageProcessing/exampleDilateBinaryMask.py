@@ -2,10 +2,17 @@ import numpy as np
 import matplotlib.pyplot as plt
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.processing.imageProcessing.roiMasksProcessing import buildStructElem, dilateMaskScipy
+import os
+import logging
 
-
+logger = logging.getLogger(__name__)
 
 def run():
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleDilateBinaryMask')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
 
     roi = ROIMask(name='TV')
     roi.color = (255, 0, 0)# red
@@ -49,6 +56,7 @@ def run():
     plt.title("diff SITK-ori")
 
     plt.show()
+    plt.savefig(os.path.join(output_path, 'ExampleDilateBinary.png')) 
 
 if __name__ == "__main__":
     run()

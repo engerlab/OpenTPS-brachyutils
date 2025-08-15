@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
+import os
 
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
@@ -10,6 +11,11 @@ from opentps.core.processing.deformableDataAugmentationToolBox.weightMaps import
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
+
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleDeformationFromWeightMaps')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = createSynthetic4DCT(numberOfPhases=10)
@@ -106,6 +112,6 @@ if __name__ == '__main__':
     ax[1,3].title.set_text('phases [0,2] - amplitude 2')
 
     plt.show()
-
+    plt.savefig(os.path.join(output_path, 'DeformationFromWeightMaps.png'))
     print('done')
     print(' ')

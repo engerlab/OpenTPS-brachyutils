@@ -4,7 +4,7 @@ from scipy.ndimage.morphology import binary_dilation
 import numpy as np
 
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.doseCalculation.protons.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.io import mcsquareIO
 from opentps.core.io.scannerReader import readScanner
 from opentps.core.data import DVH

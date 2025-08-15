@@ -5,7 +5,7 @@ from vtkmodules.vtkCommonTransforms import vtkTransform
 from vtkmodules.vtkFiltersGeneral import vtkTransformPolyDataFilter
 from vtkmodules.vtkIOGeometry import vtkSTLReader
 
-from opentps.core.data.plan import RTPlan, PlanIonBeam
+from opentps.core.data.plan import RTPlan, PlanProtonBeam
 from opentps.gui.viewer.dataForViewer.polyDataForViewer import PolyDataForViewer
 from opentps.gui.viewer.dataViewerComponents.imageViewerComponents.polyData3DLayer_3D import PolyData3DLayer_3D
 import opentps.gui.res.icons as iconModule
@@ -44,7 +44,7 @@ class BeamLayer_3D:
 
         return tform
 
-    def setBeam(self, beam:PlanIonBeam):
+    def setBeam(self, beam:PlanProtonBeam):
         self._tformFilter.SetTransform(self._tform(beam.gantryAngle, beam.couchAngle))
         self._nozzleLayer.image = self._image
 

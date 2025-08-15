@@ -2,8 +2,8 @@ import os, sys
 import numpy as np
 import logging
 from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
-from opentps.core.data.plan._planIonLayer import PlanIonLayer
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
+from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +61,11 @@ def importPlanPLD(inputPath:str):
             if line.startswith("Beam"):
                 values = line.split(",")
                 scalingFactor = float(values[-3]) / float(values[-2])
-                plan.appendBeam(PlanIonBeam())
+                plan.appendBeam(PlanProtonBeam())
                 continue
             if line.startswith("Layer"):
                 values = line.split(",")
-                layer = PlanIonLayer(nominalEnergy=float(values[2]))
+                layer = PlanProtonLayer(nominalEnergy=float(values[2]))
                 plan.beams[-1].appendLayer(layer)
                 continue
             if line.startswith("Element"):

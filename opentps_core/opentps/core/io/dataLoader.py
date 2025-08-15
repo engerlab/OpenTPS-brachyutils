@@ -119,7 +119,8 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
     # read Dicom files
     dicomCT = {}
     dicomMRI = {}
-    for filePath in fileLists["Dicom"]:
+    for d, filePath in enumerate(fileLists["Dicom"]):
+        logger.info(f'Loading data {d+1}/{len(fileLists["Dicom"])} Dicom files : {os.path.basename(filePath)}.')
         dcm = pydicom.dcmread(filePath)
 
         # Dicom field
@@ -203,12 +204,14 @@ def readData(inputPaths, maxDepth=-1) -> Sequence[Union[PatientData, Patient]]:
         dataList.append(mri)
 
     # read MHD images
-    for filePath in fileLists["MHD"]:
+    for d, filePath in enumerate(fileLists["MHD"]):
+        logger.info(f'Loading data {d}/{len(fileLists["MHD"])} MHD files : {os.path.basename(filePath)}.')
         mhdImage = mhdIO.importImageMHD(filePath)
         dataList.append(mhdImage)
 
     # read serialized object files
-    for filePath in fileLists["Serialized"]:
+    for d, filePath in enumerate(fileLists["Serialized"]):
+        logger.info(f'Loading data {d}/{len(fileLists["Serialized"])} Serialized files : {os.path.basename(filePath)}.')
         dataList += loadDataStructure(filePath) # not append because loadDataStructure returns a list already
         print('---------', type(dataList[-1]))
 

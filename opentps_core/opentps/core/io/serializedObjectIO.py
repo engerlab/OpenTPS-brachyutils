@@ -2,18 +2,20 @@
 Made by damien (damien.dasnoy@uclouvain.be / damien.dasnoy@gmail.com)
 """
 import bz2
-import _pickle as cPickle
+import pickle as cPickle
 import pickle
 import os
 import logging
 import matplotlib.pyplot as plt
 
+from opentps.core.data.plan._protonPlan import ProtonPlan
+from opentps.core.data.plan._photonPlan import PhotonPlan
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._vectorField3D import VectorField3D
-from opentps.core.data._patient import Patient
+
 
 
 
@@ -151,7 +153,7 @@ def loadSerializedObject(filePath):
 
 
 
-def saveRTPlan(plan, file_path):
+def saveRTPlan(plan, file_path, unloadBeamlets=True):
     """
     Save the RTPlan object in a file
 
@@ -162,10 +164,11 @@ def saveRTPlan(plan, file_path):
     file_path : str
         The path of the file where to save the RTPlan object
     """
-    if plan.planDesign:
+    if plan.planDesign and unloadBeamlets:
         if plan.planDesign.beamlets:
             plan.planDesign.beamlets.unload()
-        if plan.planDesign.beamletsLET:
+        from opentps.core.data.plan._protonPlanDesign import ProtonPlanDesign
+        if isinstance(plan.planDesign, ProtonPlanDesign) and plan.planDesign.beamletsLET:
             plan.planDesign.beamletsLET.unload()
 
         for scenario in plan.planDesign.robustness.scenarios:
@@ -175,7 +178,7 @@ def saveRTPlan(plan, file_path):
         pickle.dump(plan.__dict__, fid)
 
 
-def loadRTPlan(file_path):
+def loadRTPlan(file_path, radiationType="Proton"):
     """
     Load a RTPlan object from a file
 
@@ -191,8 +194,13 @@ def loadRTPlan(file_path):
     """
     with open(file_path, 'rb') as fid:
         tmp = pickle.load(fid)
-
-    plan = RTPlan()
+    
+    if radiationType.upper() == "PROTON":
+        plan = ProtonPlan()
+    elif radiationType.upper() == "PHOTON":
+        plan = PhotonPlan()
+    else:
+        raise NotImplementedError("Radiation type {} is not yet supported".format(radiationType))
     plan.__dict__.update(tmp)
     return plan
 
@@ -276,7 +284,7 @@ def dictionarizeData(data):
 
     print('Dictionarize data -', data.getTypeAsString())
     newDict = {}
-
+    from opentps.core.data._patient import Patient
     if isinstance(data, Patient):
 
         patientDataDictList = []

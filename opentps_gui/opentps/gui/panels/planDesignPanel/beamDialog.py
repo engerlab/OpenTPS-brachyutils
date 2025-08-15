@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import *
 
 
 class BeamDialog(QDialog):
-    def __init__(self, BeamName, RangeShifterList=[]):
+    def __init__(self, Modality, BeamName, RangeShifterList=[]):
         RangeShifterList = ["None"] + RangeShifterList
 
         # initialize the window
@@ -40,6 +40,8 @@ class BeamDialog(QDialog):
         self.RangeShifter = QComboBox()
         self.RangeShifter.addItems(RangeShifterList)
         self.InputLayout.addWidget(self.RangeShifter, 3, 1)
+        if Modality == "IMRT":
+            self.RangeShifter.setEnabled(False)
 
         # buttons
         self.ButtonLayout = QHBoxLayout()

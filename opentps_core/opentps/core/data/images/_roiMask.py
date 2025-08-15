@@ -110,7 +110,7 @@ class ROIMask(Image3D):
         """
         return ROIMask(imageArray=copy.deepcopy(self.imageArray), name=self.name + '_copy', origin=self.origin, spacing=self.spacing, angles=self.angles)
 
-    def dilateMask(self, radius=1.0, struct=None, tryGPU=False):
+    def dilateMask(self, radius=1.0, struct=None, tryGPU=True):
         """
         Dilate the ROI mask.
 
