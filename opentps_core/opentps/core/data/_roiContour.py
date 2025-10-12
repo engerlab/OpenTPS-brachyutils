@@ -115,12 +115,8 @@ class ROIContour(PatientData):
             from opentps.core.data.images._roiMask import ROIMask
             return ROIMask(imageArray=None, name=self.name, origin=contourOrigin, spacing=contourSpacing,
                            displayColor=self._displayColor)
-
         else:
-            if np.isfinite(zDiff[0]):
-                contourSpacing[2] = zDiff[0]
-            else:
-                contourSpacing[2] = spacing[2] if not (spacing is None) else minSpatialResolution
+            contourSpacing[2] = zDiff.min()
 
         contourOrigin[0] = allX[0]
         contourOrigin[1] = allY[0]
@@ -162,6 +158,9 @@ class ROIContour(PatientData):
 
             resampler3D.resampleImage3DOnImage3D(mask, referenceImage, inPlace=True, fillValue=0)
 
+        # if masks are generated every few slides (e.g., 3mm) but the desired spacing is smaller (e.g., 1mm),
+        # then the resampling will create holes in the mask.
+        
         return mask
 
     def getBinaryMask_old(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
