@@ -10,6 +10,9 @@ from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data._roiContour import ROIContour
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core import Event
+import logging
+logger = logging.getLogger(__name__)
+
 
 
 class DVH:
@@ -366,14 +369,16 @@ class DVH:
 
         raise NotImplementedError(f'Homogenity index method {method} not implemented.')
 
-    def conformityIndex(self, method="Paddick"):
+    def conformityIndex(self, body_contour, method="Paddick"):
         """
         Compute the conformity index describing how tightly the prescription dose is conforming to the target.
 
         Parameters
         ----------
+        body_contour: ROIcontour
+          ROIcontour object of delineating the contour of the body of the patient
 
-        method: str
+        method: str (default="Paddick")
           Method to use for computing the conformity index
           if method=='RTOG': use the Radiation therapy oncology group guidelines index (https://doi.org/10.1016/0360-3016(93)90548-A)
           if method=='Paddick': use Paddick index, improved RTOG by taking into account the location and shape of the prescription
@@ -381,30 +386,32 @@ class DVH:
 
         Return
         ------
-        out: float
+        float
           Conformity index
 
         """
         assert self._prescription is not None
         percentile = 0.95  # ICRU reference isodose
-        if method == 'RTOG':  # Radiation therapy oncology group guidelines (1993)
-            # prescription isodose volume
-            isodose_prescription_volume = np.sum(
-                self._doseImage.imageArray[self._roiMask.imageArray == True] >= percentile 
-                * self._prescription)
-            contour_volume = np.sum(self._roiMask.imageArray)
-            return isodose_prescription_volume / contour_volume
 
+        # prescription isodose volume
+        isodose_prescription_volume = np.sum(
+            self._doseImage.imageArray[body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing).imageArray] >= percentile
+            * self._prescription) #V_RI
+
+        target_volume = np.sum(self._roiMask.imageArray) #V_T
+
+        if method == 'RTOG': # Radiation therapy oncology group guidelines (1993)
+            if isodose_prescription_volume == 0 or target_volume == 0:
+                logger.warning("Conformity index RTOG: division by zero, returning 0.0")
+                return 0.0
+            return isodose_prescription_volume / target_volume
         if method == 'Paddick':
-            # prescription isodose volume
-            isodose_prescription_volume = np.sum(
-                self._doseImage.imageArray[self._roiMask.imageArray == True] >= percentile 
-                * self._prescription)
-            # Target volume
-            contour_volume = np.sum(self._roiMask.imageArray)
-            # target volume covered by the prescription isodose volume
-            contour_volume_covered_by_prescription = np.sum(
-                self._doseImage.imageArray[self._roiMask.imageArray == True] >= percentile * self._prescription)
-            return contour_volume_covered_by_prescription ** 2 / (isodose_prescription_volume * contour_volume)
+            target_volume_covered_by_prescription = np.sum(
+                self._doseImage.imageArray[self._roiMask.imageArray] >= percentile * self._prescription) #V_T,RI
+            if isodose_prescription_volume == 0 or target_volume == 0:
+                logger.warning("Conformity index Paddick: division by zero, returning 0.0")
+                return 0.0
+            return target_volume_covered_by_prescription ** 2 / (isodose_prescription_volume * target_volume)
 
-        raise NotImplementedError(f'Conformity index method {method} not implemented.')
+        else:
+            raise NotImplementedError(f'Conformity index method {method} not implemented.')
