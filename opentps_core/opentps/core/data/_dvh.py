@@ -393,9 +393,12 @@ class DVH:
         assert self._prescription is not None
         percentile = 0.95  # ICRU reference isodose
 
+        body_mask = body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing).imageArray
+        body_mask = np.ma.mask_or(body_mask, self._roiMask.imageArray)  # include target volume in body mask
+
         # prescription isodose volume
         isodose_prescription_volume = np.sum(
-            self._doseImage.imageArray[body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing).imageArray] >= percentile
+            self._doseImage.imageArray[body_mask] >= percentile
             * self._prescription) #V_RI
 
         target_volume = np.sum(self._roiMask.imageArray) #V_T
