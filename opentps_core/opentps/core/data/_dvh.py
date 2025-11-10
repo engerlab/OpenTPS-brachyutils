@@ -369,7 +369,7 @@ class DVH:
 
         raise NotImplementedError(f'Homogenity index method {method} not implemented.')
 
-    def conformityIndex(self, body_contour, method="Paddick"):
+    def conformityIndex(self, body_contour:Union[ROIContour, ROIMask], method:str="Paddick"):
         """
         Compute the conformity index describing how tightly the prescription dose is conforming to the target.
 
@@ -392,8 +392,11 @@ class DVH:
         """
         assert self._prescription is not None
         percentile = 0.95  # ICRU reference isodose
-
-        body_mask = body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing).imageArray
+       
+        if isinstance(body_contour, ROIContour):
+            body_mask = body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing).imageArray
+        else:
+            body_mask = body_contour.imageArray
         body_mask = np.ma.mask_or(body_mask, self._roiMask.imageArray)  # include target volume in body mask
 
         # prescription isodose volume
@@ -410,7 +413,7 @@ class DVH:
             return isodose_prescription_volume / target_volume
         if method == 'Paddick':
             target_volume_covered_by_prescription = np.sum(
-                self._doseImage.imageArray[self._roiMask.imageArray] >= percentile * self._prescription) #V_T,RI
+                self._doseImage.imageArray[self._roiMask.imageArray.astype(bool)] >= percentile * self._prescription) #V_T,RI
             if isodose_prescription_volume == 0 or target_volume == 0:
                 logger.warning("Conformity index Paddick: division by zero, returning 0.0")
                 return 0.0
