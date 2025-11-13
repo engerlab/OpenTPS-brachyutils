@@ -850,8 +850,8 @@ def readDicomStruct(dcmFile):
             continue
 
         # Create ROIContour object
-        # color = tuple([int(c) for c in list(dcmContour.ROIDisplayColor)])
-        contour = ROIContour(name=dcmStruct.ROIName, #displayColor=color,
+        color = tuple([int(c) for c in list(dcmContour.ROIDisplayColor)])
+        contour = ROIContour(name=dcmStruct.ROIName, displayColor=color,
                              referencedFrameOfReferenceUID=dcmStruct.ReferencedFrameOfReferenceUID)
         contour.patient = patient
 
