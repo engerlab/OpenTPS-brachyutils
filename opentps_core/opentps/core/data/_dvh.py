@@ -247,7 +247,7 @@ class DVH:
         index = np.searchsorted(-self._volume_absolute, -x)
         if (index > len(self._volume) - 2): index = len(self._volume) - 2
         volume = self._volume_absolute[index - 1]
-        volume2 = self._volume_absolute[index]q
+        volume2 = self._volume_absolute[index]
 
         if (volume == volume2):
             Dcc = self._dose[index]
