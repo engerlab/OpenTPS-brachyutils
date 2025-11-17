@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import logging
+import os
 
 from opentps.core.processing.registration.registrationRigid import RegistrationRigid
 from opentps.core.examples.syntheticData import *
@@ -13,6 +14,12 @@ from opentps.core.processing.imageProcessing.imageTransform3D import rotateData,
 logger = logging.getLogger(__name__)
 
 def run():
+
+    output_path = os.path.join(os.getcwd(), 'Output')
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed = createSynthetic3DCT()
@@ -73,6 +80,7 @@ def run():
     ax[1, 2].set_title('Diff after')
     fig.colorbar(diffAft, ax=ax[1, 2])
     plt.show()
+    plt.savefig(os.path.join(output_path, 'Example_Registration.png'))
 
     print('Rigid registration example completed')
 

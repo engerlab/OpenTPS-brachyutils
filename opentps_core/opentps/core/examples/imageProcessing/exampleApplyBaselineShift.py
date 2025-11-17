@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
+import os
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import ROIMask
@@ -11,8 +12,14 @@ logger = logging.getLogger(__name__)
 
 def run():
 
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleApplyBasilineShift')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
+
     # GENERATE SYNTHETIC CT IMAGE AND TUMOR MASK
-    ct, roi = createSynthetic3DCT(returnTumorMask=True)
+    ct, roi = createSynthetic3DCT(returnTumorMask=True) #roi = [45, 54], [95, 104], [30, 39]
 
     # APPLY BASELINE SHIFT
     ctDef1, maskDef1 = applyBaselineShift(ct, roi, [4, 4, 4])
@@ -20,9 +27,9 @@ def run():
     ctDef3, maskDef3 = applyBaselineShift(ct, roi, [0, 0, -16])
 
     # CHECK RESULTS
-    assert (ctDef1.imageArray[58, 108, 41] > -100) & (ctDef1.imageArray[49, 99, 31] < -700), f"Error for baseline shift +4,+4,+4"
-    assert (ctDef2.imageArray[41, 91, 28] > -100) & (ctDef2.imageArray[50, 100, 38] < -700), f"Error for baseline shift -4,-4,-4"
-    assert (ctDef3.imageArray[50, 100, 23] > -100) & (ctDef3.imageArray[50, 100, 33] < -700), f"Error for baseline shift 0,0,-16"
+    assert (np.all(ctDef1.imageArray[50:57, 100:107, 36:42] > -700)), f"Error for baseline shift +4,+4,+4"
+    assert (np.all(ctDef2.imageArray[42:49, 92:99, 28:34] > -700)), f"Error for baseline shift -4,-4,-4"
+    assert (np.all(ctDef3.imageArray[46:53, 96:103, 22:32] > -700)), f"Error for baseline shift 0,0,-16"
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 4)
@@ -48,7 +55,7 @@ def run():
     ax[1,3].title.set_text('baseline shift 0,0,-16')
 
     plt.show()
-
+    plt.savefig(os.path.join(output_path, 'ExampleApplyBaselinesShift.png'))
     print('Baseline shift example completed')
 
 if __name__ == "__main__":

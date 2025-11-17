@@ -2,6 +2,7 @@ import copy
 
 import matplotlib.pyplot as plt
 import logging
+import os
 
 from opentps.core.data.images import VectorField3D
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
@@ -15,6 +16,12 @@ from opentps.core.processing.imageProcessing.resampler3D import resample
 logger = logging.getLogger(__name__)
 
 def run():
+
+    output_path = os.path.join(os.getcwd(), 'Output', 'CupyVsSitk')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
 
     imgSize = [40, 40, 40]
     imgSpacing = [1, 1, 2]
@@ -115,6 +122,7 @@ def run():
         ax[0, 3].set_xlabel(f"{movingSitk.origin}\n{movingSitk.spacing}\n{movingSitk.gridSize}")
 
         plt.show()
+        plt.savefig(os.path.join(output_path, 'cupy_VS_sitk_Transforms.png'))
     ## -----------------------------------------------------------------------------------------------
 
 

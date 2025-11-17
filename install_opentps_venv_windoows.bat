@@ -43,7 +43,7 @@ python -m pip install --upgrade pip
 
 :: Install required Python packages
 pip install pydicom
-pip install numpy
+pip install numpy>=1.24.0
 pip install scipy
 pip install matplotlib
 pip install Pillow
@@ -57,7 +57,7 @@ pip install pandas
 pip install scikit-image
 pip install tensorflow
 pip install keras
-pip3 install pymedphys==0.39.3
+pip3 install pymedphys==0.40.0
 REM pip3 install cupy
 
 echo All packages installed successfully.

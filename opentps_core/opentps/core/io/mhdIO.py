@@ -2,6 +2,8 @@ import os, sys
 import numpy as np
 import logging
 
+from opentps.core.data._patientData import PatientData
+from opentps.core.data.images._image2D import Image2D
 from opentps.core.data.images._image3D import Image3D
 from opentps.core.data.images._roiMask import ROIMask
 from opentps.core.data.images._vectorField3D import VectorField3D
@@ -33,7 +35,7 @@ def importImageMHD(headerFile):
 
 
 
-def exportImageMHD(outputPath, image):
+def exportImageMHD(outputPath, image, vectorField='velocity'):
     """
     Export image in MHD format (header + binary files).
 
@@ -42,7 +44,7 @@ def exportImageMHD(outputPath, image):
     outputPath: str
         Path of the MHD header file that will be generated.
 
-    image: image3D (or sub-class) object
+    image: image3D (or sub-class) object or list of image3D (e.g. a 4DCT or 4D displacement field)
         Image to be exported.
     """
 
@@ -59,6 +61,14 @@ def exportImageMHD(outputPath, image):
     rawPath = os.path.join(destFolder, rawFile)
 
     metaData = generateDefaultMetaData()
+    if type(image) is list:
+        if isinstance(image[0], VectorField3D):
+            metaData["ElementNumberOfChannels"] = image[0]._imageArray.shape[3]
+        image = ListOfImagesToNPlus1DimImage(image)
+    else:
+        if isinstance(image, VectorField3D):
+            metaData["ElementNumberOfChannels"] = image._imageArray.shape[3]
+
     metaData["NDims"] = len(image._spacing)
     metaData["DimSize"] = tuple(image.gridSize)
     metaData["ElementSpacing"] = tuple(image._spacing)
@@ -66,17 +76,6 @@ def exportImageMHD(outputPath, image):
     metaData["ElementDataFile"] = rawFile
 
     binaryData = image._imageArray
-    if isinstance(image, ROIMask):
-        metaData["ElementType"] = "MET_FLOAT"
-    if image._imageArray is not None and image._imageArray.ndim == 4: # save vectorField3D
-        metaData["ElementNumberOfChannels"] = image._imageArray.shape[3]
-    if hasattr(image, 'velocity'): # save deformation3D
-        if image.velocity._imageArray is not None and image.velocity._imageArray.ndim == 4:
-            metaData["ElementNumberOfChannels"] = image.velocity._imageArray.shape[3]
-        else:
-            print("Deformation field does not contain image array or dimension not equal to 4")
-        binaryData = image.velocity._imageArray
-
     writeHeaderMHD(mhdPath, metaData=metaData)
     writeBinaryMHD(rawPath, binaryData, metaData=metaData)
 
@@ -100,8 +99,6 @@ def generateDefaultMetaData():
         "DimSize": (0,0,0),
         "ElementSpacing": (1.0, 1.0, 1.0),
         "Offset": (0.0, 0.0, 0.0),
-        "TransformMatrix": (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0),
-        "CenterOfRotation": (0.0, 0.0, 0.0),
         "BinaryData": True,
         "CompressedData": False,
         "ElementByteOrderMSB": False,
@@ -162,21 +159,26 @@ def readHeaderMHD(headerFile):
                 metaData["ElementNumberOfChannels"] = int(value[0])
             
             elif "DimSize" in key:
-                metaData["DimSize"] = (int(value[0]), int(value[1]), int(value[2]))
+                # metaData["DimSize"] = (int(value[0]), int(value[1]), int(value[2]))
+                metaData["DimSize"] = tuple([int(v) for v in value])
             
             elif "ElementSpacing" in key:
-                metaData["ElementSpacing"] = (float(value[0]), float(value[1]), float(value[2]))
+                # metaData["ElementSpacing"] = (float(value[0]), float(value[1]), float(value[2]))
+                metaData["ElementSpacing"] = tuple([float(v) for v in value])
             
             elif "Offset" in key:
-                metaData["Offset"] = (float(value[0]), float(value[1]), float(value[2]))
+                # metaData["Offset"] = (float(value[0]), float(value[1]), float(value[2]))
+                metaData["Offset"] = tuple([float(v) for v in value])
             
             elif "TransformMatrix" in key:
-                metaData["TransformMatrix"] = (float(value[0]), float(value[1]), float(value[2]), \
-                                                 float(value[3]), float(value[4]), float(value[5]), \
-                                                 float(value[6]), float(value[7]), float(value[8]))
+                # metaData["TransformMatrix"] = (float(value[0]), float(value[1]), float(value[2]), \
+                #                                  float(value[3]), float(value[4]), float(value[5]), \
+                #                                  float(value[6]), float(value[7]), float(value[8]))
+                metaData["TransformMatrix"] = tuple([float(v) for v in value])
             
             elif "CenterOfRotation" in key:
-                metaData["CenterOfRotation"] = (float(value[0]), float(value[1]), float(value[2]))
+                # metaData["CenterOfRotation"] = (float(value[0]), float(value[1]), float(value[2]))
+                metaData["CenterOfRotation"] = tuple([float(v) for v in value])
           
             elif "BinaryData" in key:
                 metaData["BinaryData"] = bool(value[0])
@@ -231,7 +233,7 @@ def readBinaryMHD(inputPath, metaData=None):
 
     # import data
     if metaData["ElementType"] == "MET_DOUBLE":
-        data = np.fromfile(metaData["ElementDataFile"], dtype=np.float)
+        data = np.fromfile(metaData["ElementDataFile"], dtype=float)
     elif metaData["ElementType"] == "MET_BOOL":
         data = np.fromfile(metaData["ElementDataFile"], dtype=bool)
     elif metaData["ElementType"] == "MET_SHORT":
@@ -242,10 +244,30 @@ def readBinaryMHD(inputPath, metaData=None):
 
     if metaData["ElementNumberOfChannels"] == 1:
         data = data.reshape(metaData["DimSize"], order='F')
-        image = Image3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+        if metaData["NDims"]==4:
+            image = []
+            for d in range(data.shape[3]):
+                image.append(Image3D(imageArray=data[:,:,:,d], name=fileName, origin=metaData["Offset"][:-1], spacing=metaData["ElementSpacing"][:-1]))
+        elif metaData["NDims"]==3:
+            image = Image3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+        elif metaData["NDims"]==2:
+            image = Image2D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+        else:
+            raise NotImplementedError(f'Method not implemented for image of size {metaData["DimSize"]}')
     else:
-        data = data.reshape(np.append(metaData["DimSize"], metaData["ElementNumberOfChannels"]), order='F')
-        image = VectorField3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+        if metaData["NDims"]==4:
+            # data = data.reshape(np.append(metaData["DimSize"][:-1], [metaData["ElementNumberOfChannels"],metaData["DimSize"][-1]]), order='F')
+            data = data.reshape(np.append(metaData["ElementNumberOfChannels"], metaData["DimSize"]), order='F')
+            data = np.moveaxis(data, 0,3)
+            image = []
+            for d in range(data.shape[4]):
+                image.append(VectorField3D(imageArray=data[:,:,:,:,d], name=fileName, origin=metaData["Offset"][:-1], spacing=metaData["ElementSpacing"][:-1]))
+        elif metaData["NDims"]==3:
+            data = data.reshape(np.append(metaData["ElementNumberOfChannels"],metaData["DimSize"]), order='F')
+            data = np.moveaxis(data, 0,3)
+            image = VectorField3D(imageArray=data, name=fileName, origin=metaData["Offset"], spacing=metaData["ElementSpacing"])
+        else:
+            raise NotImplementedError(f'Method not implemented for vector field of size {metaData["DimSize"]}')
 
     return image
 
@@ -330,6 +352,9 @@ def writeBinaryMHD(outputPath, data, metaData=None):
       data = np.copy(data).astype("float32")
     elif metaData["ElementType"] == "MET_BOOL" and data.dtype != "bool":
       data = np.copy(data).astype("bool")
+
+    if metaData["ElementNumberOfChannels"]==3: # VectorField3D
+        data = np.moveaxis(data, 3, 0)
     
     if data.dtype.byteorder == '>':
       data.byteswap() 
@@ -339,3 +364,22 @@ def writeBinaryMHD(outputPath, data, metaData=None):
     # Write binary file
     with open(rawPath,"w") as fid:
         data.reshape(data.size, order='F').tofile(fid)
+
+
+class ListOfImagesToNPlus1DimImage(Image3D):
+    
+    def __init__(self, listOfImages:list):
+        self.listOfImages = listOfImages
+        self._spacing = np.append(listOfImages[0].spacing, 1)
+        self._origin = np.append(listOfImages[0].origin, 0)
+        self._imageArray = np.stack([image._imageArray for image in listOfImages], axis=-1)
+
+
+    @property
+    def gridSize(self):
+        if isinstance(self.listOfImages[0], VectorField3D):
+            return np.append(self.listOfImages[0].gridSize, self._imageArray.shape[-1])
+        else:
+            return self._imageArray.shape
+
+    

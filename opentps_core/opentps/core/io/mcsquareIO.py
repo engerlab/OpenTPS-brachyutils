@@ -22,8 +22,8 @@ from opentps.core.data.images import ROIMask
 from opentps.core.data.MCsquare import BDL
 from opentps.core.data.MCsquare import MCsquareConfig
 from opentps.core.data.plan import ObjectivesList
-from opentps.core.data.plan import PlanIonBeam
-from opentps.core.data.plan import PlanIonLayer
+from opentps.core.data.plan import PlanProtonBeam
+from opentps.core.data.plan import PlanProtonLayer
 from opentps.core.data.plan import RangeShifter
 from opentps.core.data.plan import RTPlan
 from opentps.core.data import SparseBeamlets
@@ -360,7 +360,7 @@ def readMCsquarePlan(ct: CTImage, file_path):
                 plan.numberOfFractionsPlanned = int(f.readline())
 
             elif line == "#FIELD-DESCRIPTION":
-                plan._beams.append(PlanIonBeam())
+                plan._beams.append(PlanProtonBeam())
                 plan.beams[-1].seriesInstanceUID = plan.seriesInstanceUID
 
             elif line == "###FieldID" and len(plan.beams) > 0:
@@ -388,7 +388,7 @@ def readMCsquarePlan(ct: CTImage, file_path):
                 plan.beams[-1].rangeShifter.ID = f.readline().replace('\r', '').replace('\n', '').replace('\t', '')
 
             elif line == "####ControlPointIndex":
-                plan.beams[-1]._layers.append(PlanIonLayer())
+                plan.beams[-1]._layers.append(PlanProtonLayer())
                 plan.beams[-1].layers[-1].seriesInstanceUID = plan.seriesInstanceUID
                 line = f.readline()
 
@@ -511,12 +511,10 @@ def writeCTCalibrationAndBDL(calibration: AbstractCTCalibration, scannerPath, ma
     materials = MCsquareMaterial.getMaterialList(materialPath)
     matNames = [mat["name"] for mat in materials]
 
-    with open(os.path.join(materialPath, 'list.dat'), "a") as listFile:
-        for rangeShifter in bdl.rangeShifters:
-            rangeShifter.material.write(materialPath, matNames)
-            listFile.write(str(len(materials) + 1) + ' ' + rangeShifter.material.name)
-
-    materials = MCsquareMaterial.getMaterialList(materialPath)
+    for rangeShifter in bdl.rangeShifters:
+        if rangeShifter.material.name not in matNames :
+            logger.info(f'The material contained in the range shifter {rangeShifter.material.name} is not in the material database.' +
+                        ' Please use the calss RangeShifter to create the range shifter and add his data in core/processing/doseCalculation/protons/MCsquare/Materials/')
 
     _writeBDL(bdl, bdlFileName, materials)
 
@@ -764,14 +762,14 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
             "%f\t %f\t %f\n" % _dicomIsocenterToMCsquare(beam.isocenterPosition, CT.origin, CT.spacing, CT.gridSize))
 
         if not (beam.rangeShifter is None):
-            print([rs.ID for rs in bdl.rangeShifters])
-            if beam.rangeShifter.ID not in [rs.ID for rs in bdl.rangeShifters]:
-                raise Exception('Range shifter with ID ' + beam.rangeShifter.ID + ' in plan not in BDL')
-            else:
-                fid.write("###RangeShifterID\n")
-                fid.write("%s\n" % beam.rangeShifter.ID)
-                fid.write("###RangeShifterType\n")
-                fid.write("binary\n")
+            if not isinstance(beam.rangeShifter, list) :
+                beam.rangeShifter = [beam.rangeShifter]
+            if len(beam.rangeShifter) > 1 :
+                logger.error('Only one RangeShifter is allowed per beam.')
+            fid.write("###RangeShifterID\n")
+            fid.write("%s\n" % beam.rangeShifter[0].ID)
+            fid.write("###RangeShifterType\n")
+            fid.write("binary\n")
 
         fid.write("###NumberOfControlPoints\n")
         fid.write("%d\n" % len(beam))
@@ -789,7 +787,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
             fid.write("####Energy (MeV)\n")
             fid.write("%f\n" % layer.nominalEnergy)
 
-            if not (beam.rangeShifter is None) and (beam.rangeShifter.type == "binary"):
+            if isinstance(beam.rangeShifter, list) and not (beam.rangeShifter[0] is None) and (beam.rangeShifter[0].type == "binary"):
                 fid.write("####RangeShifterSetting\n")
                 fid.write("%s\n" % layer.rangeShifterSettings.rangeShifterSetting)
                 fid.write("####IsocenterToRangeShifterDistance\n")
@@ -798,7 +796,7 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
                 if (layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness is None):
                     # fid.write("%f\n" % beam.rangeShifter.WET)
                     RS_index = [rs.ID for rs in bdl.rangeShifters]
-                    ID = RS_index.index(beam.rangeShifter.ID)
+                    ID = RS_index.index(beam.rangeShifter[0].ID)
                     fid.write("%f\n" % bdl.rangeShifters[ID].WET)
                 else:
                     fid.write("%f\n" % layer.rangeShifterSettings.rangeShifterWaterEquivalentThickness)
@@ -808,7 +806,10 @@ def writePlan(plan: RTPlan, file_path, CT: CTImage, bdl: BDL):
 
             fid.write("####X Y Weight\n")
             for i, xy in enumerate(layer.spotXY):
-                fid.write("%f %f %f\n" % (xy[0], xy[1], layer.spotMUs[i]))
+                if len(layer.spotTimings) != 0:
+                    fid.write("%f %f %f %f \n" % (xy[0], xy[1], layer.spotMUs[i], layer.spotTimings[i]))
+                else :
+                    fid.write("%f %f %f\n" % (xy[0], xy[1], layer.spotMUs[i]))
 
     fid.close()
 
@@ -955,7 +956,7 @@ def writeBin(destFolder):
     destFolder : str
         The folder where the binaries will be written
     """
-    import opentps.core.processing.doseCalculation.MCsquare as MCsquareModule
+    import opentps.core.processing.doseCalculation.protons.MCsquare as MCsquareModule
     mcsquarePath = str(MCsquareModule.__path__[0])
 
     if (platform.system() == "Linux"):
@@ -1075,16 +1076,16 @@ class MCsquareIOTestCase(unittest.TestCase):
         """
         Test the write function.
         """
-        from opentps.core.data.plan._planIonBeam import PlanIonBeam
-        from opentps.core.data.plan._planIonLayer import PlanIonLayer
+        from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
+        from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
 
         import opentps.core.processing.doseCalculation.MCsquare.BDL as BDLModule
 
         bdl = readBDL(os.path.join(str(BDLModule.__path__[0]), 'BDL_default_DN_RangeShifter.txt'))
 
         plan = RTPlan()
-        beam = PlanIonBeam()
-        layer = PlanIonLayer(nominalEnergy=100.)
+        beam = PlanProtonBeam()
+        layer = PlanProtonLayer(nominalEnergy=100.)
         layer.appendSpot(0, 0, 1)
         layer.appendSpot(0, 1, 2)
 

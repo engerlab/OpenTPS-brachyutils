@@ -2,8 +2,8 @@
 import logging
 import os
 
-import opentps.core.processing.doseCalculation.MCsquare.BDL as bdlModule
-import opentps.core.processing.doseCalculation.MCsquare.Scanners as ScannerModule
+import opentps.core.processing.doseCalculation.protons.MCsquare.BDL as bdlModule
+import opentps.core.processing.doseCalculation.protons.MCsquare.Scanners as ScannerModule
 from opentps.core import Event
 
 from opentps.core.utils.applicationConfig import AbstractApplicationConfig

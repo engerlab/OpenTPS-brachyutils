@@ -1,18 +1,18 @@
 import numpy as np
 np.random.seed(42)
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
-from opentps.core.data.plan._planIonLayer import PlanIonLayer
-from opentps.core.data.plan._rtPlan import RTPlan
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
+from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
+from opentps.core.data.plan._protonPlan import ProtonPlan
 from opentps.core.processing.planDeliverySimulation.scanAlgoBeamDeliveryTimings import ScanAlgoBeamDeliveryTimings
 from opentps.core.processing.planDeliverySimulation.simpleBeamDeliveryTimings import SimpleBeamDeliveryTimings
 from opentps.core.io.dicomIO import readDicomPlan
 
 # Create random plan
-plan = RTPlan()
-plan.appendBeam(PlanIonBeam())
+plan = ProtonPlan()
+plan.appendBeam(PlanProtonBeam())
 energies = np.array([130, 140, 150, 160, 170])
 for m in energies:
-    layer = PlanIonLayer(m)
+    layer = PlanProtonLayer(m)
     x = 10*np.random.random(5) - 5
     y = 10*np.random.random(5) - 5
     mu = 5*np.random.random(5)

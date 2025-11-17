@@ -6,7 +6,7 @@ import numpy as np
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.data.plan._planIonLayer import PlanIonLayer
+from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.processing.C_libraries.libRayTracing_wrapper import transport_spots_to_target, \
     transport_spots_inside_target
@@ -124,7 +124,7 @@ class BeamInitializer:
 
                 if layerFound == 0:
                     # add new layer
-                    layer = PlanIonLayer(energy)
+                    layer = PlanProtonLayer(energy)
                     layer.appendSpot(spotGrid["BEVx"][s], spotGrid["BEVy"][s], 1.)
 
                     if self.beam.rangeShifter and self.beam.rangeShifter.WET > 0.0:

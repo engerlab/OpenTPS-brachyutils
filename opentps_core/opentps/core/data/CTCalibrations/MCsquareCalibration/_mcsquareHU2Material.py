@@ -11,7 +11,7 @@ from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMaterial impo
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareMolecule import MCsquareMolecule
 from opentps.core.data.CTCalibrations.MCsquareCalibration._mcsquareElement import MCsquareElement
 
-import opentps.core.processing.doseCalculation.MCsquare as MCsquareModule
+import opentps.core.processing.doseCalculation.protons.MCsquare as MCsquareModule
 
 
 class MCsquareHU2Material:

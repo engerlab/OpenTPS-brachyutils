@@ -8,3 +8,6 @@ libRayTracing.so: libRayTracing.c
 
 libInterp3.so: libInterp3.c
 	gcc -shared -O2 -fopenmp -std=c99 -o libInterp3.so -fPIC libInterp3.c
+
+shiftBeamlets.so: shiftBeamlets.cpp
+	g++ -std=c++11 -shared -fPIC -o shiftBeamlets.so shiftBeamlets.cpp -pthread

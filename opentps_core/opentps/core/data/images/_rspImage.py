@@ -9,7 +9,7 @@ import numpy as np
 from opentps.core.data.CTCalibrations._abstractCTCalibration import AbstractCTCalibration
 from opentps.core.data.images._ctImage import CTImage
 from opentps.core.data.images._image3D import Image3D
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
 import opentps.core.processing.imageProcessing.imageTransform3D as imageTransform3D
 from opentps.core.processing.imageProcessing import resampler3D
 
@@ -95,14 +95,14 @@ class RSPImage(Image3D):
 
         return newRSPImage
 
-    def computeCumulativeWEPL(self, beam:Optional[PlanIonBeam]=None, sad=np.inf, roi=None) -> Image3D:
+    def computeCumulativeWEPL(self, beam:Optional[PlanProtonBeam]=None, sad=np.inf, roi=None) -> Image3D:
         """
         Compute the cumulative water equivalent path length (WEPL) of the image.
 
         Parameters
         ----------
-        beam : PlanIonBeam (optional)
-            Ion beam object.
+        beam : PlanProtonBeam (optional)
+            Proton beam object.
         roi : ROICountour or ROIMask (optional)
 
         Returns

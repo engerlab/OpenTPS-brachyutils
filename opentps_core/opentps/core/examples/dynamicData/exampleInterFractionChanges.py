@@ -12,6 +12,7 @@ import time
 import os
 import sys
 import cProfile as profile
+import logging
 pr = profile.Profile()
 pr.enable()
 
@@ -29,7 +30,14 @@ from opentps.core.processing.imageProcessing.imageTransform3D import rotateData,
 from opentps.core.processing.imageProcessing.resampler3D import resampleImage3DOnImage3D
 from opentps.core.examples.syntheticData import createSynthetic4DCT
 
+logger = logging.getLogger(__name__)
+
 if __name__ == '__main__':
+
+    output_path = os.path.join(os.getcwd(), 'Output', 'exampleInterFractionChanges')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
 
     ## paths selection ------------------------------------
     organ = 'lung'
@@ -47,10 +55,6 @@ if __name__ == '__main__':
     bodyContourToUse = 'Body'
     targetContourToUse = 'GTV T'
     lungContourToUse = 'R lung'
-
-    # bodyContourToUse = 'Body'
-    # targetContourToUse = 'GTV T'
-    # lungContourToUse = 'R lung'
 
     contourToAddShift = targetContourToUse
 
@@ -172,6 +176,7 @@ if __name__ == '__main__':
     ax[3].imshow(np.rot90(GTVMaskCopy.imageArray[:, GTVCenterOfMassInVoxels[1], :] ^ shrinkedOrganMask.imageArray[:, GTVCenterOfMassInVoxels[1], :]), cmap='gray')
     ax[3].set_title('Mask difference')
     plt.show()
+    plt.savefig(os.path.join(output_path, 'exampleInterFractionChanges.png'))
 
     pr.disable()
     # pr.print_stats(sort='time')

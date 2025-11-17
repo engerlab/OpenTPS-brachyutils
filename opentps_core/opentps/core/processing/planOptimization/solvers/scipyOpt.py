@@ -77,6 +77,7 @@ class ScipyOpt:
                 objective : list
                     The value of the objective function at each iteration.
         """
+
         def callbackF(Xi,state=None): # trust-constr method expects 2 positional arguments
             logger.info('Iteration {} of Scipy-{}'.format(self.Nfeval, self.meth))
             logger.info('objective = {0:.6e}  '.format(func[0].eval(Xi)))
@@ -90,7 +91,15 @@ class ScipyOpt:
             logger.error('{} requires the function to implement grad().'.format(self.__class__.__name__))
         else :
             pass
-        
+
+        if self.meth not in self.method_options.keys():
+            logger.error(
+                'Method Scipy_{} is not implemented. Pick among ["Scipy_BFGS", "Scipy_L-BFGS-B", "Scipy_SLSQP", "Scipy_COBYLA", "Scipy_trust-constr"]'.format(
+                    self.meth))
+            raise NotImplementedError
+
+
+
         options = {key: self.params[key] for key in self.method_options.get(self.meth, []) if key in self.params}
 
         res = scipy.optimize.minimize(func[0].eval, x0, method=self.meth, jac=func[0].grad, callback=callbackF,

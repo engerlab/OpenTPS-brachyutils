@@ -41,8 +41,6 @@ pip3 install --user cupy
 
 ## Installation (Windows):
 
-Note: VTK is only compatible with Python version <= 3.9. Do not use Python 3.10
-
 1. Install anaconda on your Windows computer
 
 2. Open Anaconda Prompt (via the Anaconda application)
@@ -50,7 +48,7 @@ Note: VTK is only compatible with Python version <= 3.9. Do not use Python 3.10
 3. Create a new Anaconda environment:
 
 ```
-conda create --name OpenTPS python=3.8
+conda create --name OpenTPS python=3.11
 ```
 
 4. Activate the new environment:
@@ -65,7 +63,7 @@ conda activate OpenTPS
 ```
 pip3 install --upgrade pip
 pip3 install pydicom
-pip3 install numpy
+pip3 install numpy>=1.24.0
 pip3 install scipy
 pip3 install matplotlib
 pip3 install Pillow
@@ -73,7 +71,7 @@ pip3 install sparse_dot_mkl
 pip3 install SimpleITK
 pip3 install pandas
 pip3 install scikit-image
-pip3 install pymedphys==0.39.3
+pip3 install pymedphys==0.40.0
 pip3
 ```
 

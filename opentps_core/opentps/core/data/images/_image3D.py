@@ -180,6 +180,11 @@ class Image3D(PatientData):
             return np.array([0, 0, 0])
         return np.array(self._imageArray.shape)
 
+    @gridSize.setter
+    def gridSize(self, gridSize) -> np.ndarray:
+        self._imageArray = np.zeros(gridSize)
+        self.dataChangedSignal.emit()
+
     @property
     def gridSizeInWorldUnit(self)  -> np.ndarray:
         return self.gridSize*self.spacing
@@ -284,7 +289,8 @@ class Image3D(PatientData):
         shiftedPosInMM = positionInMM - self.origin
         posInVoxels = np.round(np.divide(shiftedPosInMM, self.spacing)).astype(int)
         if np.any(np.logical_or(posInVoxels < 0, posInVoxels > (self.gridSize - 1))):
-            raise ValueError('Voxel position requested is outside of the domain of the image')
+            raise ValueError(f'Voxel position {position} requested is outside of the domain of the '
+                            + f'image with grid size {self.gridSize} and origin {self.origin} and spacing {self.spacing}')
 
         return posInVoxels
 
@@ -304,7 +310,8 @@ class Image3D(PatientData):
         """
         index = np.array(index)
         if np.any(np.logical_or(index < 0, index > (self.gridSize - 1))):
-            raise ValueError('Voxel position requested is outside of the domain of the image')
+            raise ValueError(f'Voxel position {index} requested is outside of the domain of the '
+                             + f'image with grid size {self.gridSize} and origin {self.origin} and spacing {self.spacing}')
         return self.origin + np.array(index).astype(dtype=float)*self.spacing
 
     def getMeshGridPositions(self) -> np.ndarray:

@@ -1,6 +1,6 @@
 from opentps.core.processing.planOptimization.solvers import bfgs, gradientDescent, lp, scipyOpt
-from opentps.core.data.plan._planIonLayer import PlanIonLayer
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
+from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
 
 
 class SPArCling:

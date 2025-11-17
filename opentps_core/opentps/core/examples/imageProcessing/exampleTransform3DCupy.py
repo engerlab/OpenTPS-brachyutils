@@ -2,6 +2,7 @@ import copy
 
 import matplotlib.pyplot as plt
 import logging
+import os
 
 from opentps.core.data.images import VectorField3D
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
@@ -15,6 +16,10 @@ from opentps.core.processing.imageProcessing.resampler3D import resample
 logger = logging.getLogger(__name__)
 
 def run():
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleTransform3DCupy')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
 
     # GENERATE SYNTHETIC INPUT IMAGES
     fixed = CTImage()
@@ -78,6 +83,7 @@ def run():
     ax[5].imshow(moving.imageArray[:, y_slice, :] - movingBoth.imageArray[:, y_slice, :])
 
     plt.show()
+    plt.savefig(os.path.join(output_path, 'ExampleTransform3DCupy.png'))
 
     ## ---------------------------------------------------------------------------------
 
@@ -183,8 +189,10 @@ def run():
     plt.figure()
     plt.subplot(1, 2, 1)
     plt.imshow(fixedMask.imageArray[:, y_slice, :])
+    plt.savefig(os.path.join(output_path, 'ExampleTransform3DCupy_fixexMask.png'))
     plt.subplot(1, 2, 2)
     plt.imshow(movingMask.imageArray[:, y_slice, :])
+    plt.savefig(os.path.join(output_path, 'ExampleTransform3DCupy_movingMask.png'))
     plt.show()
 
 

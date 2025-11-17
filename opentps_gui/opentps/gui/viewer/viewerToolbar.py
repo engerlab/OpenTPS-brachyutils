@@ -35,14 +35,6 @@ class ViewerToolbar(QToolBar):
         self._buttonSettings = QAction(QIcon(self.iconPath + "settings-5-line.png"), "Settings", self)
         self._buttonSettings.triggered.connect(self._openSettings)
 
-        self._buttonOpen = QAction(QIcon(self.iconPath + "folder-open.png"), "Open files or folder", self)
-        self._buttonOpen.setStatusTip("Open files or folder")
-        self._buttonOpen.triggered.connect(self._handleLoadData)
-        self._buttonOpen.setCheckable(False)
-
-        self._buttonSave = QAction(QIcon(self.iconPath + "save.png"), "Export", self)
-        self._buttonSave.triggered.connect(self._handleExportData)
-
         self._buttonIndependentViews = QAction(QIcon(self.iconPath + "independent_views.png"), "Independent views", self)
         self._buttonIndependentViews.setStatusTip("Independent views")
         self._buttonIndependentViews.triggered.connect(self._handleButtonIndependentViews)
@@ -81,8 +73,6 @@ class ViewerToolbar(QToolBar):
         self._dropModeAction.setDefaultWidget(self._dropModeCombo)
 
         self.addAction(self._buttonSettings)
-        self.addAction(self._buttonOpen)
-        self.addAction(self._buttonSave)
         self.addAction(self._buttonIndependentViews)
         self.addAction(self._buttonCrossHair)
         self.addAction(self._buttonWindowLevel)
@@ -162,24 +152,6 @@ class ViewerToolbar(QToolBar):
         rw = ResampleWidget(self._viewController)
         self._resampleWidgets.append(rw)
         rw.show()
-
-    def _handleLoadData(self):
-        filesOrFoldersList = self._getOpenFilesAndDirs(caption="Open patient data files or folders",
-                                                  directory=QDir.currentPath())
-        if len(filesOrFoldersList) < 1:
-            return
-
-        splitPath = filesOrFoldersList[0].split('/')
-        withoutLastElementPath = ''
-        for element in splitPath[:-1]:
-            withoutLastElementPath += element + '/'
-        self.dataPath = withoutLastElementPath
-
-        dataLoader.loadData(self._viewController._patientList, filesOrFoldersList)
-
-    def _handleExportData(self):
-        self._exportWindow = ExportWindow(self._viewController)
-        self._exportWindow.show()
 
     def _handleWindowLevel(self, pressed):
         # This is useful if controller emit a signal:

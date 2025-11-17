@@ -179,8 +179,13 @@ def erodeMask(mask, radius=1.0, struct=None, inPlace=True, tryGPU=True):
         tryGPU = False
 
     if not tryGPU:
-        logger.info('Scipy used to erode mask.')
-        erodeMaskScipy(maskCopy, radius=radius, struct=struct)
+        try:
+            logger.info('Using SITK to erode mask.')
+            radiusSITK = np.round(radius/np.array(maskCopy.spacing)).astype(int).tolist()
+            sitkImageProcessing.erodeMask(maskCopy, radiusSITK)
+        except:
+            logger.warning('Scipy used to erode mask.')
+            erodeMaskScipy(maskCopy, radius=radius, struct=struct)
 
     if not inPlace:
         return maskCopy

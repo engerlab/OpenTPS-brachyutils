@@ -8,9 +8,9 @@ import numpy as np
 import pickle
 import os
 
-
 from opentps.core.data._dvhBand import DVHBand
 from opentps.core.processing.imageProcessing import resampler3D
+from opentps.core.data.plan._robustnessPhoton import RobustnessPhoton
 
 from typing import TYPE_CHECKING
 
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class RobustnessEval:
     """
-    This class is used to compute the robustness of a plan.
+    This class is used to compute the robustness of a plan (evaluation).
 
     Attributes
     ----------
@@ -61,12 +61,17 @@ class RobustnessEval:
         ALL = "ALL"
         REDUCED_SET = "REDUCED_SET"
         RANDOM = "RANDOM"
-
+    
+    class Mode4D(Enum):
+        DISABLED = "DISABLED"
+        MCsquareAccumulation = 'MCsquareAccumulation'
+        MCsquareSystematic = 'MCsquareSystematic'
+        
     def __init__(self):
         self.selectionStrategy = self.Strategies.DEFAULT
         self.setupSystematicError = [1.6, 1.6, 1.6]  # mm
         self.setupRandomError = [1.4, 1.4, 1.4]  # mm
-        self.rangeSystematicError = 1.6  # %
+        
         self.target = []
         self.targetPrescription = 60  # Gy
         self.nominal = RobustnessScenario()
@@ -75,6 +80,17 @@ class RobustnessEval:
         self.dvhBands = []
         self.doseDistributionType = ""
         self.doseDistribution = []
+
+        #4D Mode
+        self.Mode4D = self.Mode4D.DISABLED
+        self.CreateReffrom4DCT = False
+        self.Create4DCTfromRef = False
+        self.SystematicAmplitudeError = 0.0
+        self.RandomAmplitudeError = 0.0
+        self.Dynamic_delivery = False
+        self.SystematicPeriodError = 0.0
+        self.RandomPeriodError = 0.0
+        self.Breathing_period = 7
 
     def setNominal(self, dose: DoseImage, contours: Union[ROIContour, ROIMask]):
         """
@@ -109,9 +125,11 @@ class RobustnessEval:
         from opentps.core.data._dvh import DVH
         scenario = RobustnessScenario()
         scenario.dose = dose
+        scenario.sse = self.setupSystematicError
+        scenario.sre = self.setupRandomError
         # Need to set patient to None for memory, est-ce que ca va poser probleme ?
         scenario.dose.patient = None
-        scenario.dvh.clear()
+        scenario.dvh.clear()     
         for contour in contours:
             contour.patient = None
             myDVH = DVH(contour, scenario.dose)
@@ -173,7 +191,6 @@ class RobustnessEval:
         for contour in contours:
             myDVH = DVH(contour, self.nominal.dose)
             self.nominal.dvh.append(myDVH)
-
         for scenario in self.scenarios:
             scenario.dvh.clear()
             for contour in contours:
@@ -409,22 +426,33 @@ class RobustnessScenario:
         1 if the scenario is selected, 0 otherwise.
     """
 
-    def __init__(self):
-        self.dose = []
+    def __init__(self, sse = None, sre = None, dilation_mm = {}):
+        self.dose = None
         self.dvh = []
         self.targetD95 = 0
         self.targetD5 = 0
         self.targetMSE = 0
         self.selected = 0
+        self.sse = sse      # Setup Systematic Error
+        self.sre = sre      # Setup Random Error
+        self.dilation_mm = dilation_mm
 
     def printInfo(self):
         """
         Print the information of the scenario.
         """
+        logger.info('Setup Systematic Error:{} mm'.format(self.sse))
+        logger.info('Setup Random Error:{} mm'.format(self.sre))
         logger.info("Target_D95 = " + str(self.targetD95))
         logger.info("Target_D5 = " + str(self.targetD5))
         logger.info("Target_MSE = " + str(self.targetMSE))
         logger.info(" ")
+
+    def __str__(self):
+        str = 'Setup Systematic Error:{} mm\n'.format(self.sse) + 'Setup Random Error:{} mm\n'.format(self.sre)
+        for name, dilation in self.dilation_mm.items():
+            str += name + f' dilated {round(dilation,2)} mm \n'
+        return str
 
     def save(self, file_path):
         """
@@ -451,3 +479,68 @@ class RobustnessScenario:
             tmp = pickle.load(fid)
 
         self.__dict__.update(tmp)
+
+class RobustnessEvalPhoton(RobustnessEval,RobustnessPhoton):
+    """
+    This class is used to compute the robustness of a photon plan (evaluation).
+
+    Attributes
+    ----------
+    numberOfSigmas : float (default = 2.5)
+        Number of sigmas in the normal distribution
+    """
+    def __init__(self):
+        self.numberOfSigmas = 2.5
+        RobustnessPhoton.__init__(self)  
+        RobustnessEval.__init__(self)
+        
+    
+    def generateRobustScenarios(self):
+        super().generateRobustScenarios()
+        # Update numScenarios if needed (in case the random error adds a new scenario)
+        self.numScenarios = len(self.scenariosConfig)
+
+
+    def addScenario(self, dose: DoseImage, scenarioIdx:int, contours: Union[ROIContour, ROIMask]):
+        """
+        Add a scenario.
+
+        Parameters
+        ----------
+        dose : DoseImage
+            The dose image.
+        scenarioIdx : int
+            Index of the scenario we add.
+        contours : list[ROIContour]
+            The list of contours.
+        """
+        from opentps.core.data._dvh import DVH
+        scenario = RobustnessScenario()
+        scenario.dose = dose
+        scenario.sse = self.scenariosConfig[scenarioIdx].sse
+        scenario.sre = self.scenariosConfig[scenarioIdx].sre
+        # Need to set patient to None for memory, est-ce que ca va poser probleme ?
+        scenario.dose.patient = None
+        scenario.dvh.clear()     
+        for contour in contours:
+            contour.patient = None
+            myDVH = DVH(contour, scenario.dose)
+            scenario.dvh.append(myDVH)
+        scenario.dose.imageArray = scenario.dose.imageArray.astype(
+            np.float16)  # can be reduced to float16 because all metrics are already computed and it's only used for display
+
+        self.scenarios.append(scenario)
+        
+
+class RobustnessEvalProton(RobustnessEval):
+    """
+    This class is used to compute the robustness of an ion plan (evaluation).
+
+    Attributes
+    ----------
+    rangeSystematicError : float (default = 1.6)
+        The range systematic error in %.
+    """
+    def __init__(self):
+        self.rangeSystematicError = 1.6
+        super().__init__()

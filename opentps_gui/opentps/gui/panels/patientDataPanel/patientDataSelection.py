@@ -213,6 +213,18 @@ class PatientDataTree(QTreeView):
         if not (self._currentPatient is None):
             self._currentPatient.patientDataAddedSignal.disconnect(self._appendData)
             self._currentPatient.patientDataRemovedSignal.disconnect(self._removeData)
+            # Delete the open ROI by simulate a unselected clic 
+            from opentps.gui.panels.roiPanel import ROIItem
+            from opentps.gui.viewer.dataForViewer.ROIContourForViewer import ROIContourForViewer
+            for i in range(len(self._currentPatient.rtStructs)):
+                for j in range(len(self._currentPatient.rtStructs[i]._contours)):
+                    contour = ROIContourForViewer(self._currentPatient.rtStructs[i]._contours[j])
+                    if ROIContourForViewer(contour).visible == True :
+                        checkbox = ROIItem(contour, self._viewController)
+                        checkbox.click()
+            self._viewController.mainImage = None
+            self._viewController.secondaryImage = None
+            self._viewController.selectedImage = None
 
         # Do this explicitely to be sure signals are disconnected
         for row in range(self.model().rowCount()):

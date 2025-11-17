@@ -1,8 +1,10 @@
 import os
 from abc import abstractmethod
 import re
+import logging
+logger = logging.getLogger(__name__)
 
-import opentps.core.processing.doseCalculation.MCsquare as MCsquare
+import opentps.core.processing.doseCalculation.protons.MCsquare as MCsquare
 
 class MCsquareMaterial:
     """
@@ -144,6 +146,7 @@ class MCsquareMaterial:
     def getMaterialNumberFromName(name, materialsPath='default'):
         """
         Get Material number from material name if it exists
+        If it doesn't, add it to the list.dat 
 
         Parameters
         ----------
@@ -162,7 +165,8 @@ class MCsquareMaterial:
 
         listPath = os.path.join(materialsPath, 'list.dat')
 
-        with open(listPath, "r") as file:
+        with open(listPath, "r+") as file:
+            found = False
             for line in file:
                 # to_split = " ".join(line.split()) # remove double white spaces and tab
                 lineSplit = line.split()
@@ -171,7 +175,18 @@ class MCsquareMaterial:
                     continue
                 
                 if lineSplit[1].casefold()==name.casefold():
-                    return int(lineSplit[0])
+                    found = True
+                    result = int(lineSplit[0])
+                    break
+            lastIndex = int(lineSplit[0])+1
+
+            if not found:
+                # Add a new line
+                file.write(f"{lastIndex} {name}\n")
+                result = lastIndex
+                logger.info(f'A new material has been well added to the database list.dat. Its MCsquare material ID is : {result}.'+
+                            ' Please note that you must also own the material properties and register them in core/processing/doseCalculation/protons/MCsquare/Materials/.')
+        return result
 
     def write(self, folderPath, materialNamesOrderedForPrinting):
         """
@@ -235,5 +250,5 @@ class MCsquareMaterial:
                 if re.search(r'Atomic_Weight', line): # element
                     return MCsquareElement.load(materialNb, materialsPath)
             
-        raise ValueError(moleculePath + ' is not an element nor a molecule.')
+        raise ValueError(materialNbOrName + ' is not an element nor a molecule.')
 

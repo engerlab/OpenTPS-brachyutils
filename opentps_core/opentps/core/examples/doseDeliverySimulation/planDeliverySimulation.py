@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import logging
+import os
 
 from opentps.core.io.dataLoader import readData
 from opentps.core.io.dicomIO import readDicomPlan, readDicomStruct
@@ -7,14 +9,19 @@ from opentps.core.data.images._deformation3D import Deformation3D
 from opentps.core.data._rtStruct import RTStruct
 from opentps.core.processing.planDeliverySimulation.planDeliverySimulation import *
 
+logger = logging.getLogger(__name__)
+
+output_path = os.path.join(os.getcwd(), 'Output', 'planDeliverySimulation')
+logger.info('Files will be stored in {}'.format(output_path))
+
 ######## Simulation on 4DCT #########
 
 # Load plan
-plan_path = "path/to/dicom/plan"
+plan_path = "path/to/dicom/plan" # Generate a plan and save it with writeRTPlan from dicomIO
 plan = readDicomPlan(plan_path)
 
 # Load 4DCT
-dataPath = "path/to/4DCT_folder"
+dataPath = "path/to/4DCT_folder"  # Use a 4DCT with structures availables (are going to be use below)
 dataList = readData(dataPath, 1)
 CT4D = [data for data in dataList if type(data) is CTImage]
 CT4D = Dynamic3DSequence(CT4D)
@@ -71,3 +78,4 @@ ax.set_ylabel("Volume (%)")
 plt.grid(True)
 plt.legend()
 plt.show()
+plt.savefig(os.path.join(output_path, 'Dose_4DCT.png'))

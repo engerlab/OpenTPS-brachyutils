@@ -24,7 +24,8 @@ class RangeShifter:
     def __init__(self, material='PMMA', density=1.0, WET=40.0, type='binary'):
         self.ID = ''
         self.type = type
-        self.material:MCsquareMolecule = material
+        MCmolecule = MCsquareMolecule()
+        self.material:MCsquareMolecule = MCmolecule.load(MCmolecule.getMaterialNumberFromName(material))
         self.density = density
         self.WET = WET
 

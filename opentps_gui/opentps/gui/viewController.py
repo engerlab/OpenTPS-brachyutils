@@ -225,7 +225,8 @@ class ViewController():
         self._mainImage = image
         self.mainImageChangedSignal.emit(self._mainImage)
         # self.dynamicOrStaticModeChangedSignal.emit(self._mainImage)
-        self.shownDataUIDsList.append(self._mainImage.seriesInstanceUID)
+        if hasattr(self._mainImage, 'seriesInstanceUID') : 
+            self.shownDataUIDsList.append(self._mainImage.seriesInstanceUID)
 
     @property
     def secondaryImage(self):

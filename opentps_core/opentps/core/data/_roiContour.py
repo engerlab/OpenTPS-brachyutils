@@ -74,7 +74,10 @@ class ROIContour(PatientData):
         mask: ROIMask
             Binary mask image.
         """
-        minSpatialResolution = 1.0
+        if spacing is None:
+            minSpatialResolution = 1.
+        else:
+            minSpatialResolution = min(spacing[:2])
 
         contourOrigin = [0, 0, 0]
         contourSpacing = [0, 0, 0]
@@ -98,11 +101,11 @@ class ROIContour(PatientData):
         allZ = np.sort(allZ)
 
         xDiff = np.abs(np.diff(allX))
-        xDiff[xDiff==0] = np.Inf
+        xDiff[xDiff==0] = np.inf
         yDiff = np.abs(np.diff(allY))
-        yDiff[yDiff == 0] = np.Inf
+        yDiff[yDiff == 0] = np.inf
         zDiff = np.abs(np.diff(allZ))
-        zDiff[zDiff == 0] = np.Inf
+        zDiff[zDiff == 0] = np.inf
 
         contourSpacing[0] = minSpatialResolution
         contourSpacing[1] = minSpatialResolution
@@ -111,13 +114,9 @@ class ROIContour(PatientData):
 
             from opentps.core.data.images._roiMask import ROIMask
             return ROIMask(imageArray=None, name=self.name, origin=contourOrigin, spacing=contourSpacing,
-                        displayColor=self._displayColor)
-
+                           displayColor=self._displayColor)
         else:
-            if np.isfinite(zDiff[0]):
-                contourSpacing[2] = zDiff[0]
-            else:
-                contourSpacing[2] = minSpatialResolution
+            contourSpacing[2] = zDiff.min()
 
         contourOrigin[0] = allX[0]
         contourOrigin[1] = allY[0]
@@ -132,7 +131,7 @@ class ROIContour(PatientData):
         for contourData in self.polygonMesh:
             # extract contour coordinates and convert to image coordinates (voxels)
             coordXY = list(zip(((np.array(contourData[0::3]) - contourOrigin[0]) / contourSpacing[0]),
-                            ((np.array(contourData[1::3]) - contourOrigin[1]) / contourSpacing[1])))
+                               ((np.array(contourData[1::3]) - contourOrigin[1]) / contourSpacing[1])))
             coordZ = (float(contourData[2]) - contourOrigin[2]) / contourSpacing[2]
             sliceZ = int(round(coordZ))
 
@@ -153,12 +152,15 @@ class ROIContour(PatientData):
         mask = ROIMask(imageArray=mask3D, name=self.name, origin=contourOrigin, spacing=contourSpacing,
                        displayColor=self._displayColor)
 
-        if  origin is not None:
+        if not (origin is None):
             mask3D = np.zeros(gridSize).astype(bool)
             referenceImage = ROIMask(imageArray=mask3D, spacing=spacing, origin=origin)
 
             resampler3D.resampleImage3DOnImage3D(mask, referenceImage, inPlace=True, fillValue=0)
 
+        # if masks are generated every few slides (e.g., 3mm) but the desired spacing is smaller (e.g., 1mm),
+        # then the resampling will create holes in the mask.
+        
         return mask
 
     def getBinaryMask_old(self, origin=(0, 0, 0), gridSize=(100,100,100), spacing=(1, 1, 1)):
@@ -182,7 +184,7 @@ class ROIContour(PatientData):
             The function returns the binary mask of the contour
 
         """
-        mask3D = np.zeros(gridSize, dtype=np.bool)
+        mask3D = np.zeros(gridSize, dtype=np.bool_)
 
         for contourData in self.polygonMesh:
             # extract contour coordinates and convert to image coordinates (voxels)
@@ -257,7 +259,7 @@ class ROIContour(PatientData):
         mask: roiMask object
             The function returns the binary mask of the contou
         """
-        mask3D = np.zeros(gridSize, dtype=np.bool)
+        mask3D = np.zeros(gridSize, dtype=np.bool_)
 
         for contourData in self.polygonMesh:
             # extract contour coordinates and convert to image coordinates (voxels)

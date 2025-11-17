@@ -20,15 +20,38 @@ try:
     cupy_available = True
 except:
     cupy_available = False
-
+from opentps.core.data.plan._photonPlan import PhotonPlan
 from opentps.core.data.plan._rtPlan import RTPlan
-from opentps.core.processing.planOptimization.solvers import scipyOpt, sparcling, bfgs, localSearch, fista, gradientDescent
+from opentps.core.data.plan._protonPlan import ProtonPlan
+from opentps.core.processing.planOptimization.solvers import sparcling, \
+    beamletFree
+from opentps.core.processing.planOptimization.solvers import scipyOpt, bfgs, localSearch
+from opentps.core.processing.planOptimization.solvers import fista, gradientDescent
 from opentps.core.processing.planOptimization import planPreprocessing
 from scipy.sparse import csc_matrix
 from opentps.core.data.images._doseImage import DoseImage
 
+
 logger = logging.getLogger(__name__)
 
+try:
+    import sparse_dot_mkl
+    sdm_available = True
+except:
+    sdm_available = False
+
+try:
+    import mkl as mkl
+    mkl_available = True
+except:
+    mkl_available = False
+
+try:
+    import cupy as cp
+    import cupyx as cpx
+    cupy_available = True
+except:
+    cupy_available = False
 
 class PlanOptimizer:
     """
@@ -49,14 +72,21 @@ class PlanOptimizer:
         The threshold weight below which spots are removed from the plan and beamlet matrix.
     xSquared : bool
         If True, the weights are squared. True by default to avoid negative weights.
-    GPU_acceleration : bool (default : False)
-        If True, the evaluation of the doseFidelity function is done with cupy (this attribute should only
-        be modified with the "use_GPU_acceleration" function)
+    hardwareAcceleration : str
+        The acceleration method. It can be one of the following:
+        - 'GPU' : use the GPU for the optimization.
+        - 'MKL' : use the MKL library for the optimization with the maximum number of threads available.
+        - 'MKL-n' : use the MKL library for the optimization with n threads.
+        - 'MKL-n-DEBUG' : use the MKL library for the optimization with n threads and the debug mode.
+        - 'MKL-DEBUG' : use the MKL library for the optimization with the debug mode.
+
     """
-    def __init__(self, plan:RTPlan, **kwargs):
+    def __init__(self, plan:RTPlan, hardwareAcceleration:str=None, **kwargs):
 
         self.solver = scipyOpt.ScipyOpt('L-BFGS-B')
-        planPreprocessing.extendPlanLayers(plan)
+        
+        if isinstance(plan, ProtonPlan):
+            planPreprocessing.extendPlanLayers(plan)
         self.plan = plan
         self.opti_params = kwargs
         self.functions = []
@@ -64,6 +94,26 @@ class PlanOptimizer:
         self.thresholdSpotRemoval = 1e-6 # remove all spots below this value after optimization from the plan and
         # beamlet matrix
         self.GPU_acceleration = False
+        self.MKL_acceleration = False
+        if hardwareAcceleration is not None:
+            if hardwareAcceleration == 'GPU':
+                self.use_GPU_acceleration()
+            elif hardwareAcceleration[:3] == 'MKL':
+                if hardwareAcceleration == 'MKL':
+                    self.use_MKL_acceleration()
+                else:
+                    args = hardwareAcceleration.split('-')
+                    if args[1].isdigit():
+                        n_threads = int(args[1])
+                        if len(args) > 2:
+                            debug = args[2] == 'DEBUG'
+                            self.use_MKL_acceleration(n_threads, debug=debug)
+                        self.use_MKL_acceleration(n_threads)
+                    elif args[1] == 'DEBUG':
+                        self.use_MKL_acceleration(debug=True)
+            else:
+                logger.warning('Unknown hardware acceleration method. No hardware acceleration will be used')
+
 
     @property
     def xSquared(self):
@@ -82,14 +132,56 @@ class PlanOptimizer:
             logger.info('cupy imported in planOptimization module')
             logger.info('abnormal used memory: {}'.format(cp.get_default_memory_pool().used_bytes()))
         else:
-            logger.info('Unable to import CUPY, please configure CUPY to enable GPU acceleration')
+            logger.warning('Unable to import CUPY, please configure CUPY to enable GPU acceleration')
+            logger.info('Regular optimization will be used instead')
             self.GPU_acceleration = False
+
     def stop_GPU_accelration(self):
         """
         stop the use of GPU acceleration
         """
         self.GPU_acceleration = False
         logger.info('GPU accelerations deactivated')
+
+    def use_MKL_acceleration(self,n_threads=None,debug=False):
+        """
+        Enable the uses of the MKL library for the optimization
+
+        Parameters
+        ----------
+        n_threads : int (default: None)
+            The number of threads to use. If None, the number of threads is set to the maximum number of threads available.
+        debug : bool (default: False)
+            If True, the debug mode is activated in sparse_dot_mkl.
+        """
+
+        if not sdm_available:
+            logger.warning('Unable to import sparse_dot_mkl, please install sparse_dot_mkl to enable MKL acceleration')
+            logger.info('Regular optimization will be used instead')
+
+        if mkl_available:
+            vers = mkl.get_version()['MajorVersion']
+            logger.info('MKL version: {}'.format(vers))
+        if not mkl_available:
+            logger.warning('Unable to import mkl, please install mkl-service and mkl to enable MKL acceleration as this might cause issues with MKL version')
+
+        if sdm_available:
+            if debug:
+                logger.info('MKL acceleration activated with debug mode')
+                sparse_dot_mkl.set_debug_mode(True)
+            if n_threads is not None:
+                sparse_dot_mkl.mkl_set_num_threads(n_threads)
+                logger.info('MKL acceleration activated with {} threads'.format(n_threads))
+            logger.info('CAUTION : MKL might not work on Unix systems')
+            self.MKL_acceleration = True
+            logger.info('MKL acceleration activated')
+
+    def stop_MKL_acceleration(self):
+        """
+        stop the use of MKL acceleration
+        """
+        self.MKL_acceleration = False
+        logger.info('MKL acceleration deactivated')
 
 
     def initializeWeights(self):
@@ -102,7 +194,7 @@ class PlanOptimizer:
             The weights.
         """
         # Total Dose calculation
-        totalDose = self.computeDose().imageArray
+        totalDose = self.computeDose().imageArray 
         maxDose = np.max(totalDose)
         try:
             x0 = self.opti_params['init_weights']
@@ -123,9 +215,15 @@ class PlanOptimizer:
         Initialize the dose fidelity objective function.
         """
         self.plan.planDesign.setScoringParameters()
+
         # crop on ROI
-        roiObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
-        roiRobustObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
+        if self.plan.planDesign.ROI_cropping == True:
+            roiObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
+            roiRobustObjectives = np.zeros(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
+        else : 
+            roiObjectives = np.ones(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
+            roiRobustObjectives = np.ones(len(self.plan.planDesign.objectives.fidObjList[0].maskVec)).astype(bool)
+
         robust = False
         for objective in self.plan.planDesign.objectives.fidObjList:
             if objective.robust:
@@ -135,8 +233,8 @@ class PlanOptimizer:
                 roiObjectives = np.logical_or(roiObjectives, objective.maskVec)
         roiObjectives = np.logical_or(roiObjectives, roiRobustObjectives)
 
-        if use_MKL == 1:
-            print("Using MKL")
+        if self.MKL_acceleration :
+            logger.info("Using MKL to create sparse beamlet matrix")
             beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                 sp.diags(roiObjectives.astype(np.float32), format='csc'), self.plan.planDesign.beamlets.toSparseMatrix())
         else:
@@ -147,7 +245,8 @@ class PlanOptimizer:
 
         if robust:
             for s in range(len(self.plan.planDesign.robustness.scenarios)):
-                if use_MKL == 1:
+                if self.MKL_acceleration:
+                    print("Using MKL to create sparse beamlet matrix")
                     beamletMatrix = sparse_dot_mkl.dot_product_mkl(
                         sp.diags(roiRobustObjectives.astype(np.float32), format='csc'),
                         self.plan.planDesign.robustness.scenarios[s].toSparseMatrix())
@@ -157,7 +256,7 @@ class PlanOptimizer:
                         self.plan.planDesign.robustness.scenarios[s].toSparseMatrix())
                 self.plan.planDesign.robustness.scenarios[s].setUnitaryBeamlets(beamletMatrix)
 
-        objectiveFunction = DoseFidelity(self.plan, self.xSquared,self.GPU_acceleration)
+        objectiveFunction = DoseFidelity(self.plan, self.xSquared,self.GPU_acceleration,self.MKL_acceleration)
         self.functions.append(objectiveFunction)
 
     def computeDose(self):
@@ -166,8 +265,13 @@ class PlanOptimizer:
         assert self.plan.planDesign.beamlets._sparseBeamlets is not None
 
         beamlets = self.plan.planDesign.beamlets
-        weights = np.array(self.plan.spotMUs, dtype=np.float32)
-        if use_MKL == 1:
+        
+        if self.plan.radiationType == 'PROTON':
+            weights = np.array(self.plan.spotMUs, dtype=np.float32)
+        else :
+            weights = np.array(self.plan.beamletMUs, dtype=np.float32)
+
+        if self.MKL_acceleration:
             totalDose = sparse_dot_mkl.dot_product_mkl(beamlets._sparseBeamlets, weights) * self.plan.numberOfFractionsPlanned
         else:
             totalDose = csc_matrix.dot(beamlets._sparseBeamlets, weights) * self.plan.numberOfFractionsPlanned
@@ -207,7 +311,10 @@ class PlanOptimizer:
             bounds = None
 
         # Optimization
-        result = self.solver.solve(self.functions, x0, bounds=bounds)
+        if bounds is not None:
+            result = self.solver.solve(self.functions, x0, bounds=bounds)
+        else:
+            result = self.solver.solve(self.functions, x0)
 
         if self.GPU_acceleration:
             self.functions[0].unload_blGPU()
@@ -239,7 +346,7 @@ class PlanOptimizer:
         except:
             pass
 
-        weights = result['sol']
+        self.weights = result['sol']
         crit = result['crit']
         self.niter = result['niter']
         self.time = result['time']
@@ -250,27 +357,44 @@ class PlanOptimizer:
 
         logger.info(
             ' {} terminated in {} Iter, x = {}, f(x) = {}, time elapsed {}, time per iter {}'
-                .format(self.solver.__class__.__name__, self.niter, weights, self.cost, self.time, self.time / self.niter))
+                .format(self.solver.__class__.__name__, self.niter, self.weights, self.cost, self.time, self.time / self.niter))
 
         # unload scenario beamlets
         for s in range(len(self.plan.planDesign.robustness.scenarios)):
-            self.plan.planDesign.robustness.scenarios[s].unload()
+            if self.plan.planDesign.robustness.scenarios[0] != self.plan.planDesign.beamlets :
+                self.plan.planDesign.robustness.scenarios[s].unload()
 
         # total dose
         logger.info("Total dose calculation ...")
         if self.xSquared:
-            self.plan.spotMUs = np.square(weights).astype(np.float32) / self.plan.numberOfFractionsPlanned
+            MUs = np.square(self.weights).astype(np.float32) / self.plan.numberOfFractionsPlanned
         else:
-            self.plan.spotMUs = weights.astype(np.float32) / self.plan.numberOfFractionsPlanned
-        
-        MU_before_simplify = self.plan.spotMUs.copy()
+            MUs = self.weights.astype(np.float32) / self.plan.numberOfFractionsPlanned
+        if isinstance(self.plan,ProtonPlan):
+            self.plan.spotMUs = MUs
+        elif isinstance(self.plan,PhotonPlan): 
+            self.plan.beamletMUs = MUs
+        MU_before_simplify = MUs.copy()
         self.plan.simplify(threshold=self.thresholdSpotRemoval) # remove spots below self.thresholdSpotRemoval
-        if self.plan.planDesign.beamlets.shape[1] != len(self.plan.spotMUs):
-            # Beamlet matrix has not removed zero weight column
-            ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
-            assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
-            self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
-
+        
+        if isinstance(self.plan,ProtonPlan):
+            if self.plan.planDesign.beamlets.shape[1] != len(self.plan.spotMUs):
+                # Beamlet matrix has not removed zero weight column
+                ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
+                assert np.sum(ind_to_keep) == len(self.plan.spotMUs)
+                self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+                self.plan.planDesign.beamlets._weights = self.plan.spotMUs
+            else:
+                self.plan.planDesign.beamlets._weights = self.plan.spotMUs
+        elif isinstance(self.plan,PhotonPlan):        
+            if self.plan.planDesign.beamlets.shape[1] != len(self.plan.beamletMUs):
+                # Beamlet matrix has not removed zero weight column
+                ind_to_keep = MU_before_simplify > self.thresholdSpotRemoval
+                assert np.sum(ind_to_keep) == len(self.plan.beamletMUs)
+                self.plan.planDesign.beamlets.setUnitaryBeamlets(self.plan.planDesign.beamlets._sparseBeamlets[:, ind_to_keep])
+                self.plan.planDesign.beamlets._weights = self.plan.beamletMUs
+            else:
+                self.plan.planDesign.beamlets._weights = self.plan.beamletMUs
         totalDose = self.computeDose()
         logger.info('Optimization done.')
 
@@ -305,9 +429,9 @@ class PlanOptimizer:
         return dct
 
 
-class IMPTPlanOptimizer(PlanOptimizer):
+class IntensityModulationOptimizer(PlanOptimizer):
     """
-    This class is used to optimize an Intensity Modulated Proton Therapy (IMPT) plan. It inherits from PlanOptimizer.
+    This class is used to optimize an Intensity Modulated Radiation/Proton Therapy (IMRT/IMPT). It inherits from PlanOptimizer.
     Attributes
     ----------
     method : str
@@ -322,9 +446,14 @@ class IMPTPlanOptimizer(PlanOptimizer):
         - 'LBFGS'
         - 'FISTA'
         - 'LP'
+
+    plan : RTPlan
+        The plan to optimize.
+    dict
+        The optimization parameters, depending on the selected method.
     """
-    def __init__(self, method, plan:RTPlan, **kwargs):
-        super().__init__(plan, **kwargs)
+    def __init__(self, method, plan:RTPlan, hardwareAcceleration:str=None, **kwargs):
+        super().__init__(plan, hardwareAcceleration, **kwargs)
         self.method = method
         if "Scipy" in self.method:
             algo = self.method.split('_')[1]
@@ -343,7 +472,7 @@ class IMPTPlanOptimizer(PlanOptimizer):
             self.solver = lp.LP(self.plan, **kwargs)
         else:
             logger.error(
-                'Method {} is not implemented. Pick among ["Scipy-BFGS", "Scipy-LBFGS", "Scipy-SLSQP", "Scipy-COBYLA", "Scipy-trust-constr", "Gradient", "BFGS", "LBFGS", "FISTA", "LP]'.format(
+                'Method {} is not implemented. Pick among ["Scipy_BFGS", "Scipy_L-BFGS-B", "Scipy_SLSQP", "Scipy_COBYLA", "Scipy_trust-constr", "Gradient", "BFGS", "LBFGS", "FISTA", "LP]'.format(
                     self.method))
 
     def getConvergenceData(self):
@@ -366,9 +495,13 @@ class BoundConstraintsOptimizer(PlanOptimizer):
     ----------
     bounds : tuple (default: (0.02, 5))
         The bounds.
+    plan : RTPlan
+        The plan to optimize.
+    dict
+        The optimization parameters for the SciPy methods.
     """
-    def __init__(self, plan: RTPlan, method='Scipy_L-BFGS-B', bounds=(0.02, 250), **kwargs):
-        super().__init__(plan, **kwargs)
+    def __init__(self, plan: RTPlan, hardwareAcceleration:str=None, method='Scipy_L-BFGS-B', bounds=(0.02, 250), **kwargs):
+        super().__init__(plan, hardwareAcceleration, **kwargs)
         self.bounds = bounds
         if method == 'Scipy_L-BFGS-B':
             self.method = method
@@ -473,6 +606,10 @@ class ARCPTPlanOptimizer(PlanOptimizer):
         - 'LS'
         - 'MIP'
         - 'SPArcling'
+    plan : RTPlan
+        The plan to optimize.
+    dict
+        The optimization parameters, depending on the selected method.
     """
     def __init__(self, method, plan, **kwargs):
         super(ARCPTPlanOptimizer, self).__init__(plan, **kwargs)

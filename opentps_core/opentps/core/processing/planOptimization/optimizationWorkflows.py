@@ -4,21 +4,21 @@ import numpy as np
 
 from opentps.core.data.images._doseImage import DoseImage
 from opentps.core.data.images._roiMask import ROIMask
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
-from opentps.core.data.plan._planDesign import PlanDesign
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
+from opentps.core.data.plan._protonPlanDesign import ProtonPlanDesign
 from opentps.core.data.plan._rtPlan import RTPlan
 from opentps.core.io import scannerReader, mcsquareIO
 from opentps.core.processing.doseCalculation.doseCalculationConfig import DoseCalculationConfig
-from opentps.core.processing.doseCalculation.mcsquareDoseCalculator import MCsquareDoseCalculator
+from opentps.core.processing.doseCalculation.protons.mcsquareDoseCalculator import MCsquareDoseCalculator
 from opentps.core.processing.imageProcessing import resampler3D
 from opentps.core.processing.planOptimization.objectives.doseFidelity import DoseFidelity
 from opentps.core.processing.planOptimization.planInitializer import PlanInitializer
-from opentps.core.processing.planOptimization.planOptimization import IMPTPlanOptimizer
+from opentps.core.processing.planOptimization.planOptimization import IntensityModulationOptimizer
 from opentps.core.processing.planOptimization.planOptimizationConfig import PlanOptimizationConfig
 
 logger = logging.getLogger(__name__)
 
-def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
+def optimizeIMPT(plan:RTPlan, planStructure:ProtonPlanDesign):
     """
     Optimizes an IMPT plan
 
@@ -26,7 +26,7 @@ def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
     ----------
     plan : RTPlan
         The plan to be optimized
-    planStructure : PlanDesign
+    planStructure : IonPlanDesign
         The plan design containing the optimization parameters
     """
     start = time.time()
@@ -45,7 +45,7 @@ def optimizeIMPT(plan:RTPlan, planStructure:PlanDesign):
 
     finalDose.patient = plan.patient
 
-def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
+def _defineTargetMaskAndPrescription(planStructure:ProtonPlanDesign):
     from opentps.core.data._roiContour import ROIContour
 
     targetMask = None
@@ -75,12 +75,12 @@ def _defineTargetMaskAndPrescription(planStructure:PlanDesign):
 
     planStructure.targetMask = targetMask
 
-def _createBeams(plan:RTPlan, planStructure:PlanDesign):
+def _createBeams(plan:RTPlan, planStructure:ProtonPlanDesign):
     for beam in plan:
         plan.removeBeam(beam)
 
     for i, gantryAngle in enumerate(planStructure.gantryAngles):
-        beam = PlanIonBeam()
+        beam = PlanProtonBeam()
         beam.gantryAngle = gantryAngle
         beam.couchAngle = planStructure.couchAngles[i]
         beam.isocenterPosition = planStructure.targetMask.centerOfMass
@@ -89,7 +89,7 @@ def _createBeams(plan:RTPlan, planStructure:PlanDesign):
 
         plan.appendBeam(beam)
 
-def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
+def _initializeBeams(plan:RTPlan, planStructure:ProtonPlanDesign):
     dcConfig = DoseCalculationConfig()
     ctCalibration = scannerReader.readScanner(dcConfig.scannerFolder)
 
@@ -100,7 +100,7 @@ def _initializeBeams(plan:RTPlan, planStructure:PlanDesign):
     initializer.targetMask = planStructure.targetMask
     initializer.initializePlan(planStructure.spotSpacing, planStructure.layerSpacing, planStructure.targetMargin)
 
-def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
+def _computeBeamlets(plan:RTPlan, planStructure:ProtonPlanDesign):
     dcConfig = DoseCalculationConfig()
     optimizationSettings = PlanOptimizationConfig()
 
@@ -116,13 +116,13 @@ def _computeBeamlets(plan:RTPlan, planStructure:PlanDesign):
 
     planStructure.beamlets = mc2.computeBeamlets(planStructure.ct, plan)
 
-def _optimizePlan(plan:RTPlan, planStructure:PlanDesign):
+def _optimizePlan(plan:RTPlan, planStructure:ProtonPlanDesign):
     optimizationSettings = PlanOptimizationConfig()
 
     beamletMatrix = planStructure.beamlets.toSparseMatrix()
 
     objectiveFunction = DoseFidelity(planStructure.objectives.fidObjList, beamletMatrix, xSquare=False, scenariosBL=None, returnWorstCase=False)
-    solver = IMPTPlanOptimizer(optimizationSettings.imptSolver, plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
+    solver = IntensityModulationOptimizer(optimizationSettings.imptSolver, plan, functions=[objectiveFunction], maxit=optimizationSettings.imptMaxIter)
 
     solver.xSquared = False
 

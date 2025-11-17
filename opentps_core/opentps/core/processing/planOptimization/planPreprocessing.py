@@ -3,16 +3,16 @@ from typing import Sequence
 
 import numpy as np
 
-from opentps.core.data.plan._planIonBeam import PlanIonBeam
-from opentps.core.data.plan._planIonLayer import PlanIonLayer
-from opentps.core.data.plan._planIonSpot import PlanIonSpot
-from opentps.core.data.plan._rtPlan import RTPlan
+from opentps.core.data.plan._planProtonBeam import PlanProtonBeam
+from opentps.core.data.plan._planProtonLayer import PlanProtonLayer
+from opentps.core.data.plan._planProtonSpot import PlanProtonSpot
+from opentps.core.data.plan._protonPlan import ProtonPlan
 
 '''
 Extend rtplan with attributs .layers and .spots to access directly global id and energy for each beam, layer and spot without looping. 
 '''
 
-def extendPlanLayers(plan: RTPlan) -> RTPlan:
+def extendPlanLayers(plan: ProtonPlan) -> ProtonPlan:
     """
     Extends the plan with a list of layers and spots for each beam.
 
@@ -53,7 +53,7 @@ def extendPlanLayers(plan: RTPlan) -> RTPlan:
             layerID += 1
             plan._layers.append(outLayer)
 
-class ExtendedBeam(PlanIonBeam):
+class ExtendedBeam(PlanProtonBeam):
     """
     Class to extend the PlanIonBeam class with a list of layers. Inherits from PlanIonBeam.
 
@@ -66,7 +66,7 @@ class ExtendedBeam(PlanIonBeam):
         super().__init__()
 
     @classmethod
-    def fromBeam(cls, beam: PlanIonBeam):
+    def fromBeam(cls, beam: PlanProtonBeam):
         """
         Creates a new ExtendedBeam from a PlanIonBeam.
 
@@ -99,7 +99,7 @@ class ExtendedBeam(PlanIonBeam):
         return [layer.id for layer in self.layers]
 
 
-class ExtendedPlanIonLayer(PlanIonLayer):
+class ExtendedPlanIonLayer(PlanProtonLayer):
     """
     Class to extend the PlanIonLayer class with a list of spots. Inherits from PlanIonLayer.
 
@@ -123,7 +123,7 @@ class ExtendedPlanIonLayer(PlanIonLayer):
         self.beamID = 0
 
     @classmethod
-    def fromLayer(cls, layer: PlanIonLayer):
+    def fromLayer(cls, layer: PlanProtonLayer):
         """
         Creates a new ExtendedPlanIonLayer from a PlanIonLayer.
 
@@ -143,7 +143,7 @@ class ExtendedPlanIonLayer(PlanIonLayer):
 
         for s in range(layer.numberOfSpots):
             newLayer.appendSpot(spotXY[s][0], spotXY[s][1], spotMUs[s])
-            spot = PlanIonSpot()
+            spot = PlanProtonSpot()
             newLayer._spots.append(spot)
 
         newLayer._startTime = np.array(layer._startTime)
@@ -152,7 +152,7 @@ class ExtendedPlanIonLayer(PlanIonLayer):
         return newLayer
 
     @property
-    def spots(self) -> Sequence[PlanIonSpot]:
+    def spots(self) -> Sequence[PlanProtonSpot]:
         # For backwards compatibility but we can now access each spot with indexing brackets
         return [spot for spot in self._spots]
 

@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
+import os
 
 from opentps.core.data.images import CTImage
 from opentps.core.data.images import ROIMask
@@ -12,6 +13,12 @@ from opentps.core.examples.syntheticData import *
 logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
+
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleApplyBaselineShiftToModel')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
 
     # GENERATE SYNTHETIC 4DCT
     CT4D = createSynthetic4DCT()
@@ -111,5 +118,5 @@ if __name__ == '__main__':
     ax[2, 6].title.set_text('Gen phase 3 shifted')
 
     plt.show()
-
+    plt.savefig(os.path.join(output_path, 'BaselinesSHift.png')) 
     print('done')

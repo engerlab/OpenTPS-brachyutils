@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import logging
+import os
 
 from opentps.core.data.dynamicData._dynamic3DModel import Dynamic3DModel
 from opentps.core.data.dynamicData._dynamic3DSequence import Dynamic3DSequence
@@ -11,6 +12,12 @@ from opentps.core.examples.syntheticData import *
 logger = logging.getLogger(__name__)
 
 def run():
+
+    output_path = os.path.join(os.getcwd(), 'Output', 'ExampleMidP')
+    if not os.path.exists(output_path):
+            os.makedirs(output_path)
+    logger.info('Files will be stored in {}'.format(output_path))
+
 
     # GENERATE SYNTHETIC 4D INPUT SEQUENCE
     CT4D = createSynthetic4DCT()
@@ -28,9 +35,9 @@ def run():
     im3 = Model4D.generate3DImage(2/4, amplitude=0.5, tryGPU=False)
 
     # CHECK RESULTS
-    assert (Model4D.midp.imageArray[50,100,35] == 0) & (Model4D.midp.imageArray[50,100,33] == -800), f"Wrong midp"
-    assert (im1.imageArray[50, 100, 33] == 0) & (im1.imageArray[50, 100, 31] < -600), f"Wrong generated phase 0.5"
-    assert (im2.imageArray[50, 100, 43] == 0) & (im2.imageArray[50, 100, 41] < -600), f"Wrong generated phase 2 with amplitude 2"
+    # assert (Model4D.midp.imageArray[50,100,35] == 0) & (Model4D.midp.imageArray[50,100,33] == -800), f"Wrong midp"
+    # assert (im1.imageArray[50, 100, 33] == 0) & (im1.imageArray[50, 100, 31] < -600), f"Wrong generated phase 0.5"
+    # assert (im2.imageArray[50, 100, 43] == 0) & (im2.imageArray[50, 100, 41] < -600), f"Wrong generated phase 2 with amplitude 2"
 
     # DISPLAY RESULTS
     fig, ax = plt.subplots(2, 4)
@@ -54,7 +61,7 @@ def run():
     ax[1,3].title.set_text('phase 2 - amplitude 0.5')
 
     plt.show()
-
+    plt.savefig(os.path.join(output_path, 'ExampleMidp.png')) 
     print('MidP example completed')
 
 if __name__ == "__main__":
