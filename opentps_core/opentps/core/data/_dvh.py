@@ -212,15 +212,17 @@ class DVH:
         """
         index = np.searchsorted(-self._volume, -percentile)
         if (index > len(self._volume) - 2): index = len(self._volume) - 2
-        volume = self._volume[index]
-        volume2 = self._volume[index + 1]
+        volume = self._volume[index - 1]
+        volume2 = self._volume[index]
         if (volume == volume2):
             Dx = self._dose[index]
         else:
+            assert volume >= percentile and volume2 <= percentile, (f"Volume interpolation error: volume1: {volume}, volume2: {volume2}, requested percentile: {percentile}")
             w2 = (volume - percentile) / (volume - volume2)
             w1 = (percentile - volume2) / (volume - volume2)
             Dx = w1 * self._dose[index] + w2 * self._dose[index + 1]
-            if Dx < 0: Dx = 0
+        if Dx < 0:
+            raise ValueError("Dx computation resulted in 0 dose. ")
 
         if return_percentage:
             assert self._prescription is not None
@@ -247,15 +249,18 @@ class DVH:
         """
         index = np.searchsorted(-self._volume_absolute, -x)
         if (index > len(self._volume) - 2): index = len(self._volume) - 2
-        volume = self._volume_absolute[index]
-        volume2 = self._volume_absolute[index + 1]
+        volume = self._volume_absolute[index - 1]
+        volume2 = self._volume_absolute[index]
+
         if (volume == volume2):
             Dcc = self._dose[index]
         else:
+            assert volume >= x and volume2 <= x, (f"Volume interpolation error: volume1: {volume}, volume2: {volume2}, requested volume: {x}")
             w2 = (volume - x) / (volume - volume2)
             w1 = (x - volume2) / (volume - volume2)
             Dcc = w1 * self._dose[index] + w2 * self._dose[index + 1]
-            if Dcc < 0: Dcc = 0
+        if Dcc < 0:
+            raise ValueError("Dcc computation resulted in 0 dose. ")
 
         if return_percentage:
             assert self._prescription is not None
