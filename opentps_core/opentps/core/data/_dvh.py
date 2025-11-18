@@ -223,7 +223,8 @@ class DVH:
             w2 = (volume - percentile) / (volume - volume2)
             w1 = (percentile - volume2) / (volume - volume2)
             Dx = w1 * self._dose[index - 1] + w2 * self._dose[index]
-            if Dx < 0: Dx = 0
+        if Dx < 0:
+            raise ValueError("Dx computation resulted in 0 dose. ")
 
         if return_percentage:
             assert self._prescription is not None
@@ -263,7 +264,9 @@ class DVH:
             w2 = (volume - x) / (volume - volume2)
             w1 = (x - volume2) / (volume - volume2)
             Dcc = w1 * self._dose[index - 1] + w2 * self._dose[index]
-            if Dcc < 0: Dcc = 0
+        if Dcc < 0:
+            raise ValueError("Dcc computation resulted in 0 dose. ")
+
 
         if return_percentage:
             assert self._prescription is not None
