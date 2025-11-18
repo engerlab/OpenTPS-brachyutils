@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 ## --------------------------------------------------------------------------------------
 def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None, origin:Sequence[float]=None,
-             fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False):
+             fillValue:float=0., outputType:np.dtype=None, inPlace:bool=False, tryGPU:bool=False, 
+             sitk_interpolator=sitk.sitkLinear):
     """
     Parameters
     ----------
@@ -48,13 +49,15 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
     if isinstance(data, Deformation3D):
         if not(data.velocity is None):
             data.velocity = resample(data.velocity, spacing=spacing, gridSize=gridSize, origin=origin,
-             fillValue=fillValue, outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+             fillValue=fillValue, outputType=outputType, inPlace=inPlace, tryGPU=tryGPU, 
+             sitk_interpolator=sitk_interpolator)
             data.origin = np.array(data.velocity.origin)
             data.spacing = np.array(data.velocity.spacing)
             return data
         if not(data.displacement is None):
             data.displacement = resample(data.displacement, spacing=spacing, gridSize=gridSize, origin=origin,
-             fillValue=fillValue, outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+             fillValue=fillValue, outputType=outputType, inPlace=inPlace, tryGPU=tryGPU, 
+             sitk_interpolator=sitk_interpolator)
             data.origin = np.array(data.displacement.origin)
             data.spacing = np.array(data.displacement.spacing)
             return data
@@ -69,7 +72,7 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
         for i in range(data.imageArray.shape[3]):
             component = Image3D(data.imageArray[:,:,:,i], origin=data.origin, spacing=data.spacing, angles=data.angles)
             component = resampleImage3D(component, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
-                            outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+                            outputType=outputType, inPlace=inPlace, tryGPU=tryGPU, sitk_interpolator=sitk_interpolator)
             vector_field.append(component)
         data.imageArray = np.stack([v.imageArray for v in vector_field], axis=-1)
 
@@ -79,19 +82,19 @@ def resample(data:Any, spacing:Sequence[float]=None, gridSize:Sequence[int]=None
 
     elif isinstance(data, Image3D):
         return resampleImage3D(data, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
-                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU, sitk_interpolator=sitk_interpolator)
 
     elif isinstance(data, Dynamic3DSequence):
         resampledImageList = []
         for image3D in data.dyn3DImageList:
             resampledImageList.append(resampleImage3D(image3D, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
-                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU))
+                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU, sitk_interpolator=sitk_interpolator))
             data.dyn3DImageList = resampledImageList
         return data
 
     elif isinstance(data, Dynamic3DModel):
         resampledMidP = resampleImage3D(data.midp, spacing=spacing, gridSize=gridSize, origin=origin, fillValue=fillValue,
-                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU)
+                               outputType=outputType, inPlace=inPlace, tryGPU=tryGPU, sitk_interpolator=sitk_interpolator)
         data.midp = resampledMidP
         return data
 
@@ -202,7 +205,7 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
     return image
 
 ## --------------------------------------------------------------------------------------
-def resampleOnImage3D(data:Any, fixedImage:Image3D, fillValue:float=0., inPlace:bool=False, tryGPU:bool=False):
+def resampleOnImage3D(data:Any, fixedImage:Image3D, fillValue:float=0., inPlace:bool=False, tryGPU:bool=False, sitk_interpolator=sitk.sitkLinear):
     """
 
     Parameters
@@ -224,7 +227,7 @@ def resampleOnImage3D(data:Any, fixedImage:Image3D, fillValue:float=0., inPlace:
         The resampled image (if inPlace = False)
     """
     if isinstance(data, Image3D):
-        return resampleImage3DOnImage3D(data, fixedImage, fillValue=fillValue, inPlace=inPlace, tryGPU=tryGPU)
+        return resampleImage3DOnImage3D(data, fixedImage, fillValue=fillValue, inPlace=inPlace, tryGPU=tryGPU, sitk_interpolator=sitk_interpolator)
     else:
         raise NotImplementedError
 

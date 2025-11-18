@@ -219,6 +219,7 @@ class DVH:
         if (volume == volume2):
             Dx = self._dose[index]
         else:
+            assert volume >= percentile and volume2 <= percentile, (f"Volume interpolation error: volume1: {volume}, volume2: {volume2}, requested percentile: {percentile}")
             w2 = (volume - percentile) / (volume - volume2)
             w1 = (percentile - volume2) / (volume - volume2)
             Dx = w1 * self._dose[index - 1] + w2 * self._dose[index]
@@ -258,6 +259,7 @@ class DVH:
         if (volume == volume2):
             Dcc = self._dose[index]
         else:
+            assert volume >= x and volume2 <= x, (f"Volume interpolation error: volume1: {volume}, volume2: {volume2}, requested volume: {x}")
             w2 = (volume - x) / (volume - volume2)
             w1 = (x - volume2) / (volume - volume2)
             Dcc = w1 * self._dose[index - 1] + w2 * self._dose[index]
@@ -435,7 +437,7 @@ class DVH:
             return isodose_prescription_volume / target_volume
         if method == 'Paddick':
             target_volume_covered_by_prescription = np.sum(
-                self._doseImage.imageArray[self._roiMask.imageArray] >= percentile * self._prescription) #V_T,RI
+                self._doseImage.imageArray[self._roiMask.imageArray.astype(bool)] >= percentile * self._prescription) #V_T,RI
             if isodose_prescription_volume == 0 or target_volume == 0:
                 logger.warning("Conformity index Paddick: division by zero, returning 0.0")
                 return 0.0
