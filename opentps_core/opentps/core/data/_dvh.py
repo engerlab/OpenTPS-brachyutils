@@ -163,7 +163,7 @@ class DVH:
         mask = roiMask.imageArray.astype(bool)
         spacing = self._doseImage.spacing
         number_of_bins = 4096
-        DVH_interval = [0, maxDVH]
+        DVH_interval = [0, maxDVH*1.15]
         bin_size = (DVH_interval[1] - DVH_interval[0]) / number_of_bins
         bin_edges = np.arange(DVH_interval[0], DVH_interval[1] + 0.5 * bin_size, bin_size)
         bin_edges[-1] = maxDVH + dose.max()
