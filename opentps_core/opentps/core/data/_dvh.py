@@ -47,7 +47,8 @@ class DVH:
         The dose and volume arrays
 
     """
-    def __init__(self, roiMask:Union[ROIContour, ROIMask], dose:DoseImage=None, prescription=None):
+    def __init__(self, roiMask:Union[ROIContour, ROIMask], dose:DoseImage=None, prescription:float=None,
+                 maxDVH:float=100.0, bin_size:float=None):
 
         self.dataUpdatedEvent = Event()
 
@@ -68,6 +69,8 @@ class DVH:
         self._Dmax = 0
         self._Dstd = 0
         self._prescription = prescription
+        self.maxDVH = maxDVH
+        self.bin_size = bin_size
 
         if isinstance(roiMask, ROIMask):
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
@@ -142,7 +145,7 @@ class DVH:
             self._roiMask = self._roiMask.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
-    def computeDVH(self, maxDVH:float=100.0):
+    def computeDVH(self):
         """
         Compute the DVH from the doseImage and the roiMask. The DVH is computed for the dose range [0, maxDVH] Gy.
 
@@ -150,23 +153,35 @@ class DVH:
         ----------
         maxDVH: float
             The maximum dose for the DVH
+        bin_size: float
+            The bin size in Gy for the DVH. If None, 4096 bins are used and bin size is computed using maxDVH.
         """
         if (self._doseImage is None):
             return
 
         self._convertContourToROI()
-        roiMask = self._roiMask
+
         if not(self._doseImage.hasSameGrid(self._roiMask)):
-            roiMask = resampler3D.resampleImage3DOnImage3D(self._roiMask, self._doseImage, inPlace=False, fillValue=0.)
-            roiMask.patient = None
+            self._roiMask = resampler3D.resampleImage3DOnImage3D(self._roiMask, self._doseImage, inPlace=False, fillValue=0.)
+
+        roiMask = self._roiMask
+        roiMask.patient = None
+
         dose = self._doseImage.imageArray
         mask = roiMask.imageArray.astype(bool)
         spacing = self._doseImage.spacing
-        number_of_bins = 4096
-        DVH_interval = [0, maxDVH*1.15]
-        bin_size = (DVH_interval[1] - DVH_interval[0]) / number_of_bins
+        DVH_interval = [0, self.maxDVH]
+
+        if self.bin_size is None:
+            number_of_bins = 4096
+            bin_size = (DVH_interval[1] - DVH_interval[0]) / number_of_bins
+        else:
+            bin_size = self.bin_size
+
         bin_edges = np.arange(DVH_interval[0], DVH_interval[1] + 0.5 * bin_size, bin_size)
-        bin_edges[-1] = maxDVH + dose.max()
+        bin_edges[-1] = self.maxDVH + dose.max()
+        if not (self.bin_size is None):
+            number_of_bins = len(bin_edges) - 1
         self._dose = bin_edges[:number_of_bins] + 0.5 * bin_size
 
         d = dose[mask]
@@ -383,7 +398,7 @@ class DVH:
 
 
 
-    def conformityIndex(self, body_contour, method="Paddick", percentile:float=0.95) -> float:
+    def conformityIndex(self, body_contour:Union[ROIContour, ROIMask], method:str="Paddick", percentile:float=0.95) -> float:
 
         """
         Compute the conformity index describing how tightly the prescription dose is conforming to the target.
@@ -415,7 +430,11 @@ class DVH:
         """
         assert self._prescription is not None
 
-        body_mask = body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
+        if isinstance(body_contour, ROIContour):
+            body_mask = body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
+        else:
+            assert isinstance(body_contour, ROIMask), "body_contour must be either ROIContour or ROIMask"
+            body_mask = body_contour
         # resample body contour on dose grid if needed
         if not (self._doseImage.hasSameGrid(body_mask)):
             body_mask = resampler3D.resampleImage3DOnImage3D(body_mask, self._doseImage, inPlace=False, fillValue=0.)
