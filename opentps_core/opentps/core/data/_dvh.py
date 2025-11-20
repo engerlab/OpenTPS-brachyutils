@@ -2,6 +2,7 @@ __all__ = ['DVH']
 
 from typing import Union, Optional
 
+import warnings
 import numpy as np
 
 from opentps.core.data.images._doseImage import DoseImage
@@ -183,6 +184,7 @@ class DVH:
         if not (self.bin_size is None):
             number_of_bins = len(bin_edges) - 1
         self._dose = bin_edges[:number_of_bins] + 0.5 * bin_size
+        # self._dose is increasing from 0 to maxDVH
 
         d = dose[mask]
         h, _ = np.histogram(d, bin_edges)
@@ -191,6 +193,7 @@ class DVH:
         h = np.flip(h, 0)
         self._volume = h * 100 / len(d)  # volume in %
         self._volume_absolute = h * spacing[0] * spacing[1] * spacing[2] / 1000  # volume in cm3
+        # self._volume and self._volume_absolute are decreasing from 100% of the volume to 0%
 
         # compute metrics
         self._Dmean = np.mean(d)
@@ -227,8 +230,15 @@ class DVH:
             logger.warning("DVH volume array is too small to compute Dx (length < 2). Returning 0.0.")
             return 0.0
         index = np.searchsorted(-self._volume, -percentile)
-        if index <= 0: index = 1
-        if index > len(self._volume) - 1: index = len(self._volume) - 1
+
+        # If edges cases, we cannot interpolate so we just return last or first value
+        if index <= 0: 
+            warnings.warn("Index for Dx is less than or equal to 0. Returning first value.")
+            return self._dose[0] if not return_percentage else (self._dose[0] / self._prescription) * 100
+        if index >= len(self._volume) - 1:
+            warnings.warn("Index for Dx is greater than the last index. Returning last value.")
+            return self._dose[-1] if not return_percentage else (self._dose[-1] / self._prescription) * 100
+        
         volume = self._volume[index - 1]
         volume2 = self._volume[index]
         if (volume == volume2):
@@ -268,8 +278,15 @@ class DVH:
             logger.warning("DVH volume array is too small to compute Dcc (length < 2). Returning 0.0.")
             return 0.0
         index = np.searchsorted(-self._volume_absolute, -x)
-        if index <= 0: index = 1
-        if index > len(self._volume_absolute) - 1: index = len(self._volume_absolute) - 1
+
+        # If edges cases, we cannot interpolate so we just return last or first value
+        if index <= 0:
+            warnings.warn("Index for Dcc is less than or equal to 0. Returning first value.")
+            return self._dose[0] if not return_percentage else (self._dose[0] / self._prescription) * 100
+        if index >= len(self._volume_absolute) - 1:
+            warnings.warn("Index for Dcc is greater than the last index. Returning last value.")
+            return self._dose[-1] if not return_percentage else (self._dose[-1] / self._prescription) * 100
+
         volume = self._volume_absolute[index - 1]
         volume2 = self._volume_absolute[index]
         if (volume == volume2):
@@ -307,12 +324,29 @@ class DVH:
 
         """
 
-        # TODO: improve this code using interpolation instead of search
         index = np.searchsorted(self._dose, x)
+        
+        if index <= 0: 
+            warnings.warn("Index for Vg is less than or equal to 0. Returning first value.")
+            return self._volume[0] if return_percentage else self._volume_absolute[0]
+        if index >= len(self._volume_absolute) - 1:
+            warnings.warn("Index for Vg is greater than the last index. Returning last value.")
+            return self._volume[-1] if return_percentage else self._volume_absolute[-1]
+
+        assert self._dose[index] >= x and self._dose[index - 1] <= x, (f"Dose interpolation error: dose1: {self._dose[index - 1]}, dose2: {self._dose[index]}, requested volume: {x}")
+
+        # self._dose is increasing from 0 to maxDVH
+        dose1 = self._dose[index - 1]
+        dose2 = self._dose[index]
+        w1 = (x - dose1) / (dose2 - dose1)
+        w2 = (dose2 - x) / (dose2 - dose1)
+
         if return_percentage:
-            return self._volume[index]
+            Vg = w1 * self._volume[index - 1] + w2 * self._volume[index]
+            return Vg
         else:
-            return self._volume_absolute[index]
+            Vg = w1 * self._volume_absolute[index - 1] + w2 * self._volume_absolute[index]
+            return Vg
 
     def computeVx(self, x:float, return_percentage:bool=True) -> float:
         """
@@ -334,12 +368,30 @@ class DVH:
         """
         assert self._prescription is not None
         dose_percentage = (self._dose / self._prescription) * 100
-        # TODO: improve this code using interpolation instead of search
+
         index = np.searchsorted(dose_percentage, x)
+
+        # If edges cases, we cannot interpolate so we just return last or first value
+        if index <= 0:
+            warnings.warn("Index for Vx is less than or equal to 0. Returning first value.")
+            return self._volume[0] if return_percentage else self._volume_absolute[0]
+        if index >= len(self._volume_absolute) - 1:
+            warnings.warn("Index for Vx is greater than the last index. Returning last value.")
+            return self._volume[-1] if return_percentage else self._volume_absolute[-1]
+
+        assert dose_percentage[index] >= x and dose_percentage[index - 1] <= x, (f"Dose interpolation error: dose_perc1: {dose_percentage[index - 1]}, dose_perc2: {dose_percentage[index]}, requested dose percentage: {x}")
+
+        # dose_percentage is increasing from 0 to maxDVH/prescription*100
+        dose_perc1 = dose_percentage[index - 1]
+        dose_perc2 = dose_percentage[index]
+        w2 = (dose_perc2 - x) / (dose_perc2 - dose_perc1)
+        w1 = (x - dose_perc1) / (dose_perc2 - dose_perc1)
         if return_percentage:
-            return self._volume[index]
+            Vx = w1 * self._volume[index - 1] + w2 * self._volume[index]
+            return Vx
         else:
-            return self._volume_absolute[index]
+            Vx = w1 * self._volume_absolute[index - 1] + w2 * self._volume_absolute[index]
+            return Vx
 
 
 
