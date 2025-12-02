@@ -492,10 +492,11 @@ class DVH:
             body_mask = resampler3D.resampleImage3DOnImage3D(body_mask, self._doseImage, inPlace=False, fillValue=0.)
             body_mask.patient = None
         body_mask = body_mask.imageArray.astype(bool)
-        # check overlap between body contour and target
-        if not np.any(np.logical_and(body_mask, self._roiMask.imageArray)):
-            logger.warning("No overlap between body contour and target. Union of the two is taken for conformity index computation.")
-            body_mask = np.logical_or(body_mask, self._roiMask.imageArray)
+        # # check overlap between body contour and target
+        # # XXX this checking causes issues
+        # if not np.any(np.logical_and(body_mask, self._roiMask.imageArray)):
+        #     logger.warning("No overlap between body contour and target. Union of the two is taken for conformity index computation.")
+        body_mask = np.ma.mask_or(body_mask, self._roiMask.imageArray)
 
         # prescription isodose volume
         isodose_prescription_volume = np.sum(
