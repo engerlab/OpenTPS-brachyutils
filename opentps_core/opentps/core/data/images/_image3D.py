@@ -3,7 +3,7 @@ __all__ = ['Image3D']
 
 
 import copy
-from typing import Sequence
+from typing import Sequence, Literal
 
 import numpy as np
 import logging
@@ -355,3 +355,47 @@ class Image3D(PatientData):
         Changes pixel type of data imageArray to int16 for more efficient storage
         """
         self.imageArray = self.imageArray.astype(np.int16)
+    
+    def to_lps(self, current_orientation:Literal["RAS", "LAS"]):
+        """
+        Convert the image to LPS orientation.
+
+        Parameters
+        ----------
+        current_orientation : str
+            Current orientation of the image, with could be "RAS", "LAS"
+            please implement more orientations if needed.
+        """
+
+        current_orientation = current_orientation.upper()
+        current_orientation = list(current_orientation)
+        for o in current_orientation:            
+            if o == 'R':
+                self.imageArray = np.flip(self.imageArray, axis=0)
+                self.origin = np.array([
+                    -1* (self.origin[0] + (self.gridSizeInWorldUnit[0] - self.spacing[0])),
+                    self.origin[1],
+                    self.origin[2],
+                ])
+            # elif o == 'L':
+            #     pass
+            elif o == 'A':
+                self.imageArray = np.flip(self.imageArray, axis=1)
+                self.origin = np.array([
+                    self.origin[0],
+                    -1* (self.origin[1] + (self.gridSizeInWorldUnit[1] - self.spacing[1])),
+                    self.origin[2],
+                ])
+            # elif o == 'P':
+            #     pass
+            # elif o == 'S':
+            #     pass
+            elif o == 'I':
+                self.imageArray = np.flip(self.imageArray, axis=2)
+                self.origin = np.array([
+                    self.origin[0],
+                    self.origin[1],
+                    -1* (self.origin[2] + (self.gridSizeInWorldUnit[2] - self.spacing[2])),
+                ])
+            else:
+                raise ValueError(f'Orientation {current_orientation} not recognized. Supported orientations are RAS and LAS.')
