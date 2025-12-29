@@ -369,7 +369,7 @@ class Image3D(PatientData):
 
         current_orientation = current_orientation.upper()
         current_orientation = list(current_orientation)
-        for o in current_orientation:            
+        for o in current_orientation:
             if o == 'R':
                 self.imageArray = np.flip(self.imageArray, axis=0)
                 self.origin = np.array([
