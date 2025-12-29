@@ -377,8 +377,8 @@ class Image3D(PatientData):
                     self.origin[1],
                     self.origin[2],
                 ])
-            # elif o == 'L':
-            #     pass
+            elif o == 'L':
+                pass
             elif o == 'A':
                 self.imageArray = np.flip(self.imageArray, axis=1)
                 self.origin = np.array([
@@ -386,10 +386,10 @@ class Image3D(PatientData):
                     -1* (self.origin[1] + (self.gridSizeInWorldUnit[1] - self.spacing[1])),
                     self.origin[2],
                 ])
-            # elif o == 'P':
-            #     pass
-            # elif o == 'S':
-            #     pass
+            elif o == 'P':
+                pass
+            elif o == 'S':
+                pass
             elif o == 'I':
                 self.imageArray = np.flip(self.imageArray, axis=2)
                 self.origin = np.array([
