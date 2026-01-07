@@ -496,7 +496,7 @@ class DVH:
         # # XXX this checking causes issues
         # if not np.any(np.logical_and(body_mask, self._roiMask.imageArray)):
         #     logger.warning("No overlap between body contour and target. Union of the two is taken for conformity index computation.")
-        body_mask = np.ma.mask_or(body_mask, self._roiMask.imageArray)
+        body_mask = np.ma.mask_or(body_mask, self._roiMask.imageArray.astype(bool))
 
         # prescription isodose volume
         isodose_prescription_volume = np.sum(
