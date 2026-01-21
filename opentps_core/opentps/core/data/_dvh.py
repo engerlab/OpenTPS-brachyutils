@@ -520,3 +520,81 @@ class DVH:
 
         else:
             raise NotImplementedError(f'Conformity index method {method} not implemented.')
+
+    def getBodyMask(self, body_contour:Union[ROIContour, ROIMask]) -> ROIMask:
+        """
+        Get the body mask resampled on the dose grid.
+        Parameters
+        ----------
+        body_contour: ROIcontour
+            ROIcontour object of delineating the contour of the body of the patient. Used to
+            compute the volume of the prescription isodose.
+        Returns
+        ------
+        ROIMask
+            Body mask resampled on the dose grid.
+        """
+
+        if isinstance(body_contour, ROIContour):
+            body_mask = body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
+        else:
+            assert isinstance(body_contour, ROIMask), "body_contour must be either ROIContour or ROIMask"
+            body_mask = body_contour
+        # resample body contour on dose grid if needed
+        if not (self._doseImage.hasSameGrid(body_mask)):
+            body_mask = resampler3D.resampleImage3DOnImage3D(body_mask, self._doseImage, inPlace=False, fillValue=0.)
+            body_mask.patient = None
+        return body_mask
+    
+    def conformalIndex(self, body_contour:Union[ROIContour, ROIMask]) -> float:
+
+        """
+        Compute the conformal index to evaluate implant quality and dose specification in brachytherapy.
+        Guidelines from 10.1016/S0360-3016(97)00732-3 
+
+        Parameters
+        ----------
+        body_contour: ROIcontour
+          ROIcontour object of delineating the contour of the body of the patient. Used to compute the volume of the prescription isodose.
+
+    
+        percentile: float
+          Percentile of the prescription isodose to consider (default is 0.95, i.e. 95% of the prescription dose)
+          This is the reference isodose level defined by ICRU.
+
+        Returns
+        ------
+        float
+          Conformity index
+
+        """
+
+        assert self._prescription is not None
+        
+        body_roiMask = self.getBodyMask(body_contour)
+        body_mask = body_roiMask.imageArray.astype(bool)
+        # check overlap between body contour and target
+        if not np.any(np.logical_and(body_mask, self._roiMask.imageArray)):
+            logger.warning("No overlap between body contour and target. Union of the two is taken for conformity index computation.")
+            body_mask = np.logical_or(body_mask, self._roiMask.imageArray)
+
+
+        roi_mask = self._roiMask.imageArray.astype(bool)
+        # structure receiving 100% of the prescription dose
+        structure_v100 = np.sum(
+            self._doseImage.imageArray[roi_mask] >= self._prescription
+            ) #PTV V100%
+        
+        # body volume receiving 100% of the prescription dose
+        body_v100 = np.sum(
+            self._doseImage.imageArray[body_mask] >= self._prescription
+            ) #Body V100%
+        
+        # Everything is in number of voxel and at the end the result is unit less
+        # So we don't really care about knowing the spacing which would cancel out
+        # anyway
+        target_volume = np.sum(roi_mask) #VPTV
+
+        conformal_index = (structure_v100 / target_volume) * (structure_v100 / body_v100)
+
+        return conformal_index
