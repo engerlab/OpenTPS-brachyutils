@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class DVH:
     """
     Class to compute and store the DVH of a ROI.
+    Can optionally disable signal connections to avoid memory leaks.
 
     Attributes
     ---------
@@ -49,9 +50,25 @@ class DVH:
 
     """
     def __init__(self, roiMask:Union[ROIContour, ROIMask], dose:DoseImage=None, prescription:float=None,
-                 maxDVH:float=100.0, bin_size:float=None):
-
-        self.dataUpdatedEvent = Event()
+                 maxDVH:float=100.0, bin_size:float=None, use_signals: bool = True):
+        """
+        Parameters
+        ----------
+        roiMask : ROIContour or ROIMask
+            ROI for which to compute DVH
+        dose : DoseImage, optional
+            Dose image
+        prescription : float, optional
+            Prescription dose
+        maxDVH : float
+            Maximum DVH dose 
+        bin_size : float, optional
+            Bin size for DVH
+        use_signals : bool
+            Whether to connect to signals. Set False for memory-safe, stateless DVH.
+        """
+        self._use_signals = use_signals
+        self.dataUpdatedEvent = Event() if self._use_signals else None
 
         self._roiMask = roiMask
         self._roiName = roiMask.name
@@ -73,11 +90,12 @@ class DVH:
         self.maxDVH = maxDVH
         self.bin_size = bin_size
 
-        if isinstance(roiMask, ROIMask):
+        if self._use_signals and isinstance(roiMask, ROIMask):
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
-        if not (self._doseImage is None):
+        if self._use_signals and not (self._doseImage is None):
             self._doseImage.dataChangedSignal.connect(self.computeDVH)
+        if not (self._doseImage is None):
             self.computeDVH()
 
     @property
@@ -89,12 +107,12 @@ class DVH:
         if dose==self._doseImage:
             return
 
-        if not (self._doseImage is None):
+        if self._use_signals and not (self._doseImage is None):
             self._doseImage.dataChangedSignal.disconnect(self.computeDVH)
 
         self._doseImage = dose
-
-        self._doseImage.dataChangedSignal.connect(self.computeDVH)
+        if self._use_signals:
+            self._doseImage.dataChangedSignal.connect(self.computeDVH)
         self.computeDVH()
 
     @property
@@ -144,7 +162,8 @@ class DVH:
     def _convertContourToROI(self):
         if isinstance(self._roiMask, ROIContour):
             self._roiMask = self._roiMask.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
-            self._roiMask.dataChangedSignal.connect(self.computeDVH)
+            if self._use_signals:
+                self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
     def computeDVH(self):
         """
@@ -206,7 +225,8 @@ class DVH:
         self._D5 = self.computeDx(5)
         self._D2 = self.computeDx(2)
 
-        self.dataUpdatedEvent.emit()
+        if self._use_signals:
+            self.dataUpdatedEvent.emit()
 
     def computeDx(self, percentile:float, return_percentage:bool=False) -> float:
         """
@@ -598,3 +618,20 @@ class DVH:
         conformal_index = (structure_v100 / target_volume) * (structure_v100 / body_v100)
 
         return conformal_index
+    
+    def close(self):
+        """
+        Disconnect all signals to allow memory to be freed.
+        """
+        if self._use_signals:
+            if self._roiMask is not None:
+                try:
+                    self._roiMask.dataChangedSignal.disconnect(self.computeDVH)
+                except Exception:
+                    pass
+            if self._doseImage is not None:
+                try:
+                    self._doseImage.dataChangedSignal.disconnect(self.computeDVH)
+                except Exception:
+                    pass
+        self.dataUpdatedEvent = None
