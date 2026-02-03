@@ -17,7 +17,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "~3.13"
+python = "*"
 cachecontrol = "*"
 numpy = "*"
 Pillow = "*"
@@ -41,4 +41,5 @@ opentps = "opentps.gui:main.run"
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
+
 build-backend = "poetry.core.masonry.api"
