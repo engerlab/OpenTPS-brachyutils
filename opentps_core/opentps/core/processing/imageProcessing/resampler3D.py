@@ -186,6 +186,10 @@ def resampleImage3D(image:Image3D, spacing:Sequence[float]=None, gridSize:Sequen
         try:
             from opentps.core.processing.imageProcessing import sitkImageProcessing
             sitkImageProcessing.resize(image, spacing, origin, gridSize, fillValue=fillValue, interpolator=sitk_interpolator)
+
+            image.spacing = spacing
+            image.origin = origin
+
         except Exception as e:
             logger.info('Failed to use SITK resampler. Try OpenMP without GPU instead.')
             tryOpenMP = True
