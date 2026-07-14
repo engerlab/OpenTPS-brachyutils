@@ -17,14 +17,14 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "~3.13"
+python = "*"
 cachecontrol = "*"
 numpy = "*"
 Pillow = "*"
 pydicom = "*"
-vtk = "*"
-PyQt5 = "*"
-PyQt5-Qt5 = '*'
+#vtk = "*"
+#PyQt5 = "*"
+#PyQt5-Qt5 = '*'
 pyqtgraph = "*"
 SimpleITK = "*"
 sparse-dot-mkl = "*"
