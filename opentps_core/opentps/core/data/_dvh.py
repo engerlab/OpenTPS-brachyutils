@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class DVH:
     """
     Class to compute and store the DVH of a ROI.
+    Can optionally disable signal connections to avoid memory leaks.
 
     Attributes
     ---------
@@ -49,9 +50,25 @@ class DVH:
 
     """
     def __init__(self, roiMask:Union[ROIContour, ROIMask], dose:DoseImage=None, prescription:float=None,
-                 maxDVH:float=100.0, bin_size:float=None):
-
-        self.dataUpdatedEvent = Event()
+                 maxDVH:float=100.0, bin_size:float=None, use_signals: bool = True):
+        """
+        Parameters
+        ----------
+        roiMask : ROIContour or ROIMask
+            ROI for which to compute DVH
+        dose : DoseImage, optional
+            Dose image
+        prescription : float, optional
+            Prescription dose
+        maxDVH : float
+            Maximum DVH dose 
+        bin_size : float, optional
+            Bin size for DVH
+        use_signals : bool
+            Whether to connect to signals. Set False for memory-safe, stateless DVH.
+        """
+        self._use_signals = use_signals
+        self.dataUpdatedEvent = Event() if self._use_signals else None
 
         self._roiMask = roiMask
         self._roiName = roiMask.name
@@ -73,11 +90,12 @@ class DVH:
         self.maxDVH = maxDVH
         self.bin_size = bin_size
 
-        if isinstance(roiMask, ROIMask):
+        if self._use_signals and isinstance(roiMask, ROIMask):
             self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
-        if not (self._doseImage is None):
+        if self._use_signals and not (self._doseImage is None):
             self._doseImage.dataChangedSignal.connect(self.computeDVH)
+        if not (self._doseImage is None):
             self.computeDVH()
 
     @property
@@ -89,12 +107,12 @@ class DVH:
         if dose==self._doseImage:
             return
 
-        if not (self._doseImage is None):
+        if self._use_signals and not (self._doseImage is None):
             self._doseImage.dataChangedSignal.disconnect(self.computeDVH)
 
         self._doseImage = dose
-
-        self._doseImage.dataChangedSignal.connect(self.computeDVH)
+        if self._use_signals:
+            self._doseImage.dataChangedSignal.connect(self.computeDVH)
         self.computeDVH()
 
     @property
@@ -144,7 +162,8 @@ class DVH:
     def _convertContourToROI(self):
         if isinstance(self._roiMask, ROIContour):
             self._roiMask = self._roiMask.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
-            self._roiMask.dataChangedSignal.connect(self.computeDVH)
+            if self._use_signals:
+                self._roiMask.dataChangedSignal.connect(self.computeDVH)
 
     def computeDVH(self):
         """
@@ -206,7 +225,8 @@ class DVH:
         self._D5 = self.computeDx(5)
         self._D2 = self.computeDx(2)
 
-        self.dataUpdatedEvent.emit()
+        if self._use_signals:
+            self.dataUpdatedEvent.emit()
 
     def computeDx(self, percentile:float, return_percentage:bool=False) -> float:
         """
@@ -496,7 +516,7 @@ class DVH:
         # # XXX this checking causes issues
         # if not np.any(np.logical_and(body_mask, self._roiMask.imageArray)):
         #     logger.warning("No overlap between body contour and target. Union of the two is taken for conformity index computation.")
-        body_mask = np.ma.mask_or(body_mask, self._roiMask.imageArray)
+        body_mask = np.ma.mask_or(body_mask, self._roiMask.imageArray.astype(bool))
 
         # prescription isodose volume
         isodose_prescription_volume = np.sum(
@@ -520,3 +540,98 @@ class DVH:
 
         else:
             raise NotImplementedError(f'Conformity index method {method} not implemented.')
+
+    def getBodyMask(self, body_contour:Union[ROIContour, ROIMask]) -> ROIMask:
+        """
+        Get the body mask resampled on the dose grid.
+        Parameters
+        ----------
+        body_contour: ROIcontour
+            ROIcontour object of delineating the contour of the body of the patient. Used to
+            compute the volume of the prescription isodose.
+        Returns
+        ------
+        ROIMask
+            Body mask resampled on the dose grid.
+        """
+
+        if isinstance(body_contour, ROIContour):
+            body_mask = body_contour.getBinaryMask(self._doseImage.origin, self._doseImage.gridSize, self._doseImage.spacing)
+        else:
+            assert isinstance(body_contour, ROIMask), "body_contour must be either ROIContour or ROIMask"
+            body_mask = body_contour
+        # resample body contour on dose grid if needed
+        if not (self._doseImage.hasSameGrid(body_mask)):
+            body_mask = resampler3D.resampleImage3DOnImage3D(body_mask, self._doseImage, inPlace=False, fillValue=0.)
+            body_mask.patient = None
+        return body_mask
+    
+    def conformalIndex(self, body_contour:Union[ROIContour, ROIMask]) -> float:
+
+        """
+        Compute the conformal index to evaluate implant quality and dose specification in brachytherapy.
+        Guidelines from 10.1016/S0360-3016(97)00732-3 
+
+        Parameters
+        ----------
+        body_contour: ROIcontour
+          ROIcontour object of delineating the contour of the body of the patient. Used to compute the volume of the prescription isodose.
+
+    
+        percentile: float
+          Percentile of the prescription isodose to consider (default is 0.95, i.e. 95% of the prescription dose)
+          This is the reference isodose level defined by ICRU.
+
+        Returns
+        ------
+        float
+          Conformity index
+
+        """
+
+        assert self._prescription is not None
+        
+        body_roiMask = self.getBodyMask(body_contour)
+        body_mask = body_roiMask.imageArray.astype(bool)
+        # check overlap between body contour and target
+        if not np.any(np.logical_and(body_mask, self._roiMask.imageArray)):
+            logger.warning("No overlap between body contour and target. Union of the two is taken for conformity index computation.")
+            body_mask = np.logical_or(body_mask, self._roiMask.imageArray)
+
+
+        roi_mask = self._roiMask.imageArray.astype(bool)
+        # structure receiving 100% of the prescription dose
+        structure_v100 = np.sum(
+            self._doseImage.imageArray[roi_mask] >= self._prescription
+            ) #PTV V100%
+        
+        # body volume receiving 100% of the prescription dose
+        body_v100 = np.sum(
+            self._doseImage.imageArray[body_mask] >= self._prescription
+            ) #Body V100%
+        
+        # Everything is in number of voxel and at the end the result is unit less
+        # So we don't really care about knowing the spacing which would cancel out
+        # anyway
+        target_volume = np.sum(roi_mask) #VPTV
+
+        conformal_index = (structure_v100 / target_volume) * (structure_v100 / body_v100)
+
+        return conformal_index
+    
+    def close(self):
+        """
+        Disconnect all signals to allow memory to be freed.
+        """
+        if self._use_signals:
+            if self._roiMask is not None:
+                try:
+                    self._roiMask.dataChangedSignal.disconnect(self.computeDVH)
+                except Exception:
+                    pass
+            if self._doseImage is not None:
+                try:
+                    self._doseImage.dataChangedSignal.disconnect(self.computeDVH)
+                except Exception:
+                    pass
+        self.dataUpdatedEvent = None

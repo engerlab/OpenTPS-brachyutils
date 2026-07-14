@@ -22,9 +22,9 @@ cachecontrol = "*"
 numpy = "*"
 Pillow = "*"
 pydicom = "*"
-#vtk = "*"
-#PyQt5 = "*"
-#PyQt5-Qt5 = '*'
+vtk = "*"
+PyQt5 = "*"
+PyQt5-Qt5 = '*'
 pyqtgraph = "*"
 SimpleITK = "*"
 sparse-dot-mkl = "*"
@@ -41,4 +41,5 @@ opentps = "opentps.gui:main.run"
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
+
 build-backend = "poetry.core.masonry.api"
