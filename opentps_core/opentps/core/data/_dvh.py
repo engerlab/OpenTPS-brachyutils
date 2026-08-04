@@ -460,8 +460,8 @@ class DVH:
             assert self._prescription is not None
             index = np.searchsorted(self._dose, self._prescription)
             IA = self._dose[index - 1] * 100.  # area under ideal DVH (step function)
-            AA = np.trapz(y=self._volume, x=self._dose)  # area under achieved DVH
-            OA = np.trapz(y=self._volume[:index], x=self._dose[:index])  # overlapping area between IA and AA.
+            AA = np.trapezoid(y=self._volume, x=self._dose)  # area under achieved DVH
+            OA = np.trapezoid(y=self._volume[:index], x=self._dose[:index])  # overlapping area between IA and AA.
             assert OA <= IA  # cannot do better than the step function
             return OA ** 2 / (IA * AA)
 
